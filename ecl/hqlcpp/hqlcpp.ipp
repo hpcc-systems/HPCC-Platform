@@ -745,8 +745,11 @@ struct HqlCppOptions
     bool                newBalancedSpotter;
     bool                keyedJoinPreservesOrder;
     bool                expandSelectCreateRow;
+    bool                obfuscateOutput;
+    bool                showEclInGraph;
     bool                optimizeSortAllFields;
     bool                optimizeSortAllFieldsStrict;
+    bool                alwaysReuseGlobalSpills;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -937,7 +940,7 @@ public:
     void useFunction(IHqlExpression * funcdef);
     void useLibrary(const char * libname);
     void finalizeResources();
-    void generateStatistics(const char * targetDir, const char * varient);
+    void generateStatistics(const char * targetDir, const char * variant);
 
             unsigned getHints()                             { return hints; }
     inline bool queryEvaluateCoLocalRowInvariantInExtract() const { return options.evaluateCoLocalRowInvariantInExtract; }
@@ -977,7 +980,7 @@ public:
     //or isIndependentMaybeShared is false, and the code that is inserted is never implicitly shared.
     bool getInvariantMemberContext(BuildCtx & ctx, BuildCtx * * declarectx, BuildCtx * * initctx, bool isIndependentMaybeShared, bool invariantEachStart);
 
-    IPropertyTree * gatherFieldUsage(const char * varient, const IPropertyTree * exclude);
+    IPropertyTree * gatherFieldUsage(const char * variant, const IPropertyTree * exclude);
     void writeFieldUsage(const char * targetDir, IPropertyTree * xml, const char * variant);
 
 public:
@@ -1014,7 +1017,7 @@ public:
 
     IHqlExpression * getRtlFieldKey(IHqlExpression * expr, IHqlExpression * ownerRecord);
     unsigned buildRtlField(StringBuffer * instanceName, IHqlExpression * fieldKey);
-    unsigned buildRtlType(StringBuffer & instanceName, ITypeInfo * type);
+    unsigned buildRtlType(StringBuffer & instanceName, ITypeInfo * type, unsigned typeFlags);
     unsigned buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord);
     unsigned expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord);
     unsigned buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord);
@@ -1290,7 +1293,7 @@ public:
     
     IHqlExpression * doBuildCharLength(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildHashMd5Element(BuildCtx & ctx, IHqlExpression * elem, CHqlBoundExpr & state);
-    AliasKind doBuildAliasValue(BuildCtx & ctx, IHqlExpression * value, CHqlBoundExpr & tgt);
+    AliasKind doBuildAliasValue(BuildCtx & ctx, IHqlExpression * value, CHqlBoundExpr & tgt, AliasExpansionInfo * parentInfo);
 
     void pushCluster(BuildCtx & ctx, IHqlExpression * cluster);
     void popCluster(BuildCtx & ctx);
@@ -1302,7 +1305,7 @@ public:
     void doBuildExprAbs(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprAdd(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprAggregate(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
-    void doBuildExprAlias(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt);
+    void doBuildExprAlias(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt, AliasExpansionInfo * parentInfo);
     void doBuildExprAll(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprBlobToId(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprArith(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
@@ -1507,6 +1510,8 @@ public:
     ABoundActivity * doBuildActivityWorkunitRead(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityXmlParse(BuildCtx & ctx, IHqlExpression * expr);
 
+    void doBuildHttpHeaderStringFunction(BuildCtx & ctx, IHqlExpression * expr);
+
     void doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant);
 
     void doBuildXmlEncode(BuildCtx & ctx, const CHqlBoundTarget * tgt, IHqlExpression * expr, CHqlBoundExpr * result);
@@ -1558,7 +1563,7 @@ public:
     void overrideOptionsForQuery();
 
     void doExpandAliases(BuildCtx & ctx, IHqlExpression * expr, AliasExpansionInfo & info);
-    void expandAliases(BuildCtx & ctx, IHqlExpression * expr);
+    void expandAliases(BuildCtx & ctx, IHqlExpression * expr, AliasExpansionInfo * parentInfo);
     void expandAliasScope(BuildCtx & ctx, IHqlExpression * expr);
     IHqlExpression * queryExpandAliasScope(BuildCtx & ctx, IHqlExpression * expr);
 

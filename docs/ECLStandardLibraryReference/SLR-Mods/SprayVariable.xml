@@ -179,9 +179,43 @@
         </row>
 
         <row>
+          <entry><emphasis>failIfNoSourceFile</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          allow the spray to fail if no source file is found. If omitted,
+          default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>recordStructurePresent</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          derive the record structure from the header of the file. If omitted,
+          the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>quotedTerminator</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether the
+          terminator character can be included in a quoted field. Defaults to
+          TRUE. If FALSE, it allows quicker partitioning of the file (avoiding
+          a complete file scan).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>encoding</emphasis></entry>
+
+          <entry> A null-terminated string containing the encoding. Can be set
+          to one of the following: ascii, utf8, utf8n, utf16, utf16le,
+          utf16be, utf32, utf32le,utf32be. If omitted, the default is
+          ascii.</entry>
+        </row>
+
+        <row>
           <entry><emphasis>dfuwuid</emphasis></entry>
 
-          <entry>The attribute name to recieve the null-terminated string
+          <entry>The definition name to receive the null-terminated string
           containing the DFU workunit ID (DFUWUID) generated for the
           job.</entry>
         </row>

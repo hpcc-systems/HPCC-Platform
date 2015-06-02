@@ -324,6 +324,8 @@ void CActivityInfo::readTargetClusterInfo(IConstWUClusterInfo& cluster, IPropert
         if (!smcQueue->foundQueueInStatusServer)
             targetCluster->clusterStatusDetails.appendf("Cluster %s not attached; ", clusterName.str());
     }
+
+    readJobQueue(targetCluster->serverQueue.queueName.str(), targetCluster->wuidsOnServerQueue, targetCluster->serverQueue.queueState, targetCluster->serverQueue.queueStateDetails);
 }
 
 bool CActivityInfo::readJobQueue(const char* queueName, StringArray& wuids, StringBuffer& state, StringBuffer& stateDetails)
@@ -620,6 +622,27 @@ void CActivityInfo::readWUsInTargetClusterJobQueue(IEspContext& context, CWsSMCT
     }
 }
 
+void CActivityInfo::addQueuedServerQueueJob(IEspContext& context, const char* serverName, const char* queueName, const char* instanceName,  CIArrayOf<CWsSMCTargetCluster>& targetClusters)
+{
+    ForEachItemIn(i, targetClusters)
+    {
+        CWsSMCTargetCluster& targetCluster = targetClusters.item(i);
+        if (!targetCluster.wuidsOnServerQueue.length() || !strieq(queueName, targetCluster.serverQueue.queueName.str()))
+            continue;
+
+        ForEachItemIn(i1, targetCluster.wuidsOnServerQueue)
+        {
+            const char* wuid = targetCluster.wuidsOnServerQueue.item(i1);
+            if (!wuid || !*wuid) //Multiple servers may monitor one queue. The WU may be shown under the multiple servers.
+                continue;
+
+            Owned<IEspActiveWorkunit> wu;
+            createActiveWorkUnit(context, wu, wuid, NULL, 0, serverName, queueName, instanceName, NULL, false);
+            aws.append(*wu.getClear());
+        }
+    }
+}
+
 void CActivityInfo::readRunningWUsAndJobQueueforOtherStatusServers(IEspContext& context, IPropertyTree* serverStatusRoot)
 {
     BoolHash uniqueServers;
@@ -654,6 +677,16 @@ void CActivityInfo::readRunningWUsAndJobQueueforOtherStatusServers(IEspContext& 
         {
             uniqueServers.setValue(instanceName, true);
             getServerJobQueue(queueName, instanceName, serverName, node, port);
+
+            //Now, we found a new server. we need to add queued jobs from the queues the server is monitoring.
+            StringArray qList;
+            qList.appendListUniq(queueName, ",");
+            ForEachItemIn(q, qList)
+            {
+                addQueuedServerQueueJob(context, serverName, qList.item(q), instanceName.str(), thorTargetClusters);
+                addQueuedServerQueueJob(context, serverName, qList.item(q), instanceName.str(), roxieTargetClusters);
+                addQueuedServerQueueJob(context, serverName, qList.item(q), instanceName.str(), hthorTargetClusters);
+            }
         }
     }
 
@@ -1941,6 +1974,63 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
 
     return true;
 }
+
+int CWsSMCSoapBindingEx::onHttpEcho(CHttpRequest* request,  CHttpResponse* response)
+{
+    StringBuffer xml;
+    xml.append(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+          "<soap:Body>"
+            "<HttpEchoResponse xmlns='urn:hpccsystems:ws:httpecho'>");
+
+    appendXMLTag(xml, "Method", request->queryMethod());
+    appendXMLTag(xml, "UrlPath", request->queryPath());
+    appendXMLTag(xml, "UrlParameters", request->queryParamStr());
+
+    appendXMLOpenTag(xml, "Headers");
+    StringArray &headers = request->queryHeaders();
+    headers.sortAscii(false);
+    ForEachItemIn(i, headers)
+    {
+        const char *h = headers.item(i);
+        if (strnicmp(h, "Authorization", 13))
+            appendXMLTag(xml, "Header", h);
+    }
+    appendXMLCloseTag(xml, "Headers");
+
+    const char *content = request->queryContent();
+    if (content && *content)
+        appendXMLTag(xml, "Content", content);
+    xml.append("</HttpEchoResponse></soap:Body></soap:Envelope>");
+
+    response->setContent(xml);
+    response->setContentType("text/xml");
+    response->send();
+    return 0;
+}
+
+
+int CWsSMCSoapBindingEx::onGet(CHttpRequest* request,  CHttpResponse* response)
+{
+    const char *operation = request->queryServiceMethod();
+    if (!operation || !strieq(operation, "HttpEcho"))
+        return CWsSMCSoapBinding::onGet(request, response);
+
+    return onHttpEcho(request, response);
+}
+
+void CWsSMCSoapBindingEx::handleHttpPost(CHttpRequest *request, CHttpResponse *response)
+{
+    sub_service sstype;
+    StringBuffer operation;
+    request->getEspPathInfo(sstype, NULL, NULL, &operation, false);
+    if (!operation || !strieq(operation, "HttpEcho"))
+        CWsSMCSoapBinding::handleHttpPost(request, response);
+    else
+        onHttpEcho(request, response);
+}
+
 
 int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
 {

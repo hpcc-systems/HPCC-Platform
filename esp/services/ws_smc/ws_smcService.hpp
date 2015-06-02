@@ -88,6 +88,7 @@ public:
     CWsSMCQueue agentQueue;
     CWsSMCQueue serverQueue;
     StringArray queuedWUIDs;
+    StringArray wuidsOnServerQueue;
 
     CWsSMCTargetCluster(){};
     virtual ~CWsSMCTargetCluster(){};
@@ -130,6 +131,7 @@ class CActivityInfo : public CInterface, implements IInterface
         CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2);
     CWsSMCTargetCluster* findTargetCluster(const char* clusterName, CIArrayOf<CWsSMCTargetCluster>& targetClusters);
     bool checkSetUniqueECLWUID(const char* wuid);
+    void addQueuedServerQueueJob(IEspContext& context, const char* serverName, const char* queueName, const char* instanceName, CIArrayOf<CWsSMCTargetCluster>& targetClusters);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -256,6 +258,11 @@ public:
             return NULL;
         return "stub.htm";
     }
+    virtual int onGet(CHttpRequest* request,  CHttpResponse* response);
+    void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
+    int onHttpEcho(CHttpRequest* request,  CHttpResponse* response);
+
+
     virtual int onGetRoot(IEspContext &context, CHttpRequest* request,  CHttpResponse* response)
     {
         return  onGetInstantQuery(context, request, response, "WsSMC", "Activity");

@@ -296,6 +296,12 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
     bool boolValue;
     if (iter.matchFlag(boolValue, ECLOPT_HELP))
     {
+        if (!optVerbose && iter.next())
+        {
+            iter.matchFlag(optVerbose, ECLOPT_VERBOSE);
+            if (!optVerbose)
+                iter.matchFlag(optVerbose, ECLOPT_VERBOSE_S);
+        }
         usage();
         return EclCmdOptionCompletion;
     }

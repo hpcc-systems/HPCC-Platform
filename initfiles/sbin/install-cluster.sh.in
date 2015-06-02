@@ -39,7 +39,8 @@ export CMDPREFIX="sudo"
 
 print_usage(){
     echo ""
-    echo "usage: install-cluster.sh [-h|--help] [-k|--newkey] [-n|--concurrent <number>] <Platform Package>"
+    echo "usage: install-cluster.sh [-h|--help] [-p|--pushkeydir <directory>] [-k|--newkey] [-n|--concurrent <number>] <Platform Package>"
+    echo "   -p:  copy previously generated keys from a directory"
     echo "   -k:  generate a new ssh key pair."
     echo "   -n:  how many concurrent execution allowd. The default is 5"
     echo "   <Platform Package>: HPCCSystems package file."
@@ -108,6 +109,9 @@ createPayload(){
     if [ ${NEW_KEY} -eq 1 ]; then
         mkdir -p ${NEW}
         cp -r ${GENKEY}/* ${NEW}/
+    elif [[ ${COPY_KEY} -eq 1 && -n $KEY_DIR ]]; then
+        mkdir -p ${NEW}
+        cp -r ${KEY_DIR}/* ${NEW}/
     fi
     cp -r ${PKG} ${REMOTE_INSTALL}
     cp -r ${CONFIG_DIR}/${ENV_XML_FILE} ${REMOTE_INSTALL}
@@ -141,15 +145,29 @@ fi
 
 
 NEW_KEY=0
+COPY_KEY=0
 OPTIONS="-l DEBUG -e ${CONFIG_DIR}/${ENV_CONF_FILE} -s ${SECTION:-DEFAULT}"
 
-TEMP=`/usr/bin/getopt -o n:s:kh --long help,newkey,concurrent: -n 'install-cluster' -- "$@"`
+TEMP=`/usr/bin/getopt -o p:n:s:kh --long help,pushkeydir,newkey,concurrent: -n 'install-cluster' -- "$@"`
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
 eval set -- "$TEMP"
 while true ; do
     case "$1" in
-        -k|--newkey) NEW_KEY=1
+        -k|--newkey)
+            NEW_KEY=1
+            if [[ $COPY_KEY -eq 1 ]]; then
+                echo "Cannot use both [-p|--pushkeydir] and [-k|--newkey] options"
+                exit 1
+            fi
             shift ;;
+        -p|--pushkeydir)
+            COPY_KEY=1
+            KEY_DIR=$2
+            if [[ $NEW_KEY -eq 1 ]]; then
+                echo "Cannot use both [-p|--pushkeydir] and [-k|--newkey] options"
+                exit 1
+            fi
+            shift 2 ;;
         -n|--concurrent)
             if [ -n "$2" ] && [[ $2 =~ ^[0-9]+$ ]]
             then
@@ -181,7 +199,9 @@ fi
 if [ ${NEW_KEY} -eq 1 ]; then
     generateKey
 fi
+
 export NEW_KEY
+export KEY_DIR
 
 createPayload;
 

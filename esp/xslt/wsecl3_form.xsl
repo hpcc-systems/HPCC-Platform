@@ -92,7 +92,7 @@
                 <link rel="stylesheet" type="text/css" href="/esp/files/gen_form.css"/>
                 <script type="text/javascript" src="/esp/files/req_array.js"/>
                 <script type="text/javascript" src="/esp/files/hashtable.js"/>
-                <script type="text/javascript" src="/esp/files/gen_form.js"/>
+                <script type="text/javascript" src="/esp/files/gen_form_wsecl.js"/>
                 <script type="text/javascript"><xsl:text disable-output-escaping="yes">
                 <![CDATA[
   var isIE = (navigator.appName == "Microsoft Internet Explorer");
@@ -114,7 +114,7 @@
                         <xsl:text disable-output-escaping="yes"><![CDATA[ + "<table id='"+newId+"'> </table></hr>"]]></xsl:text>
                     </xsl:if>
                     <xsl:text disable-output-escaping="yes"><![CDATA[
-       + "<input type='hidden' id='"+newId+"_ItemCt' name='"+newId+".itemcount' value='0' />"
+       + "<input type='hidden' id='"+newId+"_ItemCt' name='"+newId+".itemcount!' value='0' />"
           + "&nbsp;<input type='button' id='"+newId+"_AddBtn' onclick='appendRow(\""+newId+"\",\""+itemName+"\",get_"+typeName+"_Item)' value='Add' /> "
           + "<input type='button' id='"+newId+"_RvBtn' onclick='removeRow(\""+newId+"\",-1)' value='Delete' disabled='true' />" ]]></xsl:text>
                     <xsl:if test="not($useTableBorder)">
@@ -641,9 +641,10 @@ function switchInputForm()
                         <xsl:otherwise>20</xsl:otherwise>
                     </xsl:choose>
                 </xsl:variable>
+                <xsl:text disable-output-escaping="yes"><![CDATA[[Enter one item per line]<br/>]]></xsl:text>
                 <xsl:text disable-output-escaping="yes"><![CDATA[<textarea name=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
-                <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[.Item$' id=']]></xsl:text><!--Note $ at end of name not id marks field as array input via textarea-->
                 <xsl:value-of select="$fieldId"/>
                 <xsl:text disable-output-escaping="yes"><![CDATA[' cols=']]></xsl:text>
                 <xsl:value-of select="$inputCols"/>
@@ -700,9 +701,10 @@ function switchInputForm()
                                             <xsl:otherwise>20</xsl:otherwise>
                                         </xsl:choose>
                                     </xsl:variable>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[[Enter one item per line]<br/>]]></xsl:text>
                                     <xsl:text disable-output-escaping="yes"><![CDATA[<textarea name=']]></xsl:text>
                                     <xsl:value-of select="$fieldId"/>
-                                    <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[$' id=']]></xsl:text><!--Note $ at end of name not id marks field as array input via textarea-->
                                     <xsl:value-of select="$fieldId"/>
                                     <xsl:text disable-output-escaping="yes"><![CDATA[' cols=']]></xsl:text>
                                     <xsl:value-of select="$inputCols"/>
@@ -1130,7 +1132,7 @@ function switchInputForm()
                     <xsl:otherwise>
                         <xsl:variable name="inputType">
                             <xsl:choose>
-                                <xsl:when test="$annot/@formType">password</xsl:when>
+                                <xsl:when test="$annot/@password">password</xsl:when>
                                 <xsl:otherwise>text</xsl:otherwise>
                             </xsl:choose>
                         </xsl:variable>

@@ -619,6 +619,16 @@ static IHqlExpression * findCommonExpression(IHqlExpression * lower, IHqlExpress
 
 //---------------------------------------------------------------------------------------------------------------------
 
+bool isFileOutput(IHqlExpression * expr)
+{
+    return (expr->getOperator() == no_output) && (queryRealChild(expr, 1) != NULL);
+}
+
+bool isWorkunitOutput(IHqlExpression * expr)
+{
+    return (expr->getOperator() == no_output) && (queryRealChild(expr, 1) == NULL);
+}
+
 bool isCommonSubstringRange(IHqlExpression * expr)
 {
     if (expr->getOperator() != no_substring)
@@ -5980,20 +5990,44 @@ IHqlExpression *getDictionarySearchRecord(IHqlExpression *record)
     return recursiveStretchFields(keyrec);
 }
 
-IHqlExpression * createSelectMapRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values)
+static IHqlExpression *createTransformFromRowValue(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *dict, IHqlExpression * rowValue)
 {
     OwnedHqlExpr record = getDictionarySearchRecord(dict->queryRecord());
     TempTableTransformer transformer(errorProcessor, location, true);
-    OwnedHqlExpr newTransform = transformer.createTempTableTransform(values, record);
+    return transformer.createTempTableTransform(rowValue, record);
+}
+
+
+IHqlExpression *createRowForDictExpr(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict)
+{
+    OwnedHqlExpr rowValue = createValue(no_rowvalue, makeNullType(), LINK(expr));
+    OwnedHqlExpr newTransform = createTransformFromRowValue(errorProcessor, location, dict, rowValue);
+    return createRow(no_createrow, newTransform.getClear());
+}
+
+
+IHqlExpression * createSelectMapRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values)
+{
+    //Always process the expression and create a row since this also validates the search expression
+    OwnedHqlExpr newTransform = createTransformFromRowValue(errorProcessor, location, dict, values);
+
+    //If only a single expression is being looked up then create no_selectmap(dict, expr) instead of no_selectmap(dict, row) to avoid unnecessary aliases.
+    if (getFlatFieldCount(newTransform->queryRecord()) == 1)
+        return createRow(no_selectmap, LINK(dict), LINK(values->queryChild(0)));
+
     return createRow(no_selectmap, LINK(dict), createRow(no_createrow, newTransform.getClear()));
 }
 
 IHqlExpression *createINDictExpr(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict)
 {
-    OwnedHqlExpr record = getDictionarySearchRecord(dict->queryRecord());
-    TempTableTransformer transformer(errorProcessor, location, true);
-    OwnedHqlExpr newTransform = transformer.createTempTableTransform(expr, record);
-    return createBoolExpr(no_indict, createRow(no_createrow, newTransform.getClear()), LINK(dict));
+    //Always process the expression and create a row since this also validates the search expression
+    OwnedHqlExpr row = createRowForDictExpr(errorProcessor, location, expr, dict);
+
+    //If only a single expression is being looked up then create no_indict(expr,dict) instead of no_indict(row,dict) to avoid unnecessary row aliases.
+    if (getFlatFieldCount(row->queryRecord()) == 1)
+        return createBoolExpr(no_indict, LINK(expr), LINK(dict));
+
+    return createBoolExpr(no_indict, LINK(row), LINK(dict));
 }
 
 IHqlExpression *createINDictRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict)
@@ -8811,6 +8845,8 @@ IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression
     ForEachChild(i, transform)
     {
         IHqlExpression * cur = transform->queryChild(i);
+        if (cur->getOperator() == no_alias_scope)
+            cur = cur->queryChild(0);
         switch (cur->getOperator())
         {
         case no_assignall:

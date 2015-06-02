@@ -909,7 +909,10 @@ void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
                 if (!wfevent)
                     continue;
 
-                if (!r->hasScheduleCount() || (r->queryScheduleCountRemaining() > 0))
+                if ((!r->hasScheduleCount() || (r->queryScheduleCountRemaining() > 0))
+                    && info.getState() && !strieq(info.getState(), "scheduled")
+                    && !strieq(info.getState(), "aborting") && !strieq(info.getState(), "aborted")
+                    && !strieq(info.getState(), "failed") && !strieq(info.getState(), "archived"))
                 {
                     info.setEventSchedule(1); //Can reschedule
                     break;
@@ -1022,13 +1025,7 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
     info.setActionEx(cw->getActionEx(s).str());
     info.setDescription(cw->getDebugValue("description", s).str());
     if (version > 1.21)
-        info.setXmlParams(cw->getXmlParams(s).str());
-    if (version >= 1.49)
-    {
-        SCMStringBuffer xml;
-        exportWorkUnitToXML(cw, xml, true, false);
-        info.setWUXMLSize(xml.length());
-    }
+        info.setXmlParams(cw->getXmlParams(s, true).str());
 
     info.setResultLimit(cw->getResultLimit());
     info.setArchived(false);
@@ -1290,11 +1287,8 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned flags)
 
 void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
 {
-    bool eventCountRemaining = false;
-    bool eventCountUnlimited = false;
     try
     {
-        info.setEventSchedule(0);
         unsigned workflowsCount = 0;
         IArrayOf<IConstECLWorkflow> workflows;
         Owned<IConstWorkflowItemIterator> it = cw->getWorkflowItems();
@@ -1319,17 +1313,11 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
                         }
                         if (r->hasScheduleCount())
                         {
-                            if (r->queryScheduleCountRemaining() > 0)
-                                eventCountRemaining = true;
                             if (flags & WUINFO_IncludeWorkflows)
                             {
                                 g->setCount(r->queryScheduleCount());
                                 g->setCountRemaining(r->queryScheduleCountRemaining());
                             }
-                        }
-                        else
-                        {
-                            eventCountUnlimited = true;
                         }
                         workflowsCount++;
                         if (flags & WUINFO_IncludeWorkflows)
@@ -1351,11 +1339,6 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
         info.setWorkflowsDesc(eMsg.str());
         e->Release();
     }
-
-    if (info.getState() && !stricmp(info.getState(), "wait"))
-        info.setEventSchedule(2); //Can deschedule
-    else if (eventCountUnlimited || eventCountRemaining)
-        info.setEventSchedule(1); //Can reschedule
 }
 
 IDistributedFile* WsWuInfo::getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent)
@@ -1497,7 +1480,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
         try
         {
             SCMStringBuffer xml;
-            r.getResultXml(xml);
+            r.getResultXml(xml, true);
 
             Owned<IPropertyTree> props = createPTreeFromXMLString(xml.str(), ipt_caseInsensitive);
             IPropertyTree *val = props->queryPropTree("Row/*");
@@ -2147,8 +2130,8 @@ void WsWuInfo::getWorkunitXml(const char* plainText, MemoryBuffer& buf)
     else
         header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
 
-    SCMStringBuffer xml;
-    exportWorkUnitToXML(cw, xml, true, false);
+    StringBuffer xml;
+    exportWorkUnitToXML(cw, xml, true, false, true);
 
     buf.append(strlen(header), header);
     buf.append(xml.length(), xml.str());
@@ -3090,7 +3073,7 @@ void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& inp
     if (isEmpty(trimmedInput))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s: Workunit ID not set", methodName);
 
-    if (!looksLikeAWuid(trimmedInput))
+    if (!looksLikeAWuid(trimmedInput, 'W'))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s: Invalid Workunit ID: %s", methodName, trimmedInput);
 
     return;

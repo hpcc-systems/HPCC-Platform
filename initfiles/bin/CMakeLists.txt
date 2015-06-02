@@ -32,6 +32,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/init_roxie_cluster
     ${CMAKE_CURRENT_SOURCE_DIR}/init_sasha
     ${CMAKE_CURRENT_SOURCE_DIR}/init_thor
+    ${CMAKE_CURRENT_SOURCE_DIR}/init_thorslave
 )
     install ( PROGRAMS ${iFILES} DESTINATION ${EXEC_DIR} COMPONENT Runtime )
 ENDFOREACH ( iFILES )

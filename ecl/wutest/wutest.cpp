@@ -17,6 +17,7 @@
 #include "jlib.hpp"
 #include "jfile.hpp"
 #include "jprop.hpp"
+#include "jptree.hpp"
 #include "jsocket.hpp"
 #include "workunit.hpp"
 #include "mpbase.hpp"
@@ -25,8 +26,16 @@
 
 #include "daclient.hpp"
 #include "dasds.hpp"
+#include "dautils.hpp"
 #include "danqs.hpp"
 #include "dalienv.hpp"
+
+#ifdef _USE_CPPUNIT
+#include <cppunit/extensions/TestFactoryRegistry.h>
+#include <cppunit/ui/text/TestRunner.h>
+#endif
+
+static unsigned testSize = 1000;
 
 void usage()
 {
@@ -39,7 +48,8 @@ void usage()
            "   archive [TO=<directory>] [DEL=1] [KEEPFILERESULTS=1]\n"
            "   restore [FROM=<directory>]\n"
            "   pack\n"
-           "   unpack\n");
+           "   unpack\n"
+           "   validate [fix=1]\n");
 }
 
 bool dump(IConstWorkUnit &w, IProperties *globals)
@@ -47,7 +57,11 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
     const char *action = globals->queryProp("#action");
     if (!action || stricmp(action, "list")==0)
     {
-        printf("%-30s %-20s %-10s\n", w.queryWuid(), w.queryJobName(), w.queryStateDesc());
+        Owned <IConstWUQuery> query = w.getQuery();
+        SCMStringBuffer queryText;
+        if (query)
+            query->getQueryText(queryText);
+        printf("%-20s %-10s %-10s %s\n", w.queryWuid(), w.queryJobName(), w.queryStateDesc(), queryText.str());
     }
     else if (stricmp(action, "results")==0)
     {
@@ -55,7 +69,7 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
         ForEach(*results)
         {
             SCMStringBuffer xml;
-            results->query().getResultXml(xml);
+            results->query().getResultXml(xml, true);
             printf("%s\n", xml.str());
             SCMStringBuffer schema;
             results->query().getResultEclSchema(schema);
@@ -64,8 +78,8 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
     }
     else if (stricmp(action, "dump")==0)
     {
-        SCMStringBuffer xml;
-        exportWorkUnitToXML(&w, xml, true, false);
+        StringBuffer xml;
+        exportWorkUnitToXML(&w, xml, true, false, true);
         printf("%s\n", xml.str());
     }
     else if (stricmp(action, "temporaries")==0)
@@ -144,6 +158,9 @@ void testPagedWuList(IWorkUnitFactory *factory)
     }
 }
 
+#ifdef FORCE_WORKUNITS_TO_CASSANDRA
+extern "C" IWorkUnitFactory *createWorkUnitFactory(const IPropertyTree *props);
+#endif
 
 int main(int argc, const char *argv[])
 {
@@ -159,13 +176,27 @@ int main(int argc, const char *argv[])
         else
             globals->setProp("#action", argv[i]);
     }
+#ifdef FORCE_WORKUNITS_TO_CASSANDRA
+    StringBuffer cassandraServer;
+    if (globals->getProp("CASSANDRASERVER", cassandraServer))
+    {
+        // Statically linking to cassandra plugin makes debugging easier (and means can debug simple cassandra workunit interactions without needing dali running)
+        Owned<IPTree> props = createPTreeFromXMLString("<WorkUnitsServer><Option name='server' value='.'/><Option name='randomWuidSuffix' value='4'/><Option name='traceLevel' value='0'/><Option name='keyspace' value='hpcc_test'></Option></WorkUnitsServer>");
+        props->setProp("Option[@name='server']/@value", cassandraServer.str());
+        props->setPropInt("Option[@name='traceLevel']/@value", globals->getPropInt("tracelevel", 0));
+        setWorkUnitFactory(createWorkUnitFactory(props));
+    }
+#endif
 
     StringBuffer daliServers;
     if (!globals->getProp("DALISERVERS", daliServers))
         daliServers.append(".");
-    Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
-    initClientProcess(serverGroup,DCR_Other);
-    setPasswordsFromSDS();
+    if (!strieq(daliServers, "none"))
+    {
+        Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
+        initClientProcess(serverGroup,DCR_Other);
+        setPasswordsFromSDS();
+    }
     try
     {
         CDateTime cutoff;
@@ -183,8 +214,42 @@ int main(int argc, const char *argv[])
         }
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         const char *action = globals->queryProp("#action");
-        if (action && (stricmp(action, "testpaged")==0)) {
+        if (action && (stricmp(action, "testpaged")==0))
+        {
             testPagedWuList(factory);
+        }
+#ifdef _USE_CPPUNIT
+        else if (action && (stricmp(action, "-selftest")==0))
+        {
+            testSize = globals->getPropInt("testSize", 100);
+            queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
+            CppUnit::TextUi::TestRunner runner;
+            CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry("WuTest");
+            runner.addTest( registry.makeTest() );
+            bool wasSucessful = runner.run( "", false );
+            return wasSucessful;
+        }
+#endif
+        else if (action && (stricmp(action, "validate")==0))
+        {
+            bool fix = globals->getPropBool("fix", false);
+            unsigned errors = factory->validateRepository(fix);
+            printf("%u errors %s\n", errors, (fix && errors) ? "fixed" : "found");
+        }
+        else if (action && (stricmp(action, "clear")==0))
+        {
+            if (globals->getPropBool("entire", false) && globals->getPropBool("repository", false))
+            {
+                factory->deleteRepository(false);
+                printf("Repository deleted\n");
+            }
+            else
+                printf("You need to specify entire=1 and repository=1 to delete entire repository\n");
+        }
+        else if (action && (stricmp(action, "initialize")==0))
+        {
+            factory->createRepository();
+            printf("Repository created\n");
         }
         else if (action && (stricmp(action, "orphans")==0 || stricmp(action, "cleanup")==0))
         {
@@ -306,7 +371,7 @@ int main(int argc, const char *argv[])
         }
         else if (globals->hasProp("WUID"))
         {
-            if (stricmp(globals->queryProp("#action"), "restore")==0)
+            if (action && stricmp(action, "restore")==0)
             {
                 StringBuffer from;
                 globals->getProp("FROM", from);
@@ -355,3 +420,408 @@ int main(int argc, const char *argv[])
     return 0;
 }
 
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+class WuTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(WuTest);
+        CPPUNIT_TEST(testCreate);
+        CPPUNIT_TEST(testList);
+        CPPUNIT_TEST(testDelete);
+        CPPUNIT_TEST(testCopy);
+    CPPUNIT_TEST_SUITE_END();
+protected:
+    static StringArray wuids;
+    void testCreate()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned before = factory->numWorkUnits();
+        unsigned start = msTick();
+        for (int i = 0; i < testSize; i++)
+        {
+            VStringBuffer userId("WuTestUser%d", i % 50);
+            VStringBuffer clusterName("WuTestCluster%d", i % 5);
+            VStringBuffer jobName("WuTest job %d", i % 3);
+            Owned<IWorkUnit>wu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
+            wu->setState(WUStateFailed);
+            wu->setUser(userId);
+            wu->setClusterName(clusterName);
+            if (i % 3)
+                wu->setJobName(jobName);
+            wuids.append(wu->queryWuid());
+        }
+        unsigned after = factory->numWorkUnits();
+        DBGLOG("%u workunits created in %d ms (%d total)", testSize, msTick()-start, after);
+        ASSERT(after-before==testSize);
+        ASSERT(wuids.length() == testSize);
+        ASSERT(factory->validateRepository(false)==0);
+    }
+
+    void testCopy()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        Owned<IWorkUnit> createWu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
+        StringBuffer wuid(createWu->queryWuid());
+        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(
+                // Note - generated by compiling the following ecl:
+                //
+                //   integer one := 1 : stored('one');
+                //   d := nofold(dataset([{1}], { integer v}));
+                //   ones := count(d(v=one)) : independent;
+                //   d(v = ones);
+                //
+                // then running
+                //
+                //   ./a.out DUMPFINALWU=1 | sed "s/\"/'/g" | sed s/^/\"/ | sed s/$/\"/
+                //
+                // then a little trimming to remove some of the statistics, sort the wfid's on the workflow, and add sequence=-1 on the variable.
+                "<W_LOCAL buildVersion='community_6.0.0-trunk0Debug[heads/cass-wu-part3-0-g10b954-dirty]'"
+                "         cloneable='1'"
+                "         clusterName=''"
+                "         codeVersion='158'"
+                "         eclVersion='6.0.0'"
+                "         hash='2796091347'"
+                "         state='completed'"
+                "         xmlns:xsi='http://www.w3.org/1999/XMLSchema-instance'>"
+                " <Debug>"
+                "  <debugquery>1</debugquery>"
+                "  <expandpersistinputdependencies>1</expandpersistinputdependencies>"
+                "  <savecpptempfiles>1</savecpptempfiles>"
+                "  <saveecltempfiles>1</saveecltempfiles>"
+                "  <spanmultiplecpp>0</spanmultiplecpp>"
+                "  <standaloneexe>1</standaloneexe>"
+                "  <targetclustertype>hthor</targetclustertype>"
+                " </Debug>"
+                " <Graphs>"
+                "  <Graph name='graph1' type='activities'>"
+                "   <xgmml>"
+                "    <graph wfid='2'>"
+                "     <node id='1'>"
+                "      <att>"
+                "       <graph>"
+                "        <att name='rootGraph' value='1'/>"
+                "        <edge id='2_0' source='2' target='3'/>"
+                "        <edge id='3_0' source='3' target='4'/>"
+                "        <edge id='4_0' source='4' target='5'/>"
+                "        <node id='2' label='Inline Row&#10;{1}'>"
+                "         <att name='definition' value='./sets.ecl(2,13)'/>"
+                "         <att name='_kind' value='148'/>"
+                "         <att name='ecl' value='ROW(TRANSFORM({ integer8 v },SELF.v := 1;));&#10;'/>"
+                "         <att name='recordSize' value='8'/>"
+                "         <att name='predictedCount' value='1'/>"
+                "        </node>"
+                "        <node id='3' label='Filter'>"
+                "         <att name='definition' value='./sets.ecl(3,15)'/>"
+                "         <att name='_kind' value='5'/>"
+                "         <att name='ecl' value='FILTER(v = STORED(&apos;one&apos;));&#10;'/>"
+                "         <att name='recordSize' value='8'/>"
+                "         <att name='predictedCount' value='0..?[disk]'/>"
+                "        </node>"
+                "        <node id='4' label='Count'>"
+                "         <att name='_kind' value='125'/>"
+                "         <att name='ecl' value='TABLE({ integer8 value := COUNT(group) });&#10;'/>"
+                "         <att name='recordSize' value='8'/>"
+                "         <att name='predictedCount' value='1'/>"
+                "        </node>"
+                "        <node id='5' label='Store&#10;Internal(&apos;wf2&apos;)'>"
+                "         <att name='_kind' value='22'/>"
+                "         <att name='ecl' value='extractresult(value, named(&apos;wf2&apos;));&#10;'/>"
+                "         <att name='recordSize' value='8'/>"
+                "        </node>"
+                "       </graph>"
+                "      </att>"
+                "     </node>"
+                "    </graph>"
+                "   </xgmml>"
+                "  </Graph>"
+                "  <Graph name='graph2' type='activities'>"
+                "   <xgmml>"
+                "    <graph wfid='3'>"
+                "     <node id='6'>"
+                "      <att>"
+                "       <graph>"
+                "        <att name='rootGraph' value='1'/>"
+                "        <edge id='7_0' source='7' target='8'/>"
+                "        <edge id='8_0' source='8' target='9'/>"
+                "        <node id='7' label='Inline Row&#10;{1}'>"
+                "         <att name='definition' value='./sets.ecl(2,13)'/>"
+                "         <att name='_kind' value='148'/>"
+                "         <att name='ecl' value='ROW(TRANSFORM({ integer8 v },SELF.v := 1;));&#10;'/>"
+                "         <att name='recordSize' value='8'/>"
+                "         <att name='predictedCount' value='1'/>"
+                "        </node>"
+                "        <node id='8' label='Filter'>"
+                "         <att name='definition' value='./sets.ecl(5,1)'/>"
+                "         <att name='_kind' value='5'/>"
+                "         <att name='ecl' value='FILTER(v = INTERNAL(&apos;wf2&apos;));&#10;'/>"
+                "         <att name='recordSize' value='8'/>"
+                "         <att name='predictedCount' value='0..?[disk]'/>"
+                "        </node>"
+                "        <node id='9' label='Output&#10;Result #1'>"
+                "         <att name='definition' value='./sets.ecl(1,1)'/>"
+                "         <att name='name' value='sets'/>"
+                "         <att name='definition' value='./sets.ecl(5,1)'/>"
+                "         <att name='_kind' value='16'/>"
+                "         <att name='ecl' value='OUTPUT(..., workunit);&#10;'/>"
+                "         <att name='recordSize' value='8'/>"
+                "        </node>"
+                "       </graph>"
+                "      </att>"
+                "     </node>"
+                "    </graph>"
+                "   </xgmml>"
+                "  </Graph>"
+                " </Graphs>"
+                " <Query fetchEntire='1'>"
+                "  <Associated>"
+                "   <File desc='a.out.cpp'"
+                "         filename='/Users/rchapman/HPCC-Platform/ossd/a.out.cpp'"
+                "         ip='192.168.2.203'"
+                "         type='cpp'/>"
+                "  </Associated>"
+                " </Query>"
+                " <Results>"
+                "  <Result isScalar='0'"
+                "          name='Result 1'"
+                "          recordSizeEntry='mf1'"
+                "          rowLimit='-1'"
+                "          sequence='0'"
+                "          status='calculated'>"
+                "   <rowCount>1</rowCount>"
+                "   <SchemaRaw xsi:type='SOAP-ENC:base64'>"
+                "    dgABCAEAGBAAAAB7IGludGVnZXI4IHYgfTsK   </SchemaRaw>"
+                "   <totalRowCount>1</totalRowCount>"
+                "   <Value xsi:type='SOAP-ENC:base64'>"
+                "    AQAAAAAAAAA=   </Value>"
+                "  </Result>"
+                " </Results>"
+                " <Statistics>"
+                "  <Statistic c='eclcc'"
+                "             count='1'"
+                "             creator='eclcc'"
+                "             kind='TimeElapsed'"
+                "             s='compile'"
+                "             scope='compile:parseTime'"
+                "             ts='1431603789722535'"
+                "             unit='ns'"
+                "             value='805622'/>"
+                "  <Statistic c='unknown'"
+                "             count='1'"
+                "             creator='unknownRichards-iMac.local'"
+                "             kind='WhenQueryStarted'"
+                "             s='global'"
+                "             scope='workunit'"
+                "             ts='1431603790007020'"
+                "             unit='ts'"
+                "             value='1431603790007001'/>"
+                "  <Statistic c='unknown'"
+                "             count='1'"
+                "             creator='unknownRichards-iMac.local'"
+                "             desc='Graph graph1'"
+                "             kind='TimeElapsed'"
+                "             s='graph'"
+                "             scope='graph1'"
+                "             ts='1431603790007912'"
+                "             unit='ns'"
+                "             value='0'/>"
+                " </Statistics>"
+                " <Temporaries>"
+                "  <Variable name='wf2' status='calculated'>"
+                "   <rowCount>1</rowCount>"
+                "   <totalRowCount>1</totalRowCount>"
+                "   <Value xsi:type='SOAP-ENC:base64'>"
+                "    AQAAAAAAAAA=   </Value>"
+                "  </Variable>"
+                " </Temporaries>"
+                " <Tracing>"
+                "  <EclAgentBuild>community_6.0.0-trunk0Debug[heads/cass-wu-part3-0-g10b954-dirty]</EclAgentBuild>"
+                " </Tracing>"
+                " <Variables>"
+                "  <Variable name='one' sequence='-1' status='calculated'>"
+                "   <rowCount>1</rowCount>"
+                "   <SchemaRaw xsi:type='SOAP-ENC:base64'>"
+                "    b25lAAEIAQAYAAAAAA==   </SchemaRaw>"
+                "   <totalRowCount>1</totalRowCount>"
+                "   <Value xsi:type='SOAP-ENC:base64'>"
+                "    AQAAAAAAAAA=   </Value>"
+                "  </Variable>"
+                " </Variables>"
+                " <Workflow>"
+                "  <Item mode='normal'"
+                "        state='done'"
+                "        type='normal'"
+                "        wfid='1'/>"
+                "  <Item mode='normal'"
+                "        state='done'"
+                "        type='normal'"
+                "        wfid='2'>"
+                "   <Dependency wfid='1'/>"
+                "  </Item>"
+                "  <Item mode='normal'"
+                "        state='done'"
+                "        type='normal'"
+                "        wfid='3'>"
+                "   <Dependency wfid='2'/>"
+                "   <Schedule/>"
+                "  </Item>"
+                " </Workflow>"
+                "</W_LOCAL>"
+                );
+        StringBuffer xml1, xml2, xml3;
+        exportWorkUnitToXML(embeddedWU, xml1, false, false, false);
+        queryExtendedWU(createWu)->copyWorkUnit(embeddedWU, true);
+        createWu->setState(WUStateCompleted);
+        exportWorkUnitToXML(createWu, xml2, false, false, false);
+        createWu->commit();
+        createWu.clear();
+
+        // Now try to re-read
+        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false);
+        ASSERT(streq(wu->queryWuid(), wuid));
+        ASSERT(streq(wu->queryJobName(), embeddedWU->queryJobName()));
+        exportWorkUnitToXML(wu, xml3, false, false, false);
+        // Check that writing to/reading from the server leaves unmodified
+        // This is complicated by the fact that the order is not preserved for statistics
+        sortStatistics(xml2);
+        sortStatistics(xml3);
+
+        DBGLOG("Comparing xml2 and xml3");
+        checkStringsMatch(xml2, xml3);
+
+        // Check that copy preservers everything it should (and resets what it should)
+        // We can't directly compare xml1 with xml2 - not everything is copied
+        Owned<IPropertyTree> p2 = createPTreeFromXMLString(xml2);
+        p2->removeProp("Statistics/Statistic[@kind='WhenCreated']");
+        p2->removeProp("Debug/created_by");
+        p2->removeProp("@isClone");
+        p2->removeProp("@wuidVersion");
+        ASSERT(streq(p2->queryProp("Variables/Variable[@name='one']/@status"), "undefined"));
+        p2->setProp("Variables/Variable[@name='one']/@status", "calculated");
+        p2->renameProp("/", "W_LOCAL");
+        Owned<IPropertyTree> p1 = createPTreeFromXMLString(xml1);
+        // Checking that temporaries and tracing were not copied
+        p1->removeProp("Temporaries");
+        p1->removeProp("Tracing");
+        // Checking that variables were reset by the copy
+        p1->removeProp("Variables/Variable[@name='one']/rowCount");
+        p1->removeProp("Variables/Variable[@name='one']/totalRowCount");
+        p1->removeProp("Variables/Variable[@name='one']/Value");
+        // Checking that workflow was reset by the copy
+        p1->setProp("Workflow/Item[@wfid='1']/@state", "null");
+        p1->setProp("Workflow/Item[@wfid='2']/@state", "null");
+        p1->setProp("Workflow/Item[@wfid='3']/@state", "reqd");
+        toXML(p1, xml1.clear(), 0, XML_Format|XML_SortTags);
+        toXML(p2, xml2.clear(), 0, XML_Format|XML_SortTags);
+        DBGLOG("Comparing xml1 and xml2");
+        checkStringsMatch(xml1, xml2);
+        wu.clear();
+        factory->deleteWorkUnit(wuid);
+    }
+
+    void sortStatistics(StringBuffer &xml)
+    {
+        Owned<IPropertyTree> p = createPTreeFromXMLString(xml);
+        Owned<IPropertyTreeIterator> stats = p->getElements("Statistics/Statistic");
+        StringArray unknownAttributes;
+        IArrayOf<IPropertyTree> sorted;
+        sortElements(stats, "@ts", NULL, NULL, unknownAttributes, sorted);
+        p->removeProp("Statistics");
+        if (sorted.length())
+        {
+            Owned<IPTree> parent = createPTree("Statistics");
+            ForEachItemIn(idx, sorted)
+            {
+                parent->addPropTree("Statistic", LINK(&sorted.item(idx)));
+            }
+            p->addPropTree("Statistics", parent.getClear());
+        }
+        toXML(p, xml.clear(), 0, XML_Format|XML_SortTags);
+    }
+    void checkStringsMatch(const char *s1, const char *s2)
+    {
+        if (!streq(s1, s2))
+        {
+            int i;
+            for (i = 0; s1[i] && s2[i]==s1[i]; i++)
+                ;
+            DBGLOG("Strings differ:\n%s\n%s\n", s1+i, s2+i);
+        }
+        ASSERT(streq(s1, s2));
+    }
+
+    void testDelete()
+    {
+        ASSERT(wuids.length() == testSize);
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned before = factory->numWorkUnits();
+        unsigned start = msTick();
+        for (int i = 0; i < testSize; i++)
+        {
+            factory->deleteWorkUnit(wuids.item(i));
+        }
+        unsigned after = factory->numWorkUnits();
+        DBGLOG("%u workunits deleted in %d ms (%d remain)", testSize, msTick()-start, after);
+        ASSERT(before-after==testSize);
+        ASSERT(factory->validateRepository(false)==0);
+    }
+
+    void testList()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned before = factory->numWorkUnits();
+        unsigned start = msTick();
+        unsigned numIterated = 0;
+        Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsByOwner(NULL, NULL, NULL);
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            numIterated++;
+        }
+        DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == before);
+        // Now by owner
+        wus.setown(factory->getWorkUnitsByOwner("WuTestUser0", NULL, NULL));
+        start = msTick();
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryUser(), "WuTestUser0"));
+            numIterated++;
+        }
+        DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+49)/50);
+
+        // And by non-existent owner...
+        wus.setown(factory->getWorkUnitsByOwner("NoSuchWuTestUser0", NULL, NULL));
+        start = msTick();
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            numIterated++;
+        }
+        DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == 0);
+
+        // And by cluster
+        wus.setown(factory->getWorkUnitsByCluster("WuTestCluster0", NULL, NULL));
+        start = msTick();
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryClusterName(), "WuTestCluster0"));
+            numIterated++;
+        }
+        DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+4)/5);
+
+    }
+};
+StringArray WuTest::wuids;
+
+CPPUNIT_TEST_SUITE_REGISTRATION( WuTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( WuTest, "WuTest" );
+
+#endif

@@ -177,7 +177,7 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
 
         try
         {
-            if (!looksLikeAWuid(wuid))
+            if (!looksLikeAWuid(wuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
 
             if ((action == ActionRestore) || (action == ActionEventDeschedule))
@@ -1086,7 +1086,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
 
         if (runWuid && *runWuid)
         {
-            if (!looksLikeAWuid(runWuid))
+            if (!looksLikeAWuid(runWuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", runWuid);
 
             if (req.getCloneWorkunit())
@@ -1835,7 +1835,17 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
 
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getStartDate(), WUSFwuid);
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getEndDate(), WUSFwuidhigh);
-    addWUQueryFilterApplication(filters, filterCount, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData());
+    if (version < 1.55)
+        addWUQueryFilterApplication(filters, filterCount, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData());
+    else
+    {
+        IArrayOf<IConstApplicationValue>& applicationFilters = req.getApplicationValues();
+        ForEachItemIn(i, applicationFilters)
+        {
+            IConstApplicationValue &item = applicationFilters.item(i);
+            addWUQueryFilterApplication(filters, filterCount, filterbuf, item.getApplication(), item.getName(), item.getValue());
+        }
+    }
 
     filters[filterCount] = WUSFterm;
 
@@ -1866,7 +1876,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         }
 
         const char* wuid = cw.queryWuid();
-        if (!looksLikeAWuid(wuid))
+        if (!looksLikeAWuid(wuid, 'W'))
         {
             numWUs--;
             continue;
@@ -1875,6 +1885,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         Owned<IEspECLWorkunit> info = createECLWorkunit("","");
         WsWuInfo winfo(context, wuid);
         winfo.getCommon(*info, 0);
+        if (version >= 1.55)
+            winfo.getApplicationValues(*info, WUINFO_IncludeApplicationValues);
         results.append(*info.getClear());
     }
 
@@ -2198,7 +2210,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
-        else if(notEmpty(wuid) && looksLikeAWuid(wuid))
+        else if(notEmpty(wuid) && looksLikeAWuid(wuid, 'W'))
             doWUQueryBySingleWuid(context, wuid, resp);
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
             doWUQueryByFile(context, req.getLogicalFile(), resp);
@@ -2371,15 +2383,25 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     }
 }
 
-void openSaveFile(IEspContext &context, int opt, const char* filename, const char* origMimeType, MemoryBuffer& buf, IEspWULogFileResponse &resp)
+void checkFileSizeLimit(unsigned long xmlSize, unsigned long sizeLimit)
+{
+    if ((sizeLimit > 0) && (xmlSize > sizeLimit))
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,
+            "The file size (%ld bytes) exceeds the size limit (%ld bytes). You may set 'Option > 1' or use 'Download_XML' link to get compressed file.",
+            xmlSize, sizeLimit);
+}
+
+void openSaveFile(IEspContext &context, int opt, __int64 sizeLimit, const char* filename, const char* origMimeType, MemoryBuffer& buf, IEspWULogFileResponse &resp)
 {
     if (opt < 1)
     {
+        checkFileSizeLimit(buf.length(), sizeLimit);
         resp.setThefile(buf);
         resp.setThefile_mimetype(origMimeType);
     }
     else if (opt < 2)
     {
+        checkFileSizeLimit(buf.length(), sizeLimit);
         StringBuffer headerStr("attachment;");
         if (filename && *filename)
         {
@@ -2465,7 +2487,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
         const char* wuidIn = wuidStr.trim().str();
         if (wuidIn && *wuidIn)
         {
-            if (!looksLikeAWuid(wuidIn))
+            if (!looksLikeAWuid(wuidIn, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID");
 
             ensureWsWorkunitAccess(context, wuidIn, SecAccess_Read);
@@ -2495,12 +2517,12 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             if (strieq(File_ArchiveQuery, req.getType()))
             {
                 winfo.getWorkunitArchiveQuery(mb);
-                openSaveFile(context, opt, "ArchiveQuery.xml", HTTP_TYPE_APPLICATION_XML, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), "ArchiveQuery.xml", HTTP_TYPE_APPLICATION_XML, mb, resp);
             }
             else if (strieq(File_Cpp,req.getType()) && notEmpty(req.getName()))
             {
                 winfo.getWorkunitCpp(req.getName(), req.getDescription(), req.getIPAddress(),mb, opt > 0);
-                openSaveFile(context, opt, req.getName(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), req.getName(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_DLL,req.getType()))
             {
@@ -2508,17 +2530,17 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 winfo.getWorkunitDll(name, mb);
                 resp.setFileName(name.str());
                 resp.setDaliServer(daliServers.get());
-                openSaveFile(context, opt, req.getName(), HTTP_TYPE_OCTET_STREAM, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), req.getName(), HTTP_TYPE_OCTET_STREAM, mb, resp);
             }
             else if (strieq(File_Res,req.getType()))
             {
                 winfo.getWorkunitResTxt(mb);
-                openSaveFile(context, opt, "res.txt", HTTP_TYPE_TEXT_PLAIN, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), "res.txt", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strncmp(req.getType(), File_ThorLog, 7) == 0)
             {
                 winfo.getWorkunitThorLog(req.getName(), mb);
-                openSaveFile(context, opt, "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
             {
@@ -2526,12 +2548,12 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 getConfigurationDirectory(directories, "log", "thor", req.getProcess(), logDir);
 
                 winfo.getWorkunitThorSlaveLog(req.getClusterGroup(), req.getIPAddress(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, false);
-                openSaveFile(context, opt, "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))
             {
                 winfo.getWorkunitEclAgentLog(req.getName(), req.getProcess(), mb);
-                openSaveFile(context, opt, "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
             {
@@ -2543,7 +2565,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                     ptr = name;
 
                 winfo.getWorkunitAssociatedXml(name, req.getIPAddress(), req.getPlainText(), req.getDescription(), opt > 0, mb);
-                openSaveFile(context, opt, ptr, HTTP_TYPE_APPLICATION_XML, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), ptr, HTTP_TYPE_APPLICATION_XML, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) || strieq(File_WUECL,req.getType()))
             {
@@ -2571,7 +2593,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                         mimeType.set(HTTP_TYPE_APPLICATION_XML);
                     }
                 }
-                openSaveFile(context, opt, fileName.str(), mimeType.str(), mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), fileName.str(), mimeType.str(), mb, resp);
             }
         }
     }
@@ -2591,7 +2613,7 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
         const char* wuidIn = wuidStr.trim().str();
         if (wuidIn && *wuidIn)
         {
-            if (!looksLikeAWuid(wuidIn))
+            if (!looksLikeAWuid(wuidIn, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuidIn);
 
             ensureWsWorkunitAccess(context, wuidIn, SecAccess_Read);
@@ -2784,7 +2806,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         const char* wuid = wuidStr.trim().str();
         if (wuid && *wuid)
         {
-            if (!looksLikeAWuid(wuid))
+            if (!looksLikeAWuid(wuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
 
             ensureWsWorkunitAccess(context, wuid, SecAccess_Read);
@@ -3080,7 +3102,7 @@ bool CWsWorkunitsEx::onWUExport(IEspContext &context, IEspWUExportRequest &req, 
         {
             Owned<IConstWorkUnit> cw = factory->openWorkUnit(it->c_str(), false);
             if (cw)
-                exportWorkUnitToXML(cw, xml, true, false);
+                exportWorkUnitToXML(cw, xml, true, false, true);
         }
         xml.append("</Workunits>");
 
@@ -3358,6 +3380,54 @@ bool isRunning(IConstWorkUnit &cw)
     }
 }
 
+void CWsWorkunitsEx::readGraph(IEspContext& context, const char* subGraphId, WUGraphIDType& id, bool running,
+    IConstWUGraph* graph, IArrayOf<IEspECLGraphEx>& graphs)
+{
+    SCMStringBuffer name, label, type;
+    graph->getName(name);
+    graph->getLabel(label);
+    graph->getTypeName(type);
+
+    Owned<IEspECLGraphEx> g = createECLGraphEx("","");
+    g->setName(name.str());
+    g->setLabel(label.str());
+    g->setType(type.str());
+
+    WUGraphState graphState = graph->getState();
+    if (running && (WUGraphRunning == graphState))
+    {
+        g->setRunning(true);
+        g->setRunningId(id);
+    }
+    else if (context.getClientVersion() > 1.20)
+    {
+        if (WUGraphComplete == graphState)
+            g->setComplete(true);
+        else if (WUGraphFailed == graphState)
+            g->setFailed(true);
+    }
+
+    Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true);
+
+    // New functionality, if a subgraph id is specified and we only want to load the xgmml for that subgraph
+    // then we need to conditionally pull a propertytree from the xgmml graph one and use that for the xgmml.
+
+    //JCSMORE this should be part of the API and therefore allow *only* the subtree to be pulled from the backend.
+
+    StringBuffer xml;
+    if (notEmpty(subGraphId))
+    {
+        VStringBuffer xpath("//node[@id='%s']", subGraphId);
+        toXML(xgmml->queryPropTree(xpath.str()), xml);
+    }
+    else
+        toXML(xgmml, xml);
+
+    g->setGraph(xml.str());
+
+    graphs.append(*g.getClear());
+}
+
 bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& req, IEspWUGetGraphResponse& resp)
 {
     try
@@ -3376,65 +3446,16 @@ bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& r
         bool running = (isRunning(*cw) && cw->getRunningGraph(runningGraph,id));
 
         IArrayOf<IEspECLGraphEx> graphs;
-
-        Owned<IConstWUGraphIterator> it;
-        IConstWUGraph *graph = NULL;
         if (isEmpty(req.getGraphName())) // JCS->GS - is this really required??
         {
-            it.setown(&cw->getGraphs(GraphTypeAny));
-            if (it->first())
-                graph = &it->query();
+            Owned<IConstWUGraphIterator> it = &cw->getGraphs(GraphTypeAny);
+            ForEach(*it)
+                readGraph(context, req.getSubGraphId(), id, running, &it->query(), graphs);
         }
         else
-            graph = cw->getGraph(req.getGraphName());
-        while (graph)
         {
-            SCMStringBuffer name, label, type;
-            graph->getName(name);
-            graph->getLabel(label);
-            graph->getTypeName(type);
-
-            Owned<IEspECLGraphEx> g = createECLGraphEx("","");
-            g->setName(name.str());
-            g->setLabel(label.str());
-            g->setType(type.str());
-            WUGraphState graphState = graph->getState();
-
-            if (running && (WUGraphRunning == graphState))
-            {
-                g->setRunning(true);
-                g->setRunningId(id);
-            }
-            else if (context.getClientVersion() > 1.20)
-            {
-                if (WUGraphComplete == graphState)
-                    g->setComplete(true);
-                else if (WUGraphFailed == graphState)
-                    g->setFailed(true);
-            }
-
-            Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true);
-
-            // New functionality, if a subgraph id is specified and we only want to load the xgmml for that subgraph
-            // then we need to conditionally pull a propertytree from the xgmml graph one and use that for the xgmml.
-
-            //JCSMORE this should be part of the API and therefore allow *only* the subtree to be pulled from the backend.
-
-            StringBuffer xml;
-            if (notEmpty(req.getSubGraphId()))
-            {
-                VStringBuffer xpath("//node[@id='%s']", req.getSubGraphId());
-                toXML(xgmml->queryPropTree(xpath.str()), xml);
-            }
-            else
-                toXML(xgmml, xml);
-
-            g->setGraph(xml.str());
-
-            graphs.append(*g.getClear());
-            if (!it || !it->next())
-                break;
-            graph = &it->query();
+            Owned<IConstWUGraph> graph = cw->getGraph(req.getGraphName());
+            readGraph(context, req.getSubGraphId(), id, running, graph, graphs);
         }
         resp.setGraphs(graphs);
     }

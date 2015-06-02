@@ -32,6 +32,7 @@
 #include "rmtfile.hpp"
 #include "sockfile.hpp"
 
+#include "jutil.hpp"
 
 static class CSecuritySettings
 {
@@ -64,7 +65,7 @@ public:
         else
             listenep.getUrlStr(eps);
         enableDafsAuthentication(requireauthenticate);
-        server.setown(createRemoteFileServer());
+        server.setown(createRemoteFileServer(0)); // no throttle limiting
     }
 
     int run()
@@ -192,6 +193,15 @@ CDfuPlusHelper::CDfuPlusHelper(IProperties* _globals,   CDfuPlusMessagerIntercep
 
     const char* username = globals->queryProp("username");
     const char* password = globals->queryProp("password");
+    if ( username && *username && (!password || !*password))
+    {
+        VStringBuffer prompt("%s's password: ", username);
+        StringBuffer passw;
+        passwordInput(prompt, passw);
+        globals->setProp("password",passw.str());
+        password = globals->queryProp("password");
+    }
+
     sprayclient->setUsernameToken(username, password, NULL);
     dfuclient->setUsernameToken(username, password, NULL);
 
@@ -367,15 +377,29 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
 
     const char* encoding = globals->queryProp("encoding");
     const char* rowtag = globals->queryProp("rowtag");
-    if(stricmp(format, "xml") == 0)
+    const char* rowpath = globals->queryProp("rowpath");
+    if(strieq(format, "json"))
+    {
+        req->setIsJSON(true);
+        if (!encoding)
+            encoding = "utf8";
+        else if (strieq(encoding, "ascii"))
+            throw MakeStringExceptionDirect(-1, "json format only accepts utf encodings");
+        if(rowtag && *rowtag)
+            throw MakeStringExceptionDirect(-1, "You can't use rowtag option with json format");
+        if (rowpath && *rowpath)
+            req->setSourceRowPath(rowpath);
+    }
+    else if(stricmp(format, "xml") == 0)
     {
         if(encoding == NULL)
             encoding = "utf8";
         else if(stricmp(encoding, "ascii") == 0)
             throw MakeStringException(-1, "xml format only accepts utf encodings");
-        
         if(rowtag == NULL || *rowtag == '\0')
             throw MakeStringException(-1, "rowtag not specified.");
+        if(rowpath && *rowpath)
+            throw MakeStringException(-1, "You can't use rowpath option with xml format");
     }
     else if(stricmp(format, "csv") == 0)
     {
@@ -384,6 +408,8 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
 
         if(rowtag != NULL && *rowtag != '\0')
             throw MakeStringException(-1, "You can't use rowtag option with csv/delimited format");
+        if(rowpath && *rowpath)
+            throw MakeStringException(-1, "You can't use rowpath option with csv/delimited format");
 
         const char* separator = globals->queryProp("separator");
         if(separator)
@@ -527,7 +553,7 @@ int CDfuPlusHelper::spray()
     bool ok;
     if ((stricmp(format, "fixed") == 0)||(stricmp(format, "recfmvb") == 0)||(stricmp(format, "recfmv") == 0)||(stricmp(format, "variablebigendian") == 0))
         ok = fixedSpray(srcxml,srcip,srcfile,xmlbuf,dstcluster,dstname,format,wuid,errmsg);
-    else if((stricmp(format, "csv") == 0)||(stricmp(format, "xml") == 0)||(stricmp(format, "variable") == 0))
+    else if((stricmp(format, "csv") == 0)||(stricmp(format, "xml") == 0)||(stricmp(format, "json") == 0)||(stricmp(format, "variable") == 0))
         ok = variableSpray(srcxml,srcip,srcfile,xmlbuf,dstcluster,dstname,format,wuid, errmsg);
     else
         throw MakeStringException(-1, "format %s not supported", format);
@@ -750,6 +776,8 @@ int CDfuPlusHelper::copy()
     }
     if(globals->hasProp("compress"))
         req->setCompress(globals->getPropBool("compress", false));
+    if(globals->hasProp("preserveCompression"))
+        req->setPreserveCompression(globals->getPropBool("preserveCompression", true));
     if(globals->hasProp("encrypt"))
         req->setEncrypt(globals->queryProp("encrypt"));
     if(globals->hasProp("decrypt"))

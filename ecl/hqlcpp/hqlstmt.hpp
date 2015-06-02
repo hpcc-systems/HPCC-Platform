@@ -88,6 +88,7 @@ public:
     BuildCtx(HqlCppInstance & _state, IAtom * section);
     BuildCtx(HqlCppInstance & _state);
     BuildCtx(BuildCtx & _owner);
+    BuildCtx(BuildCtx & _owner, IHqlStmt * container);
     ~BuildCtx();
 
     IHqlStmt *                  addAssign(IHqlExpression * target, IHqlExpression * value);
@@ -135,6 +136,7 @@ public:
     HqlExprAssociation *        queryMatchExpr(IHqlExpression * expr);
     bool                        getMatchExpr(IHqlExpression * expr, CHqlBoundExpr & bound);
     IHqlExpression *            getTempDeclare(ITypeInfo * type, IHqlExpression * value);
+    bool                        isOuterContext() const;
     void                        needFunction(IFunctionInfo & helper);
     void                        needFunction(IAtom * name);
     void                        removeAssociation(HqlExprAssociation * search);

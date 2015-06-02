@@ -756,6 +756,12 @@ ILoadedDllEntry *WuWebView::loadDll(bool force)
         {
             dll.setown(queryDllServer().loadDll(dllname.str(), DllLocationAnywhere));
         }
+        catch (IException *e)
+        {
+            VStringBuffer msg("Failed to load %s", dllname.str());
+            EXCLOG(e, msg.str());
+            e->Release();
+        }
         catch(...)
         {
             DBGLOG("Failed to load %s", dllname.str());
@@ -893,6 +899,12 @@ extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char 
     {
         return new WuWebView(wu, target, queryname, dir, mapEspDirectories);
     }
+    catch (IException *e)
+    {
+        VStringBuffer msg("ERROR loading workunit %s shared object.", wu.queryWuid());
+        EXCLOG(e, msg.str());
+        e->Release();
+    }
     catch (...)
     {
         DBGLOG("ERROR loading workunit %s shared object.", wu.queryWuid());
@@ -905,6 +917,12 @@ extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *t
     try
     {
         return new WuWebView(wuid, target, queryname, dir, mapEspDirectories);
+    }
+    catch (IException *e)
+    {
+        VStringBuffer msg("ERROR loading workunit %s shared object.", wuid);
+        EXCLOG(e, msg.str());
+        e->Release();
     }
     catch (...)
     {

@@ -390,14 +390,17 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 realdllfilename.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
 
                 StringBuffer wuXML;
-                if (getWorkunitXMLFromFile(realdllfilename, wuXML))
+                if (!getWorkunitXMLFromFile(realdllfilename, wuXML))
+                    throw makeStringException(999, "Failed to extract workunit from query dll");
+
+                Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(wuXML);
+                queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, true);
+                workunit->setIsClone(false);
+                const char *jobname = embeddedWU->queryJobName();
+                if (jobname && *jobname) //let ECL win naming job during initial compile
+                    workunit->setJobName(jobname);
+                if (!workunit->getDebugValueBool("obfuscateOutput", false))
                 {
-                    Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(wuXML);
-                    queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, true);
-                    workunit->setIsClone(false);
-                    const char *jobname = embeddedWU->queryJobName();
-                    if (jobname && *jobname) //let ECL win naming job during initial compile
-                        workunit->setJobName(jobname);
                     Owned<IWUQuery> query = workunit->updateQuery();
                     query->setQueryText(eclQuery.s.str());
                 }

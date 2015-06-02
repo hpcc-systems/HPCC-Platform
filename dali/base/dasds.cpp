@@ -1003,7 +1003,7 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
             return;
         if (0 == --_retryAttempts)
         {
-            WARNLOG("writeDelta, too many retry attemps [%d]", retryAttempts);
+            WARNLOG("writeDelta, too many retry attempts [%d]", retryAttempts);
             return;
         }
         exception.clear();
@@ -1093,7 +1093,7 @@ class CBackupHandler : public CInterface, implements IThreaded
                 return;
             if (0 == --_retryAttempts)
             {
-                WARNLOG("writeExt, too many retry attemps [%d]", retryAttempts);
+                WARNLOG("writeExt, too many retry attempts [%d]", retryAttempts);
                 return;
             }
             exception.clear();
@@ -1126,7 +1126,7 @@ class CBackupHandler : public CInterface, implements IThreaded
                 return;
             if (0 == --_retryAttempts)
             {
-                WARNLOG("deleteExt, too many retry attemps [%d]", retryAttempts);
+                WARNLOG("deleteExt, too many retry attempts [%d]", retryAttempts);
                 return;
             }
             exception.clear();
@@ -2353,15 +2353,13 @@ CRemoteTreeBase *CRemoteTreeBase::createChild(int pos, const char *childName)
 static CheckedCriticalSection suppressedOrphanUnlockCrit; // to temporarily suppress unlockall
 static bool suppressedOrphanUnlock=false;
 
-#ifdef __64BIT__
-#pragma pack(push,1)    // 64bit pack CServerRemoteTree's    (could do for 32bit also)
-#endif
-
 #if defined(new)
 #define __old_new new
 #undef new
 #endif
 
+//Do not override the packing for this class - otherwise the fixed size allocator will allocate
+//misaligned objects, which can cause problems on some architectures (especially for atomic operations)
 class CServerRemoteTree : public CRemoteTreeBase
 {
     DECL_NAMEDCOUNT;
@@ -2816,11 +2814,6 @@ public:
 
 #if defined(_WIN32) && defined(__old_new)
 #define new __old_new
-#endif
-
-
-#ifdef __64BIT__
-#pragma pack(pop)   // 64bit pack CServerRemoteTree's    (could do for 32bit also)
 #endif
 
 
@@ -4469,6 +4462,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 if (queryTransactionLogging())
                     transactionLog.log("xpath='%s'", xpath.get());
                 mb.clear();
+                CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 Owned<IPropertyTree> matchTree = SDSManager->getXPaths(serverId, xpath, DAMP_SDSCMD_GETXPATHSPLUSIDS==action);
                 if (matchTree)
                 {
@@ -4499,6 +4493,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                         ascending?"true":"false", from, limit);
                 }
                 mb.clear();
+                CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 Owned<IPropertyTree> matchTree = SDSManager->getXPathsSortLimitMatchTree(xpath, matchXPath, sortBy, caseinsensitive, ascending, from, limit);
                 if (matchTree)
                 {
@@ -4516,7 +4511,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 mb.clear().append((int) DAMP_SDSREPLY_OK);
                 if (queryTransactionLogging())
                 {
-                    CServerRemoteTree *idTree = (CServerRemoteTree *) SDSManager->queryRegisteredTree(serverId);
+                    Owned<CServerRemoteTree> idTree = (CServerRemoteTree *) SDSManager->getRegisteredTree(serverId);
                     transactionLog.log("%s", idTree?idTree->queryName():"???");
                 }
                 SDSManager->getExternalValueFromServerId(serverId, mb);
@@ -7034,7 +7029,7 @@ void CCovenSDSManager::getExternalValue(__int64 index, MemoryBuffer &mb)
 
 void CCovenSDSManager::getExternalValueFromServerId(__int64 serverId, MemoryBuffer &mb)
 {
-    CServerRemoteTree *idTree = (CServerRemoteTree *) SDSManager->queryRegisteredTree(serverId);
+    Owned<CServerRemoteTree> idTree = (CServerRemoteTree *) SDSManager->getRegisteredTree(serverId);
     if (idTree)
     {
         CHECKEDCRITICALBLOCK(extCrit, fakeCritTimeout);

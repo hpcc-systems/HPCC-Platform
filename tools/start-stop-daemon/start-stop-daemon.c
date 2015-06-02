@@ -39,6 +39,8 @@
 #  define OSFreeBSD
 #elif defined(__NetBSD__)
 #  define OSNetBSD
+#elif defined(__APPLE__)
+#  define OSLinux
 #else
 #  error Unknown architecture - cannot build start-stop-daemon
 #endif
@@ -122,6 +124,10 @@
 
 #if defined(SYS_ioprio_set) && defined(linux)
 #define HAVE_IOPRIO_SET
+#endif
+
+#if defined(__APPLE__)
+#undef _POSIX_PRIORITY_SCHEDULING
 #endif
 
 enum {

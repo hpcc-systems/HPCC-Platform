@@ -24,6 +24,8 @@ useSequential := #IFDEFINED(root.useSequential, false);
 
 //--- end of version configuration ---
 
+#option ('obfuscateOutput', true);
+
 import $.setup;
 sq := setup.sq(multiPart);
 

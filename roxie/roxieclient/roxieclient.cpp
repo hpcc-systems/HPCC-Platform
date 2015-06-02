@@ -261,7 +261,7 @@ void RoxieThread::immediateOutput(size32_t len, const char* result)
     }
     else
     {
-        throw MakeStringException(-1, "Output stream not set. Pleaes set default outputstream, or use bxml as output format");
+        throw MakeStringException(-1, "Output stream not set. Please set default outputstream, or use bxml as output format");
     }
 }
 

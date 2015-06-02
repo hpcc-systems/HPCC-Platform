@@ -246,7 +246,7 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
                 else if (r.isResultScalar())
                 {
                     SCMStringBuffer x;
-                    r.getResultXml(x);
+                    r.getResultXml(x, true);
                     try
                     {
                         Owned<IPropertyTree> props = createPTreeFromXMLString(x.str(), ipt_caseInsensitive);

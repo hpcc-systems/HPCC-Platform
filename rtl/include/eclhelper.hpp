@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      157
-#define MIN_ACTIVITY_INTERFACE_VERSION  157             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      158
+#define MIN_ACTIVITY_INTERFACE_VERSION  158             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -326,6 +326,7 @@ enum RtlFieldTypeMask
 
     RFTMalien               = 0x00000800,                   // this is the physical format of a user defined type, if unknown size we can't calculate it
     RFTMcontainsifblock     = 0x00000800,                   // contains an if block - if set on a record then it contains ifblocks, so can't work out field offsets.
+    RFTMhasnonscalarxpath   = 0x00001000,                   // field xpath contains only one node, and is therefore usable for naming scalar fields
 
     RFTMcontainsunknown     = 0x10000000,                   // contains a field of unknown type that we can't process properly
     RFTMinvalidxml          = 0x20000000,                   // cannot be called to generate xml
@@ -363,6 +364,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline bool isFixedSize() const { return (fieldType & RFTMunknownsize) == 0; }
     inline bool isLinkCounted() const { return (fieldType & RFTMlinkcounted) != 0; }
     inline bool isUnsigned() const { return (fieldType & RFTMunsigned) != 0; }
+    inline bool hasNonScalarXpath() const { return (fieldType & RFTMhasnonscalarxpath) != 0; }
     inline unsigned getDecimalDigits() const { return (length & 0xffff); }
     inline unsigned getDecimalPrecision() const { return (length >> 16); }
     inline unsigned getBitfieldIntSize() const { return (length & 0xff); }
@@ -375,7 +377,6 @@ public:
                                     // for decimal, numdigits | precision << 16
                                     // if RFTMunknownsize then maxlength (records) [maxcount(datasets)]
 };
-
 
 //Core struct used for representing meta for a field.
 struct RtlFieldInfo
@@ -2137,6 +2138,7 @@ enum
     SOAPFpreserveSpace  = 0x0080,
     SOAPFlogmin         = 0x0100,
     SOAPFlogusermsg     = 0x0200,
+    SOAPFhttpheaders    = 0x0400
 };
 
 struct IHThorWebServiceCallActionArg : public IHThorArg
@@ -2161,6 +2163,7 @@ struct IHThorWebServiceCallActionArg : public IHThorArg
     virtual const char * getHttpHeaderValue()         { return NULL; }
     virtual const char * getProxyAddress()            { return NULL; }
     virtual const char * getAcceptType()              { return NULL; }
+    virtual const char * getHttpHeaders()             { return NULL; }
 };
 typedef IHThorWebServiceCallActionArg IHThorSoapActionArg ;
 typedef IHThorWebServiceCallActionArg IHThorHttpActionArg ;

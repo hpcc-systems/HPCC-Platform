@@ -160,6 +160,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   COUNTER
   COVARIANCE
   CPPBODY
+  TOK_CPP
   CRC
   CRON
   CSV
@@ -1065,6 +1066,12 @@ embedBody
                             else
                                 $$.setExpr(parser->processEmbedBody($2, embedText, language, NULL), $1);
                         }
+    | embedCppPrefix CPPBODY
+                        {
+                            OwnedHqlExpr attrs = $1.getExpr();
+                            OwnedHqlExpr embedText = $2.getExpr();
+                            $$.setExpr(parser->processEmbedBody($2, embedText, NULL, attrs), $1);
+                        }
     | EMBED '(' abstractModule ',' expression ')'
                         {
                             parser->normalizeExpression($5, type_stringorunicode, true);
@@ -1088,6 +1095,14 @@ embedPrefix
                         {
                             parser->getLexer()->enterEmbeddedMode();
                             $$.setExpr(createComma($3.getExpr(), $4.getExpr()), $1);
+                        }
+    ;
+
+embedCppPrefix
+    : EMBED '(' TOK_CPP attribs ')'
+                        {
+                            parser->getLexer()->enterEmbeddedMode();
+                            $$.setExpr($4.getExpr(), $1);
                         }
     ;
 
@@ -5249,8 +5264,8 @@ compareExpr
                             parser->normalizeExpression($4);
                             parser->normalizeExpression($4, type_dictionary, false);
                             OwnedHqlExpr dict = $4.getExpr();
-                            OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $1.getExpr());
-                            OwnedHqlExpr indict = createINDictExpr(*parser->errorHandler, $4.pos, row, dict);
+                            OwnedHqlExpr expr = $1.getExpr();
+                            OwnedHqlExpr indict = createINDictExpr(*parser->errorHandler, $4.pos, expr, dict);
                             $$.setExpr(getInverse(indict));
                             $$.setPosition($3);
                         }
@@ -5271,8 +5286,8 @@ compareExpr
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($3, type_dictionary, false);
                             OwnedHqlExpr dict = $3.getExpr();
-                            OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $1.getExpr());
-                            $$.setExpr(createINDictExpr(*parser->errorHandler, $3.pos, row, dict));
+                            OwnedHqlExpr expr = $1.getExpr();
+                            $$.setExpr(createINDictExpr(*parser->errorHandler, $3.pos, expr, dict));
                             $$.setPosition($2);
                         }
     | dataRow TOK_IN dictionary

@@ -53,7 +53,7 @@ cmake_minimum_required (VERSION 2.8.3)
 include(CTest)
 ENABLE_TESTING()
 
-set (HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 
 include(${HPCC_SOURCE_DIR}/version.cmake)
@@ -138,9 +138,15 @@ else()
     set(CPACK_PACKAGE_NAME "hpccsystems-clienttools-${majorver}.${minorver}")
     set(PACKAGE_FILE_NAME_PREFIX  "hpccsystems-clienttools-${projname}")
 endif()
+
+set (VER_SEPARATOR "-")
+if ("${stagever}" MATCHES "^rc[0-9]+$")
+    set (VER_SEPARATOR "~")
+endif()
+
 SET(CPACK_PACKAGE_VERSION_MAJOR ${majorver})
 SET(CPACK_PACKAGE_VERSION_MINOR ${minorver})
-SET(CPACK_PACKAGE_VERSION_PATCH ${point}-${stagever})
+SET(CPACK_PACKAGE_VERSION_PATCH ${point}${VER_SEPARATOR}${stagever})
 set ( CPACK_PACKAGE_CONTACT "HPCCSystems <ossdevelopment@lexisnexis.com>" )
 set( CPACK_SOURCE_GENERATOR TGZ )
 
@@ -158,6 +164,8 @@ set(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${CPACK_RPM_PACKAGE_ARCHITECTURE}")
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     set(CPACK_STRIP_FILES TRUE)
 endif()
+
+
 if ( APPLE )
 elseif ( UNIX )
     EXECUTE_PROCESS (
@@ -195,7 +203,7 @@ elseif ( UNIX )
     endif ()
 endif ()
 MESSAGE ( "-- Current release version is ${CPACK_PACKAGE_FILE_NAME}" )
-set( CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}" )
+set( CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}" )
 set( CPACK_SOURCE_GENERATOR TGZ )
 set( CPACK_SOURCE_IGNORE_FILES
         "~$"

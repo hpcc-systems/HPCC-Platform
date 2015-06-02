@@ -600,6 +600,8 @@ void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte 
         case TAKdiskwrite:
         case TAKfetch:
         case TAKkeyedjoin:
+        case TAKkeyeddenormalize:
+        case TAKkeyeddenormalizegroup:
         case TAKworkunitwrite:
         case TAKworkunitread:
         case TAKdictionaryworkunitwrite:
@@ -967,7 +969,7 @@ public:
     {
         PROTECTED_GETRESULT(stepname, sequence, "Data", "data",
             SCMStringBuffer result;
-            r->getResultString(result);
+            r->getResultString(result, false);
             tlen = result.length();
             tgt = (char *)result.s.detach();
         );
@@ -1015,7 +1017,7 @@ public:
     {
         PROTECTED_GETRESULT(stepname, sequence, "String", "string",
             SCMStringBuffer result;
-            r->getResultString(result);
+            r->getResultString(result, false);
             tlen = result.length();
             tgt = (char *)result.s.detach();
         );
@@ -1024,7 +1026,7 @@ public:
     {
         PROTECTED_GETRESULT(stepname, sequence, "String", "string",
             SCMStringBuffer result;
-            r->getResultString(result);
+            r->getResultString(result, false);
             rtlStrToStr(tlen, tgt, result.length(), result.s.str());
         );
     }
@@ -1042,7 +1044,7 @@ public:
     { 
         PROTECTED_GETRESULT(stepname, sequence, "VarString", "string",
             SCMStringBuffer result;
-            r->getResultString(result);
+            r->getResultString(result, false);
             return result.s.detach();
         );
     }

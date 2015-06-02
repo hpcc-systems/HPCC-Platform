@@ -504,6 +504,24 @@ extern REMOTE_API int setDafileSvrTraceFlags(const SocketEndpoint &_ep,byte flag
     return -2;
 }
 
+extern REMOTE_API int setDafileSvrThrottleLimit(const SocketEndpoint &_ep, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit)
+{
+    SocketEndpoint ep(_ep);
+    setDafsEndpointPort(ep);
+    if (ep.isNull())
+        return -3;
+    try {
+        Owned<ISocket> socket = ISocket::connect_wait(ep,5000);
+        return setDafsThrottleLimit(socket, throttleLimit, throttleDelayMs, throttleCPULimit);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e,"setDafileSvrThrottleLimit");
+        e->Release();
+    }
+    return -2;
+}
+
 extern REMOTE_API int getDafileSvrInfo(const SocketEndpoint &_ep,StringBuffer &retstr)
 {
     SocketEndpoint ep(_ep);
@@ -638,10 +656,14 @@ public:
     }
 };
 
-unsigned validateNodes(const SocketEndpointArray &eps,const char *dataDir, const char *mirrorDir, bool chkver, const char *script, unsigned scripttimeout, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename)
+unsigned validateNodes(const SocketEndpointArray &epso,const char *dataDir, const char *mirrorDir, bool chkver, const char *script, unsigned scripttimeout, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename)
 {
     // used for detecting duff nodes
     IPointerArrayOf<ISocket> sockets;
+    // dedup nodes
+    SocketEndpointArray eps;
+    ForEachItemIn(i1,epso)
+        eps.appendUniq(epso.element(i1));
     unsigned to=30*1000;
     unsigned n=eps.ordinality();    // use approx log scale (timeout is long but only for failure situation)
     while (n>1) {

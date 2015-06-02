@@ -228,7 +228,7 @@ public:
 
             loadTransform( fullxsltpath, params);
 
-            for( int i=0; i < optXformTimes; i++ )
+            for( unsigned i=0; i < optXformTimes; i++ )
             {
                 doTransform( *structs, outputBuffer, optVersion, opts.get(), NULL, optFlags );
             }
@@ -268,7 +268,7 @@ public:
         puts("                        only used for inheritance, and collapses their elements into their child. That simplifies the\n" );
         puts("                        stylesheet. By default this option is on.");
         puts("  --no-arrayof : Supresses the use of the arrrayof element. arrayof optimizes the XML output to include 'ArrayOf...'\n" );
-        puts("                        structure definitions for those EsdlArray elements with no item_tag attribute. Works in conjuction\n" );
+        puts("                        structure definitions for those EsdlArray elements with no item_tag attribute. Works in conjunction\n" );
         puts("                        with an optimized stylesheet that doesn't generate these itself. This defaults to on.");
     }
 
@@ -549,7 +549,7 @@ public:
             createParams();
             loadTransform( fullxsltpath, params);
 
-            for( int i=0; i < optXformTimes; i++ )
+            for( unsigned i=0; i < optXformTimes; i++ )
             {
                 doTransform( *structs, outputBuffer, optVersion, opts.get(), NULL, optFlags );
             }

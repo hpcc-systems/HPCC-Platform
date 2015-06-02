@@ -2062,7 +2062,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             doBuildDataset(ctx, expr->queryChild(0), tgt, format);
         return;
     case no_alias:
-        doBuildExprAlias(ctx, expr, &tgt);
+        doBuildExprAlias(ctx, expr, &tgt, NULL);
         return;
     case no_owned_ds:
         buildTempExpr(ctx, expr, tgt);
@@ -4413,6 +4413,9 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
     case no_null:
         doBuildRowAssignNullRow(ctx, target, expr);
         return;
+    case no_nofold:
+        buildRowAssign(ctx, target, expr->queryChild(0));
+        return;
     case no_serialize:
         {
             IHqlExpression * deserialized = expr->queryChild(0);
@@ -5051,7 +5054,7 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
 {
     if (!expr->hasAttribute(externalAtom) && (!isCurrentActiveGraph(ctx, expr->queryChild(1)) || !insideOnStart(ctx)))
     {
-        doBuildAliasValue(ctx, expr, tgt);
+        doBuildAliasValue(ctx, expr, tgt, NULL);
         return;
 
         if (!isCurrentActiveGraph(ctx, expr->queryChild(1)))

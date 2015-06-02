@@ -28,7 +28,7 @@ int gArgc = 0;
 void static usage(const char* programName)
 {
     printf("\nESDL Compiler\n\n");
-    printf("Usage:        %s [options] filename.ecm [<outdir>]\n", programName);
+    printf("Usage:        %s [options] filename.(ecm|esdl) [<outdir>]\n", programName);
     printf("Output:       (srcdir|<outdir>)/filename.xml\n\n");
 
     puts("Available options:");

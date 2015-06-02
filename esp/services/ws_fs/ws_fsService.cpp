@@ -843,12 +843,64 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
     return true;
 }
 
+bool CFileSprayEx::getOneDFUWorkunit(IEspContext& context, const char* wuid, IEspGetDFUWorkunitsResponse& resp)
+{
+    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+    Owned<IConstDFUWorkUnit> wu = factory->openWorkUnit(wuid, false);
+    if (!wu)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Dfu workunit %s not found.", wuid);
+
+    Owned<IEspDFUWorkunit> resultWU = createDFUWorkunit();
+    resultWU->setID(wuid);
+    resultWU->setCommand(wu->getCommand());
+    resultWU->setIsProtected(wu->isProtected());
+
+    StringBuffer jobname, user, cluster;
+    resultWU->setJobName(wu->getJobName(jobname).str());
+    resultWU->setUser(wu->getUser(user).str());
+
+    const char* clusterName = wu->getClusterName(cluster).str();
+    if (clusterName && *clusterName)
+    {
+        Owned<IStringIterator> targets = getTargetClusters(NULL, clusterName);
+        if (!targets->first())
+            resultWU->setClusterName(clusterName);
+        else
+        {
+            SCMStringBuffer targetCluster;
+            targets->str(targetCluster);
+            resultWU->setClusterName(targetCluster.str());
+        }
+    }
+
+    IConstDFUprogress* prog = wu->queryProgress();
+    if (prog)
+    {
+        StringBuffer statemsg;
+        DFUstate state = prog->getState();
+        encodeDFUstate(state, statemsg);
+        resultWU->setState(state);
+        resultWU->setStateMessage(statemsg.str());
+        resultWU->setPercentDone(prog->getPercentDone());
+    }
+
+    IArrayOf<IEspDFUWorkunit> result;
+    result.append(*resultWU.getClear());
+    resp.setResults(result);
+    return true;
+}
+
 bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &req, IEspGetDFUWorkunitsResponse &resp)
 {
     try
     {
         if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
+
+        StringBuffer wuidStr = req.getWuid();
+        const char* wuid = wuidStr.trim().str();
+        if (wuid && *wuid && looksLikeAWuid(wuid, 'D'))
+            return getOneDFUWorkunit(context, wuid, resp);
 
         double version = context.getClientVersion();
         if (version > 1.02)
@@ -973,6 +1025,13 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
                 filterbuf.append(req.getStateReq());
             else
                 filterbuf.append("");
+        }
+
+        if(wuid && *wuid)
+        {
+            filters[filterCount] = DFUsf_wildwuid;
+            filterCount++;
+            filterbuf.append(wuid);
         }
 
         if(clusterName && *clusterName)
@@ -2219,6 +2278,39 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
     return true;
 }
 
+const char* CFileSprayEx::getDropZoneDirByIP(const char* ip, StringBuffer& dir)
+{
+    if (!ip || !*ip)
+        return NULL;
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
+        return NULL;
+
+    Owned<IConstMachineInfo> machine = env->getMachineByAddress(ip);
+    if (!machine)
+    {
+        IpAddress ipAddr;
+        ipAddr.ipset(ip);
+        if (!ipAddr.isLocal())
+            return NULL;
+        machine.setown(env->getMachineForLocalHost());
+        if (!machine)
+            return NULL;
+    }
+    SCMStringBuffer computer, directory;
+    machine->getName(computer);
+    if (!computer.length())
+        return NULL;
+
+    Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByComputer(computer.str());
+    if (!dropZone)
+        return NULL;
+    dropZone->getDirectory(directory);
+    return dir.set(directory.str()).str();
+}
+
 bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDesprayResponse &resp)
 {
     try
@@ -2266,7 +2358,16 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         {
             RemoteFilename rfn;
             SocketEndpoint ep(destip);
-            rfn.setPath(ep, destfile);
+            if (isAbsolutePath(destfile))
+                rfn.setPath(ep, destfile);
+            else
+            {
+                StringBuffer buf;
+                getDropZoneDirByIP(destip, buf);
+                if (buf.length())
+                    addPathSepChar(buf);
+                rfn.setPath(ep, buf.append(destfile).str());
+            }
             destination->setSingleFilename(rfn);
         }
         else
@@ -2438,6 +2539,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         wuFSpecDest->setLogicalName(dstname);
         wuFSpecDest->setFileMask(fileMask.str());
         wuOptions->setOverwrite(req.getOverwrite());
+        wuOptions->setPreserveCompression(req.getPreserveCompression());
 
         if (bRoxie)
         {

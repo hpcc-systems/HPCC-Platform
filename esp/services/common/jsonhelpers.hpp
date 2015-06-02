@@ -31,94 +31,6 @@
 #define REQSF_ESCAPEFORMATTERS 0x0008
 #define REQSF_EXCLUSIVE (REQSF_SAMPLE_DATA | REQSF_TRIM)
 
-namespace HttpParamHelpers
-{
-    static const char * nextParameterTag(StringBuffer &tag, const char *path)
-    {
-        while (*path=='.')
-            path++;
-        const char *finger = strchr(path, '.');
-        if (finger)
-        {
-            tag.clear().append(finger - path, path);
-            finger++;
-        }
-        else
-            tag.set(path);
-        return finger;
-    }
-
-    static void ensureParameter(IPropertyTree *pt, StringBuffer &tag, const char *path, const char *value, const char *fullpath)
-    {
-        if (!tag.length())
-            return;
-
-        unsigned idx = 1;
-        if (path && isdigit(*path))
-        {
-            StringBuffer pos;
-            path = nextParameterTag(pos, path);
-            idx = (unsigned) atoi(pos.str())+1;
-            if (idx>25) //adf
-                throw MakeStringException(-1, "Array items above 25 not supported in HPCC WS HTTP parameters: %s", fullpath);
-        }
-
-        if (tag.charAt(tag.length()-1)=='$')
-        {
-            if (path && *path)
-                throw MakeStringException(-1, "'$' not allowed in parent node of parameter path: %s", fullpath);
-            tag.setLength(tag.length()-1);
-            StringArray values;
-            values.appendList(value, "\r");
-            ForEachItemIn(pos, values)
-            {
-                const char *itemValue = values.item(pos);
-                while (*itemValue=='\n')
-                    itemValue++;
-                pt->addProp(tag, itemValue);
-            }
-            return;
-        }
-        unsigned count = pt->getCount(tag);
-        while (count++ < idx)
-            pt->addPropTree(tag, createPTree(tag));
-        StringBuffer xpath(tag);
-        xpath.append('[').append(idx).append(']');
-        pt = pt->queryPropTree(xpath);
-
-        if (!path || !*path)
-        {
-            pt->setProp(NULL, value);
-            return;
-        }
-
-        StringBuffer nextTag;
-        path = HttpParamHelpers::nextParameterTag(nextTag, path);
-        ensureParameter(pt, nextTag, path, value, fullpath);
-    }
-
-    static void ensureParameter(IPropertyTree *pt, const char *path, const char *value)
-    {
-        const char *fullpath = path;
-        StringBuffer tag;
-        path = HttpParamHelpers::nextParameterTag(tag, path);
-        ensureParameter(pt, tag, path, value, fullpath);
-    }
-
-    static IPropertyTree *createPTreeFromHttpParameters(const char *name, IProperties *parameters)
-    {
-        Owned<IPropertyTree> pt = createPTree(name);
-        Owned<IPropertyIterator> props = parameters->getIterator();
-        ForEach(*props)
-        {
-            const char *key = props->getPropKey();
-            const char *value = parameters->queryProp(key);
-            ensureParameter(pt, key, value);
-        }
-        return pt.getClear();
-    }
-};
-
 namespace JsonHelpers
 {
     static StringBuffer &appendJSONExceptionItem(StringBuffer &s, int code, const char *msg, const char *objname="Exceptions", const char *arrayName = "Exception")
@@ -154,7 +66,7 @@ namespace JsonHelpers
 
         StringBuffer temp;
         IArrayOf<IException>& exceptions = e->getArray();
-        for (int i = 0 ; i < exceptions.ordinality(); i++)
+        for (unsigned i = 0 ; i < exceptions.ordinality(); i++)
         {
             appendJSONExceptionItem(s, e->errorCode(), e->errorMessage(temp.clear()).str(), objname, arrayName);
         }

@@ -1834,7 +1834,7 @@ void ActivityInstance::addAttribute(const char * name, IHqlExpression * expr)
 
 void ActivityInstance::addLocationAttribute(IHqlExpression * location)
 {
-    if (!translator.queryOptions().reportLocations)
+    if (!translator.queryOptions().reportLocations || translator.queryOptions().obfuscateOutput)
         return;
 
     unsigned line = location->getStartLine();
@@ -1857,6 +1857,9 @@ void ActivityInstance::addLocationAttribute(IHqlExpression * location)
 
 void ActivityInstance::addNameAttribute(IHqlExpression * symbol)
 {
+    if (translator.queryOptions().obfuscateOutput)
+        return;
+
     //Not so sure about adding a location for a named symbol if there are other locations already present....
     //We should probably perform some deduping instead.
     addLocationAttribute(symbol);
@@ -1933,9 +1936,12 @@ void ActivityInstance::processHint(IHqlExpression * attr)
 
 void ActivityInstance::processSection(IHqlExpression * section)
 {
-    StringBuffer sectionName;
-    getStringValue(sectionName, section->queryChild(0));
-    addAttribute("section", sectionName);
+    if (!translator.queryOptions().obfuscateOutput)
+    {
+        StringBuffer sectionName;
+        getStringValue(sectionName, section->queryChild(0));
+        addAttribute("section", sectionName);
+    }
 }
 
 void ActivityInstance::processHints(IHqlExpression * hintAttr)
@@ -1973,18 +1979,24 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     IPropertyTree * parentGraphNode = subgraph ? subgraph->tree.get() : defaultSubGraph;
     if (!parentGraphNode)
         return;
+
+    HqlCppOptions const & options = translator.queryOptions();
     assertex(kind < TAKlast);
     graphNode.set(parentGraphNode->addPropTree("node", createPTree()));
 
     graphNode->setPropInt64("@id", activityId);
-    StringBuffer label;
-    if (isGrouped)
-        label.append("Grouped ");
-    else if (isLocal)
-        label.append("Local ");
-    label.append(getActivityText(kind));
 
-    graphNode->setProp("@label", graphLabel ? graphLabel.get() : label.str());
+    if (!options.obfuscateOutput)
+    {
+        StringBuffer label;
+        if (isGrouped)
+            label.append("Grouped ");
+        else if (isLocal)
+            label.append("Local ");
+        label.append(getActivityText(kind));
+
+        graphNode->setProp("@label", graphLabel ? graphLabel.get() : label.str());
+    }
 
     IHqlExpression * cur = dataset;
     loop
@@ -2026,82 +2038,88 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     if (isNoAccess)
         addAttributeBool("noAccess", true);
 
-    if (graphEclText.length() == 0)
-        toECL(dataset->queryBody(), graphEclText, false, true);
-
-    elideString(graphEclText, MAX_GRAPH_ECL_LENGTH);
-    if (strcmp(graphEclText.str(), "<>") != 0)
-        addAttribute("ecl", graphEclText.str());
-
-    if (translator.queryOptions().showSeqInGraph)
+    if (!options.obfuscateOutput)
     {
-        IHqlExpression * selSeq = querySelSeq(dataset);
-        if (selSeq)
-            addAttributeInt("selSeq", selSeq->querySequenceExtra());
-    }
+        if (graphEclText.length() == 0)
+            toECL(dataset->queryBody(), graphEclText, false, true);
 
-
-    if (translator.queryOptions().showMetaInGraph)
-    {
-        StringBuffer s;
-        if (translator.targetThor())
+        elideString(graphEclText, MAX_GRAPH_ECL_LENGTH);
+        if (options.showEclInGraph)
         {
-            IHqlExpression * distribution = queryDistribution(dataset);
-            if (distribution && distribution->queryName() != localAtom)
-                addAttribute("metaDistribution", getExprECL(distribution, s.clear(), true).str());
+            if (strcmp(graphEclText.str(), "<>") != 0)
+                addAttribute("ecl", graphEclText.str());
         }
 
-        IHqlExpression * grouping = queryGrouping(dataset);
-        if (grouping)
-            addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
-
-        if (translator.targetThor())
+        if (options.showSeqInGraph)
         {
-            IHqlExpression * globalSortOrder = queryGlobalSortOrder(dataset);
-            if (globalSortOrder)
-                addAttribute("metaGlobalSortOrder", getExprECL(globalSortOrder, s.clear(), true).str());
+            IHqlExpression * selSeq = querySelSeq(dataset);
+            if (selSeq)
+                addAttributeInt("selSeq", selSeq->querySequenceExtra());
         }
 
-        IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(dataset);
-        if (localSortOrder)
-            addAttribute("metaLocalSortOrder", getExprECL(localSortOrder, s.clear(), true).str());
 
-        IHqlExpression * groupSortOrder = queryGroupSortOrder(dataset);
-        if (groupSortOrder)
-            addAttribute("metaGroupSortOrder", getExprECL(groupSortOrder, s.clear(), true).str());
-    }
-
-    if (translator.queryOptions().noteRecordSizeInGraph)
-    {
-        IHqlExpression * record = dataset->queryRecord();
-        if (!record && (getNumChildTables(dataset) == 1))
-            record = dataset->queryChild(0)->queryRecord();
-        if (record)
+        if (options.showMetaInGraph)
         {
-            size32_t maxSize = getMaxRecordSize(record, translator.getDefaultMaxRecordSize());
-            if (isVariableSizeRecord(record))
+            StringBuffer s;
+            if (translator.targetThor())
             {
-                size32_t minSize = getMinRecordSize(record);
-                size32_t expectedSize = getExpectedRecordSize(record);
-                StringBuffer temp;
-                temp.append(minSize).append("..");
-                if (maxRecordSizeUsesDefault(record))
-                    temp.append("?");
-                else
-                    temp.append(maxSize);
-                temp.append("(").append(expectedSize).append(")");
-                addAttribute("recordSize", temp.str());
+                IHqlExpression * distribution = queryDistribution(dataset);
+                if (distribution && distribution->queryName() != localAtom)
+                    addAttribute("metaDistribution", getExprECL(distribution, s.clear(), true).str());
             }
-            else
-                addAttributeInt("recordSize", maxSize);
-        }
-    }
 
-    if (translator.queryOptions().showRecordCountInGraph && !dataset->isAction())
-    {
-        StringBuffer text;
-        getRecordCountText(text, dataset);
-        addAttribute("predictedCount", text);
+            IHqlExpression * grouping = queryGrouping(dataset);
+            if (grouping)
+                addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
+
+            if (translator.targetThor())
+            {
+                IHqlExpression * globalSortOrder = queryGlobalSortOrder(dataset);
+                if (globalSortOrder)
+                    addAttribute("metaGlobalSortOrder", getExprECL(globalSortOrder, s.clear(), true).str());
+            }
+
+            IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(dataset);
+            if (localSortOrder)
+                addAttribute("metaLocalSortOrder", getExprECL(localSortOrder, s.clear(), true).str());
+
+            IHqlExpression * groupSortOrder = queryGroupSortOrder(dataset);
+            if (groupSortOrder)
+                addAttribute("metaGroupSortOrder", getExprECL(groupSortOrder, s.clear(), true).str());
+        }
+
+        if (options.noteRecordSizeInGraph)
+        {
+            IHqlExpression * record = dataset->queryRecord();
+            if (!record && (getNumChildTables(dataset) == 1))
+                record = dataset->queryChild(0)->queryRecord();
+            if (record)
+            {
+                size32_t maxSize = getMaxRecordSize(record, translator.getDefaultMaxRecordSize());
+                if (isVariableSizeRecord(record))
+                {
+                    size32_t minSize = getMinRecordSize(record);
+                    size32_t expectedSize = getExpectedRecordSize(record);
+                    StringBuffer temp;
+                    temp.append(minSize).append("..");
+                    if (maxRecordSizeUsesDefault(record))
+                        temp.append("?");
+                    else
+                        temp.append(maxSize);
+                    temp.append("(").append(expectedSize).append(")");
+                    addAttribute("recordSize", temp.str());
+                }
+                else
+                    addAttributeInt("recordSize", maxSize);
+            }
+        }
+
+        if (options.showRecordCountInGraph && !dataset->isAction())
+        {
+            StringBuffer text;
+            getRecordCountText(text, dataset);
+            addAttribute("predictedCount", text);
+        }
     }
 
     processAnnotations(dataset);
@@ -2247,7 +2265,7 @@ void ActivityInstance::buildSuffix()
             if ((options.complexClassesActivityFilter == 0) || (kind == options.complexClassesActivityFilter))
                 translator.WARNING2(CategoryEfficiency, HQLWRN_ComplexHelperClass, activityId, approxSize);
         }
-        if (options.showActivitySizeInGraph)
+        if (!options.obfuscateOutput && options.showActivitySizeInGraph)
             addAttributeInt("approxClassSize", approxSize);
     }
 
@@ -3486,6 +3504,11 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
     return LINK(expr);
 }
 
+bool checkXpathIsNonScalar(const char *xpath)
+{
+    return (strpbrk(xpath, "/?*[]<>")!=NULL); //anything other than a single tag/attr name cannot name a scalar field
+}
+
 unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpression * fieldKey)
 {
     BuildCtx declarectx(*code, declareAtom);
@@ -3526,22 +3549,6 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
             break;
         }
 
-        StringBuffer typeName;
-        typeFlags = buildRtlType(typeName, fieldType);
-
-        StringBuffer lowerName;
-        lowerName.append(field->queryName()).toLowerCase();
-
-        if (options.debugGeneratedCpp)
-        {
-            name.append("rf_");
-            convertToValidLabel(name, lowerName.str(), lowerName.length());
-            name.append("_").append(++nextFieldId);
-        }
-        else
-            name.append("rf").append(++nextFieldId);
-
-
         StringBuffer xpathName, xpathItem;
         switch (fieldType->getTypeCode())
         {
@@ -3561,8 +3568,28 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
             break;
         }
 
-        if (xpathName.length() && (xpathName.charAt(0) == '@'))
-            typeFlags |= RFTMhasxmlattr;
+        if (xpathName.length())
+        {
+            if (xpathName.charAt(0) == '@')
+                typeFlags |= RFTMhasxmlattr;
+            if (checkXpathIsNonScalar(xpathName))
+                typeFlags |= RFTMhasnonscalarxpath;
+        }
+
+        StringBuffer typeName;
+        typeFlags = buildRtlType(typeName, fieldType, typeFlags); //benefit to adding other flags to generated code as well?
+
+        StringBuffer lowerName;
+        lowerName.append(field->queryName()).toLowerCase();
+
+        if (options.debugGeneratedCpp)
+        {
+            name.append("rf_");
+            convertToValidLabel(name, lowerName.str(), lowerName.length());
+            name.append("_").append(++nextFieldId);
+        }
+        else
+            name.append("rf").append(++nextFieldId);
 
         //Format of the xpath field is (nested-item 0x01 repeated-item)
         StringBuffer xpathFull, xpathCppText;
@@ -3713,14 +3740,15 @@ unsigned HqlCppTranslator::getRtlFieldInfo(StringBuffer & fieldInfoName, IHqlExp
     return buildRtlField(&fieldInfoName, fieldKey);
 }
 
-unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo * type)
+unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo * type, unsigned typeFlags)
 {
     assertex(type);
     type_t tc = type->getTypeCode();
     if (tc == type_record)
         type = queryUnqualifiedType(type);
 
-    OwnedHqlExpr search = createVariable("t", LINK(type));
+    VStringBuffer searchKey("t%d", typeFlags);
+    OwnedHqlExpr search = createVariable(searchKey, LINK(type));
     BuildCtx declarectx(*code, declareAtom);
     HqlExprAssociation * match = declarectx.queryMatchExpr(search);
     if (match)
@@ -3742,7 +3770,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
     else
         name.append("ty").append(++nextTypeId);
 
-    unsigned fieldType= 0;
+    unsigned fieldType = typeFlags;
     if (tc == type_alien)
     {
         ITypeInfo * physicalType = queryAlienType(type)->queryPhysicalType();
@@ -3851,7 +3879,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
         {
             className.clear().append("RtlRowTypeInfo");
             arguments.append(",&");
-            childType = buildRtlType(arguments, ::queryRecordType(type));
+            childType = buildRtlType(arguments, ::queryRecordType(type), 0);
 //          fieldType |= (childType & RFTMcontainsifblock);
             if (hasLinkCountedModifier(type))
                 fieldType |= RFTMlinkcounted;
@@ -3862,7 +3890,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
         {
             className.clear().append("RtlDatasetTypeInfo");
             arguments.append(",&");
-            childType = buildRtlType(arguments, ::queryRecordType(type));
+            childType = buildRtlType(arguments, ::queryRecordType(type), 0);
             if (hasLinkCountedModifier(type))
                 fieldType |= RFTMlinkcounted;
             break;
@@ -3871,7 +3899,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
         {
             className.clear().append("RtlDictionaryTypeInfo");
             arguments.append(",&");
-            childType = buildRtlType(arguments, ::queryRecordType(type));
+            childType = buildRtlType(arguments, ::queryRecordType(type), 0);
             if (hasLinkCountedModifier(type))
                 fieldType |= RFTMlinkcounted;
             StringBuffer lookupHelperName;
@@ -3882,7 +3910,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
     case type_set:
         className.clear().append("RtlSetTypeInfo");
         arguments.append(",&");
-        childType = buildRtlType(arguments, type->queryChildType());
+        childType = buildRtlType(arguments, type->queryChildType(), 0);
         break;
     case type_unicode:
         className.clear().append("RtlUnicodeTypeInfo");
@@ -4099,7 +4127,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
             assertex(!instance.isGrouped());
 
             StringBuffer typeName;
-            unsigned recordTypeFlags = buildRtlType(typeName, record->queryType());
+            unsigned recordTypeFlags = buildRtlType(typeName, record->queryType(), 0);
             s.clear().append("virtual const RtlTypeInfo * queryTypeInfo() const { return &").append(typeName).append("; }");
             metactx.addQuoted(s);
 
@@ -5784,6 +5812,12 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         wu()->setCodeVersion(ACTIVITY_INTERFACE_VERSION,BUILD_TAG,LANGUAGE_VERSION);
         cacheOptions();
 
+        if (options.obfuscateOutput)
+        {
+            Owned<IWUQuery> query = wu()->updateQuery();
+            query->setQueryText(NULL);
+        }
+
         useLibrary(ECLRTL_LIB);
         useInclude("eclrtl.hpp");
 
@@ -6007,10 +6041,10 @@ static int compareTrackedSourceByName(CInterface * const * _left, CInterface * c
     return stricmp(leftName, rightName);
 }
 
-IPropertyTree * HqlCppTranslator::gatherFieldUsage(const char * varient, const IPropertyTree * exclude)
+IPropertyTree * HqlCppTranslator::gatherFieldUsage(const char * variant, const IPropertyTree * exclude)
 {
     Owned<IPropertyTree> sources = createPTree("usedsources");
-    sources->setProp("@varient", varient);
+    sources->setProp("@varient", variant);
     trackedSources.sort(compareTrackedSourceByName);
     ForEachItemIn(i, trackedSources)
     {
@@ -6075,11 +6109,11 @@ void HqlCppTranslator::writeFieldUsage(const char * targetDir, IPropertyTree * s
 }
 
 
-void HqlCppTranslator::generateStatistics(const char * targetDir, const char * varient)
+void HqlCppTranslator::generateStatistics(const char * targetDir, const char * variant)
 {
     if ((options.reportFieldUsage || options.reportFileUsage) && trackedSources.ordinality())
     {
-        Owned<IPropertyTree> sources = gatherFieldUsage(varient, NULL);
+        Owned<IPropertyTree> sources = gatherFieldUsage(variant, NULL);
         writeFieldUsage(targetDir, sources, NULL);
     }
 }
@@ -6757,7 +6791,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 }
         }
     }
-    catch (IError * e)
+    catch (IError *)
     {
         throw;
     }
@@ -7501,7 +7535,7 @@ bool HqlCppTranslator::checkGetResultContext(BuildCtx & ctx, IHqlExpression * ex
     {
         if (queryEvalContext(ctx))
         {
-            doBuildAliasValue(ctx, expr, tgt);
+            doBuildAliasValue(ctx, expr, tgt, NULL);
             return true;
         }
 
@@ -7685,7 +7719,7 @@ static bool isFilePersist(IHqlExpression * expr)
             expr = expr->queryChild(1);
             break;
         case no_output:
-            return (queryRealChild(expr, 1) != NULL);
+            return isFileOutput(expr);
         case no_actionlist:
         case no_orderedactionlist:
             expr = expr->queryChild(expr->numChildren()-1);
@@ -7789,7 +7823,7 @@ void HqlCppTranslator::doBuildEvalOnce(BuildCtx & ctx, const CHqlBoundTarget * t
 {
     IHqlExpression * value = expr->queryChild(0);
     CHqlBoundExpr result;
-    doBuildAliasValue(ctx, value, result);
+    doBuildAliasValue(ctx, value, result, NULL);
     if (target)
     {
         OwnedHqlExpr translated = result.getTranslatedExpr();
@@ -7998,7 +8032,11 @@ void HqlCppTranslator::doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget 
             case type_dictionary:
             case type_table:
             case type_groupedtable:
-                UNIMPLEMENTED;
+                {
+                    StringBuffer typeName;
+                    getFriendlyTypeStr(leftType, typeName);
+                    throwError2(HQLERR_UnsupportedRowDiffType, typeName.str(), expr->queryId()->str());
+                }
             }
 
             StringBuffer fullName;
@@ -13594,15 +13632,31 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
 
 //---------------------------------------------------------------------------
 
+static bool isDistributedFunctionCall(IHqlExpression * expr)
+{
+    IHqlExpression * funcdef = NULL;
+    switch (expr->getOperator())
+    {
+    case no_externalcall:
+        funcdef = expr->queryBody()->queryExternalDefinition();
+        break;
+    case no_call:
+        funcdef = expr->queryBody()->queryFunctionDefinition();
+        break;
+    }
+    return (funcdef && queryFunctionAttribute(funcdef, distributedAtom));
+}
+
 ABoundActivity * HqlCppTranslator::doBuildActivityChildDataset(BuildCtx & ctx, IHqlExpression * expr)
 {
     if (options.mainRowsAreLinkCounted || isGrouped(expr))
         return doBuildActivityLinkedRawChildDataset(ctx, expr);
 
-
     StringBuffer s;
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKchilditerator, expr, "ChildIterator");
+    if (isDistributedFunctionCall(expr))
+        instance->setLocal(true);
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
@@ -13627,7 +13681,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChildDataset(BuildCtx & ctx, I
     default:
         {
             CHqlBoundExpr bound;
-            doBuildAliasValue(instance->onstartctx, value, bound);
+            doBuildAliasValue(instance->onstartctx, value, bound, NULL);
             value.setown(bound.getTranslatedExpr());
             break;
         }
@@ -13656,6 +13710,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityStreamedCall(BuildCtx & ctx, I
     StringBuffer s;
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKstreamediterator, expr, "StreamedIterator");
+    if (isDistributedFunctionCall(expr))
+        instance->setLocal(true);
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
@@ -13675,6 +13731,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLinkedRawChildDataset(BuildCtx
     StringBuffer s;
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKlinkedrawiterator, expr, "LinkedRawIterator");
+    if (isDistributedFunctionCall(expr))
+        instance->setLocal(true);
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
@@ -17005,6 +17063,32 @@ void HqlCppTranslator::validateExprScope(BuildCtx & ctx, IHqlExpression * datase
         throwError2(HQLERR_OpArgDependsDataset, opName, argName);
 }
 
+void HqlCppTranslator::doBuildHttpHeaderStringFunction(BuildCtx &ctx, IHqlExpression * expr)
+{
+    HqlExprArray headerExprs;
+    gatherAttributes(headerExprs, httpHeaderAtom, expr);
+    if (headerExprs.length())
+    {
+        Owned<ITypeInfo> string2Type = makeStringType(2);
+        OwnedHqlExpr endName = createConstant(createStringValue(": ", LINK(string2Type)));
+        OwnedHqlExpr endLine = createConstant(createStringValue("\r\n", LINK(string2Type)));
+
+        HqlExprArray headerStringExprs;
+        ForEachItemIn(i, headerExprs)
+        {
+            IHqlExpression * httpHeader = &headerExprs.item(i);
+            headerStringExprs.append(*LINK(httpHeader->queryChild(0)));
+            headerStringExprs.append(*LINK(endName));
+            headerStringExprs.append(*LINK(httpHeader->queryChild(1)));
+            headerStringExprs.append(*LINK(endLine));
+        }
+
+        OwnedHqlExpr concatHeaders = createBalanced(no_concat, unknownVarStringType, headerStringExprs);
+        concatHeaders.setown(foldHqlExpression(concatHeaders));
+        doBuildVarStringFunction(ctx, "getHttpHeaders", concatHeaders);
+    }
+
+}
 
 ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpression * expr, bool isSink, bool isRoot)
 {
@@ -17087,12 +17171,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
     if (action)
         doBuildVarStringFunction(instance->startctx, "getSoapAction", action->queryChild(0));
 
-    IHqlExpression * httpHeader = expr->queryAttribute(httpHeaderAtom);
-    if (httpHeader)
-    {
-        doBuildVarStringFunction(instance->startctx, "getHttpHeaderName", httpHeader->queryChild(0));
-        doBuildVarStringFunction(instance->startctx, "getHttpHeaderValue", httpHeader->queryChild(1));
-    }
+    doBuildHttpHeaderStringFunction(instance->startctx, expr);
 
     IHqlExpression * proxyAddress = expr->queryAttribute(proxyAddressAtom);
     if (proxyAddress)
@@ -17143,6 +17222,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             flags.append("|SOAPFlogmin");
         if (logText)
             flags.append("|SOAPFlogusermsg");
+        if (expr->hasAttribute(httpHeaderAtom))
+            flags.append("|SOAPFhttpheaders");
 
         if (flags.length())
             doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -17251,6 +17332,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
     //virtual void toXML(const byte * self, StringBuffer & out) = 0;
     buildHTTPtoXml(instance->startctx);
 
+    doBuildHttpHeaderStringFunction(instance->startctx, expr);
+
     //virtual const char * queryOutputIteratorPath()
     IHqlExpression * separator = expr->queryAttribute(separatorAtom);
     if (separator)
@@ -17294,6 +17377,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
             flags.append("|SOAPFlogmin");
         if (logText)
             flags.append("|SOAPFlogusermsg");
+        if (expr->hasAttribute(httpHeaderAtom))
+            flags.append("|SOAPFhttpheaders");
 
         if (flags.length())
             doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -18584,8 +18669,6 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_nohoist:
     case no_actionlist:
     case no_orderedactionlist:
-    case no_externalcall:
-    case no_call:
     case no_compound_fetch:
     case no_addfiles:
     case no_nonempty:
@@ -18639,6 +18722,13 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_globalscope:
     case no_extractresult:
         return needsRealThor(expr->queryChild(0), flags);
+
+    case no_call:
+    case no_externalcall:
+        if (isDistributedFunctionCall(expr))
+            return true;
+        //MORE: check for streamed inputs.
+        break;
 
     case no_fetch:
         return needsRealThor(expr->queryChild(1), flags);

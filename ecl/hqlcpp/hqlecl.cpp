@@ -453,7 +453,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
             return false;
         }
 
-        if (wu->getDebugValueBool("saveEclTempFiles", false) || wu->getDebugValueBool("saveCppTempFiles", false))
+        if (wu->getDebugValueBool("saveEclTempFiles", false) || wu->getDebugValueBool("saveCppTempFiles", false) || wu->getDebugValueBool("saveCpp", false))
             setSaveGeneratedFiles(true);
 
         doExpand(translator);
@@ -480,8 +480,8 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 
 void HqlDllGenerator::addWorkUnitAsResource()
 {
-    SCMStringBuffer wuXML;
-    exportWorkUnitToXML(wu, wuXML, false, false);
+    StringBuffer wuXML;
+    exportWorkUnitToXML(wu, wuXML, false, false, false);
     code->addCompressResource("WORKUNIT", wuXML.length(), wuXML.str(), NULL, 1000);
 }
 

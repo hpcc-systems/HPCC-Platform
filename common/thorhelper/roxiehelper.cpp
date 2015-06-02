@@ -19,6 +19,8 @@
 #include "thorherror.h"
 #include "roxiehelper.hpp"
 #include "roxielmj.hpp"
+#include "roxierow.hpp"
+#include "roxierowbuff.hpp"
 
 #include "jmisc.hpp"
 #include "jfile.hpp"
@@ -411,7 +413,908 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
     }
     return group.ordinality()>0;
 }
+
+//=========================================================================================
+
+// default implementations - can be overridden for efficiency...
+bool ISimpleInputBase::nextGroup(ConstPointerArray & group)
+{
+    // MORE - this should be replaced with a version that reads to a builder
+    const void * next;
+    while ((next = nextInGroup()) != NULL)
+        group.append(next);
+    if (group.ordinality())
+        return true;
+    return false;
+}
+
+void ISimpleInputBase::readAll(RtlLinkedDatasetBuilder &builder)
+{
+    loop
+    {
+        const void *nextrec = nextInGroup();
+        if (!nextrec)
+        {
+            nextrec = nextInGroup();
+            if (!nextrec)
+                break;
+            builder.appendEOG();
+        }
+        builder.appendOwn(nextrec);
+    }
+}
+
+
+//=========================================================================================
+
+// Ability to read an input stream and group and/or sort it on-the-fly
+
+using roxiemem::OwnedConstRoxieRow;
+
+class InputReaderBase  : public CInterfaceOf<IGroupedInput>
+{
+protected:
+    IInputBase *input;
+public:
+    InputReaderBase(IInputBase *_input)
+    : input(_input)
+    {
+    }
+
+    virtual IOutputMetaData * queryOutputMeta() const
+    {
+        return input->queryOutputMeta();
+    }
+};
+
+class GroupedInputReader : public InputReaderBase
+{
+protected:
+    bool firstRead;
+    bool eof;
+    bool endGroupPending;
+    OwnedConstRoxieRow next;
+    const ICompare *compare;
+public:
+    GroupedInputReader(IInputBase *_input, const ICompare *_compare)
+    : InputReaderBase(_input), compare(_compare)
+    {
+        firstRead = false;
+        eof = false;
+        endGroupPending = false;
+    }
+
+    virtual const void *nextInGroup()
+    {
+        if (!firstRead)
+        {
+            firstRead = true;
+            next.setown(input->nextInGroup());
+        }
+
+        if (eof || endGroupPending)
+        {
+            endGroupPending = false;
+            return NULL;
+        }
+
+        OwnedConstRoxieRow prev(next.getClear());
+        next.setown(input->nextUngrouped());  // skip incoming grouping if present
+
+        if (next)
+        {
+            dbgassertex(prev);  // If this fails, you have an initial empty group. That is not legal.
+            if (compare && compare->docompare(prev, next) != 0)
+                endGroupPending = true;
+        }
+        else
+            eof = true;
+        return prev.getClear();
+    }
+};
+
+class DegroupedInputReader : public InputReaderBase
+{
+public:
+    DegroupedInputReader(IInputBase *_input) : InputReaderBase(_input)
+    {
+    }
+    virtual const void *nextInGroup()
+    {
+        return input->nextUngrouped();
+    }
+};
+
+class SortedInputReader : public InputReaderBase
+{
+protected:
+    DegroupedInputReader degroupedInput;
+    Owned<ISortAlgorithm> sorter;
+    bool firstRead;
+public:
+    SortedInputReader(IInputBase *_input, ISortAlgorithm *_sorter)
+      : InputReaderBase(_input), degroupedInput(_input), sorter(_sorter), firstRead(false)
+    {
+        sorter->reset();
+    }
+
+    virtual const void *nextInGroup()
+    {
+        if (!firstRead)
+        {
+            firstRead = true;
+            sorter->prepare(&degroupedInput);
+        }
+        return sorter->next();
+    }
+};
+
+class SortedGroupedInputReader : public SortedInputReader
+{
+protected:
+    bool eof;
+    bool endGroupPending;
+    OwnedConstRoxieRow next;
+    const ICompare *compare;
+public:
+    SortedGroupedInputReader(IInputBase *_input, const ICompare *_compare, ISortAlgorithm *_sorter)
+      : SortedInputReader(_input, _sorter), compare(_compare), eof(false), endGroupPending(false)
+    {
+    }
+
+    virtual const void *nextInGroup()
+    {
+        if (!firstRead)
+        {
+            firstRead = true;
+            sorter->prepare(&degroupedInput);
+            next.setown(sorter->next());
+        }
+
+        if (eof || endGroupPending)
+        {
+            endGroupPending = false;
+            return NULL;
+        }
+
+        OwnedConstRoxieRow prev(next.getClear());
+        next.setown(sorter->next());
+
+        if (next)
+        {
+            dbgassertex(prev);  // If this fails, you have an initial empty group. That is not legal.
+            if (compare->docompare(prev, next) != 0) // MORE - could assert >=0, as input is supposed to be sorted
+                 endGroupPending = true;
+        }
+        else
+            eof = true;
+        return prev.getClear();
+    }
+};
+
+extern IGroupedInput *createGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare)
+{
+    dbgassertex(_input && _groupCompare);
+    return new GroupedInputReader(_input, _groupCompare);
+}
+
+extern IGroupedInput *createDegroupedInputReader(IInputBase *_input)
+{
+    dbgassertex(_input);
+    return new DegroupedInputReader(_input);
+}
+
+extern IGroupedInput *createSortedInputReader(IInputBase *_input, ISortAlgorithm *_sorter)
+{
+    dbgassertex(_input && _sorter);
+    return new SortedInputReader(_input, _sorter);
+}
+
+extern IGroupedInput *createSortedGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter)
+{
+    dbgassertex(_input && _groupCompare && _sorter);
+    return new SortedGroupedInputReader(_input, _groupCompare, _sorter);
+}
+
 //========================================================================================= 
+
+class CQuickSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
+{
+protected:
+    unsigned curIndex;
+    ConstPointerArray sorted;
+    ICompare *compare;
+
+public:
+    CQuickSortAlgorithm(ICompare *_compare) : compare(_compare)
+    {
+        curIndex = 0;
+    }
+
+    virtual void prepare(IInputBase *input)
+    {
+        curIndex = 0;
+        if (input->nextGroup(sorted))
+            qsortvec(const_cast<void * *>(sorted.getArray()), sorted.ordinality(), *compare);
+    }
+
+    virtual const void *next()
+    {
+        if (sorted.isItem(curIndex))
+            return sorted.item(curIndex++);
+        return NULL;
+    }
+
+    virtual void reset()
+    {
+        while (sorted.isItem(curIndex))
+            ReleaseRoxieRow(sorted.item(curIndex++));
+        curIndex = 0;
+        sorted.kill();
+    }
+};
+
+class CStableQuickSortAlgorithm : public CQuickSortAlgorithm
+{
+public:
+    CStableQuickSortAlgorithm(ICompare *_compare) : CQuickSortAlgorithm(_compare)
+    {
+    }
+    virtual void prepare(IInputBase *input)
+    {
+        curIndex = 0;
+        if (input->nextGroup(sorted))
+        {
+            unsigned numRows = sorted.ordinality();
+            void **rows = const_cast<void * *>(sorted.getArray());
+            MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
+            void **temp = (void **) tempAttr.bufferBase();
+            memcpy(temp, rows, numRows*sizeof(void **));
+            qsortvecstable(temp, numRows, *compare, (void ***)rows);
+            for (unsigned i = 0; i < numRows; i++)
+            {
+                *rows = **((void ***)rows);
+                rows++;
+            }
+        }
+    }
+};
+
+#define INSERTION_SORT_BLOCKSIZE 1024
+
+class SortedBlock : public CInterface, implements IInterface
+{
+    unsigned sequence;
+    const void **rows;
+    unsigned length;
+    unsigned pos;
+
+    SortedBlock(const SortedBlock &);
+public:
+    IMPLEMENT_IINTERFACE;
+
+    SortedBlock(unsigned _sequence, roxiemem::IRowManager *rowManager, unsigned activityId) : sequence(_sequence)
+    {
+        rows = (const void **) rowManager->allocate(INSERTION_SORT_BLOCKSIZE * sizeof(void *), activityId);
+        length = 0;
+        pos = 0;
+    }
+
+    ~SortedBlock()
+    {
+        while (pos < length)
+            ReleaseRoxieRow(rows[pos++]);
+        ReleaseRoxieRow(rows);
+    }
+
+    int compareTo(SortedBlock *r, ICompare *compare)
+    {
+        int rc = compare->docompare(rows[pos], r->rows[r->pos]);
+        if (!rc)
+            rc = sequence - r->sequence;
+        return rc;
+    }
+
+    const void *next()
+    {
+        if (pos < length)
+            return rows[pos++];
+        else
+            return NULL;
+    }
+
+    inline bool eof()
+    {
+        return pos==length;
+    }
+
+    bool insert(const void *next, ICompare *_compare )
+    {
+        unsigned b = length;
+        if (b == INSERTION_SORT_BLOCKSIZE)
+            return false;
+        else if (b < 7)
+        {
+            while (b)
+            {
+                if (_compare->docompare(next, rows[b-1]) >= 0)
+                    break;
+                b--;
+            }
+            if (b != length)
+                memmove(&rows[b+1], &rows[b], (length - b) * sizeof(void *));
+            rows[b] = next;
+            length++;
+            return true;
+        }
+        else
+        {
+            unsigned int a = 0;
+            while ((int)a<b)
+            {
+                int i = (a+b)/2;
+                int rc = _compare->docompare(next, rows[i]);
+                if (rc>=0)
+                    a = i+1;
+                else
+                    b = i;
+            }
+            if (a != length)
+                memmove(&rows[a+1], &rows[a], (length - a) * sizeof(void *));
+            rows[a] = next;
+            length++;
+            return true;
+        }
+    }
+};
+
+class CInsertionSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
+{
+    SortedBlock *curBlock;
+    unsigned blockNo;
+    IArrayOf<SortedBlock> blocks;
+    unsigned activityId;
+    roxiemem::IRowManager *rowManager;
+    ICompare *compare;
+
+    void newBlock()
+    {
+        blocks.append(*curBlock);
+        curBlock = new SortedBlock(blockNo++, rowManager, activityId);
+    }
+
+    inline static int doCompare(SortedBlock &l, SortedBlock &r, ICompare *compare)
+    {
+        return l.compareTo(&r, compare);
+    }
+
+    void makeHeap()
+    {
+        /* Permute blocks to establish the heap property
+           For each element p, the children are p*2+1 and p*2+2 (provided these are in range)
+           The children of p must both be greater than or equal to p
+           The parent of a child c is given by p = (c-1)/2
+        */
+        unsigned i;
+        unsigned n = blocks.length();
+        SortedBlock **s = blocks.getArray();
+        for (i=1; i<n; i++)
+        {
+            SortedBlock * r = s[i];
+            int c = i; /* child */
+            while (c > 0)
+            {
+                int p = (c-1)/2; /* parent */
+                if ( doCompare( blocks.item(c), blocks.item(p), compare ) >= 0 )
+                    break;
+                s[c] = s[p];
+                s[p] = r;
+                c = p;
+            }
+        }
+    }
+
+    void remakeHeap()
+    {
+        /* The row associated with block[0] will have changed
+           This code restores the heap property
+        */
+        unsigned p = 0; /* parent */
+        unsigned n = blocks.length();
+        SortedBlock **s = blocks.getArray();
+        while (1)
+        {
+            unsigned c = p*2 + 1; /* child */
+            if ( c >= n )
+                break;
+            /* Select smaller child */
+            if ( c+1 < n && doCompare( blocks.item(c+1), blocks.item(c), compare ) < 0 ) c += 1;
+            /* If child is greater or equal than parent then we are done */
+            if ( doCompare( blocks.item(c), blocks.item(p), compare ) >= 0 )
+                break;
+            /* Swap parent and child */
+            SortedBlock *r = s[c];
+            s[c] = s[p];
+            s[p] = r;
+            /* child becomes parent */
+            p = c;
+        }
+    }
+
+public:
+    CInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId)
+        : compare(_compare)
+    {
+        rowManager = _rowManager;
+        activityId = _activityId;
+        curBlock = NULL;
+        blockNo = 0;
+    }
+
+    virtual void reset()
+    {
+        blocks.kill();
+        delete curBlock;
+        curBlock = NULL;
+        blockNo = 0;
+    }
+
+    virtual void prepare(IInputBase *input)
+    {
+        blockNo = 0;
+        curBlock = new SortedBlock(blockNo++, rowManager, activityId);
+        loop
+        {
+            const void *next = input->nextInGroup();
+            if (!next)
+                break;
+            if (!curBlock->insert(next, compare))
+            {
+                newBlock();
+                curBlock->insert(next, compare);
+            }
+        }
+        if (blockNo > 1)
+        {
+            blocks.append(*curBlock);
+            curBlock = NULL;
+            makeHeap();
+        }
+    }
+
+    virtual const void * next()
+    {
+        const void *ret;
+        if (blockNo==1) // single block case..
+        {
+            ret = curBlock->next();
+        }
+        else if (blocks.length())
+        {
+            SortedBlock &top = blocks.item(0);
+            ret = top.next();
+            if (top.eof())
+                blocks.replace(blocks.popGet(), 0);
+            remakeHeap();
+        }
+        else
+            ret = NULL;
+        return ret;
+    }
+};
+
+class CHeapSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
+{
+    unsigned curIndex;
+    ConstPointerArray sorted;
+    bool inputAlreadySorted;
+    IntArray sequences;
+    bool eof;
+    ICompare *compare;
+
+#ifdef _CHECK_HEAPSORT
+    void checkHeap() const
+    {
+        unsigned n = sorted.ordinality();
+        if (n)
+        {
+            ICompare *_compare = compare;
+            void **s = sorted.getArray();
+            int *sq = sequences.getArray();
+            unsigned p;
+#if 0
+            CTXLOG("------------------------%d entries-----------------", n);
+            for (p = 0; p < n; p++)
+            {
+                CTXLOG("HEAP %d: %d %.10s", p, sq[p], s[p] ? s[p] : "..");
+            }
+#endif
+            for (p = 0; p < n; p++)
+            {
+                unsigned c = p*2+1;
+                if (c<n)
+                    assertex(!s[c] || (docompare(p, c, _compare, s, sq) <= 0));
+                c++;
+                if (c<n)
+                    assertex(!s[c] || (docompare(p, c, _compare, s, sq) <= 0));
+            }
+        }
+    }
+#else
+    inline void checkHeap() const {}
+#endif
+
+    const void *removeHeap()
+    {
+        unsigned n = sorted.ordinality();
+        if (n)
+        {
+            const void *ret = sorted.item(0);
+            if (n > 1 && ret)
+            {
+                ICompare *_compare = compare;
+                const void **s = sorted.getArray();
+                int *sq = sequences.getArray();
+                unsigned v = 0; // vacancy
+                loop
+                {
+                    unsigned c = 2*v + 1;
+                    if (c < n)
+                    {
+                        unsigned f = c; // favourite to fill it
+                        c++;
+                        if (c < n && s[c] && (!s[f] || (docompare(f, c, _compare, s, sq) > 0))) // is the smaller of the children
+                            f = c;
+                        sq[v] = sq[f];
+                        if ((s[v] = s[f]) != NULL)
+                            v = f;
+                        else
+                            break;
+                    }
+                    else
+                    {
+                        s[v] = NULL;
+                        break;
+                    }
+                }
+            }
+            checkHeap();
+            return ret;
+        }
+        else
+            return NULL;
+    }
+
+    static inline int docompare(unsigned l, unsigned r, ICompare *_compare, const void **s, int *sq)
+    {
+        int rc = _compare->docompare(s[l], s[r]);
+        if (!rc)
+            rc = sq[l] - sq[r];
+        return rc;
+    }
+
+    void insertHeap(const void *next)
+    {
+        // Upside-down heap sort
+        // Maintain a heap where every parent is lower than each of its children
+        // Root (at node 0) is lowest record seen, nodes 2n+1, 2n+2 are the children
+        // To insert a row, add it at end then keep swapping with parent as long as parent is greater
+        // To remove a row, take row 0, then recreate heap by replacing it with smaller of two children and so on down the tree
+        // Nice features:
+        // 1. Deterministic
+        // 2. Sort time can be overlapped with upstream/downstream processes - there is no delay between receiving last record from input and deliveriing first to output
+        // 3. Already sorted case can be spotted at zero cost while reading.
+        // 4. If you don't read all the results, you don't have to complete the sort
+        // BUT it is NOT stable, so we have to use a parallel array of sequence numbers
+
+        unsigned n = sorted.ordinality();
+        sorted.append(next);
+        sequences.append(n);
+        if (!n)
+            return;
+        ICompare *_compare = compare;
+        const void **s = sorted.getArray();
+        if (inputAlreadySorted)
+        {
+            if (_compare->docompare(next, s[n-1]) >= 0)
+                return;
+            else
+            {
+                // MORE - could delay creating sequences until now...
+                inputAlreadySorted = false;
+            }
+        }
+        int *sq = sequences.getArray();
+        unsigned q = n;
+        while (n)
+        {
+            unsigned parent = (n-1) / 2;
+            const void *p = s[parent];
+            if (_compare->docompare(p, next) <= 0)
+                break;
+            s[n] = p;
+            sq[n] = sq[parent];
+            s[parent] = next;
+            sq[parent] = q;
+            n = parent;
+        }
+    }
+
+public:
+    CHeapSortAlgorithm(ICompare *_compare) : compare(_compare)
+    {
+        inputAlreadySorted = true;
+        curIndex = 0;
+        eof = false;
+    }
+
+    virtual void reset()
+    {
+        eof = false;
+        if (inputAlreadySorted)
+        {
+            while (sorted.isItem(curIndex))
+                ReleaseRoxieRow(sorted.item(curIndex++));
+            sorted.kill();
+        }
+        else
+        {
+            roxiemem::ReleaseRoxieRows(sorted);
+        }
+        inputAlreadySorted = true;
+        sequences.kill();
+    }
+
+    virtual void prepare(IInputBase *input)
+    {
+        inputAlreadySorted = true;
+        curIndex = 0;
+        eof = false;
+        assertex(sorted.ordinality()==0);
+        const void *next = input->nextInGroup();
+        if (!next)
+        {
+            eof = true;
+            return;
+        }
+        loop
+        {
+            insertHeap(next);
+            next = input->nextInGroup();
+            if (!next)
+                break;
+        }
+        checkHeap();
+    }
+
+    virtual const void * next()
+    {
+        if (inputAlreadySorted)
+        {
+            if (sorted.isItem(curIndex))
+            {
+                return sorted.item(curIndex++);
+            }
+            else
+                return NULL;
+        }
+        else
+            return removeHeap();
+    }
+};
+
+class CSpillingQuickSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>, implements roxiemem::IBufferedRowCallback
+{
+    enum {
+        InitialSortElements = 0,
+        //The number of rows that can be added without entering a critical section, and therefore also the number
+        //of rows that might not get freed when memory gets tight.
+        CommitStep=32
+    };
+    roxiemem::DynamicRoxieOutputRowArray rowsToSort;
+    roxiemem::RoxieSimpleInputRowArray sorted;
+    ICompare *compare;
+    roxiemem::IRowManager &rowManager;
+    Owned<IDiskMerger> diskMerger;
+    Owned<IRowStream> diskReader;
+    IOutputMetaData *rowMeta;
+    StringAttr tempDirectory;
+    ICodeContext *ctx;
+    unsigned activityId;
+    bool stable;
+
+public:
+    CSpillingQuickSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable)
+        : rowsToSort(&_rowManager, InitialSortElements, CommitStep, _activityId),
+          rowManager(_rowManager), compare(_compare), rowMeta(_rowMeta), ctx(_ctx), tempDirectory(_tempDirectory), activityId(_activityId), stable(_stable)
+    {
+        rowManager.addRowBuffer(this);
+    }
+    ~CSpillingQuickSortAlgorithm()
+    {
+        rowManager.removeRowBuffer(this);
+        diskReader.clear();
+    }
+
+    virtual void prepare(IInputBase *input)
+    {
+        loop
+        {
+            const void * next = input->nextInGroup();
+            if (!next)
+                break;
+            if (!rowsToSort.append(next))
+            {
+                {
+                    roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+                    //We should have been called back to free any committed rows, but occasionally it may not (e.g., if
+                    //the problem is global memory is exhausted) - in which case force a spill here (but add any pending
+                    //rows first).
+                    if (rowsToSort.numCommitted() != 0)
+                    {
+                        rowsToSort.flush();
+                        spillRows();
+                    }
+                    //Ensure new rows are written to the head of the array.  It needs to be a separate call because
+                    //spillRows() cannot shift active row pointer since it can be called from any thread
+                    rowsToSort.flush();
+                }
+
+                if (!rowsToSort.append(next))
+                {
+                    ReleaseRoxieRow(next);
+                    throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Insufficient memory to append sort row");
+                }
+            }
+        }
+        rowsToSort.flush();
+
+        roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+        if (diskMerger)
+        {
+            spillRows();
+            rowsToSort.kill();
+            diskReader.setown(diskMerger->merge(compare));
+        }
+        else
+        {
+            unsigned numRows = rowsToSort.numCommitted();
+            if (numRows)
+            {
+                void ** rows = const_cast<void * *>(rowsToSort.getBlock(numRows));
+                //MORE: Should this be parallel?  Should that be dependent on whether it is grouped?  Should be a hint.
+                if (stable)
+                {
+                    MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
+                    void **temp = (void **) tempAttr.bufferBase();
+                    memcpy(temp, rows, numRows*sizeof(void **));
+                    qsortvecstable(temp, numRows, *compare, (void ***)rows);
+                    for (unsigned i = 0; i < numRows; i++)
+                    {
+                        *rows = **((void ***)rows);
+                        rows++;
+                    }
+                }
+                else
+                    qsortvec(rows, numRows, *compare);
+            }
+            sorted.transferFrom(rowsToSort);
+        }
+    }
+
+    virtual const void *next()
+    {
+        if(diskReader)
+            return diskReader->nextRow();
+        return sorted.dequeue();
+    }
+
+    virtual void reset()
+    {
+        //MORE: This could transfer any row pointer from sorted back to rowsToSort. It would trade
+        //fewer heap allocations with not freeing up the memory from large group sorts.
+        rowsToSort.clearRows();
+        sorted.kill();
+        //Disk reader must be cleared before the merger - or the files may still be locked.
+        diskReader.clear();
+        diskMerger.clear();
+    }
+
+//interface roxiemem::IBufferedRowCallback
+    virtual unsigned getSpillCost() const
+    {
+        //Spill global sorts before grouped sorts
+        if (rowMeta->isGrouped())
+            return 20;
+        return 10;
+    }
+    virtual bool freeBufferedRows(bool critical)
+    {
+        roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+        return spillRows();
+    }
+
+protected:
+    bool spillRows()
+    {
+        unsigned numRows = rowsToSort.numCommitted();
+        if (numRows == 0)
+            return false;
+
+        const void * * rows = rowsToSort.getBlock(numRows);
+        qsortvec(const_cast<void * *>(rows), numRows, *compare);
+
+        Owned<IRowWriter> out = queryMerger()->createWriteBlock();
+        for (unsigned i= 0; i < numRows; i++)
+        {
+            out->putRow(rows[i]);
+        }
+        rowsToSort.noteSpilled(numRows);
+        return true;
+    }
+
+    IDiskMerger * queryMerger()
+    {
+        if (!diskMerger)
+        {
+            unsigned __int64 seq = (memsize_t)this ^ get_cycles_now();
+            StringBuffer spillBasename;
+            spillBasename.append(tempDirectory).append(PATHSEPCHAR).appendf("spill_sort_%" I64F "u", seq);
+            Owned<IRowLinkCounter> linker = new RoxieRowLinkCounter();
+            Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(rowMeta, activityId, ctx);
+            diskMerger.setown(createDiskMerger(rowInterfaces, linker, spillBasename));
+        }
+        return diskMerger;
+    }
+};
+
+extern ISortAlgorithm *createQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CQuickSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createStableQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CStableQuickSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId)
+{
+    return new CInsertionSortAlgorithm(_compare, _rowManager, _activityId);
+}
+
+extern ISortAlgorithm *createHeapSortAlgorithm(ICompare *_compare)
+{
+    return new CHeapSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createSpillingQuickSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable)
+{
+    return new CSpillingQuickSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, _stable);
+}
+
+extern ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm _algorithm, ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId)
+{
+    switch (_algorithm)
+    {
+    case heapSortAlgorithm:
+        return createHeapSortAlgorithm(_compare);
+    case insertionSortAlgorithm:
+        return createInsertionSortAlgorithm(_compare, &_rowManager, _activityId);
+    case quickSortAlgorithm:
+        return createQuickSortAlgorithm(_compare);
+    case stableQuickSortAlgorithm:
+        return createStableQuickSortAlgorithm(_compare);
+    case spillingQuickSortAlgorithm:
+    case stableSpillingQuickSortAlgorithm:
+        return createSpillingQuickSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, _algorithm==stableSpillingQuickSortAlgorithm);
+    default:
+        break;
+    }
+    throwUnexpected();
+}
+
+//===================================================
 
 CSafeSocket::CSafeSocket(ISocket *_sock)
 {
@@ -524,6 +1427,17 @@ bool CSafeSocket::readBlock(MemoryBuffer &ret, unsigned timeout, unsigned maxBlo
     }
 }
 
+int readHttpHeaderLine(IBufferedSocket *linereader, char *headerline, unsigned maxlen)
+{
+    Owned<IMultiException> me = makeMultiException("roxie");
+    int bytesread = linereader->readline(headerline, maxlen, true, me);
+    if (me->ordinality())
+        throw me.getClear();
+    if(bytesread <= 0 || bytesread > maxlen)
+        throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Bad Request");
+    return bytesread;
+}
+
 bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &continuationNeeded, bool &isStatus, unsigned maxBlockSize)
 {
     continuationNeeded = false;
@@ -553,6 +1467,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         if (pHttpHelper != NULL && strncmp((char *)&len, "POST", 4) == 0)
         {
 #define MAX_HTTP_HEADERSIZE 8000
+            pHttpHelper->setIsHttp(true);
             char header[MAX_HTTP_HEADERSIZE + 1]; // allow room for \0
             sock->read(header, 1, MAX_HTTP_HEADERSIZE, bytesRead, timeout);
             header[bytesRead] = 0;
@@ -563,7 +1478,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                 payload += 4;
                 char *str;
 
-                pHttpHelper->setUrlPath(header);
+                pHttpHelper->parseHTTPRequestLine(header);
 
                 // capture authentication token
                 if ((str = strstr(header, "Authorization: Basic ")) != NULL)
@@ -589,9 +1504,45 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
             else
                 left = len = 0;
 
-            pHttpHelper->setIsHttp(true);
             if (!len)
                 throw MakeStringException(THORHELPER_DATA_ERROR, "Badly formed HTTP header");
+        }
+        else if (pHttpHelper != NULL && strncmp((char *)&len, "GET", 3) == 0)
+        {
+#define MAX_HTTP_GET_LINE 16000 //arbitrary per line limit, most web servers are lower, but urls for queries can be complex..
+                pHttpHelper->setIsHttp(true);
+                char headerline[MAX_HTTP_GET_LINE + 1];
+                Owned<IBufferedSocket> linereader = createBufferedSocket(sock);
+
+                int bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
+                pHttpHelper->parseHTTPRequestLine(headerline);
+
+                bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
+                while(bytesread >= 0 && *headerline && *headerline!='\r')
+                {
+                    // capture authentication token
+                    if (!strnicmp(headerline, "Authorization: Basic ", 21))
+                        pHttpHelper->setAuthToken(headerline+21);
+                    bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
+                }
+
+                StringBuffer queryName;
+                const char *target = pHttpHelper->queryTarget();
+                if (!target || !*target)
+                    throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not specified");
+                else if (!pHttpHelper->validateTarget(target))
+                    throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not found");
+                const char *query = pHttpHelper->queryQueryName();
+                if (!query || !*query)
+                    throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Query not specified");
+
+                queryName.append(query);
+                Owned<IPropertyTree> req = createPTreeFromHttpParameters(queryName, pHttpHelper->queryUrlParameters(), true, pHttpHelper->queryContentFormat()==MarkupFmt_JSON);
+                if (pHttpHelper->queryContentFormat()==MarkupFmt_JSON)
+                    toJSON(req, ret);
+                else
+                    toXML(req, ret);
+                return true;
         }
         else if (strnicmp((char *)&len, "STAT", 4) == 0)
             isStatus = true;
@@ -618,6 +1569,13 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
 
         return len != 0;
     }
+    catch (IException *E)
+    {
+        if (pHttpHelper)
+            checkSendHttpException(*pHttpHelper, E, NULL);
+        heartbeat = false;
+        throw;
+    }
     catch (...)
     {
         heartbeat = false;
@@ -625,11 +1583,11 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
     }
 }
 
-void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, TextMarkupFormat _mlfmt)
+void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, HttpHelper &httphelper)
 {
     CriticalBlock c(crit); // Should not be needed
     httpMode = true;
-    mlFmt = _mlfmt;
+    mlFmt = httphelper.queryContentFormat();
     heartbeat = false;
     assertex(contentHead.length()==0 && contentTail.length()==0);
     if (mlFmt==MarkupFmt_JSON)
@@ -640,17 +1598,89 @@ void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, TextMarkupF
     else
     {
         StringAttrBuilder headText(contentHead), tailText(contentTail);
-        headText.append(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-            "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
-            "<soap:Body>");
+        if (httphelper.getUseEnvelope())
+            headText.append(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+                "<soap:Body>");
         if (arrayMode)
         {
             headText.append("<").append(queryName).append("ResponseArray>");
             tailText.append("</").append(queryName).append("ResponseArray>");
         }
-        tailText.append("</soap:Body></soap:Envelope>");
+        if (httphelper.getUseEnvelope())
+            tailText.append("</soap:Body></soap:Envelope>");
     }
+}
+
+void CSafeSocket::checkSendHttpException(HttpHelper &httphelper, IException *E, const char *queryName)
+{
+    if (!httphelper.isHttp())
+        return;
+    if (httphelper.queryContentFormat()==MarkupFmt_JSON)
+        sendJsonException(E, queryName);
+    else
+        sendSoapException(E, queryName);
+}
+
+void CSafeSocket::sendSoapException(IException *E, const char *queryName)
+{
+    try
+    {
+        if (!queryName)
+            queryName = "Unknown"; // Exceptions when parsing query XML can leave queryName unset/unknowable....
+
+        StringBuffer response;
+        response.append("<").append(queryName).append("Response");
+        response.append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(strlen(queryName), queryName).append("\">");
+        response.appendf("<Results><Result><Exception><Source>Roxie</Source><Code>%d</Code>", E->errorCode());
+        response.append("<Message>");
+        StringBuffer s;
+        E->errorMessage(s);
+        encodeXML(s.str(), response);
+        response.append("</Message></Exception></Result></Results>");
+        response.append("</").append(queryName).append("Response>");
+        write(response.str(), response.length());
+    }
+    catch(IException *EE)
+    {
+        StringBuffer error("While reporting exception: ");
+        EE->errorMessage(error);
+        DBGLOG("%s", error.str());
+        EE->Release();
+    }
+#ifndef _DEBUG
+    catch(...) {}
+#endif
+}
+
+void CSafeSocket::sendJsonException(IException *E, const char *queryName)
+{
+    try
+    {
+        if (!queryName)
+            queryName = "Unknown"; // Exceptions when parsing query XML can leave queryName unset/unknowable....
+
+        StringBuffer response;
+        appendfJSONName(response, "%sResponse", queryName).append(" {");
+        appendJSONName(response, "Results").append(" {");
+        appendJSONName(response, "Exception").append(" [{");
+        appendJSONValue(response, "Source", "Roxie");
+        appendJSONValue(response, "Code", E->errorCode());
+        StringBuffer s;
+        appendJSONValue(response, "Message", E->errorMessage(s).str());
+        response.append("}]}}");
+        write(response.str(), response.length());
+    }
+    catch(IException *EE)
+    {
+        StringBuffer error("While reporting exception: ");
+        DBGLOG("%s", EE->errorMessage(error).str());
+        EE->Release();
+    }
+#ifndef _DEBUG
+    catch(...) {}
+#endif
 }
 
 void CSafeSocket::setHeartBeat()
@@ -1494,18 +2524,18 @@ StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
 
 static const char *skipLfnForeign(const char *lfn)
 {
-    while (*lfn=='~')
-        lfn++;
+    // NOTE: The leading ~ and any leading spaces have already been stripped at this point
     const char *finger = lfn;
-    const char *scope = strstr(finger, "::");
-    if (scope)
+    if (strnicmp(finger, "foreign", 7)==0)
     {
-        StringBuffer cmp;
-        if (strieq("foreign", cmp.append(scope-finger, finger).trim()))
+        finger += 7;
+        while (*finger == ' ')
+            finger++;
+        if (finger[0] == ':' && finger[1] == ':')
         {
-            // foreign scope - need to strip off the ip and port
-            scope += 2;  // skip ::
-            finger = strstr(scope,"::");
+            // foreign scope - need to strip off the ip and port (i.e. from here to the next ::)
+            finger += 2;  // skip ::
+            finger = strstr(finger, "::");
             if (finger)
             {
                 finger += 2;
@@ -1518,14 +2548,19 @@ static const char *skipLfnForeign(const char *lfn)
     return lfn;
 }
 
-StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
+StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally, bool ignoreForeignPrefix)
 {
-    const char *native = skipLfnForeign(fname); //foreign location should already be reflected in local dali dfs meta data
     if (fname[0]=='~')
-        logicalName.append(native);
+    {
+        while (*fname=='~' || *fname==' ')
+            fname++;
+        if (ignoreForeignPrefix)
+            fname = skipLfnForeign(fname);
+        logicalName.append(fname);
+    }
     else if (resolveLocally)
     {
-        StringBuffer sb(native);
+        StringBuffer sb(fname);
         sb.replaceString("::",PATHSEPSTR);
         makeAbsolutePath(sb.str(), logicalName.clear());
     }
@@ -1538,7 +2573,7 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
             if(lfn.length())
                 logicalName.append(lfn.s).append("::");
         }
-        logicalName.append(native);
+        logicalName.append(fname);
     }
     return logicalName;
 }
@@ -1553,9 +2588,21 @@ void IRoxieContextLogger::CTXLOGae(IException *E, const char *file, unsigned lin
     va_end(args);
 }
 
-void HttpHelper::gatherUrlParameters()
+void HttpHelper::parseURL()
 {
-    const char *finger = strchr(urlPath, '?');
+    const char *start = url.str();
+    while (isspace(*start))
+        start++;
+    if (*start=='/')
+        start++;
+    StringAttr path;
+    const char *finger = strpbrk(start, "?");
+    if (finger)
+        path.set(start, finger-start);
+    else
+        path.set(start);
+    if (path.length())
+        pathNodes.appendList(path, "/");
     if (!finger)
         return;
     finger++;

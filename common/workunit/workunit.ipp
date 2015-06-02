@@ -161,8 +161,8 @@ template <>  struct CachedTags<CLocalWUAppValue, IConstWUAppValue>
 
 class CLocalWorkUnit : public CInterface, implements IWorkUnit , implements IExtendedWUInterface
 {
-    friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs, bool includeProgress);
-    friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs, bool includeProgress);
+    friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs, bool includeProgress, bool hidePasswords);
+    friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs, bool includeProgress, bool hidePasswords);
 
 protected:
     Owned<IPropertyTree> p;
@@ -272,7 +272,7 @@ public:
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const;
     virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const;
-    virtual IStringVal & getXmlParams(IStringVal & params) const;
+    virtual IStringVal & getXmlParams(IStringVal & params, bool hidePasswords) const;
     virtual const IPropertyTree *getXmlParams() const;
     virtual unsigned __int64 getHash() const;
     virtual IStringIterator *getLogs(const char *type, const char *component) const;
@@ -294,6 +294,7 @@ public:
     virtual void subscribe(WUSubscribeOptions options);
     virtual unsigned calculateHash(unsigned prevHash);
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all);
+    virtual IPropertyTree *queryPTree() const;
     virtual unsigned queryFileUsage(const char *filename) const;
     virtual bool getCloneable() const;
     virtual IUserDescriptor * queryUserDescriptor() const;
@@ -363,10 +364,10 @@ public:
     IWURoxieQueryInfo* updateRoxieQueryInfo(const char *wuid, const char *roxieClusterName);
     IWUPlugin * updatePluginByName(const char * name);
     IWULibrary * updateLibraryByName(const char * name);
-    IWUResult * updateResultByName(const char * name);
-    IWUResult * updateResultBySequence(unsigned seq);
-    IWUResult * updateTemporaryByName(const char * name);
-    IWUResult * updateVariableByName(const char * name);
+    virtual IWUResult * updateResultByName(const char * name);
+    virtual IWUResult * updateResultBySequence(unsigned seq);
+    virtual IWUResult * updateTemporaryByName(const char * name);
+    virtual IWUResult * updateVariableByName(const char * name);
     void addFile(const char *fileName, StringArray *clusters, unsigned usageCount, WUFileKind fileKind, const char *graphOwner);
     void noteFileRead(IDistributedFile *file);
     void releaseFile(const char *fileName);
@@ -558,6 +559,8 @@ protected:
     virtual void _lockRemote() {};
     virtual void _unlockRemote() {};
     virtual void unsubscribe();
+    virtual void _loadResults() const;
+    virtual void _loadStatistics() const;
 };
 
 interface ISDSManager; // MORE - can remove once dali split out
@@ -577,7 +580,7 @@ public:
     virtual IConstWorkUnit * openWorkUnit(const char * wuid, bool lock, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual int setTracingLevel(int newlevel);
-    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * user, ISecManager *secmgr, ISecUser *secuser);
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *scope, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
@@ -595,11 +598,11 @@ public:
                                                 ISecManager *secmgr,
                                                 ISecUser *secuser) = 0;
     virtual unsigned numWorkUnits() = 0;
-    virtual unsigned numWorkUnitsFiltered(WUSortField *filters, const void *filterbuf, ISecManager *secmgr, ISecUser *secuser);
     virtual void descheduleAllWorkUnits(ISecManager *secmgr, ISecUser *secuser);
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset);
     virtual bool isAborting(const char *wuid) const;
     virtual void clearAborting(const char *wuid);
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState) = 0;
 
 protected:
     // These need to be implemented by the derived classes

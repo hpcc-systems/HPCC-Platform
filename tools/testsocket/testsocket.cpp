@@ -600,7 +600,7 @@ void usage(int exitCode)
 {
     printf("testsocket ip<:port> [flags] [query | -f[f] file.sql | -]\n");
     printf("  -         take query from stdin\n");
-    printf("  -a        abort before input recieved\n");
+    printf("  -a        abort before input received\n");
     printf("  -a1       abort after first packet receieved\n");
     printf("  -c        test sending response to a socket\n");
     printf("  -cb       test sending response to a block mode socket\n");
@@ -614,7 +614,7 @@ void usage(int exitCode)
     printf("  -n        multiple results - keep going until socket closes\n");
     printf("  -o        set output filename\n");
     printf("  -or       set output filename for raw output\n");
-    printf("  -persist  use persistant connection\n");
+    printf("  -persist  use persistent connection\n");
     printf("  -pr <text>add a prefix to the query\n");
     printf("  -q        quiet - don't echo query\n");
     printf("  -qname xx Use xx as queryname in place of the xml root element name\n");

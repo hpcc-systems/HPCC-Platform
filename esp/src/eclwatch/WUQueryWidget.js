@@ -88,7 +88,9 @@ define([
             this._idleWatcher.start();
             var context = this;
             this._idleWatcherHandle = this._idleWatcher.on("idle", function () {
-                context._onRefresh();
+                if (!context.store.busy && !context.filter.exists()) {
+                    context._onRefresh();
+                }
             });
         },
 
@@ -203,6 +205,9 @@ define([
         _onFilterType: function (evt) {
             var filter = this.filter.toObject();
             this.setVisible(this.id + "ArchivedWarning", filter.Type);
+            this.setDisabled(this.id + "ECL", filter.Type);
+            this.setDisabled(this.id + "LogicalFile", filter.Type);
+            this.setDisabled(this.id + "LogicalFileSearchType", filter.Type);
         },
 
         //  Implementation  ---
@@ -212,10 +217,18 @@ define([
                 lang.mixin(retVal, {
                     StartDate: this.getISOString("FromDate", "FromTime")
                 });
+            } else if (retVal.StartDate) {
+                lang.mixin(retVal, {
+                    StartDate: registry.byId(this.id + "FromDate").attr("value").toISOString()
+                });
             }
             if (retVal.EndDate && retVal.ToTime) {
                 lang.mixin(retVal, {
                     EndDate: this.getISOString("ToDate", "ToTime")
+                });
+            } else if (retVal.EndDate) {
+                lang.mixin(retVal, {
+                    EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString()
                 });
             }
             if (retVal.StartDate && retVal.EndDate) {
@@ -378,9 +391,9 @@ define([
 
         initWorkunitsGrid: function () {
             var context = this;
-            var store = this.params.searchResults ? this.params.searchResults : new ESPWorkunit.CreateWUQueryStore();
+            this.store = this.params.searchResults ? this.params.searchResults : new ESPWorkunit.CreateWUQueryStore();
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
-                store: store,
+                store: this.store,
                 query: this.getFilter(),
                 columns: {
                     col1: selector({

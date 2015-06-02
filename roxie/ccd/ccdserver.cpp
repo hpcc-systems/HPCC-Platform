@@ -91,6 +91,7 @@ using roxiemem::OwnedRoxieRow;
 using roxiemem::OwnedRoxieString;
 using roxiemem::OwnedConstRoxieRow;
 using roxiemem::IRowManager;
+using roxiemem::ReleaseRoxieRows;
 
 // There is a bug in VC6 implemetation of protected which prevents nested classes from accessing owner's data. It can be tricky to work around - hence...
 #if _MSC_VER==1200
@@ -100,13 +101,6 @@ using roxiemem::IRowManager;
 #define TRACE_STARTSTOP  // This determines if it is available - it is enabled/disabled by a configuration option
  
 static const SmartStepExtra dummySmartStepExtra(SSEFreadAhead, NULL);
-
-inline void ReleaseRoxieRowSet(ConstPointerArray &data)
-{
-    ForEachItemIn(idx, data)
-        ReleaseRoxieRow(data.item(idx));
-    data.kill();
-}
 
 //=================================================================================
 
@@ -165,44 +159,6 @@ public:
 };
 
 //================================================================================
-
-// default implementation - can be overridden for efficiency...
-bool IRoxieInput::nextGroup(ConstPointerArray & group)
-{
-    // MORE - this should be replaced with a version that reads to a builder
-    const void * next;
-    while ((next = nextInGroup()) != NULL)
-        group.append(next);
-    if (group.ordinality())
-        return true;
-    return false;
-}
-
-void IRoxieInput::readAll(RtlLinkedDatasetBuilder &builder)
-{
-    loop
-    {
-        const void *nextrec = nextInGroup();
-        if (!nextrec)
-        {
-            nextrec = nextInGroup();
-            if (!nextrec)
-                break;
-            builder.appendEOG();
-        }
-        builder.appendOwn(nextrec);
-    }
-}
-
-inline const void * nextUngrouped(IRoxieInput * input)
-{
-    const void * ret = input->nextInGroup();
-    if (!ret)
-        ret = input->nextInGroup();
-    return ret;
-};
-
-//=================================================================================
 
 //The following don't link their arguments because that creates a circular reference
 //But I wish there was a better way
@@ -396,6 +352,7 @@ static const StatisticsMapping indexStatistics(&actStatistics, StNumServerCacheH
                                                 StNumIndexRowsRead, StKindNone);
 static const StatisticsMapping diskStatistics(&actStatistics, StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                StNumDiskRejected, StKindNone);
+static const StatisticsMapping soapStatistics(&actStatistics, StTimeSoapcall, StKindNone);
 
 //=================================================================================
 
@@ -2538,7 +2495,7 @@ public:
     }
 
     // Note that this caching mechanism (unlike the old keyed-join specific one) does not common up cases where multiple 
-    // identical queries are in-flight at the same time. But if we can make it persistant between queries that will 
+    // identical queries are in-flight at the same time. But if we can make it persistent between queries that will
     // more than make up for it
 };
 
@@ -2591,7 +2548,7 @@ public:
 
     ~CRowArrayMessageResult()
     {
-        ReleaseRoxieRowSet(data);
+        ReleaseRoxieRows(data);
     }
 
     virtual IMessageUnpackCursor *getCursor(IRowManager *rowMgr) const
@@ -4316,7 +4273,7 @@ public:
             }
             else
             {
-                if (!anyActivity)
+                if (!anyActivity && !localSlave)
                 {
                     activity.queryLogCtx().CTXLOG("Input has stalled - retry required?");
                     retryPending();
@@ -4373,14 +4330,14 @@ class CSkippableRemoteResultAdaptor : public CRemoteResultAdaptor
                 if (count > rowLimit)
                 {
                     ReleaseRoxieRow(next);
-                    ReleaseRoxieRowSet(buff);
+                    ReleaseRoxieRows(buff);
                     errorHandler->onLimitExceeded(false); // throws an exception - user or LimitSkipException
                     throwUnexpected();
                 }
                 else if (count > keyedLimit)
                 {
                     ReleaseRoxieRow(next);
-                    ReleaseRoxieRowSet(buff);
+                    ReleaseRoxieRows(buff);
                     errorHandler->onLimitExceeded(true); // throws an exception - user or LimitSkipException
                     throwUnexpected();
                 }
@@ -4392,7 +4349,7 @@ class CSkippableRemoteResultAdaptor : public CRemoteResultAdaptor
             if (QUERYINTERFACE(E, LimitSkipException))
             {
                 Owned<IException> cleanup = E;
-                ReleaseRoxieRowSet(buff);
+                ReleaseRoxieRows(buff);
                 const void *onfail = errorHandler->createLimitFailRow(E->errorCode() == KeyedLimitSkipErrorCode);
                 if (onfail)
                     buff.append(onfail);
@@ -4483,13 +4440,9 @@ public:
         helper.start();
         loop
         {
-            const void * next = input->nextInGroup();
+            const void * next = input->nextUngrouped();
             if (!next)
-            {
-                next = input->nextInGroup();
-                if (!next)
-                    break;
-            }
+                break;
             helper.apply(next);
             ReleaseRoxieRow(next);
         }
@@ -5181,13 +5134,9 @@ public:
                 IRecordSize * inputMeta = input->queryOutputMeta();
                 loop
                 {
-                    const void *nextrec = input->nextInGroup();
+                    const void *nextrec = input->nextUngrouped();
                     if (!nextrec)
-                    {
-                        nextrec = input->nextInGroup();
-                        if (!nextrec)
-                            break;
-                    }
+                        break;
                     result.append(inputMeta->getRecordSize(nextrec), nextrec);
                     ReleaseRoxieRow(nextrec);
                 }
@@ -5320,8 +5269,8 @@ IRoxieServerActivityFactory *createRoxieServerInlineTableActivityFactory(unsigne
 class CRoxieServerWorkUnitReadActivity : public CRoxieServerActivity
 {
     IHThorWorkunitReadArg &helper;
+    CriticalSection readerCrit;
     Owned<IWorkUnitRowReader> wuReader; // MORE - can we use IRoxieInput instead?
-
 public:
     CRoxieServerWorkUnitReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorWorkunitReadArg &)basehelper)
@@ -5348,7 +5297,10 @@ public:
 
     virtual void reset() 
     {
-        wuReader.clear();
+        {
+            CriticalBlock b(readerCrit);
+            wuReader.clear();
+        }
         CRoxieServerActivity::reset(); 
     };
 
@@ -5357,7 +5309,14 @@ public:
     virtual const void *nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void *ret = wuReader->nextInGroup();
+        Linked<IWorkUnitRowReader> useReader;
+        {
+            CriticalBlock b(readerCrit);
+            if (!wuReader)
+                return NULL;
+            useReader.set(wuReader);
+        }
+        const void *ret = useReader->nextInGroup();
         if (ret)
             processed++;
         return ret;
@@ -5743,6 +5702,7 @@ protected:
 class CRoxieServerLocalResultReadActivity : public CRoxieServerActivity
 {
     IHThorLocalResultReadArg &helper;
+    CriticalSection iterCrit;
     Owned<IRoxieInput> iter;
     ILocalGraphEx * graph;
     unsigned graphId;
@@ -5771,14 +5731,24 @@ public:
 
     virtual void reset() 
     {
-        iter.clear();
+        {
+            CriticalBlock b(iterCrit);
+            iter.clear();
+        }
         CRoxieServerActivity::reset(); 
     };
 
     virtual const void *nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * next = iter->nextInGroup();
+        Linked<IRoxieInput> useIter;
+        {
+            CriticalBlock b(iterCrit);
+            if (!iter)
+                return NULL;
+            useIter.set(iter);
+        }
+        const void * next = useIter->nextInGroup();
         if (next)
         {
             processed++;
@@ -6011,13 +5981,9 @@ public:
         RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
         loop
         {
-            const void *row = input->nextInGroup();
+            const void *row = input->nextUngrouped();
             if (!row)
-            {
-                row = input->nextInGroup();
-                if (!row)
-                    break;
-            }
+                break;
             builder.appendOwn(row);
             processed++;
         }
@@ -6068,6 +6034,7 @@ class CRoxieServerGraphLoopResultReadActivity : public CRoxieServerActivity
 {
 protected:
     IHThorGraphLoopResultReadArg &helper;
+    CriticalSection iterCrit;
     Owned<IRoxieInput> iter;
     ILocalGraphEx * graph;
     unsigned graphId;
@@ -6118,16 +6085,26 @@ public:
 
     virtual void reset() 
     {
-        if (iter)
-            iter->reset();
-        iter.clear();
+        {
+            CriticalBlock b(iterCrit);
+            if (iter)
+                iter->reset();
+            iter.clear();
+        }
         CRoxieServerActivity::reset(); 
     };
 
     virtual const void *nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * next = iter ? iter->nextInGroup() : NULL;
+        Linked<IRoxieInput> useIter;
+        {
+            CriticalBlock b(iterCrit);
+            if (!iter)
+                return NULL;
+            useIter.set(iter);
+        }
+        const void * next = useIter->nextInGroup();
         if (next)
         {
             processed++;
@@ -6325,58 +6302,6 @@ IRoxieServerActivityFactory *createRoxieServerGraphLoopResultWriteActivityFactor
 {
     return new CRoxieServerGraphLoopResultWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _graphId);
 }
-
-#if 0
-//=====================================================================================================
-
-CHThorLocalResultSpillActivity::CHThorLocalResultSpillActivity(IAgentContext &_agent, ActivityId const & _id, IHThorLocalResultSpillArg &_arg)
- : CHThorSimpleActivityBase(_agent, _id, _arg), helper(_arg)
-{
-    next = NULL;
-}
-
-void CHThorLocalResultSpillActivity::ready()
-{
-    CHThorSimpleActivityBase::ready(); 
-    next = input->nextInGroup();
-    grouped = input->isGrouped();
-    rowdata.clear();
-}
-
-const void * CHThorLocalResultSpillActivity::nextInGroup()
-{
-    const void * ret = next;
-    next = input->nextInGroup();
-    if (!ret && !next)
-        return NULL;
-
-    if (ret)
-    {
-        size32_t thisSize = outputMeta->getRecordSize(ret);
-        rowdata.append(thisSize, ret);
-        if (grouped)
-            rowdata.append(next == NULL);
-    }
-    return ret;
-}
-
-void CHThorLocalResultSpillActivity::done()
-{
-    loop
-    {
-        const void * ret = nextInGroup();
-        if (!ret)
-        {
-            ret = nextInGroup();
-            if (!ret)
-                break;
-        }
-        ReleaseRoxieRow(ret);
-    }
-    agent.setLocalResult(helper.querySequence(), rowdata.length(), rowdata.toByteArray());
-    CHThorSimpleActivityBase::done(); 
-}
-#endif
 
 //=================================================================================
 
@@ -7390,663 +7315,6 @@ IRoxieServerActivityFactory *createRoxieServerNormalizeLinkedChildActivityFactor
 
 //=================================================================================
 
-interface ISortAlgorithm : extends IInterface
-{
-    virtual void prepare(IRoxieInput *input) = 0;
-    virtual const void *next() = 0;
-    virtual void reset() = 0;
-};
-
-class CQuickSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
-{
-protected:
-    unsigned curIndex;
-    ConstPointerArray sorted;
-    ICompare *compare;
-
-public:
-    CQuickSortAlgorithm(ICompare *_compare) : compare(_compare) 
-    {
-        curIndex = 0;
-    }
-
-    virtual void prepare(IRoxieInput *input)
-    {
-        curIndex = 0;
-        if (input->nextGroup(sorted))
-            qsortvec(const_cast<void * *>(sorted.getArray()), sorted.ordinality(), *compare);
-    }
-
-    virtual const void *next()
-    {
-        if (sorted.isItem(curIndex))
-            return sorted.item(curIndex++);
-        return NULL;
-    }
-
-    virtual void reset()
-    {
-        while (sorted.isItem(curIndex))
-            ReleaseRoxieRow(sorted.item(curIndex++));
-        curIndex = 0;
-        sorted.kill();
-    }
-};
-
-class CStableQuickSortAlgorithm : public CQuickSortAlgorithm
-{
-public:
-    CStableQuickSortAlgorithm(ICompare *_compare) : CQuickSortAlgorithm(_compare)
-    {
-    }
-    virtual void prepare(IRoxieInput *input)
-    {
-        curIndex = 0;
-        if (input->nextGroup(sorted))
-        {
-            unsigned numRows = sorted.ordinality();
-            void **rows = const_cast<void * *>(sorted.getArray());
-            MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
-            void **temp = (void **) tempAttr.bufferBase();
-            memcpy(temp, rows, numRows*sizeof(void **));
-            qsortvecstable(temp, numRows, *compare, (void ***)rows);
-            for (unsigned i = 0; i < numRows; i++)
-            {
-                *rows = **((void ***)rows);
-                rows++;
-            }
-        }
-    }
-};
-
-class CSpillingQuickSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>, implements roxiemem::IBufferedRowCallback
-{
-    enum {
-        InitialSortElements = 0,
-        //The number of rows that can be added without entering a critical section, and therefore also the number
-        //of rows that might not get freed when memory gets tight.
-        CommitStep=32
-    };
-    roxiemem::DynamicRoxieOutputRowArray rowsToSort;
-    roxiemem::RoxieSimpleInputRowArray sorted;
-    ICompare *compare;
-    IRoxieSlaveContext * ctx;
-    Owned<IDiskMerger> diskMerger;
-    Owned<IRowStream> diskReader;
-    IOutputMetaData *rowMeta;
-    unsigned activityId;
-    bool stable;
-
-public:
-    CSpillingQuickSortAlgorithm(ICompare *_compare, IRoxieSlaveContext * _ctx, IOutputMetaData * _rowMeta, unsigned _activityId, bool _stable)
-        : rowsToSort(&_ctx->queryRowManager(), InitialSortElements, CommitStep, _activityId),
-          ctx(_ctx), compare(_compare), rowMeta(_rowMeta), activityId(_activityId), stable(_stable)
-    {
-        ctx->queryRowManager().addRowBuffer(this);
-    }
-    ~CSpillingQuickSortAlgorithm()
-    {
-        ctx->queryRowManager().removeRowBuffer(this);
-        diskReader.clear();
-    }
-
-    virtual void prepare(IRoxieInput *input)
-    {
-        loop
-        {
-            const void * next = input->nextInGroup();
-            if (!next)
-                break;
-            if (!rowsToSort.append(next))
-            {
-                {
-                    roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
-                    //We should have been called back to free any committed rows, but occasionally it may not (e.g., if
-                    //the problem is global memory is exhausted) - in which case force a spill here (but add any pending
-                    //rows first).
-                    if (rowsToSort.numCommitted() != 0)
-                    {
-                        rowsToSort.flush();
-                        spillRows();
-                    }
-                    //Ensure new rows are written to the head of the array.  It needs to be a separate call because
-                    //spillRows() cannot shift active row pointer since it can be called from any thread
-                    rowsToSort.flush();
-                }
-
-                if (!rowsToSort.append(next))
-                {
-                    ReleaseRoxieRow(next);
-                    throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Insufficient memory to append sort row");
-                }
-            }
-        }
-        rowsToSort.flush();
-
-        roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
-        if (diskMerger)
-        {
-            spillRows();
-            rowsToSort.kill();
-            diskReader.setown(diskMerger->merge(compare));
-        }
-        else
-        {
-            unsigned numRows = rowsToSort.numCommitted();
-            if (numRows)
-            {
-                void ** rows = const_cast<void * *>(rowsToSort.getBlock(numRows));
-                //MORE: Should this be parallel?  Should that be dependent on whether it is grouped?  Should be a hint.
-                if (stable)
-                {
-                    MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
-                    void **temp = (void **) tempAttr.bufferBase();
-                    memcpy(temp, rows, numRows*sizeof(void **));
-                    qsortvecstable(temp, numRows, *compare, (void ***)rows);
-                    for (unsigned i = 0; i < numRows; i++)
-                    {
-                        *rows = **((void ***)rows);
-                        rows++;
-                    }
-                }
-                else
-                    qsortvec(rows, numRows, *compare);
-            }
-            sorted.transferFrom(rowsToSort);
-        }
-    }
-
-    virtual const void *next()
-    {
-        if(diskReader)
-            return diskReader->nextRow();
-        return sorted.dequeue();
-    }
-
-    virtual void reset()
-    {
-        //MORE: This could transfer any row pointer from sorted back to rowsToSort. It would trade
-        //fewer heap allocations with not freeing up the memory from large group sorts.
-        rowsToSort.clearRows();
-        sorted.kill();
-        //Disk reader must be cleared before the merger - or the files may still be locked.
-        diskReader.clear();
-        diskMerger.clear();
-    }
-
-//interface roxiemem::IBufferedRowCallback
-    virtual unsigned getSpillCost() const
-    {
-        //Spill global sorts before grouped sorts
-        if (rowMeta->isGrouped())
-            return 20;
-        return 10;
-    }
-    virtual bool freeBufferedRows(bool critical)
-    {
-        roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
-        return spillRows();
-    }
-
-protected:
-    bool spillRows()
-    {
-        unsigned numRows = rowsToSort.numCommitted();
-        if (numRows == 0)
-            return false;
-
-        const void * * rows = rowsToSort.getBlock(numRows);
-        qsortvec(const_cast<void * *>(rows), numRows, *compare);
-
-        Owned<IRowWriter> out = queryMerger()->createWriteBlock();
-        for (unsigned i= 0; i < numRows; i++)
-        {
-            out->putRow(rows[i]);
-        }
-        rowsToSort.noteSpilled(numRows);
-        return true;
-    }
-
-    IDiskMerger * queryMerger()
-    {
-        if (!diskMerger)
-        {
-            unsigned __int64 seq = (memsize_t)this ^ get_cycles_now();
-            StringBuffer spillBasename;
-            spillBasename.append(tempDirectory).append(PATHSEPCHAR).appendf("spill_sort_%" I64F "u", seq);
-            Owned<IRowLinkCounter> linker = new RoxieRowLinkCounter();
-            Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(rowMeta, activityId, ctx->queryCodeContext());
-            diskMerger.setown(createDiskMerger(rowInterfaces, linker, spillBasename));
-        }
-        return diskMerger;
-    }
-};
-
-#define INSERTION_SORT_BLOCKSIZE 1024
-
-class SortedBlock : public CInterface, implements IInterface
-{
-    unsigned sequence;
-    const void **rows;
-    unsigned length;
-    unsigned pos;
-
-    SortedBlock(const SortedBlock &);
-public:
-    IMPLEMENT_IINTERFACE;
-
-    SortedBlock(unsigned _sequence, IRowManager *rowManager, unsigned activityId) : sequence(_sequence)
-    {
-        rows = (const void **) rowManager->allocate(INSERTION_SORT_BLOCKSIZE * sizeof(void *), activityId);
-        length = 0;
-        pos = 0;
-    }
-
-    ~SortedBlock()
-    {
-        while (pos < length)
-            ReleaseRoxieRow(rows[pos++]);
-        ReleaseRoxieRow(rows);
-    }
-
-    int compareTo(SortedBlock *r, ICompare *compare)
-    {
-        int rc = compare->docompare(rows[pos], r->rows[r->pos]);
-        if (!rc)
-            rc = sequence - r->sequence;
-        return rc;
-    }
-
-    const void *next()
-    {
-        if (pos < length)
-            return rows[pos++];
-        else
-            return NULL;
-    }
-
-    inline bool eof()
-    {
-        return pos==length;
-    }
-
-    bool insert(const void *next, ICompare *_compare )
-    {
-        unsigned b = length;
-        if (b == INSERTION_SORT_BLOCKSIZE)
-            return false;
-        else if (b < 7)
-        {
-            while (b)
-            {
-                if (_compare->docompare(next, rows[b-1]) >= 0)
-                    break;
-                b--;
-            }
-            if (b != length)
-                memmove(&rows[b+1], &rows[b], (length - b) * sizeof(void *));
-            rows[b] = next;
-            length++;
-            return true;
-        }
-        else
-        {
-            unsigned int a = 0;
-            while ((int)a<b)
-            {
-                int i = (a+b)/2;
-                int rc = _compare->docompare(next, rows[i]);
-                if (rc>=0)
-                    a = i+1;
-                else
-                    b = i;
-            }
-            if (a != length)
-                memmove(&rows[a+1], &rows[a], (length - a) * sizeof(void *));
-            rows[a] = next;
-            length++;
-            return true;
-        }
-    }
-};
-
-class CInsertionSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
-{
-    SortedBlock *curBlock;
-    unsigned blockNo;
-    IArrayOf<SortedBlock> blocks;
-    unsigned activityId;
-    IRowManager *rowManager;
-    ICompare *compare;
-
-    void newBlock()
-    {
-        blocks.append(*curBlock);
-        curBlock = new SortedBlock(blockNo++, rowManager, activityId);
-    }
-
-    inline static int doCompare(SortedBlock &l, SortedBlock &r, ICompare *compare)
-    {
-        return l.compareTo(&r, compare);
-    }
-
-    void makeHeap()
-    {
-        /* Permute blocks to establish the heap property
-           For each element p, the children are p*2+1 and p*2+2 (provided these are in range)
-           The children of p must both be greater than or equal to p
-           The parent of a child c is given by p = (c-1)/2
-        */
-        unsigned i;
-        unsigned n = blocks.length();
-        SortedBlock **s = blocks.getArray();
-        for (i=1; i<n; i++)
-        {
-            SortedBlock * r = s[i];
-            int c = i; /* child */
-            while (c > 0) 
-            {
-                int p = (c-1)/2; /* parent */
-                if ( doCompare( blocks.item(c), blocks.item(p), compare ) >= 0 ) 
-                    break;
-                s[c] = s[p];
-                s[p] = r;
-                c = p;
-            }
-        }
-    }
-
-    void remakeHeap()
-    {
-        /* The row associated with block[0] will have changed
-           This code restores the heap property
-        */
-        unsigned p = 0; /* parent */
-        unsigned n = blocks.length();
-        SortedBlock **s = blocks.getArray();
-        while (1) 
-        {
-            unsigned c = p*2 + 1; /* child */
-            if ( c >= n ) 
-                break;
-            /* Select smaller child */
-            if ( c+1 < n && doCompare( blocks.item(c+1), blocks.item(c), compare ) < 0 ) c += 1;
-            /* If child is greater or equal than parent then we are done */
-            if ( doCompare( blocks.item(c), blocks.item(p), compare ) >= 0 ) 
-                break;
-            /* Swap parent and child */
-            SortedBlock *r = s[c];
-            s[c] = s[p];
-            s[p] = r;
-            /* child becomes parent */
-            p = c;
-        }
-    }
-
-public:
-    CInsertionSortAlgorithm(ICompare *_compare, IRowManager *_rowManager, unsigned _activityId) 
-        : compare(_compare)
-    {
-        rowManager = _rowManager;
-        activityId = _activityId;
-        curBlock = NULL;
-        blockNo = 0;
-    }
-
-    virtual void reset()
-    {
-        blocks.kill();
-        delete curBlock;
-        curBlock = NULL;
-        blockNo = 0;
-    }
-
-    virtual void prepare(IRoxieInput *input)
-    {
-        blockNo = 0;
-        curBlock = new SortedBlock(blockNo++, rowManager, activityId);
-        loop
-        {
-            const void *next = input->nextInGroup();
-            if (!next)
-                break;
-            if (!curBlock->insert(next, compare))
-            {
-                newBlock();
-                curBlock->insert(next, compare);
-            }
-        }
-        if (blockNo > 1)
-        {
-            blocks.append(*curBlock);
-            curBlock = NULL;
-            makeHeap();
-        }
-    }
-
-    virtual const void * next()
-    {
-        const void *ret;
-        if (blockNo==1) // single block case..
-        {
-            ret = curBlock->next();
-        }
-        else if (blocks.length())
-        {
-            SortedBlock &top = blocks.item(0);
-            ret = top.next();
-            if (top.eof())
-                blocks.replace(blocks.popGet(), 0);
-            remakeHeap();
-        }
-        else
-            ret = NULL;
-        return ret;
-    }
-};
-
-class CHeapSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
-{
-    unsigned curIndex;
-    ConstPointerArray sorted;
-    bool inputAlreadySorted;
-    IntArray sequences;
-    bool eof;
-    ICompare *compare;
-
-#ifdef _CHECK_HEAPSORT
-    void checkHeap() const
-    {
-        unsigned n = sorted.ordinality();
-        if (n)
-        {
-            ICompare *_compare = compare;
-            void **s = sorted.getArray();
-            int *sq = sequences.getArray();
-            unsigned p;
-#if 0
-            CTXLOG("------------------------%d entries-----------------", n);
-            for (p = 0; p < n; p++)
-            {
-                CTXLOG("HEAP %d: %d %.10s", p, sq[p], s[p] ? s[p] : "..");
-            }
-#endif
-            for (p = 0; p < n; p++)
-            {
-                unsigned c = p*2+1;
-                if (c<n)
-                    assertex(!s[c] || (docompare(p, c, _compare, s, sq) <= 0));
-                c++;
-                if (c<n)
-                    assertex(!s[c] || (docompare(p, c, _compare, s, sq) <= 0));
-            }
-        }
-    }
-#else
-    inline void checkHeap() const {}
-#endif
-
-    const void *removeHeap()
-    {
-        unsigned n = sorted.ordinality();
-        if (n)
-        {
-            const void *ret = sorted.item(0);
-            if (n > 1 && ret)
-            {
-                ICompare *_compare = compare;
-                const void **s = sorted.getArray();
-                int *sq = sequences.getArray();
-                unsigned v = 0; // vacancy
-                loop
-                {
-                    unsigned c = 2*v + 1;
-                    if (c < n)
-                    {
-                        unsigned f = c; // favourite to fill it
-                        c++;
-                        if (c < n && s[c] && (!s[f] || (docompare(f, c, _compare, s, sq) > 0))) // is the smaller of the children
-                            f = c;
-                        sq[v] = sq[f];
-                        if ((s[v] = s[f]) != NULL)
-                            v = f;
-                        else
-                            break;
-                    }
-                    else
-                    {
-                        s[v] = NULL;
-                        break;
-                    }
-                }
-            }
-            checkHeap();
-            return ret;
-        }
-        else
-            return NULL;
-    }
-
-    static inline int docompare(unsigned l, unsigned r, ICompare *_compare, const void **s, int *sq)
-    {
-        int rc = _compare->docompare(s[l], s[r]);
-        if (!rc)
-            rc = sq[l] - sq[r];
-        return rc;
-    }
-
-    void insertHeap(const void *next)
-    {
-        // Upside-down heap sort
-        // Maintain a heap where every parent is lower than each of its children
-        // Root (at node 0) is lowest record seen, nodes 2n+1, 2n+2 are the children
-        // To insert a row, add it at end then keep swapping with parent as long as parent is greater
-        // To remove a row, take row 0, then recreate heap by replacing it with smaller of two children and so on down the tree
-        // Nice features:
-        // 1. Deterministic
-        // 2. Sort time can be overlapped with upstream/downstream processes - there is no delay between receiving last record from input and deliveriing first to output
-        // 3. Already sorted case can be spotted at zero cost while reading. 
-        // 4. If you don't read all the results, you don't have to complete the sort
-        // BUT it is NOT stable, so we have to use a parallel array of sequence numbers
-
-        unsigned n = sorted.ordinality();
-        sorted.append(next);
-        sequences.append(n);
-        if (!n)
-            return;
-        ICompare *_compare = compare;
-        const void **s = sorted.getArray();
-        if (inputAlreadySorted)
-        {
-            if (_compare->docompare(next, s[n-1]) >= 0)
-                return;
-            else
-            {
-                // MORE - could delay creating sequences until now...
-                inputAlreadySorted = false;
-            }
-        }
-        int *sq = sequences.getArray();
-        unsigned q = n;
-        while (n)
-        {
-            unsigned parent = (n-1) / 2;
-            const void *p = s[parent];
-            if (_compare->docompare(p, next) <= 0)
-                break;
-            s[n] = p;
-            sq[n] = sq[parent];
-            s[parent] = next;
-            sq[parent] = q;
-            n = parent;
-        }
-    }
-
-public:
-    CHeapSortAlgorithm(ICompare *_compare) : compare(_compare)
-    {
-        inputAlreadySorted = true;
-        curIndex = 0;
-        eof = false;
-    }
-
-    virtual void reset()
-    {
-        eof = false;
-        if (inputAlreadySorted)
-        {
-            while (sorted.isItem(curIndex))
-                ReleaseRoxieRow(sorted.item(curIndex++));
-            sorted.kill();
-        }
-        else
-        {
-            ReleaseRoxieRowSet(sorted);
-        }
-        inputAlreadySorted = true;
-        sequences.kill();
-    }
-
-    virtual void prepare(IRoxieInput *input)
-    {
-        inputAlreadySorted = true;
-        curIndex = 0;
-        eof = false;
-        assertex(sorted.ordinality()==0);
-        const void *next = input->nextInGroup();
-        if (!next)
-        {
-            eof = true;
-            return;
-        }
-        loop
-        {
-            insertHeap(next);
-            next = input->nextInGroup();
-            if (!next)
-                break;
-        }
-        checkHeap();
-    }
-
-    virtual const void * next()
-    {
-        if (inputAlreadySorted)
-        {
-            if (sorted.isItem(curIndex))
-            {
-                return sorted.item(curIndex++);
-            }
-            else
-                return NULL;
-        }
-        else
-            return removeHeap();
-    }
-};
-
-typedef enum {heapSort, insertionSort, quickSort, stableQuickSort, spillingQuickSort, stableSpillingQuickSort, unknownSort } RoxieSortAlgorithm;
-
 class CRoxieServerSortActivity : public CRoxieServerActivity
 {
 protected:
@@ -8068,31 +7336,10 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        switch (sortAlgorithm)
-        {
-        case heapSort:
-            sorter.setown(new CHeapSortAlgorithm(compare));
-            break;
-        case insertionSort:
-            sorter.setown(new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId));
-            break;
-        case quickSort:
-            sorter.setown(new CQuickSortAlgorithm(compare));
-            break;
-        case stableQuickSort:
-            sorter.setown(new CStableQuickSortAlgorithm(compare));
-            break;
-        case spillingQuickSort:
-        case stableSpillingQuickSort:
-            sorter.setown(new CSpillingQuickSortAlgorithm(compare, ctx, meta, activityId, sortAlgorithm==stableSpillingQuickSort));
-            break;
-        case unknownSort:
-            sorter.clear(); // create it later....
-            break;
-        default:
-            throwUnexpected();
-            break;
-        }
+        if (sortAlgorithm==unknownSortAlgorithm)
+            sorter.clear();
+        else
+            sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -8109,45 +7356,51 @@ public:
         CRoxieServerActivity::reset();
     }
 
+    static RoxieSortAlgorithm useAlgorithm(const char *algorithmName, unsigned sortFlags)
+    {
+        RoxieSortAlgorithm sortAlgorithm;
+        if (!algorithmName)
+            algorithmName = "";
+        if (stricmp(algorithmName, "quicksort")==0)
+        {
+            switch (sortFlags & (TAFstable|TAFspill))
+            {
+            case 0: sortAlgorithm = quickSortAlgorithm; break;
+            case TAFstable: sortAlgorithm = stableQuickSortAlgorithm; break;
+            case TAFspill: sortAlgorithm = spillingQuickSortAlgorithm; break;
+            case TAFstable|TAFspill: sortAlgorithm = stableSpillingQuickSortAlgorithm; break;
+            }
+        }
+        else if (stricmp(algorithmName, "heapsort")==0)
+            sortAlgorithm = heapSortAlgorithm; // NOTE - we do allow UNSTABLE('heapsort') in order to facilitate runtime selection. Also explicit selection of heapsort overrides request to spill
+        else if (stricmp(algorithmName, "insertionsort")==0)
+            sortAlgorithm = insertionSortAlgorithm;
+        else
+        {
+            if (*algorithmName)
+                WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", algorithmName);
+            if (sortFlags & TAFspill)
+                sortAlgorithm = ((sortFlags & TAFunstable) != 0) ? spillingQuickSortAlgorithm : stableSpillingQuickSortAlgorithm;
+            else if (sortFlags & TAFunstable)
+                sortAlgorithm = quickSortAlgorithm;
+            else
+                sortAlgorithm = heapSortAlgorithm;
+        }
+        return sortAlgorithm;
+    }
+
     virtual const void * nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (!readInput)
         {
-            if (sortAlgorithm == unknownSort)
+            if (sortAlgorithm == unknownSortAlgorithm)
             {
                 sorter.clear();
                 IHThorAlgorithm *sortMethod = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
-                OwnedRoxieString useAlgorithm(sortMethod->getAlgorithm());
-                if (useAlgorithm)
-                {
-                    if (stricmp(useAlgorithm, "quicksort")==0)
-                    {
-                        switch (sortFlags & (TAFstable|TAFspill))
-                        {
-                        case 0: sortAlgorithm = quickSort; break;
-                        case TAFstable: sortAlgorithm = stableQuickSort; break;
-                        case TAFspill: sortAlgorithm = spillingQuickSort; break;
-                        case TAFstable|TAFspill: sortAlgorithm = stableSpillingQuickSort; break;
-                        }
-                    }
-                    else if (stricmp(useAlgorithm, "heapsort")==0)
-                        sorter.setown(new CHeapSortAlgorithm(compare));
-                    else if (stricmp(useAlgorithm, "insertionsort")==0)
-                        sorter.setown(new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId));
-                    else
-                    {
-                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm.get());
-                        if (sortFlags & TAFspill)
-                            sorter.setown(new CSpillingQuickSortAlgorithm(compare, ctx, meta, activityId, (sortFlags & TAFstable) != 0));
-                        else if (sortFlags & TAFunstable)
-                            sorter.setown(new CQuickSortAlgorithm(compare));
-                        else
-                            sorter.setown(new CHeapSortAlgorithm(compare));
-                    }
-                }
-                else
-                    sorter.setown(new CHeapSortAlgorithm(compare)); // shouldn't really happen but there was a vintage of codegen that did not set the flag when algorithm not specified...
+                OwnedRoxieString algorithmName(sortMethod->getAlgorithm());
+                sortAlgorithm = useAlgorithm(algorithmName, sortFlags);
+                sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
             }
             sorter->prepare(input);
             readInput = true;
@@ -8168,65 +7421,30 @@ class CRoxieServerSortActivityFactory : public CRoxieServerActivityFactory
 {
     RoxieSortAlgorithm sortAlgorithm;
     unsigned sortFlags;
-    bool forceSpill;
 public:
     CRoxieServerSortActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
-        forceSpill = _queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);;
-        if (forceSpill)
-        {
-            sortAlgorithm = stableSpillingQuickSort;
-            sortFlags = TAFstable|TAFspill;
-        }
-        else
-        {
-            sortAlgorithm = heapSort;
-            sortFlags = TAFstable;
-        }
         Owned<IHThorSortArg> sortHelper = (IHThorSortArg *) helperFactory();
+        const char *algorithmName = NULL;
         IHThorAlgorithm *sortMethod = static_cast<IHThorAlgorithm *>(sortHelper->selectInterface(TAIalgorithm_1));
         if (sortMethod)
         {
             sortFlags = sortMethod->getAlgorithmFlags();
-            if (forceSpill)
-                sortFlags |= TAFspill;
-            if (sortFlags & TAFspill)
-                sortAlgorithm = stableSpillingQuickSort;
-            else if (sortFlags & TAFunstable)
-                sortAlgorithm = quickSort;
-            if (!(sortFlags & TAFconstant))
-                sortAlgorithm = unknownSort;
-            else
-            {
-                OwnedRoxieString useAlgorithm(sortMethod->getAlgorithm());
-                if (useAlgorithm)
-                {
-                    if (stricmp(useAlgorithm, "quicksort")==0)
-                    {
-                        switch (sortFlags & (TAFstable|TAFspill))
-                        {
-                        case 0: sortAlgorithm = quickSort; break;
-                        case TAFstable: sortAlgorithm = stableQuickSort; break;
-                        case TAFspill: sortAlgorithm = spillingQuickSort; break;
-                        case TAFstable|TAFspill: sortAlgorithm = stableSpillingQuickSort; break;
-                        }
-                    }
-                    else if (stricmp(useAlgorithm, "heapsort")==0)
-                        sortAlgorithm = heapSort; // NOTE - we do allow UNSTABLE('heapsort') in order to facilitate runtime selection. Also explicit selection of heapsort overrides request to spill
-                    else if (stricmp(useAlgorithm, "insertionsort")==0)
-                        sortAlgorithm = insertionSort;
-                    else
-                    {
-                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm.get());
-                        if (sortFlags & TAFunstable)
-                            sortAlgorithm = quickSort;
-                        else
-                            sortAlgorithm = heapSort;
-                    }
-                }
-            }
+            if (sortFlags & TAFconstant)
+                algorithmName = sortMethod->getAlgorithm();
         }
+        else
+            sortFlags = TAFstable|TAFconstant;
+        bool forceSpill = _queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);;
+        if (forceSpill)
+            sortFlags |= TAFspill;
+        if (!(sortFlags & TAFunstable))
+            sortFlags |= TAFstable;    // Assume stable unless specifically requested otherwise
+        if (sortFlags & TAFconstant)
+            sortAlgorithm = CRoxieServerSortActivity::useAlgorithm(algorithmName, sortFlags);
+        else
+            sortAlgorithm = unknownSortAlgorithm;
     }
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
@@ -9272,13 +8490,9 @@ public:
     {
         loop
         {
-            const void *row = input->nextInGroup();
+            const void *row = input->nextUngrouped();
             if (!row)
-            {
-                row = input->nextInGroup();
-                if (!row)
-                    break;
-            }
+                break;
             processed++;
             if(recreate)
                 openPipe(helper.getNameFromRow(row));
@@ -9665,7 +8879,7 @@ public:
             if (num != 0)
             {
                 if (!helper.isValid(num, (const void * *)gathered.getArray()))
-                    ReleaseRoxieRowSet(gathered);       // read next group
+                    ReleaseRoxieRows(gathered);       // read next group
             }
             else
                 eof = true;
@@ -9726,12 +8940,12 @@ public:
         if (num != 0)
         {
             if (!helper.isValid(num, (const void * *)gathered.getArray()))
-                ReleaseRoxieRowSet(gathered);       // read next group
+                ReleaseRoxieRows(gathered);       // read next group
         }
         else
             eof = true;
 
-        return nextUngrouped(this);
+        return nextUngrouped();
     }
 
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) 
@@ -10040,15 +9254,11 @@ public:
 
         loop
         {
-            const void * ret = input->nextInGroup();
+            const void * ret = input->nextUngrouped();
             if (!ret)
             {
-                ret = input->nextInGroup();
-                if (!ret)
-                {
-                    done = true;
-                    return NULL;
-                }
+                done = true;
+                return NULL;
             }
             processed++;
             switch (helper.getRecordAction(ret))
@@ -10353,10 +9563,8 @@ public:
         const void * ret;
         loop
         {
-            ret = input->nextInGroup();
-            if(!ret) //end of group
-                ret = input->nextInGroup();
-            if(!ret) //eof
+            ret = input->nextUngrouped();
+            if (!ret) //eof
             {
                 eof = true;
                 return ret;
@@ -10609,9 +9817,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
-        const void * ret = input->nextInGroup();
-        if (!ret)
-            ret = input->nextInGroup();
+        const void * ret = input->nextUngrouped();
         if (ret)
             processed++;
         else
@@ -10859,7 +10065,7 @@ protected:
         {
             OwnedRoxieString rawLogicalName = helper.getFileName();
             StringBuffer lfn;   // logical filename
-            expandLogicalFilename(lfn, rawLogicalName, wu, false);
+            expandLogicalFilename(lfn, rawLogicalName, wu, false, false);
             if (lfn.length())
             {
                 unsigned flags = helper.getFlags();
@@ -11021,13 +10227,9 @@ public:
     {
         loop
         {
-            const void *nextrec = input->nextInGroup();
+            const void *nextrec = input->nextUngrouped();
             if (!nextrec)
-            {
-                nextrec = input->nextInGroup();
-                if (!nextrec)
-                    break;
-            }
+                break;
             processed++;
             outSeq->putRow(nextrec);
         }
@@ -11130,13 +10332,9 @@ public:
         }
         loop
         {
-            const void *nextrec = input->nextInGroup();
+            const void *nextrec = input->nextUngrouped();
             if (!nextrec)
-            {
-                nextrec = input->nextInGroup();
-                if (!nextrec)
-                    break;
-            }
+                break;
             processed++;
             csvOutput.beginLine();
             csvHelper.writeRow((const byte *)nextrec, &csvOutput);
@@ -11232,13 +10430,9 @@ public:
 
         loop
         {
-            OwnedConstRoxieRow nextrec = input->nextInGroup();
+            OwnedConstRoxieRow nextrec = input->nextUngrouped();
             if (!nextrec)
-            {
-                nextrec.setown(input->nextInGroup());
-                if (!nextrec)
-                    break;
-            }
+                break;
             processed++;
             writer->clear().outputBeginNested(rowTag, false);
             xmlHelper.toXML((const byte *)nextrec.get(), *writer);
@@ -11349,7 +10543,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         {
             OwnedRoxieString rawLogicalName = helper.getFileName();
             StringBuffer lfn;   // logical filename
-            expandLogicalFilename(lfn, rawLogicalName, wu, false);
+            expandLogicalFilename(lfn, rawLogicalName, wu, false, false);
             if (lfn.length())
             {
                 if (helper.getSequence() >= 0)
@@ -11524,13 +10718,9 @@ public:
             // Loop thru the results
             loop
             {
-                OwnedConstRoxieRow nextrec(input->nextInGroup());
+                OwnedConstRoxieRow nextrec(input->nextUngrouped());
                 if (!nextrec)
-                {
-                    nextrec.setown(input->nextInGroup());
-                    if (!nextrec)
-                        break;
-                }
+                    break;
                 try
                 {
                     unsigned __int64 fpos;
@@ -11719,6 +10909,7 @@ class CRoxieServerJoinActivity : public CRoxieServerTwoInputActivity
     bool exclude;
     bool limitFail;
     bool limitOnFail;
+    bool forceSpill;
     unsigned keepLimit;
     unsigned joinLimit;
     unsigned atmostLimit;
@@ -11741,6 +10932,8 @@ class CRoxieServerJoinActivity : public CRoxieServerTwoInputActivity
     OwnedConstRoxieRow defaultRight;
     Owned<IEngineRowAllocator> defaultLeftAllocator;
     Owned<IEngineRowAllocator> defaultRightAllocator;
+    Owned<IGroupedInput> sortedLeft;
+    Owned<IGroupedInput> groupedSortedRight;
 
     bool cloneLeft;
 
@@ -11771,8 +10964,8 @@ class CRoxieServerJoinActivity : public CRoxieServerTwoInputActivity
     }
 
 public:
-    CRoxieServerJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerTwoInputActivity(_factory, _probeManager), helper((IHThorJoinArg &)basehelper)
+    CRoxieServerJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _forceSpill)
+        : CRoxieServerTwoInputActivity(_factory, _probeManager), helper((IHThorJoinArg &)basehelper), forceSpill(_forceSpill)
     {
         // MORE - some of this should be done in factory
         unsigned joinFlags = helper.getJoinFlags();
@@ -11835,10 +11028,25 @@ public:
             createDefaultLeft();
         if ((leftOuterJoin && (activityKind==TAKjoin || activityKind==TAKjoinlight || activityKind==TAKdenormalizegroup)) || limitOnFail)
             createDefaultRight();
-        if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
+        bool isStable = (helper.getJoinFlags() & JFunstable) == 0;
+        RoxieSortAlgorithm sortAlgorithm;
+        if (forceSpill)
+            sortAlgorithm = isStable ? stableSpillingQuickSortAlgorithm : spillingQuickSortAlgorithm;
+        else
+            sortAlgorithm = isStable ? stableQuickSortAlgorithm : quickSortAlgorithm;
+        if (helper.isLeftAlreadySorted())
+            sortedLeft.setown(createDegroupedInputReader(input));
+        else
+            sortedLeft.setown(createSortedInputReader(input, createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+        ICompare *compareRight = helper.queryCompareRight();
+        if (helper.isRightAlreadySorted())
+            groupedSortedRight.setown(createGroupedInputReader(input1, compareRight));
+        else
+            groupedSortedRight.setown(createSortedGroupedInputReader(input1, compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+        if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit())
         {   //limited match join (s[1..n])
             limitedhelper.setown(createRHLimitedCompareHelper());
-            limitedhelper->init( helper.getJoinLimit(), input1, collate, helper.queryPrefixCompare() );
+            limitedhelper->init( helper.getJoinLimit(), groupedSortedRight, collate, helper.queryPrefixCompare() );
         }
     }
 
@@ -11851,7 +11059,8 @@ public:
         ReleaseClearRoxieRow(pendingRight);
         defaultRight.clear();
         defaultLeft.clear();
-
+        sortedLeft.clear();
+        groupedSortedRight.clear();
         CRoxieServerTwoInputActivity::reset();
     }
 
@@ -11886,10 +11095,8 @@ public:
     void fillLeft()
     {
         matchedLeft = false;
-        left = input->nextInGroup();
-        if (!left)
-            left = input->nextInGroup();
-        if(betweenjoin && left && pendingRight && (collate->docompare(left, pendingRight) >= 0))
+        left = sortedLeft->nextInGroup(); // NOTE: already degrouped by the IGroupedInput we attached
+        if (betweenjoin && left && pendingRight && (collate->docompare(left, pendingRight) >= 0))
             fillRight();
         if (limitedhelper && 0==rightIndex)
         {
@@ -11934,14 +11141,14 @@ public:
             }
             else
             {
-                next = input1->nextInGroup();
+                next = groupedSortedRight->nextInGroup();
             }
             if(!rightOuterJoin && next && (!left || (collateupper->docompare(left, next) > 0))) // if right is less than left, and not right outer, can skip group
             {
                 while(next)
                 {
                     ReleaseClearRoxieRow(next);
-                    next = input1->nextInGroup();
+                    next = groupedSortedRight->nextInGroup();
                 }
                 continue;
             }
@@ -11969,7 +11176,7 @@ public:
                     right.append(next);
                     do
                     {
-                        next = input1->nextInGroup();
+                        next = groupedSortedRight->nextInGroup();
                         ReleaseRoxieRow(next);
                     } while(next);
                     break;
@@ -11982,7 +11189,7 @@ public:
                     while(next) 
                     {
                         ReleaseRoxieRow(next);
-                        next = input1->nextInGroup();
+                        next = groupedSortedRight->nextInGroup();
                     }
                 }
                 else
@@ -11990,12 +11197,12 @@ public:
                     right.append(next);
                     groupCount++;
                 }
-                next = input1->nextInGroup();
+                next = groupedSortedRight->nextInGroup();
             }
             // normally only want to read one right group, but if is between join and next right group is in window for left, need to continue
             if(betweenjoin && left)
             {
-                pendingRight = input1->nextInGroup();
+                pendingRight = groupedSortedRight->nextInGroup();
                 if(!pendingRight || (collate->docompare(left, pendingRight) < 0))
                     break;
             }
@@ -12380,18 +11587,20 @@ class CRoxieServerJoinActivityFactory : public CRoxieServerActivityFactory
 {
     unsigned input2;
     unsigned input2idx;
+    bool forceSpill;
 
 public:
-    CRoxieServerJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+    CRoxieServerJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
+        forceSpill = _queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);
         input2 = 0;
         input2idx = 0;
     }
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerJoinActivity(this, _probeManager);
+        return new CRoxieServerJoinActivity(this, _probeManager, forceSpill);
     }
 
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -12426,9 +11635,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -12982,9 +12191,7 @@ class CRoxieServerMergeActivity : public CRoxieServerActivity
 
     bool pullInput(unsigned i)
     {
-        const void *next = inputArray[i]->nextInGroup();
-        if (!next)
-            next = inputArray[i]->nextInGroup();
+        const void *next = inputArray[i]->nextUngrouped();
         pending[i] = next;
         return (next != NULL);
     }
@@ -13356,7 +12563,7 @@ public:
             }
             else if (group.ordinality() != numInputs)
             {
-                ReleaseRoxieRowSet(group);
+                ReleaseRoxieRows(group);
                 throw MakeStringException(ROXIE_MISMATCH_GROUP_ERROR, "Mismatched group input for Combine Activity(%d)", factory->queryId());
             }
 
@@ -13364,7 +12571,7 @@ public:
             {
                 RtlDynamicRowBuilder rowBuilder(rowAllocator);
                 size32_t outSize = helper.transform(rowBuilder, group.ordinality(), group.getArray());
-                ReleaseRoxieRowSet(group);
+                ReleaseRoxieRows(group);
                 if (outSize)
                 {
                     processed++;
@@ -13373,7 +12580,7 @@ public:
             }
             catch (IException *E)
             {
-                ReleaseRoxieRowSet(group);
+                ReleaseRoxieRows(group);
                 throw makeWrappedException(E);
             }
         }
@@ -13490,7 +12697,7 @@ public:
             if (group.ordinality() == 0)
             {
                 ReleaseRoxieRow(left);
-                ReleaseRoxieRowSet(group);
+                ReleaseRoxieRows(group);
                 throw MakeStringException(ROXIE_MISSING_GROUP_ERROR, "Missing RIGHT group for Combine Group (%d)", factory->queryId());
             }
 
@@ -13499,7 +12706,7 @@ public:
                 RtlDynamicRowBuilder rowBuilder(rowAllocator);
                 size32_t outSize = helper.transform(rowBuilder, left, group.ordinality(), (const void * *)group.getArray());
                 ReleaseRoxieRow(left);
-                ReleaseRoxieRowSet(group);
+                ReleaseRoxieRows(group);
                 if (outSize)
                 {
                     processed++;
@@ -13509,7 +12716,7 @@ public:
             catch (IException *E)
             {
                 ReleaseRoxieRow(left);
-                ReleaseRoxieRowSet(group);
+                ReleaseRoxieRows(group);
                 throw makeWrappedException(E);
             }
         }
@@ -13623,7 +12830,7 @@ public:
                 RtlDynamicRowBuilder rowBuilder(rowAllocator);
                 size32_t outSize = helper.transform(rowBuilder, group.ordinality(), (const void * *)group.getArray());
 
-                ReleaseRoxieRowSet(group);
+                ReleaseRoxieRows(group);
                 if (outSize)
                 {
                     processed++;
@@ -13632,7 +12839,7 @@ public:
             }
             catch (IException * E)
             {
-                ReleaseRoxieRowSet(group);
+                ReleaseRoxieRows(group);
                 throw makeWrappedException(E);
             }
         }
@@ -15889,7 +15096,7 @@ protected:
         }
         return ret;
 #else
-        return doNextInputRow();
+        return input->nextUngrouped();
 #endif
     }
 
@@ -15943,14 +15150,6 @@ protected:
     virtual IInputSteppingMeta * queryInputSteppingMeta()
     {
         return input->querySteppingMeta();
-    }
-
-    inline const void * doNextInputRow()
-    {
-        const void * ret = input->nextInGroup();
-        if (!ret)
-            ret = input->nextInGroup();
-        return ret;
     }
 
     inline const void * doNextInputRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
@@ -16023,7 +15222,7 @@ public:
         if (seek)
             next = inputArray[i]->nextSteppedGE(seek, numFields, matches, *stepExtra);
         else
-            next = nextUngrouped(inputArray[i]);
+            next = inputArray[i]->nextUngrouped();
         pending[i] = next;
         pendingMatches[i] = matches;
         return (next != NULL);
@@ -16751,9 +15950,7 @@ public:
         }
 
         const void * prev = next;
-        next = input->nextInGroup();
-        if (!next)
-            next = input->nextInGroup();
+        next = input->nextUngrouped();
 
         if (next)
         {
@@ -16927,17 +16124,13 @@ public:
         unsigned __int64 index = helper.getRowToSelect();
         while (--index)
         {
-            const void * next = input->nextInGroup();
-            if (!next)
-                next = input->nextInGroup();
+            const void * next = input->nextUngrouped();
             if (!next)
                 return defaultRow();
             ReleaseRoxieRow(next);
         }
 
-        const void * next = input->nextInGroup();
-        if (!next)
-            next = input->nextInGroup();
+        const void * next = input->nextUngrouped();
         if (!next)
             next = defaultRow();
 
@@ -16990,6 +16183,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     bool limitFail;
     bool limitOnFail;
     bool cloneLeft;
+    bool forceSpill;
     OwnedConstRoxieRow defaultLeft;
     OwnedConstRoxieRow defaultRight;
     OwnedConstRoxieRow lhs;
@@ -16998,6 +16192,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     Owned<IEngineRowAllocator> defaultAllocator;
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
+    Owned<IGroupedInput> groupedInput;
     IInputBase *dualCacheInput;
 
     bool fillGroup()
@@ -17008,7 +16203,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
         failingOuterAtmost = false;
         const void * next;
         unsigned groupCount = 0;
-        while((next = input->nextInGroup()) != NULL)
+        while((next = groupedInput->nextInGroup()) != NULL)
         {
             if(groupCount==abortLimit)
             {
@@ -17037,7 +16232,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
                 while(next) 
                 {
                     ReleaseRoxieRow(next);
-                    next = input->nextInGroup();
+                    next = groupedInput->nextInGroup();
                 }
             }
             else if(groupCount==atmostLimit)
@@ -17057,7 +16252,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
                     while (next) 
                     {
                         ReleaseRoxieRow(next);
-                        next = input->nextInGroup();
+                        next = groupedInput->nextInGroup();
                     }
                 }
             }
@@ -17144,8 +16339,8 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     }
 
 public:
-    CRoxieServerSelfJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorJoinArg &)basehelper)
+    CRoxieServerSelfJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _forceSpill)
+        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorJoinArg &)basehelper), forceSpill(_forceSpill)
     {
         collate = helper.queryCompareLeftRight();
         eof = false;
@@ -17195,10 +16390,23 @@ public:
             createDefaultLeft();
         if (leftOuterJoin || limitOnFail)
             createDefaultRight();
+        ICompare *compareLeft = helper.queryCompareLeft();
+        if (helper.isLeftAlreadySorted())
+            groupedInput.setown(createGroupedInputReader(input, compareLeft));
+        else
+        {
+            bool isStable = (helper.getJoinFlags() & JFunstable) == 0;
+            RoxieSortAlgorithm sortAlgorithm;
+            if (forceSpill)
+                sortAlgorithm = isStable ? stableSpillingQuickSortAlgorithm : spillingQuickSortAlgorithm;
+            else
+                sortAlgorithm = isStable ? stableQuickSortAlgorithm : quickSortAlgorithm;
+            groupedInput.setown(createSortedGroupedInputReader(input, compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+        }
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
         {   //limited match join (s[1..n])
             dualcache.setown(new CRHDualCache());
-            dualcache->init(CRoxieServerActivity::input);
+            dualcache->init(groupedInput);
             dualCacheInput = dualcache->queryOut1();
             failingOuterAtmost = false;
             matchedLeft = false;
@@ -17216,6 +16424,7 @@ public:
         if (atmostsTriggered)
             noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         group.clear();
+        groupedInput.clear();
         CRoxieServerActivity::reset();
         defaultLeft.clear();
         defaultRight.clear();
@@ -17298,7 +16507,7 @@ public:
                     if(failingLimit || failingOuterAtmost)
                     {
                         const void * lhs;
-                        while((lhs = input->nextInGroup()) != NULL)  // dualCache never active here
+                        while((lhs = groupedInput->nextInGroup()) != NULL)  // dualCache never active here
                         {
                             const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
                             ReleaseRoxieRow(lhs);
@@ -17363,15 +16572,17 @@ public:
 
 class CRoxieServerSelfJoinActivityFactory : public CRoxieServerActivityFactory
 {
+    bool forceSpill;
 public:
-    CRoxieServerSelfJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+    CRoxieServerSelfJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
+        forceSpill = queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);;
     }
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSelfJoinActivity(this, _probeManager);
+        return new CRoxieServerSelfJoinActivity(this, _probeManager, forceSpill);
     }
 
     virtual const StatisticsMapping &queryStatsMapping() const
@@ -17380,9 +16591,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSelfJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerSelfJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerSelfJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerSelfJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
@@ -17730,9 +16941,7 @@ public:
             const void * next;
             while(true)
             {
-                next = input1->nextInGroup();
-                if(!next)
-                    next = input1->nextInGroup();
+                next = input1->nextUngrouped();
                 if(!next)
                     break;
                 rightset.append(next);
@@ -18158,7 +17367,7 @@ class CRoxieServerLookupJoinActivityFactory : public CRoxieServerJoinActivityFac
 {
 public:
     CRoxieServerLookupJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+        : CRoxieServerJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         Owned<IHThorHashJoinArg> helper = (IHThorHashJoinArg *) helperFactory();
         useFewTable = _graphNode.getPropBool("hint[@name='usefewtable']/@value", false);
@@ -18269,7 +17478,7 @@ public:
     {
         defaultRight.clear();
         defaultLeft.clear();
-        ReleaseRoxieRowSet(rightset);
+        ReleaseRoxieRows(rightset);
         matchedRight.kill();
         CRoxieServerTwoInputActivity::reset();
     }
@@ -18303,9 +17512,7 @@ public:
         const void * next;
         while(true)
         {
-            next = input1->nextInGroup();
-            if(!next)
-                next = input1->nextInGroup();
+            next = input1->nextUngrouped();
             if(!next)
                 break;
             rightset.append(next);
@@ -18560,8 +17767,8 @@ public:
 class CRoxieServerAllJoinActivityFactory : public CRoxieServerJoinActivityFactory
 {
 public:
-    CRoxieServerAllJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerAllJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         Owned<IHThorAllJoinArg> helper = (IHThorAllJoinArg *) helperFactory();
         if((helper->getJoinFlags() & (JFfirst | JFfirstleft | JFfirstright)) != 0)
@@ -18578,9 +17785,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerAllJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerAllJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerAllJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerAllJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
@@ -18899,7 +18106,7 @@ protected:
             if (count > rowLimit)
             {
                 ReleaseRoxieRow(next);
-                ReleaseRoxieRowSet(buff);
+                ReleaseRoxieRows(buff);
                 if (ctx->queryDebugContext())
                     ctx->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
                 if (transformExtra)
@@ -19073,7 +18280,7 @@ protected:
     void onException(IException *E)
     {
         input->stop(true);
-        ReleaseRoxieRowSet(buff);
+        ReleaseRoxieRows(buff);
         if (createRow)
         {
             createRowAllocator();
@@ -20147,13 +19354,9 @@ public:
         RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
         loop
         {
-            const void *row = input->nextInGroup();
+            const void *row = input->nextUngrouped();
             if (!row)
-            {
-                row = input->nextInGroup();
-                if (!row)
-                    break;
-            }
+                break;
             builder.appendOwn(row);
             processed++;
         }
@@ -25359,7 +24562,6 @@ public:
 
     // IRoxieAbortMonitor
     virtual void checkForAbort() { checkAbort(); }
-
 };
 
 //---------------------------------------------------------------------------
@@ -25419,6 +24621,10 @@ public:
         return new CRoxieServerSoapRowCallActivity(this, _probeManager);
     }
 
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return soapStatistics;
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerSoapRowCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
@@ -25476,6 +24682,11 @@ public:
     {
         return isRoot;
     }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return soapStatistics;
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerSoapRowActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
@@ -25502,14 +24713,8 @@ public:
 
     virtual const void *getNextRow()
     {
-        CriticalBlock b(crit);
-
-        const void *nextrec = input->nextInGroup();
-        if (!nextrec)
-        {
-            nextrec = input->nextInGroup();
-        }
-        return nextrec;
+        CriticalBlock b(crit); // MORE - why ?
+        return input->nextUngrouped();
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -25548,6 +24753,11 @@ public:
     {
         return new CRoxieServerSoapDatasetCallActivity(this, _probeManager);
     }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return soapStatistics;
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerSoapDatasetCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
@@ -25566,13 +24776,8 @@ public:
 
     virtual const void *getNextRow()
     {
-        CriticalBlock b(crit);
-
-        const void *nextrec = input->nextInGroup();
-        if (!nextrec)
-        {
-            nextrec = input->nextInGroup();
-        }
+        CriticalBlock b(crit); // MORE - Why?
+        const void *nextrec = input->nextUngrouped();
         if (nextrec)
             processed++;
         return nextrec;
@@ -25636,6 +24841,11 @@ public:
     virtual bool isSink() const
     {
         return isRoot;
+    }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return soapStatistics;
     }
 };
 
@@ -26910,27 +26120,6 @@ protected:
         qsort(output, 2000, sizeof(output[0]), compareFunc);
         testActivity(activity, input, output);
 
-#if 0
-        // Random
-        #define BIGSORTSIZE 1000000
-        char **linput = new char*[BIGSORTSIZE +2];
-        char **loutput = new char *[BIGSORTSIZE+2];
-        linput[BIGSORTSIZE] = linput[BIGSORTSIZE+1] = loutput[BIGSORTSIZE] = loutput[BIGSORTSIZE+1] = NULL;
-        for (i=0; i<BIGSORTSIZE; i++)
-        {
-            unsigned r = rand() % 15000;
-            linput[i] = loutput[i] = new char[11];
-            sprintf(linput[i], "%04d", r);
-        }
-        qsort(loutput, BIGSORTSIZE, 4, compareFunc);
-        testActivity(activity, linput, loutput);
-        for (i=0; i<BIGSORTSIZE; i++)
-        {
-            delete [] linput[i];
-        }
-        delete [] linput;
-        delete [] loutput;
-#endif
         unsigned __int64 us = cycle_to_nanosec(factory->queryLocalCycles()/1000);
         DBGLOG("Simple %s sorts: activity time %u.%u ms", type==2?"Heap" : (type==1 ? "Insertion" : "Quick"), (int)(us/1000), (int)(us%1000));
         factory->resetNodeProgressInfo();

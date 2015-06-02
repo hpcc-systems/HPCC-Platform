@@ -1220,7 +1220,6 @@ public:
                             opttree->setPropBool("@recordStructurePresent", true);
 
                         opttree->setPropBool("@quotedTerminator", options->getQuotedTerminator());
-
                         Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey,options->getSuppressNonKeyRepeats()&&!iskey);
                         if (fdesc) {
                             if (options->getSubfileCopy()) {// need to set destination compressed or not
@@ -1562,7 +1561,7 @@ public:
             case DFUcmd_monitor: 
                 {
                     CriticalBlock block(monitorsect);
-                    // first check done when WU recieved
+                    // first check done when WU received
                     IDFUmonitor *monitor = wu->queryUpdateMonitor();
                     if (!monitor)
                         break;

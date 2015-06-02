@@ -149,9 +149,9 @@
           <title>ecl.ini</title>
 
           <para>Many options can be placed in a file called <emphasis
-          role="bold">ecl.ini</emphasis> in the local directory. Options that
-          do not change very often should be put in the ini file. For
-          example:</para>
+          role="bold">ecl.ini</emphasis> in the same directory as the
+          executable. Options that do not change very often should be put in
+          the ini file. For example:</para>
 
           <programlisting>eclWatchIP=10.150.50.12
 eclWatchPort=28010

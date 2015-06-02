@@ -10441,6 +10441,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case COUNTER: msg.append("COUNTER"); break;
     case COVARIANCE: msg.append("COVARIANCE"); break;
     case CPPBODY: msg.append("BEGINC++"); break;
+    case TOK_CPP: msg.append("C++"); break;
     case CRC: msg.append("HASHCRC"); break;
     case CRON: msg.append("CRON"); break;
     case CSV: msg.append("CSV"); break;

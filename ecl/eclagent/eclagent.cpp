@@ -335,7 +335,7 @@ public:
 
         Owned<IDebuggerContext> debuggerContext;
         unsigned slavesReplyLen = 0;
-        HttpHelper httpHelper;
+        HttpHelper httpHelper(NULL);
         try
         {
             client->querySocket()->getPeerAddress(peer);
@@ -748,7 +748,7 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
     {
     case ofXML:
         {
-            res->getResultXml(buff);
+            res->getResultXml(buff, true);
             outputSerializer->fwrite(sequence, (const void*)buff.str(), 1, buff.length());
             break;
         }
@@ -902,7 +902,7 @@ char *EclAgent::getResultVarString(const char * stepname, unsigned sequence)
 {
     PROTECTED_GETRESULT(stepname, sequence, "VarString", "string",
         SCMStringBuffer result;
-        r->getResultString(result);
+        r->getResultString(result, false);
         return result.s.detach();
     );
 }
@@ -922,7 +922,7 @@ void EclAgent::getResultString(unsigned & tlen, char * & tgt, const char * stepn
 {
     PROTECTED_GETRESULT(stepname, sequence, "String", "string",
         SCMStringBuffer result;
-        r->getResultString(result);
+        r->getResultString(result, false);
         tlen = result.length();
         tgt = (char *)result.s.detach();
     );
@@ -933,7 +933,7 @@ void EclAgent::getResultStringF(unsigned tlen, char * tgt, const char * stepname
     PROTECTED_GETRESULT(stepname, sequence, "String", "string",
         //MORE: Could used a fixed size IStringVal implementation to save a memory allocation, but hardly worth it.
         SCMStringBuffer result;
-        r->getResultString(result);
+        r->getResultString(result, false);
         rtlStrToStr(tlen, tgt, result.length(), result.s.str());
     );
 }
@@ -942,7 +942,7 @@ void EclAgent::getResultData(unsigned & tlen, void * & tgt, const char * stepnam
 {
     PROTECTED_GETRESULT(stepname, sequence, "Data", "data",
         SCMStringBuffer result;
-        r->getResultString(result);
+        r->getResultString(result, false);
         tlen = result.length();
         tgt = (char *)result.s.detach();
     );
@@ -1372,7 +1372,7 @@ bool EclAgent::expandLogicalName(StringBuffer & fullname, const char * logicalNa
 ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *errorTxt, bool optional, bool noteRead, bool isWrite, StringBuffer * expandedlfn)
 {
     StringBuffer lfn;
-    expandLogicalFilename(lfn, fname, queryWorkUnit(), resolveFilesLocally);
+    expandLogicalFilename(lfn, fname, queryWorkUnit(), resolveFilesLocally, false);
     if (resolveFilesLocally && *fname != '~')
     {
         StringBuffer name;
@@ -1970,6 +1970,12 @@ void EclAgent::doProcess()
                 w->deleteTemporaries();
         }
 
+        if (globals->getPropBool("DUMPFINALWU", false))
+        {
+            StringBuffer xml;
+            exportWorkUnitToXML(wuRead, xml, true, false, true);
+            fprintf(stdout, "%s", xml.str());
+        }
         wuRead.clear(); // have a write lock still, but don't want to leave dangling unlocked wuRead after releasing write lock
                         // or else something can delete whilst still referenced (e.g. on complete signal)
         w.clear();
@@ -2289,7 +2295,7 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
         if (agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
             doExecuteItemDependencies(item, wfid);
         if (maxPersistCopies > 0)
-            agent.deleteLRUPersists(logicalName, maxPersistCopies-1);
+            agent.deleteLRUPersists(logicalName, (unsigned)(maxPersistCopies-1));
         doExecuteItem(item, wfid);
         agent.updatePersist(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC);
     }
@@ -2707,7 +2713,7 @@ static int comparePersistAccess(IInterface * const *_a, IInterface * const *_b)
 
 }
 
-void EclAgent::deleteLRUPersists(const char * logicalName, int keep)
+void EclAgent::deleteLRUPersists(const char * logicalName, unsigned keep)
 {
     StringBuffer lfn;
     expandLogicalName(lfn, logicalName);

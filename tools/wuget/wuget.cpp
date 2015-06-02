@@ -57,7 +57,7 @@ int main(int argc, char **argv)
                 if (getWorkunitXMLFromFile(argv[i], xml))
                 {
                     Owned<ILocalWorkUnit> wu = createLocalWorkUnit(xml);
-                    exportWorkUnitToXML(wu, xml.clear(), true, false);
+                    exportWorkUnitToXML(wu, xml.clear(), true, false, true);
                     printf("%s\n", xml.str());
                 }
                 else

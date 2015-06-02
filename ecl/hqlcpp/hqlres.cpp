@@ -544,9 +544,17 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         const char *type = s.type.str();
         unsigned id = s.id;
         VStringBuffer binfile("%s_%s_%u.bin", filename.str(), type, id);
+        VStringBuffer label("%s_%u_txt_start", type, id);
+#if defined(__APPLE__)
         fprintf(f, " .section __TEXT,%s_%u\n", type, id);
-        fprintf(f, " .global _%s_%u_txt_start\n", type, id);  // For some reason apple needs a leading underbar and linux does not
-        fprintf(f, "_%s_%u_txt_start:\n", type, id);
+        fprintf(f, " .global _%s\n", label.str());  // For some reason apple needs a leading underbar and linux does not
+        fprintf(f, "_%s:\n", label.str());
+#else
+        fprintf(f, " .section %s_%u,\"a\"\n", type, id);
+        fprintf(f, " .global %s\n", label.str());
+        fprintf(f, " .type %s,STT_OBJECT\n", label.str());
+        fprintf(f, "%s:\n", label.str());
+#endif
         fprintf(f, " .incbin \"%s\"\n", binfile.str());
         FILE *bin = fopen(binfile, "wb");
         if (!bin)

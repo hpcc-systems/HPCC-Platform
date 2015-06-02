@@ -85,6 +85,14 @@ BuildCtx::BuildCtx(BuildCtx & _owner, HqlStmts * _root) : state(_owner.state)
 }
 
 
+BuildCtx::BuildCtx(BuildCtx & _owner, IHqlStmt * _container) : state(_owner.state)
+{
+    HqlCompoundStmt * cast = dynamic_cast<HqlCompoundStmt *>(_container);
+    assertex(cast);
+    init(&cast->code);
+}
+
+
 BuildCtx::~BuildCtx()
 {
 }
@@ -619,6 +627,31 @@ bool BuildCtx::hasAssociation(HqlExprAssociation & search, bool unconditional)
     }
 }
 
+
+bool BuildCtx::isOuterContext() const
+{
+    HqlStmts * searchStmts = curStmts;
+    loop
+    {
+        HqlStmt * owner = searchStmts->owner;
+        if (!owner)
+            return true;
+
+        switch (owner->getStmt())
+        {
+        case quote_compound_stmt:
+        case quote_compoundopt_stmt:
+        case indirect_stmt:
+            return true;
+        case group_stmt:
+            break;
+        default:
+            return false;
+        }
+
+        searchStmts = owner->queryContainer();
+    }
+}
 
 HqlExprAssociation * BuildCtx::queryAssociation(IHqlExpression * search, AssocKind kind, HqlExprCopyArray * selectors)
 {

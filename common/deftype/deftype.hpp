@@ -33,9 +33,9 @@
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
 typedef wchar_t UChar;
-#else //__WIN32
+#else //_WIN32
 typedef unsigned short UChar;
-#endif //__WIN32
+#endif //_WIN32
 
 interface ITypeInfo;
 interface IValue;
@@ -128,6 +128,7 @@ enum typemod_t
     typemod_outofline   = 8,
     typemod_attr        = 9,
     typemod_indirect    = 10,       // type definition needs to go via an ecl definition
+    typemod_mutable     = 11,
     typemod_max
 };
 

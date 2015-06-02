@@ -1935,6 +1935,10 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_assertdistributed:
     case no_extractresult:
         return childdataset_dataset;
+    case no_alias_scope:
+        if (expr->isDataset())
+            return childdataset_dataset_noscope;
+        return childdataset_none;
     case no_keyedlimit:
     case no_preload:
     case no_limit:
@@ -1945,7 +1949,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_split:
     case no_spill:
     case no_activerow:
-    case no_alias_scope:
     case no_executewhen:  //second argument is independent of the other arguments
     case no_selectnth:
     case no_readspill:
@@ -2123,9 +2126,12 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_nwayjoin:
     case no_nwaymerge:
         return 0;       //??
+    case no_alias_scope:
+        if (dataset->isDataset())
+            return 1;
+        return 0;
     case no_selfjoin:
     case no_alias_project:
-    case no_alias_scope:
     case no_newaggregate:
     case no_apply:
     case no_cachealias:
@@ -12336,12 +12342,51 @@ IHqlExpression * ensureActiveRow(IHqlExpression * expr)
     return createRow(no_activerow, LINK(expr->queryNormalizedSelector()));
 }
 
+static void ensureSerialized(HqlExprArray & assigns, IHqlExpression *transform, IHqlExpression * srcRecord, IHqlExpression * tgtRecord, IAtom * serialForm)
+{
+    OwnedHqlExpr childSelf = createSelector(no_self, tgtRecord, NULL);
+    ForEachChild(i, srcRecord)
+    {
+        IHqlExpression * src = srcRecord->queryChild(i);
+        IHqlExpression * tgt = tgtRecord->queryChild(i);
+        dbgassertex(src->getOperator() == tgt->getOperator());
+        switch (src->getOperator())
+        {
+        case no_field:
+            {
+                OwnedHqlExpr  match = getExtractSelect(transform, src, false);
+                assertex(match);
+                OwnedHqlExpr lhs = createSelectExpr(LINK(childSelf), LINK(tgt));
+                assigns.append(*createAssign(lhs.getClear(), ensureSerialized(match, serialForm)));
+                break;
+            }
+        case no_record:
+            ensureSerialized(assigns, transform, src, tgt, serialForm);
+            break;
+        case no_ifblock:
+            ensureSerialized(assigns, transform, src->queryChild(1), tgt->queryChild(1), serialForm);
+            break;
+        }
+    }
+}
+
 IHqlExpression * ensureSerialized(IHqlExpression * expr, IAtom * serialForm)
 {
     ITypeInfo * type = expr->queryType();
     Owned<ITypeInfo> serialType = getSerializedForm(type, serialForm);
     if (type == serialType)
         return LINK(expr);
+
+    if (expr->getOperator() == no_createrow)
+    {
+        IHqlExpression * serialRecord = queryRecord(serialType);
+        IHqlExpression * exprRecord = expr->queryRecord();
+        IHqlExpression * transform = expr->queryChild(0);
+        HqlExprArray assigns;
+        ensureSerialized(assigns, transform, exprRecord, serialRecord, serialForm);
+        OwnedHqlExpr newTransform = createValue(no_transform, makeTransformType(serialRecord->getType()), assigns);
+        return createRow(no_createrow, newTransform.getClear());
+    }
 
     HqlExprArray args;
     args.append(*LINK(expr));
@@ -15669,6 +15714,25 @@ ITypeInfo * createRecordType(IHqlExpression * record)
 }
 
 
+IHqlExpression * queryFunctionAttribute(IHqlExpression * funcdef, IAtom * name)
+{
+    dbgassertex(funcdef->getOperator() == no_funcdef);
+    IHqlExpression * body = funcdef->queryChild(0);
+    switch (body->getOperator())
+    {
+    case no_external:
+        return body->queryAttribute(name);
+    case no_outofline:
+        {
+            IHqlExpression * embed = body->queryChild(0);
+            if (embed->getOperator() == no_embedbody)
+                return embed->queryAttribute(name);
+        }
+        break;
+    }
+    return NULL;
+}
+
 ITypeInfo * getSumAggType(ITypeInfo * argType)
 {
     type_t tc = argType->getTypeCode();
@@ -15896,7 +15960,6 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
     {
         HqlScopeArray scopes;   
         getRootScopes(scopes, dataServer, ctx);
-        scopes.sort(compareScopesByName);
         ForEachItemIn(i, scopes)
         {
             IHqlScope & cur = scopes.item(i);

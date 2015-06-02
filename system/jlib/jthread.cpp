@@ -928,23 +928,32 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
         PooledThreadHandle ret;
         {
             CriticalBlock block(crit);
-            if (timedout&&!availsem.wait(0)) {  // make sure take allocated sem if has become available
-                if (noBlock || timeout > 0)
-                    throw MakeStringException(0, "No threads available in pool %s", poolname.get());
-                WARNLOG("Pool limit exceeded for %s", poolname.get());
+            if (timedout)
+            {
+                if (!availsem.wait(0)) {  // make sure take allocated sem if has become available
+                    if (noBlock || timeout > 0)
+                        throw MakeStringException(0, "No threads available in pool %s", poolname.get());
+                    WARNLOG("Pool limit exceeded for %s", poolname.get());
+                }
+                else
+                    timedout = false;
             }
             if (traceStartDelayPeriod)
             {
                 ++startsInPeriod;
-                startDelayInPeriod += startTimer.elapsedCycles();
-                if (overAllTimer.elapsedCycles() >= queryOneSecCycles()*traceStartDelayPeriod) // check avg. delay per minute
+                if (timedout)
                 {
-                    cycle_t avg = startDelayInPeriod/startsInPeriod;
-                    unsigned avgMs = static_cast<unsigned>(cycle_to_nanosec(avg)/1000000);
-                    PROGLOG("%s: %d threads started in last %d seconds, average delay = %d milliseconds", poolname.get(), startsInPeriod, traceStartDelayPeriod, avgMs);
-                    startsInPeriod = 0;
-                    startDelayInPeriod = 0;
-                    overAllTimer.reset();
+                    startDelayInPeriod += startTimer.elapsedCycles();
+                    if (overAllTimer.elapsedCycles() >= queryOneSecCycles()*traceStartDelayPeriod) // check avg. delay per minute
+                    {
+                        double totalDelayMs = (static_cast<double>(cycle_to_nanosec(startDelayInPeriod)))/1000000;
+                        double avgDelayMs = (static_cast<double>(cycle_to_nanosec(startDelayInPeriod/startsInPeriod)))/1000000;
+                        unsigned totalElapsedSecs = overAllTimer.elapsedMs()/1000;
+                        PROGLOG("%s: %u threads started in last %u seconds, total delay = %0.2f milliseconds, average delay = %0.2f milliseconds, currently running = %u", poolname.get(), startsInPeriod, totalElapsedSecs, totalDelayMs, avgDelayMs, runningCount());
+                        startsInPeriod = 0;
+                        startDelayInPeriod = 0;
+                        overAllTimer.reset();
+                    }
                 }
             }
             CPooledThreadWrapper &t = allocThread();
@@ -1723,7 +1732,7 @@ class CLinuxPipeProcess: public CInterface, implements IPipeProcess
             }
             return 0;
         }
-        void stop() 
+        void stop()
         {
             stopsem.signal();
             Thread::join();
@@ -1771,6 +1780,27 @@ protected: friend class PipeWriterThread;
     StringArray envVars;
     StringArray envValues;
 
+    void clearUtilityThreads()
+    {
+        Owned<cForkThread> ft;
+        cStdErrorBufferThread *et;
+        {
+            CriticalBlock block(sect); // clear forkthread and stderrbufferthread
+            ft.setown(forkthread.getClear());
+            et = stderrbufferthread;
+            stderrbufferthread = NULL;
+        }
+        if (ft)
+        {
+            ft->join();
+            ft.clear();
+        }
+        if (et)
+        {
+            et->stop();
+            delete et;
+        }
+    }
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1796,22 +1826,7 @@ public:
         closeInput();
         closeOutput();
         closeError();
-
-        Owned<cForkThread> ft;
-        cStdErrorBufferThread *et;
-        {   CriticalBlock block(sect); // clear forkthread  and stderrbufferthread
-            ft.setown(forkthread.getClear());
-            et = stderrbufferthread;
-            stderrbufferthread = NULL;
-        }
-        if (ft) {
-            ft->join();
-            ft.clear();
-        }
-        if (et) {
-            et->stop();
-            delete et;
-        }
+        clearUtilityThreads();
     }
 
 
@@ -2074,51 +2089,40 @@ public:
             pipeProcess = (HANDLE)-1;
         }
     }
-    
-    
+
     unsigned wait()
     {
-        CriticalBlock block(sect); 
-        if (stderrbufferthread)
-            stderrbufferthread->stop();
-        if (forkthread) {
-            {
-                CriticalUnblock unblock(sect);
-                forkthread->join();
-            }
-            if (pipeProcess != (HANDLE)-1) {
-                if (title.length())
-                    PROGLOG("%s: Pipe: process %d complete %d",title.get(),pipeProcess,retcode);
-                pipeProcess = (HANDLE)-1;
-            }
-            forkthread.clear();
-        }
-        return retcode;
+        bool timedout;
+        return wait(INFINITE, timedout);
     }
 
     unsigned wait(unsigned timeoutms, bool &timedout)
     {
-        CriticalBlock block(sect); 
         timedout = false;
-        if (forkthread) {
+        if (INFINITE != timeoutms)
+        {
+            CriticalBlock block(sect);
+            if (forkthread)
             {
-                CriticalUnblock unblock(sect);
-                if (!forkthread->join(timeoutms)) {
-                    timedout = true;
-                    return retcode;
+                {
+                    CriticalUnblock unblock(sect);
+                    if (!forkthread->join(timeoutms))
+                    {
+                        timedout = true;
+                        return retcode;
+                    }
                 }
-
             }
-            if (pipeProcess != (HANDLE)-1) {
-                if (title.length())
-                    PROGLOG("%s: Pipe: process %d complete %d",title.get(),pipeProcess,retcode);
-                pipeProcess = (HANDLE)-1;
-            }
-            forkthread.clear();
+        }
+        clearUtilityThreads(); // NB: will recall forkthread->join(), but doesn't matter
+        if (pipeProcess != (HANDLE)-1)
+        {
+            if (title.length())
+                PROGLOG("%s: Pipe: process %d complete %d", title.get(), pipeProcess, retcode);
+            pipeProcess = (HANDLE)-1;
         }
         return retcode;
     }
-    
 
     void closeOutput()
     {

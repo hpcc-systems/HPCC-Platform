@@ -315,7 +315,8 @@ public:
 
 struct ECLRTL_API RtlFieldStrInfo : public RtlFieldInfo
 {
-    RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char * _initializer = NULL);
+    RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type);
+    RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char * _initializer);
 };
 
 

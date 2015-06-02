@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+//class=embedded
+//class=3rdparty
+
 //nothor
 
 IMPORT redis FROM lib_redis;
@@ -93,7 +96,7 @@ SEQUENTIAL(
     myRedis.SetUtf8('utf8', utf);
     myRedis.GetUtf8('utf8');
     myRedis.Exists('utf8');
-    myRedis.Del('utf8');
+    myRedis.Delete('utf8');
     myRedis.Exists('uft8');
     );
 

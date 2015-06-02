@@ -29,6 +29,10 @@
 #include <mach-o/getsect.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#elif !defined(_WIN32)
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <elf.h>
 #endif
 
 #include "thorplugin.hpp"
@@ -82,7 +86,7 @@ public:
     virtual const char * queryVersion() const;
     virtual const char * queryName() const;
     virtual const byte * getResource(unsigned id) const;
-    virtual bool getResource(size32_t & len, const void * & data, const char * type, unsigned id) const;
+    virtual bool getResource(size32_t & len, const void * & data, const char * type, unsigned id, bool trace) const;
 
     bool load(bool isGlobal, bool raiseOnError);
     bool loadCurrentExecutable();
@@ -184,7 +188,7 @@ const byte resourceHeaderVersion=1;
 const size32_t resourceHeaderLength = sizeof(byte) + sizeof(byte) + sizeof(bool) + sizeof(size32_t);
 
 
-bool HelperDll::getResource(size32_t & len, const void * & data, const char * type, unsigned id) const
+bool HelperDll::getResource(size32_t & len, const void * & data, const char * type, unsigned id, bool trace) const
 {
 #ifdef _WIN32
     HINSTANCE dllHandle = so.getInstanceHandle();
@@ -200,7 +204,8 @@ bool HelperDll::getResource(size32_t & len, const void * & data, const char * ty
     data = (const void *) getEntry(symName.str());
     if (!data)
     {
-        printf("Failed to locate symbol %s", symName.str());
+        if (trace)
+            printf("Failed to locate symbol %s\n", symName.str());
         return false;
     }
     byte bom;
@@ -244,6 +249,67 @@ static void secscan (bfd *file, sec_ptr sec, void *userParam)
 }
 #endif
 
+static bool getResourceFromMappedFile(const char * filename, const byte * start_addr, MemoryBuffer &data, const char * type, unsigned id)
+{
+#if defined(_WIN32) || defined (_USE_BINUTILS)
+    throwUnexpected();
+#elif defined(__APPLE__)
+    VStringBuffer sectname("%s_%u", type, id);
+    // The first bytes are the Mach-O header
+    const struct mach_header_64 *mh = (const struct mach_header_64 *) start_addr;
+    if (mh->magic != MH_MAGIC_64)
+    {
+        DBGLOG("Failed to extract resource %s: Does not appear to be a Mach-O 64-bit binary", filename);
+        return false;
+    }
+
+    unsigned long len = 0;
+    unsigned char *data2 = getsectiondata(mh, "__TEXT", sectname.str(), &len);
+    data.append(len, data2);
+    return true;
+#else
+    // The first bytes are the ELF header
+    const Elf64_Ehdr * hdr = (const Elf64_Ehdr *) start_addr;
+    if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0)
+    {
+        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF binary", filename);
+        return false;
+    }
+    if (hdr->e_ident[EI_CLASS] != ELFCLASS64)
+    {
+        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF 64-bit binary", filename);
+        return false;
+    }
+
+    //Check that there is a symbol table for the sections.
+    if (hdr->e_shstrndx == SHN_UNDEF)
+    {
+        DBGLOG("Failed to extract resource %s: Does not include a section symbol table", filename);
+        return false;
+    }
+
+    //Now walk the sections comparing the section names
+    Elf64_Half numSections = hdr->e_shnum;
+    const Elf64_Shdr * sectionHeaders = reinterpret_cast<const Elf64_Shdr *>(start_addr + hdr->e_shoff);
+    const Elf64_Shdr & symbolTableSection = sectionHeaders[hdr->e_shstrndx];
+    const char * symbolTable = (const char *)start_addr + symbolTableSection.sh_offset;
+    VStringBuffer sectname("%s_%u", type, id);
+    for (unsigned iSect= 0; iSect < numSections; iSect++)
+    {
+        const Elf64_Shdr & section = sectionHeaders[iSect];
+        const char * sectionName = symbolTable + section.sh_name;
+        if (streq(sectionName, sectname))
+        {
+            data.append(section.sh_size, start_addr + section.sh_offset);
+            return true;
+        }
+    }
+
+    DBGLOG("Failed to extract resource %s: Does not include a matching entry", filename);
+    return false;
+#endif
+}
+
 extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const char * type, unsigned id)
 {
 #ifdef _WIN32
@@ -276,8 +342,7 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
         bfd_close (file);
    }
    return data.length() != 0;
-#elif defined(__APPLE__)
-    unsigned long len = 0;
+#else
     struct stat stat_buf;
     VStringBuffer sectname("%s_%u", type, id);
     int fd = open(filename, O_RDONLY);
@@ -286,31 +351,21 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
         DBGLOG("Failed to load library %s: %d", filename, errno);
         return false;
     }
+
+    bool ok = false;
     __uint64 size = stat_buf.st_size;
-    byte *start_addr = (byte *) mmap(0, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
+    const byte *start_addr = (const byte *) mmap(0, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
     if (start_addr == MAP_FAILED)
     {
         DBGLOG("Failed to load library %s: %d", filename, errno);
     }
     else
     {
-        // The first bytes are the Mach-O header
-        struct mach_header_64 *mh = (struct mach_header_64 *) start_addr;
-        if (mh->magic != MH_MAGIC_64)
-        {
-            DBGLOG("Failed to load library %s: Does not appear to be a Mach-O 64-bit binary", filename);
-        }
-        else
-        {
-            unsigned char *data2 = getsectiondata(mh, "__TEXT", sectname.str(), &len);
-            data.append(len, data2);
-        }
-        munmap(start_addr, size);
+        ok = getResourceFromMappedFile(filename, start_addr, data, type, id);
+        munmap((void *)start_addr, size);
     }
     close(fd);
-    return len != 0;
-#else
-    UNIMPLEMENTED;
+    return ok;
 #endif
 }
 
@@ -468,7 +523,7 @@ extern DLLSERVER_API bool checkEmbeddedWorkUnitXML(ILoadedDllEntry *dll)
 {
     size32_t len = 0;
     const void * data = NULL;
-    return dll->getResource(len, data, "WORKUNIT", 1000);
+    return dll->getResource(len, data, "WORKUNIT", 1000, false);
 }
 
 extern DLLSERVER_API bool getResourceXMLFromFile(const char *filename, const char *type, unsigned id, StringBuffer &xml)

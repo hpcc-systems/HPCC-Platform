@@ -69,7 +69,7 @@ void HttpStat::printStat(FILE* ofile)
         __int64 totallen = totalreqlen + totalresplen;
         fprintf(ofile, "Total data transferred:           %Ld\n", totallen);
         if(duration > 0)
-            fprintf(ofile, "Data transfered per second:       %5.1f\n", totallen/(duration*0.001));
+            fprintf(ofile, "Data transferred per second:      %5.1f\n", totallen/(duration*0.001));
         if(numrequests > 0)
         {
             fprintf(ofile, "Slowest round trip(millisecond):  %d\n", slowest);
@@ -1351,7 +1351,7 @@ int HttpClient::validate(StringBuffer& xml)
         if(http_tracelevel > 0)
         {
             IArrayOf<IException> &es = me->getArray();
-            for (int i=0; i<es.ordinality(); i++)
+            for (unsigned i=0; i<es.ordinality(); i++)
             {
                 StringBuffer msg;
                 IException& e = es.item(i);
@@ -1430,7 +1430,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
     else
         request.append(c1);
 
-    int seq = 2;
+    unsigned seq = 2;
     while(seq < req.length() && !endofheaders)
     {
         char c = req.charAt(seq);

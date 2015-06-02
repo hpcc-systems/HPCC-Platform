@@ -425,7 +425,7 @@ public:
     }
 
     
-    //Receive will fill HRPCbuffer with what is heard (recieved message)
+    //Receive will fill HRPCbuffer with what is heard (received message)
     void Receive(HRPCbuffer &c,int timeo)
     {
         mb.clear();
@@ -445,7 +445,7 @@ public:
         h->winrev();
     }
 
-    //block until there is a message recieved by this node
+    //block until there is a message received by this node
     bool Listen()
     {   
         return state->Listen();

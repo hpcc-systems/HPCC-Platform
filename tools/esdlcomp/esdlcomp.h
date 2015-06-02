@@ -55,6 +55,9 @@ inline bool es_streq(const char* s, const char* t) {  return strcmp(s,t)==0; }
 #define PF_ESPSTRUCT    0x800
 #define PF_MASK        0x7fff
 
+#define LEGACY_FILE_EXTENSION ".ecm"
+#define ESDL_FILE_EXTENSION   ".esdl"
+#define XML_FILE_EXTENSION    ".xml"
 
 enum type_kind
 {
@@ -1286,7 +1289,7 @@ public:
 class esdlcomp_decl ESDLcompiler
 {
 public:
-    ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir, bool outputIncludes);
+    ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir, bool outputIncludes, bool includedEsdl);
     ~ESDLcompiler();
 
     void Process();

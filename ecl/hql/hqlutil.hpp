@@ -466,6 +466,7 @@ extern HQL_API bool isNullList(IHqlExpression * expr);
 extern HQL_API IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record);
 extern HQL_API IHqlExpression *getDictionarySearchRecord(IHqlExpression *record);
 extern HQL_API IHqlExpression * createSelectMapRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values);
+extern HQL_API IHqlExpression * createRowForDictExpr(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict);
 extern HQL_API IHqlExpression * createINDictExpr(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict);
 extern HQL_API IHqlExpression *createINDictRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict);
 extern HQL_API IHqlExpression * convertTempRowToCreateRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * expr);
@@ -681,6 +682,8 @@ extern HQL_API IHqlExpression * queryTransformAssign(IHqlExpression * transform,
 extern HQL_API IHqlExpression * queryTransformAssignValue(IHqlExpression * transform, IHqlExpression * searchField);
 
 extern HQL_API bool isCommonSubstringRange(IHqlExpression * expr);
+extern HQL_API bool isFileOutput(IHqlExpression * expr);
+extern HQL_API bool isWorkunitOutput(IHqlExpression * expr);
 
 class HQL_API AtmostLimit
 {

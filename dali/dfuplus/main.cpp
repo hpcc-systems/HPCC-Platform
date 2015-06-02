@@ -20,9 +20,6 @@
 #include "daftcfg.hpp"
 #include "dfuerror.hpp"
 #include "dfuplus.hpp"
-#if defined( __linux__) || defined(__FreeBSD__)
-#include "termios.h"
-#endif
 
 void printVersion()
 {
@@ -65,7 +62,7 @@ void handleSyntax()
     out.append("        srcxml=<xml-file> -- replaces srcip and srcfile\n");
     out.append("        dstname=<destination-logical-name>\n");
     out.append("        dstcluster=<cluster-name>\n");
-    out.append("        format=fixed|csv|delimited|xml|variable|recfmv|recfmvb\n");
+    out.append("        format=fixed|csv|delimited|xml|json|variable|recfmv|recfmvb\n");
     out.append("        prefix=filename{:length},filesize{:[B|L][1-8]}\n");
     out.append("        options for fixed:\n");
     out.append("            recordsize=<record-size>\n");
@@ -81,6 +78,9 @@ void handleSyntax()
     out.append("        options for xml:\n");
     out.append("            rowtag=rowTag -- required\n");
     out.append("            encoding=utf8|utf8n|utf16|utf16le|utf16be|utf32|utf32le|utf32be -- optional, default is utf8\n");
+    out.append("            maxrecordsize=<max-record-size> -- optional, default is 8192\n");
+    out.append("        options for json:\n");
+    out.append("            rowpath=rowPath - optional, default is \"/\"\n");
     out.append("            maxrecordsize=<max-record-size> -- optional, default is 8192\n");
     out.append("    replicate options:\n");
     out.append("        srcname=<source-logical-name>\n");
@@ -107,6 +107,7 @@ void handleSyntax()
     out.append("        diffkeysrc=<old-key-name>   -- use keydiff/keypatch (src old name)\n");
     out.append("        diffkeydst=<old-key-name>   -- use keydiff/keypatch (dst old name)\n");
     out.append("        multicopy=0|1   -- each destination part gets whole file\n");
+    out.append("        preservecompression=1|0 -- optional, default is 1 (preserve compression)\n");
     out.append("    remove options:\n");
     out.append("        name=<logical-name>\n");
     out.append("        names=<multiple-logical-names-separated-by-comma>\n");
@@ -197,70 +198,6 @@ bool build_globals(int argc, const char *argv[], IProperties * globals)
 
     return true;
 }
-
-void promptFor(const char *prompt, const char *prop, bool hide, IProperties * globals)
-{
-    StringBuffer result;
-    fprintf(stdout, "%s", prompt);
-    fflush(stdout);
-    if (hide)
-    {
-#ifdef _WIN32
-        HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);   
-        DWORD dwInputMode;
-        GetConsoleMode(hStdIn, &dwInputMode);   
-        SetConsoleMode(hStdIn, dwInputMode & ~ENABLE_LINE_INPUT & ~ENABLE_ECHO_INPUT);
-        loop
-        {
-            /* read a character from the console input */   
-            char ch;
-            DWORD dwRead;
-            if (!ReadFile(hStdIn, &ch, sizeof(ch), &dwRead, NULL))
-                break;
-            if (ch == '\n' || ch=='\r' || !ch)
-                break;
-            result.append(ch);
-        }
-        SetConsoleMode(hStdIn, dwInputMode); 
-#else
-        int fn = fileno(stdin);
-#ifdef __linux__        
-        struct termio t;
-        /* If ioctl fails, we're probably not connected to a terminal. */
-        if(!ioctl(fn, TCGETA, &t))
-        {
-            t.c_lflag &= ~ECHO;
-            ioctl(fn, TCSETA, &t);
-        }
-#endif
-        loop
-        {
-            char ch = fgetc(stdin);
-            if (ch == '\n' || ch=='\r' || !ch)
-                break;
-            result.append(ch);
-        }
-#ifdef __linux__        
-        if(!ioctl(fn, TCGETA, &t))
-        {
-            t.c_lflag |= ECHO;
-            ioctl(fn, TCSETA, &t);
-        }
-#endif
-#endif
-        printf("\n");
-    }
-    else
-    {
-        char buf[100];
-        if (fgets(buf, 100, stdin))
-            result.append(buf);
-        if (result.length() && result.charAt(result.length()-1)=='\n')
-            result.remove(result.length()-1, 1);
-    }
-    globals->setProp(prop, result);
-}
-
 
 int main(int argc, const char* argv[])
 {

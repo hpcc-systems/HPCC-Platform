@@ -1996,9 +1996,8 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return CreateRecordSourceActivity;
     case no_createdictionary:
         return FixedInputActivity;
-    case no_indict:
     case no_selectmap:
-        return FixedInputActivity;
+        return SourceActivity;
     case no_extractresult:
     case no_apply:
         return SinkActivity;
@@ -3163,7 +3162,7 @@ IHqlExpression * ImplicitProjectTransformer::process(IHqlExpression * expr)
         // same as roxie, but also maybe worth inserting projects to minimise the amount of data that is spilled.
         break;
     case ThorLCRCluster:
-        //worth inserting projects to reduce copying, spilling, but primarily data transfered between nodes.
+        //worth inserting projects to reduce copying, spilling, but primarily data transferred between nodes.
         if (options.insertProjectCostLevel || options.optimizeSpills)
             insertProjects();
         break;
