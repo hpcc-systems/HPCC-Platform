@@ -26,7 +26,6 @@
  #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
-#include "jlib.hpp"
 #include "jhash.hpp"
 #include "jmutex.hpp"
 
@@ -181,13 +180,13 @@ MappingKey::MappingKey(const void * inKey, int keysize)
 
 const char *IAtom::getAtomNamePtr() const
 {
-   if (isNull(this)) return NULL;
+   if (!this) return NULL;
    return getNamePtr();
 }
 
 IAtom * IIdAtom::lower() const
 {
-    if (isNull(this))
+    if (!this)
         return NULL;
     return queryLower();
 }

@@ -1027,7 +1027,7 @@ bool PermissionProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescr
     if(num_resources <= 0)
         return true;
 
-    if(isNull(&user))
+    if(!(&user))
     {
         DBGLOG("user passed in to PermissionProcessor::getPermissions is NULL");
         return false;
@@ -1477,7 +1477,7 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser& user, const 
     if(ptype != PT_ADMINISTRATORS_ONLY)
     {
         MemoryBuffer umb, gmb;
-        if( !isNull(&user) && DEFAULT_OWNER_PERMISSION != SecAccess_None)
+        if(&user != NULL && DEFAULT_OWNER_PERMISSION != SecAccess_None)
         {
             //Add SD for given user
             lookupSid(user.getName(), umb);
@@ -1559,7 +1559,7 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser& user, ISecRe
     PSID user_psid;
     PACL pnewdacl = NULL;
     MemoryBuffer umb;
-    if( !isNull(&user) && DEFAULT_OWNER_PERMISSION != SecAccess_None)
+    if(&user != NULL && DEFAULT_OWNER_PERMISSION != SecAccess_None)
     {
         lookupSid(user.getName(), umb);
         user_psid = (PSID)(umb.toByteArray());

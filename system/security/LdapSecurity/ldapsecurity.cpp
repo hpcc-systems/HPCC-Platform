@@ -910,7 +910,7 @@ bool CLdapSecManager::addResources(ISecUser& sec_user, ISecResourceList * resour
 
 bool CLdapSecManager::addUser(ISecUser & user)
 {
-    if( isNull(&user) )
+    if(&user == NULL)
     {
         DBGLOG("CLdapSecManager::addUser - user is NULL");
         return false;

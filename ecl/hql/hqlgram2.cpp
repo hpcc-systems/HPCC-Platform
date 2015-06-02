@@ -17,8 +17,8 @@
 #include "platform.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "jlib.hpp"
 #include "hql.hpp"
+#include "jlib.hpp"
 #include "jmisc.hpp"
 #include "jexcept.hpp"
 #include "hqlerrors.hpp"

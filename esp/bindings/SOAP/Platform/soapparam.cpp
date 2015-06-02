@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "jlib.hpp"
 #include "esphttp.hpp"
 
 #include "jstring.hpp"

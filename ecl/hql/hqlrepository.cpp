@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "jlib.hpp"
 #include "hqlrepository.hpp"
 #include "hqlerrors.hpp"
 #include "hqlplugins.hpp"

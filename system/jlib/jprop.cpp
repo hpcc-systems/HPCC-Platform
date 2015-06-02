@@ -16,7 +16,6 @@
 ############################################################################## */
 
 
-#include "jlib.hpp"
 #include "jiface.hpp"
 #include "jprop.hpp"
 #include "jhash.hpp"

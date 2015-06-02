@@ -942,7 +942,7 @@ int CHttpMessage::close()
 
     try
     {
-        if(!isNull(&m_socket))
+        if(&m_socket != NULL)
         {
             m_socket.shutdown();
             m_socket.close();

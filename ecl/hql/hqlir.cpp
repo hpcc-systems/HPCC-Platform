@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "jlib.hpp"
 #include "jstring.hpp"
 #include "jiface.hpp"
 #include "hqlir.hpp"

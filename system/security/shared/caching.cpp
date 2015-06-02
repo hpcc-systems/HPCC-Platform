@@ -336,7 +336,7 @@ ISecUser* CPermissionsCache::getCachedUser( ISecUser& sec_user)
 }
 void CPermissionsCache::add(ISecUser& sec_user)
 {
-    if(!isCacheEnabled() || isNull(&sec_user) )
+    if(!isCacheEnabled() || &sec_user == NULL)
         return;
     
     const char* username = sec_user.getName();

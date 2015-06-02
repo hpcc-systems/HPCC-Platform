@@ -150,7 +150,7 @@ public:
                 ForEach(*iter)
                 {
                     IPropertyTree &attr = iter->query();
-                    if (isNull(&attr))
+                    if (!&attr)
                         continue;
                     const char *name = attr.queryProp("@name");
                     if (!name||!*name)
@@ -2305,7 +2305,7 @@ IClusterFileScanIterator *getClusterFileScanIterator(
     StringBuffer gname;
     ForEach(*iter) {
         IPropertyTree &attr = iter->query();
-        if (isNull(&attr))
+        if (!&attr)
             continue;
         const char *name = attr.queryProp("@name");
         if (!name||!*name)

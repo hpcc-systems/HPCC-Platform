@@ -17,7 +17,6 @@
 
 #define mp_decl __declspec(dllexport)
 
-#include "jlib.hpp"
 #include "mptag.hpp"
 #include "jmutex.hpp"
 #include <jhash.hpp> 
