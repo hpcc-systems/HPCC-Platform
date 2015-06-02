@@ -1147,9 +1147,8 @@ void setDeleteFileResults(const char* fileName, const char* nodeGroup, bool fail
 
     StringBuffer message;
     if (start)
-        message.append(start);
-    if (fileName && *fileName)
-        message.append(' ').append(fileName);
+        message.append(start).append(' ');
+    message.append(fileName);
     if (nodeGroup && *nodeGroup)
         message.append(" on ").append(nodeGroup);
     if (text && *text)
@@ -1254,7 +1253,7 @@ DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, Strin
     {
         StringBuffer emsg;
         e->errorMessage(emsg);
-        if (removeFromSuperfiles && strstr(emsg, "owned"))
+        if (removeFromSuperfiles && strstr(emsg, "owned by"))
         {
             if (!doRemoveFileFromSuperfiles(lfn, userdesc, superFiles, failedFiles, deleteRecursively, returnStr, actionResults))
                 return DeleteActionFailure;
