@@ -297,7 +297,8 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     {
         DBGLOG("MEMORY WILL NOT BE RELEASED TO OS");
         if (!retainMemory)
-            DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*32 is a multiple of system huge page size");
+            DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*32 (0x%" I64F "x) is a multiple of system huge page size (0x%" I64F "x)",
+                    (unsigned __int64)HEAP_ALIGNMENT_SIZE * 32, (unsigned __int64) getHugePageSize());
     }
 
     assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
