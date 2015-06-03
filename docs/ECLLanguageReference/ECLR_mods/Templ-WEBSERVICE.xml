@@ -66,16 +66,16 @@
     </informaltable></para>
 
   <para>The <emphasis role="bold">#WEBSERVICE</emphasis>statement sets options
-  for the WsECL Web form for a published query. </para>
+  for the input parameters on a WsECL Web form for a published query.</para>
 
   <para>Example:</para>
 
   <programlisting>#WEBSERVICE(FIELDS('Field1','AddThem','Field2'),
             HELP('Enter Integer Values'),
             DESCRIPTION('If AddThem is TRUE, this adds the two integers')); 
-Field1 := 1 ;//: Stored('Field1');
-Field2 := 2 ;//:Stored('Field2');
-AddThem := TRUE ;//:STORED ('AddThem');
+Field1 := 1 : Stored('Field1');
+Field2 := 2 :Stored('Field2');
+AddThem := TRUE :STORED ('AddThem');
 IF(AddThem,OUTPUT(Field1+Field2),OUTPUT('Not Added'));
 </programlisting>
 

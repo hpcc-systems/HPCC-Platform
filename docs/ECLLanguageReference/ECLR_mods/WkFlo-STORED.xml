@@ -14,8 +14,11 @@
     </indexterm> ][</emphasis>, <emphasis
   role="bold">FORMAT</emphasis>(<emphasis
   role="bold">[FIELDWIDTH(</emphasis><emphasis>widthvalue</emphasis>)<emphasis
-  role="bold">][,SEQUENCE</emphasis>(<emphasis>sequencevalue</emphasis>)<emphasis
-  role="bold">])] )</emphasis> <indexterm>
+  role="bold">]<emphasis
+  role="bold">[,FIELDHEIGHT(</emphasis><emphasis>heightvalue</emphasis>)][,SEQUENCE</emphasis>(<emphasis>sequencevalue</emphasis>)<emphasis
+  role="bold">]<emphasis
+  role="bold">[,NOINPUT</emphasis><emphasis></emphasis>)<emphasis
+  role="bold">]</emphasis>] )</emphasis> <indexterm>
       <primary>STORED workflow service</primary>
     </indexterm>;</para>
 
@@ -74,7 +77,21 @@
             <entry><emphasis>widthvalue</emphasis></entry>
 
             <entry>An integer expression defining the width (number of
-            characters) of the input box </entry>
+            characters) of the input box</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FIELDHEIGHT</emphasis></entry>
+
+            <entry>Optional. FIELDHEIGHT specifies the height of the input box
+            on a Web form in WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>heightvalue</emphasis></entry>
+
+            <entry>An integer expression defining the height (number of rows)
+            of the input box</entry>
           </row>
 
           <row>
@@ -88,7 +105,15 @@
             <entry><emphasis>sequencevalue</emphasis></entry>
 
             <entry>An integer expression defining the sequential location of
-            the input box.</entry>
+            the input box. These can be sparse values (e.g., 100, 200, 300) to
+            allow insertion of new inputs in the future. </entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOINPUT</emphasis></entry>
+
+            <entry>Optional. If NOINPUT is specified, the field is not
+            displayed on the Web form in WsECL. </entry>
           </row>
         </tbody>
       </tgroup>
@@ -116,11 +141,15 @@
   fred := COUNT(person) : STORED('mindy');
      // Name in work unit is mindy
 
-//FORMAT options
-
+//FORMAT options for WsECL form
+  
   Field1 := 1 : Stored('Field1',FORMAT(SEQUENCE(10)));
-  Field2 := 2 :Stored('Field2',FORMAT(FIELDWIDTH(25),SEQUENCE(20))); //Creates 25 character input box
+  Field2 := 2 : Stored('Field2',FORMAT(SEQUENCE(20)));
   AddThem := TRUE :STORED ('AddThem',FORMAT(SEQUENCE(15))); // places field in between Field1 and Field2
+  HiddenValue := 12 :STORED ('HiddenValue',FORMAT(NOINPUT)); // not on form
+  TextField1 :='Fill in description' :Stored('Description',
+                                      FORMAT(FIELDWIDTH(25),FIELDHEIGHT(2),
+                                      SEQUENCE(5))); //Creates 25 character wide, 2 row high input box
 </programlisting>
 
   <para>See Also: <link linkend="STORED">STORED function</link>, <link
