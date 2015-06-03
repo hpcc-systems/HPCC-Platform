@@ -448,7 +448,7 @@
               <row>
                 <entry>--keywords</entry>
 
-                <entry>Outputs a list of ECL reserved words to stdout (XML
+                <entry>Outputs the lists of ECL reserved words to stdout (XML
                 format)</entry>
               </row>
 
