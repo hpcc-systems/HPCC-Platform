@@ -81,7 +81,7 @@ const char * const helpText[] = {
     "    -help -v      Display verbose help message",
     "!   -internal     Run internal tests",
     "?!  -legacy       Use legacy import and when semantics (deprecated)",
-    "!   --keywords    Outputs the list of ECL reserved words to ECLKeywords.xml",
+    "!   --keywords    Outputs the list of ECL reserved words to stdout (XML format)",
     "!   -legacyimport Use legacy import semantics (deprecated)",
     "!   -legacywhen   Use legacy when/side-effects semantics (deprecated)",
     "    --logfile <file> Write log to specified file",
