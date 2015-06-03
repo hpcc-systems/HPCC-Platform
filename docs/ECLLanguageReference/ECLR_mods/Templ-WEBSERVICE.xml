@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_WEBSERVICE">
+  <title>#WEBSERVICE</title>
+
+  <para><emphasis role="bold">#WEBSERVICE<indexterm>
+      <primary>#WEBSERVICE</primary>
+    </indexterm>( </emphasis><emphasis role="bold">[</emphasis><emphasis
+  role="bold">FIELDS</emphasis>(<emphasis>fieldlist</emphasis>),<emphasis
+  role="bold">][</emphasis><emphasis
+  role="bold">HELP</emphasis>(<emphasis>helptext</emphasis>),<emphasis
+  role="bold">][</emphasis><emphasis
+  role="bold">DESCRIPTION</emphasis>(<emphasis>descriptiontext</emphasis>),<emphasis
+  role="bold">]</emphasis> <emphasis role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="77.25pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">FIELDS</emphasis></entry>
+
+            <entry>The FIELDS parameter specifies field sequence<indexterm>
+                <primary>field sequence</primary>
+              </indexterm> in WsECL Web forms.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>fieldlist</emphasis></entry>
+
+            <entry>A comma-separated list of field names in the order in which
+            they should appear on the form.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">HELP</emphasis></entry>
+
+            <entry>The HELP Parameter specifies to add help text to the WsECL
+            Web form.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>helptext</emphasis></entry>
+
+            <entry>The help text to display.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">DESCRIPTION</emphasis></entry>
+
+            <entry>The DESCRIPTION Parameter specifies to add descriptive text
+            to the WsECL Web form.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>descriptiontext</emphasis></entry>
+
+            <entry>The description text to display.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#WEBSERVICE</emphasis>statement sets options
+  for the WsECL Web form for a published query. </para>
+
+  <para>Example:</para>
+
+  <programlisting>#WEBSERVICE(FIELDS('Field1','AddThem','Field2'),
+            HELP('Enter Integer Values'),
+            DESCRIPTION('If AddThem is TRUE, this adds the two integers')); 
+Field1 := 1 ;//: Stored('Field1');
+Field2 := 2 ;//:Stored('Field2');
+AddThem := TRUE ;//:STORED ('AddThem');
+IF(AddThem,OUTPUT(Field1+Field2),OUTPUT('Not Added'));
+</programlisting>
+
+  <para>See Also: <link linkend="STORED_workflow_service">STORED</link></para>
+</sect1>

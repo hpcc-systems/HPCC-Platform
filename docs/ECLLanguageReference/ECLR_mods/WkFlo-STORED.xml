@@ -11,7 +11,11 @@
     </indexterm>( </emphasis><emphasis> storedname </emphasis><emphasis
   role="bold">[, FEW<indexterm>
       <primary>FEW</primary>
-    </indexterm> ] ) </emphasis><indexterm>
+    </indexterm> ][</emphasis>, <emphasis
+  role="bold">FORMAT</emphasis>(<emphasis
+  role="bold">[FIELDWIDTH(</emphasis><emphasis>widthvalue</emphasis>)<emphasis
+  role="bold">][,SEQUENCE</emphasis>(<emphasis>sequencevalue</emphasis>)<emphasis
+  role="bold">])] )</emphasis> <indexterm>
       <primary>STORED workflow service</primary>
     </indexterm>;</para>
 
@@ -42,7 +46,7 @@
           </row>
 
           <row>
-            <entry><emphasis>FEW</emphasis></entry>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
 
             <entry>Optional. When the expression is a dataset or recordset,
             FEW specifies that the dataset is stored completely within the
@@ -50,6 +54,41 @@
             file and the workunit contains only the name of the file. The FEW
             option is required when using STORED in a SOAP-enabled MACRO and
             the expected input is a dataset (such as tns:xmlDataset).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FORMAT</emphasis></entry>
+
+            <entry>Optional. FORMAT specifies options for formatting the field
+            on a Web form in WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FIELDWIDTH</emphasis></entry>
+
+            <entry>Optional. FIELDWIDTH specifies the width of the input box
+            on a Web form in WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>widthvalue</emphasis></entry>
+
+            <entry>An integer expression defining the width (number of
+            characters) of the input box </entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SEQUENCE</emphasis></entry>
+
+            <entry>Optional. SEQUENCE specifies field ordering on a Web form
+            in WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sequencevalue</emphasis></entry>
+
+            <entry>An integer expression defining the sequential location of
+            the input box.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -76,7 +115,14 @@
      // Name in work unit is fred
   fred := COUNT(person) : STORED('mindy');
      // Name in work unit is mindy
+
+//FORMAT options
+
+  Field1 := 1 : Stored('Field1',FORMAT(SEQUENCE(10)));
+  Field2 := 2 :Stored('Field2',FORMAT(FIELDWIDTH(25),SEQUENCE(20))); //Creates 25 character input box
+  AddThem := TRUE :STORED ('AddThem',FORMAT(SEQUENCE(15))); // places field in between Field1 and Field2
 </programlisting>
 
-  <para>See Also: <link linkend="STORED">STORED function</link></para>
+  <para>See Also: <link linkend="STORED">STORED function</link>, <link
+  linkend="_WEBSERVICE">#WEBSERVICE</link></para>
 </sect1>
