@@ -43,7 +43,9 @@ define([
 
         _onNewPage: function (event) {
             var win = window.open(this.getURL(), "_blank");
-            win.focus();
+            if (win) {
+                win.focus();
+            }
         },
 
         init: function (params) {
