@@ -6681,6 +6681,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
 
     enum ParseStates { headerStart, nameStart, valueStart, itemStart, objAttributes, itemContent, itemEnd } state;
     bool endOfRoot;
+    bool preReadItemName;
     StringBuffer tag, value;
 
     void init()
@@ -6688,6 +6689,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
         state = headerStart;
         stateInfo = NULL;
         endOfRoot = false;
+        preReadItemName = false;
     }
 
     virtual void resetState()
@@ -6817,7 +6819,10 @@ public:
 
     void namedItem()
     {
-        readName(tag.clear());
+        if (!preReadItemName)
+            readName(tag.clear());
+        else
+            preReadItemName = false;
         skipWS();
         switch (nextChar)
         {
@@ -6863,9 +6868,8 @@ public:
             expecting(",");
         return true;
     }
-    void newAttribute()
+    void newNamedAttribute()
     {
-        readName(tag.clear());
         skipWS();
         readValue(value.clear());
         readNext();
@@ -6958,14 +6962,12 @@ public:
                 checkDelimiter(", or }");
                 if (nextChar != '\"')
                     expecting("\"");
-                readNext();
-                bool att = '@' == nextChar;
-                rewind(2);
-                readNext();
-                if (att)
-                    newAttribute();
+                readName(tag.clear());
+                if (tag.charAt(0)=='@')
+                    newNamedAttribute();
                 else
                 {
+                    preReadItemName = true;
                     state=itemContent;
                     stateInfo->childCount=0;
                     iEvent->beginNodeContent(stateInfo->wnsTag);
