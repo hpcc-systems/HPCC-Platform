@@ -600,6 +600,7 @@ define({root:
     ZeroLogicalFilesCheckFilter: "Zero Logical Files(check filter)",
     Zip: "Zip",
     ZippedAnalysisPackage: "Zipped Analysis Package",
+    Zoom: "Zoom",
     Zoom100Pct: "Zoom 100%",
     ZoomAll: "Zoom All",
     ZoomWidth: "Zoom Width"

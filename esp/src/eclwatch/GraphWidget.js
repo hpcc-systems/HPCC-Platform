@@ -42,6 +42,7 @@ define([
     "dijit/Toolbar", 
     "dijit/ToolbarSeparator", 
     "dijit/form/Button",
+    "dijit/form/ComboBox",
     "dijit/form/NumberSpinner"
     
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
@@ -422,17 +423,22 @@ define([
                 this.graphViewHistory.navigateNext();
             },
 
-            _onClickZoomOrig: function (args) {
-                this.setScale(100);
-                this.centerOnItem(0);
-            },
-
-            _onClickZoomAll: function (args) {
-                this.centerOnItem(0, true);
-            },
-
-            _onClickZoomWidth: function (args) {
-                this.centerOnItem(0, true, true);
+            _onChangeZoom: function (args) {
+                var selection = this.zoomDropCombo.get("value");
+                switch (selection) {
+                    case this.i18n.All:
+                        this.centerOnItem(0, true);
+                        break;
+                    case this.i18n.Width:
+                        this.centerOnItem(0, true, true);
+                        break;
+                    default:
+                        var scale = parseFloat(selection);
+                        if (!isNaN(scale)) {
+                            this.setScale(scale);
+                        }
+                        break;
+                }
             },
 
             _onDepthChange: function (value) {
@@ -482,6 +488,7 @@ define([
                 this.graphContentPane = registry.byId(this.id + "GraphContentPane");
                 this.next = registry.byId(this.id + "Next");
                 this.previous = registry.byId(this.id + "Previous");
+                this.zoomDropCombo = registry.byId(this.id + "ZoomDropCombo");
                 this.depth = registry.byId(this.id + "Depth");
                 this.distance = registry.byId(this.id + "Distance");
                 this.syncSelectionSplitter = registry.byId(this.id + "SyncSelectionSplitter");
@@ -493,6 +500,7 @@ define([
                 this._isPluginInstalled = dojoConfig.isPluginInstalled();
                 this.createPlugin();
                 this.watchStyleChange();
+                this.watchSelect(this.zoomDropCombo);
             },
 
             resize: function (args) {
