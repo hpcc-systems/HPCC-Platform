@@ -363,7 +363,7 @@ private:
 class EclCmdRoxieUnusedFiles : public EclCmdCommon
 {
 public:
-    EclCmdRoxieUnusedFiles() : optCheckPackageMaps(false)
+    EclCmdRoxieUnusedFiles() : optCheckPackageMaps(false), optDeleteFiles(false), optDeleteSubFiles(false), optDeleteRecursive(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -384,6 +384,10 @@ public:
             }
             if (iter.matchFlag(optCheckPackageMaps, ECLOPT_CHECK_PACKAGEMAPS))
                 continue;
+            if (iter.matchFlag(optDeleteRecursive, ECLOPT_DELETE_RECURSIVE))
+                continue;
+            if (iter.matchFlag(optDeleteSubFiles, ECLOPT_DELETE_SUBFILES))
+                continue;
             if (iter.matchFlag(optDeleteFiles, ECLOPT_DELETE_FILES))
                 continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
@@ -400,12 +404,16 @@ public:
             fputs("process cluster must be specified.\n\n", stderr);
             return false;
         }
+        if (optDeleteRecursive)
+            optDeleteSubFiles = true; //implied
+        if (optDeleteSubFiles)
+            optDeleteFiles = true; //implied
         return true;
     }
 
     virtual int processCMD()
     {
-        Owned<IClientWsDFUXRef> client = createCmdClient(WsDFUXRef, *this);
+        Owned<IClientWsDFUXRef> client = createCmdClientExt(WsDFUXRef, *this, "?ver_=1.29");
         Owned<IClientDFUXRefUnusedFilesRequest> req = client->createDFUXRefUnusedFilesRequest();
         req->setProcessCluster(optProcess);
         req->setCheckPackageMaps(optCheckPackageMaps);
@@ -437,18 +445,31 @@ public:
         {
             fputs("Deleting...\n", stderr);
 
-            Owned<IClientWsDfu> dfuClient = createCmdClient(WsDfu, *this);
+            Owned<IClientWsDfu> dfuClient = createCmdClientExt(WsDfu, *this, "?ver_=1.29");
             Owned<IClientDFUArrayActionRequest> dfuReq = dfuClient->createDFUArrayActionRequest();
             dfuReq->setType("Delete");
             dfuReq->setLogicalFiles(filesToDelete);
+            dfuReq->setRemoveFromSuperfiles(optDeleteSubFiles);
+            dfuReq->setRemoveRecursively(optDeleteRecursive);
 
             Owned<IClientDFUArrayActionResponse> dfuResp = dfuClient->DFUArrayAction(dfuReq);
             if (dfuResp->getExceptions().ordinality())
                 outputMultiExceptions(dfuResp->getExceptions());
 
             IArrayOf<IConstDFUActionInfo> &results = dfuResp->getActionResults();
-            ForEachItemIn(i, results)
-                fprintf(stdout, "  %s\n", results.item(i).getActionResult()); //result text already has filename
+            ForEachItemIn(i1, results) //list successes first
+            {
+                IConstDFUActionInfo &info = results.item(i1);
+                if (!info.getFailed())
+                    fprintf(stdout, "  %s\n", info.getActionResult()); //result text already has filename
+            }
+            fputs("\n", stdout);
+            ForEachItemIn(i2, results) //then errors
+            {
+                IConstDFUActionInfo &info = results.item(i2);
+                if (info.getFailed())
+                    fprintf(stdout, "  %s\n", info.getActionResult()); //result text already has filename
+            }
             fputs("\n", stdout);
         }
 
@@ -470,6 +491,10 @@ public:
         fputs("\n"
             "   --check-packagemaps    Exclude files referenced in active packagemaps\n"
             "   --delete               Delete unused files from DFS\n"
+            "   --delete-subfiles      Delete unused files from DFS and remove them from\n"
+            "                          superfiles.\n"
+            "   --delete-recursive     Delete unused files from DFS and remove them from\n"
+            "                          superfiles recursively.\n"
             " Common Options:\n",
             stdout);
         EclCmdCommon::usage();
@@ -478,6 +503,8 @@ private:
     StringAttr optProcess;
     bool optCheckPackageMaps;
     bool optDeleteFiles;
+    bool optDeleteSubFiles;
+    bool optDeleteRecursive;
 };
 
 IEclCommand *createEclRoxieCommand(const char *cmdname)

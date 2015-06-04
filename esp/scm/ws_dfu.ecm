@@ -237,6 +237,8 @@ DFUArrayActionRequest
     bool NoDelete;
     [min_ver("1.04")] string BackToPage;
     ESParray<string> LogicalFiles;
+    bool removeFromSuperfiles(false);
+    bool removeRecursively(false);
 };
 
 ESPresponse 
