@@ -46,7 +46,7 @@ define([
         baseClass: "FilterDropDownWidget",
         i18n: nlsHPCC,
 
-        _width:"460px",
+        _width:"100%",
         iconFilter: null,
         filterDropDown: null,
         filterForm: null,
