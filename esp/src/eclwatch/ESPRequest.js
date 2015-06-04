@@ -114,11 +114,37 @@ define([
 
             var handleAs = params.handleAs ? params.handleAs : "json";
             return this._send(service, action, params).then(function (response) {
-                if (!params.suppressExceptionToaster && handleAs == "json") {
+                if (handleAs === "json") {
                     if (lang.exists("Exceptions.Source", response)) {
+                        var severity = params.suppressExceptionToaster ? "Info" : "Error";
+                        var source = service + "." + action;
+                        if (lang.exists("Exceptions.Exception", response) && response.Exceptions.Exception.length === 1) {
+                            switch (source) {
+                                case "WsWorkunits.WUInfo":
+                                    if (response.Exceptions.Exception[0].Code === 20080) {
+                                        severity = "Info";
+                                    }
+                                    break;
+                                case "WsWorkunits.WUQuery":
+                                    if (response.Exceptions.Exception[0].Code === 20081) {
+                                        severity = "Info";
+                                    }
+                                    break;
+                                case "FileSpray.GetDFUWorkunit":
+                                    if (response.Exceptions.Exception[0].Code === 20080) {
+                                        severity = "Info";
+                                    }
+                                    break;
+                                case "WsDfu.DFUInfo":
+                                    if (response.Exceptions.Exception[0].Code === 20038) {
+                                        severity = "Info";
+                                    }
+                                    break;
+                            }
+                        }
                         topic.publish("hpcc/brToaster", {
-                            Severity: "Error",
-                            Source: service + "." + action,
+                            Severity: severity,
+                            Source: source,
                             Exceptions: response.Exceptions.Exception
                         });
                     }
