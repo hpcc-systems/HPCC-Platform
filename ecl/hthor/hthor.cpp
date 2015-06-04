@@ -3815,6 +3815,10 @@ void CHThorGroupSortActivity::createSorter()
             sorter.setown(new CStableQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
         else
             sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
+    else if(stricmp(algoname, "parquicksort") == 0)
+        sorter.setown(new CParallelStableQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
+    else if(stricmp(algoname, "mergesort") == 0)
+        sorter.setown(new CStableMergeSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
     else if(stricmp(algoname, "heapsort") == 0)
         sorter.setown(new CHeapSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
     else if(stricmp(algoname, "insertionsort") == 0)
@@ -3955,7 +3959,7 @@ void CQuickSorter::performSort()
 
 // StableQuick sort
 
-bool CStableQuickSorter::addRow(const void * next)
+bool CStableSorter::addRow(const void * next)
 {
     roxiemem::rowidx_t nextRowCapacity = rowsToSort.rowCapacity() + 1;//increment capacity for the row we are about to add
     if (nextRowCapacity > indexCapacity)
@@ -3978,13 +3982,23 @@ bool CStableQuickSorter::addRow(const void * next)
     return CSimpleSorterBase::addRow(next);
 }
 
-void CStableQuickSorter::spillSortedToDisk(IDiskMerger * merger)
+void CStableSorter::spillSortedToDisk(IDiskMerger * merger)
 {
     CSimpleSorterBase::spillSortedToDisk(merger);
     ReleaseRoxieRow(index);
     index = NULL;
     indexCapacity = 0;
 }
+
+void CStableSorter::killSorted()
+{
+    CSimpleSorterBase::killSorted();
+    ReleaseRoxieRow(index);
+    index = NULL;
+    indexCapacity = 0;
+}
+
+// StableQuick sort
 
 void CStableQuickSorter::performSort()
 {
@@ -3997,12 +4011,28 @@ void CStableQuickSorter::performSort()
     }
 }
 
-void CStableQuickSorter::killSorted()
+void CParallelStableQuickSorter::performSort()
 {
-    CSimpleSorterBase::killSorted();
-    ReleaseRoxieRow(index);
-    index = NULL;
-    indexCapacity = 0;
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        parqsortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
+        finger = 0;
+    }
+}
+
+// StableMerge sort
+
+void CStableMergeSorter::performSort()
+{
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        msortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
+        finger = 0;
+    }
 }
 
 // Heap sort

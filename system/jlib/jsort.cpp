@@ -621,6 +621,86 @@ void parqsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare
 }
 
 
+//-----------------------------------------------------------------------------------------------------------------------------
+
+static void * * mergeSort(void ** rows, size32_t n, const ICompare & compare, void ** tmp, unsigned depth)
+{
+    void * * result = (depth & 1) ? tmp : rows;
+    //This could be coded to perform an "optimal" 3 element compare, but the following code is much simpler,
+    //and in performance testing it executed marginally more quickly
+    if (n <= 2)
+    {
+        //Check for n == 1, but compare against 2 to avoid another comparison
+        if (n < 2)
+        {
+            if (result != rows)
+                result[0] = rows[0];
+        }
+        else
+        {
+            void * left = rows[0];
+            void * right = rows[1];
+            if (compare.docompare(left, right) <= 0)
+            {
+                result[0] = left;
+                result[1] = right;
+            }
+            else
+            {
+                result[0] = right;
+                result[1] = left;
+            }
+        }
+        return result;
+    }
+
+    unsigned n1 = (n+1)/2;
+    unsigned n2 = n - n1;
+    void * * ret1 = mergeSort(rows, n1, compare, tmp, depth+1);
+    void * * ret2 = mergeSort(rows+n1, n2, compare, tmp + n1, depth+1);
+    dbgassertex(ret2 == ret1 + n1);
+    dbgassertex(ret2 != result);
+    void * * tgt = result;
+
+    loop
+    {
+       if (compare.docompare(*ret1, *ret2) <= 0)
+       {
+           *tgt++ = *ret1++;
+           if (--n1 == 0)
+           {
+               //There must be at least one row in the right partition - copy any that remain
+               do
+               {
+                   *tgt++ = *ret2++;
+               } while (--n2);
+               return result;
+           }
+       }
+       else
+       {
+           *tgt++ = *ret2++;
+           if (--n2 == 0)
+           {
+               //There must be at least one row in the left partition - copy any that remain
+               do
+               {
+                   *tgt++ = *ret1++;
+               } while (--n1);
+               return result;
+           }
+       }
+    }
+}
+
+
+void msortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp)
+{
+    if (n <= 1)
+        return;
+    mergeSort(rows, n, compare, temp, 0);
+}
+
 //=========================================================================
 
 bool heap_push_down(unsigned p, unsigned num, unsigned * heap, const void ** rows, ICompare * compare)
