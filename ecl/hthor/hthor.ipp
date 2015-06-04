@@ -509,7 +509,6 @@ public:
 private:
     bool calcNextDedupAll();
     void dedupRange(unsigned first, unsigned last, OwnedRowArray & group);
-    void dedupRangeIndirect(unsigned first, unsigned last, void *** index);
 
 private:
     IHThorDedupArg &helper;
@@ -1134,7 +1133,6 @@ public:
     virtual bool addRow(const void * next);
     virtual void spillSortedToDisk(IDiskMerger * merger);
     virtual void performSort();
-    virtual const void * getNextSorted();
     virtual void killSorted();
 
 private:

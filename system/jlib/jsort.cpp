@@ -505,88 +505,6 @@ void parqsortvec(void **a, size32_t n, const ICompare & compare, unsigned numcpu
 
 //---------------------------------------------------------------------------
 
-#define CMP(a,b)         cmpic2(a,b,compare1,compare2)
-#define MED3(a,b,c)      med3ic2(a,b,c,compare1,compare2)
-#define RECURSE(a,b)     qsortvec(a, b, compare1, compare2)
-static inline int cmpic2(VECTOR a, VECTOR b, const ICompare & compare1, const ICompare & compare2)
-{
-    int ret = compare1.docompare(*(a),*(b));
-    if (ret==0)
-        ret = compare2.docompare(*(a),*(b));
-    return ret;
-}
-static inline VECTOR med3ic2(VECTOR a, VECTOR b, VECTOR c, const ICompare & compare1, const ICompare & compare2)
-{
-  return CMP(a, b) < 0 ?
-      (CMP(b, c) < 0 ? b : (CMP(a, c) < 0 ? c : a ))
-    : (CMP(b, c) > 0 ? b : (CMP(a, c) < 0 ? a : c ));
-}
-
-
-void qsortvec(void **a, size32_t n, const ICompare & compare1, const ICompare & compare2)
-#include "jsort2.inc"
-
-
-class cParQSort2: public cParQSortBase
-{
-    VECTOR array;
-    const ICompare &compare1;
-    const ICompare &compare2;
-
-    void partition(unsigned s, unsigned n, unsigned &r1, unsigned &r2) // NB s, r1 and r2 are relative to array
-    {
-        DOPARTITION
-    }
-
-    void serialsort(unsigned from, unsigned len)
-    {
-        qsortvec(array+from,len,compare1,compare2);
-    }
-
-public:
-
-    cParQSort2(VECTOR _a,const ICompare &_compare1,const ICompare &_compare2, unsigned _numsubthreads)
-        : cParQSortBase(_numsubthreads),compare1(_compare1), compare2(_compare2)
-    {
-        array = _a;
-        cParQSortBase::start();
-    }
-
-};
-
-
-void parqsortvec(void **a, size32_t n, const ICompare & compare1, const ICompare & compare2,unsigned numcpus)
-{
-    if ((n<=PARALLEL_GRANULARITY)||!sortParallel(numcpus)) {
-        qsortvec(a,n,compare1,compare2);
-        return;
-    }
-    cParQSort2 sorter(a,compare1,compare2,numcpus-1);
-    sorter.subsort(0,n);
-    sorter.join();
-
-#ifdef TESTPARSORT
-    for (unsigned i=1;i<n;i++) {
-        int cmp = compare1.docompare(a[i-1],a[i]);
-        if (cmp>0)
-            ERRLOG("parqsortvec(2,1) failed %d",i);
-        else if ((cmp==0)&&(compare2.docompare(a[i-1],a[i])>0))
-            ERRLOG("parqsortvec(2,2) failed %d",i);
-    }
-#endif
-
-
-}
-
-
-
-
-#undef CMP
-#undef MED3
-#undef RECURSE
-
-//---------------------------------------------------------------------------
-
 #undef VECTOR
 #undef SWAP
 typedef void *** _IVECTOR;
@@ -657,14 +575,26 @@ public:
 #undef RECURSE
 #undef VECTOR
 
-void qsortvecstable(void ** const rows, size32_t n, const ICompare & compare, void *** index)
+static void qsortvecstable(void ** const rows, size32_t n, const ICompare & compare, void *** index)
 {
     for(unsigned i=0; i<n; ++i)
         index[i] = rows+i;
     doqsortvecstable(index, n, compare);
 }
 
-void parqsortvecstable(void ** const rows, size32_t n, const ICompare & compare, void *** index, unsigned numcpus)
+void qsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp)
+{
+    memcpy(temp, rows, n * sizeof(void*));
+
+    qsortvecstable(temp, n, compare, (void * * *)rows);
+
+    //I'm sure this violates the aliasing rules...
+    void * * * rowsAsIndex = (void * * *)rows;
+    for(unsigned i=0; i<n; ++i)
+        rows[i] = *rowsAsIndex[i];
+}
+
+static void parqsortvecstable(void ** rows, size32_t n, const ICompare & compare, void *** index, unsigned numcpus)
 {
     for(unsigned i=0; i<n; ++i)
         index[i] = rows+i;
@@ -677,6 +607,18 @@ void parqsortvecstable(void ** const rows, size32_t n, const ICompare & compare,
     sorter.join();
 }
 
+
+void parqsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp, unsigned numcpus)
+{
+    memcpy(temp, rows, n * sizeof(void*));
+
+    parqsortvecstable(temp, n, compare, (void * * *)rows, numcpus);
+
+    //I'm sure this violates the aliasing rules...
+    void * * * rowsAsIndex = (void * * *)rows;
+    for(unsigned i=0; i<n; ++i)
+        rows[i] = *rowsAsIndex[i];
+}
 
 
 //=========================================================================

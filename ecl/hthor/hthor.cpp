@@ -2528,27 +2528,28 @@ bool CHThorGroupDedupAllActivity::calcNextDedupAll()
     if (primaryCompare)
     {
         //hard, if not impossible, to hit this code once optimisations in place
-        MemoryAttr indexbuff(max*sizeof(void **));
-        void *** index = (void ***)indexbuff.bufferBase();
-        qsortvecstable((void * *)group.getArray(), max, *primaryCompare, index);
+        MemoryAttr indexbuff(max*sizeof(void *));
+        void ** temp = (void **)indexbuff.bufferBase();
+        void ** rows = (void * *)group.getArray();
+        qsortvecstableinplace(rows, max, *primaryCompare, temp);
         unsigned first = 0;
         for (unsigned idx = 1; idx < max; idx++)
         {
-            if (primaryCompare->docompare(*(index[first]), *(index[idx])) != 0)
+            if (primaryCompare->docompare(rows[first], rows[idx]) != 0)
             {
-                dedupRangeIndirect(first, idx, index);
+                dedupRange(first, idx, group);
                 first = idx;
             }
         }
-        dedupRangeIndirect(first, max, index);
+        dedupRange(first, max, group);
 
         for(unsigned idx2=0; idx2<max; ++idx2)
         {
-            void * * cur = index[idx2];
+            void * cur = rows[idx2];
             if(cur)
             {
-                LinkRoxieRow(*cur);
-                survivors.append(*cur);
+                LinkRoxieRow(cur);
+                survivors.append(cur);
             }
         }
     }
@@ -2587,34 +2588,6 @@ void CHThorGroupDedupAllActivity::dedupRange(unsigned first, unsigned last, Owne
                         else
                         {
                             group.replace(NULL, idxL);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-void CHThorGroupDedupAllActivity::dedupRangeIndirect(unsigned first, unsigned last, void *** index)
-{
-    for (unsigned idxL = first; idxL < last; idxL++)
-    {
-        if (index[idxL])
-        {
-            for (unsigned idxR = first; idxR < last; idxR++)
-            {
-                if ((idxL != idxR) && index[idxR])
-                {
-                    if (helper.matches(*(index[idxL]), *(index[idxR])))
-                    {
-                        if (keepLeft)
-                        {
-                            index[idxR] = NULL;
-                        }
-                        else
-                        {
-                            index[idxL] = NULL;
                             break;
                         }
                     }
@@ -4019,21 +3992,9 @@ void CStableQuickSorter::performSort()
     if (numRows)
     {
         const void * * rows = rowsToSort.getBlock(numRows);
-        qsortvecstable((void * *)rows, numRows, *compare, index);
+        qsortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
         finger = 0;
     }
-}
-
-const void * CStableQuickSorter::getNextSorted()
-{
-    if(finger < rowsToSort.numCommitted())
-    {
-        const void * row = *(index[finger]);
-        *(index[finger++]) = NULL;//Clear the entry in rowsToSort so it wont get double-released
-        return row;
-    }
-    else
-        return NULL;
 }
 
 void CStableQuickSorter::killSorted()
