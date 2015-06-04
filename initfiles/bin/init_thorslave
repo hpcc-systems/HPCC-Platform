@@ -33,11 +33,23 @@ slavename=thorslave_${hpcc_compname}
 
 stop_slaves()
 {
-    killall -0 $slavename > /dev/null 2>&1
-    if [[ $? -eq 0 ]];then
-        log "killing slaves"
+    local timer=15
+    local isAlive=0
+
+    log "Attempting to kill $slavename with SIGTERM"
+    killall -15 $slavename > /dev/null 2>&1
+    while [[ $isAlive -eq 0 && $timer -gt 0 ]];do
+        killall -0 $slavename > /dev/null 2>&1
+        isAlive=$?
+        [[ $isAlive -eq 0 ]] && sleep 0.5
+        ((timer--))
+    done
+
+    if [[ $isAlive -eq 0 ]]; then
+        log "Failed to kill slaves with SIGTERM. Sending SIGKILL"
         killall -9 $slavename > /dev/null 2>&1
     fi
+
     rm -f $PID/${slavename}_*.pid > /dev/null 2>&1
 }
 
