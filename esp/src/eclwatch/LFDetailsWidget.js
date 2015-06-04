@@ -42,6 +42,7 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
+    "hpcc/TargetComboBoxWidget",
     "hpcc/ESPLogicalFile",
     "hpcc/ESPDFUWorkunit",
     "hpcc/FileBelongsToWidget",
@@ -58,7 +59,7 @@ define([
 
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget,
+                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget,
                 template) {
     exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -180,6 +181,7 @@ define([
             if (this.desprayForm.validate()) {
                 var context = this;
                 var request = domForm.toObject(this.id + "DesprayForm");
+                request.destPath = this.desprayTargetPath.getDropZoneFolder();
                 if (!context.endsWith(request.destPath, "/")) {
                     request.destPath += "/";
                 }

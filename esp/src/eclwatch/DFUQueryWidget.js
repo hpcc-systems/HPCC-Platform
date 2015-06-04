@@ -49,6 +49,7 @@ define([
     "hpcc/ESPDFUWorkunit",
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
+    "hpcc/TargetComboBoxWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/SelectionGridWidget",
     "hpcc/WsTopology",
@@ -78,7 +79,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea, ValidationTextBox,
                 editor, selector, tree,
-                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, SelectionGridWidget, WsTopology,
+                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, FilterDropDownWidget, SelectionGridWidget, WsTopology,
                 put,
                 template) {
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
@@ -102,6 +103,26 @@ define([
             this.addToSuperfileGrid = registry.byId(this.id + "AddToSuperfileGrid");
             this.desprayForm = registry.byId(this.id + "DesprayForm");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
+            this.desprayTooltiopDialog = registry.byId(this.id + "DesprayTooltipDialog");
+            var context = this;
+            var origOnOpen = this.desprayTooltiopDialog.onOpen;
+            this.desprayTooltiopDialog.onOpen = function () {
+                if (!context.desprayTargetSelect.initalized) {
+                    context.desprayTargetSelect.init({
+                        DropZones: true,
+                        callback: function (value, item) {
+                            registry.byId(context.id + "DesprayTargetIPAddress").set("value", item.machine.Netaddress);
+                            if (context.desprayTargetPath) {
+                                context.desprayTargetPath.reset();
+                                context.desprayTargetPath._dropZoneTarget = item;
+                                context.desprayTargetPath.defaultValue = context.desprayTargetPath.get("value");
+                                context.desprayTargetPath.loadDropZoneFolders();
+                            }
+                        }
+                    });
+                }
+                origOnOpen.apply(context.desprayTooltiopDialog, arguments);
+            }
             this.desprayTargetPath = registry.byId(this.id + "DesprayTargetPath");
             this.desprayGrid = registry.byId(this.id + "DesprayGrid");
             this.remoteCopyReplicateCheckbox = registry.byId(this.id + "RemoteCopyReplicate");
@@ -232,6 +253,7 @@ define([
                 var context = this;
                 arrayUtil.forEach(this.desprayGrid.store.data, function (item, idx) {
                     var request = domForm.toObject(context.id + "DesprayForm");
+                    request.destPath = context.desprayTargetPath.getDropZoneFolder();
                     if (!context.endsWith(request.destPath, "/")) {
                         request.destPath += "/";
                     }
@@ -308,18 +330,7 @@ define([
             this.copyTargetSelect.init({
                 Groups: true
             });
-            this.desprayTargetSelect.init({
-                DropZones: true,
-                callback: function (value, item) {
-                    registry.byId(context.id + "DesprayTargetIPAddress").set("value", item.machine.Netaddress);
-                    if (context.desprayTargetPath) {
-                        context.desprayTargetPath.reset();
-                        context.desprayTargetPath._dropZoneTarget = item;
-                        context.desprayTargetPath.defaultValue = context.desprayTargetPath.get("value");
-                        context.desprayTargetPath.loadDropZoneFolders();
-                    }
-                }
-            });
+
             this.desprayTargetPath.init({
                 DropZoneFolders: true
             });
