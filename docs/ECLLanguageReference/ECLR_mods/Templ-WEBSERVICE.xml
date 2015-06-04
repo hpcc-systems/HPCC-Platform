@@ -26,7 +26,9 @@
 
             <entry>The FIELDS parameter specifies field sequence<indexterm>
                 <primary>field sequence</primary>
-              </indexterm> in WsECL Web forms.</entry>
+              </indexterm> in WsECL Web forms. This is an exclusive list. If
+            the FIELDS attribute is present, only the fields in the fieldslist
+            are displayed on the Web form in WsECL.</entry>
           </row>
 
           <row>
@@ -76,6 +78,7 @@
 Field1 := 1 : Stored('Field1');
 Field2 := 2 :Stored('Field2');
 AddThem := TRUE :STORED ('AddThem');
+HiddenValue := 12 :STORED ('HiddenValue'); //not in fieldlist, won't display on WsECl form
 IF(AddThem,OUTPUT(Field1+Field2),OUTPUT('Not Added'));
 </programlisting>
 
