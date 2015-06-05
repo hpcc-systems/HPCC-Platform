@@ -561,6 +561,7 @@ protected:
     virtual void unsubscribe();
     virtual void _loadResults() const;
     virtual void _loadStatistics() const;
+    virtual void _loadExceptions() const;
 };
 
 interface ISDSManager; // MORE - can remove once dali split out

@@ -2359,8 +2359,8 @@ public:
     }
     virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
     {
-        // never bound
-        return false;
+        // never bound, but does need to be included in the ?
+        return true;
     }
 } timestampColumnMapper;
 
@@ -3152,10 +3152,10 @@ struct ChildTableInfo
 static const CassandraXmlMapping wuExceptionsMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
+    {"sequence", "int", "@sequence", intColumnMapper},
     {"attributes", "map<text, text>", "", attributeMapColumnMapper},
     {"value", "text", ".", stringColumnMapper},
-    {"ts", "timeuuid", NULL, timestampColumnMapper}, // must be last since we don't bind it, so it would throw out the colidx values of following fields
-    { NULL, "wuExceptions", "((wuid), ts)", stringColumnMapper}
+    { NULL, "wuExceptions", "((wuid), sequence)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuExceptionsTable =
@@ -3656,14 +3656,22 @@ public:
                     const CassandraXmlMapping *table = *dirtyPaths.mapToValue(&iter.query());
                     if (sessionCache->queryTraceLevel()>2)
                         DBGLOG("Updating dirty path %s", path);
-                    IPTree *dirty = p->queryPropTree(path);
-                    if (dirty)
-                        childXMLRowtoCassandra(sessionCache, *batch, table, wuid, *dirty, 0);
-                    else if (sessionCache->queryTraceLevel())
+                    if (*path == '*')
                     {
-                        StringBuffer xml;
-                        toXML(p, xml);
-                        DBGLOG("Missing dirty element %s in %s", path, xml.str());
+                        sessionCache->deleteChildByWuid(table, wuid, *batch);
+                        childXMLtoCassandra(sessionCache, *batch, table, p, path+1, 0);
+                    }
+                    else
+                    {
+                        IPTree *dirty = p->queryPropTree(path);
+                        if (dirty)
+                            childXMLRowtoCassandra(sessionCache, *batch, table, wuid, *dirty, 0);
+                        else if (sessionCache->queryTraceLevel())
+                        {
+                            StringBuffer xml;
+                            toXML(p, xml);
+                            DBGLOG("Missing dirty element %s in %s", path, xml.str());
+                        }
                     }
                 }
             }
@@ -3751,14 +3759,19 @@ public:
     {
         return noteDirty(CLocalWorkUnit::updateVariableByName(name));
     }
+    virtual IWUException *createException()
+    {
+        IWUException *result = CLocalWorkUnit::createException();
+        VStringBuffer xpath("Exceptions/Exception[@sequence='%d']", result->getSequence());
+        noteDirty(xpath, wuExceptionsMappings);
+        return result;
+    }
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
     {
         // Make sure that any required updates to the secondary files happen
         IPropertyTree *fromP = queryExtendedWU(cached)->queryPTree();
         for (const char * const *search = searchPaths; *search; search++)
             trackSecondaryChange(fromP->queryProp(*search), *search);
-        //for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
-        //    trackSecondaryChange(fromP->queryProp(mapping[0]->xpath), *mapping);
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             checkChildLoaded(**table);
         CLocalWorkUnit::copyWorkUnit(cached, all);
@@ -3776,6 +3789,19 @@ public:
     {
         checkChildLoaded(wuStatisticsTable);        // Lazy populate the Statistics branch of p from Cassandra
         CLocalWorkUnit::_loadStatistics();
+    }
+
+    virtual void _loadExceptions() const
+    {
+        checkChildLoaded(wuExceptionsTable);        // Lazy populate the Exceptions branch of p from Cassandra
+        CLocalWorkUnit::_loadExceptions();
+    }
+
+    virtual void clearExceptions()
+    {
+        CriticalBlock b(crit);
+        noteDirty("*Exceptions/Exception", wuExceptionsMappings);
+        CLocalWorkUnit::clearExceptions();
     }
 
     virtual IPropertyTree *queryPTree() const

@@ -505,6 +505,7 @@ interface IConstWUException : extends IInterface
     virtual IStringVal & getExceptionFileName(IStringVal & str) const = 0;
     virtual unsigned getExceptionLineNo() const = 0;
     virtual unsigned getExceptionColumn() const = 0;
+    virtual unsigned getSequence() const = 0;
 };
 
 

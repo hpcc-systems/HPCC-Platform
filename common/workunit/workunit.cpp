@@ -1103,7 +1103,6 @@ public:
     {
         CLocalWorkUnit::cleanupAndDelete(deldll, deleteOwned, deleteExclusions);
         connection->close(true);
-        PROGLOG("WUID %s removed",p->queryName());
         connection.clear();
     }
 
@@ -1891,6 +1890,7 @@ public:
     virtual IStringVal & getExceptionFileName(IStringVal & str) const;
     virtual unsigned    getExceptionLineNo() const;
     virtual unsigned    getExceptionColumn() const;
+    virtual unsigned    getSequence() const;
     virtual void        setExceptionSource(const char *str);
     virtual void        setExceptionMessage(const char *str);
     virtual void        setExceptionCode(unsigned code);
@@ -5827,22 +5827,24 @@ void CLocalWorkUnit::unsubscribe()
     // Only overriding versions need to do anything
 }
 
+void CLocalWorkUnit::_loadExceptions() const
+{
+    assertex(exceptions.length() == 0);
+    Owned<IPropertyTreeIterator> r = p->getElements("Exceptions/Exception");
+    for (r->first(); r->isValid(); r->next())
+    {
+        IPropertyTree *rp = &r->query();
+        rp->Link();
+        exceptions.append(*new CLocalWUException(rp));
+    }
+}
+
 void CLocalWorkUnit::loadExceptions() const
 {
     CriticalBlock block(crit);
     if (!exceptionsCached)
     {
-        
-        assertex(exceptions.length() == 0);
-        Owned<IPropertyTreeIterator> r = p->getElements("Exceptions/Exception");
-
-
-        for (r->first(); r->isValid(); r->next())
-        {
-            IPropertyTree *rp = &r->query();
-            rp->Link();
-            exceptions.append(*new CLocalWUException(rp));
-        }
+        _loadExceptions();
         exceptionsCached = true;
     }
 }
@@ -5881,6 +5883,7 @@ IWUException* CLocalWorkUnit::createException()
         p->addPropTree("Exceptions", createPTree("Exceptions"));
     IPropertyTree *r = p->queryPropTree("Exceptions");
     IPropertyTree *s = r->addPropTree("Exception", createPTree("Exception"));
+    s->setPropInt("@sequence", exceptions.ordinality());
     IWUException* q = new CLocalWUException(LINK(s)); 
     exceptions.append(*LINK(q));
 
@@ -8561,6 +8564,11 @@ unsigned CLocalWUException::getExceptionLineNo() const
 unsigned CLocalWUException::getExceptionColumn() const
 {
     return p->getPropInt("@col", 0);
+}
+
+unsigned CLocalWUException::getSequence() const
+{
+    return p->getPropInt("@sequence", 0);
 }
 
 void CLocalWUException::setExceptionSource(const char *str)

@@ -760,6 +760,19 @@ protected:
         for (i = 0; i < testSize; i++)
         {
             Owned<IWorkUnit> wu = factory->updateWorkUnit(wuids.item(i));
+            for (int exNum = 0; exNum < 10; exNum++)
+            {
+                Owned <IWUException> ex = wu->createException();
+                ex->setExceptionCode(77 + exNum);
+                ex->setExceptionColumn(88 + exNum);
+                ex->setExceptionFileName("exfile");
+                ex->setExceptionLineNo(99);
+                ex->setExceptionMessage("exMessage");
+                ex->setExceptionSource("exSource");
+                ex->setSeverity(SeverityFatal);
+                ex->setTimeStamp("2001");
+            }
+
             wu->addProcess("ptype", "pInstance", 54321, "mylog");
             wu->setAction(WUActionCompile);
             wu->setApplicationValue("app1", "av1", "value", true);
@@ -798,6 +811,22 @@ protected:
                 exportWorkUnitToXML(wu, wuXML, true, false, false);
                 DBGLOG("%s", wuXML.str());
             }
+            ASSERT(wu->getExceptionCount() == 10);
+            Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
+            int exNo = 0;
+            ForEach(*exceptions)
+            {
+                IConstWUException &ex = exceptions->query();
+                ASSERT(ex.getExceptionCode()==77 + exNo);
+                ASSERT(ex.getExceptionColumn()==88 + exNo);
+                ASSERT(streq(ex.getExceptionFileName(s).str(),"exfile"));
+                ASSERT(ex.getExceptionLineNo()==99);
+                ASSERT(streq(ex.getExceptionMessage(s).str(),"exMessage"));
+                ASSERT(streq(ex.getExceptionSource(s).str(),"exSource"));
+                ASSERT(ex.getSeverity()==SeverityFatal);
+                ASSERT(streq(ex.getTimeStamp(s).str(),"2001"));
+                exNo++;
+            }
 
             Owned<IPTreeIterator> processes = wu->getProcesses("ptype", "pInstance");
             ASSERT(processes->first());
@@ -805,6 +834,7 @@ protected:
             ASSERT(process.getPropInt("@pid", 0)==54321);
             ASSERT(streq(process.queryProp("@log"), "mylog"));
             ASSERT(!processes->next());
+
             ASSERT(wu->getAction() == WUActionCompile);
             ASSERT(streq(wu->getApplicationValue("app1", "av1", s).str(), "value"));
             ASSERT(wu->getApplicationValueInt("app2", "av2", 0) == 42);
@@ -838,6 +868,23 @@ protected:
         }
         end = msTick();
         DBGLOG("%u workunits reread in %d ms", testSize, end-start);
+        start = end;
+        for (i = 0; i < testSize; i++)
+        {
+            Owned<IWorkUnit> wu = factory->updateWorkUnit(wuids.item(i));
+            wu->clearExceptions();
+        }
+        end = msTick();
+        DBGLOG("%u * 10 workunit exceptions cleared in %d ms", testSize, end-start);
+        start = end;
+        for (i = 0; i < testSize; i++)
+        {
+            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuids.item(i), false);
+            ASSERT(wu->getExceptionCount() == 0);
+        }
+        end = msTick();
+        DBGLOG("%u workunits reread in %d ms", testSize, end-start);
+        start = end;
     }
 
     void testList()
