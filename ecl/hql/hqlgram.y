@@ -11384,6 +11384,10 @@ sortItem
                             $$.setExpr(createExprAttribute(unstableAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
+    | PARALLEL
+                        {
+                            $$.setExpr(createAttribute(parallelAtom), $1);
+                        }
     | prefetchAttribute
     | expandedSortListByReference
     ;

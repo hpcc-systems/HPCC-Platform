@@ -16473,6 +16473,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
         flags.append("|TAFspill");
     if (!method || method->isConstant())
         flags.append("|TAFconstant");
+    if (expr->hasAttribute(parallelAtom))
+        flags.append("|TAFparallel");
 
     if (method)
         doBuildVarStringFunction(instance->startctx, "getAlgorithm", method);

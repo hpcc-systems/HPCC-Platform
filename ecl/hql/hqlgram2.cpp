@@ -5693,6 +5693,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     if (attr == assertAtom) ok = true;
                     if (attr == stableAtom) ok = true;
                     if (attr == unstableAtom) ok = true;
+                    if (attr == parallelAtom) ok = true;
                     break;
                 case no_nwaymerge:
                     if (attr == localAtom) ok = true;

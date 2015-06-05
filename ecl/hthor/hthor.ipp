@@ -1164,6 +1164,14 @@ public:
     virtual void performSort();
 };
 
+class CParallelStableMergeSorter : public CStableSorter
+{
+public:
+    CParallelStableMergeSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta, roxiemem::IBufferedRowCallback * _rowCB) : CStableSorter(_compare, _rowManager, _initialSize, _commitDelta, _rowCB){}
+
+    virtual void performSort();
+};
+
 class CHeapSorter :  public CSimpleSorterBase
 {
 public:

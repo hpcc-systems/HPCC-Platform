@@ -92,6 +92,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_MEMCACHED "Enable Memcached support" ON)
   option(USE_REDIS "Enable Redis support" ON)
 
+  if (APPLE OR WIN32)
+      option(USE_TBB "Enable Threading Building Block support" OFF)
+  else()
+      option(USE_TBB "Enable Threading Building Block support" ON)
+  endif()
+
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
   if ( USE_PYTHON OR USE_V8 OR USE_JNI OR USE_RINSIDE OR USE_SQLITE3 OR USE_MYSQL OR USE_CASSANDRA OR USE_MEMCACHED OR USE_REDIS)
@@ -689,6 +695,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       else()
         add_definitions (-D_NO_APR)
       endif(USE_APR)
+
+      if(USE_TBB)
+        find_package(TBB)
+        if (TBB_FOUND)
+          add_definitions (-D_USE_TBB)
+        else()
+          message(FATAL_ERROR "TBB requested but package not found")
+        endif()
+      else()
+        set(TBB_INCLUDE_DIR "")
+      endif(USE_TBB)
 
   ENDIF()
   ###########################################################################
