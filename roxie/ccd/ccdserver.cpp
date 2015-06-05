@@ -11079,7 +11079,7 @@ public:
             fileProps.setPropInt64("@size", uncompressedBytesWritten);
             partProps.setPropInt64("@size", uncompressedBytesWritten);
         }
-        else if (tallycrc)
+        else if (tallycrc && crc.get())
             partProps.setPropInt64("@fileCrc", crc.get());
 
         if (encrypted)
