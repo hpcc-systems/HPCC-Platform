@@ -244,7 +244,7 @@ define([
             arrayUtil.forEach(this.landingZonesGrid.getSelected(), function (item, idx) {
                 var downloadIframeName = "downloadIframe_" + item.calculatedID;
                 var frame = iframe.create(downloadIframeName);
-                var url = ESPRequest.getBaseURL("FileSpray") + "/DownloadFile?Name=" + encodeURIComponent(item.partialPath) + "&NetAddress=" + item.DropZone.NetAddress + "&Path=" + encodeURIComponent(item.DropZone.Path) + "&OS=" + item.DropZone.OS;
+                var url = ESPRequest.getBaseURL("FileSpray") + "/DownloadFile?Name=" + encodeURIComponent(item.name) + "&NetAddress=" + item.DropZone.NetAddress + "&Path=" + encodeURIComponent(item.fullFolderPath) + "&OS=" + item.DropZone.OS;
                 iframe.setSrc(frame, url, true);
             });
         },
