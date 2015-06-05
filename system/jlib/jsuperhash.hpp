@@ -459,6 +459,7 @@ public:
     unsigned queryReferences() { return linkCount+1; } // 1 implicit
 
 private:        
+    static const char *keyPtr(HashKeyElement * hashKeyElement) { return hashKeyElement ? hashKeyElement->keyPtr() : NULL; }
     const char *keyPtr() { return ((const char *)this)+sizeof(*this); }
 
     unsigned hashValue;
