@@ -229,12 +229,12 @@ namespace JsonHelpers
         else
             out.append("null");
     }
-    static void buildJsonMsg(StringArray& parentTypes, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *reqTree, unsigned flags)
+    static void buildJsonMsg(StringArray& parentTypes, IXmlType* type, StringBuffer& out, const char* tag, const IPropertyTree *reqTree, unsigned flags)
     {
         assertex(type!=NULL);
 
         if (flags & REQSF_ROOT)
-            out.append("{");
+            out.append('{');
 
         const char* typeName = type->queryName();
         if (type->isComplexType())
@@ -242,11 +242,9 @@ namespace JsonHelpers
             if (typeName && !parentTypes.appendUniq(typeName))
                 return; // recursive
 
-            int startlen = out.length();
             if (tag)
                 appendJSONName(out, tag);
             out.append('{');
-            int taglen=out.length()+1;
             if (type->getSubType()==SubType_Complex_SimpleContent)
             {
                 if (reqTree)
@@ -277,7 +275,7 @@ namespace JsonHelpers
 
             if (typeName)
                 parentTypes.pop();
-            out.append("}");
+            out.append('}');
         }
         else if (type->isArray())
         {
@@ -308,7 +306,7 @@ namespace JsonHelpers
 
             if (typeName)
                 parentTypes.pop();
-            out.append("}");
+            out.append('}');
         }
         else // simple type
         {
