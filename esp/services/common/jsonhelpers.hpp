@@ -30,6 +30,7 @@
 #define REQSF_TRIM         0x0004
 #define REQSF_ESCAPEFORMATTERS 0x0008
 #define REQSF_EXCLUSIVE (REQSF_SAMPLE_DATA | REQSF_TRIM)
+#define NOT_FOUND UINT_MAX
 
 namespace JsonHelpers
 {
@@ -229,6 +230,151 @@ namespace JsonHelpers
         else
             out.append("null");
     }
+    static bool isNotJSONDelim(int source, int delim)
+    {
+    	return (source != delim);
+    }
+    static void trimJSONString(StringBuffer& buffer, unsigned rpos=NOT_FOUND)
+    {
+    	unsigned rlen = buffer.length();
+    	if (!rlen)
+    		return;
+
+    	const char *p = buffer.str();
+    	if(rpos == NOT_FOUND)
+    		rpos = rlen -1;
+    	p += rpos;
+    	assertex(rpos!=NOT_FOUND);
+
+    	switch (*p)
+    	{
+    		case '}':
+    		{
+    			unsigned ccurlyPos = rpos;
+
+
+    			for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+    			if (ccurlyPos == rpos) { p--;--rpos; }
+    			for(;isspace(*p)&&rpos>=0;p--&&--rpos);
+
+    			if (*p == ':')
+    			{
+    				unsigned colonPos = rpos;
+
+    				for(;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);
+    				for(p--,--rpos;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);
+
+    				unsigned dqPos1 = rpos; //'"'
+
+    				for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+    				if (*(p-1) == '{')
+    					buffer.remove(rpos-1, ccurlyPos-rpos+2).clip();
+    				else
+    					buffer.remove(dqPos1, colonPos-dqPos1+1).clip();
+
+    				if (buffer.length())
+    					trimJSONString(buffer);
+    			}
+    			else if (*p == '{')
+    			{
+    				unsigned ocurlyPos = rpos;
+    				buffer.remove(ocurlyPos, ccurlyPos-ocurlyPos+1).clip();
+
+    				if (buffer.length())
+    					trimJSONString(buffer);
+    			}
+    			else if (*p == ',')
+    			{
+    				unsigned commaPos = rpos;
+    				for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+    				if (commaPos == rpos) { p--;--rpos; }
+    				if (*p != ':')
+    				{
+    					buffer.remove(commaPos, ccurlyPos-commaPos).clip();
+
+    					if (buffer.length())
+    						trimJSONString(buffer);
+    				}
+    				else if (*p == ':')
+    				{
+    					unsigned colonPos = rpos;
+
+    					for(;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the second double-quote.
+    					for(p--,--rpos;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the first double-quote.
+
+    					unsigned dqPos1 = rpos - 1; //'"'
+
+    					for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+    					if (*(p-1) == '{')
+    						buffer.remove(rpos-1, ccurlyPos-rpos+1).clip();
+    					else
+    						buffer.remove(dqPos1, colonPos-dqPos1+1).clip();
+
+    					if (buffer.length())
+    						trimJSONString(buffer);
+    				}
+    				else if (*p == '}')
+    				{
+    					buffer.remove(commaPos, 1).clip();
+
+    					if(buffer.length())
+    						trimJSONString(buffer);
+    				}
+    			}
+    			else
+    				trimJSONString(buffer, rpos);
+
+    			break;
+    		}
+    		case ':':
+    		{
+    			unsigned colonPos = rpos;
+
+    			for(;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the second double-quote.
+    			for(p--,--rpos;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the first double-quote.
+
+    			unsigned dqPos1 = rpos; //'"'
+
+    			for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+    			buffer.remove(dqPos1, colonPos-dqPos1+1).clip();
+
+    			break;
+    		}
+    		case ']':
+    		{
+    			unsigned csquarePos = rpos;
+
+    			for(;isNotJSONDelim(*p, '[')&&rpos>=0;p--&&--rpos) ;
+
+    			unsigned osquarePos = rpos;
+    			unsigned len = csquarePos - osquarePos + 1;
+    			if (len == 2) // '[]'. Remove it.
+    				buffer.remove(osquarePos, len).clip();
+
+    			len = buffer.length();
+    			if (len)
+    			{
+    				const char *p = buffer.str();
+    				unsigned rpos = len -1;
+    				p += rpos;
+    				if (*p == '}')
+    				{
+    					for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+    					if ((*p == ']')) // ]}
+    					{
+    						for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+    						if (*p == '[') // []}
+    							trimJSONString(buffer, rpos);
+    					}
+    					else if (*p == ':') // {"QuoteBack": }
+    						trimJSONString(buffer);
+    				}
+    			}
+
+    			break;
+    		}
+    	}
+    }
     static void buildJsonMsg(StringArray& parentTypes, IXmlType* type, StringBuffer& out, const char* tag, const IPropertyTree *reqTree, unsigned flags)
     {
         assertex(type!=NULL);
@@ -242,7 +388,7 @@ namespace JsonHelpers
             if (typeName && !parentTypes.appendUniq(typeName))
                 return; // recursive
 
-            if (tag)
+            if (((flags & REQSF_TRIM) && (tag&&*tag)) || (!(flags & REQSF_TRIM)))
                 appendJSONName(out, tag);
             out.append('{');
             if (type->getSubType()==SubType_Complex_SimpleContent)
@@ -250,13 +396,19 @@ namespace JsonHelpers
                 if (reqTree)
                 {
                     const char *attrval = reqTree->queryProp(NULL);
+                    if ((flags & REQSF_TRIM) && (attrval&&*attrval))
+                    		out.appendf("\"%s\" ", attrval);
+                    else if (!(flags & REQSF_TRIM))
                     out.appendf("\"%s\" ", (attrval) ? attrval : "");
                 }
                 else if (flags & REQSF_SAMPLE_DATA)
                 {
+                    if (((flags & REQSF_TRIM) && (tag&&*tag)) || (!(flags & REQSF_TRIM)))
+                    {
                     out.append("\"");
                     type->queryFieldType(0)->getSampleValue(out,tag);
                     out.append("\" ");
+                    }
                 }
             }
             else
@@ -287,12 +439,11 @@ namespace JsonHelpers
             if (!itemName || !itemType)
                 throw MakeStringException(-1,"*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
 
-            int startlen = out.length();
-            if (tag)
+        	if (((flags & REQSF_TRIM) && (tag&&*tag)) || (!(flags & REQSF_TRIM) && (tag)))
                 out.appendf("\"%s\": ", tag);
             out.append('{');
+        	if (((flags & REQSF_TRIM) && (itemName&&*itemName)) || (!(flags & REQSF_TRIM)))
             out.appendf("\"%s\": [", itemName);
-            int taglen=out.length();
             if (reqTree)
             {
                 Owned<IPropertyTreeIterator> items = reqTree->getElements(itemName);
@@ -311,11 +462,14 @@ namespace JsonHelpers
         else // simple type
         {
             const char *parmval = (reqTree) ? reqTree->queryProp(NULL) : NULL;
+            if (((flags & REQSF_TRIM) && (parmval&&*parmval)) || (!(flags & REQSF_TRIM)))
             buildJsonAppendValue(type, out, tag, parmval, flags);
         }
 
         if (flags & REQSF_ROOT)
             out.append('}');
+        if (flags & REQSF_TRIM)
+        	trimJSONString(out);
     }
 };
 #endif // _JSONHELPERS_HPP__
