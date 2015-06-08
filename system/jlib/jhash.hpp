@@ -49,11 +49,13 @@ interface jlib_decl IAtom : extends IMapping
 {
  public:
     virtual const char * getNamePtr() const = 0;
+    const char *         getAtomNamePtr() const { return IAtom::getAtomNamePtr(this);} // ok if this=NULL
+    static const char * getAtomNamePtr(const IAtom *atom) { return atom ? atom->getNamePtr(): NULL; }
 
-    const char *         getAtomNamePtr() const;     // ok if this=NULL
-    inline const char * str() const { return getAtomNamePtr(); }
-    inline operator const char *() const { return getAtomNamePtr(); }
+    inline const char * str() const { return IAtom::getAtomNamePtr(this); }
+    inline operator const char *() const { return IAtom::getAtomNamePtr(this); }
 };
+
 
 //This interface represents an atom which preserves its case, but also stores a lower case representation
 //for efficient case insensitive comparison.
@@ -68,9 +70,9 @@ interface jlib_decl IIdAtom : extends IMapping
     inline operator const char *() const { return IIdAtom::getAtomNamePtr(this); }
     const char * getAtomNamePtr() const { return IIdAtom::getAtomNamePtr(this); }
 
- public:
     virtual IAtom * queryLower() const = 0;
-    IAtom * lower() const; // safe if this==NULL
+    IAtom * lower() const { return IIdAtom::lower(this); } // safe if this==NULL
+    static IAtom * lower(const IIdAtom *atom) { return atom? atom->queryLower(): NULL; }
 };
 
 #ifdef _MSC_VER
