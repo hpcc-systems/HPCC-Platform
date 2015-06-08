@@ -91,10 +91,13 @@ define([
         preProcessRow: function (row) {
             var partialPath = this.parent.partialPath + row.name + (row.isDir ? "/" : "");
             var fullPath = this.parent.fullPath + row.name + (row.isDir ? "/" : "");
+            var fullFolderPathParts = fullPath.split("/");
+            fullFolderPathParts.pop();
             lang.mixin(row, {
                 calculatedID: this.parent.DropZone.NetAddress + fullPath,
                 partialPath: partialPath,
                 fullPath: fullPath,
+                fullFolderPath: fullFolderPathParts.join("/"),
                 DropZone: this.parent.DropZone,
                 displayName: row.name,
                 type: row.isDir ? "folder" : "file"
