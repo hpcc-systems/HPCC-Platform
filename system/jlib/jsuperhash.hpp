@@ -455,7 +455,7 @@ public:
     const char *get() { return (const char *)keyPtr(); }
     unsigned length() { return (size32_t)strlen((const char *)keyPtr()); }
     unsigned queryHash() const { return hashValue; }
-    operator const char * () { return keyPtr(this); }
+    operator const char * () { return HashKeyElement::keyPtr(this); }
     unsigned queryReferences() { return linkCount+1; } // 1 implicit
 
 private:        
