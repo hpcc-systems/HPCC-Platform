@@ -18,6 +18,8 @@
   role="bold">[,FIELDHEIGHT(</emphasis><emphasis>heightvalue</emphasis>)][,SEQUENCE</emphasis>(<emphasis>sequencevalue</emphasis>)<emphasis
   role="bold">]<emphasis
   role="bold">[,NOINPUT</emphasis><emphasis></emphasis>)<emphasis
+  role="bold">]</emphasis><emphasis
+  role="bold">[,PASSWORD</emphasis><emphasis></emphasis>)<emphasis
   role="bold">]</emphasis>] )</emphasis> <indexterm>
       <primary>STORED workflow service</primary>
     </indexterm>;</para>
@@ -106,14 +108,22 @@
 
             <entry>An integer expression defining the sequential location of
             the input box. These can be sparse values (e.g., 100, 200, 300) to
-            allow insertion of new inputs in the future. </entry>
+            allow insertion of new inputs in the future.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">NOINPUT</emphasis></entry>
 
             <entry>Optional. If NOINPUT is specified, the field is not
-            displayed on the Web form in WsECL. </entry>
+            displayed on the Web form in WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PASSWORD</emphasis></entry>
+
+            <entry>Optional. If PASSWORD is specified, a password entry box is
+            used on the Web form in WsECL and the field's supplied value is
+            not displayed while entering it.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -143,8 +153,9 @@
 
 //FORMAT options for WsECL form
   
-  Field1 := 1 : Stored('Field1',FORMAT(SEQUENCE(10)));
-  Field2 := 2 : Stored('Field2',FORMAT(SEQUENCE(20)));
+  Password :='' := STORED('Password',FORMAT(SEQUENCE(1),PASSWORD));//password entry box on form
+  Field1 := 1 : STORED('Field1',FORMAT(SEQUENCE(10)));
+  Field2 := 2 : STORED('Field2',FORMAT(SEQUENCE(20)));
   AddThem := TRUE :STORED ('AddThem',FORMAT(SEQUENCE(15))); // places field in between Field1 and Field2
   HiddenValue := 12 :STORED ('HiddenValue',FORMAT(NOINPUT)); // not on form
   TextField1 :='Fill in description' :Stored('Description',
