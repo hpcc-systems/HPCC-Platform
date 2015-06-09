@@ -711,6 +711,9 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ORDERED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-OUTPUT.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1078,7 +1081,12 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WARNING.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+ 
 
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WEBSERVICE.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+ 
     <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WORKUNIT.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
