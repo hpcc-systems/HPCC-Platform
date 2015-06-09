@@ -6480,7 +6480,11 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                                 canAccessResultDirectly = extract->areGraphResultsAccessible(graphId);
                         }
                         else if (getTargetClusterType() == HThorCluster)
-                            canAccessResultDirectly = true;
+                        {
+                            //Only create the activity for results from parent graphs, not from siblings
+                            if (matchActiveGraph(ctx, graphId))
+                                canAccessResultDirectly = true;
+                        }
                     }
                     if (canAccessResultDirectly)
                         result = doBuildActivityGetGraphResult(ctx, expr);
