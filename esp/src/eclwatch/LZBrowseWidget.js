@@ -44,6 +44,7 @@ define([
     "hpcc/ESPDFUWorkunit",
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
+    "hpcc/TargetComboBoxWidget",
     "hpcc/SelectionGridWidget",
 
     "dojo/text!../templates/LZBrowseWidget.html",
@@ -71,7 +72,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, iframe, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 tree, editor, selector,
-                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, SelectionGridWidget,
+                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, SelectionGridWidget,
                 template) {
     return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -152,6 +153,20 @@ define([
         },
 
         _onUpload: function (event) {
+            var context = this;
+            if (!this.dropZoneTargetSelect.initalized) {
+                this.dropZoneTargetSelect.init({
+                    DropZones: true,
+                    callback: function (value, row) {
+                        if (context.dropZoneFolderSelect) {
+                            context.dropZoneFolderSelect.reset();
+                            context.dropZoneFolderSelect._dropZoneTarget = row;
+                            context.dropZoneFolderSelect.defaultValue = context.dropZoneFolderSelect.get("value");
+                            context.dropZoneFolderSelect.loadDropZoneFolders();
+                        }
+                    }
+                });
+            }
             var fileList = registry.byId(this.id + "Upload").getFileList();
             var totalFileSize = 0;
 
@@ -226,7 +241,7 @@ define([
         },
 
         getUploadPath: function () {
-            return this.dropZoneFolderSelect.get("row").value;
+            return this.dropZoneFolderSelect.getDropZoneFolder();
         },
 
         _onUploadSubmit: function (event) {
@@ -455,17 +470,6 @@ define([
                 SprayTargets: true
             });
             var context = this;
-            this.dropZoneTargetSelect.init({
-                DropZones: true,
-                callback: function (value, row) {
-                    if (context.dropZoneFolderSelect) {
-                        context.dropZoneFolderSelect.reset();
-                        context.dropZoneFolderSelect._dropZoneTarget = row;
-                        context.dropZoneFolderSelect.defaultValue = context.dropZoneFolderSelect.get("value");
-                        context.dropZoneFolderSelect.loadDropZoneFolders();
-                    }
-                }
-            });
             this.dropZoneFolderSelect.init({
                 DropZoneFolders: true,
                 includeBlank: true
