@@ -3181,6 +3181,17 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             break;
 
         }
+    case no_stepped:
+        {
+            node_operator childOp = child->getOperator();
+            switch(childOp)
+            {
+            case no_limit:
+            case no_keyedlimit:
+                return swapNodeWithChild(transformed);
+            }
+            break;
+        }
     case no_keyedlimit:
         {
             node_operator childOp = child->getOperator();
@@ -3188,7 +3199,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             {
             case no_distributed:
             case no_sorted:
-            case no_stepped:
             case no_limit:
             case no_choosen:
             case no_compound_indexread:
@@ -3322,13 +3332,9 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_stepped:
                 return moveProjectionOverSimple(transformed, true, false);
             case no_keyedlimit:
-                if (isWorthMovingProjectOverLimit(transformed))
-                {
-                    if (child->hasAttribute(onFailAtom))
-                        return moveProjectionOverLimit(transformed);
-                    return swapNodeWithChild(transformed);
-                }
-                break;
+                if (child->hasAttribute(onFailAtom))
+                    return moveProjectionOverLimit(transformed);
+                return swapNodeWithChild(transformed);
             case no_catchds:
                 //could treat like a limit, but not at the moment
                 break;
