@@ -1375,6 +1375,12 @@ ChildGraphBuilder::ChildGraphBuilder(HqlCppTranslator & _translator, IHqlExpress
 
 void ChildGraphBuilder::generateGraph(BuildCtx & ctx)
 {
+    if (translator.queryOptions().showChildCountInGraph)
+    {
+        ActivityInstance * activeActivity = translator.queryCurrentActivity(ctx);
+        if (activeActivity)
+            activeActivity->noteChildQuery();
+    }
     BuildCtx graphctx(ctx);
 
     //Make sure at least one results - because currently that's how we determine if new resourcing is being used
