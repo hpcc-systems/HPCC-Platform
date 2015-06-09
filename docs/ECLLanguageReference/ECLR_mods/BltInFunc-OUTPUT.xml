@@ -959,7 +959,7 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
 </programlisting>
   </sect2>
 
-  <sect2 id="OUTPUT_XML_Files">
+  <sect2 id="OUTPUT_JSON_Files">
     <title>OUTPUT JSON Files<indexterm>
         <primary>JSON Files</primary>
       </indexterm><indexterm>

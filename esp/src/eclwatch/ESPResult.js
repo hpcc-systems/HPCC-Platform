@@ -32,6 +32,19 @@ define([
             parser, entities,
             ESPBase, ESPRequest, WsWorkunits) {
 
+    var safeEncode = function (item) {
+        switch (Object.prototype.toString.call(item)) {
+            case "[object Boolean]":
+            case "[object Number]":
+                return item;
+            case "[object String]":
+                return entities.encode(item);
+            default:
+                console.log("Unknown cell type.")
+        }
+        return "";
+    }
+
     var Store = declare([ESPRequest.Store, ESPBase], {
         service: "WsWorkunits",
         action: "WUResult",
@@ -156,52 +169,89 @@ define([
             return this.getFirstSchemaNode(complexType, "sequence");
         },
 
+        isChildDataset: function (cell) {
+            if (Object.prototype.toString.call(cell) !== "[object Object]") {
+                return false;
+            }
+            var propCount = 0;
+            var firstPropType = null;
+            for (var key in cell) {
+                if (!firstPropType) {
+                    firstPropType = Object.prototype.toString.call(cell[key]);
+                }
+                propCount++;
+            }
+            return propCount === 1 && firstPropType === "[object Array]";
+        },
+
         rowToTable: function (cell, __row, node) {
-            var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, node);
-            if (Object.prototype.toString.call(cell) === '[object Object]') {
-                //  Set of Scalar or "Row" ---
+            if (this.isChildDataset(cell)) {  //  Don't display "Row" as a header  ---
                 for (var key in cell) {
                     this.rowToTable(cell[key], __row, node);
                 }
-            } else if (Object.prototype.toString.call(cell) === '[object Array]') {
-                for (var i = 0; i < cell.length; ++i) {
-                    switch (Object.prototype.toString.call(cell[i])) {
-                    case "[object Boolean]":
-                    case "[object Number]":
-                    case "[object String]":
-                        //  Item in Scalar  ---
-                        var tr = domConstruct.create("tr", null, table);
-                        domConstruct.create("td", { innerHTML: cell[i] }, tr);
-                        break;
-                    default:
-                        //  Child Dataset  ---
-                        if (i === 0) {
-                            var tr = domConstruct.create("tr", null, table);
-                            for (var key in cell[i]) {
-                                var th = domConstruct.create("th", { innerHTML: entities.encode(key) }, tr);
-                            }
-                        }
-                        var tr = domConstruct.create("tr", null, table);
-                        for (var key in cell[i]) {
-                            if (cell[i][key]) {
-                                if (Object.prototype.toString.call(cell[i][key]) === '[object Object]' || Object.prototype.toString.call(cell[i][key]) === '[object Array]') {
-                                    var td = domConstruct.create("td", null, tr);
-                                    this.rowToTable(cell[i][key], cell[i], td);
-                                } else if (key.indexOf("__html", key.length - "__html".length) !== -1) {
-                                    var td = domConstruct.create("td", { innerHTML: cell[i][key] }, tr);
-                                } else if (key.indexOf("__javascript", key.length - "__javascript".length) !== -1) {
-                                    var td = domConstruct.create("td", null, tr);
-                                    this.injectJavascript(cell[i][key], cell[i], td);
-                                } else {
-                                    var val = cell[i][key];
-                                    var td = domConstruct.create("td", { innerHTML: Object.prototype.toString.call(val) === '[object String]' ? entities.encode(val) : val }, tr);
-                                }
-                            } else {
-                                var td = domConstruct.create("td", { innerHTML: "" }, tr);
-                            }
+                return;
+            }
+
+            var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, node);
+            switch(Object.prototype.toString.call(cell)) {
+                case "[object Object]":
+                    var tr = domConstruct.create("tr", null, table);
+                    for (var key in cell) {
+                        domConstruct.create("th", { innerHTML: safeEncode(key) }, tr);
+                    }
+                    tr = domConstruct.create("tr", null, table);
+                    for (var key in cell) {
+                        switch (Object.prototype.toString.call(cell[key])) {
+                            case "[object Object]":
+                            case "[object Array]":
+                                this.rowToTable(cell[key], __row, node);
+                                break;
+                            default:
+                                domConstruct.create("td", { innerHTML: safeEncode(cell[key]) }, tr);
+                                break;
                         }
                     }
-                }
+                    break;
+                case "[object Array]":
+                    for (var i = 0; i < cell.length; ++i) {
+                        switch (Object.prototype.toString.call(cell[i])) {
+                            case "[object Boolean]":
+                            case "[object Number]":
+                            case "[object String]":
+                                //  Item in Scalar  ---
+                                var tr = domConstruct.create("tr", null, table);
+                                domConstruct.create("td", { innerHTML: safeEncode(cell[i]) }, tr);
+                                break;
+                            default:
+                                //  Child Dataset  ---
+                                if (i === 0) {
+                                    var tr = domConstruct.create("tr", null, table);
+                                    for (var key in cell[i]) {
+                                        var th = domConstruct.create("th", { innerHTML: safeEncode(key) }, tr);
+                                    }
+                                }
+                                var tr = domConstruct.create("tr", null, table);
+                                for (var key in cell[i]) {
+                                    if (cell[i][key]) {
+                                        if (Object.prototype.toString.call(cell[i][key]) === '[object Object]' || Object.prototype.toString.call(cell[i][key]) === '[object Array]') {
+                                            var td = domConstruct.create("td", null, tr);
+                                            this.rowToTable(cell[i][key], cell[i], td);
+                                        } else if (key.indexOf("__html", key.length - "__html".length) !== -1) {
+                                            var td = domConstruct.create("td", { innerHTML: cell[i][key] }, tr);
+                                        } else if (key.indexOf("__javascript", key.length - "__javascript".length) !== -1) {
+                                            var td = domConstruct.create("td", null, tr);
+                                            this.injectJavascript(cell[i][key], cell[i], td);
+                                        } else {
+                                            var val = cell[i][key];
+                                            var td = domConstruct.create("td", { innerHTML: safeEncode(val) }, tr);
+                                        }
+                                    } else {
+                                        var td = domConstruct.create("td", { innerHTML: "" }, tr);
+                                    }
+                                }
+                        }
+                    }
+                    break;
             }
         },
         injectJavascript : function(__cellContent, __row, __cell, __width) {
@@ -215,7 +265,7 @@ define([
             try {
                 eval(__cellContent);
             } catch (e) {
-                __cell.innerHTML = "<b>Error:</b>&nbsp;&nbsp;" + entities.encode(e.message) + "<br>" + entities.encode(__cellContent);
+                __cell.innerHTML = "<b>Error:</b>&nbsp;&nbsp;" + safeEncode(e.message) + "<br>" + safeEncode(__cellContent);
             }
         },
         parseName: function (nameObj) {
