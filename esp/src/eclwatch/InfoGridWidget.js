@@ -324,29 +324,40 @@ define([
                 var errorChecked = this.errorsCheck.get("checked");
                 var warningChecked = this.warningsCheck.get("checked");
                 var infoChecked = this.infoCheck.get("checked");
+                this._counts = {
+                    error: 0,
+                    warning: 0,
+                    errorWarning: 0,
+                    info: 0
+                };
                 arrayUtil.forEach(this.infoData, function (item, idx) {
                     lang.mixin(item, {
                         id: idx
                     });
                     switch(item.Severity) {
                         case "Error":
+                            this._counts.error++;
+                            this._counts.errorWarning++;
                             if (errorChecked) {
                                 data.push(item);
                             }
                             break;
                         case "Warning":
+                            this._counts.warning++;
+                            this._counts.errorWarning++;
                             if (warningChecked) {
                                 data.push(item);
                             }
                             break;
                         case "Message":
                         case "Info":
+                            this._counts.info++;
                             if (infoChecked) {
                                 data.push(item);
                             }
                             break;
                     }
-                });
+                }, this);
                 this.infoStore.setData(data);
                 this.infoGrid.refresh();
             },
@@ -401,10 +412,10 @@ define([
             refreshTopics: function() {
                 this.refreshFilter();
                 if (this.errWarnCount) {
-                    this.errWarnCount.innerHTML = this.infoData.length > 0 ? this.infoData.length : "";
+                    this.errWarnCount.innerHTML = this._counts.errorWarning > 0 ? this._counts.errorWarning : "";
                 }
                 if (this.errWarnMenuItem) {
-                    this.errWarnMenuItem.set("label", this.i18n.ErrorWarnings + (this.infoData.length > 0 ? " (" + this.infoData.length + ")" : ""));
+                    this.errWarnMenuItem.set("label", this.i18n.ErrorWarnings + (this._counts.errorWarning > 0 ? " (" + this._counts.errorWarning + ")" : ""));
                 }
             }
         });

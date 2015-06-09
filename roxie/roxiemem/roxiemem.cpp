@@ -96,6 +96,7 @@ static unsigned *heapBitmap;
 static unsigned heapBitmapSize;
 static unsigned heapTotalPages; // derived from heapBitmapSize - here for code clarity
 static unsigned heapLWM;
+static unsigned heapHWM;
 static unsigned heapLargeBlocks;
 static unsigned heapLargeBlockGranularity;
 static ILargeMemCallback * heapLargeBlockCallback;
@@ -298,7 +299,8 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     {
         DBGLOG("MEMORY WILL NOT BE RELEASED TO OS");
         if (!retainMemory)
-            DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*32 is a multiple of system huge page size");
+            DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*32 (0x%" I64F "x) is a multiple of system huge page size (0x%" I64F "x)",
+                    (unsigned __int64)HEAP_ALIGNMENT_SIZE * 32, (unsigned __int64) getHugePageSize());
     }
 
     assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
@@ -308,6 +310,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     memset(heapBitmap, 0xff, heapBitmapSize*sizeof(unsigned));
     heapLargeBlocks = 1;
     heapLWM = 0;
+    heapHWM = heapBitmapSize;
 
     if (memTraceLevel)
         DBGLOG("RoxieMemMgr: %u Pages successfully allocated for the pool - memsize=%" I64F "u base=%p alignment=%" I64F "u bitmapSize=%u", 
@@ -533,7 +536,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
             lastStatsCycles = cyclesNow;
             StringBuffer s;
             memstats(s);
-            s.appendf(", heapLWM %u, dataBuffersActive=%d, dataBufferPages=%d", heapLWM, atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
+            s.appendf(", heapLWM %u, heapHWM %u, dataBuffersActive=%d, dataBufferPages=%d", heapLWM, heapHWM, atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
             DBGLOG("RoxieMemMgr: %s", s.str());
         }
     }
@@ -578,7 +581,11 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                 const unsigned mask = 1U << pos;
                 const unsigned match = i*UNSIGNED_BITS + pos;
                 char *ret = heapBase + match*HEAP_ALIGNMENT_SIZE;
-                heapBitmap[i] = (hbi & ~mask);
+                hbi &= ~mask;
+                heapBitmap[i] = hbi;
+                //If no more free pages in this mask increment the low water mark
+                if (hbi == 0)
+                    i++;
                 heapLWM = i;
                 heapAllocated++;
                 if (memTraceLevel >= 2)
@@ -590,7 +597,21 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
     else
     {
         // Usage pattern is such that we expect normally to succeed immediately.
-        unsigned i = heapBitmapSize;
+        dbgassertex(heapHWM != 0); // should have been caught much earlier
+
+        unsigned i = heapHWM;
+        //Check if the last page allocated created a new run of completely allocated memory
+        if (heapBitmap[i-1] == 0)
+        {
+            loop
+            {
+                i--;
+                dbgassertex(i != 0); // should never occur - memory must be full, and should have been caught much earlier
+                if (heapBitmap[i-1])
+                    break;
+            }
+            heapHWM = i;
+        }
         unsigned matches = 0;
         while (i)
         {
@@ -605,6 +626,8 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                         matches++;
                         if (matches==pages)
                         {
+                            unsigned start = i;
+                            unsigned startHbi = hbi;
                             char *ret = heapBase + (i*UNSIGNED_BITS+b-1)*HEAP_ALIGNMENT_SIZE;
                             loop
                             {
@@ -622,6 +645,16 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                                     mask <<= 1;
                             }
                             heapBitmap[i] = hbi;
+
+                            //Check if all memory above this allocation is allocated - if so extend the HWM
+                            if ((hbi == 0) && (i+1 == heapHWM))
+                            {
+                                if (startHbi != 0)
+                                    heapHWM = start+1;
+                                else
+                                    heapHWM = start;
+                            }
+
                             if (memTraceLevel >= 2)
                                 DBGLOG("RoxieMemMgr: suballoc_aligned() %u pages ok - addr=%p", pages, ret);
                             heapAllocated += pages;
@@ -719,12 +752,15 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
             }
         }
 
+        if (wordOffset >= heapHWM)
+            heapHWM = wordOffset+1;
+
         if (firstReleaseBlock)
             notifyMemoryUnused(firstReleaseBlock, (lastReleaseBlock - firstReleaseBlock) + heapBlockSize);
     }
 
     if (memTraceLevel >= 2)
-        DBGLOG("RoxieMemMgr: subfree_aligned() %u pages ok - addr=%p heapLWM=%u totalPages=%u", _pages, ptr, heapLWM, heapTotalPages);
+        DBGLOG("RoxieMemMgr: subfree_aligned() %u pages ok - addr=%p heapLWM=%u heapHWM=%u totalPages=%u", _pages, ptr, heapLWM, heapHWM, heapTotalPages);
 }
 
 static void clearBits(unsigned start, unsigned len)
@@ -761,6 +797,9 @@ static void clearBits(unsigned start, unsigned len)
 
 static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
 {
+    //If this function shrinks the size of the block, then the call to subfree_aligned() may increase heapHWM.
+    //If this function increases the size of the block, it is possible heapHWM could decrease - it will be
+    //updated on the next multi-page allocation
     assertex(newPages > 0);
     unsigned _pages = pages;
     memsize_t offset = (char *)ptr - heapBase;
@@ -5113,6 +5152,7 @@ protected:
             _heapBitmapSize = heapBitmapSize;
             _heapTotalPages = heapTotalPages;
             _heapLWM = heapLWM;
+            _heapHWM = heapHWM;
             _heapAllocated = heapAllocated;
             _heapUseHugePages = heapUseHugePages;
             _heapNotifyUnusedEachFree = heapNotifyUnusedEachFree;
@@ -5126,6 +5166,7 @@ protected:
             heapBitmapSize = _heapBitmapSize;
             heapTotalPages = _heapTotalPages;
             heapLWM = _heapLWM;
+            heapHWM = _heapHWM;
             heapAllocated = _heapAllocated;
             heapUseHugePages = _heapUseHugePages;
             heapNotifyUnusedEachFree = _heapNotifyUnusedEachFree;
@@ -5137,6 +5178,7 @@ protected:
         unsigned _heapBitmapSize;
         unsigned _heapTotalPages;
         unsigned _heapLWM;
+        unsigned _heapHWM;
         unsigned _heapAllocated;
         bool _heapUseHugePages;
         bool _heapNotifyUnusedEachFree;
@@ -5150,6 +5192,7 @@ protected:
         heapBitmapSize = size;
         heapTotalPages = heapBitmapSize * UNSIGNED_BITS;
         heapLWM = 0;
+        heapHWM = heapBitmapSize;
         heapAllocated = 0;
     }
 

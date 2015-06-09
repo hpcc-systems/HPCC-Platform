@@ -2268,6 +2268,19 @@ IHqlExpression * queryResultName(IHqlExpression * expr)
     return NULL;
 }
 
+
+bool remainingChildrenMatch(IHqlExpression * left, IHqlExpression * right, unsigned first)
+{
+    if (left->numChildren() != right->numChildren())
+        return false;
+    ForEachChildFrom(i, left, first)
+    {
+        if (left->queryChild(i) != right->queryChild(i))
+            return false;
+    }
+    return true;
+}
+
 //---------------------------------------------------------------------------
 
 IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int64 topNlimit)

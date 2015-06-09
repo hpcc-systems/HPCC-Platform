@@ -16,12 +16,12 @@
 define([
     "dojo/_base/declare",
 
-    "dijit/form/Select",
+    "dijit/form/ComboBox",
 
     "hpcc/TargetSelectClass"
 ], function (declare,
-    Select,
+    ComboBox,
     TargetSelectClass) {
 
-    return declare("TargetSelectWidget", [Select], TargetSelectClass);
+    return declare("TargetComboBoxWidget", [ComboBox], TargetSelectClass);
 });

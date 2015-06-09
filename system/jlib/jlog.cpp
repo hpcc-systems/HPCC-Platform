@@ -1165,15 +1165,6 @@ void LogMsgComponentReporter::report(const LogMsg & msg)
 
 // LogMsgPrepender
 
-LogMsgPrepender * LogMsgPrepender::setContext(LogMsgComponentReporter * r, char const * f, unsigned l)
-{
-    crit.enter();
-    reporter = r;
-    file = f;
-    line = l;
-    return this;
-}
-
 void LogMsgPrepender::report(const LogMsgCategory & cat, const char * format, ...)
 {
     StringBuffer buff;
@@ -1185,7 +1176,6 @@ void LogMsgPrepender::report(const LogMsgCategory & cat, const char * format, ..
     else
         queryLogMsgManager()->report_va(cat, unknownJob, buff.str(), args);
     va_end(args);
-    crit.leave();
 }
 
 void LogMsgPrepender::report_va(const LogMsgCategory & cat, const char * format, va_list args)
@@ -1196,7 +1186,6 @@ void LogMsgPrepender::report_va(const LogMsgCategory & cat, const char * format,
         reporter->report_va(cat, unknownJob, buff.str(), args);
     else
         queryLogMsgManager()->report_va(cat, unknownJob, buff.str(), args);
-    crit.leave();
 }
 
 void LogMsgPrepender::report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...)
@@ -1210,7 +1199,6 @@ void LogMsgPrepender::report(const LogMsgCategory & cat, LogMsgCode code, const 
     else
         queryLogMsgManager()->report_va(cat, unknownJob, buff.str(), args);
     va_end(args);
-    crit.leave();
 }
 
 void LogMsgPrepender::report_va(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args)
@@ -1221,7 +1209,6 @@ void LogMsgPrepender::report_va(const LogMsgCategory & cat, LogMsgCode code, con
         reporter->report_va(cat, unknownJob, buff.str(), args);
     else
         queryLogMsgManager()->report_va(cat, unknownJob, buff.str(), args);
-    crit.leave();
 }
 
 void LogMsgPrepender::report(const LogMsgCategory & cat, const IException * exception, const char * prefix)
@@ -1234,7 +1221,6 @@ void LogMsgPrepender::report(const LogMsgCategory & cat, const IException * exce
         reporter->report(cat, unknownJob, exception->errorCode(), "%s",  buff.str());
     else
         queryLogMsgManager()->report(cat, unknownJob, exception->errorCode(), "%s", buff.str());
-    crit.leave();
 }
 
 void LogMsgPrepender::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...)
@@ -1248,7 +1234,6 @@ void LogMsgPrepender::report(const LogMsgCategory & cat, const LogMsgJobInfo & j
     else
         queryLogMsgManager()->report_va(cat, job, buff.str(), args);
     va_end(args);
-    crit.leave();
 }
 
 void LogMsgPrepender::report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args)
@@ -1259,7 +1244,6 @@ void LogMsgPrepender::report_va(const LogMsgCategory & cat, const LogMsgJobInfo 
         reporter->report_va(cat, job, buff.str(), args);
     else
         queryLogMsgManager()->report_va(cat, job, buff.str(), args);
-    crit.leave();
 }
 
 void LogMsgPrepender::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...)
@@ -1273,7 +1257,6 @@ void LogMsgPrepender::report(const LogMsgCategory & cat, const LogMsgJobInfo & j
     else
         queryLogMsgManager()->report_va(cat, job, buff.str(), args);
     va_end(args);
-    crit.leave();
 }
 
 void LogMsgPrepender::report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args)
@@ -1284,7 +1267,6 @@ void LogMsgPrepender::report_va(const LogMsgCategory & cat, const LogMsgJobInfo 
         reporter->report_va(cat, job, buff.str(), args);
     else
         queryLogMsgManager()->report_va(cat, job, buff.str(), args);
-    crit.leave();
 }
 
 void LogMsgPrepender::report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * exception, const char * prefix)
@@ -1297,7 +1279,6 @@ void LogMsgPrepender::report(const LogMsgCategory & cat, const LogMsgJobInfo & j
         reporter->report(cat, job, exception->errorCode(), "%s(%d) : %s", file, line, txt.str());
     else
         queryLogMsgManager()->report(cat, job, exception->errorCode(), "%s(%d) : %s", file, line, txt.str());
-    crit.leave();
 }
 
 IException * LogMsgPrepender::report(IException * e, const char * prefix, LogMsgClass cls)
@@ -2217,7 +2198,6 @@ HandleLogMsgHandlerTable * theStderrHandler;
 CLogMsgManager * theManager;
 CSysLogEventLogger * theSysLogEventLogger;
 LogMsgComponentReporter * theReporters[MSGCOMP_NUMBER];
-LogMsgPrepender * thePrepender;
 
 MODULE_INIT(INIT_PRIORITY_JLOG)
 {
@@ -2230,12 +2210,10 @@ MODULE_INIT(INIT_PRIORITY_JLOG)
     theManager->resetMonitors();
     for(unsigned compo = 0; compo<MSGCOMP_NUMBER; compo++)
         theReporters[compo] = new LogMsgComponentReporter(compo);
-    thePrepender = new LogMsgPrepender;
     return true;
 }
 MODULE_EXIT()
 {
-    delete thePrepender;
     for(unsigned compo = 0; compo<MSGCOMP_NUMBER; compo++)
         delete theReporters[compo];
     delete theManager;
@@ -2259,11 +2237,6 @@ ILogMsgHandler * queryStderrLogMsgHandler()
 LogMsgComponentReporter * queryLogMsgComponentReporter(unsigned compo)
 {
     return theReporters[compo];
-}
-
-LogMsgPrepender * queryLogMsgPrepender()
-{
-    return thePrepender;
 }
 
 ILogMsgManager * createLogMsgManager() // use with care! (needed by mplog listener facility)

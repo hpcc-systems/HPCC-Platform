@@ -6587,7 +6587,7 @@ primexpr1
                             Owned<IHqlExpression> locale = (ltype->getTypeCode() == type_varstring) ? lexpr.getLink() : createValue(no_implicitcast, makeVarStringType(ltype->getStringLen()), lexpr.getLink());
                             $$.setExpr(createValue(no_unicodeorder, makeIntType(4, true), $3.getExpr(), $5.getExpr(), locale.getLink(), $9.getExpr()));
                         }
-    | '[' beginList sortList ']'
+    | '[' beginList nonDatasetList ']'
                         {
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
@@ -11255,7 +11255,25 @@ sortList
                         }
     ;
 
-sortItem
+nonDatasetList
+    : nonDatasetExpr
+                        {
+                            parser->addListElement($1.getExpr());
+                            $$.clear();
+                        }
+    |   nonDatasetList ',' nonDatasetExpr
+                        {
+                            parser->addListElement($3.getExpr());
+                            $$.clear();
+                        }
+    |   nonDatasetList ';' nonDatasetExpr
+                        {
+                            parser->addListElement($3.getExpr());
+                            $$.clear();
+                        }
+    ;
+
+nonDatasetExpr
     : expression            
                         {
                             node_operator op = $1.getOperator();
@@ -11288,6 +11306,11 @@ sortItem
                             $$.setPosition($1);
                         }
     | dictionary
+    ;
+
+sortItem
+    : nonDatasetExpr
+    | dataSet
     | FEW               {   $$.setExpr(createAttribute(fewAtom));   }
     | MANY              {   $$.setExpr(createAttribute(manyAtom));  }
     | MERGE             {   $$.setExpr(createAttribute(mergeAtom)); }
@@ -11419,6 +11442,7 @@ dedupFlag
                                 row.setown(createAttribute(rightAtom));
                             $$.setExpr(row.getClear(), $1);
                         }
+    | dataSet
     ;
 
 rollupExtra
@@ -11447,6 +11471,7 @@ rollupFlag
                             $$.setExpr(createAttribute(exceptAtom, $2.getExpr())); 
                         }
     | dataRow
+    | dataSet
     ;
 
 conditions

@@ -7982,50 +7982,52 @@ void HqlCppTranslator::doBuildAssignCompareTable(BuildCtx & ctx, EvaluateCompare
     // i2; forEachIn(i2); {
     CHqlBoundExpr isValid;
     BuildCtx loopctx(subctx);
-    buildDatasetIterate(loopctx, right, true);
-    bindTableCursor(loopctx, left, leftRow);
- 
-    //     if (!i1.isValid()) { cmp = -1; break; }
-    buildIteratorIsValid(loopctx, leftIter, leftRow, isValid);
-    OwnedHqlExpr test = createValue(no_not, makeBoolType(), isValid.expr.getClear());
-    BuildCtx moreRightCtx(loopctx);
-    moreRightCtx.addFilter(test);
-
-    if (info.actionIfDiffer == return_stmt)
+    if (buildDatasetIterate(loopctx, right, true))
     {
-        if (info.isEqualityCompare())
+        bindTableCursor(loopctx, left, leftRow);
+
+        //     if (!i1.isValid()) { cmp = -1; break; }
+        buildIteratorIsValid(loopctx, leftIter, leftRow, isValid);
+        OwnedHqlExpr test = createValue(no_not, makeBoolType(), isValid.expr.getClear());
+        BuildCtx moreRightCtx(loopctx);
+        moreRightCtx.addFilter(test);
+
+        if (info.actionIfDiffer == return_stmt)
         {
-            OwnedHqlExpr returnValue = info.getEqualityReturnValue();
-            moreRightCtx.addReturn(returnValue);
+            if (info.isEqualityCompare())
+            {
+                OwnedHqlExpr returnValue = info.getEqualityReturnValue();
+                moreRightCtx.addReturn(returnValue);
+            }
+            else
+                moreRightCtx.addReturn(minusOne);
         }
         else
-            moreRightCtx.addReturn(minusOne);
-    }
-    else
-    {
-        buildExprAssign(moreRightCtx, info.target, minusOne);
-        moreRightCtx.addBreak();
-    }
+        {
+            buildExprAssign(moreRightCtx, info.target, minusOne);
+            moreRightCtx.addBreak();
+        }
 
-    //Now do the comparison....
-    {
-        EvaluateCompareInfo childInfo(info);
-        if (childInfo.actionIfDiffer == break_stmt)
-            childInfo.actionIfDiffer = null_stmt;
-        //***childInfo??
-        doBuildAssignCompareRow(loopctx, info, left, right);
-    }
+        //Now do the comparison....
+        {
+            EvaluateCompareInfo childInfo(info);
+            if (childInfo.actionIfDiffer == break_stmt)
+                childInfo.actionIfDiffer = null_stmt;
+            //***childInfo??
+            doBuildAssignCompareRow(loopctx, info, left, right);
+        }
 
-    if (info.actionIfDiffer != return_stmt)
-    {
-        //     if (cmp != 0) break;
-        BuildCtx donectx(loopctx);
-        donectx.addFilter(info.target.expr);
-        donectx.addQuotedLiteral("break;");
-    }
+        if (info.actionIfDiffer != return_stmt)
+        {
+            //     if (cmp != 0) break;
+            BuildCtx donectx(loopctx);
+            donectx.addFilter(info.target.expr);
+            donectx.addQuotedLiteral("break;");
+        }
 
-    //     i1.next();
-    buildIteratorNext(*this, loopctx, leftIter, leftRow);
+        //     i1.next();
+        buildIteratorNext(*this, loopctx, leftIter, leftRow);
+    }
 
     buildIteratorIsValid(subctx, leftIter, leftRow, isValid);
     if (info.actionIfDiffer == return_stmt)

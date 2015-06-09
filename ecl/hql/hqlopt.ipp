@@ -115,6 +115,7 @@ protected:
     IHqlExpression * optimizeJoinCondition(IHqlExpression * expr);
     IHqlExpression * optimizeDistributeDedup(IHqlExpression * expr);
     IHqlExpression * optimizeIf(IHqlExpression * expr);
+    IHqlExpression * optimizeIfAppend(IHqlExpression * expr, node_operator combineOp);
     IHqlExpression * optimizeProjectInlineTable(IHqlExpression * transformed, bool childrenAreShared);
         
     inline const char * queryNode0Text(IHqlExpression * expr) { return queryChildNodeTraceText(nodeText[0], expr); }

@@ -7632,6 +7632,13 @@ void HqlCppTranslator::doBuildStmtSetResult(BuildCtx & ctx, IHqlExpression * exp
         graphLabel.set(text.str());
     }
 
+    if (insideChildQuery(ctx))
+    {
+        StringBuffer description;
+        getStoredDescription(description, seq, name, true);
+        reportWarning(CategoryUnusual, SeverityError, queryLocation(expr), ECODETEXT(HQLWRN_OutputScalarInsideChildQuery), description.str());
+    }
+
     if (cluster)
         pushCluster(subctx, cluster->queryChild(0));
 
@@ -17847,6 +17854,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetResult(BuildCtx & ctx, IHql
     buildActivityFramework(instance, isRoot && !isInternalSeq(sequence));
 
     buildInstancePrefix(instance);
+
+    if (insideChildQuery(ctx))
+    {
+        StringBuffer description;
+        getStoredDescription(description, sequence, name, true);
+        reportWarning(CategoryUnusual, SeverityError, queryLocation(expr), ECODETEXT(HQLWRN_OutputScalarInsideChildQuery), description.str());
+    }
 
     noteResultDefined(ctx, instance, sequence, name, isRoot);
     if (attribute->isDatarow())
