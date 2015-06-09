@@ -1066,6 +1066,11 @@ protected:
     bool _isAborting;
 };
 
+extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
+{
+    return new CLightweightWorkunitInfo(p);
+}
+
 class CDaliWorkUnit : public CLocalWorkUnit
 {
 public:
@@ -2585,6 +2590,11 @@ public:
     {
         // Nothing to do
     }
+    virtual const char *queryStoreType() const
+    {
+        return "Dali";
+    }
+
     virtual CLocalWorkUnit *_createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer wuRoot;
@@ -3041,6 +3051,10 @@ public:
     virtual void createRepository()
     {
         return baseFactory->createRepository();
+    }
+    virtual const char *queryStoreType() const
+    {
+        return baseFactory->queryStoreType();
     }
 
     virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)

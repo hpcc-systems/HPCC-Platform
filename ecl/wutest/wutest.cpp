@@ -441,7 +441,9 @@ protected:
         DBGLOG("%u workunits created in %d ms (%d total)", testSize, msTick()-start, after);
         ASSERT(after-before==testSize);
         ASSERT(wuids.length() == testSize);
+        start = msTick();
         ASSERT(factory->validateRepository(false)==0);
+        DBGLOG("%u workunits validated in %d ms", after, msTick()-start);
     }
 
     void testCopy()
@@ -890,13 +892,18 @@ protected:
     void testList()
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        bool isDali = streq(factory->queryStoreType(), "Dali");
         unsigned before = factory->numWorkUnits();
         unsigned start = msTick();
         unsigned numIterated = 0;
         Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsByOwner(NULL, NULL, NULL);
+        StringBuffer lastWu;
         ForEach(*wus)
         {
             IConstWorkUnitInfo &wu = wus->query();
+            if (lastWu.length() && !isDali)  // Dali does not define the order here
+                ASSERT(strcmp(wu.queryWuid(), lastWu) <= 0);
+            lastWu.set(wu.queryWuid());
             numIterated++;
         }
         DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);

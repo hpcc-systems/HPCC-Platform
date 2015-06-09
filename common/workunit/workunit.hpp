@@ -1287,6 +1287,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual unsigned validateRepository(bool fixErrors) = 0;
     virtual void deleteRepository(bool recreate) = 0;
     virtual void createRepository() = 0;  // If not already there...
+    virtual const char *queryStoreType() const = 0; // Returns "Dali" or "Cassandra"
 };
 
 interface IWorkflowScheduleConnection : extends IInterface
@@ -1376,6 +1377,7 @@ extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);
 extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit(const char *XML);
+extern WORKUNIT_API IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p);
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords);
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords);
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, const char *password);
