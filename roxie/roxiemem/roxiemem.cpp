@@ -784,7 +784,7 @@ static void clearBits(unsigned start, unsigned len)
 static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
 {
     //If this function shrinks the size of the block, then the call to subfree_aligned() may increase heapHWM.
-    //If this function increases the size of the block, it is possible heapHWM could increase - it will be
+    //If this function increases the size of the block, it is possible heapHWM could decrease - it will be
     //updated on the next multi-page allocation
     assertex(newPages > 0);
     unsigned _pages = pages;
