@@ -8,8 +8,8 @@
       <primary>Record Set Operators</primary>
     </indexterm></title>
 
-  <para>The following record set Append operators are supported (both require
-  that the files were created using identical RECORD structures<indexterm>
+  <para>The following record set operators are supported (both require that
+  the files were created using identical RECORD structures<indexterm>
       <primary>RECORD structure</primary>
     </indexterm>):</para>
 
@@ -28,6 +28,12 @@
         </row>
 
         <row>
+          <entry>-</entry>
+
+          <entry>Subtract records from a file</entry>
+        </row>
+
+        <row>
           <entry>&amp;</entry>
 
           <entry>Append all records from both files, maintaining record order
@@ -36,4 +42,25 @@
       </tbody>
     </tgroup>
   </informaltable>
+
+  <para>Example:</para>
+
+  <programlisting>MyLayout := RECORD
+  UNSIGNED Num;
+  STRING Number;
+END;
+
+FirstRecSet := DATASET([{1, 'ONE'}, {2, 'Two'}, {3, 'Three'}, {4, 'Four'}], MyLayout);
+SecondRecSet := DATASET([{5, 'FIVE'}, {6, 'SIX'}, {7, 'SEVEN'}, {8, 'EIGHT'}], MyLayout);
+
+ExcludeThese := SecondRecSet(Num &gt; 6);
+
+WholeRecSet := FirstRecSet + SecondRecSet;
+ResultSet:= WholeRecSet-ExcludeThese;
+
+OUTPUT (WholeRecSet);
+OUTPUT(ResultSet);
+</programlisting>
+
+  <para></para>
 </sect1>
