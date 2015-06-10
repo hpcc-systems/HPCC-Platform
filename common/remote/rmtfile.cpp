@@ -504,7 +504,7 @@ extern REMOTE_API int setDafileSvrTraceFlags(const SocketEndpoint &_ep,byte flag
     return -2;
 }
 
-extern REMOTE_API int setDafileSvrThrottleLimit(const SocketEndpoint &_ep, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit)
+extern REMOTE_API int setDafileSvrThrottleLimit(const SocketEndpoint &_ep, ThrottleClass throttleClass, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit, unsigned queueLimit, StringBuffer *errMsg)
 {
     SocketEndpoint ep(_ep);
     setDafsEndpointPort(ep);
@@ -512,7 +512,7 @@ extern REMOTE_API int setDafileSvrThrottleLimit(const SocketEndpoint &_ep, unsig
         return -3;
     try {
         Owned<ISocket> socket = ISocket::connect_wait(ep,5000);
-        return setDafsThrottleLimit(socket, throttleLimit, throttleDelayMs, throttleCPULimit);
+        return setDafsThrottleLimit(socket, throttleClass, throttleLimit, throttleDelayMs, throttleCPULimit, queueLimit, errMsg);
     }
     catch (IException *e)
     {
@@ -522,7 +522,7 @@ extern REMOTE_API int setDafileSvrThrottleLimit(const SocketEndpoint &_ep, unsig
     return -2;
 }
 
-extern REMOTE_API int getDafileSvrInfo(const SocketEndpoint &_ep,StringBuffer &retstr)
+extern REMOTE_API int getDafileSvrInfo(const SocketEndpoint &_ep, unsigned level, StringBuffer &retstr)
 {
     SocketEndpoint ep(_ep);
     setDafsEndpointPort(ep);
@@ -530,7 +530,7 @@ extern REMOTE_API int getDafileSvrInfo(const SocketEndpoint &_ep,StringBuffer &r
         return false;
     try {
         Owned<ISocket> socket = ISocket::connect_wait(ep,5000);
-        return getDafsInfo(socket, retstr);
+        return getDafsInfo(socket, level, retstr);
     }
     catch (IException *e)
     {

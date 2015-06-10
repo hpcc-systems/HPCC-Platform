@@ -59,6 +59,7 @@
 #define RFSERR_NoConnectSlaveXY                 8046
 #define RFSERR_VersionMismatch                  8047
 #define RFSERR_SetThrottleFailed                8048
+#define RFSERR_MaxQueueRequests                 8049
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 
