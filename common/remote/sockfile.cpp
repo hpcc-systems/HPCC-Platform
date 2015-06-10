@@ -2853,7 +2853,7 @@ public:
     void wait()
     {
         if (limit)
-            threadsem.signal();
+            threadsem.wait();
     }
 
     AsyncCommandStatus copySection(const char *uuid, const char *fromFile, const char *toFile, offset_t toOfs, offset_t fromOfs, offset_t size, offset_t &done, offset_t &total, unsigned timeout)
@@ -2901,17 +2901,17 @@ public:
 
 
 
-inline void throwErr(MemoryBuffer &reply, RemoteFileCommandType e)
+inline void appendErr(MemoryBuffer &reply, RemoteFileCommandType e)
 {
     reply.append((unsigned)e).append(getRFCText(e));
 }
-inline void throwErr2(MemoryBuffer &reply, RemoteFileCommandType e, unsigned v)
+inline void appendErr2(MemoryBuffer &reply, RemoteFileCommandType e, unsigned v)
 {
     StringBuffer msg;
     msg.append(getRFCText(e)).append(':').append(v);
     reply.append((unsigned)e).append(msg.str());
 }
-inline void throwErr3(MemoryBuffer &reply, RemoteFileCommandType e, int code, const char *errMsg)
+inline void appendErr3(MemoryBuffer &reply, RemoteFileCommandType e, int code, const char *errMsg)
 {
     StringBuffer msg;
     msg.appendf("ERROR: %s(%d) '%s'", getRFCText(e), code, errMsg?errMsg:"");
@@ -2948,7 +2948,7 @@ class CClientStatsTable : public StringSuperHashTableOf<ClientStats>
 {
     typedef StringSuperHashTableOf<ClientStats> PARENT;
     CriticalSection crit;
-    unsigned cmdStats[RFCmax-1];
+    unsigned cmdStats[RFCmax];
 
     inline ClientStats *addClientCommon(RemoteFileCommandType cmd, const char *client)
     {
@@ -2958,13 +2958,7 @@ class CClientStatsTable : public StringSuperHashTableOf<ClientStats>
             stats = new ClientStats(client);
             PARENT::replace(*stats);
         }
-        if (cmd>=RFCmax)
-        {
-            VStringBuffer errMsg("cmd too high: %u", cmd);
-            PrintStackReport();
-            raiseAssertException(errMsg.str(), __FILE__, __LINE__);
-        }
-        cmdStats[cmd] = cmdStats[cmd]+1;
+        cmdStats[cmd]++;
         ++stats->count;
         return stats;
     }
@@ -3035,16 +3029,16 @@ public:
         if (totalClients)
         {
             SuperHashIteratorOf<ClientStats> iter(*this);
+            PointerArrayOf<ClientStats> elements;
+            ForEach(iter)
+            {
+                ClientStats &elem = iter.query();
+                elements.append(&elem);
+            }
+            elements.sort(&compareElement);
             if (level < 10)
             {
                 // list up to 10 clients ordered by # of commands processed
-                PointerArrayOf<ClientStats> elements;
-                ForEach(iter)
-                {
-                    ClientStats &elem = iter.query();
-                    elements.append(&elem);
-                }
-                elements.sort(&compareElement);
                 unsigned max=elements.ordinality();
                 if (max>10)
                     max = 10; // cap
@@ -3059,9 +3053,9 @@ public:
             else // list all
             {
                 info.append("All clients:").newline();
-                ForEach(iter)
+                ForEachItemIn(e, elements)
                 {
-                    ClientStats &element = iter.query();
+                    const ClientStats &element = *elements.item(e);
                     info.appendf("Client %s - %" I64F "d requests handled, bytes read = %" I64F "d, bytes written = % " I64F "d",
                             element.client.get(), element.count, element.bRead, element.bWritten).newline();
                 }
@@ -3165,10 +3159,6 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
             msg.setEndian(__BIG_ENDIAN);
             if (left==0)
             {
-                if (0 == avail)
-                {
-                    avail = 0;
-                }
                 try
                 {
                     left = avail?receiveBufferSize(socket):0;
@@ -3269,7 +3259,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
             initSendBuffer(reply);
             StringBuffer s;
             e->errorMessage(s);
-            throwErr3(reply, cmd, e->errorCode(), s.str());
+            appendErr3(reply, cmd, e->errorCode(), s.str());
             parent->appendError(cmd, this, cmd, reply);
             sendBuffer(socket, reply);
             return false;
@@ -3617,12 +3607,12 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
              * Queued items are processed 1st, the current request, then anything that was queued when handling current request
              * Throttle slot (semaphore) is only given back when no more to do.
              */
-            RemoteFileCommandType currentCmd;
             Linked<CRemoteClientHandler> currentClient;
             MemoryBuffer currentMsg;
             unsigned ms;
             loop
             {
+                RemoteFileCommandType currentCmd;
                 {
                     CriticalBlock b(crit);
                     Owned<CThrottleQueueItem> item = queue.dequeue();
@@ -3653,12 +3643,6 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
                         ms = timer.elapsedMs();
                         client = NULL;
                     }
-                }
-                if (currentCmd>=RFCmax)
-                {
-                    VStringBuffer errMsg("cmd too high: %u, client sock=%u", currentCmd, client->socket->OShandle());
-                    PrintStackReport();
-                    raiseAssertException(errMsg.str(), __FILE__, __LINE__);
                 }
                 if (ms >= 1000)
                 {
@@ -3893,7 +3877,7 @@ public:
         CriticalBlock block(sect);
         fileio = NULL;
         if (handle<=0) {
-            throwErr(reply, (RemoteFileCommandType)RFSERR_NullFileIOHandle);
+            appendErr(reply, (RemoteFileCommandType)RFSERR_NullFileIOHandle);
             return false;
         }
         unsigned clientidx;
@@ -3912,7 +3896,7 @@ public:
             }
             return true;
         }
-        throwErr(reply, (RemoteFileCommandType)RFSERR_InvalidFileIOHandle);
+        appendErr(reply, (RemoteFileCommandType)RFSERR_InvalidFileIOHandle);
         return false;
     }
 
@@ -4044,7 +4028,7 @@ public:
             reply.setWritePos(posOfErr);
             StringBuffer s;
             e->errorMessage(s);
-            throwErr3(reply, (RemoteFileCommandType)RFSERR_ReadFailed,e->errorCode(),s.str());
+            appendErr3(reply, (RemoteFileCommandType)RFSERR_ReadFailed,e->errorCode(),s.str());
             e->Release();
             return false;
         }
@@ -4717,13 +4701,13 @@ public:
     bool cmdKill(MemoryBuffer & msg, MemoryBuffer & reply)
     {
         // TBD
-        throwErr2(reply, (RemoteFileCommandType)RFSERR_InvalidCommand, RFCkill);
+        appendErr2(reply, (RemoteFileCommandType)RFSERR_InvalidCommand, RFCkill);
         return false;
     }
 
     bool cmdUnknown(MemoryBuffer & msg, MemoryBuffer & reply,RemoteFileCommandType cmd)
     {
-        throwErr2(reply, (RemoteFileCommandType)RFSERR_InvalidCommand, cmd);
+        appendErr2(reply, (RemoteFileCommandType)RFSERR_InvalidCommand, cmd);
         return false;
     }
 
@@ -4735,7 +4719,7 @@ public:
             StringBuffer s(client.queryPeerName());
             PROGLOG("Connect from %s",s.str());
         }
-        throwErr2(reply, (RemoteFileCommandType)RFSERR_InvalidCommand, RFCunlock);
+        appendErr2(reply, (RemoteFileCommandType)RFSERR_InvalidCommand, RFCunlock);
         return false;
     }
 
@@ -4842,12 +4826,6 @@ public:
             case RFCcopysection: // slightly odd, but has it's own limit
             default:
             {
-                if (cmd>=RFCmax)
-                {
-                    VStringBuffer errMsg("cmd too high: %u, client sock=%u", cmd, client->socket->OShandle());
-                    PrintStackReport();
-                    raiseAssertException(errMsg.str(), __FILE__, __LINE__);
-                }
                 client->processCommand(cmd, msg, NULL);
                 break;
             }
@@ -4900,12 +4878,6 @@ public:
                 MAPCOMMAND(RFCsetthrottle, cmdSetThrottle); // legacy version
                 MAPCOMMAND(RFCsetthrottle2, cmdSetThrottle2);
             default:
-                if (cmd>=RFCmax)
-                {
-                    VStringBuffer errMsg("cmd too high: %u, client sock=%u", cmd, client->socket->OShandle());
-                    PrintStackReport();
-                    raiseAssertException(errMsg.str(), __FILE__, __LINE__);
-                }
                 ret = cmdUnknown(msg,reply,cmd);
                 break;
             }
@@ -4915,7 +4887,7 @@ public:
             ret = false;
             StringBuffer s;
             e->errorMessage(s);
-            throwErr3(reply, cmd, e->errorCode(), s.str());
+            appendErr3(reply, cmd, e->errorCode(), s.str());
             e->Release();
         }
         if (!ret) // append error string
@@ -5124,7 +5096,7 @@ public:
             }
         }
         reply.clear();
-        throwErr(reply, (RemoteFileCommandType)RFSERR_AuthenticateFailed);
+        appendErr(reply, (RemoteFileCommandType)RFSERR_AuthenticateFailed);
         sendBuffer(socket, reply); // send OK
         return false;
     }
