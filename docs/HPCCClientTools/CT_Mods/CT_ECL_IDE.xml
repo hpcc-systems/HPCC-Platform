@@ -2830,7 +2830,7 @@ ENDMACRO;
         <graphic fileref="../../images/CT55.jpg" scalefit="1" />
       </sect2>
 
-      <sect2 id="Graph_Viewer" role="brk">
+      <sect2 id="ECLWatch_View" role="brk">
         <title><emphasis>ECL Watch View </emphasis></title>
 
         <para>A workunit’s Workunit Details page view is displayed in the ECL
