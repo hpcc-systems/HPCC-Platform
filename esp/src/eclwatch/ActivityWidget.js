@@ -45,6 +45,7 @@ define([
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.title_Activity,
         idProperty: "__hpcc_id",
+        firstLoad: true,
 
         _onAutoRefresh: function (event) {
             this.activity.disableMonitor(!this.autoRefreshButton.get("checked"));
@@ -355,7 +356,10 @@ define([
                         width: 270,
                         sortable: true,
                         shouldExpand: function (row, level, previouslyExpanded) {
-                            return true;
+                            if (context.firstLoad === true) {
+                                return true;
+                            }
+                            return previouslyExpanded;
                         },
                         formatter: function (_name, row) {
                             var img = row.getStateImage();
@@ -510,6 +514,7 @@ define([
         },
 
         refreshGrid: function (args) {
+            this.firstLoad = false;
             this.activity.refresh();
         },
 
