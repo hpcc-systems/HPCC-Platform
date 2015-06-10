@@ -282,7 +282,7 @@ public:
     virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const;
 
     virtual const char *queryUser() const;
-    virtual IStringVal & getWuScope(IStringVal & str) const;
+    virtual const char *queryWuScope() const;
     virtual IConstWUResult * getVariableByName(const char * name) const;
     virtual IConstWUResultIterator & getVariables() const;
     virtual const char *queryWuid() const;

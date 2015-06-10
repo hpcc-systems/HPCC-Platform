@@ -864,7 +864,7 @@ protected:
             ASSERT(streq(xml, "<Tracing><trace1>tvalue1</trace1><trace2>43</trace2></Tracing>"));
 
             ASSERT(streq(wu->queryUser(), "user"));
-            ASSERT(streq(wu->getWuScope(s).str(), "scope"));
+            ASSERT(streq(wu->queryWuScope(), "scope"));
             ASSERT(streq(wu->getSnapshot(s).str(),"snap"));
             ASSERT(wu->getWarningSeverity(1234, SeverityInformation) == SeverityFatal);
         }

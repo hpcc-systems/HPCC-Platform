@@ -979,6 +979,7 @@ interface IConstWorkUnitInfo : extends IInterface
     virtual const char *queryWuid() const = 0;
     virtual const char *queryUser() const = 0;
     virtual const char *queryJobName() const = 0;
+    virtual const char *queryWuScope() const = 0;
     virtual const char *queryClusterName() const = 0;
     virtual WUState getState() const = 0;
     virtual const char *queryStateDesc() const = 0;
@@ -1040,7 +1041,6 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const = 0;
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const = 0; // filter must currently stay alive while the iterator does.
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const = 0;
-    virtual IStringVal & getWuScope(IStringVal & str) const = 0;
     virtual IConstWUResult * getVariableByName(const char * name) const = 0;
     virtual IConstWUResultIterator & getVariables() const = 0;
     virtual bool isPausing() const = 0;
@@ -1409,7 +1409,8 @@ extern WORKUNIT_API IPropertyTree * resolveDefinitionInArchive(IPropertyTree * a
 inline bool isLibrary(IConstWorkUnit * wu) { return wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0) != 0; }
 extern WORKUNIT_API bool looksLikeAWuid(const char * wuid, const char firstChar);
 
-extern WORKUNIT_API IConstWorkUnitIterator *createConstWUIterator(IPropertyTreeIterator *iter, ISecManager *secmgr, ISecUser *secuser);
+extern WORKUNIT_API IConstWorkUnitIterator *createSecureConstWUIterator(IPropertyTreeIterator *iter, ISecManager *secmgr, ISecUser *secuser);
+extern WORKUNIT_API IConstWorkUnitIterator *createSecureConstWUIterator(IConstWorkUnitIterator *iter, ISecManager *secmgr, ISecUser *secuser);
 
 enum WUQueryActivationOptions
 {

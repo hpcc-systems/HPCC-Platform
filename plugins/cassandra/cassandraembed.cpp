@@ -3096,7 +3096,7 @@ static const CassandraXmlMapping workunitsMappings [] =
     {"jobname", "text", "@jobName", stringColumnMapper},
     {"priorityclass", "text", "@priorityClass", stringColumnMapper},
     {"protected", "boolean", "@protected", boolColumnMapper},
-    {"scope", "text", "@scope", stringColumnMapper},
+    {"wuScope", "text", "@scope", stringColumnMapper},
     {"submitID", "text", "@submitID", stringColumnMapper},
     {"state", "text", "@state", stringColumnMapper},
 
@@ -3125,7 +3125,7 @@ static const CassandraXmlMapping workunitInfoMappings [] =  // A cut down versio
     {"jobname", "text", "@jobName", stringColumnMapper},
     {"priorityclass", "text", "@priorityClass", stringColumnMapper},
     {"protected", "boolean", "@protected", boolColumnMapper},
-    {"scope", "text", "@scope", stringColumnMapper},
+    {"wuScope", "text", "@scope", stringColumnMapper},
     {"submitID", "text", "@submitID", stringColumnMapper},
     {"state", "text", "@state", stringColumnMapper},
     { NULL, "workunits", "((partition), wuid)|CLUSTERING ORDER BY (wuid DESC)", stringColumnMapper}
@@ -4346,8 +4346,6 @@ public:
         connect();
         ensureTable(session, workunitsMappings);
         ensureTable(session, searchMappings);
-        //for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
-        //    ensureTable(session, *mapping);
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             ensureTable(session, table[0]->mappings);
     }
@@ -4412,7 +4410,7 @@ private:
         {
             merger->addResult(*new CassandraResult(fetchDataByPartition(workunitInfoMappings, i)));
         }
-        return merger.getClear();
+        return createSecureConstWUIterator(merger.getClear(), secmgr, secuser);
     }
 
     IConstWorkUnitIterator * getWorkUnitsByXXX(const char *xpath, const char *key, ISecManager *secmgr, ISecUser *secuser)
@@ -4430,7 +4428,7 @@ private:
             parent->addPropTree(wuid, wuXML.getClear());
         }
         Owned<IPropertyTreeIterator> iter = parent->getElements("*");
-        return createConstWUIterator(iter, secmgr, secuser);
+        return createSecureConstWUIterator(iter.getClear(), secmgr, secuser);
     }
 
     unsigned validateSearch(const char *xpath, const char *wuid, IPTree *wuXML, CassBatch *batch)
