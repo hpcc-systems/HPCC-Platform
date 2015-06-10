@@ -2225,7 +2225,6 @@ MODULE_EXIT()
     delete thePassNoneFilter;
     delete thePassLocalFilter;
     delete thePassAllFilter;
-    thePrepender = NULL;
     theManager = NULL;
     theSysLogEventLogger = NULL;
     theStderrHandler = NULL;
