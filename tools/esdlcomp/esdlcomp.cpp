@@ -1097,9 +1097,10 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const cha
     includes=NULL;
     methods=NULL;
     versions = NULL;
-
+    esxdlo = -1;
     StringBuffer ext;
-    splitFilename(sourceFile, NULL, &srcDir, &name, &ext);
+    StringBuffer prot;
+    splitFilename(sourceFile, &prot, &srcDir, &name, &ext);
 
     filename = strdup(sourceFile);
     size_t l = strlen(filename);
@@ -1109,8 +1110,8 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const cha
     {
         if (isIncludedEsdl)
         {
-            StringBuffer alternateExtFilename(srcDir);
-            alternateExtFilename.append(name.str());
+            StringBuffer alternateExtFilename;
+            alternateExtFilename.setf("%s%s%s", (prot.length()>0) ? prot.str() : "", srcDir.str(), name.str());
 
             if (stricmp(ext.str(), ESDL_FILE_EXTENSION)==0)
                 alternateExtFilename.append(LEGACY_FILE_EXTENSION);
@@ -1233,8 +1234,8 @@ void ESDLcompiler::Process()
     write_esxdl();
 
     fclose(yyin);
-	if (gOutfile > 0)
-		close (gOutfile);
+    if (gOutfile > 0)
+        close (gOutfile);
 
     yyCleanupESDLGlobals();
     yylex_destroy();
