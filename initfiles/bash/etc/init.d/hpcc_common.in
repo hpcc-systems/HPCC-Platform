@@ -390,18 +390,31 @@ startCmd() {
     logDir=$log/${compName}
 
     if [ ${noStatusCheck} -ne 1 ]; then
-      check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
-      RCSTART=$?
-      if [ ${RCSTART} -gt 1 ];then
-        # take care of failure message in check_status function
-        cleanupRuntimeEnvironment
-      fi
-      if [ ${RCSTART} -eq 0 ]; then
-        #Since component is already started but current script is failed till returning 0
-        log "$compName ---> already started"
-        log_success_msg "Already Started"
-        return ${RCSTART}
-      fi
+        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
+        RCSTART=$?
+        if [ ${RCSTART} -gt 1 ];then
+            # take care of failure message in check_status function
+            checkPidExist $PIDPATH
+            local initRunning=$__pidExists
+            checkPidExist $COMPPIDPATH
+            local compRunning=$__pidExists
+            if [[ $compRunning -eq 1 || $initRunning -eq 1 ]]; then
+                log "Orphaned Process"
+                cleanup_component
+                if [[ $? -eq 1 ]]; then
+                    log_failure_msg
+                    return 1
+                else
+                     cleanupRuntimeEnvironment
+                fi
+            fi
+        fi
+        if [ ${RCSTART} -eq 0 ]; then
+            #Since component is already started but current script is failed till returning 0
+            log "$compName ---> already started"
+            log_success_msg "Already Started"
+            return ${RCSTART}
+        fi
     fi
 
     limits=(
@@ -516,8 +529,6 @@ stop_component() {
     log "$stopcmd"
 
     eval $stopcmd
-
-    unlock ${LOCKPATH}
 
     RESULT=0
     local waittime=30
@@ -910,57 +921,58 @@ cluster_tools_init() {
 ##
 cleanup_component() {
 
-  # used to get variables for frunssh
-  # Necessary for when we source in setvars, since we aren't using the start-stop-demon the $HOME will
-  # be set to /root or some other location, and not the appropriate directory, causing problems
-  # with $SSHidentityfile
-  set_environmentvars
-  HOME=${home}/${user}
-  instancedir=${runtime}/${compName}
-  if [ -e $instancedir/setvars ]; then
-    source $instancedir/setvars
-  fi
-
-  # grab the PID of our component, and in the case it doesn't exist, the pid of the init file (in case
-  # it somehow is still alive)
-  local cpidpath=${COMPPIDPATH}
-  if [ "${compType}" = "thor" ] && [ ! -f "${cpidpath}" ]; then
-    # if run_thor is sent a SIGKILL, the normal COMPPIDPATH file will no longer exist, we catch this and
-    # fall back to the {compName}_master.pid file that will still be available.
-    cpidpath=$( echo $cpidpath | sed 's/\.pid/_master.pid/' )
-  fi
-  getPid ${cpidpath}
-  local mpid=$__pidValue
-  if [ $mpid -eq 0 ]; then
-    getPid ${PIDPATH}
-    mpid=$__pidValue
-  fi
-
-  # start with SIGTERM and then follow up with SIGKILL if unsuccessful
-  if [ $mpid -ne 0 ] ; then
-    # use the mpid we collected to grab the group pid of the process, to kill off all siblings at once
-    local pgid=$( ps -p $mpid -o pid,pgid | grep $mpid | awk '{ print $2 }' )
-
-    kill -15 -$pgid
-    sleep 1
-    local WAITTIME=5
-    local RUNNING=1
-    while [[ ${WAITTIME} -gt 0 ]]; do
-      WAITTIME=`expr ${WAITTIME} - 1`
-      kill -0 -$pgid &> /dev/null
-      if [ $? -ne 0 ];then
-        log "${compName} orphans cleaned up"
-        RUNNING=0
-        break;
-      else
-        log "Waiting for ${compName} orphans to cleanup gracefully"
-        sleep 1
-      fi
-    done
-
-    if [[ ${RUNNING} -eq 1 ]]; then
-      log "sending SIGKILL to ${compName} orphans"
-      kill -9 -$pgid
+    # used to get variables for frunssh
+    # Necessary for when we source in setvars, since we aren't using the start-stop-demon the $HOME will
+    # be set to /root or some other location, and not the appropriate directory, causing problems
+    # with $SSHidentityfile
+    set_environmentvars
+    HOME=${home}/${user}
+    instancedir=${runtime}/${compName}
+    if [ -e $instancedir/setvars ]; then
+        source $instancedir/setvars
     fi
-  fi
+
+    # grab the PID of our component, and in the case it doesn't exist, the pid of the init file (in case
+    # it somehow is still alive)
+    local cpidpath=${COMPPIDPATH}
+    if [ "${compType}" = "thor" ] && [ ! -f "${cpidpath}" ]; then
+        # if run_thor is sent a SIGKILL, the normal COMPPIDPATH file will no longer exist, we catch this and
+        # fall back to the {compName}_master.pid file that will still be available.
+        cpidpath=$( echo $cpidpath | sed 's/\.pid/_master.pid/' )
+    fi
+    getPid ${cpidpath}
+    local mpid=$__pidValue
+    if [ $mpid -eq 0 ]; then
+        getPid ${PIDPATH}
+        mpid=$__pidValue
+    fi
+
+    # start with SIGTERM and then follow up with SIGKILL if unsuccessful
+    if [ $mpid -ne 0 ] ; then
+        # use the mpid we collected to grab the group pid of the process, to kill off all siblings at once
+        local pgid=$( ps -p $mpid -o pid,pgid | grep $mpid | awk '{ print $2 }' )
+
+        kill -15 -$pgid
+        sleep 1
+        local WAITTIME=5
+        local RUNNING=1
+        while [[ ${WAITTIME} -gt 0 ]]; do
+            WAITTIME=`expr ${WAITTIME} - 1`
+            kill -0 -$pgid &> /dev/null
+            if [ $? -ne 0 ];then
+                log "${compName} orphans cleaned up"
+                RUNNING=0
+                break;
+            else
+                log "Waiting for ${compName} orphans to cleanup gracefully"
+                sleep 1
+            fi
+        done
+
+        if [[ ${RUNNING} -eq 1 ]]; then
+            log "sending SIGKILL to ${compName} orphans"
+            kill -9 -$pgid
+        fi
+    fi
+    return $RUNNING
 }

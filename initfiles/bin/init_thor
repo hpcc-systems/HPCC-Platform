@@ -22,6 +22,8 @@ source ${PATH_PRE}
 INSTALL_DIR=$(dirname ${PATH_PRE})/..
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 component=$(basename $PWD)
+dir.getByName lock
+lock="$dir_return"
 
 PID_NAME="$PID/${component}.pid"
 
@@ -112,9 +114,15 @@ killed()
 {
     log "Stopping ${component}"
     kill_process ${PID_NAME} thormaster_${component} 30
-    kill_slaves
-    log "removing init.pid file and uslaves.start file"
-    rm -f $INIT_PID_NAME $instancedir/uslaves.start > /dev/null 2>&1
+    if [[ $? -ne 1 ]]; then
+        log "could not kill $component"
+    else
+        log "$component Stopped"
+        unlock /var/lock/HPCCSystems/$component/${component}.lock
+        kill_slaves
+        log "removing init.pid file and uslaves.start file"
+        rm -f $INIT_PID_NAME $instancedir/uslaves.start > /dev/null 2>&1
+    fi
     exit 255
 }
 
