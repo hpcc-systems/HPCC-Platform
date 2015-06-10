@@ -6,7 +6,7 @@
   "dojo/dom-geometry",
   "dojo/Evented",
 
-  "d3/d3"
+  "d3"
 
 ], function (declare, lang, dom, domConstruct, domGeom, Evented,
     d3) {

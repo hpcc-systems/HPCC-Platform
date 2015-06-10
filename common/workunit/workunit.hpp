@@ -548,6 +548,9 @@ interface IConstWUClusterInfo : extends IInterface
     virtual const SocketEndpointArray & getRoxieServers() const = 0;
     virtual const char *getLdapUser() const = 0;
     virtual const char *getLdapPassword() const = 0;
+    virtual unsigned getRoxieRedundancy() const = 0;
+    virtual unsigned getChannelsPerNode() const = 0;
+    virtual int getRoxieReplicateOffset() const = 0;
 };
 
 //! IWorkflowItem

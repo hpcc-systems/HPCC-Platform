@@ -542,6 +542,9 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FETCH.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FROMJSON.xml"
+		xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FROMUNICODE.xml"
                 xpointer="element(/1)"
@@ -872,6 +875,9 @@
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-THISNODE.xml"
                 xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOJSON.xml"
+		xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOPN.xml"

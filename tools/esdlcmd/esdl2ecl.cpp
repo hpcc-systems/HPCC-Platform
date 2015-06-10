@@ -118,7 +118,7 @@ public:
             {
                 StringBuffer msg("Unsupported file type: ");
                 msg.append(srcfile);
-
+                msg.append(srcext);
                 throw MakeStringExceptionDirect(-1, msg.str());
             }
 
@@ -276,8 +276,12 @@ public:
         StringBuffer srcPath;
         StringBuffer srcName;
         StringBuffer srcExt;
+        StringBuffer srcProt;
 
-        splitFilename(optSource.get(), NULL, &srcPath, &srcName, &srcExt);
+        splitFilename(optSource.get(), &srcProt, &srcPath, &srcName, &srcExt);
+
+        if (srcProt.length() > 0)
+            srcPath.insert(0, srcProt.str());
 
         unsigned start = msTick();
         EsdlIndexedPropertyTrees trees;
@@ -392,6 +396,17 @@ public:
         }
         outfile.append(finger).append(".ecl");
 
+        {
+            //If the target output file cannot be accessed, this operation will
+            //throw, and will be caught and reported at the shell level.
+            Owned<IFile> ofile =  createIFile(outfile.str());
+            if (ofile)
+            {
+                Owned<IFileIO> fileIO = ofile->open(IFOcreate);
+                fileIO.clear();
+            }
+        }
+
         StringBuffer fullname(srcpath);
         if (fullname.length() && !strchr("/\\", fullname.charAt(fullname.length()-1)))
             fullname.append('/');
@@ -455,7 +470,15 @@ public:
         }
 
         trans->setResultTarget(filename);
-        trans->transform();
+
+        try
+        {
+            trans->transform();
+        }
+        catch(...)
+        {
+            fprintf(stdout, "Error transforming Esdl to ECL file %s", filename);
+        }
     }
 
 public:

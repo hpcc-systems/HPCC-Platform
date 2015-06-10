@@ -317,6 +317,16 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
                 heapTotalPages, (unsigned __int64) memsize, heapBase, (unsigned __int64) HEAP_ALIGNMENT_SIZE, heapBitmapSize);
 }
 
+static void adjustHeapSize(unsigned numPages)
+{
+    memsize_t bitmapSize = (numPages + UNSIGNED_BITS - 1) / UNSIGNED_BITS;
+    memsize_t totalPages = bitmapSize * UNSIGNED_BITS;
+    memsize_t memsize = totalPages * HEAP_ALIGNMENT_SIZE;
+    heapEnd = heapBase + memsize;
+    heapBitmapSize = (unsigned)bitmapSize;
+    heapTotalPages = (unsigned)totalPages;
+}
+
 extern void releaseRoxieHeap()
 {
     if (heapBase)
@@ -2301,6 +2311,12 @@ public:
             }
             prevHeaplet = heaplet;
         }
+    }
+
+    bool mayHaveEmptySpace() const
+    {
+        unsigned head = atomic_read(&headMaybeSpace);
+        return !isNullBlock(head);
     }
 
     void reportLeaks(unsigned &leaked) const
@@ -4292,46 +4308,58 @@ void * CChunkedHeap::inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCos
     //The latter is done outside the spinblock, to reduce the window for contention.
     ChunkedHeaplet * donorHeaplet;
     char * chunk;
-    {
-        SpinBlock b(crit);
-        if (activeHeaplet)
-        {
-            //This cast is safe because we are within a member of CChunkedHeap
-            donorHeaplet = static_cast<ChunkedHeaplet *>(activeHeaplet);
-            chunk = donorHeaplet->allocateChunk();
-            if (chunk)
-            {
-                //The code at the end of this function needs to be executed outside of the spinblock.
-                //Just occasionally gotos are the best way of expressing something
-                goto gotChunk;
-            }
-            activeHeaplet = NULL;
-        }
-
-        //Now walk the list of blocks which may potentially have some free space:
-        loop
-        {
-            Heaplet * next = popFromSpaceList();
-            if (!next)
-                break;
-
-            //This cast is safe because we are within a member of CChunkedHeap
-            donorHeaplet = static_cast<ChunkedHeaplet *>(next);
-            chunk = donorHeaplet->allocateChunk();
-            if (chunk)
-            {
-                activeHeaplet = donorHeaplet;
-                //The code at the end of this function needs to be executed outside of the spinblock.
-                //Just occasionally gotos are the best way of expressing something
-                goto gotChunk;
-            }
-        }
-    }
-
-    //NB: At this point activeHeaplet = NULL;
     loop
     {
-        rowManager->checkLimit(1, maxSpillCost);
+        {
+            SpinBlock b(crit);
+            if (activeHeaplet)
+            {
+                //This cast is safe because we are within a member of CChunkedHeap
+                donorHeaplet = static_cast<ChunkedHeaplet *>(activeHeaplet);
+                chunk = donorHeaplet->allocateChunk();
+                if (chunk)
+                {
+                    //The code at the end of this function needs to be executed outside of the spinblock.
+                    //Just occasionally gotos are the best way of expressing something
+                    goto gotChunk;
+                }
+                activeHeaplet = NULL;
+            }
+
+            //Now walk the list of blocks which may potentially have some free space:
+            loop
+            {
+                Heaplet * next = popFromSpaceList();
+                if (!next)
+                    break;
+
+                //This cast is safe because we are within a member of CChunkedHeap
+                donorHeaplet = static_cast<ChunkedHeaplet *>(next);
+                chunk = donorHeaplet->allocateChunk();
+                if (chunk)
+                {
+                    activeHeaplet = donorHeaplet;
+                    //The code at the end of this function needs to be executed outside of the spinblock.
+                    //Just occasionally gotos are the best way of expressing something
+                    goto gotChunk;
+                }
+            }
+        }
+
+        //NB: At this point activeHeaplet = NULL;
+        try
+        {
+            rowManager->checkLimit(1, maxSpillCost);
+        }
+        catch (IException * e)
+        {
+            //No pages left, but freeing the buffers may have freed some records from the current heap
+            if (!mayHaveEmptySpace())
+                throw;
+            logctx.CTXLOG("Checking for space in existing heap following callback");
+            e->Release();
+            continue;
+        }
 
         donorHeaplet = allocateHeaplet();
         if (donorHeaplet)
@@ -4900,6 +4928,42 @@ protected:
     unsigned cost;
 };
 
+// A row buffer which does not allocate memory for the row array from roxiemem
+class TestingRowBuffer : implements IBufferedRowCallback
+{
+public:
+    TestingRowBuffer(unsigned _cost) : cost(_cost)
+    {
+    }
+    ~TestingRowBuffer() { kill(); }
+
+//interface IBufferedRowCallback
+    virtual unsigned getSpillCost() const { return cost; }
+    virtual bool freeBufferedRows(bool critical)
+    {
+        if (rows.ordinality() == 0)
+            return false;
+        kill();
+        return true;
+    }
+
+    void addRow(const void * row)
+    {
+        rows.append((void *)row);
+    }
+
+    void kill()
+    {
+        ForEachItemIn(i, rows)
+            ReleaseRoxieRow(rows.item(i));
+        rows.kill();
+    }
+
+protected:
+    PointerArray rows;
+    unsigned cost;
+};
+
 //A buffered row class - used for testing
 class CallbackBlockAllocator : implements IBufferedRowCallback
 {
@@ -5338,6 +5402,7 @@ protected:
     }
 
 #ifdef __64BIT__
+    //Testing allocating bits that represent 1Tb of memory.  With 256K pages, that is simulating 4M pages.
     enum { maxBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // Test larger range - in case we ever reduce the granularity
 #else
     // Restrict heap sizes on 32-bit systems
@@ -5411,7 +5476,6 @@ protected:
     }
     void testBitmapThreading()
     {
-        //Don't run this with NOTIFY_UNUSED_PAGES_ON_FREE enabled - I'm not sure what the calls to map out random memory are likely to do!
         testBitmapThreading(1, 1);
         testBitmapThreading(3, 1);
         testBitmapThreading(11, 1);
@@ -6149,6 +6213,7 @@ protected:
         testCallback(16, 10, 5, 0.25, RHFunique);  // 4 at each cost level
         testCallback(128, 10, 5, 0.25, RHFunique);  // 4 at each cost level
         testCallback(1024, 10, 5, 0.25, RHFunique);  // 4 at each cost level
+        testCallbacks2();
     }
     const static size32_t compactingAllocSize = 32;
     void testCompacting(IRowManager * rowManager, IFixedRowHeap * rowHeap, unsigned numRows, unsigned milliFraction)
@@ -6263,6 +6328,45 @@ protected:
             ok = true;
         }
         ASSERT(ok);
+    }
+    void testFragmentCallbacks(IRowManager * rowManager, unsigned numPages)
+    {
+        //Allocate rows, but only free a proportion in the callbacks
+        TestingRowBuffer buff1(1);
+        TestingRowBuffer buff2(2);
+
+        rowManager->addRowBuffer(&buff2);
+        unsigned numPerPage = 32;
+        unsigned chunkSize = FixedSizeHeaplet::dataAreaSize() / numPerPage;
+        unsigned allocSize = chunkSize-16;
+        unsigned proportion = 4;
+        unsigned numAllocations = numPerPage * (proportion - 1) * numPages;
+        for (unsigned i=0; i < numAllocations; i++)
+        {
+            const void * row = rowManager->allocate(allocSize, 0);
+            if ((i % proportion) == 0)
+                buff1.addRow(row);
+            else
+                buff2.addRow(row);
+        }
+        buff2.freeBufferedRows(false);
+        rowManager->removeRowBuffer(&buff2);
+    }
+    void testCallbacks2()
+    {
+        //Test allocating within the heap when a limit is set on the row manager
+        {
+            Owned<IRowManager> rowManager = createRowManager(HEAP_ALIGNMENT_SIZE, NULL, logctx, NULL);
+            testFragmentCallbacks(rowManager, 1);
+        }
+
+        //Test allocating within the heap when the limit is the number of pages
+        {
+            HeapPreserver preserver;
+            adjustHeapSize(UNSIGNED_BITS);
+            Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+            testFragmentCallbacks(rowManager, UNSIGNED_BITS);
+        }
     }
     void testRecursiveCallbacks()
     {

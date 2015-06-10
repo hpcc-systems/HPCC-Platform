@@ -47,7 +47,8 @@ void usage()
     printf("  dafscontrol [<dali-ip>] CHECKVERMAJOR <ip-or-cluster>\n");
     printf("  dafscontrol [<dali-ip>] TRACE <ip> <num>\n");
     printf("  dafscontrol [<dali-ip>] CHKDSK <ip> <num>\n");
-    printf("  dafscontrol [<dali-ip>] THROTTLE <ip> <limit> <ms-delay> <cpu-limit>\n");
+    printf("  dafscontrol [<dali-ip>] INFO <ip-or-clsuter> [level]\n");
+    printf("  dafscontrol [<dali-ip>] THROTTLE <ip-or-cluster> <class> <limit> <ms-delay> <cpu-limit> <queue-limit>\n");
     printf("  dafscontrol MYVER\n");
     exit(1);
 }
@@ -81,7 +82,7 @@ bool getCluster(const char *clustername,SocketEndpointArray &eps)
     unsigned p = getDaliServixPort();
     for (unsigned i=0;i<n;i++) {
         SocketEndpoint ep(p,grp->queryNode(i).endpoint());
-        eps.append(ep);
+        eps.appendUniq(ep);
     }
     return eps.ordinality()!=0;
 }
@@ -388,23 +389,61 @@ int main(int argc, char* argv[])
                 }
                 break;
             }
-            if (stricmp(argv[ai],"throttle")==0) {
-                if (ai+4>=ac)
+            if (stricmp(argv[ai], "info")==0) {
+                if (ai+1>=ac)
                     usage();
                 else {
                     SocketEndpointArray eps;
+                    StringBuffer errMsg;
+                    unsigned level=1;
+                    if (ac-(ai+1)>1)
+                        level = atoi(argv[ai+2]);
+                    PROGLOG("Info level = %u", level);
                     if (!isdali||!getCluster(argv[ai+1],eps)) {
                         SocketEndpoint ep(argv[ai+1]);
-                        int ret = setDafileSvrThrottleLimit(ep, atoi(argv[ai+2]), atoi(argv[ai+3]), atoi(argv[ai+4]));
+                        StringBuffer epStr;
+                        ep.getUrlStr(epStr);
+                        VStringBuffer result("Info for %s", epStr.str());
+                        int ret = getDafileSvrInfo(ep, level, result);
                         if (ret!=0)
-                            ERRLOG("setDafileSvrThrottleLimit returned %d", ret);
+                            ERRLOG("getDafileSvrInfo for %s returned %d", epStr.str(), ret);
+                        else
+                            PROGLOG("%s", result.str());
                     }
                     else {
                         ForEachItemIn(ni,eps) {
                             SocketEndpoint ep = eps.item(ni);
-                            int ret = setDafileSvrThrottleLimit(ep, atoi(argv[ai+2]), atoi(argv[ai+3]), atoi(argv[ai+4]));
+                            StringBuffer epStr;
+                            ep.getUrlStr(epStr);
+                            VStringBuffer result("Info for %s: ", epStr.str());
+                            int ret = getDafileSvrInfo(ep, level, result);
                             if (ret!=0)
-                                ERRLOG("setDafileSvrThrottleLimit returned %d", ret);
+                                ERRLOG("getDafileSvrInfo for %s returned %d", epStr.str(), ret);
+                            else
+                                PROGLOG("%s", result.str());
+                        }
+                    }
+                }
+                break;
+            }
+            if (stricmp(argv[ai],"throttle")==0) {
+                if (ai+6>=ac)
+                    usage();
+                else {
+                    SocketEndpointArray eps;
+                    StringBuffer errMsg;
+                    if (!isdali||!getCluster(argv[ai+1],eps)) {
+                        SocketEndpoint ep(argv[ai+1]);
+                        int ret = setDafileSvrThrottleLimit(ep, (ThrottleClass)atoi(argv[ai+2]), atoi(argv[ai+3]), atoi(argv[ai+4]), atoi(argv[ai+5]), atoi(argv[ai+6]), &errMsg);
+                        if (ret!=0)
+                            ERRLOG("setDafileSvrThrottleLimit returned %d, error = %s", ret, errMsg.str());
+                    }
+                    else {
+                        ForEachItemIn(ni,eps) {
+                            SocketEndpoint ep = eps.item(ni);
+                            int ret = setDafileSvrThrottleLimit(ep, (ThrottleClass)atoi(argv[ai+2]), atoi(argv[ai+3]), atoi(argv[ai+4]), atoi(argv[ai+5]), atoi(argv[ai+6]), &errMsg.clear());
+                            if (ret!=0)
+                                ERRLOG("setDafileSvrThrottleLimit returned %d, error = %s", ret, errMsg.str());
                             StringBuffer s("done ");
                             ep.getUrlStr(s);
                             PROGLOG("%s",s.str());

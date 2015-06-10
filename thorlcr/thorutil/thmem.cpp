@@ -508,14 +508,7 @@ void CThorExpandingRowArray::doSort(rowidx_t n, void **const rows, ICompare &com
             dbgassertex(NULL != stableTable);
             stableTablePtr = stableTable;
         }
-        void **_rows = rows;
-        memcpy(stableTablePtr, _rows, n*sizeof(void **));
-        parqsortvecstable(stableTablePtr, n, compare, (void ***)_rows, maxCores);
-        while (n--)
-        {
-            *_rows = **((void ***)_rows);
-            _rows++;
-        }
+        parqsortvecstableinplace(rows, n, compare, stableTablePtr, maxCores);
     }
     else
         parqsortvec((void **const)rows, n, compare, maxCores);

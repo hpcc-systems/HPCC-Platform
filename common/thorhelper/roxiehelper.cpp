@@ -669,13 +669,7 @@ public:
             void **rows = const_cast<void * *>(sorted.getArray());
             MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
             void **temp = (void **) tempAttr.bufferBase();
-            memcpy(temp, rows, numRows*sizeof(void **));
-            qsortvecstable(temp, numRows, *compare, (void ***)rows);
-            for (unsigned i = 0; i < numRows; i++)
-            {
-                *rows = **((void ***)rows);
-                rows++;
-            }
+            qsortvecstableinplace(rows, numRows, *compare, temp);
         }
     }
 };
@@ -1187,13 +1181,7 @@ public:
                 {
                     MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
                     void **temp = (void **) tempAttr.bufferBase();
-                    memcpy(temp, rows, numRows*sizeof(void **));
-                    qsortvecstable(temp, numRows, *compare, (void ***)rows);
-                    for (unsigned i = 0; i < numRows; i++)
-                    {
-                        *rows = **((void ***)rows);
-                        rows++;
-                    }
+                    qsortvecstableinplace(rows, numRows, *compare, temp);
                 }
                 else
                     qsortvec(rows, numRows, *compare);

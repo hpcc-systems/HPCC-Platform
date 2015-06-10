@@ -7,8 +7,8 @@ define([
   "./Mapping",
   "./map/us-counties",
 
-  "d3/d3",
-  "topojson/topojson",
+  "d3",
+  "topojson",
 
   "dojo/text!./templates/DojoD3Choropleth.css"
 

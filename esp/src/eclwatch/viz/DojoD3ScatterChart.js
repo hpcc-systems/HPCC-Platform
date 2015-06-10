@@ -5,7 +5,7 @@ define([
   "./DojoD3",
   "./Mapping",
 
-  "d3/d3",
+  "d3",
 
   "dojo/text!./templates/DojoD3ScatterChart.css"
 
