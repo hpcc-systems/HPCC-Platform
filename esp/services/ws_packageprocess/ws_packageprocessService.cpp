@@ -140,8 +140,12 @@ void cloneFileInfoToDali(StringArray &notFound, IPropertyTree *packageMap, const
     SCMStringBuffer processName;
     dstInfo->getRoxieProcess(processName);
     wufiles->resolveFiles(processName.str(), lookupDaliIp, remotePrefix, srcCluster, !overWrite, false);
+
+    StringBuffer defReplicateFolder;
+    getConfigurationDirectory(NULL, "data2", "roxie", processName.str(), defReplicateFolder);
+
     Owned<IDFUhelper> helper = createIDFUhelper();
-    wufiles->cloneAllInfo(helper, overWrite, true);
+    wufiles->cloneAllInfo(helper, overWrite, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
 
     Owned<IReferencedFileIterator> iter = wufiles->getFiles();
     ForEach(*iter)
