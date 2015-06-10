@@ -509,7 +509,6 @@ public:
 private:
     bool calcNextDedupAll();
     void dedupRange(unsigned first, unsigned last, OwnedRowArray & group);
-    void dedupRangeIndirect(unsigned first, unsigned last, void *** index);
 
 private:
     IHThorDedupArg &helper;
@@ -1125,22 +1124,44 @@ public:
     virtual void performSort();
 };
 
-class CStableQuickSorter : public CSimpleSorterBase
+class CStableSorter : public CSimpleSorterBase
 {
 public:
-    CStableQuickSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta, roxiemem::IBufferedRowCallback * _rowCB) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta), commitDelta(_commitDelta), index(NULL), indexCapacity(0) {}
-    virtual ~CStableQuickSorter() { killSorted(); }
-    IMPLEMENT_IINTERFACE;
+    CStableSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta, roxiemem::IBufferedRowCallback * _rowCB) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta), commitDelta(_commitDelta), index(NULL), indexCapacity(0) {}
+    virtual ~CStableSorter() { killSorted(); }
+
     virtual bool addRow(const void * next);
     virtual void spillSortedToDisk(IDiskMerger * merger);
-    virtual void performSort();
-    virtual const void * getNextSorted();
     virtual void killSorted();
 
-private:
+protected:
     void *** index;
     roxiemem::rowidx_t indexCapacity;
     unsigned commitDelta;
+};
+
+class CStableQuickSorter : public CStableSorter
+{
+public:
+    CStableQuickSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta, roxiemem::IBufferedRowCallback * _rowCB) : CStableSorter(_compare, _rowManager, _initialSize, _commitDelta, _rowCB){}
+
+    virtual void performSort();
+};
+
+class CParallelStableQuickSorter : public CStableSorter
+{
+public:
+    CParallelStableQuickSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta, roxiemem::IBufferedRowCallback * _rowCB) : CStableSorter(_compare, _rowManager, _initialSize, _commitDelta, _rowCB){}
+
+    virtual void performSort();
+};
+
+class CStableMergeSorter : public CStableSorter
+{
+public:
+    CStableMergeSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta, roxiemem::IBufferedRowCallback * _rowCB) : CStableSorter(_compare, _rowManager, _initialSize, _commitDelta, _rowCB){}
+
+    virtual void performSort();
 };
 
 class CHeapSorter :  public CSimpleSorterBase
@@ -1148,7 +1169,7 @@ class CHeapSorter :  public CSimpleSorterBase
 public:
     CHeapSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta), heapsize(0) {}
     virtual ~CHeapSorter() { killSorted(); }
-    IMPLEMENT_IINTERFACE;
+
     virtual void performSort();
     virtual void spillSortedToDisk(IDiskMerger * merger);
     virtual const void * getNextSorted();
