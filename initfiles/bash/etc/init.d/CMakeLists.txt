@@ -29,6 +29,10 @@ FOREACH( oFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/lock.sh
     ${CMAKE_CURRENT_SOURCE_DIR}/init-functions
     ${CMAKE_CURRENT_SOURCE_DIR}/export-path
+    ${CMAKE_CURRENT_SOURCE_DIR}/hpcc-init.service
+    ${CMAKE_CURRENT_SOURCE_DIR}/hpcc-init@.service
+    ${CMAKE_CURRENT_SOURCE_DIR}/dafilesrv.service
+    ${CMAKE_CURRENT_SOURCE_DIR}/dafilesrv@.service
 )
     install ( PROGRAMS ${oFILES} DESTINATION etc/init.d COMPONENT Runtime )
 ENDFOREACH ( oFILES )
