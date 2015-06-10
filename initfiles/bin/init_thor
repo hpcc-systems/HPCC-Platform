@@ -142,6 +142,30 @@ while [[ 1 ]]; do
     makethorgroup
     sort $instancedir/slaves | uniq > $instancedir/uslaves.start
 
+    ${INSTALL_DIR}/sbin/configgen -env ${CONFIG_DIR}/${ENV_XML_FILE} -c ${THORNAME} -listall2 | awk 'BEGIN {FS=",";} /ThorSlaveProcess/ { print $3 }' > $instancedir/configgen.out
+    rm -f $instancedir/hosts.resolve > /dev/null 2>&1
+    errcode=0
+    while read line; do
+        resolved_value=$(python -c "import socket; print socket.gethostbyname('${line}')" 2> /dev/null)
+        if [[ $? -eq 0 ]]; then
+            echo $resolved_value >> $instancedir/hosts.resolve
+        else
+            log "ERROR:  Could not resolve the line -${line}- from configgen -listall2 output"
+            exit 1
+        fi
+    done < $instancedir/configgen.out
+
+    sort $instancedir/hosts.resolve | uniq > $instancedir/hosts.uniq
+    diff $instancedir/uslaves.start $instancedir/hosts.uniq > /dev/null 2>&1
+    DFSGROUP_CHECK=$?
+    rm -f $instancedir/hosts.resolve $instancedir/configgen.out $instancedir/hosts.uniq > /dev/null 2>&1
+    if [[ $DFSGROUP_CHECK -ne 0 ]]; then
+        log "ERROR:  Your environment has changed. dfsgroup $groupName does not match environmnent.xml file"
+        log "If this was intentional, please run 'updtdalienv ${CONFIG_DIR}/${ENV_XML_FILE} -f'"
+        log "Stopping $groupName"
+        exit 1
+    fi
+
     log "--------------------------"
     log "starting thorslaves ..."
 
