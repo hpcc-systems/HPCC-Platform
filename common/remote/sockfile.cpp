@@ -1201,13 +1201,17 @@ public:
     {
         CriticalBlock block(crit);
         CriticalBlock block2(CConnectionTable::crit); // this shouldn't ever block
-        ISocket *s = socket.getClear();
-        if (ConnectionTable) {
-            SocketEndpoint tep(ep);
-            setDafsEndpointPort(tep);
-            ConnectionTable->remove(tep,s);
+        if (socket)
+        {
+            ISocket *s = socket.getClear();
+            if (ConnectionTable)
+            {
+                SocketEndpoint tep(ep);
+                setDafsEndpointPort(tep);
+                ConnectionTable->remove(tep,s);
+            }
+            ::Release(s);
         }
-        ::Release(s);
     }
 
     const char *queryLocalName()
