@@ -33,6 +33,9 @@ fi
 
 mkdir -p "$DISTDIR"
 cp -r "$SRCDIR/CodeMirror2" "$DISTDIR/CodeMirror2"
+mkdir "$DISTDIR/crossfilter"
+cp "$SRCDIR/crossfilter/crossfilter.min.js" "$DISTDIR/crossfilter/crossfilter.min.js"
+cp "$SRCDIR/crossfilter/LICENSE" "$DISTDIR/LICENSE"
 
 # Copy & minify stub.htm to dist
 cat "$SRCDIR/stub.htm" | tr '\n' ' ' | \
@@ -42,7 +45,8 @@ perl -pe "
 
 echo "Building: $SRCDIR/Visualization"
 cd "$SRCDIR/Visualization/"
-./build.sh "$DISTDIR/Visualization/widgets"
+mkdir -p "$DISTDIR/Visualization"
+cp -r "$SRCDIR/Visualization/dist-amd" "$DISTDIR/Visualization/dist-amd"
 
 cd "$TOOLSDIR"
 

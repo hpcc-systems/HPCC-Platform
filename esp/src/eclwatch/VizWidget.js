@@ -362,18 +362,20 @@ define([
             if (this.vizType !== value) {
                 this.vizType = value;
                 var context = this;
-                require(["hpcc/viz/" + this.vizType], function (D3Viz) {
-                    context.d3Viz = new D3Viz();
-                    context.d3Viz._chartType = chartType;
-                    domConstruct.empty(context.id + "VizCP");
-                    context.d3Viz.renderTo({
-                        domNodeID: context.id + "VizCP"
+                require(["src/hpcc-viz", "src/hpcc-viz-common", "src/hpcc-viz-api", "src/hpcc-viz-chart", "src/hpcc-viz-c3chart", "src/hpcc-viz-map", "src/hpcc-viz-graph"], function () {
+                    require(["hpcc/viz/" + context.vizType], function (D3Viz) {
+                        context.d3Viz = new D3Viz();
+                        context.d3Viz._chartType = chartType;
+                        domConstruct.empty(context.id + "VizCP");
+                        context.d3Viz.renderTo({
+                            domNodeID: context.id + "VizCP"
+                        });
+                        deferred.resolve(context.vizType);
                     });
-                    deferred.resolve(context.vizType);
                 });
             } else {
                 if (chartType && this.d3Viz.chart) {
-                    this.d3Viz.chart.chart_type(chartType);
+                    this.d3Viz.chart.chartType(chartType);
                 }
                 deferred.resolve(this.vizType);
             }

@@ -84,115 +84,117 @@ define([
                 return;
 
             var context = this;
-            require(["src/other/Comms", "src/chart/MultiChartSurface", "src/common/Surface", "src/tree/SunburstPartition", "src/other/Table", "crossfilter/crossfilter"], function (Comms, MultiChartSurface, Surface, SunburstPartition, Table, crossfilterXXX) {
-                function CFGroup(crossfilter, dimensionID, targetID) {
-                    this.targetID = targetID;
-                    this.dimensionID = dimensionID;
-                    this.dimension = crossfilter.dimension(function (d) { return d[dimensionID]; });
-                    this.group = this.dimension.group().reduceSum(function (d) { return d.RawValue; });
+            require(["src/hpcc-viz", "src/hpcc-viz-common", "src/hpcc-viz-api", "src/hpcc-viz-chart", "src/hpcc-viz-c3chart", "src/hpcc-viz-google", "src/hpcc-viz-tree", "src/hpcc-viz-other"], function () {
+                require(["src/other/Comms", "src/chart/MultiChartSurface", "src/common/Surface", "src/tree/SunburstPartition", "src/other/Table", "crossfilter"], function (Comms, MultiChartSurface, Surface, SunburstPartition, Table, crossfilterXXX) {
+                    function CFGroup(crossfilter, dimensionID, targetID) {
+                        this.targetID = targetID;
+                        this.dimensionID = dimensionID;
+                        this.dimension = crossfilter.dimension(function (d) { return d[dimensionID]; });
+                        this.group = this.dimension.group().reduceSum(function (d) { return d.RawValue; });
 
-                    this.widget = new MultiChartSurface()
-                        .target(targetID)
-                        .title(dimensionID)
-                        .columns([dimensionID, "Total"])
-                        .show_icon(false)
-                        .menu(["Pie (Google)", "Pie (C3)", "Table"])
-                        .chart_type("GOOGLE_PIE")
-                    ;
+                        this.widget = new MultiChartSurface()
+                            .target(targetID)
+                            .title(dimensionID)
+                            .columns([dimensionID, "Total"])
+                            .showIcon(false)
+                            .menu(["Pie (Google)", "Pie (C3)", "Table"])
+                            .chartType("GOOGLE_PIE")
+                        ;
 
-                    this.filter = null;
-                    var context = this;
-                    this.widget.click = function (row, column) {
-                        if (context.filter === row[dimensionID]) {
-                            context.filter = null;
-                        } else {
-                            context.filter = row[dimensionID];
+                        this.filter = null;
+                        var context = this;
+                        this.widget.click = function (row, column) {
+                            if (context.filter === row[dimensionID]) {
+                                context.filter = null;
+                            } else {
+                                context.filter = row[dimensionID];
+                            }
+                            context.dimension.filter(context.filter);
+                            context.click(row, column);
+                            context.render();
+                        };
+                    }
+                    CFGroup.prototype.click = function (row, column) {
+                    }
+                    CFGroup.prototype.resetFilter = function () {
+                        this.filter = null;
+                        this.dimension.filter(null);
+                    }
+                    CFGroup.prototype.render = function () {
+                        this.widget
+                            .title(this.dimensionID + (this.filter ? " (" + this.filter + ")" : ""))
+                            .data(this.group.all().map(function (row) {
+                                return [row.key, row.value];
+                            }))
+                            .render()
+                        ;
+                    }
+
+                    context.stats = crossfilter([]);
+                    context.summaryByKind = context.stats.dimension(function (d) { return d.Kind; });
+                    context.groupByKind = context.summaryByKind.group().reduceCount();
+
+                    context.select = registry.byId(context.id + "Kind");
+                    var prevKind = "";
+                    context.select.on("change", function (newValue) {
+                        if (prevKind !== newValue) {
+                            context.pieCreatorType.resetFilter();
+                            context.pieScopeType.resetFilter();
+                            context.prevScope = null;
+                            context.summaryByScope.filterAll();
+                            context.summaryByKind.filter(newValue);
+                            context.doRender(context.select);
+                            prevKind = newValue;
                         }
-                        context.dimension.filter(context.filter);
-                        context.click(row, column);
-                        context.render();
-                    };
-                }
-                CFGroup.prototype.click = function (row, column) {
-                }
-                CFGroup.prototype.resetFilter = function () {
-                    this.filter = null;
-                    this.dimension.filter(null);
-                }
-                CFGroup.prototype.render = function () {
-                    this.widget
-                        .title(this.dimensionID + (this.filter ? " (" + this.filter + ")" : ""))
-                        .data(this.group.all().map(function (row) {
-                            return [row.key, row.value];
-                        }))
-                        .render()
+                    });
+
+                    context.pieCreatorType = new CFGroup(context.stats, "CreatorType", context.id + "CreatorType");
+                    context.pieCreatorType.click = function (row, column) {
+                        context.doRender(context.pieCreatorType);
+                    }
+
+                    context.pieScopeType = new CFGroup(context.stats, "ScopeType", context.id + "ScopeType");
+                    context.pieScopeType.click = function (row, column) {
+                        context.doRender(context.pieScopeType);
+                    }
+
+                    context.summaryByScope = context.stats.dimension(function (d) { return d.Scope; });
+                    context.groupByScope = context.summaryByScope.group().reduceSum(function (d) { return d.RawValue; });
+
+                    context.scopes = new SunburstPartition();
+                    context.scopesSurface = new Surface()
+                        .target(context.id + "Scope")
+                        .showIcon(false)
+                        .title("Scope")
+                        .content(context.scopes)
                     ;
-                }
 
-                context.stats = crossfilter([]);
-                context.summaryByKind = context.stats.dimension(function (d) { return d.Kind; });
-                context.groupByKind = context.summaryByKind.group().reduceCount();
+                    context.prevScope = null;
+                    context.scopes.click = SunburstPartition.prototype.debounce(function (row, column) {
+                        if (row.id === "") {
+                            context.prevScope = null;
+                            context.summaryByScope.filter(null);
+                        } else if (context.prevScope === row.id) {
+                            context.prevScope = null;
+                            context.summaryByScope.filter(null);
+                        } else {
+                            context.prevScope = row.id;
+                            context.summaryByScope.filter(function (d) {
+                                return d.indexOf(context.prevScope + ":") === 0;
+                            });
+                        }
+                        context.doRender(context.scopes);
+                    }, 250);
 
-                context.select = registry.byId(context.id + "Kind");
-                var prevKind = "";
-                context.select.on("change", function (newValue) {
-                    if (prevKind !== newValue) {
-                        context.pieCreatorType.resetFilter();
-                        context.pieScopeType.resetFilter();
-                        context.prevScope = null;
-                        context.summaryByScope.filterAll();
-                        context.summaryByKind.filter(newValue);
-                        context.doRender(context.select);
-                        prevKind = newValue;
-                    }
+                    context.bar = new MultiChartSurface()
+                        .target(context.id + "Stats")
+                        .showIcon(false)
+                        .menu(["Bar (Google)", "Bar (C3)", "Column (Google)", "Column (C3)", "Table"])
+                        .chartType("GOOGLE_COLUMN")
+                    ;
+
+                    context.doRefreshData();
                 });
-
-                context.pieCreatorType = new CFGroup(context.stats, "CreatorType", context.id + "CreatorType");
-                context.pieCreatorType.click = function (row, column) {
-                    context.doRender(context.pieCreatorType);
-                }
-
-                context.pieScopeType = new CFGroup(context.stats, "ScopeType", context.id + "ScopeType");
-                context.pieScopeType.click = function (row, column) {
-                    context.doRender(context.pieScopeType);
-                }
-
-                context.summaryByScope = context.stats.dimension(function (d) { return d.Scope; });
-                context.groupByScope = context.summaryByScope.group().reduceSum(function (d) { return d.RawValue; });
-
-                context.scopes = new SunburstPartition();
-                context.scopesSurface = new Surface()
-                    .target(context.id + "Scope")
-                    .show_icon(false)
-                    .title("Scope")
-                    .content(context.scopes)
-                ;
-
-                context.prevScope = null;
-                context.scopes.click = SunburstPartition.prototype.debounce(function (row, column) {
-                    if (row.id === "") {
-                        context.prevScope = null;
-                        context.summaryByScope.filter(null);
-                    } else if (context.prevScope === row.id) {
-                        context.prevScope = null;
-                        context.summaryByScope.filter(null);
-                    } else {
-                        context.prevScope = row.id;
-                        context.summaryByScope.filter(function (d) {
-                            return d.indexOf(context.prevScope + ":") === 0;
-                        });
-                    }
-                    context.doRender(context.scopes);
-                }, 250);
-
-                context.bar = new MultiChartSurface()
-                    .target(context.id + "Stats")
-                    .show_icon(false)
-                    .menu(["Bar (Google)", "Bar (C3)", "Column (Google)", "Column (C3)", "Table"])
-                    .chart_type("GOOGLE_COLUMN")
-                ;
-
-                context.doRefreshData();
             });
         },
 

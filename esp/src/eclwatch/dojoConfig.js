@@ -56,10 +56,8 @@ var dojoConfig = (function () {
         },
         paths: {
             //  Visualization Paths  ---
-            "async": urlInfo.basePath + "/Visualization/widgets/lib/requirejs/plugins/async",
-            "css": urlInfo.basePath + "/Visualization/widgets/lib/requirejs/plugins/css",
-            "goog": urlInfo.basePath + "/Visualization/widgets/lib/requirejs/plugins/goog",
-            "propertyParser": urlInfo.basePath + "/Visualization/widgets/lib/requirejs/plugins/propertyParser"
+            "crossfilter": urlInfo.basePath + "/crossfilter/crossfilter.min",
+            "font-awesome.css": urlInfo.basePath + "/Visualization/dist-amd/font-awesome/css/font-awesome.min.css"
         },
         packages: [{
             name: "hpcc",
@@ -75,25 +73,11 @@ var dojoConfig = (function () {
             location: urlInfo.pluginsPath
         }, {
             name: "src",
-            location: urlInfo.basePath + "/Visualization/widgets/src"
-        }, {
-            name: "lib",
-            location: urlInfo.basePath + "/Visualization/widgets/lib"
+            location: urlInfo.basePath + "/Visualization/dist-amd"
         }, {
             name: "d3",
-            location: urlInfo.basePath + "/Visualization/widgets/lib/d3",
-            main: "d3"
-        }, {
-            name: "c3",
-            location: urlInfo.basePath + "/Visualization/widgets/lib/c3",
-            main: "c3"
-        }, {
-            name: "crossfilter",
-            location: urlInfo.basePath + "/Visualization/widgets/lib/crossfilter",
-            main: "crossfilter"
-        }, {
-            name: "topojson",
-            location: urlInfo.basePath + "/Visualization/widgets/lib/topojson"
+            location: urlInfo.basePath + "/Visualization/dist-amd",
+            main: "hpcc-viz-common"
         }, {
             name: "this",
             location: urlInfo.thisPath
