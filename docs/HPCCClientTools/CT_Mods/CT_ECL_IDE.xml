@@ -942,8 +942,8 @@
           as optional addons. And, you can create your own and add them to a
           system.</para>
 
-          <para>A right-click on the folders in the Repository Toolbox gives you
-          an option of <emphasis role="bold">Locate File in
+          <para>A right-click on the folders in the Repository Toolbox gives
+          you an option of <emphasis role="bold">Locate File in
           Explorer</emphasis> which will then open that folder in a new
           explorer window.</para>
 
@@ -1166,8 +1166,9 @@
           <para>This toolbox displays Logical files for the environment to
           which you are connected. Logical files are are organized into
           “folders” by scope in which they were created and displayed in a
-          tree format. Expand any branch to see the files within it. Right-click
-          to copy the label of the file to paste into your code.</para>
+          tree format. Expand any branch to see the files within it.
+          Right-click to copy the label of the file to paste into your
+          code.</para>
 
           <para></para>
         </sect3>
@@ -2081,7 +2082,8 @@
         <sect3>
           <title>Workunit Pop-up Menu</title>
 
-          <para>Right-click on any Workunit for a Pop-up menu containing:</para>
+          <para>Right-click on any Workunit for a Pop-up menu
+          containing:</para>
 
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -2770,10 +2772,10 @@ ENDMACRO;
           </listitem>
 
           <listitem>
-            <para>Use Ribbon bar buttons or right-click the popup menu. Cut, Copy,
-            Paste, or Delete to remove or add cells, rows, columns to what is
-            displayed. This does not change the actual result, only the
-            display.</para>
+            <para>Use Ribbon bar buttons or right-click the popup menu. Cut,
+            Copy, Paste, or Delete to remove or add cells, rows, columns to
+            what is displayed. This does not change the actual result, only
+            the display.</para>
           </listitem>
 
           <listitem>
@@ -2826,6 +2828,102 @@ ENDMACRO;
         <para></para>
 
         <graphic fileref="../../images/CT55.jpg" scalefit="1" />
+      </sect2>
+
+      <sect2 id="Graph_Viewer" role="brk">
+        <title><emphasis>ECL Watch View </emphasis></title>
+
+        <para>A workunit’s Workunit Details page view is displayed in the ECL
+        Watch Tab. </para>
+
+        <para>The Workunit Details page provides more information about a
+        workunit. </para>
+
+        <para>You can see specific information about the workunit by selecting
+        the various Workunit Detail tabs. </para>
+
+        <para><graphic fileref="../../images/ECLIDE_WuDetails.jpg"
+        scalefit="1" /></para>
+
+        <para>You can also perform actions on the workunit using the Workunit
+        Action buttons. </para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="52.60pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><graphic fileref="../../images/tip.jpg" /></entry>
+
+                <entry>You can copy a Workunit's ECL Watch URL by rt-clicking
+                on the <emphasis role="bold">Open in New Page</emphasis> icon
+                and selecting <emphasis role="bold">Copy Shortcut</emphasis>.
+                </entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <itemizedlist>
+          <listitem>
+            <para>Press the<emphasis role="bold"> Refresh </emphasis>button to
+            refresh the workunit details.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Save </emphasis>button to
+            save any changes to the workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Delete</emphasis> button to
+            delete the workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Restore</emphasis> button to
+            restore a workunit that has been archived by Sasha.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Set To Failed</emphasis>
+            button to change the workunit state to failed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Abort</emphasis> button to
+            stop a running workunit and abort the job.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Recover</emphasis> button to
+            restart the workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Resubmit</emphasis> button
+            to resubmit the job.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Clone</emphasis> button to
+            clone the workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Publish</emphasis> button to
+            publish the workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Z.A.P.</emphasis> button to
+            package up system information for analysis. This is useful for bug
+            reporting or troubleshooting.</para>
+          </listitem>
+        </itemizedlist>
       </sect2>
     </sect1>
 
