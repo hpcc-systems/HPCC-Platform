@@ -282,7 +282,7 @@ public:
     virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const;
 
     virtual const char *queryUser() const;
-    virtual IStringVal & getWuScope(IStringVal & str) const;
+    virtual const char *queryWuScope() const;
     virtual IConstWUResult * getVariableByName(const char * name) const;
     virtual IConstWUResultIterator & getVariables() const;
     virtual const char *queryWuid() const;
@@ -561,6 +561,7 @@ protected:
     virtual void unsubscribe();
     virtual void _loadResults() const;
     virtual void _loadStatistics() const;
+    virtual void _loadExceptions() const;
 };
 
 interface ISDSManager; // MORE - can remove once dali split out
@@ -587,7 +588,7 @@ public:
     virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;  // deprecated
-    virtual IConstWorkUnitIterator* getWorkUnitsSorted(WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
+    virtual IConstWorkUnitIterator* getWorkUnitsSorted(WUSortField sortorder, // field to sort by
                                                 WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
                                                 const void *filterbuf,  // (appended) string values for filters
                                                 unsigned startoffset,

@@ -41,6 +41,7 @@ public:
     StringBuffer(unsigned len, const char *value);
     StringBuffer(const StringBuffer & value);
     StringBuffer(bool useInternal);
+    StringBuffer(char value);
     ~StringBuffer();
 
     inline size32_t length() const                      { return curLen; }

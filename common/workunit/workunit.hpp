@@ -505,6 +505,7 @@ interface IConstWUException : extends IInterface
     virtual IStringVal & getExceptionFileName(IStringVal & str) const = 0;
     virtual unsigned getExceptionLineNo() const = 0;
     virtual unsigned getExceptionColumn() const = 0;
+    virtual unsigned getSequence() const = 0;
 };
 
 
@@ -978,6 +979,7 @@ interface IConstWorkUnitInfo : extends IInterface
     virtual const char *queryWuid() const = 0;
     virtual const char *queryUser() const = 0;
     virtual const char *queryJobName() const = 0;
+    virtual const char *queryWuScope() const = 0;
     virtual const char *queryClusterName() const = 0;
     virtual WUState getState() const = 0;
     virtual const char *queryStateDesc() const = 0;
@@ -1039,7 +1041,6 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const = 0;
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const = 0; // filter must currently stay alive while the iterator does.
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const = 0;
-    virtual IStringVal & getWuScope(IStringVal & str) const = 0;
     virtual IConstWUResult * getVariableByName(const char * name) const = 0;
     virtual IConstWUResultIterator & getVariables() const = 0;
     virtual bool isPausing() const = 0;
@@ -1273,7 +1274,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField * sortorder, WUSortField * filters, const void * filterbuf,
+    virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField sortorder, WUSortField * filters, const void * filterbuf,
                                                         unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total,
                                                         ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual unsigned numWorkUnits() = 0;
@@ -1286,6 +1287,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual unsigned validateRepository(bool fixErrors) = 0;
     virtual void deleteRepository(bool recreate) = 0;
     virtual void createRepository() = 0;  // If not already there...
+    virtual const char *queryStoreType() const = 0; // Returns "Dali" or "Cassandra"
 };
 
 interface IWorkflowScheduleConnection : extends IInterface
@@ -1375,6 +1377,7 @@ extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);
 extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit(const char *XML);
+extern WORKUNIT_API IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p);
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords);
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords);
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, const char *password);
@@ -1406,7 +1409,8 @@ extern WORKUNIT_API IPropertyTree * resolveDefinitionInArchive(IPropertyTree * a
 inline bool isLibrary(IConstWorkUnit * wu) { return wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0) != 0; }
 extern WORKUNIT_API bool looksLikeAWuid(const char * wuid, const char firstChar);
 
-extern WORKUNIT_API IConstWorkUnitIterator *createConstWUIterator(IPropertyTreeIterator *iter, ISecManager *secmgr, ISecUser *secuser);
+extern WORKUNIT_API IConstWorkUnitIterator *createSecureConstWUIterator(IPropertyTreeIterator *iter, ISecManager *secmgr, ISecUser *secuser);
+extern WORKUNIT_API IConstWorkUnitIterator *createSecureConstWUIterator(IConstWorkUnitIterator *iter, ISecManager *secmgr, ISecUser *secuser);
 
 enum WUQueryActivationOptions
 {

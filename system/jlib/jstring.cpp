@@ -75,6 +75,12 @@ StringBuffer::StringBuffer(const char *value)
     append(value);
 }
 
+StringBuffer::StringBuffer(char value)
+{
+    init();
+    append(value);
+}
+
 StringBuffer::StringBuffer(unsigned len, const char *value)
 {
     init();

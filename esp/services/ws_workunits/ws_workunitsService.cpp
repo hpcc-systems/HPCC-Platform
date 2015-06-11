@@ -1781,31 +1781,31 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         pagesize = count;
     }
 
-    WUSortField sortorder[2] = {(WUSortField) (WUSFwuid | WUSFreverse), WUSFterm};
-    if(notEmpty(req.getSortby()))
+    WUSortField sortorder = (WUSortField) (WUSFwuid | WUSFreverse);
+    if (notEmpty(req.getSortby()))
     {
         const char *sortby = req.getSortby();
         if (strieq(sortby, "Owner"))
-            sortorder[0] = WUSFuser;
+            sortorder = WUSFuser;
         else if (strieq(sortby, "JobName"))
-            sortorder[0] = WUSFjob;
+            sortorder = WUSFjob;
         else if (strieq(sortby, "Cluster"))
-            sortorder[0] = WUSFcluster;
+            sortorder = WUSFcluster;
         else if (strieq(sortby, "RoxieCluster"))
-            sortorder[0] = WUSFroxiecluster;
+            sortorder = WUSFroxiecluster;
         else if (strieq(sortby, "Protected"))
-            sortorder[0] = WUSFprotected;
+            sortorder = WUSFprotected;
         else if (strieq(sortby, "State"))
-            sortorder[0] = WUSFstate;
+            sortorder = WUSFstate;
         else if (strieq(sortby, "ClusterTime"))
-            sortorder[0] = (WUSortField) (WUSFtotalthortime+WUSFnumeric);
+            sortorder = (WUSortField) (WUSFtotalthortime+WUSFnumeric);
         else
-            sortorder[0] = WUSFwuid;
+            sortorder = WUSFwuid;
 
-        sortorder[0] = (WUSortField) (sortorder[0] | WUSFnocase);
+        sortorder = (WUSortField) (sortorder | WUSFnocase);
         bool descending = req.getDescending();
         if (descending)
-            sortorder[0] = (WUSortField) (sortorder[0] | WUSFreverse);
+            sortorder = (WUSortField) (sortorder | WUSFreverse);
     }
 
     WUSortField filters[10];
