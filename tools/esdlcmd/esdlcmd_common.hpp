@@ -52,6 +52,7 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDL_CONVERT_SOURCE             "--source"
 #define ESDL_CONVERT_OUTDIR             "--outdir"
 
+#define ESDL_PROCESS_INCLUDES           "--includes"
 #define ESDL_CONVERT_ALL                "--all"
 #define ESDL_CONVERT_EXPANDEDXML        "--expandedxml"
 #define ESDL_CONVERT_EXPANDEDXML_x      "-x"
@@ -95,7 +96,9 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDL_OPTION_TARGET_ESP_ADDRESS   "--esp-ip"
 #define ESDL_OPTION_TARGET_ESP_PORT      "--esp-port"
 #define ESDL_OPTION_CONFIG              "--config"
-#define ESDL_OPTION_OVERWRITE              "--overwrite"
+#define ESDL_OPTION_OVERWRITE           "--overwrite"
+#define ESDL_OPTION_ROLLUP              "--rollup"
+
 
 bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
 
