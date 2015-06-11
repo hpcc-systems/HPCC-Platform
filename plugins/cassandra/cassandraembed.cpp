@@ -70,6 +70,18 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
 namespace cassandraembed {
 
+static void logCallBack(const CassLogMessage *message, void *data)
+{
+    DBGLOG("cassandra: %s - %s", cass_log_level_string(message->severity), message->message);
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    cass_log_set_callback(logCallBack, NULL);
+    cass_log_set_level(CASS_LOG_WARN);
+    return true;
+}
+
 static void failx(const char *msg, ...) __attribute__((noreturn))  __attribute__((format(printf, 1, 2)));
 static void fail(const char *msg) __attribute__((noreturn));
 
