@@ -312,7 +312,15 @@ define([
             WsWorkunits.WUUpdate({
                 request: request,
                 load: function (response) {
-                    context.updateData(response.WUUpdateResponse.Workunit);
+                    if (lang.exists("Exceptions.Exception", response)) {
+                        dojo.publish("hpcc/brToaster", {
+                            message: "<h4>" + response.Exceptions.Source + "</h4>" + "<p>" + response.Exceptions.Exception[0].Message + "</p>",
+                            type: "error",
+                            duration: -1
+                        });
+                    } else {
+                        context.updateData(response.WUUpdateResponse.Workunit);
+                    }
                     context.onUpdate();
                 }
             });
