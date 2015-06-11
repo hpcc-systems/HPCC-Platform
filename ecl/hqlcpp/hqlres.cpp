@@ -24,6 +24,8 @@
 #include "hqlcerrors.hpp"
 #include "thorplugin.hpp"
 #ifdef _USE_BINUTILS
+#define PACKAGE "hpcc-system"
+#define PACKAGE_VERSION "1.0"
 #include "bfd.h"
 #endif
 
@@ -469,9 +471,16 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
     {
         bfd_init ();
         bfd_set_default_target(target64bit ? "x86_64-unknown-linux-gnu" : "x86_32-unknown-linux-gnu");
+#ifdef _ARCH_PPC64EL_
+        const bfd_arch_info_type *temp_arch_info = bfd_scan_arch ("powerpc");
+#else
         const bfd_arch_info_type *temp_arch_info = bfd_scan_arch ("i386");
+#endif
+
 #if defined __APPLE__
         file = bfd_openw(filename, NULL);//MORE: Quick fix to get working on OSX
+#elif defined _ARCH_PPC64EL_
+        file = bfd_openw(filename, "elf64-powerpcle");
 #else
         file = bfd_openw(filename, target64bit ? "elf64-x86-64" : NULL);//MORE: Test on 64 bit to see if we can always pass NULL
 #endif
@@ -538,6 +547,13 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
     FILE *f = fopen(filename, "wt");
     if (!f)
         throwError1(HQLERR_ResourceCreateFailed, filename.str());
+
+    //MORE: This should really use targetCompiler instead
+#if defined(__APPLE__)
+    bool generateClang = true;
+#else
+    bool generateClang = false;
+#endif
     ForEachItemIn(idx, resources)
     {
         ResourceItem &s = (ResourceItem &) resources.item(idx);
@@ -545,16 +561,19 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         unsigned id = s.id;
         VStringBuffer binfile("%s_%s_%u.bin", filename.str(), type, id);
         VStringBuffer label("%s_%u_txt_start", type, id);
-#if defined(__APPLE__)
-        fprintf(f, " .section __TEXT,%s_%u\n", type, id);
-        fprintf(f, " .global _%s\n", label.str());  // For some reason apple needs a leading underbar and linux does not
-        fprintf(f, "_%s:\n", label.str());
-#else
-        fprintf(f, " .section %s_%u,\"a\"\n", type, id);
-        fprintf(f, " .global %s\n", label.str());
-        fprintf(f, " .type %s,STT_OBJECT\n", label.str());
-        fprintf(f, "%s:\n", label.str());
-#endif
+        if (generateClang)
+        {
+            fprintf(f, " .section __TEXT,%s_%u\n", type, id);
+            fprintf(f, " .global _%s\n", label.str());  // For some reason apple needs a leading underbar and linux does not
+            fprintf(f, "_%s:\n", label.str());
+        }
+        else
+        {
+            fprintf(f, " .section %s_%u,\"a\"\n", type, id);
+            fprintf(f, " .global %s\n", label.str());
+            fprintf(f, " .type %s,STT_OBJECT\n", label.str());
+            fprintf(f, "%s:\n", label.str());
+        }
         fprintf(f, " .incbin \"%s\"\n", binfile.str());
         FILE *bin = fopen(binfile, "wb");
         if (!bin)

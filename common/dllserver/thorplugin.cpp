@@ -24,6 +24,8 @@
 #include "jlzw.hpp"
 #include "eclrtl.hpp"
 #ifdef _USE_BINUTILS
+#define PACKAGE "hpcc-system"
+#define PACKAGE_VERSION "1.0"
 #include "bfd.h"
 #elif defined(__APPLE__)
 #include <mach-o/getsect.h>

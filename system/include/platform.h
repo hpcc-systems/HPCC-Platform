@@ -37,6 +37,12 @@
 #define _ARCH_ARM64_
 #endif
 
+// Identify all possible flags that mean ppc64el
+#if defined(__powerpc__) || defined(__powerpc64__) \
+ || defined(__ppc__) || defined(__ppc64__) || defined(__ppc64el__)
+#define _ARCH_PPC64EL_
+#endif
+
 // Identify all possible flags that mean x86_64
 #if defined(__amd64__) || defined(__x86_64__) \
  || defined(_M_X64) || defined(_M_AMD64)
@@ -50,7 +56,7 @@
 
 // **** START OF X-PLATFORM SECTION ****
 
-#if defined(_ARCH_X86_64_) || defined(_ARCH_ARM64_) || __WORDSIZE==64
+#if defined(_ARCH_X86_64_) || defined(_ARCH_ARM64_) || defined(_ARCH_PPC64EL_) || __WORDSIZE==64
 #define __64BIT__
 #endif
 
