@@ -37,7 +37,7 @@ stop_slaves()
     local isAlive=0
 
     log "Attempting to kill $slavename with SIGTERM"
-    killall -15 $slavename > /dev/null 2>&1
+    killall -SIGTERM $slavename > /dev/null 2>&1
     while [[ $isAlive -eq 0 && $timer -gt 0 ]];do
         killall -0 $slavename > /dev/null 2>&1
         isAlive=$?
@@ -47,7 +47,7 @@ stop_slaves()
 
     if [[ $isAlive -eq 0 ]]; then
         log "Failed to kill slaves with SIGTERM. Sending SIGKILL"
-        killall -9 $slavename > /dev/null 2>&1
+        killall -SIGKILL $slavename > /dev/null 2>&1
     fi
 
     rm -f $PID/${slavename}_*.pid > /dev/null 2>&1
