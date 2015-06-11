@@ -6372,7 +6372,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite, bool bClearEnv)
   try
   {
     StringBuffer err;
-    if (modified && fileExists)
+    if (modified && fileExists && m_userWithLock.length())
       saveEnvironment(NULL, NULL, err);
   }
   catch (IErrnoException* e)
