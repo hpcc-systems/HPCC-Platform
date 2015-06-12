@@ -1644,69 +1644,6 @@ void doWUQueryByFile(IEspContext &context, const char *logicalFile, IEspWUQueryR
     resp.setCount(1);
 }
 
-void doWUQueryByXPath(IEspContext &context, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
-{
-    IArrayOf<IEspECLWorkunit> results;
-
-    WsWuSearch wlist(context,req.getOwner(),req.getState(),req.getCluster(),req.getStartDate(),req.getEndDate(),req.getECL(),req.getJobname(),req.getApplicationName(),req.getApplicationKey(),req.getApplicationData());
-
-    int count=(int)req.getPageSize();
-    if (!count)
-        count=100;
-
-    if (wlist.getSize() < 1)
-    {
-        resp.setNumWUs(0);
-        return;
-    }
-
-    if (wlist.getSize() < count)
-        count = (int) wlist.getSize() - 1;
-
-    WsWuSearch::iterator begin, end;
-
-    if(notEmpty(req.getAfter()))
-    {
-        begin=wlist.locate(req.getAfter());
-        end=min(begin+count,wlist.end());
-    }
-    else if (notEmpty(req.getBefore()))
-    {
-        end=wlist.locate(req.getBefore());
-        begin=max(end-count,wlist.begin());
-    }
-    else
-    {
-        begin=wlist.begin();
-        end=min(begin+count,wlist.end());
-    }
-
-    if(begin>wlist.begin() && begin<wlist.end())
-        resp.setCurrent(begin->c_str());
-
-    if (context.getClientVersion() > 1.02)
-    {
-        resp.setPageStartFrom(begin - wlist.begin() + 1);
-        resp.setNumWUs((int)wlist.getSize());
-        resp.setCount(end - begin);
-    }
-
-    if(end<wlist.end())
-        resp.setNext(end->c_str());
-
-    for(;begin!=end;begin++)
-    {
-        Owned<IEspECLWorkunit> info = createECLWorkunit("","");
-        WsWuInfo winfo(context, begin->c_str());
-        winfo.getCommon(*info, 0);
-        results.append(*info.getClear());
-    }
-    resp.setPageSize(abs(count));
-    resp.setWorkunits(results);
-
-    return;
-}
-
 bool addWUQueryFilter(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *name, WUSortField value)
 {
     if (isEmpty(name))
@@ -3112,8 +3049,10 @@ bool CWsWorkunitsEx::onWUExport(IEspContext &context, IEspWUExportRequest &req, 
 {
     try
     {
+        if (req.getECL() && *req.getECL())
+            throw makeStringException(0, "WUExport no longer supports filtering by ECL text");
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        WsWuSearch ws(context, req.getOwner(), req.getState(), req.getCluster(), req.getStartDate(), req.getEndDate(), req.getECL(), req.getJobname());
+        WsWuSearch ws(context, req.getOwner(), req.getState(), req.getCluster(), req.getStartDate(), req.getEndDate(), req.getJobname());
 
         StringBuffer xml("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Workunits>");
         for(WsWuSearch::iterator it=ws.begin(); it!=ws.end(); it++)

@@ -2664,41 +2664,19 @@ public:
         Owned<CLocalWorkUnit> cw = new CDaliWorkUnit(conn, (ISecManager *) NULL, NULL);
         return &cw->lockRemote(false);
     }
-
     virtual IConstWorkUnitIterator* getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer path("*");
         if (owner && *owner)
-            path.append("[@submitID=\"").append(owner).append("\"]");
+            path.append("[@submitID=?~\"").append(owner).append("\"]");
         return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
     }
-    IConstWorkUnitIterator* getWorkUnitsByState(WUState state, ISecManager *secmgr, ISecUser *secuser)
+    IConstWorkUnitIterator* getScheduledWorkUnits(ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer path("*");
-        path.append("[@state=\"").append(getEnumText(state, states)).append("\"]");
+        path.append("[@state=\"").append(getEnumText(WUStateScheduled, states)).append("\"]");
         return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
     }
-    IConstWorkUnitIterator* getWorkUnitsByECL(const char* ecl, ISecManager *secmgr, ISecUser *secuser)
-    {
-        StringBuffer path("*");
-        if (ecl && *ecl)
-            path.append("[Query/Text=~\"*").append(ecl).append("*\"]");
-        return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
-    }
-    IConstWorkUnitIterator* getWorkUnitsByCluster(const char* cluster, ISecManager *secmgr, ISecUser *secuser)
-    {
-        StringBuffer path("*");
-        if (cluster && *cluster)
-            path.append("[@clusterName=\"").append(cluster).append("\"]");
-        return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
-    }
-
-    IConstWorkUnitIterator* getWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser)
-    {
-        // NOTE - this is deprecated - we want to get rid of it (daliadmin MAY be allowed to use it, but nothing else should)
-        return _getWorkUnitsByXPath(xpath, secmgr, secuser);
-    }
-
     virtual void clientShutdown();
 
     virtual unsigned numWorkUnits()
@@ -3139,33 +3117,12 @@ public:
         if (!secUser) secUser = defaultSecUser.get();
         return baseFactory->getWorkUnitsByOwner(owner, secMgr, secUser);
     }
-    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state, ISecManager *secMgr, ISecUser *secUser)
+    virtual IConstWorkUnitIterator * getScheduledWorkUnits(ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
         if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->getWorkUnitsByState(state, secMgr, secUser);
+        return baseFactory->getScheduledWorkUnits(secMgr, secUser);
     }
-    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char* ecl, ISecManager *secMgr, ISecUser *secUser)
-    {
-        if (!secMgr) secMgr = defaultSecMgr.get();
-        if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->getWorkUnitsByECL(ecl, secMgr, secUser);
-    }
-
-    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char* cluster, ISecManager *secMgr, ISecUser *secUser)
-    {   
-        if (!secMgr) secMgr = defaultSecMgr.get();
-        if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->getWorkUnitsByCluster(cluster, secMgr, secUser);
-    }
-
-    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath, ISecManager *secMgr, ISecUser *secUser)
-    {
-        if (!secMgr) secMgr = defaultSecMgr.get();
-        if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->getWorkUnitsByXPath(xpath, secMgr, secUser);
-    }
-
     virtual void descheduleAllWorkUnits(ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();

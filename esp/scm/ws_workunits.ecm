@@ -905,7 +905,7 @@ ESPrequest WUExportRequest
     string State;
     string StartDate;
     string EndDate;
-    string ECL;
+    [max_ver("1.55")] string ECL;
     string Jobname;
 };
 ESPresponse [exceptions_inline] WUExportResponse
@@ -1610,7 +1610,7 @@ ESPresponse [exceptions_inline] WUGetStatsResponse
 };
 
 ESPservice [
-    version("1.55"), default_client_version("1.55"),
+    version("1.56"), default_client_version("1.56"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

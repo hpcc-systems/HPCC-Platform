@@ -2201,46 +2201,33 @@ void WsWuInfo::getWorkunitAssociatedXml(const char* name, const char* ipAddress,
 
 
 
-WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,const char* cluster,const char* startDate,const char* endDate,const char* ecl,const char* jobname,const char* appname,const char* appkey,const char* appvalue)
+WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,const char* cluster,const char* startDate,const char* endDate,const char* jobname)
 {
     SecAccessFlags accessOwn;
     SecAccessFlags accessOthers;
     getUserWuAccessFlags(context, accessOwn, accessOthers, true);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    Owned<IConstWorkUnitIterator> it(factory->getWorkUnitsByOwner(owner)); // null owner means fetch all
 
-    StringBuffer xpath("*");
-    if(ecl && *ecl)
-        xpath.append("[Query/Text=?~\"*").append(ecl).append("*\"]");
-    if(state && *state)
-        xpath.append("[@state=\"").append(state).append("\"]");
-    if(cluster && *cluster)
-        xpath.append("[@clusterName=\"").append(cluster).append("\"]");
-    if(owner && *owner)
-        xpath.append("[@submitID=?~\"").append(owner).append("\"]");
-    if(jobname && *jobname)
-        xpath.append("[@jobName=?~\"*").append(jobname).append("*\"]");
-    if((appname && *appname) || (appkey && *appkey) || (appvalue && *appvalue))
-    {
-        xpath.append("[Application/").append(appname && *appname ? appname : "*");
-        xpath.append("/").append(appkey && *appkey ? appkey : "*");
-        if(appvalue && *appvalue)
-            xpath.append("=?~\"").append(appvalue).append("\"");
-        xpath.append("]");
-    }
-
-    Owned<IConstWorkUnitIterator> it(factory->getWorkUnitsByXPath(xpath.str()));
-
-    StringBuffer wuFrom, wuTo;
-    if(startDate && *startDate)
+    StringBuffer wuFrom, wuTo, jobPattern;
+    if (startDate && *startDate)
         createWuidFromDate(startDate, wuFrom);
-    if(endDate && *endDate)
+    if (endDate && *endDate)
         createWuidFromDate(endDate, wuTo);
+    if (jobname && *jobname)
+        jobPattern.appendf("*%s*", jobname);
 
     ForEach(*it)
     {
         IConstWorkUnitInfo &cw = it->query();
         if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
+            continue;
+        if (state && *state && !strieq(cw.queryStateDesc(), state))
+            continue;
+        if (cluster && *cluster && !strieq(cw.queryClusterName(), cluster))
+            continue;
+        if (jobPattern.length() && !WildMatch(cw.queryJobName(), jobPattern, true))
             continue;
 
         const char *wuid = cw.queryWuid();
@@ -2781,7 +2768,7 @@ int WUSchedule::run()
         while(!stopping)
         {
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            Owned<IConstWorkUnitIterator> itr = factory->getWorkUnitsByState(WUStateScheduled);
+            Owned<IConstWorkUnitIterator> itr = factory->getScheduledWorkUnits();
             if (itr)
             {
                 ForEach(*itr)
