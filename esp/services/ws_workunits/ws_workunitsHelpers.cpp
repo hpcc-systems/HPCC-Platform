@@ -2236,12 +2236,6 @@ WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,
         if (wuTo.length() && strcmp(wuid, wuTo.str())>0)
             continue;
 
-        if (state && *state)
-        {
-            if(!strieq(cw.queryStateDesc(),state))
-                continue;
-        }
-
         wuids.push_back(wuid);
     }
     std::sort(wuids.begin(), wuids.end(),std::greater<std::string>());
