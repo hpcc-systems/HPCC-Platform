@@ -669,13 +669,7 @@ public:
             void **rows = const_cast<void * *>(sorted.getArray());
             MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
             void **temp = (void **) tempAttr.bufferBase();
-            memcpy(temp, rows, numRows*sizeof(void **));
-            qsortvecstable(temp, numRows, *compare, (void ***)rows);
-            for (unsigned i = 0; i < numRows; i++)
-            {
-                *rows = **((void ***)rows);
-                rows++;
-            }
+            qsortvecstableinplace(rows, numRows, *compare, temp);
         }
     }
 };
@@ -1187,13 +1181,7 @@ public:
                 {
                     MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
                     void **temp = (void **) tempAttr.bufferBase();
-                    memcpy(temp, rows, numRows*sizeof(void **));
-                    qsortvecstable(temp, numRows, *compare, (void ***)rows);
-                    for (unsigned i = 0; i < numRows; i++)
-                    {
-                        *rows = **((void ***)rows);
-                        rows++;
-                    }
+                    qsortvecstableinplace(rows, numRows, *compare, temp);
                 }
                 else
                     qsortvec(rows, numRows, *compare);
@@ -2112,8 +2100,10 @@ void FlushingStringBuffer::startDataset(const char *elementName, const char *res
 
 void FlushingStringBuffer::startScalar(const char *resultName, unsigned sequence)
 {
+    if (s.length())
+        throw MakeStringException(0, "Attempt to output scalar ('%s',%d) multiple times", resultName ? resultName : "", (int)sequence);
+
     CriticalBlock b(crit);
-    assertex(!s.length());
     name.clear().append(resultName ? resultName : "Dataset");
 
     sequenceNumber = 0;
@@ -2214,8 +2204,10 @@ void FlushingJsonBuffer::startDataset(const char *elementName, const char *resul
 
 void FlushingJsonBuffer::startScalar(const char *resultName, unsigned sequence)
 {
+    if (s.length())
+        throw MakeStringException(0, "Attempt to output scalar ('%s',%d) multiple times", resultName ? resultName : "", (int)sequence);
+
     CriticalBlock b(crit);
-    assertex(!s.length());
     name.set(resultName ? resultName : "Dataset");
 
     sequenceNumber = 0;

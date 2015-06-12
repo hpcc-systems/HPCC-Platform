@@ -6599,28 +6599,28 @@ public:
         }
     }
 
-    void dedupRangeIndirect(unsigned first, unsigned last, void *** index)
+    void dedupRange(unsigned first, unsigned last, void ** rows)
     {
         for (unsigned idxL = first; idxL < last; idxL++)
         {
-            void * left = *(index[idxL]);
+            void * left = rows[idxL];
             if (left)
             {
                 for (unsigned idxR = first; idxR < last; idxR++)
                 {
-                    void * right = *(index[idxR]);
+                    void * right = rows[idxR];
                     if ((idxL != idxR) && right)
                     {
                         if (helper.matches(left, right))
                         {
                             if (keepLeft)
                             {
-                                *(index[idxR]) = NULL;
+                                rows[idxR] = NULL;
                                 ReleaseRoxieRow(right);
                             }
                             else
                             {
-                                *(index[idxL]) = NULL;
+                                rows[idxL] = NULL;
                                 ReleaseRoxieRow(left);
                                 break;
                             }
@@ -6647,23 +6647,24 @@ public:
         if (primaryCompare)
         {
             //hard, if not impossible, to hit this code once optimisations in place
-            MemoryAttr indexbuff(max*sizeof(void **));
-            void *** index = (void ***)indexbuff.bufferBase();
-            qsortvecstable(const_cast<void * *>(group.getArray()), max, *primaryCompare, index);
+            MemoryAttr indexbuff(max*sizeof(void *));
+            void ** temp = (void **)indexbuff.bufferBase();
+            void * *rows = const_cast<void * *>(group.getArray());
+            qsortvecstableinplace(rows, max, *primaryCompare, temp);
             unsigned first = 0;
             for (unsigned idx = 1; idx < max; idx++)
             {
-                if (primaryCompare->docompare(*(index[first]), *(index[idx])) != 0)
+                if (primaryCompare->docompare(rows[first], rows[idx]) != 0)
                 {
-                    dedupRangeIndirect(first, idx, index);
+                    dedupRange(first, idx, rows);
                     first = idx;
                 }
             }
-            dedupRangeIndirect(first, max, index);
+            dedupRange(first, max, rows);
 
             for(unsigned idx2=0; idx2<max; ++idx2)
             {
-                void * cur = *(index[idx2]);
+                void * cur = rows[idx2];
                 if(cur)
                     survivors.append(cur);
             }
@@ -10248,7 +10249,7 @@ public:
             fileProps.setPropInt64("@size", uncompressedBytesWritten);
             partProps.setPropInt64("@size", uncompressedBytesWritten);
         }
-        else if (tallycrc)
+        else if (tallycrc && crc.get())
             partProps.setPropInt64("@fileCrc", crc.get());
 
         if (encrypted)
@@ -16966,13 +16967,7 @@ public:
                             MemoryAttr tempAttr(rightord*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
                             void **temp = (void **) tempAttr.bufferBase();
                             void **_rows = const_cast<void * *>(rightset.getArray());
-                            memcpy(temp, _rows, rightord*sizeof(void **));
-                            qsortvecstable(temp, rightord, *helper.queryCompareRight(), (void ***)_rows);
-                            for (unsigned i = 0; i < rightord; i++)
-                            {
-                                *_rows = **((void ***)_rows);
-                                _rows++;
-                            }
+                            qsortvecstableinplace(_rows, rightord, *helper.queryCompareRight(), temp);
                         }
                     }
                     table.setown(new ManyLookupTable(rightset, helper));  // NOTE - takes ownership of rightset

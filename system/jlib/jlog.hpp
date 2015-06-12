@@ -600,9 +600,7 @@ private:
 class jlib_decl LogMsgPrepender
 {
 public:
-    // N.B. This method locks the critical section...
-    LogMsgPrepender * setContext(LogMsgComponentReporter * r, char const * f, unsigned l);
-    // ... and these ones unlock it. So they should be used in pairs.
+    LogMsgPrepender(LogMsgComponentReporter * r, char const * f, unsigned l) : reporter(r), file(f), line(l) { }
     void                      report(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 3, 4)));
     void                      report_va(const LogMsgCategory & cat, const char * format, va_list args);
     void                      report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 4, 5)));
@@ -618,7 +616,6 @@ private:
     LogMsgComponentReporter * reporter;
     char const *              file;
     unsigned                  line;
-    CriticalSection           crit;
 };
 
 // FUNCTIONS, DATA, AND MACROS
@@ -706,7 +703,6 @@ extern jlib_decl const LogMsgJobInfo unknownJob;
 extern jlib_decl ILogMsgManager * queryLogMsgManager();
 extern jlib_decl ILogMsgHandler * queryStderrLogMsgHandler();
 extern jlib_decl LogMsgComponentReporter * queryLogMsgComponentReporter(unsigned compo);
-extern jlib_decl LogMsgPrepender * queryLogMsgPrepender();
 
 extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (needed by mplog listener facility)
 
@@ -714,10 +710,10 @@ extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (need
 
 #ifdef LOGMSGCOMPONENT
 #define LOGMSGREPORTER queryLogMsgComponentReporter(LOGMSGCOMPONENT)
-#define FLLOG queryLogMsgPrepender()->setContext(LOGMSGREPORTER, __FILE__, __LINE__)->report
+#define FLLOG LogMsgPrepender(LOGMSGREPORTER, __FILE__, __LINE__).report
 #else // LOGMSGCOMPONENT
 #define LOGMSGREPORTER queryLogMsgManager()
-#define FLLOG queryLogMsgPrepender()->setContext(0, __FILE__, __LINE__)->report
+#define FLLOG LogMsgPrepender(NULL, __FILE__, __LINE__).report
 #endif // LOGMSGCOMPONENT
 
 #ifdef LOGMSGCOMPONENT

@@ -354,9 +354,17 @@ int main(int argc,char **argv)
     unsigned short  dafsPort;//DAFILESRV_PORT or SECURE_DAFILESRV_PORT
     querySecuritySettings(&useSSL, &dafsPort, &sslCertFile, NULL);
 
-    unsigned parallelRequestLimit = DEFAULT_PARALLELREQUESTLIMIT;
-    unsigned throttleDelayMs = DEFAULT_THROTTLEDELAYMS;
-    unsigned throttleCPULimit = DEFAULT_THROTTLECPULIMIT;
+    unsigned maxThreads = DEFAULT_THREADLIMIT;
+    unsigned maxThreadsDelayMs = DEFAULT_THREADLIMITDELAYMS;
+    unsigned maxAsyncCopy = DEFAULT_ASYNCCOPYMAX;
+    unsigned parallelRequestLimit = DEFAULT_STDCMD_PARALLELREQUESTLIMIT;
+    unsigned throttleDelayMs = DEFAULT_STDCMD_THROTTLEDELAYMS;
+    unsigned throttleCPULimit = DEFAULT_STDCMD_THROTTLECPULIMIT;
+    unsigned throttleQueueLimit = DEFAULT_STDCMD_THROTTLEQUEUELIMIT;
+    unsigned parallelSlowRequestLimit = DEFAULT_SLOWCMD_PARALLELREQUESTLIMIT;
+    unsigned throttleSlowDelayMs = DEFAULT_SLOWCMD_THROTTLEDELAYMS;
+    unsigned throttleSlowCPULimit = DEFAULT_SLOWCMD_THROTTLECPULIMIT;
+    unsigned throttleSlowQueueLimit = DEFAULT_SLOWCMD_THROTTLEQUEUELIMIT;
 
     Owned<IPropertyTree> env = getHPCCEnvironment();
     if (env)
@@ -368,9 +376,20 @@ int main(int argc,char **argv)
         if (daFileSrv)
         {
             // global DaFileSrv settings:
-            parallelRequestLimit = daFileSrv->getPropInt("@parallelRequestLimit", DEFAULT_PARALLELREQUESTLIMIT);
-            throttleDelayMs = daFileSrv->getPropInt("@throttleDelayMs", DEFAULT_THROTTLEDELAYMS);
-            throttleCPULimit = daFileSrv->getPropInt("@throttleCPULimit", DEFAULT_THROTTLECPULIMIT);
+
+            maxThreads = daFileSrv->getPropInt("@maxThreads", DEFAULT_THREADLIMIT);
+            maxThreadsDelayMs = daFileSrv->getPropInt("@maxThreadsDelayMs", DEFAULT_THREADLIMITDELAYMS);
+            maxAsyncCopy = daFileSrv->getPropInt("@maxAsyncCopy", DEFAULT_ASYNCCOPYMAX);
+
+            parallelRequestLimit = daFileSrv->getPropInt("@parallelRequestLimit", DEFAULT_STDCMD_PARALLELREQUESTLIMIT);
+            throttleDelayMs = daFileSrv->getPropInt("@throttleDelayMs", DEFAULT_STDCMD_THROTTLEDELAYMS);
+            throttleCPULimit = daFileSrv->getPropInt("@throttleCPULimit", DEFAULT_STDCMD_THROTTLECPULIMIT);
+            throttleQueueLimit = daFileSrv->getPropInt("@throttleQueueLimit", DEFAULT_STDCMD_THROTTLEQUEUELIMIT);
+
+            parallelSlowRequestLimit = daFileSrv->getPropInt("@parallelSlowRequestLimit", DEFAULT_SLOWCMD_PARALLELREQUESTLIMIT);
+            throttleSlowDelayMs = daFileSrv->getPropInt("@throttleSlowDelayMs", DEFAULT_SLOWCMD_THROTTLEDELAYMS);
+            throttleSlowCPULimit = daFileSrv->getPropInt("@throttleSlowCPULimit", DEFAULT_SLOWCMD_THROTTLECPULIMIT);
+            throttleSlowQueueLimit = daFileSrv->getPropInt("@throttleSlowQueueLimit", DEFAULT_SLOWCMD_THROTTLEQUEUELIMIT);
 
             // any overrides by Instance definitions?
             // NB: This won't work if netAddress is "." or if we start supporting hostnames there
@@ -380,9 +399,19 @@ int main(int argc,char **argv)
             IPropertyTree *dafileSrvInstance = daFileSrv->queryPropTree(daFileSrvPath);
             if (dafileSrvInstance)
             {
+                maxThreads = dafileSrvInstance->getPropInt("@maxThreads", maxThreads);
+                maxThreadsDelayMs = dafileSrvInstance->getPropInt("@maxThreadsDelayMs", maxThreadsDelayMs);
+                maxAsyncCopy = dafileSrvInstance->getPropInt("@maxAsyncCopy", maxAsyncCopy);
+
                 parallelRequestLimit = dafileSrvInstance->getPropInt("@parallelRequestLimit", parallelRequestLimit);
                 throttleDelayMs = dafileSrvInstance->getPropInt("@throttleDelayMs", throttleDelayMs);
                 throttleCPULimit = dafileSrvInstance->getPropInt("@throttleCPULimit", throttleCPULimit);
+                throttleQueueLimit = dafileSrvInstance->getPropInt("@throttleQueueLimit", throttleQueueLimit);
+
+                parallelSlowRequestLimit = dafileSrvInstance->getPropInt("@parallelSlowRequestLimit", parallelSlowRequestLimit);
+                throttleSlowDelayMs = dafileSrvInstance->getPropInt("@throttleSlowDelayMs", throttleSlowDelayMs);
+                throttleSlowCPULimit = dafileSrvInstance->getPropInt("@throttleSlowCPULimit", throttleSlowCPULimit);
+                throttleSlowQueueLimit = dafileSrvInstance->getPropInt("@throttleSlowQueueLimit", throttleSlowQueueLimit);
             }
         }
     }
@@ -585,7 +614,9 @@ int main(int argc,char **argv)
                 PROGLOG("Version: %s", verstring);
                 PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
                 PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Running");
-                server.setown(createRemoteFileServer(parallelRequestLimit, throttleDelayMs, throttleCPULimit));
+                server.setown(createRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy));
+                server->setThrottle(ThrottleStd, parallelRequestLimit, throttleDelayMs, throttleCPULimit);
+                server->setThrottle(ThrottleSlow, parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
                 try {
                     server->run(listenep, useSSL);
                 }
@@ -624,16 +655,36 @@ int main(int argc,char **argv)
     PROGLOG("Opening Dali File Server on %s%s", useSSL?"SECURE ":"",eps.str());
     PROGLOG("Version: %s", verstring);
     PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
-    startPerformanceMonitor(10*60*1000, PerfMonStandard);
-    server.setown(createRemoteFileServer(parallelRequestLimit, throttleDelayMs, throttleCPULimit));
+    server.setown(createRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy));
+    server->setThrottle(ThrottleStd, parallelRequestLimit, throttleDelayMs, throttleCPULimit);
+    server->setThrottle(ThrottleSlow, parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
+    class CPerfHook : public CSimpleInterfaceOf<IPerfMonHook>
+    {
+    public:
+        virtual void processPerfStats(unsigned processorUsage, unsigned memoryUsage, unsigned memoryTotal, unsigned __int64 fistDiskUsage, unsigned __int64 firstDiskTotal, unsigned __int64 secondDiskUsage, unsigned __int64 secondDiskTotal, unsigned threadCount)
+        {
+        }
+        virtual StringBuffer &extraLogging(StringBuffer &extra)
+        {
+            return server->getStats(extra.newline(), true);
+        }
+        virtual void log(int level, const char *msg)
+        {
+            PROGLOG("%s", msg);
+        }
+    } perfHook;
+    startPerformanceMonitor(10*60*1000, PerfMonStandard, &perfHook);
     writeSentinelFile(sentinelFile);
-    try {
+    try
+    {
         server->run(listenep, useSSL);
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         EXCLOG(e,"DAFILESRV");
         e->Release();
     }
+    stopPerformanceMonitor();
     if (server)
         server->stop();
     server.clear();

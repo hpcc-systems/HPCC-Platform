@@ -920,22 +920,27 @@ class CThorCodeContextSlave : public CThorCodeContextBase, implements IEngineCon
     mptag_t mptag;
     Owned<IDistributedFileTransaction> superfiletransaction;
 
+    void invalidSetResult(const char * name, unsigned seq)
+    {
+        throw MakeStringException(0, "Attempt to output result ('%s',%d) from a child query", name ? name : "", (int)seq);
+    }
+
 public:
     CThorCodeContextSlave(CJobBase &job, ILoadedDllEntry &querySo, IUserDescriptor &userDesc, mptag_t _mptag) : CThorCodeContextBase(job, querySo, userDesc), mptag(_mptag)
     {
     }
-    virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
-    virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
-    virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { throwUnexpected(); } 
-    virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { throwUnexpected(); }
-    virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
-    virtual void setResultReal(const char * stepname, unsigned sequence, double value) { throwUnexpected(); }
-    virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) { throwUnexpected(); }
-    virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) { throwUnexpected(); }
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) { throwUnexpected(); }
-    virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) { throwUnexpected(); }
-    virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { throwUnexpected(); }
-    virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { throwUnexpected(); }
+    virtual void setResultBool(const char *name, unsigned sequence, bool value) { invalidSetResult(name, sequence); }
+    virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { invalidSetResult(name, sequence); }
+    virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { invalidSetResult(stepname, sequence); }
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { invalidSetResult(name, sequence); }
+    virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { invalidSetResult(name, sequence); }
+    virtual void setResultReal(const char * stepname, unsigned sequence, double value) { invalidSetResult(stepname, sequence); }
+    virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) { invalidSetResult(name, sequence); }
+    virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) { invalidSetResult(name, sequence); }
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) { invalidSetResult(name, sequence); }
+    virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) { invalidSetResult(name, sequence); }
+    virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { invalidSetResult(name, sequence); }
+    virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { invalidSetResult(name, sequence); }
 
     virtual bool getResultBool(const char * name, unsigned sequence) { throwUnexpected(); }
     virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }

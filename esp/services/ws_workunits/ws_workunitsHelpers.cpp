@@ -1021,7 +1021,7 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
     info.setPriorityClass(cw->getPriority());
     info.setPriorityLevel(cw->getPriorityLevel());
     if (context.querySecManager())
-        info.setScope(cw->getWuScope(s).str());
+        info.setScope(cw->queryWuScope());
     info.setActionEx(cw->getActionEx(s).str());
     info.setDescription(cw->getDebugValue("description", s).str());
     if (version > 1.21)

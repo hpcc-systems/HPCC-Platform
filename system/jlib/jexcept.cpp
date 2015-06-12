@@ -511,7 +511,6 @@ void throwUnexpectedException(const char * where, const char * file, unsigned li
 
 void raiseAssertException(const char *assertion, const char *file, unsigned line)
 {
-    printStackReport();
     StringBuffer s;
     s.append("assert(");
     s.append(assertion);
@@ -519,12 +518,17 @@ void raiseAssertException(const char *assertion, const char *file, unsigned line
     s.append(file);
     s.append(", line ");
     s.append(line);
-    ERRLOG("%s",s.str());       // make sure doesn't get lost!
-    queryLogMsgManager()->flushQueue(10*1000);
+
+    if (queryLogMsgManager())
+    {
+        printStackReport();
+        ERRLOG("%s",s.str());       // make sure doesn't get lost!
+        queryLogMsgManager()->flushQueue(10*1000);
 #ifdef _DEBUG
-    // cause a breakpoint in the debugger if we are debugging.
-    //userBreakpoint();
+        // cause a breakpoint in the debugger if we are debugging.
+        //userBreakpoint();
 #endif
+    }
     
 #if 0
 #ifndef USING_MPATROL
@@ -1342,6 +1346,8 @@ void jlib_decl serializeException(IException * e, MemoryBuffer & out)
 
 void printStackReport()
 {
+    if (!queryLogMsgManager())
+        return;
 #ifdef _WIN32
     unsigned onstack=1234;
     doPrintStackReport(0, 0,(unsigned)&onstack);

@@ -2518,27 +2518,28 @@ bool CHThorGroupDedupAllActivity::calcNextDedupAll()
     if (primaryCompare)
     {
         //hard, if not impossible, to hit this code once optimisations in place
-        MemoryAttr indexbuff(max*sizeof(void **));
-        void *** index = (void ***)indexbuff.bufferBase();
-        qsortvecstable((void * *)group.getArray(), max, *primaryCompare, index);
+        MemoryAttr indexbuff(max*sizeof(void *));
+        void ** temp = (void **)indexbuff.bufferBase();
+        void ** rows = (void * *)group.getArray();
+        qsortvecstableinplace(rows, max, *primaryCompare, temp);
         unsigned first = 0;
         for (unsigned idx = 1; idx < max; idx++)
         {
-            if (primaryCompare->docompare(*(index[first]), *(index[idx])) != 0)
+            if (primaryCompare->docompare(rows[first], rows[idx]) != 0)
             {
-                dedupRangeIndirect(first, idx, index);
+                dedupRange(first, idx, group);
                 first = idx;
             }
         }
-        dedupRangeIndirect(first, max, index);
+        dedupRange(first, max, group);
 
         for(unsigned idx2=0; idx2<max; ++idx2)
         {
-            void * * cur = index[idx2];
+            void * cur = rows[idx2];
             if(cur)
             {
-                LinkRoxieRow(*cur);
-                survivors.append(*cur);
+                LinkRoxieRow(cur);
+                survivors.append(cur);
             }
         }
     }
@@ -2577,34 +2578,6 @@ void CHThorGroupDedupAllActivity::dedupRange(unsigned first, unsigned last, Owne
                         else
                         {
                             group.replace(NULL, idxL);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-void CHThorGroupDedupAllActivity::dedupRangeIndirect(unsigned first, unsigned last, void *** index)
-{
-    for (unsigned idxL = first; idxL < last; idxL++)
-    {
-        if (index[idxL])
-        {
-            for (unsigned idxR = first; idxR < last; idxR++)
-            {
-                if ((idxL != idxR) && index[idxR])
-                {
-                    if (helper.matches(*(index[idxL]), *(index[idxR])))
-                    {
-                        if (keepLeft)
-                        {
-                            index[idxR] = NULL;
-                        }
-                        else
-                        {
-                            index[idxL] = NULL;
                             break;
                         }
                     }
@@ -3832,6 +3805,10 @@ void CHThorGroupSortActivity::createSorter()
             sorter.setown(new CStableQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
         else
             sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
+    else if(stricmp(algoname, "parquicksort") == 0)
+        sorter.setown(new CParallelStableQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
+    else if(stricmp(algoname, "mergesort") == 0)
+        sorter.setown(new CStableMergeSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
     else if(stricmp(algoname, "heapsort") == 0)
         sorter.setown(new CHeapSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
     else if(stricmp(algoname, "insertionsort") == 0)
@@ -3972,7 +3949,7 @@ void CQuickSorter::performSort()
 
 // StableQuick sort
 
-bool CStableQuickSorter::addRow(const void * next)
+bool CStableSorter::addRow(const void * next)
 {
     roxiemem::rowidx_t nextRowCapacity = rowsToSort.rowCapacity() + 1;//increment capacity for the row we are about to add
     if (nextRowCapacity > indexCapacity)
@@ -3995,7 +3972,7 @@ bool CStableQuickSorter::addRow(const void * next)
     return CSimpleSorterBase::addRow(next);
 }
 
-void CStableQuickSorter::spillSortedToDisk(IDiskMerger * merger)
+void CStableSorter::spillSortedToDisk(IDiskMerger * merger)
 {
     CSimpleSorterBase::spillSortedToDisk(merger);
     ReleaseRoxieRow(index);
@@ -4003,35 +3980,49 @@ void CStableQuickSorter::spillSortedToDisk(IDiskMerger * merger)
     indexCapacity = 0;
 }
 
+void CStableSorter::killSorted()
+{
+    CSimpleSorterBase::killSorted();
+    ReleaseRoxieRow(index);
+    index = NULL;
+    indexCapacity = 0;
+}
+
+// StableQuick sort
+
 void CStableQuickSorter::performSort()
 {
     size32_t numRows = rowsToSort.numCommitted();
     if (numRows)
     {
         const void * * rows = rowsToSort.getBlock(numRows);
-        qsortvecstable((void * *)rows, numRows, *compare, index);
+        qsortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
         finger = 0;
     }
 }
 
-const void * CStableQuickSorter::getNextSorted()
+void CParallelStableQuickSorter::performSort()
 {
-    if(finger < rowsToSort.numCommitted())
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
     {
-        const void * row = *(index[finger]);
-        *(index[finger++]) = NULL;//Clear the entry in rowsToSort so it wont get double-released
-        return row;
+        const void * * rows = rowsToSort.getBlock(numRows);
+        parqsortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
+        finger = 0;
     }
-    else
-        return NULL;
 }
 
-void CStableQuickSorter::killSorted()
+// StableMerge sort
+
+void CStableMergeSorter::performSort()
 {
-    CSimpleSorterBase::killSorted();
-    ReleaseRoxieRow(index);
-    index = NULL;
-    indexCapacity = 0;
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        msortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
+        finger = 0;
+    }
 }
 
 // Heap sort

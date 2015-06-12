@@ -88,7 +88,7 @@ public:
         return qname;
     }
 
-    void loadFile(const char *srcpath, const char *srcfile, const char *srcext="", IProperties *versions=NULL, bool loadincludes=false, bool isIncludedESDL=false)
+    void loadFile(const char *srcpath, const char *srcfile, const char *srcext="", IProperties *versions=NULL, bool loadincludes=false, bool isIncludedESDL=false, bool rollUp=false)
     {
         if (!srcfile || !*srcfile)
             throw MakeStringException(-1, "EsdlInclude no file name");
@@ -106,7 +106,7 @@ public:
             {
                 fileName.append(srcext);
                 StringBuffer esxml;
-                EsdlCmdHelper::convertECMtoESXDL(fileName.str(), srcfile, esxml, false, true, true, isIncludedESDL);
+                EsdlCmdHelper::convertECMtoESXDL(fileName.str(), srcfile, esxml, loadincludes && rollUp, true, true, isIncludedESDL);
                 src = createPTreeFromXMLString(esxml, 0);
             }
             else if (!srcext || !*srcext || stricmp(srcext, XML_FILE_EXTENSION)==0)
@@ -118,7 +118,7 @@ public:
             {
                 StringBuffer msg("Unsupported file type: ");
                 msg.append(srcfile);
-
+                msg.append(srcext);
                 throw MakeStringExceptionDirect(-1, msg.str());
             }
 
@@ -173,12 +173,12 @@ public:
                 }
             }
 
-            if (loadincludes)
+            if (loadincludes && !rollUp)
             {
                 ForEachItemIn(idx, add_includes)
                 {
                     const char *file=add_includes.item(idx);
-                    loadFile(srcpath, file, srcext, versions, loadincludes, true);
+                    loadFile(srcpath, file, srcext, versions, loadincludes, true, false);
                 }
             }
         }
@@ -188,7 +188,7 @@ public:
 class Esdl2EclCmd : public EsdlConvertCmd
 {
 public:
-    Esdl2EclCmd() : optGenerateAllIncludes(false), optOutputExpandedXML(false)
+    Esdl2EclCmd() : optProcessIncludes(false), optOutputExpandedXML(false), optRollUpEclToSingleFile(false)
     {
         StringBuffer componentsfolder;
         if (getComponentFilesRelPathFromBin(componentsfolder))
@@ -234,11 +234,13 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            if (iter.matchFlag(optGenerateAllIncludes, ESDL_CONVERT_ALL))
+            if (iter.matchFlag(optProcessIncludes, ESDL_PROCESS_INCLUDES))
                 continue;
             if (iter.matchFlag(optOutputExpandedXML, ESDL_CONVERT_EXPANDEDXML) || iter.matchFlag(optOutputExpandedXML, ESDL_CONVERT_EXPANDEDXML_x))
                 continue;
             if (iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR) || iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR_CDE))
+                continue;
+            if (iter.matchFlag(optRollUpEclToSingleFile, ESDL_OPTION_ROLLUP))
                 continue;
 
             if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
@@ -276,12 +278,16 @@ public:
         StringBuffer srcPath;
         StringBuffer srcName;
         StringBuffer srcExt;
+        StringBuffer srcProt;
 
-        splitFilename(optSource.get(), NULL, &srcPath, &srcName, &srcExt);
+        splitFilename(optSource.get(), &srcProt, &srcPath, &srcName, &srcExt);
+
+        if (srcProt.length() > 0)
+            srcPath.insert(0, srcProt.str());
 
         unsigned start = msTick();
         EsdlIndexedPropertyTrees trees;
-        trees.loadFile(srcPath.str(), srcName.str(), srcExt.str(), NULL, optGenerateAllIncludes, false);
+        trees.loadFile(srcPath.str(), srcName.str(), srcExt.str(), NULL, optProcessIncludes, false, optRollUpEclToSingleFile);
         DBGLOG("Time taken to load ESDL files %u", msTick() - start);
 
         StringBuffer idxxml("<types><type name=\"StringArrayItem\" src=\"share\"/>");
@@ -320,8 +326,10 @@ public:
         idxxml.append("<keyword word=\"isvalid\"/>");
         idxxml.append("</keywords>");
 
-        if (optGenerateAllIncludes)
+        if (optProcessIncludes)
         {
+            StringBuffer entireesxdl;
+
             Owned<IPropertyTreeIterator> files = trees.all->getElements("esxdl");
             ForEach(*files)
             {
@@ -330,7 +338,6 @@ public:
                 StringBuffer xmlfile;
                 toXML(&file, xmlfile, 0,0);
 
-                //expandEsxdlForEclGeneration(trees, src);
                 outputEcl(srcPath.str(), filename, optOutDirPath.get(), idxxml.str(), xmlfile);
             }
         }
@@ -345,7 +352,6 @@ public:
                     StringBuffer xmlfile;
                     toXML(file, xmlfile, 0,0);
 
-                    //expandEsxdlForEclGeneration(trees, srcName.str());
                     outputEcl(srcPath.str(), srcName.str(), optOutDirPath.get(), idxxml.str(), xmlfile);
                 }
             }
@@ -364,14 +370,14 @@ public:
                 "outputPath must be the absolute path where the ECL output with be created."
                 "   Options:\n"
                 "      -x, --expandedxml     Output expanded XML files\n"
-                "      --all                 Generate ECL files for all includes\n"
+                "      --includes            Process all included files\n"
+                "      --rollup              Roll-up all processed includes to single ecl output file"
                 ,stdout);
     }
 
     void outputEcl(const char *srcpath, const char *file, const char *path, const char *types, const char * xml)
     {
         DBGLOG("Generating ECL file for %s", file);
-
 
         StringBuffer filePath;
         StringBuffer fileName;
@@ -391,6 +397,17 @@ public:
                 outfile.append('/');
         }
         outfile.append(finger).append(".ecl");
+
+        {
+            //If the target output file cannot be accessed, this operation will
+            //throw, and will be caught and reported at the shell level.
+            Owned<IFile> ofile =  createIFile(outfile.str());
+            if (ofile)
+            {
+                Owned<IFileIO> fileIO = ofile->open(IFOcreate);
+                fileIO.clear();
+            }
+        }
 
         StringBuffer fullname(srcpath);
         if (fullname.length() && !strchr("/\\", fullname.charAt(fullname.length()-1)))
@@ -455,11 +472,20 @@ public:
         }
 
         trans->setResultTarget(filename);
-        trans->transform();
+
+        try
+        {
+            trans->transform();
+        }
+        catch(...)
+        {
+            fprintf(stdout, "Error transforming Esdl to ECL file %s", filename);
+        }
     }
 
 public:
-    bool optGenerateAllIncludes;
+    bool optRollUpEclToSingleFile;
+    bool optProcessIncludes;
     bool optOutputExpandedXML;
     StringAttr optHPCCCompFilesDir;
 };

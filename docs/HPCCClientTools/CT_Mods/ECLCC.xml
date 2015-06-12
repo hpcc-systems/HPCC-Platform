@@ -35,7 +35,7 @@
     <releaseinfo>© 2015 HPCC Systems<superscript>®</superscript>. All rights
     reserved</releaseinfo>
 
-    <date><emphasis role="bold">BETA</emphasis></date>
+    <date><emphasis role="bold"></emphasis></date>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
@@ -330,6 +330,13 @@
               </row>
 
               <row>
+                <entry>-D<emphasis>name</emphasis>=<emphasis>value</emphasis></entry>
+
+                <entry>Override the definition of a global attribute 'name'
+                </entry>
+              </row>
+
+              <row>
                 <entry>-Wl,xx</entry>
 
                 <entry>Pass option xx to the linker</entry>
@@ -443,6 +450,13 @@
                 <entry>--legacy</entry>
 
                 <entry>Use legacy import semantics (deprecated)</entry>
+              </row>
+
+              <row>
+                <entry>--keywords</entry>
+
+                <entry>Outputs the lists of ECL reserved words to stdout (XML
+                format)</entry>
               </row>
 
               <row>
@@ -652,6 +666,21 @@
         <para>This would result in the output of the following:</para>
 
         <programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;Hello world&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting>
+
+        <para>The following example provides a defined value passed to the
+        compiler:</para>
+
+        <programlisting>//file named hello2.ecl
+IMPORT ^ as repo;
+OUTPUT(repo.optionXX);</programlisting>
+
+        <para><programlisting>eclcc -Doptionxx='HELLO' hello2.ecl</programlisting></para>
+
+        <para>This would result in the output of the following:</para>
+
+        <programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;HELLO&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting>
+
+        <para></para>
       </sect2>
     </sect1>
   </chapter>

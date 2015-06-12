@@ -67,8 +67,9 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
+
 HPCC_ADD_EXECUTABLE ( ecl ${SRCS} )
-add_dependencies ( ecl espscm workunit ws_workunits )
+add_dependencies ( ecl espscm workunit)
 install ( TARGETS ecl RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( ecl
         jlib

@@ -1781,31 +1781,31 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         pagesize = count;
     }
 
-    WUSortField sortorder[2] = {(WUSortField) (WUSFwuid | WUSFreverse), WUSFterm};
-    if(notEmpty(req.getSortby()))
+    WUSortField sortorder = (WUSortField) (WUSFwuid | WUSFreverse);
+    if (notEmpty(req.getSortby()))
     {
         const char *sortby = req.getSortby();
         if (strieq(sortby, "Owner"))
-            sortorder[0] = WUSFuser;
+            sortorder = WUSFuser;
         else if (strieq(sortby, "JobName"))
-            sortorder[0] = WUSFjob;
+            sortorder = WUSFjob;
         else if (strieq(sortby, "Cluster"))
-            sortorder[0] = WUSFcluster;
+            sortorder = WUSFcluster;
         else if (strieq(sortby, "RoxieCluster"))
-            sortorder[0] = WUSFroxiecluster;
+            sortorder = WUSFroxiecluster;
         else if (strieq(sortby, "Protected"))
-            sortorder[0] = WUSFprotected;
+            sortorder = WUSFprotected;
         else if (strieq(sortby, "State"))
-            sortorder[0] = WUSFstate;
+            sortorder = WUSFstate;
         else if (strieq(sortby, "ClusterTime"))
-            sortorder[0] = (WUSortField) (WUSFtotalthortime+WUSFnumeric);
+            sortorder = (WUSortField) (WUSFtotalthortime+WUSFnumeric);
         else
-            sortorder[0] = WUSFwuid;
+            sortorder = WUSFwuid;
 
-        sortorder[0] = (WUSortField) (sortorder[0] | WUSFnocase);
+        sortorder = (WUSortField) (sortorder | WUSFnocase);
         bool descending = req.getDescending();
         if (descending)
-            sortorder[0] = (WUSortField) (sortorder[0] | WUSFreverse);
+            sortorder = (WUSortField) (sortorder | WUSFreverse);
     }
 
     WUSortField filters[10];
@@ -1828,7 +1828,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     addWUQueryFilter(filters, filterCount, filterbuf, req.getCluster(), WUSFcluster);
     if(version > 1.07)
         addWUQueryFilter(filters, filterCount, filterbuf, req.getRoxieCluster(), WUSFroxiecluster);
-    addWUQueryFilter(filters, filterCount, filterbuf, req.getLogicalFile(), WUSFfileread);
+    addWUQueryFilter(filters, filterCount, filterbuf, req.getLogicalFile(), (WUSortField) (WUSFfileread | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getJobname(), (WUSortField) (WUSFjob | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getECL(), (WUSortField) (WUSFecl | WUSFwild));
@@ -2332,7 +2332,8 @@ INewResultSet* createFilteredResultSet(INewResultSet* result, IArrayOf<IConstNam
 }
 
 void getWsWuResult(IEspContext &context, const char* wuid, const char *name, const char *logical, unsigned index, __int64 start,
-    unsigned& count, __int64& total, IStringVal& resname, bool bin, IArrayOf<IConstNamedValue>* filterBy, MemoryBuffer& mb, bool xsd=true)
+    unsigned& count, __int64& total, IStringVal& resname, bool bin, IArrayOf<IConstNamedValue>* filterBy, MemoryBuffer& mb,
+    WUState& wuState, bool xsd=true)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
@@ -2381,6 +2382,8 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
         Owned<INewResultSet> filteredResult = createFilteredResultSet(rs, filterBy);
         appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
     }
+
+    wuState = cw->getState();
 }
 
 void checkFileSizeLimit(unsigned long xmlSize, unsigned long sizeLimit)
@@ -2626,11 +2629,12 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
         IArrayOf<IConstNamedValue>* filterBy = &req.getFilterBy();
         SCMStringBuffer name;
 
+        WUState wuState = WUStateUnknown;
         bool bin = (req.getFormat() && strieq(req.getFormat(),"raw"));
         if (notEmpty(wuidIn) && notEmpty(req.getResultName()))
-            getWsWuResult(context, wuidIn, req.getResultName(), NULL, 0, start, count, total, name, bin, filterBy, mb);
+            getWsWuResult(context, wuidIn, req.getResultName(), NULL, 0, start, count, total, name, bin, filterBy, mb, wuState);
         else if (notEmpty(wuidIn) && (req.getSequence() >= 0))
-            getWsWuResult(context, wuidIn, NULL, NULL, req.getSequence(), start, count, total, name, bin,filterBy, mb);
+            getWsWuResult(context, wuidIn, NULL, NULL, req.getSequence(), start, count, total, name, bin,filterBy, mb, wuState);
         else if (notEmpty(req.getLogicalName()))
         {
             const char* logicalName = req.getLogicalName();
@@ -2638,7 +2642,7 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
             getWuidFromLogicalFileName(context, logicalName, wuid);
             if (!wuid.length())
                 throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT,"Cannot find the workunit for file %s.",logicalName);
-            getWsWuResult(context, wuid.str(), NULL, logicalName, 0, start, count, total, name, bin, filterBy, mb);
+            getWsWuResult(context, wuid.str(), NULL, logicalName, 0, start, count, total, name, bin, filterBy, mb, wuState);
         }
         else
             throw MakeStringException(ECLWATCH_CANNOT_GET_WU_RESULT,"Cannot open the workunit result.");
@@ -2871,6 +2875,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         }
         else
         {
+            WUState wuState = WUStateUnknown;
             if(logicalName && *logicalName)
             {
                 StringBuffer lwuid;
@@ -2890,17 +2895,22 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
                 }
                 else
                     throw MakeStringException(ECLWATCH_INVALID_INPUT,"Need valid target cluster to browse file %s.",logicalName);
+
+                Owned<IWorkUnitFactory> wf = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+                Owned<IConstWorkUnit> cw = wf->openWorkUnit(lwuid.str(), false);
+                if (cw)
+                    wuState = cw->getState();
             }
             else if (notEmpty(wuid) && notEmpty(resultName))
             {
                 name.set(resultName);
-                getWsWuResult(context, wuid, resultName, NULL, 0, start, count, total, name, false, filterBy, mb, inclXsd);
+                getWsWuResult(context, wuid, resultName, NULL, 0, start, count, total, name, false, filterBy, mb, wuState, inclXsd);
                 resp.setWuid(wuid);
                 resp.setSequence(seq);
             }
             else
             {
-                getWsWuResult(context, wuid, NULL, NULL, seq, start, count, total, name, false, filterBy, mb, inclXsd);
+                getWsWuResult(context, wuid, NULL, NULL, seq, start, count, total, name, false, filterBy, mb, wuState, inclXsd);
                 resp.setWuid(wuid);
                 resp.setSequence(seq);
             }
@@ -2909,7 +2919,15 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
             if (requested > total)
                 requested = (unsigned)total;
 
-            dataCache->add(filter, mb.toByteArray(), name.str(), logicalName, wuid, resultName, seq, start, count, requested, total);
+            switch (wuState)
+            {
+                 case WUStateCompleted:
+                 case WUStateAborted:
+                 case WUStateFailed:
+                 case WUStateArchived:
+                     dataCache->add(filter, mb.toByteArray(), name.str(), logicalName, wuid, resultName, seq, start, count, requested, total);
+                     break;
+            }
         }
 
         resp.setName(name.str());

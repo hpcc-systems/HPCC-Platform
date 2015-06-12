@@ -23,6 +23,8 @@ INSTALL_DIR="$(dirname ${PATH_PRE})/.."
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 
 component=$(basename $PWD)
+dir.getByName lock
+lock="$dir_return"
 export logfile="${LOG_DIR}/${component}/init_${component}_$(date +%Y_%m_%d_%H_%M_%S).log"
 
 export SENTINEL="saserver.sentinel"
@@ -34,9 +36,10 @@ killed()
     log "Attempting to kill $component"
     kill_process ${PID_NAME} saserver 3 ${SENTINEL}
     if [[ $? -eq 1 ]]; then
-      log "could not kill $component"
+        log "could not kill $component"
     else
-      log "$component Stopped"
+        log "$component Stopped"
+        unlock /var/lock/HPCCSystems/$component/${component}.lock
     fi
     exit 255
 }

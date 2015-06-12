@@ -23,6 +23,7 @@ define([
 
     "dijit/registry",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane",
 
@@ -36,7 +37,7 @@ define([
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
-                registry, Button, ToolbarSeparator, ContentPane,
+                registry, Button, ToggleButton, ToolbarSeparator, ContentPane,
                 selector, tree,
                 GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil) {
     return declare("ActivityWidget", [GridDetailsWidget], {
@@ -44,6 +45,11 @@ define([
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.title_Activity,
         idProperty: "__hpcc_id",
+        firstLoad: true,
+
+        _onAutoRefresh: function (event) {
+            this.activity.disableMonitor(!this.autoRefreshButton.get("checked"));
+        },
 
         _onPause: function (event, params) {
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
@@ -187,6 +193,8 @@ define([
                 return;
 
             var context = this;
+            this.autoRefreshButton = registry.byId(this.id + "AutoRefresh");
+            this.activity.disableMonitor(true);
             this.activity.watch("__hpcc_changedCount", function (item, oldValue, newValue) {
                 context.grid.set("query", {});
                 context._refreshActionState();
@@ -204,6 +212,17 @@ define([
             var context = this;
 
             this.openButton = registry.byId(this.id + "Open");
+            this.refreshButton = registry.byId(this.id + "Refresh");            
+            this.autoRefreshButton = new ToggleButton({
+                id: this.id + "AutoRefresh",
+                iconClass:'iconAutoRefresh',
+                showLabel: false,
+                checked: false,
+                onClick: function (event) {
+                    context._onAutoRefresh(event);
+                }
+            }).placeAt(this.refreshButton.domNode, "before");
+            tmpSplitter = new ToolbarSeparator().placeAt(this.refreshButton.domNode, "before");
             this.clusterPauseButton = new Button({
                 id: this.id + "PauseButton",
                 label: this.i18n.Pause,
@@ -337,7 +356,10 @@ define([
                         width: 270,
                         sortable: true,
                         shouldExpand: function (row, level, previouslyExpanded) {
-                            return true;
+                            if (context.firstLoad === true) {
+                                return true;
+                            }
+                            return previouslyExpanded;
                         },
                         formatter: function (_name, row) {
                             var img = row.getStateImage();
@@ -492,6 +514,7 @@ define([
         },
 
         refreshGrid: function (args) {
+            this.firstLoad = false;
             this.activity.refresh();
         },
 
