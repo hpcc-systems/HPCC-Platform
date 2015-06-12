@@ -166,7 +166,6 @@ public:
     void getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags);
     bool getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize);
 
-    void getRoxieCluster(IEspECLWorkunit &info, unsigned flags);
     void getWorkflow(IEspECLWorkunit &info, unsigned flags);
 
     void getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEspECLHelpFile>& helpers);

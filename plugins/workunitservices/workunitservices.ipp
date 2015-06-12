@@ -71,7 +71,7 @@ inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
     fixedAppend(mb,24,pt.queryName());
     varAppend(mb,64,pt,"@submitID");
     varAppend(mb,64,pt,"@clusterName");
-    varAppend(mb,64,pt,"RoxieQueryInfo/@roxieClusterName");
+    varAppend(mb,64,pt,"RoxieQueryInfo/@roxieClusterName"); // No longer likely to be present but retain for compatibility (for now - this needs rewriting to not hit dali directly anyway!)
     varAppend(mb,256,pt,"@jobName");
     fixedAppend(mb,10,pt,"@state");
     fixedAppend(mb,7,pt,"@priorityClass");

@@ -355,7 +355,6 @@ public:
                     const char *priority,
                     const char *fileread,
                     const char *filewritten,
-                    const char *roxiecluster,
                     const char *ecl
 
     ) : user(_user), namelo(_namelo), namehi(_namehi)
@@ -391,8 +390,6 @@ public:
             query.appendf("[FilesRead/File/@name=~?\"%s\"]",fileread);
         if (filewritten&&*filewritten) 
             query.appendf("[Files/File/@name=~?\"%s\"]",filewritten);
-        if (roxiecluster&&*roxiecluster) 
-            query.appendf("[RoxieQueryInfo/@roxieClusterName=~?\"%s\"]",roxiecluster);
         if (ecl&&*ecl)
             query.appendf("[Query/Text=?~\"*%s*\"]",ecl);
         conn.setown(querySDS().connect("WorkUnits", myProcessSession(), 0, SDS_LOCK_TIMEOUT));
@@ -507,7 +504,7 @@ WORKUNITSERVICES_API void wsWorkunitList(
     const char *priority,
     const char *fileread,
     const char *filewritten,
-    const char *roxiecluster,
+    const char *roxiecluster,  // Not in use - retained for compatibility only
     const char *eclcontains,
     bool online,
     bool archived 
@@ -541,8 +538,6 @@ WORKUNITSERVICES_API void wsWorkunitList(
                 cmd->setFileRead(fileread);
             if (filewritten&&*filewritten)
                 cmd->setFileWritten(filewritten);
-            if (roxiecluster&&*roxiecluster)
-                cmd->setRoxieCluster(roxiecluster);
             if (eclcontains&&*eclcontains)
                 cmd->setEclContains(eclcontains);
             Owned<INode> sashanode = createINode(sashaeps.item(i));
@@ -562,7 +557,7 @@ WORKUNITSERVICES_API void wsWorkunitList(
         }
     }
     if (online) {
-        Owned<COnlineWorkunitIterator> oniter = new COnlineWorkunitIterator(ctx->queryUserDescriptor(),lowwuid,highwuid,username,cluster,jobname,state,priority,fileread,filewritten,roxiecluster,eclcontains);
+        Owned<COnlineWorkunitIterator> oniter = new COnlineWorkunitIterator(ctx->queryUserDescriptor(),lowwuid,highwuid,username,cluster,jobname,state,priority,fileread,filewritten,eclcontains);
         ForEach(*oniter) {
             if (!oniter->serialize(mb)) 
                 throw MakeStringException(-1,"WORKUNITSERVICES: Result buffer overflowed");

@@ -614,7 +614,6 @@ void WsWuInfo::getApplicationValues(IEspECLWorkunit &info, unsigned flags)
 
             Owned<IEspApplicationValue> t= createApplicationValue("","");
             t->setApplication(val.getApplication(buf).str());
-            t->setValue(val.getValue(buf).str());
             t->setName(val.getName(buf).str());
             t->setValue(val.getValue(buf).str());
             av.append(*t.getLink());
@@ -871,22 +870,6 @@ void WsWuInfo::legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingDat
     }
 }
 
-
-
-void WsWuInfo::getRoxieCluster(IEspECLWorkunit &info, unsigned flags)
-{
-    if (version > 1.06)
-    {
-        Owned<IConstWURoxieQueryInfo> roxieQueryInfo = cw->getRoxieQueryInfo();
-        if (roxieQueryInfo)
-        {
-            SCMStringBuffer roxieClusterName;
-            roxieQueryInfo->getRoxieClusterName(roxieClusterName);
-            info.setRoxieCluster(roxieClusterName.str());
-        }
-    }
-}
-
 void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
 {
     info.setEventSchedule(0);
@@ -1005,8 +988,6 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
     cw->getTimeScheduled(dt);
     if(dt.isValid())
         info.setDateTimeScheduled(dt.getString(s).str());
-
-    getRoxieCluster(info, flags);
 }
 
 void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
@@ -1022,7 +1003,7 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
     info.setPriorityLevel(cw->getPriorityLevel());
     if (context.querySecManager())
         info.setScope(cw->queryWuScope());
-    info.setActionEx(cw->getActionEx(s).str());
+    info.setActionEx(cw->queryActionDesc());
     info.setDescription(cw->getDebugValue("description", s).str());
     if (version > 1.21)
         info.setXmlParams(cw->getXmlParams(s, true).str());

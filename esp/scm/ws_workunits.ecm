@@ -334,7 +334,7 @@ ESPresponse [exceptions_inline] WUDeployWorkunitResponse
 ESPrequest [nil_remove] WUQueryRequest
 {
     string Wuid;
-    [min_ver("1.01")] string Type;  //archieved or non-archieved
+    [min_ver("1.01")] string Type;  //archived or non-archived
     string Cluster;
     [min_ver("1.08")] string RoxieCluster;
     string Owner;
@@ -367,7 +367,7 @@ ESPrequest [nil_remove] WUQueryRequest
 
 ESPresponse [nil_remove, exceptions_inline] WUQueryResponse
 {
-    [min_ver("1.01")] string Type("");  //archieved or non-archieved
+    [min_ver("1.01")] string Type("");  //archived or non-archived
     string Cluster;
     [min_ver("1.08")] string RoxieCluster;
     string Owner;

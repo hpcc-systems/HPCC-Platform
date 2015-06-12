@@ -96,7 +96,6 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
     const char *priority = cmd->queryPriority();
     const char *fileread = cmd->queryFileRead();
     const char *filewritten = cmd->queryFileWritten();
-    const char *roxiecluster = cmd->queryRoxieCluster();
     const char *eclcontains = cmd->queryEclContains();
     const char *cmdname = cmd->queryDfuCmdName();
     unsigned start = cmd->getStart(); 
@@ -189,9 +188,8 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                                 bool haspriority = priority&&*priority;
                                 bool hasfileread = fileread&&*fileread;
                                 bool hasfilewritten = filewritten&&*filewritten;
-                                bool hasroxiecluster = roxiecluster&&*roxiecluster;
                                 bool haseclcontains = eclcontains&&*eclcontains;
-                                if ((cmd->getAction()==SCA_GET)||haswusoutput||hasowner||hasstate||hascluster||hasjobname||hascommand||(hasoutput&&inrange)||haspriority||hasfileread||hasfilewritten||hasroxiecluster||haseclcontains) {
+                                if ((cmd->getAction()==SCA_GET)||haswusoutput||hasowner||hasstate||hascluster||hasjobname||hascommand||(hasoutput&&inrange)||haspriority||hasfileread||hasfilewritten||haseclcontains) {
                                     try {
                                         t.setown(createPTree(di2->query()));
                                         if (!t)
@@ -211,8 +209,6 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                                         if (hasfileread&&!t->hasProp(tmppath.clear().appendf("FilesRead/File[@name=~?\"%s\"]",fileread).str()))
                                             continue;
                                         if (hasfilewritten&&!t->hasProp(tmppath.clear().appendf("Files/File[@name=~?\"%s\"]",filewritten).str()))
-                                            continue;
-                                        if (hasroxiecluster&&!t->hasProp(tmppath.clear().appendf("RoxieQueryInfo[@roxieClusterName=~?\"%s\"]",roxiecluster).str()))
                                             continue;
                                         if (haseclcontains&&!t->hasProp(tmppath.clear().appendf("Query[Text=~?\"*%s*\"]",eclcontains).str()))
                                             continue;

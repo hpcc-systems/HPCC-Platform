@@ -169,7 +169,6 @@ protected:
     mutable CriticalSection crit;
     mutable Owned<IWUQuery> query;
     mutable Owned<IWUWebServicesInfo> webServicesInfo;
-    mutable Owned<IWURoxieQueryInfo> roxieQueryInfo;
     mutable Owned<IWorkflowItemIterator> workflowIterator;
     mutable bool workflowIteratorCached;
     mutable bool resultsCached;
@@ -214,7 +213,7 @@ public:
     virtual bool aborting() const;
     virtual void forceReload() {};
     virtual WUAction getAction() const;
-    virtual IStringVal& getActionEx(IStringVal & str) const;
+    virtual const char *queryActionDesc() const;
     virtual IStringVal & getApplicationValue(const char * application, const char * propname, IStringVal & str) const;
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const;
     virtual IConstWUAppValueIterator & getApplicationValues() const;
@@ -271,7 +270,6 @@ public:
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const;
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const;
-    virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const;
     virtual IStringVal & getXmlParams(IStringVal & params, bool hidePasswords) const;
     virtual const IPropertyTree *getXmlParams() const;
     virtual unsigned __int64 getHash() const;
@@ -311,6 +309,7 @@ public:
     virtual IConstWULibrary * getLibraryByName(const char * name) const;
     virtual unsigned getDebugAgentListenerPort() const;
     virtual IStringVal & getDebugAgentListenerIP(IStringVal &ip) const;
+    virtual unsigned getTotalThorTime() const;
 
     void clearExceptions();
     void commit();
@@ -361,7 +360,7 @@ public:
     IWUGraph * updateGraph(const char * name);
     IWUQuery * updateQuery();
     IWUWebServicesInfo* updateWebServicesInfo(bool create);
-    IWURoxieQueryInfo* updateRoxieQueryInfo(const char *wuid, const char *roxieClusterName);
+
     IWUPlugin * updatePluginByName(const char * name);
     IWULibrary * updateLibraryByName(const char * name);
     virtual IWUResult * updateResultByName(const char * name);

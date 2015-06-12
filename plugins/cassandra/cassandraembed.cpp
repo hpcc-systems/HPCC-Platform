@@ -3095,13 +3095,18 @@ static const CassandraXmlMapping workunitsMappings [] =
     {"clustername", "text", "@clusterName", stringColumnMapper},
     {"jobname", "text", "@jobName", stringColumnMapper},
     {"priorityclass", "text", "@priorityClass", stringColumnMapper},
-    {"protected", "boolean", "@protected", boolColumnMapper},
     {"wuScope", "text", "@scope", stringColumnMapper},
     {"submitID", "text", "@submitID", stringColumnMapper},
     {"state", "text", "@state", stringColumnMapper},
 
+    {"action", "text", "Action", stringColumnMapper},
+    {"protected", "boolean", "@protected", boolColumnMapper},
+    {"scheduled", "text", "@timeScheduled", stringColumnMapper},   // Should store as a date?
+    {"totalThorTime", "int", "@totalThorTime", intColumnMapper},
+    {"appvalues", "map<text, text>", "@Application@", subTreeMapColumnMapper}, // MORE - change to a custom map to make searchable
+
     {"debug", "map<text, text>", "Debug", simpleMapColumnMapper},
-    {"attributes", "map<text, text>", "@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state@", attributeMapColumnMapper},  // name is the suppression list, note trailing @
+    {"attributes", "map<text, text>", "@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state@timeScheduled@totalThorTime@", attributeMapColumnMapper},  // name is the suppression list, note trailing @
     {"graphs", "map<text, text>", "Graphs", graphMapColumnMapper}, // MORE - make me lazy...
     {"plugins", "list<text>", "Plugins", pluginListColumnMapper},
     {"query", "text", "Query/Text", queryTextColumnMapper},        // MORE - make me lazy...
@@ -3111,8 +3116,8 @@ static const CassandraXmlMapping workunitsMappings [] =
 
     // These are catchalls for anything not processed above or in a child table
 
-    {"elements", "map<text, text>", "@Debug@Exceptions@Graphs@Results@Statistics@Plugins@Query@Variables@Temporaries@Workflow@", elementMapColumnMapper},  // name is the suppression list, note trailing @
-    {"subtrees", "map<text, text>", "@Application@Process@Tracing@", subTreeMapColumnMapper},  // name is the INCLUSION list, note trailing @
+    {"elements", "map<text, text>", "@Action@Application@Debug@Exceptions@Graphs@Results@Statistics@Plugins@Query@Variables@Temporaries@Workflow@", elementMapColumnMapper},  // name is the suppression list, note trailing @
+    {"subtrees", "map<text, text>", "@Process@Tracing@", subTreeMapColumnMapper},  // name is the INCLUSION list, note trailing @
 
     { NULL, "workunits", "((partition), wuid)|CLUSTERING ORDER BY (wuid DESC)", stringColumnMapper}
 };
@@ -3124,10 +3129,15 @@ static const CassandraXmlMapping workunitInfoMappings [] =  // A cut down versio
     {"clustername", "text", "@clusterName", stringColumnMapper},
     {"jobname", "text", "@jobName", stringColumnMapper},
     {"priorityclass", "text", "@priorityClass", stringColumnMapper},
-    {"protected", "boolean", "@protected", boolColumnMapper},
     {"wuScope", "text", "@scope", stringColumnMapper},
     {"submitID", "text", "@submitID", stringColumnMapper},
     {"state", "text", "@state", stringColumnMapper},
+
+    {"action", "text", "Action", stringColumnMapper},
+    {"protected", "boolean", "@protected", boolColumnMapper},
+    {"scheduled", "text", "@timeScheduled", stringColumnMapper},   // Should store as a date?
+    {"totalThorTime", "int", "@totalThorTime", intColumnMapper},
+    {"appvalues", "map<text, text>", "@Application@", subTreeMapColumnMapper}, // MORE - change to a custom map to make searchable
     { NULL, "workunits", "((partition), wuid)|CLUSTERING ORDER BY (wuid DESC)", stringColumnMapper}
 };
 
@@ -3142,14 +3152,19 @@ static const CassandraXmlMapping searchMappings [] =
     {"clustername", "text", "@clusterName", stringColumnMapper},
     {"jobname", "text", "@jobName", stringColumnMapper},
     {"priorityclass", "text", "@priorityClass", stringColumnMapper},
-    {"protected", "boolean", "@protected", boolColumnMapper},
     {"scope", "text", "@scope", stringColumnMapper},
     {"submitID", "text", "@submitID", stringColumnMapper},
     {"state", "text", "@state", stringColumnMapper},
-    { NULL, "workunitsSearch", "((xpath, fieldPrefix), fieldValue, wuid)", stringColumnMapper}
+
+    {"action", "text", "Action", stringColumnMapper},
+    {"protected", "boolean", "@protected", boolColumnMapper},
+    {"scheduled", "text", "@timeScheduled", stringColumnMapper},   // Should store as a date?
+    {"totalThorTime", "int", "@totalThorTime", intColumnMapper},
+    {"appvalues", "map<text, text>", "@Application@", subTreeMapColumnMapper}, // MORE - change to a custom map to make searchable
+{ NULL, "workunitsSearch", "((xpath, fieldPrefix), fieldValue, wuid)", stringColumnMapper}
 };
 
-// The fields we can search by. These presently match the fields in the basic workunit info that is returned from a search, though there's no technical reason why they have to...
+// The fields we can search by. These are a subset of the fields in the basic workunit info that is returned from a search
 
 const char * searchPaths[] = { "@submitID", "@clusterName", "@jobName", "@priorityClass", "@protected", "@scope", "@state", NULL};
 

@@ -78,8 +78,6 @@ interface ISashaCommand: extends IInterface
     virtual const char *queryFileRead() = 0;
     virtual void setFileWritten(const char *val) = 0;
     virtual const char *queryFileWritten() = 0;
-    virtual void setRoxieCluster(const char *val) = 0;
-    virtual const char *queryRoxieCluster() = 0;
     virtual void setEclContains(const char *val) = 0;
     virtual const char *queryEclContains() = 0;
     virtual bool WUSreply() = 0;    // if only one byte is WUSstatus
