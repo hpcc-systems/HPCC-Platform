@@ -455,11 +455,10 @@ public:
     const char *get() { return (const char *)keyPtr(); }
     unsigned length() { return (size32_t)strlen((const char *)keyPtr()); }
     unsigned queryHash() const { return hashValue; }
-    operator const char * () { return HashKeyElement::keyPtr(this); }
+    operator const char * () { return (NULL==this)?NULL:keyPtr(); }
     unsigned queryReferences() { return linkCount+1; } // 1 implicit
 
 private:        
-    static const char *keyPtr(HashKeyElement * hashKeyElement) { return hashKeyElement ? hashKeyElement->keyPtr() : NULL; }
     const char *keyPtr() { return ((const char *)this)+sizeof(*this); }
 
     unsigned hashValue;
