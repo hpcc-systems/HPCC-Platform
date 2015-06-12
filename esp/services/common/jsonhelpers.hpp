@@ -232,148 +232,147 @@ namespace JsonHelpers
     }
     static bool isNotJSONDelim(int source, int delim)
     {
-    	return (source != delim);
+        return (source != delim);
     }
     static void trimJSONString(StringBuffer& buffer, unsigned rpos=NOT_FOUND)
     {
-    	unsigned rlen = buffer.length();
-    	if (!rlen)
-    		return;
+        unsigned rlen = buffer.length();
+        if (!rlen)
+            return;
 
-    	const char *p = buffer.str();
-    	if(rpos == NOT_FOUND)
-    		rpos = rlen -1;
-    	p += rpos;
-    	assertex(rpos!=NOT_FOUND);
+        const char *p = buffer.str();
+        if(rpos == NOT_FOUND)
+            rpos = rlen -1;
+        p += rpos;
+        assertex(rpos!=NOT_FOUND);
 
-    	switch (*p)
-    	{
-    		case '}':
-    		{
-    			unsigned ccurlyPos = rpos;
+        switch (*p)
+        {
+            case '}':
+            {
+                unsigned ccurlyPos = rpos;
 
+                for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+                if (ccurlyPos == rpos) { p--;--rpos; }
+                for(;isspace(*p)&&rpos>=0;p--&&--rpos);
 
-    			for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
-    			if (ccurlyPos == rpos) { p--;--rpos; }
-    			for(;isspace(*p)&&rpos>=0;p--&&--rpos);
+                if (*p == ':')
+                {
+                    unsigned colonPos = rpos;
 
-    			if (*p == ':')
-    			{
-    				unsigned colonPos = rpos;
+                    for(;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);
+                    for(p--,--rpos;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);
 
-    				for(;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);
-    				for(p--,--rpos;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);
+                    unsigned dqPos1 = rpos; //'"'
 
-    				unsigned dqPos1 = rpos; //'"'
+                    for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+                    if (*(p-1) == '{')
+                        buffer.remove(rpos-1, ccurlyPos-rpos+2).clip();
+                    else
+                        buffer.remove(dqPos1, colonPos-dqPos1+1).clip();
 
-    				for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
-    				if (*(p-1) == '{')
-    					buffer.remove(rpos-1, ccurlyPos-rpos+2).clip();
-    				else
-    					buffer.remove(dqPos1, colonPos-dqPos1+1).clip();
+                    if (buffer.length())
+                        trimJSONString(buffer);
+                }
+                else if (*p == '{')
+                {
+                    unsigned ocurlyPos = rpos;
+                    buffer.remove(ocurlyPos, ccurlyPos-ocurlyPos+1).clip();
 
-    				if (buffer.length())
-    					trimJSONString(buffer);
-    			}
-    			else if (*p == '{')
-    			{
-    				unsigned ocurlyPos = rpos;
-    				buffer.remove(ocurlyPos, ccurlyPos-ocurlyPos+1).clip();
+                    if (buffer.length())
+                        trimJSONString(buffer);
+                }
+                else if (*p == ',')
+                {
+                    unsigned commaPos = rpos;
+                    for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+                    if (commaPos == rpos) { p--;--rpos; }
+                    if (*p != ':')
+                    {
+                        buffer.remove(commaPos, ccurlyPos-commaPos).clip();
 
-    				if (buffer.length())
-    					trimJSONString(buffer);
-    			}
-    			else if (*p == ',')
-    			{
-    				unsigned commaPos = rpos;
-    				for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
-    				if (commaPos == rpos) { p--;--rpos; }
-    				if (*p != ':')
-    				{
-    					buffer.remove(commaPos, ccurlyPos-commaPos).clip();
+                        if (buffer.length())
+                            trimJSONString(buffer);
+                    }
+                    else if (*p == ':')
+                    {
+                        unsigned colonPos = rpos;
 
-    					if (buffer.length())
-    						trimJSONString(buffer);
-    				}
-    				else if (*p == ':')
-    				{
-    					unsigned colonPos = rpos;
+                        for(;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the second double-quote.
+                        for(p--,--rpos;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the first double-quote.
 
-    					for(;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the second double-quote.
-    					for(p--,--rpos;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the first double-quote.
+                        unsigned dqPos1 = rpos - 1; //'"'
 
-    					unsigned dqPos1 = rpos - 1; //'"'
+                        for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+                        if (*(p-1) == '{')
+                            buffer.remove(rpos-1, ccurlyPos-rpos+1).clip();
+                        else
+                            buffer.remove(dqPos1, colonPos-dqPos1+1).clip();
 
-    					for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
-    					if (*(p-1) == '{')
-    						buffer.remove(rpos-1, ccurlyPos-rpos+1).clip();
-    					else
-    						buffer.remove(dqPos1, colonPos-dqPos1+1).clip();
+                        if (buffer.length())
+                            trimJSONString(buffer);
+                    }
+                    else if (*p == '}')
+                    {
+                        buffer.remove(commaPos, 1).clip();
 
-    					if (buffer.length())
-    						trimJSONString(buffer);
-    				}
-    				else if (*p == '}')
-    				{
-    					buffer.remove(commaPos, 1).clip();
+                        if(buffer.length())
+                            trimJSONString(buffer);
+                    }
+                }
+                else
+                    trimJSONString(buffer, rpos);
 
-    					if(buffer.length())
-    						trimJSONString(buffer);
-    				}
-    			}
-    			else
-    				trimJSONString(buffer, rpos);
+                break;
+            }
+            case ':':
+            {
+                unsigned colonPos = rpos;
 
-    			break;
-    		}
-    		case ':':
-    		{
-    			unsigned colonPos = rpos;
+                for(;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the second double-quote.
+                for(p--,--rpos;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the first double-quote.
 
-    			for(;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the second double-quote.
-    			for(p--,--rpos;isNotJSONDelim(*p, '"')&&rpos>=0;p--&&--rpos);//goto to the first double-quote.
+                unsigned dqPos1 = rpos; //'"'
 
-    			unsigned dqPos1 = rpos; //'"'
+                for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+                buffer.remove(dqPos1, colonPos-dqPos1+1).clip();
 
-    			for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
-    			buffer.remove(dqPos1, colonPos-dqPos1+1).clip();
+                break;
+            }
+            case ']':
+            {
+                unsigned csquarePos = rpos;
 
-    			break;
-    		}
-    		case ']':
-    		{
-    			unsigned csquarePos = rpos;
+                for(;isNotJSONDelim(*p, '[')&&rpos>=0;p--&&--rpos) ;
 
-    			for(;isNotJSONDelim(*p, '[')&&rpos>=0;p--&&--rpos) ;
+                unsigned osquarePos = rpos;
+                unsigned len = csquarePos - osquarePos + 1;
+                if (len == 2) // '[]'. Remove it.
+                    buffer.remove(osquarePos, len).clip();
 
-    			unsigned osquarePos = rpos;
-    			unsigned len = csquarePos - osquarePos + 1;
-    			if (len == 2) // '[]'. Remove it.
-    				buffer.remove(osquarePos, len).clip();
+                len = buffer.length();
+                if (len)
+                {
+                    const char *p = buffer.str();
+                    unsigned rpos = len -1;
+                    p += rpos;
+                    if (*p == '}')
+                    {
+                        for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+                        if ((*p == ']')) // ]}
+                        {
+                            for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
+                            if (*p == '[') // []}
+                                trimJSONString(buffer, rpos);
+                        }
+                        else if (*p == ':') // {"QuoteBack": }
+                            trimJSONString(buffer);
+                    }
+                }
 
-    			len = buffer.length();
-    			if (len)
-    			{
-    				const char *p = buffer.str();
-    				unsigned rpos = len -1;
-    				p += rpos;
-    				if (*p == '}')
-    				{
-    					for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
-    					if ((*p == ']')) // ]}
-    					{
-    						for(p--,--rpos;isspace(*p)&&rpos>=0;p--&&--rpos);
-    						if (*p == '[') // []}
-    							trimJSONString(buffer, rpos);
-    					}
-    					else if (*p == ':') // {"QuoteBack": }
-    						trimJSONString(buffer);
-    				}
-    			}
-
-    			break;
-    		}
-    	}
+                break;
+            }
+        }
     }
     static void buildJsonMsg(StringArray& parentTypes, IXmlType* type, StringBuffer& out, const char* tag, const IPropertyTree *reqTree, unsigned flags)
     {
@@ -397,7 +396,7 @@ namespace JsonHelpers
                 {
                     const char *attrval = reqTree->queryProp(NULL);
                     if ((flags & REQSF_TRIM) && (attrval&&*attrval))
-                    		out.appendf("\"%s\" ", attrval);
+                            out.appendf("\"%s\" ", attrval);
                     else if (!(flags & REQSF_TRIM))
                     out.appendf("\"%s\" ", (attrval) ? attrval : "");
                 }
@@ -439,10 +438,10 @@ namespace JsonHelpers
             if (!itemName || !itemType)
                 throw MakeStringException(-1,"*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
 
-        	if (((flags & REQSF_TRIM) && (tag&&*tag)) || (!(flags & REQSF_TRIM) && (tag)))
+            if (((flags & REQSF_TRIM) && (tag&&*tag)) || (!(flags & REQSF_TRIM) && (tag)))
                 out.appendf("\"%s\": ", tag);
             out.append('{');
-        	if (((flags & REQSF_TRIM) && (itemName&&*itemName)) || (!(flags & REQSF_TRIM)))
+            if (((flags & REQSF_TRIM) && (itemName&&*itemName)) || (!(flags & REQSF_TRIM)))
             out.appendf("\"%s\": [", itemName);
             if (reqTree)
             {
@@ -469,7 +468,7 @@ namespace JsonHelpers
         if (flags & REQSF_ROOT)
             out.append('}');
         if (flags & REQSF_TRIM)
-        	trimJSONString(out);
+            trimJSONString(out);
     }
 };
 #endif // _JSONHELPERS_HPP__
