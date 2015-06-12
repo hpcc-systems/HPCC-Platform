@@ -1778,6 +1778,10 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
             unsigned guillotineTimeout = queryWorkUnit()->getDebugValueInt("maxRunTime", 0);
             if (guillotineTimeout)
                 abortmonitor->setGuillotineTimeout(guillotineTimeout);
+            StringBuffer jobTempDir;
+            getTempfileBase(jobTempDir);
+            if (!recursiveCreateDirectory(jobTempDir))
+                throw MakeStringException(0, "Failed to create temporary directory: %s", jobTempDir.str());
             activeGraph->execute(NULL);
             updateWULogfile();//Update workunit logfile name in case of rollover
             if (guillotineTimeout)
