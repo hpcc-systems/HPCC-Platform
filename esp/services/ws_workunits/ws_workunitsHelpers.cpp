@@ -1879,7 +1879,19 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
         pidstr.appendf(" %s ", agentPid);
     else
         pidstr.appendf(" %5d ", cw->getAgentPID());
+/*
+    Scan the master daily logfile for given PID/WUID. We make the following assumptions
+        Column ordering (time, date, pid) is unknown, but we must assume it is constant throughout the logfile.
+        It is assumed that the first column is the 8 digit workunit logfile line number.
+        Rows from concurrent workunits are intermixed.
+        Logfiles are searched via PID and WUID. You are not assured of a match until you have both.
+        PIDS and TIDS can and are reused. Beware that a TID could match the search PID.
+        Once you have both, you know the offset of the PID column. It is assumed this offset remains constant.
+        Search stops at EOF, or early exit if the search PID reappears on different WUID.
+*/
     char const * pidchars = pidstr.str();
+    size32_t pidLen = pidstr.length();
+    unsigned pidOffset = 0;//offset of PID in logfile entry
     while(!eof)
     {
         line.clear();
@@ -1898,9 +1910,10 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
         }
 
         //Retain all rows that match a unique program instance - by retaining all rows that match a pid
-        if(strstr(line.str(), pidchars))
+        const char * pPid = strstr(line.str() + pidOffset, pidchars);
+        if (pPid)
         {
-            //Check if this is a new instance using line sequence number
+            //Check if this is a new instance using line sequence number (PIDs are often reused)
             if (strncmp(line.str(), "00000000", 8) == 0)
             {
                 if (wuidFound) //If the correct instance has been found, return that instance before the next instance.
@@ -1910,16 +1923,19 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
                 buf.clear();
             }
 
-            //If we spot the workunit id anywhere in the tacing for this pid then assume it is the correct instance.
+            //If we spot the workunit id anywhere in the tracing for this pid then assume it is the correct instance.
             if(!wuidFound && strstr(line.str(), wuid.str()))
+            {
+                pidOffset = pPid - line.str();//remember offset of PID within line
                 wuidFound = true;
-
-            buf.append(line.length(), line.str());
+            }
+            if (pidOffset && 0 == strncmp(line.str() + pidOffset, pidchars, pidLen))//this makes sure the match was the PID and not the TID or something else
+                buf.append(line.length(), line.str());
         }
     }
 
     if (buf.length() < 1)
-        buf.append(47, "(Not found a log line related to this workunit)");
+        buf.append(47, "(No logfile entries found for this workunit)");
 }
 
 void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf)
