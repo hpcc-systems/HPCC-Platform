@@ -91,9 +91,9 @@ interface IPermissionProcessor : implements IInterface
     virtual void setLdapClient(ILdapClient* client) = 0;
     
     virtual bool getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>& sdlist, IArrayOf<ISecResource>& resources) = 0;
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, ISecResource* resource, SecPermissionType ptype) = 0;
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, const char* name, SecPermissionType ptype) = 0;
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, ISecResource* resource, MemoryBuffer& initial_sd) = 0;
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype) = 0;
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype) = 0;
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd) = 0;
     virtual bool retrieveUserInfo(ISecUser& user) = 0;
 
     virtual void getCachedSid(const char* name, MemoryBuffer& sid) = 0;

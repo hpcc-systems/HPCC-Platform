@@ -4549,7 +4549,7 @@ void EclResourceDependencyGatherer::addDependencyUse(IHqlExpression * search, Re
             //Don't give a warning if get/set is within the same activity (e.g., within a local())
             if (&dependencySource.exprs.item(index) != expr)
                 //errors->reportWarning(HQLWRN_RecursiveDependendencies, HQLWRN_RecursiveDependendencies_Text, *codeGeneratorAtom, 0, 0, 0);
-                errors->reportError(HQLWRN_RecursiveDependendencies, HQLWRN_RecursiveDependendencies_Text, codeGeneratorId->str(), 0, 0, 0);
+                errors->reportError(HQLWRN_RecursiveDependendencies, HQLWRN_RecursiveDependendencies_Text, str(codeGeneratorId), 0, 0, 0);
         }
         else
         {

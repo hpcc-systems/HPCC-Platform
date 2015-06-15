@@ -108,7 +108,7 @@ unsigned HqlCppLibrary::getHash(const HqlExprArray & values, unsigned crc) const
         IHqlExpression & cur = values.item(i);
 
         //names are significant because inputs/outputs are ordered by name
-        const char * name = cur.queryName()->str();
+        const char * name = str(cur.queryName());
         crc = hashnc((const byte *)name, strlen(name), crc);
 
         ITypeInfo * type = cur.queryType();

@@ -1091,7 +1091,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false);
     size32_t prevErrs = errorProcessor.errCount();
     cycle_t startCycles = get_cycles_now();
-    const char * sourcePathname = queryContents ? queryContents->querySourcePath()->str() : NULL;
+    const char * sourcePathname = queryContents ? str(queryContents->querySourcePath()) : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
 
     //The following is only here to provide information about the source file being compiled when reporting leaks

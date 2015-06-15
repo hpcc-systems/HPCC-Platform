@@ -1847,7 +1847,7 @@ void ActivityInstance::addLocationAttribute(IHqlExpression * location)
     ISourcePath * sourcePath = location->querySourcePath();
     unsigned column = location->getStartColumn();
     StringBuffer s;
-    s.append(sourcePath->str()).append("(").append(line);
+    s.append(str(sourcePath)).append("(").append(line);
     if (column)
         s.append(",").append(column);
     s.append(")");
@@ -1874,7 +1874,7 @@ void ActivityInstance::addNameAttribute(IHqlExpression * symbol)
             return;
     }
     names.append(*symbol);
-    addAttribute("name", name->str());
+    addAttribute("name", str(name));
 }
 
 void ActivityInstance::removeAttribute(const char * name)
@@ -3610,7 +3610,7 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
             if (createConstantField(target, field, defaultValue))
                 appendStringAsQuotedCPP(defaultInitializer, target.length(), target.toByteArray(), false);
             else
-                throwError1(HQLERR_CouldNotGenerateDefault, field->queryName()->str());
+                throwError1(HQLERR_CouldNotGenerateDefault, str(field->queryName()));
         }
 
         StringBuffer definition;
@@ -8046,12 +8046,12 @@ void HqlCppTranslator::doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget 
                 {
                     StringBuffer typeName;
                     getFriendlyTypeStr(leftType, typeName);
-                    throwError2(HQLERR_UnsupportedRowDiffType, typeName.str(), expr->queryId()->str());
+                    throwError2(HQLERR_UnsupportedRowDiffType, typeName.str(), str(expr->queryId()));
                 }
             }
 
             StringBuffer fullName;
-            fullName.append(selectorText).append(id->str());
+            fullName.append(selectorText).append(str(id));
 
             ITypeInfo * rightType = right->queryType()->queryPromotedType();
             if (!leftType->assignableFrom(rightType))
@@ -8848,7 +8848,7 @@ void HqlCppTranslator::doBuildStmtAssert(BuildCtx & ctx, IHqlExpression * expr)
 
     if (location.sourcePath)
     {
-        const char * filename = location.sourcePath->str();
+        const char * filename = str(location.sourcePath);
         if (options.reportAssertFilenameTail)
             filename = pathTail(filename);
         args.append(*createConstant(filename));
@@ -10645,7 +10645,7 @@ void HqlCppTranslator::addSchemaField(IHqlExpression *field, MemoryBuffer &schem
     StringBuffer schemaName;
     if (name)
     {
-        schemaName.append(name->str());
+        schemaName.append(str(name));
     }
     else
     {
@@ -12291,7 +12291,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
                 if (isUnicodeType(lhsType))
                 {
                     func = prefixDiffUnicodeId;
-                    args.append(*createConstant(lhsType->queryLocale()->str()));
+                    args.append(*createConstant(str(lhsType->queryLocale())));
                 }
                 args.append(*getSizetConstant(origin));
                 OwnedHqlExpr diff = bindFunctionCall(func, args);
@@ -17951,7 +17951,7 @@ static bool expandFieldName(StringBuffer & s, IHqlExpression * e)
     {
         if (expandFieldName(s, e->queryChild(0)))
             s.append('.');
-        const char * name = e->queryChild(1)->queryName()->str();
+        const char * name = str(e->queryChild(1)->queryName());
         s.appendLower(strlen(name), name);
         return true;
     }
@@ -18136,13 +18136,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribution(BuildCtx & ctx, I
         case type_data:
         case type_qstring:
             if (type->getSize() == UNKNOWN_LENGTH)
-                throwError1(HQLERR_DistributionVariableLengthX, cur.queryChild(1)->queryId()->str());
+                throwError1(HQLERR_DistributionVariableLengthX, str(cur.queryChild(1)->queryId()));
             break;
         default:
             {
                 StringBuffer typeName;
                 getFriendlyTypeStr(type, typeName);
-                throwError2(HQLERR_DistributionUnsupportedTypeXX, cur.queryChild(1)->queryId()->str(), typeName.str());
+                throwError2(HQLERR_DistributionUnsupportedTypeXX, str(cur.queryChild(1)->queryId()), typeName.str());
             }
         }
     }

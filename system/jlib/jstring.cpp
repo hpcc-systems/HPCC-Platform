@@ -236,7 +236,7 @@ StringBuffer & StringBuffer::append(const char * value, int offset, int len)
 StringBuffer & StringBuffer::append(const IAtom * value)
 {
     if (value)
-        append(value->getAtomNamePtr());
+        append(value->getNamePtr());
     return *this;
 }
 

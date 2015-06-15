@@ -320,7 +320,7 @@ void ViewTransformerRegistry::addPlugins(const char * name)
         }
         catch (IException * e)
         {
-            const char * name = scope->queryName()->str();
+            const char * name = str(scope->queryName());
             VStringBuffer msg("Error loading plugin %s", name);
             EXCLOG(e, msg.str());
         }
@@ -409,7 +409,7 @@ ViewFieldTransformer * ViewTransformerRegistry::createTransformer(IHqlExpression
 void ViewTransformerRegistry::addServiceDefinition(IHqlExpression * service)
 {
     Owned<ViewServiceEntry> entry = new ViewServiceEntry;
-    entry->name.set(service->queryName()->str());
+    entry->name.set(str(service->queryName()));
 
     HqlExprArray symbols;
     service->queryScope()->getSymbols(symbols);

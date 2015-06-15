@@ -176,7 +176,7 @@ void LogicalGraphCreator::addAttribute(const char * name, const char * value)
 void LogicalGraphCreator::addAttribute(const char * name, IAtom * value)
 {
     if (value)
-        addGraphAttribute(activityNode, name, value->str());
+        addGraphAttribute(activityNode, name, str(value));
 }
 
 void LogicalGraphCreator::addAttributeInt(const char * name, __int64 value)
@@ -380,8 +380,8 @@ void LogicalGraphCreator::createGraphActivity(IHqlExpression * expr)
     IHqlExpression * symbol = queryNamedSymbol(expr);
     if (symbol)
     {
-        addAttribute("name", symbol->queryId()->str());
-        addAttribute("module", symbol->queryFullContainerId()->str());
+        addAttribute("name", str(symbol->queryId()));
+        addAttribute("module", str(symbol->queryFullContainerId()));
         addAttributeInt("line", symbol->getStartLine());
         addAttributeInt("column", symbol->getStartColumn());
     }
@@ -580,22 +580,22 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
             {
                 //module and name supplied.  module may be the form <module>.<attr>.  
                 //If so, display <module>.<attr> if the name matches the attr, else <module>.<attr>::<name>
-                const char * dot = strrchr(module->str(), '.');
+                const char * dot = strrchr(str(module), '.');
                 if (dot)
                 {
-                    if (stricmp(dot+1, name->str()) == 0)
-                        header.append(module->str());
+                    if (stricmp(dot+1, str(name)) == 0)
+                        header.append(str(module));
                     else
-                        header.append(module->str()).append("::").append(name->str());
+                        header.append(str(module)).append("::").append(str(name));
                 }
                 else
-                    header.append(module->str()).append(".").append(name->str());
+                    header.append(str(module)).append(".").append(str(name));
             }
             else
-                header.append(module->str());
+                header.append(str(module));
         }
         else if (name)
-            header.append(name->str());
+            header.append(str(name));
 
         if (header.length())
             temp.append(header).append("\n");

@@ -2022,7 +2022,7 @@ void RegexNamedPattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
 {
     RegexPattern::toXMLattr(out, state);
     if (def->queryName())
-        out.appendf(" name=\"%s\"", def->queryName()->str());
+        out.appendf(" name=\"%s\"", str(def->queryName()));
     out.appendf(" body=\"%d\"", state.named.find(*def));
 }
 
@@ -2947,11 +2947,11 @@ void RegexNamed::serializePattern(MemoryBuffer & out)
     if (name)
     {
         StringBuffer lowerName;
-        lowerName.append(name->str()).toLowerCase();
+        lowerName.append(str(name)).toLowerCase();
         out.append(lowerName.str());
     }
     else
-        out.append(name->str());
+        out.append(str(name));
 
     out.append(id);
 }
@@ -2979,7 +2979,7 @@ void graphToXML(StringBuffer & out, RegexXmlState & state, RegexPattern * first)
 void RegexNamed::toXML(StringBuffer & out, RegexXmlState & state)
 {
     StringBuffer lowerName;
-    lowerName.append(name->str()).toLowerCase();
+    lowerName.append(str(name)).toLowerCase();
     out.appendf("<named id=\"%d\" name=\"%s\" matchid=\"%d\" first=\"%d\">", state.named.find(*this), lowerName.str(), id, state.patterns.find(*first)).newline();
     graphToXML(out, state, first);
     //first->toXML(out, state);

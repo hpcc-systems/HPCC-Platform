@@ -2207,7 +2207,7 @@ private:
         int perm;
         if (!perms)
         {
-            perm = secmgr->authorizeWorkunitScope(*secuser, scopeName);
+            perm = secuser.get() ? secmgr->authorizeWorkunitScope(*secuser, scopeName):-1;
             scopePermissions.setValue(scopeName, perm);
         }
         else

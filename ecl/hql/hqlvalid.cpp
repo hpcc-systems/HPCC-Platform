@@ -95,7 +95,7 @@ StringBuffer & ECLlocation::getText(StringBuffer & text) const
     if (!sourcePath && !lineno)
         return text;
 
-    text.append(sourcePath->str());
+    text.append(str(sourcePath));
     if (lineno)
     {
         text.append("(").append(lineno);

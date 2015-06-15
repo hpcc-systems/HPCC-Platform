@@ -241,7 +241,7 @@ IHqlExpression * getVirtualReplacement(IHqlExpression * field, IHqlExpression * 
         return createValue(no_sizeof, LINK(sizetType), getVirtualSelector(dataset));
     else if (virtualKind == logicalFilenameAtom)
         return createValue(no_implicitcast, field->getType(), getFileLogicalName(dataset));
-    throwError1(HQLERR_UnknownVirtualAttr, virtualKind->str());
+    throwError1(HQLERR_UnknownVirtualAttr, str(virtualKind));
     return NULL;
 }
 
@@ -621,9 +621,9 @@ public:
             IHqlExpression * cur = rawStepping.fields->queryChild(i);
             unsigned thisMatch = monitors.queryKeySelectIndex(cur);
             if (thisMatch == NotFound)
-                throwError1(HQLERR_StepFieldNotKeyed, cur->queryChild(1)->queryName()->str());
+                throwError1(HQLERR_StepFieldNotKeyed, str(cur->queryChild(1)->queryName()));
             if ((prev != NotFound) && (thisMatch != prev+1))
-                throwError1(HQLERR_StepFieldNotContiguous, cur->queryChild(1)->queryName()->str());
+                throwError1(HQLERR_StepFieldNotContiguous, str(cur->queryChild(1)->queryName()));
             prev = thisMatch;
         }
     }
@@ -3570,7 +3570,7 @@ void KeyFailureInfo::reportError(HqlCppTranslator & translator, IHqlExpression *
     case KFRtoocomplex:
         translator.throwError1(HQLERR_KeyedJoinTooComplex, ecl.str());
     case KFRcast:
-        translator.throwError2(HQLERR_KeyAccessNeedCast, ecl.str(), field->queryName()->str());
+        translator.throwError2(HQLERR_KeyAccessNeedCast, ecl.str(), str(field->queryName()));
     case KFRor:
         translator.throwError1(HQLERR_OrMultipleKeyfields, ecl.str());
     }
@@ -4584,7 +4584,7 @@ KeyedKind getKeyedKind(HqlCppTranslator & translator, KeyConditionArray & matche
             if (keyedKind == KeyedNo)
                 keyedKind = cur.keyedKind;
             else
-                translator.throwError1(HQLERR_InconsistentKeyedOpt, cur.selector->queryChild(1)->queryName()->str());
+                translator.throwError1(HQLERR_InconsistentKeyedOpt, str(cur.selector->queryChild(1)->queryName()));
         }
     }
     return keyedKind;
@@ -4633,7 +4633,7 @@ void MonitorExtractor::buildKeySegment(BuildMonitorState & buildState, BuildCtx 
                 else if (buildState.implicitWildField && !ignoreUnkeyed)
                 {
                     StringBuffer s, keyname;
-                    translator.throwError3(HQLERR_WildFollowsGap, getExprECL(field, s).str(), buildState.implicitWildField->queryChild(1)->queryName()->str(), queryKeyName(keyname));
+                    translator.throwError3(HQLERR_WildFollowsGap, getExprECL(field, s).str(), str(buildState.implicitWildField->queryChild(1)->queryName()), queryKeyName(keyname));
                 }
             }
             else
@@ -4643,10 +4643,10 @@ void MonitorExtractor::buildKeySegment(BuildMonitorState & buildState, BuildCtx 
                 {
                     StringBuffer s,keyname;
                     if (cur.isKeyed())
-                        translator.throwError3(HQLERR_KeyedFollowsGap, getExprECL(field, s).str(), buildState.implicitWildField->queryChild(1)->queryName()->str(), queryKeyName(keyname));
+                        translator.throwError3(HQLERR_KeyedFollowsGap, getExprECL(field, s).str(), str(buildState.implicitWildField->queryChild(1)->queryName()), queryKeyName(keyname));
                     else if (!buildState.doneImplicitWarning)
                     {
-                        translator.WARNING3(CategoryEfficiency, HQLWRN_KeyedFollowsGap, getExprECL(field, s).str(), buildState.implicitWildField->queryChild(1)->queryName()->str(), queryKeyName(keyname));
+                        translator.WARNING3(CategoryEfficiency, HQLWRN_KeyedFollowsGap, getExprECL(field, s).str(), str(buildState.implicitWildField->queryChild(1)->queryName()), queryKeyName(keyname));
                         buildState.doneImplicitWarning = true;
                     }
                 }
@@ -4656,7 +4656,7 @@ void MonitorExtractor::buildKeySegment(BuildMonitorState & buildState, BuildCtx 
     if (buildState.wildWasKeyed && (matches.ordinality() == 0))
     {
         StringBuffer keyname;
-        translator.WARNING2(CategoryFolding, HQLWRN_FoldRemoveKeyed, field->queryName()->str(), queryKeyName(keyname));
+        translator.WARNING2(CategoryFolding, HQLWRN_FoldRemoveKeyed, str(field->queryName()), queryKeyName(keyname));
     }
 
     StringBuffer s;
