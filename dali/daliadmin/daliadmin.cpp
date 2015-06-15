@@ -2273,115 +2273,20 @@ static bool begins(const char *&ln,const char *pat)
 
 static void dodalilocks(const char *pattern,const char *obj,Int64Array *conn,bool filesonly)
 {
+    Owned<IPropertyTreeIterator> itr = getLockDataTreeIterator();
+
     StringBuffer buf;
-    getDaliDiagnosticValue("locks",buf);
-    for (int pass=(filesonly?1:0);pass<2;pass++) {
-        bool headerdone = false;
-        StringBuffer line;
-        StringBuffer curfile;
-        StringBuffer curxpath;
-        StringBuffer ips;
-        StringBuffer times;
-        StringBuffer sessid;
-        StringBuffer connid;
-        const char *s = buf.str();
-        loop {
-            line.clear();
-            while (*s&&(*s!='\n')) 
-                line.append(*(s++));
-            if (line.length()) {
-                const char *ln = line.str();
-                if (begins(ln,"Locks on path: ")) {
-                    curfile.clear();
-                    curxpath.clear();
-                    const char *x = ln;
-                    while (*x)
-                        curxpath.append(*(x++));
-                    if (begins(ln,"/Files")) {
-                        while (*ln&&(begins(ln,"/Scope[@name=\"")||begins(ln,"/File[@name=\"")||begins(ln,"/SuperFile[@name=\""))) {
-                            if (curfile.length())
-                                curfile.append("::");
-                            while (*ln&&(*ln!='"'))
-                                curfile.append(*(ln++));
-                            if (*ln=='"')
-                                ln++;
-                            if (*ln==']')
-                                ln++;
-                        }
-                    }
-                }
-                else if (isdigit(*ln)) {
-                    if (obj) 
-                        if (!curxpath.length()||!WildMatch(curxpath.str(),obj)) 
-                            if (!curfile.length()||!WildMatch(curfile.str(),obj)) 
-                                continue;
-                    if ((curfile.length()!=0)==(pass==1)) {
-                        ips.clear();
-                        while (*ln&&(*ln!=':'))
-                            ips.append(*(ln++));
-                        if (!pattern||WildMatch(ips.str(),pattern)) {
-                            ips.append(*ln++);
-                            while (isdigit(*ln))
-                                ips.append(*ln++);
-                            while (*ln!='|')    
-                                ln++;
-                            ln++; // sessid start
-                            sessid.clear();
-                            while (*ln!='|') {
-                                sessid.append(*ln);
-                                ln++;
-                            }
-                            sessid.clip();
-                            ln++; // connectid start
-                            connid.clear();
-                            while (*ln!='|') {
-                                connid.append(*ln);
-                                ln++;
-                            }
-                            connid.clip();
-                            ln++; // mode start
-                            unsigned mode = 0;
-                            while (isdigit(*ln))
-                                mode = mode*10+(*(ln++)-'0');
-                            while (*ln!='|')
-                                ln++;
-                            ln++; // duration start
-                            times.clear();
-                            while (*ln&&(*ln!='('))
-                                times.append(*(ln++));
-                            ln++;
-                            unsigned duration = 0;
-                            while (isdigit(*ln))
-                                duration = duration*10+(*(ln++)-'0');
-                            if (conn) {
-                                bool err;
-                                __int64 c = (__int64)hextoll(connid.str(),err);
-                                if (!err) {
-                                    bool found = false;
-                                    ForEachItemIn(i,*conn) 
-                                        if (c==conn->item(i))
-                                            found = true;
-                                    if (!found)
-                                        conn->append(c);
-                                }
-                            }
-                            else {
-                                if (!headerdone) {
-                                    OUTLOG( "\nServer IP         , session   ,mode, time              ,duration ,%s",pass?"File":"XPath");
-                                    OUTLOG(   "==================,===========,===,====================,=========,=====");
-                                    headerdone = true;
-                                }
-                                OUTLOG("%s, %s, %d, %s, %d, %s",ips.str(),sessid.str(),mode,times.str(),duration,pass?curfile.str():curxpath.str());
-                            }
-                        }
-                    }
-                }
-            }
-            if (!*s)
-                break;
-            s++;
-        }
-    }
+    CLockDataHelper helper;
+    if (!filesonly)
+        helper.formatLocks(itr, false, 1, pattern, obj, conn, buf);
+    helper.formatLocks(itr, true, 1, pattern, obj, conn, buf);
+
+    if (conn)
+        return;
+    if (buf.length())
+        printf("%s", buf.str());
+    else
+        printf("No lock found\n");
 }
 
 static void dalilocks(const char *pattern,bool fileonly)

@@ -26,6 +26,7 @@
 #include "danqs.hpp"
 #include "dasds.hpp"
 #include "dadfs.hpp"
+#include "dautils.hpp"
 #include "jptree.hpp"
 #include "jlzw.hpp"
 
@@ -459,69 +460,14 @@ static bool begins(const char *&ln,const char *pat)
 
 void fileLocks(const char *ip)
 {
+    Owned<IPropertyTreeIterator> itr = getLockDataTreeIterator();
+    CLockDataHelper helper;
     StringBuffer buf;
-    getDaliDiagnosticValue("locks",buf);
-    StringBuffer line;
-    StringBuffer curfile;
-    StringBuffer ips;
-    const char *s = buf.str();
-    loop {
-        line.clear();
-        while (*s&&(*s!='\n')) 
-            line.append(*(s++));
-        if (line.length()) {
-            const char *ln = line.str();
-            if (begins(ln,"Locks on path: ")) {
-                curfile.clear();
-                if (begins(ln,"/Files")) {
-                    while (*ln&&(begins(ln,"/Scope[@name=\"")||begins(ln,"/File[@name=\""))) {
-                        if (curfile.length())
-                            curfile.append("::");
-                        while (*ln&&(*ln!='"'))
-                            curfile.append(*(ln++));
-                        if (*ln=='"')
-                            ln++;
-                        if (*ln==']')
-                            ln++;
-                    }
-                }
-            }
-            else if (isdigit(*ln)) {
-                if (curfile.length()) {
-                    ips.clear();
-                    while (*ln&&(*ln!=':'))
-                        ips.append(*(ln++));
-                    if (!ip||(strcmp(ips.str(),ip)==0)) {
-                        ips.append(*ln++);
-                        while (isdigit(*ln))
-                            ips.append(*ln++);
-                        while (*ln!='|')    
-                            ln++;
-                        ln++; // sessid start
-                        while (*ln!='|')
-                            ln++;
-                        ln++; // connectid start
-                        while (*ln!='|')
-                            ln++;
-                        ln++; // mode start
-                        unsigned mode = 0;
-                        while (isdigit(*ln))
-                            mode = mode*10+(*(ln++)-'0');
-                        while (*ln!='|')
-                            ln++;
-                        ln++; // duration start
-                        unsigned duration = 0;
-                        while (isdigit(*ln))
-                            duration = duration*10+(*(ln++)-'0');
-                        printf("%s, %d, %d, %s\n",ips.str(),mode,duration,curfile.str());
-                    }
-                }
-            }
-        }
-        if (!*s)
-            break;
-        s++;
-    }
+    helper.formatLocks(itr, true, 0, ip, NULL, NULL, buf);
+    if (buf.length())
+        printf("%s", buf.str());
+    else
+        printf("No lock found\n");
 }
 
 // NB: there's strtoll under Linux

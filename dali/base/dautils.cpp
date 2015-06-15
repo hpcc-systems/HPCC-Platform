@@ -924,6 +924,36 @@ StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) con
     return lfnNodeName;
 }
 
+static bool begins(const char *&ln,const char *pat)
+{
+    size32_t sz = strlen(pat);
+    if (memicmp(ln,pat,sz)==0) {
+        ln += sz;
+        return true;
+    }
+    return false;
+}
+
+StringBuffer &CDfsLogicalFileName::xPathToLName(const char *xpath, StringBuffer &lName) const
+{
+    const char *s = xpath;
+    if (!begins(s, "/Files"))
+        return lName;
+
+    while (*s && (begins(s, "/Scope[@name=\"") || begins(s, "/File[@name=\"") || begins(s, "/SuperFile[@name=\"")))
+    {
+        if (lName.length())
+            lName.append("::");
+        while (*s && (*s != '"'))
+            lName.append(*(s++));
+        if (*s == '"')
+            s++;
+        if (*s == ']')
+            s++;
+    }
+    return lName;
+}
+
 bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
 {
     SocketEndpoint nullep;
@@ -3083,3 +3113,262 @@ bool traceAllTransactions(bool on)
     return ret;
 }
 
+const char* LockDataFieldNames[] = { "@XPath", "@EPCount", "@EP", "@connId", "@sessId", "@mode", "@timeLocked" };
+
+extern da_decl const char* getLockDataFieldName(LockDataField feild)
+{
+    return LockDataFieldNames[feild];
+}
+
+void CLockDataHelper::serializeLockData(CheckedCriticalSection &crit, unsigned critTimeout, const char *xpath, ConnectionInfoMap &connectionInfo, CMessageBuffer &mb)
+{
+    unsigned epCount=0;
+    MemoryBuffer locks;
+    UInt64Array keys;
+    {
+        CHECKEDCRITICALBLOCK(crit, critTimeout);
+        HashIterator iter(connectionInfo);
+        ForEach(iter)
+        {
+            IMapping &imap = iter.query();
+            LockData *lD = connectionInfo.mapToValue(&imap);
+            keys.append(* ((ConnectionId *) imap.getKey()));
+            locks.append(sizeof(LockData), lD);
+            epCount++;
+        }
+    }
+    mb.append(xpath);
+    mb.append(epCount);
+    if (epCount < 1)
+        return;
+
+    ForEachItemIn(k, keys)
+    {
+        LockData lD;
+        memcpy(&lD, ((const byte *)locks.toByteArray())+k*sizeof(LockData), sizeof(LockData));
+
+        StringBuffer sessEpStr;
+        mb.append(querySessionManager().getClientProcessEndpoint(lD.sessId, sessEpStr).str());
+        mb.append(lD.sessId);
+        mb.append(keys.item(k));
+        mb.append(lD.mode);
+        mb.append(lD.timeLockObtained);
+    }
+}
+
+IPropertyTreeIterator *deserializeLockDataIterator(MemoryBuffer &mb)
+{
+    class CLockDataIterator: public CInterface, implements IPropertyTreeIterator
+    {
+        Owned<IPropertyTree> cur;
+
+        IPropertyTree *deserializeLockData(MemoryBuffer &mb)
+        {
+            StringAttr xPath;
+            mb.read(xPath);
+
+            IPropertyTree *lock = createPTree("lock");
+            lock->setProp(getLockDataFieldName(LDFXPath), xPath.get());
+
+            unsigned epCount;
+            mb.read(epCount);
+            lock->setPropInt(getLockDataFieldName(LDFEPCount), epCount);
+            if (epCount < 1)
+                return lock;
+
+            for (unsigned l = 0; l < epCount; l++)
+            {
+                StringAttr ep;
+                __int64 connId, sessId;
+                unsigned mode, timeLockObtained;
+                mb.read(ep);
+                mb.read(sessId);
+                mb.read(connId);
+                mb.read(mode);
+                mb.read(timeLockObtained);
+
+                IPropertyTree* sub = createPTree("EP");
+                sub->setProp(getLockDataFieldName(LDFEP), ep.get());
+                sub->setPropInt64(getLockDataFieldName(LDFconnId), connId);
+                sub->setPropInt64(getLockDataFieldName(LDFsessId), sessId);
+                sub->setPropInt(getLockDataFieldName(LDFmode), mode);
+                sub->setPropInt(getLockDataFieldName(LDFtimeLocked), timeLockObtained);
+                lock->addPropTree("EP", sub);
+            }
+            return lock;
+        }
+
+    public:
+        IMPLEMENT_IINTERFACE;
+        MemoryBuffer mb;
+        unsigned lockCount;
+
+        bool first()
+        {
+            mb.reset();
+            mb.read(lockCount);
+
+            return next();
+        }
+
+        bool next()
+        {
+            cur.clear();
+            if (mb.getPos()>=mb.length())
+                return false;
+            cur.setown(deserializeLockData(mb));
+            return true;
+        }
+
+        bool isValid()
+        {
+            return cur.get()!=NULL;
+        }
+
+        IPropertyTree  & query()
+        {
+            return *cur;
+        }
+    } *fai = new CLockDataIterator;
+    mb.swapWith(fai->mb);
+    return fai;
+}
+
+IPropertyTreeIterator *CLockDataHelper::getLockDataTreeIterator(MemoryBuffer &lockInfo)
+{
+    return deserializeLockDataIterator(lockInfo);
+}
+
+StringBuffer &CLockDataHelper::formatLockData(MemoryBuffer &lockInfo, StringBuffer &out)
+{
+    StringAttr xPath;
+    lockInfo.read(xPath);
+    out.append("Locks on path: /").append(xPath).newline();
+    out.append("Endpoint            |SessionId       |ConnectionId    |mode    |time(duration)]").newline().newline();
+
+    unsigned lockCount;
+    lockInfo.read(lockCount);
+    if (lockCount < 1)
+    {
+        out.newline();
+        return out;
+    }
+
+    unsigned msNow = msTick();
+    CDateTime time;
+    time.setNow();
+
+    for (unsigned l = 0; l < lockCount; l++)
+    {
+        StringAttr ep;
+        __int64 connId, sessId;
+        unsigned mode, timeLockObtained;
+        lockInfo.read(ep);
+        lockInfo.read(sessId);
+        lockInfo.read(connId);
+        lockInfo.read(mode);
+        lockInfo.read(timeLockObtained);
+
+        CDateTime timeLocked;
+        unsigned lockedFor = msNow-timeLockObtained;
+        time_t tt = time.getSimple() - (lockedFor/1000);
+        timeLocked.set(tt);
+        StringBuffer timeStr;
+        timeLocked.getString(timeStr);
+        out.appendf("%-20s|%-16" I64F "x|%-16" I64F "x|%-8x|%s(%d ms)", ep.str(), sessId, connId, mode,
+            timeStr.str(), lockedFor).newline();
+    }
+    return out;
+}
+
+bool CLockDataHelper::checkEP(const char *ep, const char *ipPattern)
+{
+    StringBuffer ips;
+    while (*ep && (*ep != ':'))
+        ips.append(*(ep++));
+    return WildMatch(ips.str(), ipPattern);
+}
+
+void CLockDataHelper::formatLock(IPropertyTree &query, bool fileLock, unsigned formatType, bool &headerDone, const char *ipPattern,
+    const char *xpathPattern, Int64Array *connIds, StringBuffer &out)
+{
+    unsigned epCount =  query.getPropInt(getLockDataFieldName(LDFEPCount));
+    if (epCount < 1)
+        return;
+
+    StringBuffer xpath, file;
+    query.getProp(getLockDataFieldName(LDFXPath), xpath);
+
+    CDfsLogicalFileName lfn;
+    lfn.xPathToLName(xpath.insert(0, '/').str(), file);
+
+    if ((file.length() > 0) != fileLock)
+        return;
+    if (xpathPattern && (!xpath.length() || !WildMatch(xpath.str(), xpathPattern))
+        && (!file.length() || !WildMatch(file.str(), xpathPattern)))
+        return;
+
+    unsigned msNow = msTick();
+    CDateTime time;
+    time.setNow();
+
+    Owned<IPropertyTreeIterator> it = query.getElements("EP");
+    ForEach(*it)
+    {
+        IPropertyTree &e = it->query();
+        const char* ep = e.queryProp(getLockDataFieldName(LDFEP));
+        __int64 connId = e.getPropInt64(getLockDataFieldName(LDFconnId));
+        __int64 sessId = e.getPropInt64(getLockDataFieldName(LDFsessId));
+        unsigned mode = e.getPropInt(getLockDataFieldName(LDFmode));
+        unsigned timeLockObtained = e.getPropInt(getLockDataFieldName(LDFtimeLocked));
+
+        if (ipPattern && !checkEP(ep, ipPattern))
+            continue;;
+
+        if (connIds)
+        {
+            bool found = false;
+            ForEachItemIn(i, *connIds)
+                if (connId == connIds->item(i))
+                {
+                    found = true;
+                    break;
+                }
+            if (!found)
+                connIds->append(connId);
+        }
+        else
+        {
+            CDateTime timeLocked;
+            unsigned lockedFor = msNow-timeLockObtained;
+            time_t tt = time.getSimple() - (lockedFor/1000);
+            timeLocked.set(tt);
+            StringBuffer timeStr;
+            timeLocked.getString(timeStr);
+            if (formatType < 1)
+                out.appendf("\n%s, %d, %d, %s", ep, mode, lockedFor, file.str());
+            else
+            {
+                if (!headerDone)
+                {
+                    out.appendf( "\n  Server IP        , session   ,mode, time               ,duration ,%s", fileLock?"File":"XPath");
+                    out.appendf( "\n===================,===========,====,====================,=========,=====");
+                    headerDone = true;
+                }
+                out.appendf("\n%s, %" I64F "x, %d, %s, %d, %s", ep, sessId, mode, timeStr.str(),
+                    lockedFor, fileLock ? file.str(): xpath.str());
+            }
+        }
+    }
+    return;
+}
+
+void CLockDataHelper::formatLocks(IPropertyTreeIterator *itr, bool fileLock, unsigned formatType, const char *ipPattern,
+    const char *xPathPattern, Int64Array *connIds, StringBuffer &out)
+{
+    bool headerDone = false;
+    ForEach(*itr)
+        formatLock(itr->query(), fileLock, formatType, headerDone, ipPattern, xPathPattern, connIds, out);
+    if (out.length())
+        out.appendf("\n");
+}

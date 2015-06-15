@@ -117,6 +117,7 @@ public:
     StringBuffer &makeScopeQuery(StringBuffer &query, bool absolute=true) const; // returns xpath for containing scope
     StringBuffer &makeFullnameQuery(StringBuffer &query, DfsXmlBranchKind kind, bool absolute=true) const; // return xpath for branch
     StringBuffer &makeXPathLName(StringBuffer &lfnNodeName) const; // return a mangled logical name compatible with a xpath node name
+    StringBuffer &xPathToLName(const char *xpath, StringBuffer &lName) const;
 
     bool getEp(SocketEndpoint &ep) const;       // foreign and external
     StringBuffer &getGroupName(StringBuffer &grp) const;    // external only
@@ -417,5 +418,41 @@ interface ILocalOrDistributedFile: extends IInterface
 };
 
 extern da_decl ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,bool iswrite=false);
+
+struct LockData
+{
+    unsigned mode;
+    SessionId sessId;
+    unsigned timeLockObtained;
+};
+
+typedef __int64 ConnectionId;
+typedef MapBetween<ConnectionId, ConnectionId, LockData, LockData> ConnectionInfoMap;
+
+enum LockDataField
+{
+    LDFXPath = 0,
+    LDFEPCount = 1,
+    LDFEP = 2,
+    LDFconnId = 3,
+    LDFsessId = 4,
+    LDFmode = 5,
+    LDFtimeLocked = 6
+};
+
+class CLockDataHelper
+{
+    bool checkEP(const char *ep, const char *ipPattern);
+    void formatLock(IPropertyTree &query, bool fileLock, unsigned formatType, bool &headerDone, const char *ipPattern, const char *xpathPattern,
+        Int64Array *connIds, StringBuffer &out);
+
+public:
+    CLockDataHelper() {};
+    void serializeLockData(CheckedCriticalSection &crit, unsigned critTimeout, const char *xpath, ConnectionInfoMap &connectionInfo, CMessageBuffer &lockInfo);
+    IPropertyTreeIterator *getLockDataTreeIterator(MemoryBuffer &lockInfo);
+    StringBuffer &formatLockData(MemoryBuffer &lockInfo, StringBuffer &out);
+    void formatLocks(IPropertyTreeIterator *itr, bool fileLock, unsigned formatType, const char *ipPattern, const char *xPathPattern,
+        Int64Array *connIds, StringBuffer &out);
+};
 
 #endif
