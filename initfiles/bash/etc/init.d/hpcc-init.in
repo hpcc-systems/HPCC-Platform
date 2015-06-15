@@ -49,6 +49,7 @@ function print_usage {
     echo "Usage: $0 [-c component] {start|stop|restart|status|setup}
        $0 [--componentlist] Display node component name list.
        $0 [--typelist] Display node component type list.
+       $0 [-f] [--force] Force hard kill on orphaned process groups
        $0 [-h] [--help] Display help"
     echo
     print_components
@@ -104,7 +105,7 @@ TRACE=${TRACE:-0}
 VERBOSE=${VERBOSE:-0}
 COMP_BY_TYPE=${COMP_BY_TYPE:-0}
 DAFILESRV=${DAFILESRV:-0}
-
+FORCE=${FORCE:-NO_FORCE}
 
 set_environmentvars
 envfile=$configs/$environment
@@ -218,7 +219,7 @@ component=""
 runSetupOnly=0
 dafilesrvflag=0
 
-TEMP=`/usr/bin/getopt -o c:hd --long help,componentlist,typelist,debug -n 'hpcc-init' -- "$@"`
+TEMP=`/usr/bin/getopt -o c:hdf --long help,componentlist,typelist,debug,force -n 'hpcc-init' -- "$@"`
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
 eval set -- "$TEMP"
 while true ; do
@@ -250,6 +251,8 @@ while true ; do
             fi
             shift 2 ;;
         -d|--debug) DEBUG="DEBUG"
+                    shift ;;
+        -f|--force) FORCE="FORCE"
                     shift ;;
         -h|--help)  print_usage
                     shift ;;

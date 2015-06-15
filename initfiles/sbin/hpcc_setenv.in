@@ -54,14 +54,8 @@ function pidwait_fn () {
     done
 
     if [[ $TIMEOUT -le 0 ]] && ps -p $WATCH_PID -o command= | grep "${PROCESS}" &>/dev/null ; then
-      echo "Failed to kill ${PROCESS} gracefully, sending SIGKILL"
-      kill -9 $WATCH_PID &>/dev/null
-      sleep 1
-      kill -0 $WATCH_PID &>/dev/null
-      # if still alive
-      if [[ $? -eq 0 ]]; then
-        return 1
-      fi
+      log "Failed to kill ${PROCESS} with SIGTERM"
+      return 1
     fi
 
     rm -f $PID > /dev/null 2>&1

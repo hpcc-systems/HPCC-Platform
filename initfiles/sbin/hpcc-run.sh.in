@@ -34,6 +34,8 @@ print_usage(){
     echo "  -n|--concurrent: How many concurrent instances to run. The default is equal to the number of nodes present."
     echo "  -S|--sequentially: For the command to run sequentially. i.e. one host a time. (overrides -n)"
     echo "  -s|--save: Save the result to a file named by ip."
+    echo "  -f|--force: Force kill orphaned process groups"
+    echo "  -d|--debug: set debug flag for hpcc-init on each node in the cluster"
     echo
     end 1
 }
@@ -69,23 +71,19 @@ createIPListFileExcludeDIP(){
 doOneIP(){
     local _ip=$1
     local _action=$2
-    local _cmd=$3
-    local _comp=$4
+    shift 2
+    local _args=$(echo "$@" | tr '\n' ' ')
 
     if ping -c 1 -w 5 -n $_ip > /dev/null 2>&1; then
         #echo "$_ip: Host is alive."
         local CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$_ip exit > /dev/null 2>&1; echo $?`"
         if [[ "$CAN_SSH" -eq 255 ]]; then
-            echo "$_ip: Cannot SSH to host.";
+            echo "$_ip: Cannot SSH to host."
             return 1
         else
             hpccStatusFile=/tmp/hpcc_status_$$
-            if [[ -z "${_comp}" ]]; then
-                local CMD="sudo /etc/init.d/$_action $_cmd"
-            else
-                local CMD="sudo /etc/init.d/$_action -c $_comp $_cmd"
-            fi
-            echo "$_ip: Running $CMD";
+            local CMD="sudo /etc/init.d/$_action $_args"
+            echo "$_ip: Running $CMD"
             local CMD="$CMD | tee ${hpccStatusFile}"
 
             ssh -i $home/$user/.ssh/id_rsa $user@$_ip $CMD;
@@ -106,8 +104,8 @@ doOneIP(){
 createScript(){
     local _scriptFile=$1
     local _action=$2
-    local _cmd=$3
-    local _comp=$4
+    shift 2
+    local _args=$( echo "$@" | tr '\n' ' ')
     local hpccStatusFile=/tmp/hpcc_status_${dateTime}_$$
 
     cat > $_scriptFile <<SCRIPTFILE
@@ -117,15 +115,11 @@ if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
     echo "\$IP: Host is alive."
     CAN_SSH="\`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?\`"
     if [[ "\$CAN_SSH" -eq 255 ]]; then
-        echo "\$IP: Cannot SSH to host.";
+        echo "\$IP: Cannot SSH to host."
         exit 1
     else
-        if [[ -z "${_comp}" ]]; then
-            CMD="sudo /etc/init.d/$_action $_cmd"
-        else
-            CMD="sudo /etc/init.d/$_action -c $_comp $_cmd"
-        fi
-        echo "\$IP: Running \$CMD";
+        CMD="sudo /etc/init.d/$_action $_args"
+        echo "\$IP: Running \$CMD"
         CMD="\$CMD | tee $hpccStatusFile"
         ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD;
         rc=\${PIPESTATUS[0]}
@@ -166,7 +160,7 @@ runScript() {
 doSetup() {
     init setup
     scriptFile=/tmp/${action}_setup_$$
-    createScript $scriptFile $action "setup" $comp
+    createScript $scriptFile $action $args setup
     runScript
     report "${action} setup"
 }
@@ -174,7 +168,7 @@ doSetup() {
 doStatus() {
     init status
     scriptFile=/tmp/${action}_status_$$
-    createScript $scriptFile $action "status" $comp
+    createScript $scriptFile $action $args status
     runScript
     report "${action} status"
 }
@@ -183,19 +177,22 @@ doStop() {
     echo "$action stop in the cluster ..."
     init stop
     scriptFile=/tmp/${action}_stop_$$
-    createScript $scriptFile $action "stop" $comp
+    createScript $scriptFile $action $args stop
     if [[ -n "${comp}" ]]; then
         OPTIONS="${DEFAULT_OPTIONS} -h $IPsFile"
         runScript $IPsFile
         report "${action} stop"
     else
         if [[ -e $IPsExcludeDIP ]]; then
-            OPTIONS="${DEFAULT_OPTIONS} -h $IPsExcludeDIP"
-            runScript $IPsExcludeDIP
-            report "${action} stop" $DIP
+            local numIPs=$(wc -l $IPsExcludeDIP | awk '{ print $1 }')
+            if [[ $numIPs -gt 0 ]]; then
+                OPTIONS="${DEFAULT_OPTIONS} -h $IPsExcludeDIP"
+                runScript $IPsExcludeDIP
+                report "${action} stop" $DIP
+            fi
         fi
         for _dip in $DIP; do
-            doOneIP $_dip $action "stop" $comp || end 1
+            doOneIP $_dip $action $args stop || end 1
         done
     fi
 }
@@ -214,22 +211,25 @@ doStart() {
         local startFile=$IPsFile
     else
         for _dip in $DIP; do
-            doOneIP $_dip $action "start" $comp || end 1
+            doOneIP $_dip $action $args start || end 1
         done
         local startFile=$IPsExcludeDIP
     fi
     if [[ -e $startFile ]]; then
-        echo "$action start in the cluster ..."
-        scriptFile=/tmp/${action}_start_$$
-        createScript $scriptFile $action "start" $comp
-        OPTIONS="${DEFAULT_OPTIONS} -h $startFile"
-        runScript $startFile
-        if [[ -n "${comp}" ]]; then
-            report "${action} start"
-        else
-            report "${action} start" $DIP
+        local numIPs=$(wc -l $startFile | awk '{ print $1 }')
+        if [[ $numIPs -gt 0 ]]; then
+            echo "$action start in the cluster ..."
+            scriptFile=/tmp/${action}_start_$$
+            createScript $scriptFile $action $args start
+            OPTIONS="${DEFAULT_OPTIONS} -h $startFile"
+            runScript $startFile
+            if [[ -n "${comp}" ]]; then
+                report "${action} start"
+            else
+                report "${action} start" $DIP
+            fi
+            [[ $rc -ne 0 ]] && end $rc
         fi
-        [[ $rc -ne 0 ]] && end $rc
     fi
 }
 
@@ -296,7 +296,6 @@ fi
 envfile=$configs/$environment
 configfile=${CONFIG_DIR}/${ENV_CONF_FILE}
 
-
 hasPython=0
 save=0
 expected_python_version=2.6
@@ -307,12 +306,17 @@ RUN_CLUSTER_DISPLAY_OUTPUT=FALSE
 
 DEFAULT_OPTIONS="-e $configfile -s ${SECTION:-DEFAULT}"
 
-TEMP=`/usr/bin/getopt -o a:c:n:sSh --long help,comp:,action:,save,concurrent:,sequentially -n 'hpcc-run' -- "$@"`
+TEMP=`/usr/bin/getopt -o a:c:n:sShfd --long help,comp:,action:,save,concurrent:,sequentially,force,debug -n 'hpcc-run' -- "$@"`
 if [[ $? != 0 ]] ; then echo "Failure to parse commandline." >&2 ; end 1 ; fi
 eval set -- "$TEMP"
 while true ; do
     case "$1" in
         -c|--comp) comp=$2
+            if [[ -z ${args} ]]; then
+                args="-c $2"
+            else
+                args="${args} -c $2"
+            fi
             shift 2 ;;
         -a|--action) action=$2
             shift 2 ;;
@@ -327,6 +331,18 @@ while true ; do
             shift ;;
         -s|--save) save=1
             shift ;;
+        -f|--force) if [[ -z ${args} ]]; then
+                        args="-f"
+                    else
+                        args="${args} -f"
+                    fi
+                    shift ;;
+        -d|--debug) if [[ -z ${args} ]]; then
+                        args="-d"
+                    else
+                        args="${args} -d"
+                    fi
+                    shift ;;
         -h|--help) print_usage
             shift ;;
         --) shift ; break ;;
