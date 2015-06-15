@@ -569,11 +569,8 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
     const char* requeststr = request.get_text();
     CSoapResponse& response = *(dynamic_cast<CSoapResponse*>(&resp));
 
-    if(&request == NULL || &response == NULL)
-        throw MakeStringException(-1, "request or response is NULL");
-
     StringBuffer errmsg;
-    if(connect(errmsg) < 0)
+    if(connect(errmsg) < 0 || !m_socket)
     {
         response.set_status(SOAP_CONNECTION_ERROR);
         response.set_err(errmsg);

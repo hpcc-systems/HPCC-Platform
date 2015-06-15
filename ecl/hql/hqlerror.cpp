@@ -206,7 +206,7 @@ public:
 
         StringBuffer msg;
         error->errorMessage(msg);
-        if (!filename) filename = isError(severity) ? "" : *unknownAtom;
+        if (!filename) filename = isError(severity) ? "" : str(unknownAtom);
         fprintf(f, "%s(%d,%d): %s C%04d: %s\n", filename, line, column, severityText, code, msg.str());
     }
 
@@ -255,9 +255,9 @@ void reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, 
     StringBuffer msg;
     msg.valist_appendf(format, args);
     if (errors)
-        errors->reportError(errNo, msg.str(), loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
+        errors->reportError(errNo, msg.str(), str(loc.sourcePath), loc.lineno, loc.column, loc.position);
     else
-        throw createError(errNo, msg.str(), loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
+        throw createError(errNo, msg.str(), str(loc.sourcePath), loc.lineno, loc.column, loc.position);
 }
 
 void reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...)

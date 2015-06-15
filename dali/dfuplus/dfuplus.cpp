@@ -1568,13 +1568,9 @@ int CDfuPlusHelper::updatejobname(const char* wuid, const char* jobname)
 
 void CDfuPlusHelper::exc(const IMultiException& excep,const char *title)
 {
-    if(&excep!=NULL) {
-        StringBuffer errmsg;
-        excep.errorMessage(errmsg);
-        error("%s\n",errmsg.str());
-    }
-    else
-        throw MakeStringException(-1, "unknown error %s",title);
+    StringBuffer errmsg;
+    excep.errorMessage(errmsg);
+    error("%s\n",errmsg.str());
 }
 
 void CDfuPlusHelper::info(const char *fmt, ...) 

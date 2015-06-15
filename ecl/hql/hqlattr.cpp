@@ -1399,7 +1399,7 @@ IHqlExpression * HqlUnadornedNormalizer::createTransformed(IHqlExpression * expr
             IIdAtom * id = expr->queryId();
             //Fields names compare case-insignificantly therefore the field name is converted to lower case so that
             //equivalent fields are mapped to the same normalized expression.
-            IIdAtom * newid = createIdAtom(id->lower()->str());
+            IIdAtom * newid = createIdAtom(str(lower(id)));
             if ((type != newType) || (id != newid))
                 return createField(newid, newType.getClear(), children);
 

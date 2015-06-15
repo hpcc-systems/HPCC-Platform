@@ -185,7 +185,7 @@ public:
 #else
         archive_read_support_format_all(archive);
 #if (ARCHIVE_VERSION_NUMBER >= 3000000)
-        archive_read_support_filter_all(archive);
+        //archive_read_support_filter_all(archive);
 #else
         archive_read_support_compression_all(archive);
 #endif
@@ -209,7 +209,7 @@ public:
     ~ArchiveFileIO()
     {
 #if (ARCHIVE_VERSION_NUMBER >= 3000000)
-        archive_read_free(archive);
+        //archive_read_free(archive);
 #else
         archive_read_finish(archive);
 #endif
@@ -495,7 +495,7 @@ public:
 #else
         archive_read_support_format_all(archive);
 #if (ARCHIVE_VERSION_NUMBER >= 3000000)
-        archive_read_support_filter_all(archive);
+        //archive_read_support_filter_all(archive);
 #else
         archive_read_support_compression_all(archive);
 #endif
@@ -535,7 +535,7 @@ public:
             archive_entry_free(entry);
         }
 #if (ARCHIVE_VERSION_NUMBER >= 3000000)
-        archive_read_free(archive);
+        //archive_read_free(archive);
 #else
         archive_read_finish(archive);
 #endif

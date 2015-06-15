@@ -176,21 +176,6 @@ MappingKey::MappingKey(const void * inKey, int keysize)
   key = temp;
 }
 
-//-- Default atom implementations --------------------------------------------
-
-const char *IAtom::getAtomNamePtr() const
-{
-   if (!this) return NULL;
-   return getNamePtr();
-}
-
-IAtom * IIdAtom::lower() const
-{
-    if (!this)
-        return NULL;
-    return queryLower();
-}
-
 //-- Mapping ---------------------------------------------------
 
 unsigned MappingBase::getHash() const       { return hash; }

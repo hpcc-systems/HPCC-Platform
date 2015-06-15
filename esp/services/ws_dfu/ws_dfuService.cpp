@@ -1686,7 +1686,8 @@ static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser* user, IUserDe
         {
             StringBuffer scopes;
             dlfn.getScopes(scopes);
-            permissionTemp = secmgr->authorizeFileScope(*user, scopes.str());
+            if (user)
+                permissionTemp = secmgr->authorizeFileScope(*user, scopes.str());
         }
 
         //Descrease the permission whenever a component has a lower permission.
