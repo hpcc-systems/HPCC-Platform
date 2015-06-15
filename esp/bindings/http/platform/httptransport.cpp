@@ -942,11 +942,8 @@ int CHttpMessage::close()
 
     try
     {
-        if(&m_socket != NULL)
-        {
-            m_socket.shutdown();
-            m_socket.close();
-        }
+        m_socket.shutdown();
+        m_socket.close();
     }
     catch (IException *e) 
     {

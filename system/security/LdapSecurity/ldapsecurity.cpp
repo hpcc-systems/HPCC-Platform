@@ -910,12 +910,6 @@ bool CLdapSecManager::addResources(ISecUser& sec_user, ISecResourceList * resour
 
 bool CLdapSecManager::addUser(ISecUser & user)
 {
-    if(&user == NULL)
-    {
-        DBGLOG("CLdapSecManager::addUser - user is NULL");
-        return false;
-    }
-
     bool ok = m_ldap_client->addUser(user);
     if(!ok)
         return false;

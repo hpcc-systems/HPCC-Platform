@@ -1456,12 +1456,12 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
     return csd;
 }
 
-CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser& user, ISecResource* resource, SecPermissionType ptype)
+CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype)
 {
     return createDefaultSD(user, resource->getName(), ptype);   
 }
 
-CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser& user, const char* name, SecPermissionType ptype)
+CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)
 {
     SECURITY_DESCRIPTOR sd;
     unsigned char aclBuffer[1024];
@@ -1477,10 +1477,10 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser& user, const 
     if(ptype != PT_ADMINISTRATORS_ONLY)
     {
         MemoryBuffer umb, gmb;
-        if(&user != NULL && DEFAULT_OWNER_PERMISSION != SecAccess_None)
+        if(user && DEFAULT_OWNER_PERMISSION != SecAccess_None)
         {
             //Add SD for given user
-            lookupSid(user.getName(), umb);
+            lookupSid(user->getName(), umb);
             psid = (PSID)(umb.toByteArray());
             if(psid != NULL)
             {
@@ -1518,7 +1518,7 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser& user, const 
     return csd;
 }
 
-CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser& user, ISecResource* resource, MemoryBuffer& initial_sd)
+CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd)
 {
     const char* initial_buf = initial_sd.toByteArray();
     PSECURITY_DESCRIPTOR pisd = (PSECURITY_DESCRIPTOR)initial_buf;
@@ -1559,9 +1559,9 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser& user, ISecRe
     PSID user_psid;
     PACL pnewdacl = NULL;
     MemoryBuffer umb;
-    if(&user != NULL && DEFAULT_OWNER_PERMISSION != SecAccess_None)
+    if(user && DEFAULT_OWNER_PERMISSION != SecAccess_None)
     {
-        lookupSid(user.getName(), umb);
+        lookupSid(user->getName(), umb);
         user_psid = (PSID)(umb.toByteArray());
 
 #ifdef _WIN32
