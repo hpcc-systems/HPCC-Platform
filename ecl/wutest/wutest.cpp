@@ -61,7 +61,7 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
         SCMStringBuffer queryText;
         if (query)
             query->getQueryText(queryText);
-        printf("%-20s %-10s %-10s %s\n", w.queryWuid(), w.queryJobName(), w.queryStateDesc(), queryText.str());
+        printf("%-20s %-10s %-10s %-10s %-10s %s\n", w.queryWuid(), w.queryClusterName(), w.queryUser(), w.queryJobName(), w.queryStateDesc(), queryText.str());
     }
     else if (stricmp(action, "results")==0)
     {
@@ -423,7 +423,7 @@ protected:
         unsigned start = msTick();
         for (int i = 0; i < testSize; i++)
         {
-            VStringBuffer userId("WuTestUser%d", i % 50);
+            VStringBuffer userId("WuTestUser%02d", i % 50);
             VStringBuffer clusterName("WuTestCluster%d", i % 5);
             VStringBuffer jobName("WuTest job %d", i % 3);
             Owned<IWorkUnit>wu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
@@ -896,7 +896,8 @@ protected:
         unsigned before = factory->numWorkUnits();
         unsigned start = msTick();
         unsigned numIterated = 0;
-        Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsByOwner(NULL, NULL, NULL);
+        Owned<IConstWorkUnitIterator> wus;
+        wus.setown(factory->getWorkUnitsByOwner(NULL, NULL, NULL));
         StringBuffer lastWu;
         ForEach(*wus)
         {
@@ -909,21 +910,21 @@ protected:
         DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == before);
         // Now by owner
-        wus.setown(factory->getWorkUnitsByOwner("WuTestUser0", NULL, NULL));
         start = msTick();
+        wus.setown(factory->getWorkUnitsByOwner("WuTestUser00", NULL, NULL));
         numIterated = 0;
         ForEach(*wus)
         {
             IConstWorkUnitInfo &wu = wus->query();
-            ASSERT(streq(wu.queryUser(), "WuTestUser0"));
+            ASSERT(streq(wu.queryUser(), "WuTestUser00"));
             numIterated++;
         }
         DBGLOG("%d owned workunits listed in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == (testSize+49)/50);
 
         // And by non-existent owner...
-        wus.setown(factory->getWorkUnitsByOwner("NoSuchWuTestUser0", NULL, NULL));
         start = msTick();
+        wus.setown(factory->getWorkUnitsByOwner("NoSuchWuTestUser", NULL, NULL));
         numIterated = 0;
         ForEach(*wus)
         {
@@ -932,9 +933,24 @@ protected:
         DBGLOG("%d non-existent workunits listed in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == 0);
 
-        // Get Scheduled Workunits
-        wus.setown(factory->getScheduledWorkUnits(NULL, NULL));
+        // Now by owner via generic mechanism
+        WUSortField sortByOwner[] = { WUSFuser, WUSFstate, WUSFterm };
         start = msTick();
+        wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), sortByOwner, "WuTestUser00\0completed", 0, 10000, NULL, NULL));
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryUser(), "WuTestUser00"));
+            ASSERT(wu.getState()==WUStateCompleted);
+            numIterated++;
+        }
+        DBGLOG("%d owned workunits listed the hard way in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated <= (testSize+49)/50);  // Not sure what the exact answer should be!
+
+        // Get Scheduled Workunits
+        start = msTick();
+        wus.setown(factory->getScheduledWorkUnits(NULL, NULL));
         numIterated = 0;
         ForEach(*wus)
         {
@@ -945,6 +961,102 @@ protected:
         DBGLOG("%d scheduled workunits listed in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == (testSize+5)/6);
 
+        // Get unique users
+        if (!isDali)
+        {
+            start = msTick();
+            StringArray users;
+            factory->getUniqueValues(WUSFuser, "WUTest", users);
+            int expected = testSize < 50 ? testSize : 50;
+            ASSERT(users.length() == expected);
+            ForEachItemIn(idx, users)
+            {
+                VStringBuffer name("WuTestUser%02d", idx);
+                ASSERT(streq(users.item(idx), name));
+            }
+            DBGLOG("%d unique users listed in %d ms", users.length(), msTick()-start);
+        }
+
+        // Get by hard filter and wuid range
+        WUSortField filterBySchedWuid[] = { WUSFstate, /*WUSFwildwuid, WUSFwuid, WUSFwuidhigh, */ WUSFterm };
+        start = msTick();
+        wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), filterBySchedWuid, "scheduled\0W*\0W1\0XA", 0, 100000, NULL, NULL));
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(wu.getState() == WUStateScheduled);
+            numIterated++;
+        }
+        DBGLOG("%d scheduled workunits listed the hard way in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+5)/6);
+
+        // Get by wuid range only
+        WUSortField filterByWuid[] = { WUSFwuid, WUSFwuidhigh, WUSFterm };
+        start = msTick();
+        StringAttr prevValue;
+        wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), filterByWuid, "W1\0W3", 0, 10000, NULL, NULL));
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            if (numIterated)
+                ASSERT(strcmp(wu.queryWuid(), prevValue)<0);
+            prevValue.set(wu.queryWuid());
+            numIterated++;
+        }
+        DBGLOG("%d ranged workunits listed the hard way in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == testSize);
+
+
+        // Check ascending wuids
+        WUSortField filterByCluster[] = { WUSFcluster, WUSFterm };
+        start = msTick();
+        wus.setown(factory->getWorkUnitsSorted(WUSFwuid, filterByCluster, "WuTestCluster0", 0, 10000, NULL, NULL));
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryClusterName(), "WuTestCluster0"));
+            if (numIterated)
+                ASSERT(strcmp(wu.queryWuid(), prevValue)>0);
+            prevValue.set(wu.queryWuid());
+            numIterated++;
+        }
+        DBGLOG("%d workunits listed by cluster, ascending wuid in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+4)/5);
+
+        // Check local sort
+        start = msTick();
+        wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFstate|WUSFreverse), filterByCluster, "WuTestCluster0", 0, 10000, NULL, NULL));
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryClusterName(), "WuTestCluster0"));
+            if (numIterated)
+                ASSERT(strcmp(wu.queryStateDesc(), prevValue)<=0);
+            prevValue.set(wu.queryStateDesc());
+            numIterated++;
+        }
+        DBGLOG("%d workunits listed by cluster, descending state in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+4)/5);
+
+        // Check wild user
+        WUSortField filterByWildUser[] = { (WUSortField) (WUSFuser|WUSFwild), WUSFterm };
+        start = msTick();
+        wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFwild), filterByWildUser, "WuTestUser0", 0, 10000, NULL, NULL));
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(strncmp(wu.queryUser(), "WuTestUser0", 11)==0);
+            if (numIterated)
+                ASSERT(strcmp(wu.queryWuid(), prevValue)<0);
+            prevValue.set(wu.queryWuid());
+            numIterated++;
+        }
+        DBGLOG("%d workunits listed by wild user, descending wuid in %d ms", numIterated, msTick()-start);
     }
 };
 StringArray WuTest::wuids;

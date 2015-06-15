@@ -460,8 +460,6 @@ unsigned WsWuInfo::getTimerCount()
     return numTimers;
 }
 
-struct mapEnums { int val; const char *str; };
-
 mapEnums queryFileTypes[] = {
    { FileTypeCpp, "cpp" },
    { FileTypeDll, "dll" },
@@ -470,19 +468,6 @@ mapEnums queryFileTypes[] = {
    { FileTypeXml, "xml" },
    { FileTypeSize,  NULL },
 };
-
-const char *getEnumText(int value, mapEnums *map)
-{
-    const char *defval = map->str;
-    while (map->str)
-    {
-        if (value==map->val)
-            return map->str;
-        map++;
-    }
-    assertex(!"Unexpected value in setEnum");
-    return defval;
-}
 
 void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
 {

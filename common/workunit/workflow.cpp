@@ -25,8 +25,6 @@
 //------------------------------------------------------------------------------------------
 // Workflow
 
-struct mapEnums { int val; const char *str; };
-
 mapEnums wftypes[] =
 {
     { WFTypeNormal, "normal" },
