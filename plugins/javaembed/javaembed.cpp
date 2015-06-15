@@ -287,10 +287,10 @@ protected:
             if (inSet)
             {
                 VStringBuffer arraySig("[%s", sig);
-                fieldId = JNIenv->GetFieldID(Class, field->name->getAtomNamePtr(), arraySig.str());
+                fieldId = JNIenv->GetFieldID(Class, str(field->name), arraySig.str());
             }
             else
-                fieldId = JNIenv->GetFieldID(Class, field->name->getAtomNamePtr(), sig);
+                fieldId = JNIenv->GetFieldID(Class, str(field->name), sig);
         }
         else
         {
@@ -301,14 +301,14 @@ protected:
             checkException();
             jmethodID getDeclaredField = JNIenv->GetMethodID(classClass, "getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;" );
             checkException();
-            jstring fieldName = JNIenv->NewStringUTF(field->name->getAtomNamePtr());
+            jstring fieldName = JNIenv->NewStringUTF(str(field->name));
             checkException();
             jobject reflectedField = JNIenv->CallObjectMethod(Class, getDeclaredField, fieldName);
             checkException();
             fieldId = JNIenv->FromReflectedField(reflectedField);
         }
         if (!fieldId && expected)
-            throw MakeStringException(0, "javaembed: Unable to retrieve field %s of type %s", field->name->getAtomNamePtr(), expected);
+            throw MakeStringException(0, "javaembed: Unable to retrieve field %s of type %s", str(field->name), expected);
         if (expected)
             checkException();
         else
@@ -934,7 +934,7 @@ public:
             if (!JNIenv->CallBooleanMethod(arrayClass, isArrayMethod))
             {
                 JNIenv->ExceptionClear();
-                VStringBuffer message("javaembed: Array expected for field %s", field->name->getAtomNamePtr());
+                VStringBuffer message("javaembed: Array expected for field %s", str(field->name));
                 rtlFail(0, message.str());
             }
             // Set up constructor etc for the child rows, so we don't do it per row

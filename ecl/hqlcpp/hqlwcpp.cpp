@@ -132,14 +132,14 @@ void CppWriterTemplate::generate(ISectionWriter & writer, unsigned pass, IProper
             if (output && properties)
             {
                 temp.clear();
-                properties->getProp(cur.id->str(), temp);
+                properties->getProp(str(cur.id), temp);
                 outputQuoted(writer, temp.length(), temp.str());
             }
             break;
         case TplCondition:
             outputStack.append(output);
             if (output)
-                output = (properties && properties->hasProp(cur.id->str()));
+                output = (properties && properties->hasProp(str(cur.id)));
             break;
         case TplEndCondition:
             output = outputStack.popGet();
@@ -950,7 +950,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
                 argType.setown(makePointerType(LINK(argType)));
             if (isTypePassedByAddress(argType))
                 argType.setown(makeReferenceModifier(LINK(argType)));
-            generateType(argType, paramName->str());
+            generateType(argType, str(paramName));
             nameappended = true;
             if (isOut)
                 out.append(" &");
@@ -1172,7 +1172,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 if (props->hasAttribute(entrypointAtom))
                     getAttribute(props, entrypointAtom, out);
                 else
-                    out.append(funcdef->queryBody()->queryId()->str());
+                    out.append(str(funcdef->queryBody()->queryId()));
                 out.append('(');
                 if (functionBodyUsesContext(props))
                 {

@@ -909,7 +909,7 @@ bool AciProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>&
 }
 
 
-CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser& user, ISecResource* resource, SecPermissionType ptype)
+CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype)
 {
     return createDefaultSD(user, resource->getName(), ptype);   
 }
@@ -919,12 +919,12 @@ StringBuffer& AciProcessor::sec2aci(int secperm, StringBuffer& aciperm)
     throw MakeStringException(-1, "You should call the implementation of the child class");
 }
 
-CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser& user, const char* name, SecPermissionType ptype)
+CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)
 {
     throw MakeStringException(-1, "You should call the implementation of the child class");
 }
 
-CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser& user, ISecResource* resource, MemoryBuffer& initial_sd)
+CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd)
 {
     throw MakeStringException(-1, "You should call the implementation of the child class");
 }
@@ -1069,7 +1069,7 @@ StringBuffer& CIPlanetAciProcessor::sec2aci(int secperm, StringBuffer& aciperm)
     return aciperm;
 }
 
-CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser& user, const char* name, SecPermissionType ptype)
+CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)
 {
     CSecurityDescriptor* csd = new CSecurityDescriptor(name);
     
@@ -1095,7 +1095,7 @@ CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser& user, const
     return csd;
 }
 
-CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser& user, ISecResource* resource, MemoryBuffer& initial_sd)
+CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd)
 {
     if(resource == NULL)
         return NULL;
@@ -1114,14 +1114,14 @@ CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser& user, ISecR
     if(userbasedn == NULL)
         return csd;
 
-    if(&user != NULL && DEFAULT_OWNER_PERMISSION != SecAccess_None)
+    if(user && DEFAULT_OWNER_PERMISSION != SecAccess_None)
     {
         StringBuffer defaultperm;
         sec2aci(DEFAULT_OWNER_PERMISSION, defaultperm);
         StringBuffer default_sd;
         default_sd.append("(targetattr = \"*\") (version 3.0;acl \"default_aci\";allow (").append(defaultperm.str()).append(")");
         default_sd.append("(userdn = \"ldap:///");
-        default_sd.append("uid=").append(user.getName());
+        default_sd.append("uid=").append(user->getName());
         default_sd.append(",").append(userbasedn).append("\");)");
         csd->appendDescriptor(default_sd.length(), (void*)default_sd.str());
     }
@@ -1161,7 +1161,7 @@ StringBuffer& COpenLdapAciProcessor::sec2aci(int secperm, StringBuffer& aciperm)
     return aciperm;
 }
 
-CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser& user, const char* name, SecPermissionType ptype)
+CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)
 {
     CSecurityDescriptor* csd = new CSecurityDescriptor(name);
     
@@ -1187,7 +1187,7 @@ CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser& user, cons
     return csd;
 }
 
-CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser& user, ISecResource* resource, MemoryBuffer& initial_sd)
+CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd)
 {
     if(resource == NULL)
         return NULL;
@@ -1206,12 +1206,12 @@ CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser& user, ISec
     if(userbasedn == NULL)
         return csd;
 
-    if(&user != NULL && DEFAULT_OWNER_PERMISSION != SecAccess_None)
+    if(user && DEFAULT_OWNER_PERMISSION != SecAccess_None)
     {
         StringBuffer defaultperm;
         sec2aci(DEFAULT_OWNER_PERMISSION, defaultperm);
         StringBuffer default_sd;
-        default_sd.appendf("default_aci#entry#grant;%s;[all]#access-id#uid=%s,%s", defaultperm.str(), user.getName(), userbasedn);
+        default_sd.appendf("default_aci#entry#grant;%s;[all]#access-id#uid=%s,%s", defaultperm.str(), user->getName(), userbasedn);
         csd->appendDescriptor(default_sd.length(), (void*)default_sd.str());
     }
     return csd;

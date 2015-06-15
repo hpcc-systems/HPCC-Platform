@@ -52,7 +52,7 @@ IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeM
         unsigned flags = module->getPropInt(flagsAtom, 0);
         IPropertyTree* prop = createPTree("Module", ipt_caseInsensitive);
         prop->setProp("@name", module->queryFullName());
-        prop->setProp("@path", module->querySourcePath()->str());
+        prop->setProp("@path", str(module->querySourcePath()));
         prop->setPropInt("@access", module->getPropInt(accessAtom, 3));
         prop->setPropInt("@timestamp", 1);
         prop->setPropInt("@flags", flags);

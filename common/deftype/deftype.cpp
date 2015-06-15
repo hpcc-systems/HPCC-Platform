@@ -856,13 +856,13 @@ unsigned CStringTypeInfo::getCrc()
     unsigned crc = CTypeInfo::getCrc();
     if (charset)
     {
-        const char * name = charset->queryName()->str();
+        const char * name = str(charset->queryName());
         //MORE: This and following should really be case insensitive, but we get away with it at the moment because the atoms are created very early
         crc = hashc((const byte *)name, (size32_t)strlen(name), crc);
     }
     if (collation)
     {
-        const char * name = collation->queryName()->str();
+        const char * name = str(collation->queryName());
         crc = hashc((const byte *)name, (size32_t)strlen(name), crc);
     }
     return crc;
@@ -886,9 +886,9 @@ StringBuffer &CStringTypeInfo::getDescriptiveType(StringBuffer &out)
     if(charset || collation)
     {
         out.append(" (");
-        if(charset) out.append("charset:").append(charset->queryName()->str());
+        if(charset) out.append("charset:").append(str(charset->queryName()));
         if(charset && collation) out.append(", ");
-        if(collation) out.append("collation:").append(collation->queryName()->str());
+        if(collation) out.append("collation:").append(str(collation->queryName()));
         out.append(")");
     }
     return out;
@@ -920,7 +920,7 @@ IValue * CUnicodeTypeInfo::castFrom(double value)
 
 IValue * CUnicodeTypeInfo::castFrom(size32_t len, const char * text)
 {
-    Owned<IValue> unicodeValue = createUnicodeValue(text, len, locale->str(), false);
+    Owned<IValue> unicodeValue = createUnicodeValue(text, len, str(locale), false);
     return unicodeValue->castTo(this);
 }
 
@@ -932,8 +932,8 @@ IValue * CUnicodeTypeInfo::castFrom(size32_t len, const UChar * uchars)
 StringBuffer &CUnicodeTypeInfo::getECLType(StringBuffer &out)
 {
     out.append("unicode");
-    if(locale && *locale->str())
-        out.append('_').append(locale->str());
+    if(locale && *str(locale))
+        out.append('_').append(str(locale));
     if(length != UNKNOWN_LENGTH)
         out.append(length/2);
     return out;
@@ -964,7 +964,7 @@ CVarUnicodeTypeInfo::CVarUnicodeTypeInfo(unsigned len, IAtom * _locale) : CUnico
 
 IValue * CVarUnicodeTypeInfo::castFrom(size32_t len, const char * text)
 {
-    Owned<IValue> unicodeValue = createVarUnicodeValue(text, len, locale->str(), false);
+    Owned<IValue> unicodeValue = createVarUnicodeValue(text, len, str(locale), false);
     return unicodeValue->castTo(this);
 }
 
@@ -976,8 +976,8 @@ IValue * CVarUnicodeTypeInfo::castFrom(size32_t len, const UChar * uchars)
 StringBuffer & CVarUnicodeTypeInfo::getECLType(StringBuffer & out)
 {
     out.append("varunicode");
-    if(locale && *locale->str())
-        out.append('_').append(locale->str());
+    if(locale && *str(locale))
+        out.append('_').append(str(locale));
     if(length != UNKNOWN_LENGTH)
         out.append(length/2-1);
     return out;
@@ -999,8 +999,8 @@ IValue * CUtf8TypeInfo::castFrom(size32_t len, const UChar * uchars)
 StringBuffer &CUtf8TypeInfo::getECLType(StringBuffer &out)
 {
     out.append("utf8");
-    if(locale && *locale->str())
-        out.append('_').append(locale->str());
+    if(locale && *str(locale))
+        out.append('_').append(str(locale));
     if(length != UNKNOWN_LENGTH)
         out.append('_').append(length/4);
     return out;
@@ -1067,9 +1067,9 @@ StringBuffer &CVarStringTypeInfo::getDescriptiveType(StringBuffer &out)
     if(charset || collation)
     {
         out.append(" (");
-        if(charset) out.append("charset:").append(charset->queryName()->str());
+        if(charset) out.append("charset:").append(str(charset->queryName()));
         if(charset && collation) out.append(", ");
-        if(collation) out.append("collation:").append(collation->queryName()->str());
+        if(collation) out.append("collation:").append(str(collation->queryName()));
         out.append(")");
     }
     return out;
@@ -3010,7 +3010,7 @@ ICharsetInfo * getCharset(IAtom * atom)
 ICollationInfo * getCollation(IAtom * atom)
 {
 #if _DEBUG
-    const char* name = atom->str();
+    const char* name = str(atom);
 #endif
 
     if ((atom == NULL) || (atom == asciiAtom) || (atom == dataAtom) || (atom == utf8Atom))
@@ -3140,7 +3140,7 @@ ITypeInfo * getBorType(ITypeInfo * lType, ITypeInfo * rType)
 
 bool hasDefaultLocale(ITypeInfo * type)
 {
-    return ((type->queryLocale() == 0) || (*type->queryLocale()->str() == 0));
+    return ((type->queryLocale() == 0) || (*str(type->queryLocale()) == 0));
 }
 
 bool haveCommonLocale(ITypeInfo * type1, ITypeInfo * type2)

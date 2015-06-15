@@ -1663,7 +1663,7 @@ bool FindInStringArray(StringArray& clusters, const char *cluster)
     return bFound;
 }
 
-static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser* user, IUserDescriptor* udesc, ISecManager* secmgr, int& permission)
+static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser & user, IUserDescriptor* udesc, ISecManager* secmgr, int& permission)
 {
     if (dlfn.isMulti())
     {
@@ -1686,7 +1686,8 @@ static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser* user, IUserDe
         {
             StringBuffer scopes;
             dlfn.getScopes(scopes);
-            permissionTemp = secmgr->authorizeFileScope(*user, scopes.str());
+
+            permissionTemp = secmgr->authorizeFileScope(user, scopes.str());
         }
 
         //Descrease the permission whenever a component has a lower permission.
@@ -1728,9 +1729,9 @@ bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udes
     CDfsLogicalFileName dlfn;
     dlfn.set(logicalName);
 
-    //Start from the SecAccess_Full. Descrease the permission whenever a component has a lower permission.
+    //Start from the SecAccess_Full. Decrease the permission whenever a component has a lower permission.
     permission = SecAccess_Full;
-    getFilePermission(dlfn, user, udesc, secmgr, permission);
+    getFilePermission(dlfn, *user, udesc, secmgr, permission);
 
     return true;
 }

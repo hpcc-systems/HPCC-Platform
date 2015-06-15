@@ -6659,7 +6659,7 @@ void WorkflowTransformer::analyseExpr(IHqlExpression * expr)
             {
                 StringBuffer s;
                 if (expr->queryName())
-                    s.appendf(" '%s'", expr->queryName()->str());
+                    s.appendf(" '%s'", str(expr->queryName()));
                 //MORE: Better if we also kept nested track of locations
                 translator.WARNINGAT1(CategoryMistake, queryActiveLocation(expr), HQLWRN_WorkflowSeemsToBeDependent, s.str());
             }
@@ -7509,7 +7509,7 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                     IHqlExpression * symbol = queryActiveSymbol();
                     StringBuffer s;
                     if (symbol && symbol->queryBody() == expr)
-                        s.appendf(" '%s'", symbol->queryName()->str());
+                        s.appendf(" '%s'", str(symbol->queryName()));
                     else
                     {
                         s.append(" ").append(getOpString(value->getOperator()));
@@ -9052,7 +9052,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
                 if (recordRequiresLinkCount(transformedRecord))
                 {
                     if (expr->hasAttribute(embeddedAtom) || queryAttribute(type, embeddedAtom) || expr->hasAttribute(countAtom) || expr->hasAttribute(sizeofAtom))
-                        throwError1(HQLERR_InconsistentEmbedded, expr->queryId()->str());
+                        throwError1(HQLERR_InconsistentEmbedded, str(expr->queryId()));
                 }
                 if (expr->hasAttribute(embeddedAtom))
                 {
@@ -9557,7 +9557,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             if (lhs->isDatarow() && newRhs->isDataset())
             {
                 StringBuffer exprText;
-                VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), lhs->queryChild(1)->queryName()->str());
+                VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), str(lhs->queryChild(1)->queryName()));
                 reportError(CategoryError, msg.str());
             }
             if (rhs == newRhs)
@@ -9620,7 +9620,7 @@ void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg)
     int startColumn = location ? location->getStartColumn() : 0;
     ISourcePath * sourcePath = location ? location->querySourcePath() : NULL;
     ErrorSeverity severity = queryDefaultSeverity(category);
-    Owned<IError> err = createError(category, severity, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
+    Owned<IError> err = createError(category, severity, ERR_ASSERT_WRONGSCOPING, msg, str(sourcePath), startLine, startColumn, 0);
     errors.report(err);        // will throw immediately if it is an error.
 }
 
@@ -10407,9 +10407,9 @@ IHqlExpression * NestedCompoundTransformer::createTransformed(IHqlExpression * e
             {
                 StringBuffer s;
                 if (sideEffect->queryName())
-                    s.appendf(" '%s'", sideEffect->queryName()->str());
+                    s.appendf(" '%s'", str(sideEffect->queryName()));
                 else if (value->queryName())
-                    s.appendf(" '%s'", value->queryName()->str());
+                    s.appendf(" '%s'", str(value->queryName()));
                 else
                     s.append(" ").append(getOpString(sideEffect->getOperator()));
                 IHqlExpression * location = queryLocation(sideEffect);
@@ -10516,7 +10516,7 @@ void spotPotentialDuplicateCode(HqlExprArray & exprs)
 
 static bool isUniqueAttributeName(IAtom * name)
 {
-    const char * nameText = name->str();
+    const char * nameText = str(name);
     unsigned len = strlen(nameText);
     if (len > 3)
     {
@@ -10544,7 +10544,7 @@ static IIdAtom * simplifySymbolName(IIdAtom * name, bool commonUniqueNameAttribu
         return NULL;
 
     //Rename all attributes __x__1234__ to __x__
-    const char * nameText = name->lower()->str();
+    const char * nameText = str(lower(name));
     size_t nameLen = strlen(nameText);
     size_t len = nameLen;
     if (len > 3)
@@ -10570,8 +10570,8 @@ static IIdAtom * simplifySymbolName(IIdAtom * name, bool commonUniqueNameAttribu
 
 static IIdAtom * lowerCaseSymbolName(IIdAtom * name)
 {
-    if (containsUpperCase(name->str()))
-        return createIdAtom(name->lower()->str());
+    if (containsUpperCase(str(name)))
+        return createIdAtom(str(lower(name)));
     return name;
 }
 
@@ -12124,7 +12124,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 else if (cur->getOperator() == no_purevirtual)
                 {
                     IAtom * name = cur->queryName();
-                    throwError1(HQLERR_LibraryMemberArgNotDefined, name ? name->str() : "");
+                    throwError1(HQLERR_LibraryMemberArgNotDefined, name ? str(name) : "");
                 }
                 IHqlExpression * transformed = transform(cur);
                 children.append(*transformed);

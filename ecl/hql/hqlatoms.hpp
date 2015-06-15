@@ -448,7 +448,7 @@ extern HQL_API IAtom * xmlnsAtom;
 extern HQL_API IAtom * _xmlParse_Atom;
 extern HQL_API IAtom * xpathAtom;
 
-inline bool isInternalAttributeName(IAtom * name) { return (name->str()[0] == '$'); }
+inline bool isInternalAttributeName(IAtom * name) { return (str(name)[0] == '$'); }
 
 /*
  * This is part of an experiment to make identifiers in the language case sensitive - at least optionally, possibly only for syntax checking.

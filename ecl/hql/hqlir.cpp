@@ -1447,9 +1447,9 @@ protected:
     {
         line.append(getOperatorIRText(op));
         if (info.id)
-            line.append("#").append(info.id->str());
+            line.append("#").append(str(info.id));
         else if (info.name)
-            line.append("#").append(info.name->str());
+            line.append("#").append(str(info.name));
         if (info.sequence)
             line.append("[seq(").append(info.sequence).append(")]");
 
@@ -1855,12 +1855,12 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_varunicode:
         case type_utf8:
             info.length = type->getStringLen();
-            info.locale = type->queryLocale()->str();
+            info.locale = str(type->queryLocale());
             break;;
         case type_string:
         case type_varstring:
             info.length = type->getStringLen();
-            info.locale = type->queryCharset()->queryName()->str();
+            info.locale = str(type->queryCharset()->queryName());
             break;
         case type_bitfield:
             return target->addUnknownType(tc);
@@ -2074,7 +2074,7 @@ id_t ExpressionIRPlayer::doProcessAnnotation(IHqlExpression * expr)
     case annotate_symbol:
         {
             IHqlNamedAnnotation * annotation = static_cast<IHqlNamedAnnotation *>(expr->queryAnnotation());
-            info.name = expr->queryId()->str();
+            info.name = str(expr->queryId());
             info.value = annotation->isExported() ? ob_exported : annotation->isShared() ? ob_shared : 0;
             if (annotation->isVirtual())
                 info.value |= ob_virtual;
@@ -2083,7 +2083,7 @@ id_t ExpressionIRPlayer::doProcessAnnotation(IHqlExpression * expr)
             break;
         }
     case annotate_location:
-        info.name = expr->querySourcePath()->str();
+        info.name = str(expr->querySourcePath());
         info.line = expr->getStartLine();
         info.col = expr->getStartColumn();
         break;

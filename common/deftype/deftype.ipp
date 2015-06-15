@@ -161,7 +161,7 @@ public:
     virtual bool isInteger()                    { return false; };
     virtual bool isScalar()                     { return true; }
 
-    virtual void serialize(MemoryBuffer &tgt)   { CTypeInfo::serialize(tgt); tgt.append(getStringLen()).append(locale->str()); }
+    virtual void serialize(MemoryBuffer &tgt)   { CTypeInfo::serialize(tgt); tgt.append(getStringLen()).append(str(locale)); }
 protected:
     IAtom * locale;
 };
@@ -883,11 +883,11 @@ public:
     virtual IAtom * queryName()                           { return name; }
     virtual ICollationInfo * queryDefaultCollation();
     virtual unsigned char queryFillChar()               { return fillChar; }
-    virtual char const * queryCodepageName()            { return codepage->str(); }
+    virtual char const * queryCodepageName()            { return str(codepage); }
 
     virtual void serialize(MemoryBuffer &tgt) 
     { 
-        tgt.append(name->getAtomNamePtr());
+        tgt.append(str(name));
     }
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
 protected:
@@ -909,7 +909,7 @@ public:
 
     virtual void serialize(MemoryBuffer &tgt) 
     { 
-        tgt.append(name->getAtomNamePtr());
+        tgt.append(str(name));
     }
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
 protected:

@@ -809,7 +809,7 @@ protected:
 
     IHqlScope * queryTemplateContext();
     bool insideTemplateFunction() { return queryTemplateContext() != NULL; }
-    inline const char * querySourcePathText()   { return sourcePath->str(); } // safe if null
+    inline const char * querySourcePathText()   { return str(sourcePath); } // safe if null
 
     bool areSymbolsCompatible(IHqlExpression * expr, bool isParametered, HqlExprArray & parameters, IHqlExpression * prevValue);
     IHqlExpression * extractBranchMatch(const attribute & errpos, IHqlExpression & curSym, HqlExprArray & values);
@@ -1047,7 +1047,7 @@ class HqlLex
         StringBuffer &getTokenText(StringBuffer &);
         HqlLex* getParentLex() { return parentLex; }
         void setParentLex(HqlLex* pLex) { parentLex = pLex; }
-        const char* getMacroName() { return (macroExpr) ? macroExpr->queryName()->str() : "<param>"; }
+        const char* getMacroName() { return (macroExpr) ? str(macroExpr->queryName()) : "<param>"; }
         IPropertyTree * getClearJavadoc();
 
         void loadXML(const YYSTYPE & errpos, const char * value, const char * child = NULL);
