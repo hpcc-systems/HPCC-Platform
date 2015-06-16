@@ -23,6 +23,12 @@
     <xs:annotation>
       <xs:documentation>Describes a roxie cluster</xs:documentation>
     </xs:annotation>
+           		<!--5/15-GP-added-for-auto-doc-build--> 	
+    	    	          <xs:annotation>
+    	    		      <xs:appinfo>
+    	    		          <docid>Roxie.tb1</docid>
+    	    		        </xs:appinfo>
+		            </xs:annotation>
     <xs:complexType>
       <xs:choice maxOccurs="unbounded">
 

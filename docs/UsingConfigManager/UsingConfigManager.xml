@@ -745,11 +745,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para />
 
-          <!--configMgr-Dali-Server-Include-XXX-->
+          <!--configMgr-Dali-Server-Include-XXX1-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/dali.xsd.mod.xml"
-                        xpointer="da.tbl1"
+          
+            <xi:include href="XMLGeneration/xml/dali.xsd.mod.xml"
+                        xpointer="da.t1"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -768,11 +769,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para />
 
-          <!--configMgr-Dali-Server-Include-XXX-->
+          <!--configMgr-Dali-Server-Include-XXX2-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/dali.xsd.mod.xml"
-                        xpointer="da.tbl2"
+          
+            <xi:include href="XMLGeneration/xml/dali.xsd.mod.xml"
+                        xpointer="da.t2"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -788,11 +790,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img04-4.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-DaliServer-LDAP-Include-XXX-->
+          <!--configMgr-DaliServer-LDAP-Include-XXX3-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/dali.xsd.mod.xml"
-                        xpointer="da.tbl4"
+            
+            <xi:include href="XMLGeneration/xml/dali.xsd.mod.xml"
+                        xpointer="da.t4"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -859,10 +862,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img12-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-DaFileSrv-Include-XXX-->
+          <!--configMgr-DaFileSrv-Include-XXX4-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/dafilesrv.xsd.mod.xml"
+
+            <xi:include href="XMLGeneration/xml/dafilesrv.xsd.mod.xml"
                         xpointer="daFs.t"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -907,11 +911,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img05-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-DFUSrvr-Attr-Include-XXX-->
+          <!--configMgr-DFUSrvr-Attr-Include-XXX6-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/dfuserver.xsd.mod.xml"
-                        xpointer="DF.t2"
+            
+            <xi:include href="XMLGeneration/xml/dfuserver.xsd.mod.xml"
+                        xpointer="DF.t1"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -925,11 +930,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img05-2.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-DFUSrvr-SSH-Include-XXX-->
+          <!--configMgr-DFUSrvr-SSH-Include-XXX7-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/dfuserver.xsd.mod.xml"
-                        xpointer="DF.t1"
+              
+            <xi:include href="XMLGeneration/xml/dfuserver.xsd.mod.xml"
+                        xpointer="DF.t2"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1119,10 +1125,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img07-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-ECLAgent-Attr-Include-RRR-->
+          <!--configMgr-ECLAgent-Attr-Include-XXX8-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/eclagent_config.xsd.mod.xml"
+           
+            <xi:include href="XMLGeneration/xml/eclagent_config.xsd.mod.xml"
                         xpointer="EA.t1"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1137,10 +1144,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img07-2.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-ECLAgent-Options-Include-RRR-->
+          <!--configMgr-ECLAgent-Options-Include-XXX9-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/eclagent_config.xsd.mod.xml"
+
+            <xi:include href="XMLGeneration/xml/eclagent_config.xsd.mod.xml"
                         xpointer="EA.t2"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1196,10 +1204,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-ECLCC-02.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--ECLCCServer-Include-cc.t2-XXX-->
+          <!--ECLCCServer-Include-cc.t2-XXX-X-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/eclccserver.xsd.mod.xml"
+         
+            <xi:include href="XMLGeneration/xml/eclccserver.xsd.mod.xml"
                         xpointer="cc.t2"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1266,10 +1275,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-160.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-DaliServer-LDAP-Include-XXX-->
+          <!--configMgr-DaliServer-LDAP-Include-XXX-XI-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/eclscheduler.xsd.mod.xml"
+            <xi:include href="XMLGeneration/xml/eclscheduler.xsd.mod.xml"
                         xpointer="ecl.sched"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1324,11 +1333,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img08-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--MyESP-Include-ES.t6-XXX-->
+          <!--MyESP-Include-ESP.t6-XXX12-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/esp.xsd.mod.xml"
-                        xpointer="ES.t6"
+  
+            <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="ESP.t6"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1349,31 +1359,38 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           other tables on that tab. The next table describes the <emphasis
           role="bold">URL Authentication</emphasis> table.</para>
 
-          <!--MyESP-Include-ES.t1-XXX-URL-AuthXXX-->
+          <!--MyESP-Include-ESP.t1-XXXIII-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/esp.xsd.mod.xml"
-                        xpointer="ES.t1"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+           
+             <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="ESP.t1"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />  
+    
           </para>
 
           <para>The following tables describe the ESPProcess Service Bindings,
           <emphasis role="bold">Feature Authentications</emphasis>.</para>
 
-          <!--MyESP-Include-ES.t2-XXX-Feature-AuthXXX-->
+          <!--MyESP-Include-ES.t2-XXX-14-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/esp.xsd.mod.xml"
-                        xpointer="ES.t2"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+            
+           <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="ESP.t2"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />  
+            
           </para>
 
           <para>
-            <!--MyESP-Include-ES.t3-XXX-Feature-AuthXXX-->
+            <!--MyESP-Include-ES.t3-XXX-15-->
 
-            <xi:include href="UsingConfigManager/CM_Mods/esp.xsd.mod.xml"
+ 
+           <!-- <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="ES.t3"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />  -->
+ 
+
           </para>
 
           <para />
@@ -1391,12 +1408,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img08-3.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--MyESP-Authentication-ES.t4-XOKDXX-->
+          <!--MyESP-Authentication-ES.t4-XXX-16-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/esp.xsd.mod.xml"
-                        xpointer="ES.t4"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+            
+           <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="ESP.t4"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" /> 
+          
           </para>
         </sect3>
 
@@ -1411,13 +1430,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img08-4.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--MyESP-HTTPS.t5-XXX-->
+          <!--MyESP-HTTPS.t5-XXX-17-->
 
-          <para>
-            <xi:include href="UsingConfigManager/CM_Mods/esp.xsd.mod.xml"
-                        xpointer="ES.t5"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
-          </para>
+          <para> 
+           <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="ESP.t5"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" /> 
+           </para>
         </sect3>
 
         <sect3>
@@ -1483,11 +1502,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>This section describes an FTSlaveProcess attributes
           tab.</para>
 
-          <!--FTSlave-Include-XXX-->
+          <!--FTSlave-Include-XXX-18-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/ftslave.xsd.mod.xml"
-                        xpointer="FTS"
+          
+            <xi:include href="XMLGeneration/xml/ftslave_linux.xsd.mod.xml"
+                        xpointer="FTS.t1"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1515,10 +1535,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <graphic fileref="images/LDAP_004.jpg" />
         </para>
 
-        <!--LdapServer-Include-fullDoc-XXX-->
-
-        <xi:include href="UsingConfigManager/CM_Mods/ldapserver.xsd.mod.xml"
-                    xpointer="Active_Directory_LDAP_process_mod"
+        <!--LdapServer-Include-fullDoc-XXX-19-->
+        <xi:include href="XMLGeneration/xml/ldapserver.xsd.mod.xml"
+                    xpointer="ldapSrv"
                     xmlns:xi="http://www.w3.org/2001/XInclude" />
 
         <sect3>
@@ -1593,10 +1612,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <graphic fileref="images/CM-Sasha17A.jpg" vendor="configmgrSS" />
 
-          <!--configMgr-Sasha-t1-Include-->
+          <!--configMgr-Sasha-t1-Include-XXX-20-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/sasha.xsd.mod.xml"
+            <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t1"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1614,10 +1633,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img17-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-Sasha-Archiver-Include-->
+          <!--configMgr-Sasha-Archiver-Include-XXX-21-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/sasha.xsd.mod.xml"
+            
+            <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t2"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1635,10 +1655,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img17-2.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-Sasha-Coaleser-Include-->
+          <!--configMgr-Sasha-Coaleser-Include-XXX-22-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/sasha.xsd.mod.xml"
+          
+            <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t3"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1656,10 +1677,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img17-3.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-Sasha-DfuXref-Include-->
+          <!--configMgr-Sasha-DfuXref-Include-XXX-23-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/sasha.xsd.mod.xml"
+            
+            <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t4"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1679,10 +1701,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para />
 
-          <!--configMgr-Sasha-DfuExpiry-Include-->
+          <!--configMgr-Sasha-DfuExpiry-Include-XXX-24-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/sasha.xsd.mod.xml"
+               
+            <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t5"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1700,10 +1723,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img17-5.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-Sasha-ThorQMon-Include-->
+          <!--configMgr-Sasha-ThorQMon-IncludeXXX-25-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/sasha.xsd.mod.xml"
+              
+            <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t6"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1721,10 +1745,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img17-6.jpg" vendor="configmgrSS" />
           </para>
 
-          <!--configMgr-Sasha-DafiSrvMon-Include-XXX-->
+          <!--configMgr-Sasha-DafiSrvMon-Include-XXX26-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/sasha.xsd.mod.xml"
+           
+            <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t7"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
@@ -1959,8 +1984,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Thor-Attribute-Include-XXX-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/thor.xsd.mod.xml"
-                        xpointer="th.t1"
+            <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
+                        xpointer="Th.t1"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1979,8 +2004,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Thor-SSH-Include-XXX-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/thor.xsd.mod.xml"
-                        xpointer="th.t2"
+            <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
+                        xpointer="Th.t3"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -2005,8 +2030,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Thor-SwapNode-Include-XXX-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/thor.xsd.mod.xml"
-                        xpointer="th.t4"
+            <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
+                        xpointer="Th.t4"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -2025,8 +2050,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Thor-Backup-Include-XXX-->
 
           <para>
-            <xi:include href="UsingConfigManager/CM_Mods/thor.xsd.mod.xml"
-                        xpointer="th.t5"
+               <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
+                        xpointer="Th.t5"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -2123,8 +2148,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
       <?hard-pagebreak ?>
 
-      <xi:include href="UsingConfigManager/CM_Mods/roxie.xsd.mod.xml"
-                  xpointer="RoxieCluster_mod"
+      <xi:include href="XMLGeneration/xml/roxie.xsd.mod.xml"
+                  xpointer="element(/1)"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <sect2 id="Topology" role="brk">

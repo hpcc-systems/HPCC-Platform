@@ -25,6 +25,12 @@
       <xs:documentation>Describes a thor cluster</xs:documentation>
     </xs:annotation>
     <xs:complexType>
+                  <!--5/15-GP-added-for-auto-doc-build-->
+      	    		         <xs:annotation>
+      	    		                  <xs:appinfo>
+      	    		                      <docid>Th.t1</docid>
+      	    		                  </xs:appinfo>
+      			        </xs:annotation>  
       <xs:choice maxOccurs="unbounded">
         <xs:element name="ThorSpareProcess" minOccurs="0" maxOccurs="unbounded">
           <xs:annotation>
@@ -89,6 +95,13 @@
               <tooltip>Options for using SSH remote execution</tooltip>
             </xs:appinfo>
           </xs:annotation>
+          <xs:complexType> 
+                     <!--6/15-GP-added-for-auto-doc-build-->
+	  	  	<xs:annotation>
+	  	           <xs:appinfo>
+	  	        	<docid>Th.t3</docid>
+	  	            </xs:appinfo>
+	  	        </xs:annotation>  
           <xs:attribute name="SSHidentityfile" type="xs:string" default="$HOME/.ssh/id_rsa">
             <xs:annotation>
               <xs:appinfo>
@@ -125,6 +138,7 @@
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
+          </xs:complexType>
         </xs:element>
         <xs:element name="Debug">
           <xs:annotation>
@@ -133,6 +147,12 @@
             </xs:appinfo>
           </xs:annotation>
           <xs:complexType>
+    <!--5/15-GP-added-for-auto-doc-build-->
+	  	 <xs:annotation>
+	  	    <xs:appinfo>
+	  	        <docid>Th.t2</docid>
+	  	    </xs:appinfo>
+	  	 </xs:annotation>  
             <xs:attribute name="dllsToSlaves" type="xs:boolean" use="optional" default="true">
               <xs:annotation>
                 <xs:appinfo>
@@ -161,6 +181,13 @@
             <xs:appinfo>
               <title>SwapNode</title>
               <tooltip>Options for automatic node swap</tooltip>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <!--6/15-GP-added-for-auto-doc-build-->
+	  	<xs:annotation>
+	  	  <xs:appinfo>
+	  	    <docid>Th.t4</docid>
             </xs:appinfo>
           </xs:annotation>
           <xs:attribute name="AutoSwapNode" type="xs:boolean" use="optional" default="false">
@@ -226,12 +253,20 @@
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
+          </xs:complexType>
         </xs:element>
         <xs:element name="Storage">
           <xs:annotation>
             <xs:appinfo>
               <title>Backup</title>
               <tooltip>Options for mirroring thor data</tooltip>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <!--6/15-GP-added-for-auto-doc-build-->
+	  	<xs:annotation>
+	  	  <xs:appinfo>
+	  	    <docid>Th.t5</docid>
             </xs:appinfo>
           </xs:annotation>
           <xs:attribute name="breakoutLimit" type="xs:nonNegativeInteger" use="optional" default="3600">
@@ -248,6 +283,7 @@
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
+          </xs:complexType>
         </xs:element>
         <xs:element name="Notes" maxOccurs="unbounded">
           <xs:annotation>
