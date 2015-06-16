@@ -8,8 +8,9 @@
       <primary>AVE</primary>
     </indexterm><indexterm>
       <primary>AVE function</primary>
-    </indexterm>(</emphasis><emphasis>recordset, value </emphasis><emphasis
-  role="bold">[, KEYED<indexterm>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>, expression </emphasis><emphasis
+  role="bold">] [, KEYED<indexterm>
       <primary>KEYED</primary>
     </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
 
@@ -35,9 +36,11 @@
           </row>
 
           <row>
-            <entry><emphasis>value</emphasis></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
-            <entry>The expression to find the average value of.</entry>
+            <entry>Optional. A logical expression indicating which records to
+            include in the average. Valid only when the recordset parameter is
+            the keyword GROUP to indicate the elements in a group.</entry>
           </row>
 
           <row>
@@ -74,5 +77,6 @@ SetVals := [4,8,16,2,1];
 AvgVal3 := AVE(SetVals);    //returns 6.2
 </programlisting>
 
-  <para>See Also: <link linkend="MIN">MIN</link>, <link linkend="MAX">MAX</link></para>
+  <para>See Also: <link linkend="MIN">MIN</link>, <link
+  linkend="MAX">MAX</link></para>
 </sect1>
