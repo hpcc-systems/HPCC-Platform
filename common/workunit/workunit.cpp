@@ -2794,6 +2794,7 @@ public:
             StringAttr nameFilterLo;
             StringAttr nameFilterHi;
             StringArray unknownAttributes;
+            unsigned totalWUs;
 
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -2801,6 +2802,7 @@ public:
             CWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes)
                 : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
             {
+                totalWUs = 0;
                 ForEachItemIn(x, _unknownAttributes)
                     unknownAttributes.append(_unknownAttributes.item(x));
             }
@@ -2813,8 +2815,10 @@ public:
                 if (!iter)
                     return NULL;
                 sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), unknownAttributes, elements);
+                totalWUs = elements.ordinality();
                 return conn.getClear();
             }
+            virtual unsigned getTotalElements() { return totalWUs; }
         };
         class CScopeChecker : public CSimpleInterface, implements ISortedElementsTreeFilter
         {
@@ -2901,7 +2905,7 @@ public:
         }
         IArrayOf<IPropertyTree> results;
         Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
-        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,queryowner,cachehint,results,total);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,queryowner,cachehint,results,total,NULL);
         return new CConstWUArrayIterator(conn, results, secmgr, secuser);
     }
 
@@ -2946,6 +2950,7 @@ public:
             PostFilters postFilters;
             StringArray unknownAttributes;
             const MapStringTo<bool> *subset;
+            unsigned totalQueries;
 
             void populateQueryTree(const IPropertyTree* querySetTree, IPropertyTree* queryTree)
             {
@@ -3010,6 +3015,7 @@ public:
             CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters, StringArray& _unknownAttributes, const MapStringTo<bool> *_subset)
                 : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), subset(_subset)
             {
+                totalQueries = 0;
                 postFilters.activatedFilter = _postFilters.activatedFilter;
                 postFilters.suspendedByUserFilter = _postFilters.suspendedByUserFilter;
                 ForEachItemIn(x, _unknownAttributes)
@@ -3025,8 +3031,10 @@ public:
                 if (!iter)
                     return NULL;
                 sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                totalQueries = elements.ordinality();
                 return conn.getClear();
             }
+            virtual unsigned getTotalElements() { return totalQueries; }
         };
         StringAttr querySet;
         StringBuffer xPath;
@@ -3079,7 +3087,7 @@ public:
         }
         IArrayOf<IPropertyTree> results;
         Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, postFilters, unknownAttributes, _subset);
-        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total,NULL);
         return new CConstQuerySetQueryIterator(results);
     }
 

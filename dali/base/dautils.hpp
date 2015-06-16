@@ -271,6 +271,7 @@ interface ISortedElementsTreeFilter : extends IInterface
 interface IElementsPager : extends IInterface
 {
     virtual IRemoteConnection *getElements(IArrayOf<IPropertyTree> &elements) = 0;
+    virtual unsigned getTotalElements() = 0;
 };
 extern da_decl void sortElements( IPropertyTreeIterator* elementsIter,
                                      const char *sortorder, 
@@ -286,6 +287,7 @@ extern da_decl IRemoteConnection *getElementsPaged(IElementsPager *elementsPager
                                      const char *owner,
                                      __int64 *hint,                         // if non null points to in/out cache hint
                                      IArrayOf<IPropertyTree> &results,
+                                     unsigned *returned,
                                      unsigned *total,
                                      bool checkConn = true); // total possible filtered matches, i.e. irrespective of startoffset and pagesize
 
