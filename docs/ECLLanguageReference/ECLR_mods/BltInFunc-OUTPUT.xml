@@ -427,7 +427,7 @@
 
               <entry>Optional. Specifies the file is a temporary file that may
               be automatically deleted after the specified number of days
-              since the file was read.</entry>
+              since the file was read. </entry>
             </row>
 
             <row>
@@ -435,7 +435,8 @@
 
               <entry>Optional. The number of days from last file read after
               which the file may be automatically deleted. If omitted, the
-              default is seven (7).</entry>
+              default is seven (7). This overrides the ExpiryDefault in Sasha
+              (The default is 14).</entry>
             </row>
           </tbody>
         </tgroup>
