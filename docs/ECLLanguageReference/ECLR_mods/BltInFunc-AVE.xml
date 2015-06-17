@@ -45,8 +45,9 @@
             <entry><emphasis>expression</emphasis></entry>
 
             <entry>Optional. A logical expression indicating which records to
-            include in the average. Valid only when the recordset parameter is
-            the keyword GROUP to indicate the elements in a group.</entry>
+            include in the average. Valid only when the
+            <emphasis>recordset</emphasis> parameter is the keyword GROUP to
+            indicate averaging the elements in a group.</entry>
           </row>
 
           <row>
