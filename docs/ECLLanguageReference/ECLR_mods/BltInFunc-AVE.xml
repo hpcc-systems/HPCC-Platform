@@ -8,15 +8,9 @@
       <primary>AVE</primary>
     </indexterm><indexterm>
       <primary>AVE function</primary>
-    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
-  role="bold"> </emphasis><emphasis>, value </emphasis><emphasis
-  role="bold">[, KEYED<indexterm>
-      <primary>KEYED</primary>
-    </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
-
-  <para><emphasis role="bold">AVE(</emphasis><emphasis>recordset
-  </emphasis><emphasis role="bold">[ </emphasis><emphasis>, expression
-  </emphasis><emphasis role="bold">] [, KEYED<indexterm>
+    </indexterm>(</emphasis><emphasis>recordset, value </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>, expression </emphasis><emphasis
+  role="bold">] [, KEYED<indexterm>
       <primary>KEYED</primary>
     </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
 
