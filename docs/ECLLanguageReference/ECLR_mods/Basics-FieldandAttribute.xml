@@ -13,17 +13,18 @@
         <primary>EXPORTed Definitions</primary>
       </indexterm> defined within another module and IMPORTed<indexterm>
         <primary>IMPORTed</primary>
-      </indexterm> (see the <link linkend="EXPORT">EXPORT</link> and <link linkend="IMPORT">IMPORT</link>
-     keywords) are available for use in
-    the definition that contains the IMPORT. Imported Definitions must be
-    fully qualified by their Module name and Definition name, using dot
+      </indexterm> (see the <link linkend="EXPORT">EXPORT</link> and <link
+    linkend="IMPORT">IMPORT</link> keywords) are available for use in the
+    definition that contains the IMPORT. Imported Definitions must be fully
+    qualified by their Module name and Definition name, using dot
     syntax<indexterm>
         <primary>dot syntax</primary>
       </indexterm> (module.definition).</para>
 
-    <programlisting>IMPORT abc;                //make all exported definitions in the abc module available
-EXPORT Definition1 := 5;    //make Definition1 available to other modules
-Definition2 := abc.Definition2 + Definition1;  // object qualification needed for Definitions from abc module</programlisting>
+    <programlisting>IMPORT abc;               //make all exported definitions in the abc module available
+EXPORT Definition1 := 5;  //make Definition1 available to other modules
+Definition2 := abc.Definition2 + Definition1;  
+                          // object qualification needed for Definitions from abc module</programlisting>
   </sect2>
 
   <sect2 id="Fields_in_Datasets">

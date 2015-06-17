@@ -62,7 +62,7 @@ SHARED Definition2 := AnotherModule.Definition1 + 5;
    //Definition2 available throughout its own module, only
 
 //*****************************************************************************
-//then inside the Definition3.ecl file (in the sam efolder as Definition2) you have:
+//then inside the Definition3.ecl file (in the same folder as Definition2) you have:
 IMPORT $;  
    //makes definitions from the current module available to this code, as needed
 
