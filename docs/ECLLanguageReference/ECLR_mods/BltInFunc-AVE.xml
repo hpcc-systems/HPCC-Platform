@@ -9,8 +9,14 @@
     </indexterm><indexterm>
       <primary>AVE function</primary>
     </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
-  role="bold">[ </emphasis><emphasis>, expression </emphasis><emphasis
-  role="bold">] [, KEYED<indexterm>
+  role="bold"> </emphasis><emphasis>, value </emphasis><emphasis
+  role="bold">[, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">AVE(</emphasis><emphasis>recordset
+  </emphasis><emphasis role="bold">[ </emphasis><emphasis>, expression
+  </emphasis><emphasis role="bold">] [, KEYED<indexterm>
       <primary>KEYED</primary>
     </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
 
@@ -33,6 +39,12 @@
             expression that results in a derived record set. This also may be
             the keyword GROUP to indicate averaging the field values in a
             group.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>The expression to find the average value of.</entry>
           </row>
 
           <row>

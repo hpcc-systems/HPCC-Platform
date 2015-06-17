@@ -9,8 +9,14 @@
     </indexterm><indexterm>
       <primary>SUM function</primary>
     </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
-  role="bold">[ </emphasis><emphasis>, expression </emphasis><emphasis
-  role="bold">] [, KEYED<indexterm>
+  role="bold"> </emphasis><emphasis>, value</emphasis><emphasis role="bold">
+  [, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">SUM(</emphasis><emphasis>recordset
+  </emphasis><emphasis role="bold">[ </emphasis><emphasis>, expression
+  </emphasis><emphasis role="bold">] [, KEYED<indexterm>
       <primary>KEYED</primary>
     </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
 
@@ -33,6 +39,12 @@
             the keyword GROUP to indicate finding the sum of values of the
             field in a group, when used in a RECORD structure to generate
             crosstab statistics.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>The expression to sum.</entry>
           </row>
 
           <row>
