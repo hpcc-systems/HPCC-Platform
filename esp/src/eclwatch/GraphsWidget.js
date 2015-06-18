@@ -94,6 +94,21 @@ define([
             this._refreshActionState();
         },
 
+        getStateImageName: function (row) {
+            if (row.Complete) {
+                return "workunit_completed.png";
+            } else if (row.Running) {
+                return "workunit_running.png";
+            } else if (row.Failed) {
+                return "workunit_failed.png";
+            }
+            return "workunit.png";
+        },
+
+        getStateImageHTML: function (row) {
+            return dojoConfig.getImageHTML(this.getStateImageName(row));
+        },
+
         createGrid: function (domID) {
             var context = this;
             this.openSafeMode = new Button({
@@ -121,13 +136,12 @@ define([
                         selectorType: 'checkbox'
                     }),
                     Name: {
-                        label: this.i18n.Name, width: 72, sortable: true,
+                        label: this.i18n.Name, width: 99, sortable: true,
                         formatter: function (Name, row) {
-                            return "<a href='#' class='dgrid-row-url'>" + Name + "</a>";
+                            return context.getStateImageHTML(row) + "&nbsp;<a href='#' class='dgrid-row-url'>" + Name + "</a>";
                         }
                     },
                     Label: { label: this.i18n.Label, sortable: true },
-                    Complete: { label: this.i18n.Completed, width: 72, sortable: true },
                     WhenStarted: {
                         label: this.i18n.Started, width: 90,
                         formatter: function (whenStarted) {
