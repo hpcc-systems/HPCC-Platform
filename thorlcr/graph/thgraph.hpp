@@ -619,6 +619,10 @@ public:
     {
         return new CGraphElementArrayIterator(activeSinks);
     }
+    IThorActivityIterator *getAllSinkIterator() const
+    {
+        return new CGraphElementArrayIterator(sinks);
+    }
     IPropertyTree &queryXGMML() const { return *xgmml; }
     void addActivity(CGraphElementBase *element)
     {
