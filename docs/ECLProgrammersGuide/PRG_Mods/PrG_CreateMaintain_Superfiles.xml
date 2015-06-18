@@ -307,10 +307,10 @@ SEQUENTIAL(
 IMPORT Std;
 
 SEQUENTIAL(
-  FileServices.StartSuperFileTransaction(),
-  FileServices.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile5),  
-  FileServices.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile6),
-  FileServices.FinishSuperFileTransaction());
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile5),  
+  Std.File.AddSuperFile($.DeclareData.DailyFile,$.DeclareData.SubFile6),
+  Std.File.FinishSuperFileTransaction());
 </programlisting>
 
     <para>Once you've done that, re-running the above COUNT action should now
@@ -324,7 +324,8 @@ SEQUENTIAL(
     demonstrates one technique to list the component sub-files of a
     SuperFile:</para>
 
-    <programlisting>EXPORT MAC_ListSFsubfiles(SuperFile) := MACRO
+    <programlisting>IMPORT STD;
+EXPORT MAC_ListSFsubfiles(SuperFile) := MACRO
 
 #UNIQUENAME(SeedRec)
 %SeedRec% := DATASET([{''}], {STRING name});
@@ -333,11 +334,11 @@ SEQUENTIAL(
 TYPEOF(%SeedRec%) %Xform%(%SeedRec% L, INTEGER C) :=
           TRANSFORM
 SELF.name :=
-          FileServices.GetSuperFileSubName(SuperFile,C);
+          Std.File.GetSuperFileSubName(SuperFile,C);
 END;
 
 OUTPUT(NORMALIZE(%SeedRec%,
-FileServices.GetSuperFileSubCount(SuperFile),
+Std.File.GetSuperFileSubCount(SuperFile),
 %Xform%(LEFT,COUNTER)));
 ENDMACRO;
 </programlisting>

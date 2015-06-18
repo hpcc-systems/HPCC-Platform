@@ -88,8 +88,7 @@
       </sect2>
 
       <sect2>
-        <title>Monitoring Functions in the FileServices Service
-        Library</title>
+        <title>Monitoring Functions in the Standard Library (STD.File)</title>
 
         <sect3>
           <title>MonitorFile</title>
@@ -118,10 +117,10 @@
               <term><emphasis role="bold">Note</emphasis>:</term>
 
               <listitem>
-                <para>DFUServer file monitoring (either using FileServices or
-                DFUPlus) creates a DFU Workunit. While monitoring, the
-                Workunit’s state is <emphasis>monitoring </emphasis>and once
-                it triggers the event, it is set to
+                <para>DFUServer file monitoring (either using the Standard
+                Library or DFUPlus) creates a DFU Workunit. While monitoring,
+                the Workunit’s state is <emphasis>monitoring </emphasis>and
+                once it triggers the event, it is set to
                 <emphasis>finished</emphasis>. You can Abort a “monitoring”
                 DFU Workunit to stop monitoring from ECL Watch.</para>
               </listitem>
