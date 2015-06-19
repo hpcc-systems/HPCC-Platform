@@ -97,15 +97,15 @@
 
             <entry>Optional. Specifies the <emphasis>filename</emphasis> is a
             temporary file that may be automatically deleted after the
-            specified number of days. </entry>
+            specified number of days.</entry>
           </row>
 
           <row>
             <entry><emphasis>days</emphasis></entry>
 
             <entry>Optional. The number of days after which the file may be
-            automatically deleted. If omitted, the default is seven (7). This
-            overrides the PersistExpiryDefault setting in Sasha..</entry>
+            automatically deleted. If omitted, it defaults to use the
+            PersistExpiryDefault setting in Sasha.</entry>
           </row>
 
           <row>

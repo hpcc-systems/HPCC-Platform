@@ -114,7 +114,7 @@
             <entry><emphasis>attr</emphasis></entry>
 
             <entry>Optional. The action name, which turns the action into a
-            definition, therefore not executed until the
+            definition, wwwtherefore not executed until the
             <emphasis>attr</emphasis> is used as an action.</entry>
           </row>
 
@@ -427,16 +427,16 @@
 
               <entry>Optional. Specifies the file is a temporary file that may
               be automatically deleted after the specified number of days
-              since the file was read. </entry>
+              since the file was read.</entry>
             </row>
 
             <row>
               <entry><emphasis>days</emphasis></entry>
 
               <entry>Optional. The number of days from last file read after
-              which the file may be automatically deleted. If omitted, the
-              default is seven (7). This overrides the ExpiryDefault in Sasha
-              (The default is 14).</entry>
+              which the file may be automatically deleted. If EXPIRE is
+              specified without number of days, it defaults to use the
+              ExpiryDefault setting in Sasha. </entry>
             </row>
           </tbody>
         </tgroup>
