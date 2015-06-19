@@ -404,7 +404,14 @@ int main(int argc, const char *argv[])
 
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
-
+inline int max(int a, int b)
+{
+    return a > b ? a : b;
+}
+inline int min(int a, int b)
+{
+    return a < b ? a : b;
+}
 class WuTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(WuTest);
@@ -1045,7 +1052,7 @@ protected:
         // Check wild user
         WUSortField filterByWildUser[] = { (WUSortField) (WUSFuser|WUSFwild), WUSFterm };
         start = msTick();
-        wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFwild), filterByWildUser, "WuTestUser0", 0, 10000, NULL, NULL));
+        wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFreverse), filterByWildUser, "WuTestUser0*", 0, 10000, NULL, NULL));
         numIterated = 0;
         ForEach(*wus)
         {
@@ -1057,6 +1064,74 @@ protected:
             numIterated++;
         }
         DBGLOG("%d workunits listed by wild user, descending wuid in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize/50)*10 + min(testSize % 50, 10));
+
+        // Test use of cache/page mechanism - on something needing a postsort
+        start = msTick();
+        __int64 cachehint = 0;
+        numIterated = 0;
+        int startRow = 0;
+        loop
+        {
+            wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFstate|WUSFreverse), filterByCluster, "WuTestCluster0", startRow, 1, &cachehint, NULL));
+            if (!wus->first())
+                break;
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryClusterName(), "WuTestCluster0"));
+            if (numIterated)
+                ASSERT(strcmp(wu.queryStateDesc(), prevValue)<=0);
+            prevValue.set(wu.queryStateDesc());
+            numIterated++;
+            ASSERT(!wus->next());
+            startRow++;
+        }
+        DBGLOG("%d workunits filtered by cluster, descending state, page by page in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+4)/5);
+
+        // Test use of cache/page mechanism - on something NOT needing a postsort
+        start = msTick();
+        cachehint = 0;
+        numIterated = 0;
+        startRow = 0;
+        loop
+        {
+            wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFreverse), filterByCluster, "WuTestCluster0", startRow, 1, &cachehint, NULL));
+            if (!wus->first())
+                break;
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryClusterName(), "WuTestCluster0"));
+            if (numIterated)
+                ASSERT(strcmp(wu.queryWuid(), prevValue)<0);
+            prevValue.set(wu.queryWuid());
+            numIterated++;
+            ASSERT(!wus->next());
+            startRow++;
+        }
+        DBGLOG("%d workunits filtered by cluster, descending wuid, page by page in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+4)/5);
+
+        // Test use of cache/page mechanism - on something NOT needing a postsort, ascending
+        start = msTick();
+        cachehint = 0;
+        numIterated = 0;
+        startRow = 0;
+        loop
+        {
+            wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFwuid), filterByCluster, "WuTestCluster0", startRow, 1, &cachehint, NULL));
+            if (!wus->first())
+                break;
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryClusterName(), "WuTestCluster0"));
+            if (numIterated)
+                ASSERT(strcmp(wu.queryWuid(), prevValue)>0);
+            prevValue.set(wu.queryWuid());
+            numIterated++;
+            ASSERT(!wus->next());
+            startRow++;
+        }
+        DBGLOG("%d workunits filtered by cluster, ascending wuid, page by page in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+4)/5);
+
     }
 };
 StringArray WuTest::wuids;
