@@ -48,24 +48,25 @@
 
   <para>Example:</para>
 
-  <programlisting>  File1 := 'Filename1';
-  File2 := 'Filename2';
+  <programlisting>  IMPORT STD;
+  File1 := 'names1.txt';
+  File2 := 'names2.txt';
   
-  SrcIP := '10.150.50.14';
-  SrcPath := 'c:\\InputData\\';
+  SrcIP := '10.239.219.2';
+  SrcPath := '/var/lib/HPCCSystems/mydropzone/';
   DestPath := '~THOR::IN::';
-  ESPportIP := 'http://10.150.50.12:8010/FileSpray';
+  ESPportIP := 'http://192.168.56.120:8010/FileSpray';
   
   DeleteOldFiles :=
-     PARALLEL(FileServices.DeleteLogicalFile(DestPath+File1),
-              FileServices.DeleteLogicalFile(DestPath+File2))
+     PARALLEL(STD.File.DeleteLogicalFile(DestPath+File1),
+              STD.File.DeleteLogicalFile(DestPath+File2))
                            : INDEPENDENT;
   SprayNewFiles :=
-     PARALLEL(FileServices.SprayFixed(SrcIP,SrcPath+File1,255,
-                                      '400way',DestPath+File1,
+     PARALLEL(STD.File.SprayFixed(SrcIP,SrcPath+File1,11,
+                                      'mythor',DestPath+File1,
                                       -1,ESPportIP),
-              FileServices.SprayFixed(SrcIP,SrcPath+File2,255,
-                                     '400way',DestPath+File2,
+              STD.File.SprayFixed(SrcIP,SrcPath+File2,11,
+                                     'mythor',DestPath+File2,
                                      -1,ESPportIP))
                            : INDEPENDENT;
   SEQUENTIAL(DeleteOldFiles,SprayNewFiles);

@@ -46,27 +46,28 @@
 
   <para>Example:</para>
 
-  <programlisting>rec := RECORD
+  <programlisting>IMPORT STD;
+rec := RECORD
   STRING10 S;
 END;
 
-srcnode := '10.150.199.2';
-srcdir := '/c$/test/';
+srcnode := '10.239.219.2'; 
+srcdir := '/var/lib/HPCCSystems/mydropzone/';
 
-dir := FileServices.RemoteDirectory(srcnode,srcdir,'*.txt',TRUE);
+dir := STD.File.RemoteDirectory(srcnode,srcdir,'*.txt',TRUE);
 
   //without NOTHOR this code gets this error:
   // "Cannot call function AddSuperFile in a non-global context"
 NOTHOR(SEQUENTIAL(
-  FileServices.DeleteSuperFile('MultiSuper1'),
-  FileServices.CreateSuperFile('MultiSuper1'),
-  FileServices.StartSuperFileTransaction(),
-  APPLY(dir,FileServices.AddSuperFile('MultiSuper1',
-  FileServices.ExternalLogicalFileName(srcnode,srcdir+name))),
-  FileServices.FinishSuperFileTransaction()));
+  STD.File.DeleteSuperFile('MultiSuper1'),
+  STD.File.CreateSuperFile('MultiSuper1'),
+  STD.File.StartSuperFileTransaction(),
+  APPLY(dir,STD.File.AddSuperFile('MultiSuper1',
+        STD.File.ExternalLogicalFileName(srcnode,srcdir+name))),
+  STD.File.FinishSuperFileTransaction()));
 
 F1 := DATASET('MultiSuper1', rec, THOR);
-OUTPUT(F1,,'testmulti1',overwrite);
+OUTPUT(F1,,'testmulti1',OVERWRITE);
 </programlisting>
 
   <para>See Also: <link linkend="SEQUENTIAL">SEQUENTIAL</link></para>
