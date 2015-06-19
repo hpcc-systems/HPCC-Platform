@@ -2149,12 +2149,8 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
         return;
     case no_getresult:
     case no_workunit_dataset:
-        if (!isGrouped(expr))
-        {
-            doBuildExprGetResult(ctx, expr, tgt);
-            return;
-        }
-        break;
+        doBuildExprGetResult(ctx, expr, tgt);
+        return;
     case no_skip:
         {
             buildStmt(ctx, expr);
