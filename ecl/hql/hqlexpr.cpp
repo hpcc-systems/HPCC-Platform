@@ -914,12 +914,16 @@ void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * con
 
 void HqlLookupContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents)
 {
+    if (queryNestedDependTree())
+        createDependencyEntry(NULL, NULL);
     parseCtx.noteBeginQuery(scope, contents);
 }
 
 
 void HqlLookupContext::noteBeginModule(IHqlScope * scope, IFileContents * contents)
 {
+    if (queryNestedDependTree())
+        createDependencyEntry(scope, NULL);
     parseCtx.noteBeginModule(scope, contents);
 }
 
@@ -964,8 +968,8 @@ void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpressio
 
 void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, IIdAtom * id)
 {
-    const char * moduleName = parentScope->queryFullName();
-    const char * nameText = id->lower()->str();
+    const char * moduleName = parentScope ? parentScope->queryFullName() : "";
+    const char * nameText = id ? id->lower()->str() : "";
 
     StringBuffer xpath;
     xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(nameText).append("\"]");
@@ -8125,7 +8129,10 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     }
 
     if ((lookupFlags & LSFignoreBase))
+    {
+        ctx.noteExternalLookup(this, ret);
         return ret.getClear();
+    }
 
     StringBuffer filename;
     if (fullName)
@@ -8181,6 +8188,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))
         return NULL;
 
+    ctx.noteExternalLookup(this, newSymbol);
     return newSymbol.getClear();
 }
 
