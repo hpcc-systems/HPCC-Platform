@@ -14,13 +14,17 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-
 #pragma warning(disable : 4786)
+#include "platform.h"
 
 #ifdef WIN32
 #ifdef ESPHTTP_EXPORTS
     #define esp_http_decl __declspec(dllexport)
 #endif
+#endif
+
+#ifdef _WIN32
+  #include <algorithm>
 #endif
 
 //Jlib

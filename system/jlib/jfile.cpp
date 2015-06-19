@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-
+#include "platform.h"
 
 #ifdef _WIN32
 #define _WIN32_WINNT 0x0500  // for CreateHardLink
@@ -22,7 +22,6 @@
 //#include <winsock.h>  // for TransmitFile
 #endif
 
-#include "platform.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <algorithm>
