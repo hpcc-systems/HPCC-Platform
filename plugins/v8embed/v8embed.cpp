@@ -72,7 +72,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("v8embed: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", field->name->str());
+        msg.appendf(" for field %s", str(field->name));
     rtlFail(0, msg.str());
 }
 
@@ -207,10 +207,10 @@ protected:
         v8::Local<v8::Value> v;
         if (named)
         {
-            v8::Local<v8::String> name = v8::String::New(field->name->str());
+            v8::Local<v8::String> name = v8::String::New(str(field->name));
             if (!row->Has(name))
             {
-                VStringBuffer msg("v8embed: No value for field %s", field->name->str());
+                VStringBuffer msg("v8embed: No value for field %s", str(field->name));
                 rtlFail(0, msg.str());
             }
             v = row->Get(name);
@@ -369,7 +369,7 @@ protected:
         if (inDataset)
             obj->Set(idx++, value);
         else
-            obj->Set(v8::String::New(field->name->str()), value);
+            obj->Set(v8::String::New(str(field->name)), value);
     }
     v8::Local<v8::Object> obj;
     std::vector< v8::Local<v8::Object> > stack;
