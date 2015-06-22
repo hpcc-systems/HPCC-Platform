@@ -1027,11 +1027,6 @@ bool PermissionProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescr
     if(num_resources <= 0)
         return true;
 
-    if(!(&user))
-    {
-        DBGLOG("user passed in to PermissionProcessor::getPermissions is NULL");
-        return false;
-    }
     const char* username = user.getName();
 
 #ifdef USE_LOGONUSER
