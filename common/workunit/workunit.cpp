@@ -1982,6 +1982,7 @@ public:
     CLocalWUQuery(IPropertyTree *p);
 
     virtual WUQueryType getQueryType() const;
+    virtual WUQueryLanguage getQueryLanguage() const;
     virtual IStringVal& getQueryText(IStringVal &str) const;
     virtual IStringVal& getQueryShortText(IStringVal &str) const;
     virtual IStringVal& getQueryName(IStringVal &str) const;
@@ -1994,6 +1995,7 @@ public:
     virtual IConstWUAssociatedFileIterator& getAssociatedFiles() const;
 
     virtual void        setQueryType(WUQueryType qt);
+    virtual void        setQueryLanguage(WUQueryLanguage ql);
     virtual void        setQueryText(const char *pstr);
     virtual void        setQueryName(const char *);
     virtual void        setQueryMainDefinition(const char * str);
@@ -7616,6 +7618,23 @@ WUQueryType CLocalWUQuery::getQueryType() const
 void CLocalWUQuery::setQueryType(WUQueryType qt) 
 {
     setEnum(p, "@type", qt, queryTypes);
+}
+
+mapEnums queryLanguages[] = {
+   { QueryLanguageUnknown, "unknown" },
+   { QueryLanguageEcl, "ECL" },
+   { QueryLanguageKel, "KEL" },
+   { QueryLanguageSize,  NULL },
+};
+
+WUQueryLanguage CLocalWUQuery::getQueryLanguage() const
+{
+    return (WUQueryLanguage) getEnum(p, "@language", queryLanguages);
+}
+
+void CLocalWUQuery::setQueryLanguage(WUQueryLanguage ql)
+{
+    setEnum(p, "@language", ql, queryLanguages);
 }
 
 IStringVal& CLocalWUQuery::getQueryText(IStringVal &str) const
