@@ -417,6 +417,7 @@ class WuTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(WuTest);
         CPPUNIT_TEST(testCreate);
         CPPUNIT_TEST(testList);
+        CPPUNIT_TEST(testList2);
         CPPUNIT_TEST(testSet);
         CPPUNIT_TEST(testDelete);
         CPPUNIT_TEST(testCopy);
@@ -442,6 +443,7 @@ protected:
             wu->setClusterName(clusterName);
             if (i % 3)
                 wu->setJobName(jobName);
+            wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, "Total thor time", ((i+2)/2) * 1000000, 1, 0, StatsMergeReplace);
             wuids.append(wu->queryWuid());
         }
         unsigned after = factory->numWorkUnits();
@@ -1066,6 +1068,22 @@ protected:
         DBGLOG("%d workunits listed by wild user, descending wuid in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == (testSize/50)*10 + min(testSize % 50, 10));
 
+        // Test sorted by totalThorTime, ascending
+        start = msTick();
+        numIterated = 0;
+        unsigned prevThorTime = 0;
+        wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFtotalthortime), NULL, NULL, 0, 10000, NULL, NULL));
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            if (numIterated)
+                ASSERT(wu.getTotalThorTime()>=prevThorTime);
+            prevThorTime = wu.getTotalThorTime();
+            numIterated++;
+        }
+        DBGLOG("%d workunits ascending thortime in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == testSize);
+
         // Test use of cache/page mechanism - on something needing a postsort
         start = msTick();
         __int64 cachehint = 0;
@@ -1131,7 +1149,37 @@ protected:
         }
         DBGLOG("%d workunits filtered by cluster, ascending wuid, page by page in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == (testSize+4)/5);
+    }
 
+    void testList2()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        bool isDali = streq(factory->queryStoreType(), "Dali");
+        unsigned before = factory->numWorkUnits();
+        unsigned start = msTick();
+        unsigned numIterated = 0;
+        Owned<IConstWorkUnitIterator> wus;
+        // Test use of cache/page mechanism - sorted by totalThorTime, descending
+        start = msTick();
+        __int64 cachehint = 0;
+        numIterated = 0;
+        unsigned startRow = 0;
+        unsigned prevThorTime = 0;
+        loop
+        {
+            wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFtotalthortime|WUSFreverse), NULL, NULL, startRow, 1, &cachehint, NULL));
+            if (!wus->first())
+                break;
+            IConstWorkUnitInfo &wu = wus->query();
+            if (numIterated)
+                ASSERT(wu.getTotalThorTime()<=prevThorTime);
+            prevThorTime = wu.getTotalThorTime();
+            numIterated++;
+            ASSERT(!wus->next());
+            startRow++;
+        }
+        DBGLOG("%d workunits descending thortime, page by page in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == testSize);
     }
 };
 StringArray WuTest::wuids;

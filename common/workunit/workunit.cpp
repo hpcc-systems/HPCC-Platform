@@ -1039,7 +1039,7 @@ public:
         action = (WUAction) getEnum(&p, "Action", actions);
         wuscope.set(p.queryProp("@scope"));
         appvalues.load(&p,"Application/*");
-        totalThorTime = p.getPropInt("@totalThorTime", 0);
+        totalThorTime = nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), false));
         _isProtected = p.getPropBool("@protected", false);
     }
     virtual const char *queryWuid() const { return wuid.str(); }
@@ -3807,7 +3807,7 @@ unsigned CLocalWorkUnit::getDebugAgentListenerPort() const
 unsigned CLocalWorkUnit::getTotalThorTime() const
 {
     CriticalBlock block(crit);
-    return p->getPropInt("@totalThorTime", 0);
+    return nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), false));
 }
 
 void CLocalWorkUnit::setDebugAgentListenerPort(unsigned port)
@@ -5723,10 +5723,11 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         else
             statTree->removeProp("@max");
     }
-    if (creatorType==SCTsummary && scope==GLOBAL_SCOPE && kind==StTimeElapsed)
+    if (creatorType==SCTsummary && kind==StTimeElapsed && (scope==GLOBAL_SCOPE || strsame(scope, GLOBAL_SCOPE)))
     {
-        assertex(mergeAction==StatsMergeReplace);
-        p->setPropInt("@totalThorTime", (int) nanoToMilli(value));
+        StringBuffer t;
+        formatTimeCollatable(t, value, false);
+        p->setProp("@totalThorTime", t);
     }
 }
 
