@@ -627,6 +627,13 @@ BoundRow * InlineLinkedDatasetCursor::doBuildIterateLoop(BuildCtx & ctx, bool ne
     ctx.addLoop(test, NULL, false);
     ctx.addQuoted(s.clear().append(rowName).append(" = *").append(cursorName).append("++;"));
     BoundRow * cursor = translator.bindTableCursor(ctx, ds, row);
+    if (isGrouped(ds))
+    {
+        BuildCtx filterctx(ctx);
+        OwnedHqlExpr cond = createBoolExpr(no_not, LINK(cursor->queryBound()));
+        filterctx.addFilter(cond);
+        filterctx.addContinue();
+    }
     if (checkForNull)
         cursor->setConditional(true);
     return cursor;
