@@ -1808,6 +1808,13 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             continue;
         }
 
+        // This test is presumably trying to remove the global workunit, though it's not the right way to do so (since it will mess up page counts etc)
+        const char* wuid = cw.queryWuid();
+        if (!looksLikeAWuid(wuid, 'W'))
+        {
+            numWUs--;
+            continue;
+        }
         actualCount++;
         Owned<IEspECLWorkunit> info = createECLWorkunit("","");
         info->setWuid(cw.queryWuid());
