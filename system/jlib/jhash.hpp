@@ -49,10 +49,6 @@ interface jlib_decl IAtom : extends IMapping
 {
  public:
     virtual const char * getNamePtr() const = 0;
-
-    //const char *         getAtomNamePtr() const;     // ok if this=NULL
-    //inline const char * str() const { return getAtomNamePtr(); }
-    //inline operator const char *() const { return getAtomNamePtr(); }
 };
 inline const char * str(const IAtom * atom) { return atom ? atom->getNamePtr() : NULL; }
 
@@ -63,14 +59,8 @@ interface jlib_decl IIdAtom : extends IMapping
 {
  public:
     virtual const char * getNamePtr() const = 0;
-
-    //const char *         getAtomNamePtr() const { return this ? getNamePtr() : NULL; }
-    //inline const char * str() const { return getAtomNamePtr(); }
-    //inline operator const char *() const { return getAtomNamePtr(); }
-
  public:
     virtual IAtom * queryLower() const = 0;
-//    IAtom * lower() const; // safe if this==NULL
 };
 inline const char * str(const IIdAtom * atom) { return atom ? atom->getNamePtr() : NULL; }
 inline IAtom * lower(const IIdAtom * atom) { return atom ? atom->queryLower() : NULL; }
