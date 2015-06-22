@@ -114,7 +114,7 @@
             <entry><emphasis>attr</emphasis></entry>
 
             <entry>Optional. The action name, which turns the action into a
-            definition, wwwtherefore not executed until the
+            definition, therefore not executed until the
             <emphasis>attr</emphasis> is used as an action.</entry>
           </row>
 
@@ -436,7 +436,7 @@
               <entry>Optional. The number of days from last file read after
               which the file may be automatically deleted. If EXPIRE is
               specified without number of days, it defaults to use the
-              ExpiryDefault setting in Sasha. </entry>
+              ExpiryDefault setting in Sasha.</entry>
             </row>
           </tbody>
         </tgroup>
