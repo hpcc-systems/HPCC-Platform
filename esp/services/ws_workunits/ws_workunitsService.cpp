@@ -1644,69 +1644,6 @@ void doWUQueryByFile(IEspContext &context, const char *logicalFile, IEspWUQueryR
     resp.setCount(1);
 }
 
-void doWUQueryByXPath(IEspContext &context, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
-{
-    IArrayOf<IEspECLWorkunit> results;
-
-    WsWuSearch wlist(context,req.getOwner(),req.getState(),req.getCluster(),req.getStartDate(),req.getEndDate(),req.getECL(),req.getJobname(),req.getApplicationName(),req.getApplicationKey(),req.getApplicationData());
-
-    int count=(int)req.getPageSize();
-    if (!count)
-        count=100;
-
-    if (wlist.getSize() < 1)
-    {
-        resp.setNumWUs(0);
-        return;
-    }
-
-    if (wlist.getSize() < count)
-        count = (int) wlist.getSize() - 1;
-
-    WsWuSearch::iterator begin, end;
-
-    if(notEmpty(req.getAfter()))
-    {
-        begin=wlist.locate(req.getAfter());
-        end=min(begin+count,wlist.end());
-    }
-    else if (notEmpty(req.getBefore()))
-    {
-        end=wlist.locate(req.getBefore());
-        begin=max(end-count,wlist.begin());
-    }
-    else
-    {
-        begin=wlist.begin();
-        end=min(begin+count,wlist.end());
-    }
-
-    if(begin>wlist.begin() && begin<wlist.end())
-        resp.setCurrent(begin->c_str());
-
-    if (context.getClientVersion() > 1.02)
-    {
-        resp.setPageStartFrom(begin - wlist.begin() + 1);
-        resp.setNumWUs((int)wlist.getSize());
-        resp.setCount(end - begin);
-    }
-
-    if(end<wlist.end())
-        resp.setNext(end->c_str());
-
-    for(;begin!=end;begin++)
-    {
-        Owned<IEspECLWorkunit> info = createECLWorkunit("","");
-        WsWuInfo winfo(context, begin->c_str());
-        winfo.getCommon(*info, 0);
-        results.append(*info.getClear());
-    }
-    resp.setPageSize(abs(count));
-    resp.setWorkunits(results);
-
-    return;
-}
-
 bool addWUQueryFilter(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *name, WUSortField value)
 {
     if (isEmpty(name))
@@ -1791,8 +1728,6 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             sortorder = WUSFjob;
         else if (strieq(sortby, "Cluster"))
             sortorder = WUSFcluster;
-        else if (strieq(sortby, "RoxieCluster"))
-            sortorder = WUSFroxiecluster;
         else if (strieq(sortby, "Protected"))
             sortorder = WUSFprotected;
         else if (strieq(sortby, "State"))
@@ -1826,8 +1761,6 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
 
     addWUQueryFilter(filters, filterCount, filterbuf, req.getWuid(), WUSFwildwuid);
     addWUQueryFilter(filters, filterCount, filterbuf, req.getCluster(), WUSFcluster);
-    if(version > 1.07)
-        addWUQueryFilter(filters, filterCount, filterbuf, req.getRoxieCluster(), WUSFroxiecluster);
     addWUQueryFilter(filters, filterCount, filterbuf, req.getLogicalFile(), (WUSortField) (WUSFfileread | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getJobname(), (WUSortField) (WUSFjob | WUSFnocase));
@@ -1875,6 +1808,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             continue;
         }
 
+        // This test is presumably trying to remove the global workunit, though it's not the right way to do so (since it will mess up page counts etc)
         const char* wuid = cw.queryWuid();
         if (!looksLikeAWuid(wuid, 'W'))
         {
@@ -1883,10 +1817,47 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         }
         actualCount++;
         Owned<IEspECLWorkunit> info = createECLWorkunit("","");
-        WsWuInfo winfo(context, wuid);
-        winfo.getCommon(*info, 0);
+        info->setWuid(cw.queryWuid());
+        info->setProtected(cw.isProtected() ? 1 : 0);
+        info->setJobname(cw.queryJobName());
+        info->setOwner(cw.queryUser());
+        info->setCluster(cw.queryClusterName());
+        SCMStringBuffer s;
+        // info.setSnapshot(cw->getSnapshot(s).str());
+        info->setStateID(cw.getState());
+        info->setState(cw.queryStateDesc());
+        unsigned totalThorTimeMS = cw.getTotalThorTime();
+        StringBuffer totalThorTimeStr;
+        formatDuration(totalThorTimeStr, totalThorTimeMS);
+        if (version > 1.52)
+            info->setTotalClusterTime(totalThorTimeStr.str());
+        else
+            info->setTotalThorTime(totalThorTimeStr.str());
+        //if (cw->isPausing())
+        //    info.setIsPausing(true);
+        // getEventScheduleFlag(info);
+        WsWuDateTime dt;
+        cw.getTimeScheduled(dt);
+        if(dt.isValid())
+            info->setDateTimeScheduled(dt.getString(s).str());
         if (version >= 1.55)
-            winfo.getApplicationValues(*info, WUINFO_IncludeApplicationValues);
+        {
+            IArrayOf<IEspApplicationValue> av;
+            Owned<IConstWUAppValueIterator> app(&cw.getApplicationValues());
+            ForEach(*app)
+            {
+                IConstWUAppValue& val=app->query();
+                SCMStringBuffer buf;
+
+                Owned<IEspApplicationValue> t= createApplicationValue("","");
+                t->setApplication(val.getApplication(buf).str());
+                t->setName(val.getName(buf).str());
+                t->setValue(val.getValue(buf).str());
+                av.append(*t.getLink());
+
+            }
+            info->setApplicationValues(av);
+        }
         results.append(*info.getClear());
     }
 
@@ -2229,8 +2200,6 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
         StringBuffer basicQuery;
         addToQueryString(basicQuery, "State", req.getState());
         addToQueryString(basicQuery, "Cluster", req.getCluster());
-        if (version > 1.07)
-            addToQueryString(basicQuery, "RoxieCluster", req.getRoxieCluster());
         addToQueryString(basicQuery, "Owner", req.getOwner());
         addToQueryString(basicQuery, "StartDate", req.getStartDate());
         addToQueryString(basicQuery, "EndDate", req.getEndDate());
@@ -3112,8 +3081,10 @@ bool CWsWorkunitsEx::onWUExport(IEspContext &context, IEspWUExportRequest &req, 
 {
     try
     {
+        if (req.getECL() && *req.getECL())
+            throw makeStringException(0, "WUExport no longer supports filtering by ECL text");
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        WsWuSearch ws(context, req.getOwner(), req.getState(), req.getCluster(), req.getStartDate(), req.getEndDate(), req.getECL(), req.getJobname());
+        WsWuSearch ws(context, req.getOwner(), req.getState(), req.getCluster(), req.getStartDate(), req.getEndDate(), req.getJobname());
 
         StringBuffer xml("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Workunits>");
         for(WsWuSearch::iterator it=ws.begin(); it!=ws.end(); it++)

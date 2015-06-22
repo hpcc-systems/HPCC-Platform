@@ -435,25 +435,6 @@ interface IWUWebServicesInfo : extends IConstWUWebServicesInfo
 };
 
 
-interface IConstWURoxieQueryInfo : extends IInterface
-{
-    virtual IStringVal & getQueryInfo(IStringVal & str) const = 0;
-    virtual IStringVal & getDefaultPackageInfo(IStringVal & str) const = 0;
-    virtual IStringVal & getRoxieClusterName(IStringVal & str) const = 0;
-    virtual IStringVal & getWuid(IStringVal & str) const = 0;
-};
-
-
-interface IWURoxieQueryInfo : extends IConstWURoxieQueryInfo
-{
-    virtual void setQueryInfo(const char * info) = 0;
-    virtual void setDefaultPackageInfo(const char * pstr, int len) = 0;
-    virtual void setRoxieClusterName(const char * name) = 0;
-    virtual void setWuid(const char * wuid) = 0;
-};
-
-
-
 //! IWUPlugin
 
 interface IConstWUPlugin : extends IInterface
@@ -983,8 +964,13 @@ interface IConstWorkUnitInfo : extends IInterface
     virtual const char *queryClusterName() const = 0;
     virtual WUState getState() const = 0;
     virtual const char *queryStateDesc() const = 0;
+    virtual WUAction getAction() const = 0;
+    virtual const char *queryActionDesc() const = 0;
     virtual bool isProtected() const = 0;
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
+
+    virtual unsigned getTotalThorTime() const = 0;
+    virtual IConstWUAppValueIterator & getApplicationValues() const = 0;
 };
 
 interface IConstWorkUnit : extends IConstWorkUnitInfo
@@ -992,10 +978,8 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual bool aborting() const = 0;
     virtual void forceReload() = 0;
     virtual WUAction getAction() const = 0;
-    virtual IStringVal& getActionEx(IStringVal & str) const = 0;
     virtual IStringVal & getApplicationValue(const char * application, const char * propname, IStringVal & str) const = 0;
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const = 0;
-    virtual IConstWUAppValueIterator & getApplicationValues() const = 0;
     virtual bool hasWorkflow() const = 0;
     virtual unsigned queryEventScheduledCount() const = 0;
     virtual IPropertyTree * queryWorkflowTree() const = 0;
@@ -1038,7 +1022,6 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IConstWUResultIterator & getTemporaries() const = 0;
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const = 0;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const = 0;
-    virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const = 0;
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const = 0; // filter must currently stay alive while the iterator does.
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const = 0;
     virtual IConstWUResult * getVariableByName(const char * name) const = 0;
@@ -1103,7 +1086,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultLimit(unsigned value) = 0;
     virtual void setSecurityToken(const char * value) = 0;
     virtual void setState(WUState state) = 0;
-    virtual void setStateEx(const char * text) = 0;
+    virtual void setStateEx(const char * text) = 0;  // Indicates why blocked
     virtual void setAgentSession(__int64 sessionId) = 0;
     virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) = 0;
     virtual void setTracingValue(const char * propname, const char * value) = 0;
@@ -1124,7 +1107,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual IWUGraph * updateGraph(const char * name) = 0;
     virtual IWUQuery * updateQuery() = 0;
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create) = 0;
-    virtual IWURoxieQueryInfo * updateRoxieQueryInfo(const char * wuid, const char * roxieClusterName) = 0;
     virtual IWUPlugin * updatePluginByName(const char * name) = 0;
     virtual IWULibrary * updateLibraryByName(const char * name) = 0;
     virtual IWUResult * updateResultByName(const char * name) = 0;
@@ -1212,7 +1194,7 @@ enum WUSortField
     WUSFwuid = 6,
     WUSFwuidhigh = 7,
     WUSFfileread = 8,
-    WUSFroxiecluster = 9,
+    // WUSFroxiecluster = 9, obsolete
     WUSFprotected = 10,
     WUSFtotalthortime = 11,
     WUSFwildwuid = 12,
@@ -1270,14 +1252,11 @@ interface IWorkUnitFactory : extends IInterface
     virtual int setTracingLevel(int newlevel) = 0;
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField sortorder, WUSortField * filters, const void * filterbuf,
                                                         unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total,
                                                         ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual unsigned numWorkUnits() = 0;
+    virtual IConstWorkUnitIterator *getScheduledWorkUnits(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual void descheduleAllWorkUnits(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) = 0;
     virtual bool isAborting(const char *wuid) const = 0;

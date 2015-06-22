@@ -334,7 +334,7 @@ ESPresponse [exceptions_inline] WUDeployWorkunitResponse
 ESPrequest [nil_remove] WUQueryRequest
 {
     string Wuid;
-    [min_ver("1.01")] string Type;  //archieved or non-archieved
+    [min_ver("1.01")] string Type;  //archived or non-archived
     string Cluster;
     [min_ver("1.08")] string RoxieCluster;
     string Owner;
@@ -367,7 +367,7 @@ ESPrequest [nil_remove] WUQueryRequest
 
 ESPresponse [nil_remove, exceptions_inline] WUQueryResponse
 {
-    [min_ver("1.01")] string Type("");  //archieved or non-archieved
+    [min_ver("1.01")] string Type("");  //archived or non-archived
     string Cluster;
     [min_ver("1.08")] string RoxieCluster;
     string Owner;
@@ -905,7 +905,7 @@ ESPrequest WUExportRequest
     string State;
     string StartDate;
     string EndDate;
-    string ECL;
+    [max_ver("1.55")] string ECL;
     string Jobname;
 };
 ESPresponse [exceptions_inline] WUExportResponse
@@ -1610,7 +1610,7 @@ ESPresponse [exceptions_inline] WUGetStatsResponse
 };
 
 ESPservice [
-    version("1.55"), default_client_version("1.55"),
+    version("1.56"), default_client_version("1.56"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

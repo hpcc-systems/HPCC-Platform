@@ -2510,15 +2510,16 @@ static void wuidCompress(const char *match, const char *type, bool compress)
         WARNLOG("Currently, only type=='graph' supported.");
         return;
     }
+    Owned<IRemoteConnection> conn = querySDS().connect("/WorkUnits", myProcessSession(), 0, daliConnectTimeoutMs);
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnitIterator> iter = factory->getWorkUnitsByXPath(match);
+    Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(match?match:"*", iptiter_remote);
     ForEach(*iter)
     {
-        IConstWorkUnitInfo &wuidInfo = iter->query();
-        IConstWorkUnit &wuid = *factory->openWorkUnit(wuidInfo.queryWuid(), false);
+        const char *wuid = iter->query().queryName();
+        IConstWorkUnit &wu = *factory->openWorkUnit(wuid, false);
 
         StringArray graphNames;
-        Owned<IConstWUGraphIterator> graphIter = &wuid.getGraphs(GraphTypeAny);
+        Owned<IConstWUGraphIterator> graphIter = &wu.getGraphs(GraphTypeAny);
         ForEach(*graphIter)
         {
             SCMStringBuffer graphName;
@@ -2534,8 +2535,8 @@ static void wuidCompress(const char *match, const char *type, bool compress)
         if (graphNames.ordinality())
         {
             const char *msg = compress ? "Compressing" : "Uncompressing";
-            PROGLOG("%s graphs for workunit: %s", msg, wuidInfo.queryWuid());
-            Owned<IWorkUnit> wWuid = &wuid.lock();
+            PROGLOG("%s graphs for workunit: %s", msg, wuid);
+            Owned<IWorkUnit> wWuid = &wu.lock();
             ForEachItemIn(n, graphNames)
             {
                 Owned<IWUGraph> wGraph = wWuid->updateGraph(graphNames.item(n));

@@ -971,6 +971,18 @@ mapEnums states[] = {
    { WUStateSize, NULL }
 };
 
+mapEnums actions[] = {
+   { WUActionUnknown, "unknown" },
+   { WUActionCompile, "compile" },
+   { WUActionCheck, "check" },
+   { WUActionRun, "run" },
+   { WUActionExecuteExisting, "execute" },
+   { WUActionPause, "pause" },
+   { WUActionPauseNow, "pausenow" },
+   { WUActionResume, "resume" },
+   { WUActionSize, NULL },
+};
+
 const char * getWorkunitStateStr(WUState state)
 {
     dbgassertex(state < WUStateSize);
@@ -1039,9 +1051,11 @@ public:
         clusterName.set(p.queryProp("@clusterName"));
         timeScheduled.set(p.queryProp("@timeScheduled"));
         state = (WUState) getEnum(&p, "@state", states);
+        action = (WUAction) getEnum(&p, "Action", actions);
         wuscope.set(p.queryProp("@scope"));
+        appvalues.load(&p,"Application/*");
+        totalThorTime = p.getPropInt("@totalThorTime", 0);
         _isProtected = p.getPropBool("@protected", false);
-        _isAborting = false; // MORE - this one is tricky
     }
     virtual const char *queryWuid() const { return wuid.str(); }
     virtual const char *queryUser() const { return user.str(); }
@@ -1049,10 +1063,10 @@ public:
     virtual const char *queryClusterName() const { return clusterName.str(); }
     virtual const char *queryWuScope() const { return wuscope.str(); }
     virtual WUState getState() const { return state; }
-    virtual const char *queryStateDesc() const { return getEnumText(getState(), states); }
+    virtual const char *queryStateDesc() const { return getEnumText(state, states); }
+    virtual WUAction getAction() const { return action; }
+    virtual const char *queryActionDesc() const { return getEnumText(action, actions); }
     virtual bool isProtected() const { return _isProtected; }
-// Not sure about these ones...
-    virtual bool aborting() const { return _isAborting; }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const
     {
         if (timeScheduled.length())
@@ -1060,11 +1074,15 @@ public:
         return val;
     }
 
+    virtual unsigned getTotalThorTime() const { return totalThorTime; };
+    virtual IConstWUAppValueIterator & getApplicationValues() const { return *new CArrayIteratorOf<IConstWUAppValue,IConstWUAppValueIterator> (appvalues, 0, (IConstWorkUnitInfo *) this); };
 protected:
     StringAttr wuid, user, jobName, clusterName, timeScheduled, wuscope;
+    mutable CachedTags<CLocalWUAppValue,IConstWUAppValue> appvalues;
+    unsigned totalThorTime;
     WUState state;
+    WUAction action;
     bool _isProtected;
-    bool _isAborting;
 };
 
 extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
@@ -1262,8 +1280,8 @@ public:
             { UNIMPLEMENTED; }
     virtual WUAction getAction() const
             { return c->getAction(); }
-    virtual IStringVal& getActionEx(IStringVal & str) const
-            { return c->getActionEx(str); }
+    virtual const char *queryActionDesc() const
+            { return c->queryActionDesc(); }
     virtual IStringVal & getApplicationValue(const char * application, const char * propname, IStringVal & str) const
             { return c->getApplicationValue(application, propname, str); }
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const
@@ -1354,8 +1372,6 @@ public:
             { return c->getQuery(); }
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const
             { return c->getWebServicesInfo(); }
-    virtual IConstWURoxieQueryInfo* getRoxieQueryInfo() const
-        { return c->getRoxieQueryInfo(); }
     virtual bool getRescheduleFlag() const
             { return c->getRescheduleFlag(); }
     virtual IConstWUResult * getResultByName(const char * name) const
@@ -1450,6 +1466,8 @@ public:
             { return c->getProcesses(type); }
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const
             { return c->getProcesses(type, instance); }
+    virtual unsigned getTotalThorTime() const
+            { return c->getTotalThorTime(); }
 
     virtual void clearExceptions()
             { c->clearExceptions(); }
@@ -1535,8 +1553,6 @@ public:
             { return c->updateQuery(); }
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create)
         { return c->updateWebServicesInfo(create); }
-    virtual IWURoxieQueryInfo * updateRoxieQueryInfo(const char *wuid, const char *roxieClusterName)
-        { return c->updateRoxieQueryInfo(wuid, roxieClusterName); }
     virtual IWUPlugin * updatePluginByName(const char * name)
             { return c->updatePluginByName(name); }
     virtual IWULibrary * updateLibraryByName(const char * name)
@@ -1713,29 +1729,6 @@ public:
     virtual void        setInfo(const char *name, const char *info);
     virtual void        setText(const char *name, const char *info);
     virtual void        setWebServicesCRC(unsigned);
-};
-
-class CLocalWURoxieQueryInfo : public CInterface, implements IWURoxieQueryInfo
-{
-    Owned<IPropertyTree> p;
-    mutable CriticalSection crit;
-
-private:
-    
-public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWURoxieQueryInfo(IPropertyTree *p);
-
-    virtual IStringVal& getQueryInfo(IStringVal &str) const;
-    virtual IStringVal& getDefaultPackageInfo(IStringVal &str) const;
-    virtual IStringVal& getRoxieClusterName(IStringVal &str) const;
-    virtual IStringVal& getWuid(IStringVal &str) const;
-
-    virtual void        setQueryInfo(const char *info); 
-    virtual void        setDefaultPackageInfo(const char *, int len);
-    virtual void        setRoxieClusterName(const char *str);
-    virtual void        setWuid(const char *str);
-
 };
 
 class CLocalWUResult : public CInterface, implements IWUResult
@@ -2013,8 +2006,8 @@ mapEnums workunitSortFields[] =
    { WUSFwuid, "@" },
    { WUSFecl, "Query/Text" },
    { WUSFfileread, "FilesRead/File/@name" },
-   { WUSFroxiecluster, "RoxieQueryInfo/@roxieClusterName" },
-   { WUSFtotalthortime, "Statistics/Statistic[@c='summary'][@creator='thor'][@kind='TimeElapsed']/@value|"
+   { WUSFtotalthortime, "@totalClusterTime|"
+                        "Statistics/Statistic[@c='summary'][@creator='thor'][@kind='TimeElapsed']/@value|"
                         "Statistics/Statistic[@c='summary'][@creator='hthor'][@kind='TimeElapsed']/@value|"
                         "Statistics/Statistic[@c='summary'][@creator='roxie'][@kind='TimeElapsed']/@value|"
                         "Statistics/Statistic[@desc='Total thor time']/@value|"
@@ -2664,41 +2657,19 @@ public:
         Owned<CLocalWorkUnit> cw = new CDaliWorkUnit(conn, (ISecManager *) NULL, NULL);
         return &cw->lockRemote(false);
     }
-
     virtual IConstWorkUnitIterator* getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer path("*");
         if (owner && *owner)
-            path.append("[@submitID=\"").append(owner).append("\"]");
+            path.append("[@submitID=?~\"").append(owner).append("\"]");
         return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
     }
-    IConstWorkUnitIterator* getWorkUnitsByState(WUState state, ISecManager *secmgr, ISecUser *secuser)
+    IConstWorkUnitIterator* getScheduledWorkUnits(ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer path("*");
-        path.append("[@state=\"").append(getEnumText(state, states)).append("\"]");
+        path.append("[@state=\"").append(getEnumText(WUStateScheduled, states)).append("\"]");
         return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
     }
-    IConstWorkUnitIterator* getWorkUnitsByECL(const char* ecl, ISecManager *secmgr, ISecUser *secuser)
-    {
-        StringBuffer path("*");
-        if (ecl && *ecl)
-            path.append("[Query/Text=~\"*").append(ecl).append("*\"]");
-        return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
-    }
-    IConstWorkUnitIterator* getWorkUnitsByCluster(const char* cluster, ISecManager *secmgr, ISecUser *secuser)
-    {
-        StringBuffer path("*");
-        if (cluster && *cluster)
-            path.append("[@clusterName=\"").append(cluster).append("\"]");
-        return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
-    }
-
-    IConstWorkUnitIterator* getWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser)
-    {
-        // NOTE - this is deprecated - we want to get rid of it (daliadmin MAY be allowed to use it, but nothing else should)
-        return _getWorkUnitsByXPath(xpath, secmgr, secuser);
-    }
-
     virtual void clientShutdown();
 
     virtual unsigned numWorkUnits()
@@ -3139,33 +3110,12 @@ public:
         if (!secUser) secUser = defaultSecUser.get();
         return baseFactory->getWorkUnitsByOwner(owner, secMgr, secUser);
     }
-    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state, ISecManager *secMgr, ISecUser *secUser)
+    virtual IConstWorkUnitIterator * getScheduledWorkUnits(ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
         if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->getWorkUnitsByState(state, secMgr, secUser);
+        return baseFactory->getScheduledWorkUnits(secMgr, secUser);
     }
-    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char* ecl, ISecManager *secMgr, ISecUser *secUser)
-    {
-        if (!secMgr) secMgr = defaultSecMgr.get();
-        if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->getWorkUnitsByECL(ecl, secMgr, secUser);
-    }
-
-    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char* cluster, ISecManager *secMgr, ISecUser *secUser)
-    {   
-        if (!secMgr) secMgr = defaultSecMgr.get();
-        if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->getWorkUnitsByCluster(cluster, secMgr, secUser);
-    }
-
-    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath, ISecManager *secMgr, ISecUser *secUser)
-    {
-        if (!secMgr) secMgr = defaultSecMgr.get();
-        if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->getWorkUnitsByXPath(xpath, secMgr, secUser);
-    }
-
     virtual void descheduleAllWorkUnits(ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
@@ -3299,7 +3249,6 @@ void CLocalWorkUnit::clearCached(bool clearTree)
 {
     query.clear();
     webServicesInfo.clear();
-    roxieQueryInfo.clear();
     workflowIterator.clear();
     cachedGraphs.clear();
 
@@ -3861,6 +3810,12 @@ unsigned CLocalWorkUnit::getDebugAgentListenerPort() const
     return p->getPropInt("@DebugListenerPort", 0);
 }
 
+unsigned CLocalWorkUnit::getTotalThorTime() const
+{
+    CriticalBlock block(crit);
+    return p->getPropInt("@totalThorTime", 0);
+}
+
 void CLocalWorkUnit::setDebugAgentListenerPort(unsigned port)
 {
     CriticalBlock block(crit);
@@ -4212,18 +4167,6 @@ const char * CLocalWorkUnit::queryStateDesc() const
     }
 }
 
-mapEnums actions[] = {
-   { WUActionUnknown, "unknown" },
-   { WUActionCompile, "compile" },
-   { WUActionCheck, "check" },
-   { WUActionRun, "run" },
-   { WUActionExecuteExisting, "execute" },
-   { WUActionPause, "pause" },
-   { WUActionPauseNow, "pausenow" },
-   { WUActionResume, "resume" },
-   { WUActionSize, NULL },
-};
-
 void CLocalWorkUnit::setAction(WUAction value) 
 {
     CriticalBlock block(crit);
@@ -4236,11 +4179,10 @@ WUAction CLocalWorkUnit::getAction() const
     return (WUAction) getEnum(p, "Action", actions);
 }
 
-IStringVal& CLocalWorkUnit::getActionEx(IStringVal & str) const
+const char *CLocalWorkUnit::queryActionDesc() const
 {
     CriticalBlock block(crit);
-    str.set(p->queryProp("Action"));
-    return str;
+    return p->queryProp("Action");
 }
 
 IStringVal& CLocalWorkUnit::getApplicationValue(const char *app, const char *propname, IStringVal &str) const
@@ -5765,7 +5707,7 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         mergeAction = StatsMergeAppend;
     }
 
-    if (mergeAction != StatsMergeAppend)
+    if (mergeAction != StatsMergeAppend) // RKC->GH Is this right??
     {
         unsigned __int64 oldValue = statTree->getPropInt64("@value", 0);
         unsigned __int64 oldCount = statTree->getPropInt64("@count", 0);
@@ -5786,6 +5728,11 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
             statTree->setPropInt64("@max", maxValue);
         else
             statTree->removeProp("@max");
+    }
+    if (creatorType==SCTsummary && scope==GLOBAL_SCOPE && kind==StTimeElapsed)
+    {
+        assertex(mergeAction==StatsMergeReplace);
+        p->setPropInt("@totalThorTime", (int) nanoToMilli(value));
     }
 }
 
@@ -5984,43 +5931,6 @@ IWUWebServicesInfo* CLocalWorkUnit::updateWebServicesInfo(bool create)
         webServicesInfoCached = true;
     }
     return webServicesInfo.getLink();
-}
-
-IConstWURoxieQueryInfo* CLocalWorkUnit::getRoxieQueryInfo() const
-{
-    // For this to be legally called, we must have the read-able interface. So we are already locked for (at least) read.
-    CriticalBlock block(crit);
-    if (!roxieQueryInfoCached)
-    {
-        assertex(!roxieQueryInfo);
-        IPropertyTree *s = p->getPropTree("RoxieQueryInfo");
-        if (s)
-            roxieQueryInfo.setown(new CLocalWURoxieQueryInfo(s)); // NB takes ownership of 's'
-        roxieQueryInfoCached = true;
-    }
-    return roxieQueryInfo.getLink();
-}
-
-IWURoxieQueryInfo* CLocalWorkUnit::updateRoxieQueryInfo(const char *wuid, const char *roxieClusterName)
-{
-    // For this to be legally called, we must have the write-able interface. So we are already locked for write.
-    CriticalBlock block(crit);
-    if (!roxieQueryInfoCached)
-    {
-        IPropertyTree *s = p->queryPropTree("RoxieQueryInfo");
-        if (!s)
-            s = p->addPropTree("RoxieQueryInfo", createPTreeFromXMLString("<RoxieQueryInfo />"));
-        if (wuid && *wuid)
-            s->addProp("@wuid", wuid);
-
-        if (roxieClusterName && *roxieClusterName)
-            s->addProp("@roxieClusterName", roxieClusterName);
-
-        s->Link();
-        roxieQueryInfo.setown(new CLocalWURoxieQueryInfo(s)); 
-        roxieQueryInfoCached = true;
-    }
-    return roxieQueryInfo.getLink();
 }
 
 static int compareResults(IInterface * const *ll, IInterface * const *rr)
@@ -7572,102 +7482,6 @@ void CLocalWUWebServicesInfo::setText(const char *name, const char *info)
 {
     p->setProp(name, info);
 }
-
-
-//========================================================================================
-
-CLocalWURoxieQueryInfo::CLocalWURoxieQueryInfo(IPropertyTree *props) : p(props)
-{
-}
-
-IStringVal& CLocalWURoxieQueryInfo::getQueryInfo(IStringVal &str) const
-{
-    IPropertyTree *queryTree = p->queryPropTree("query");
-    if (queryTree)
-    {
-        StringBuffer temp;
-        toXML(queryTree, temp);
-        str.set(temp.str());
-    }
-
-    return str;
-}
-
-IStringVal& CLocalWURoxieQueryInfo::getDefaultPackageInfo(IStringVal &str) const
-{
-    MemoryBuffer mb;
-    p->getPropBin("RoxiePackages",mb);
-
-    if (mb.length())
-    {
-        unsigned len;
-        mb.read(len);
-        str.setLen((const char *) mb.readDirect(len), len);
-    }
-
-    return str;
-}
-
-IStringVal& CLocalWURoxieQueryInfo::getRoxieClusterName(IStringVal &str) const
-{
-    const char *val = p->queryProp("@roxieClusterName");
-    if (val)
-        str.set(val);
-    
-    return str;
-}
-
-IStringVal& CLocalWURoxieQueryInfo::getWuid(IStringVal &str) const
-{
-    const char *val = p->queryProp("@wuid");
-    if (val)
-        str.set(val);
-
-    return str;
-}
-
-
-void CLocalWURoxieQueryInfo::setQueryInfo(const char *info)
-{
-    IPropertyTree *queryTree = p->queryPropTree("query");
-    if (queryTree)
-        p->removeTree(queryTree);
-
-    IPropertyTree * tempTree = p->addPropTree("query", createPTreeFromXMLString(info));
-
-    if (!p->hasProp("@roxieClusterName"))
-    {
-        const char *roxieClusterName = tempTree->queryProp("@roxieName");
-        if (roxieClusterName && *roxieClusterName)
-            p->addProp("@roxieClusterName", roxieClusterName);
-    }
-
-    if (!p->hasProp("@wuid"))
-    {
-        const char *wuid = tempTree->queryProp("Query/@wuid");
-        if (wuid && *wuid)
-            p->addProp("@wuid", wuid);
-    }
-
-}
-
-void CLocalWURoxieQueryInfo::setDefaultPackageInfo(const char *info, int len)
-{
-    MemoryBuffer m;
-    serializeLPString(len, info, m);
-    p->setPropBin("RoxiePackages", m.length(), m.toByteArray());
-}
-
-void CLocalWURoxieQueryInfo::setRoxieClusterName(const char *info)
-{
-    p->setProp("@roxieClusterName", info);
-}
-
-void CLocalWURoxieQueryInfo::setWuid(const char *info)
-{
-    p->setProp("@wuid", info);
-}
-
 
 //========================================================================================
 

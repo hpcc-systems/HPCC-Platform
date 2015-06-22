@@ -166,7 +166,6 @@ public:
     void getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags);
     bool getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize);
 
-    void getRoxieCluster(IEspECLWorkunit &info, unsigned flags);
     void getWorkflow(IEspECLWorkunit &info, unsigned flags);
 
     void getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEspECLHelpFile>& helpers);
@@ -211,7 +210,7 @@ void getSashaNode(SocketEndpoint &ep);
 
 struct WsWuSearch
 {
-    WsWuSearch(IEspContext& context,const char* owner=NULL,const char* state=NULL,const char* cluster=NULL,const char* startDate=NULL,const char* endDate=NULL,const char* ecl=NULL,const char* jobname=NULL,const char* appname=NULL,const char* appkey=NULL,const char* appvalue=NULL);
+    WsWuSearch(IEspContext& context,const char* owner=NULL,const char* state=NULL,const char* cluster=NULL,const char* startDate=NULL,const char* endDate=NULL,const char* jobname=NULL);
 
     typedef std::vector<std::string>::iterator iterator;
 

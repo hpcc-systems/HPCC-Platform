@@ -614,7 +614,6 @@ void WsWuInfo::getApplicationValues(IEspECLWorkunit &info, unsigned flags)
 
             Owned<IEspApplicationValue> t= createApplicationValue("","");
             t->setApplication(val.getApplication(buf).str());
-            t->setValue(val.getValue(buf).str());
             t->setName(val.getName(buf).str());
             t->setValue(val.getValue(buf).str());
             av.append(*t.getLink());
@@ -871,22 +870,6 @@ void WsWuInfo::legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingDat
     }
 }
 
-
-
-void WsWuInfo::getRoxieCluster(IEspECLWorkunit &info, unsigned flags)
-{
-    if (version > 1.06)
-    {
-        Owned<IConstWURoxieQueryInfo> roxieQueryInfo = cw->getRoxieQueryInfo();
-        if (roxieQueryInfo)
-        {
-            SCMStringBuffer roxieClusterName;
-            roxieQueryInfo->getRoxieClusterName(roxieClusterName);
-            info.setRoxieCluster(roxieClusterName.str());
-        }
-    }
-}
-
 void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
 {
     info.setEventSchedule(0);
@@ -1005,8 +988,6 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
     cw->getTimeScheduled(dt);
     if(dt.isValid())
         info.setDateTimeScheduled(dt.getString(s).str());
-
-    getRoxieCluster(info, flags);
 }
 
 void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
@@ -1022,7 +1003,7 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
     info.setPriorityLevel(cw->getPriorityLevel());
     if (context.querySecManager())
         info.setScope(cw->queryWuScope());
-    info.setActionEx(cw->getActionEx(s).str());
+    info.setActionEx(cw->queryActionDesc());
     info.setDescription(cw->getDebugValue("description", s).str());
     if (version > 1.21)
         info.setXmlParams(cw->getXmlParams(s, true).str());
@@ -2217,46 +2198,33 @@ void WsWuInfo::getWorkunitAssociatedXml(const char* name, const char* ipAddress,
 
 
 
-WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,const char* cluster,const char* startDate,const char* endDate,const char* ecl,const char* jobname,const char* appname,const char* appkey,const char* appvalue)
+WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,const char* cluster,const char* startDate,const char* endDate,const char* jobname)
 {
     SecAccessFlags accessOwn;
     SecAccessFlags accessOthers;
     getUserWuAccessFlags(context, accessOwn, accessOthers, true);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    Owned<IConstWorkUnitIterator> it(factory->getWorkUnitsByOwner(owner)); // null owner means fetch all
 
-    StringBuffer xpath("*");
-    if(ecl && *ecl)
-        xpath.append("[Query/Text=?~\"*").append(ecl).append("*\"]");
-    if(state && *state)
-        xpath.append("[@state=\"").append(state).append("\"]");
-    if(cluster && *cluster)
-        xpath.append("[@clusterName=\"").append(cluster).append("\"]");
-    if(owner && *owner)
-        xpath.append("[@submitID=?~\"").append(owner).append("\"]");
-    if(jobname && *jobname)
-        xpath.append("[@jobName=?~\"*").append(jobname).append("*\"]");
-    if((appname && *appname) || (appkey && *appkey) || (appvalue && *appvalue))
-    {
-        xpath.append("[Application/").append(appname && *appname ? appname : "*");
-        xpath.append("/").append(appkey && *appkey ? appkey : "*");
-        if(appvalue && *appvalue)
-            xpath.append("=?~\"").append(appvalue).append("\"");
-        xpath.append("]");
-    }
-
-    Owned<IConstWorkUnitIterator> it(factory->getWorkUnitsByXPath(xpath.str()));
-
-    StringBuffer wuFrom, wuTo;
-    if(startDate && *startDate)
+    StringBuffer wuFrom, wuTo, jobPattern;
+    if (startDate && *startDate)
         createWuidFromDate(startDate, wuFrom);
-    if(endDate && *endDate)
+    if (endDate && *endDate)
         createWuidFromDate(endDate, wuTo);
+    if (jobname && *jobname)
+        jobPattern.appendf("*%s*", jobname);
 
     ForEach(*it)
     {
         IConstWorkUnitInfo &cw = it->query();
         if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
+            continue;
+        if (state && *state && !strieq(cw.queryStateDesc(), state))
+            continue;
+        if (cluster && *cluster && !strieq(cw.queryClusterName(), cluster))
+            continue;
+        if (jobPattern.length() && !WildMatch(cw.queryJobName(), jobPattern, true))
             continue;
 
         const char *wuid = cw.queryWuid();
@@ -2264,12 +2232,6 @@ WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,
             continue;
         if (wuTo.length() && strcmp(wuid, wuTo.str())>0)
             continue;
-
-        if (state && *state)
-        {
-            if(!strieq(cw.queryStateDesc(),state))
-                continue;
-        }
 
         wuids.push_back(wuid);
     }
@@ -2797,7 +2759,7 @@ int WUSchedule::run()
         while(!stopping)
         {
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            Owned<IConstWorkUnitIterator> itr = factory->getWorkUnitsByState(WUStateScheduled);
+            Owned<IConstWorkUnitIterator> itr = factory->getScheduledWorkUnits();
             if (itr)
             {
                 ForEach(*itr)

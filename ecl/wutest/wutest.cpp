@@ -430,7 +430,7 @@ protected:
             if (i % 6)
                 wu->setState(WUStateCompleted);
             else
-                wu->setState(WUStateFailed);
+                wu->setState(WUStateScheduled);
             wu->setUser(userId);
             wu->setClusterName(clusterName);
             if (i % 3)
@@ -932,30 +932,17 @@ protected:
         DBGLOG("%d non-existent workunits listed in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == 0);
 
-        // And by cluster
-        wus.setown(factory->getWorkUnitsByCluster("WuTestCluster0", NULL, NULL));
+        // Get Scheduled Workunits
+        wus.setown(factory->getScheduledWorkUnits(NULL, NULL));
         start = msTick();
         numIterated = 0;
         ForEach(*wus)
         {
             IConstWorkUnitInfo &wu = wus->query();
-            ASSERT(streq(wu.queryClusterName(), "WuTestCluster0"));
+            ASSERT(wu.getState() == WUStateScheduled);
             numIterated++;
         }
-        DBGLOG("%d cluster workunits listed in %d ms", numIterated, msTick()-start);
-        ASSERT(numIterated == (testSize+4)/5);
-
-        // And by state
-        wus.setown(factory->getWorkUnitsByState(WUStateFailed, NULL, NULL));
-        start = msTick();
-        numIterated = 0;
-        ForEach(*wus)
-        {
-            IConstWorkUnitInfo &wu = wus->query();
-            ASSERT(wu.getState() == WUStateFailed);
-            numIterated++;
-        }
-        DBGLOG("%d failed workunits listed in %d ms", numIterated, msTick()-start);
+        DBGLOG("%d scheduled workunits listed in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == (testSize+5)/6);
 
     }
