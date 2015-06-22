@@ -1287,7 +1287,7 @@ defineid
                         }
     | UNKNOWN_ID UNKNOWN_ID
                         {
-                            parser->reportError(ERR_UNKNOWN_TYPE, $1, "Unknown type '%s'", $1.getId()->str());
+                            parser->reportError(ERR_UNKNOWN_TYPE, $1, "Unknown type '%s'", str($1.getId()));
                             parser->beginDefineId($2.getId(), NULL);
                             $$.setType(NULL);
                             $$.setPosition($1);
@@ -2092,7 +2092,7 @@ transformDst
                         {
                             OwnedHqlExpr lhs = $1.getExpr();
                             if (lhs->isDataset())
-                                parser->reportError(ERR_ASSIGN_MEMBER_DATASET, $1, "Cannot directly assign to field %s within a child dataset", $3.queryExpr()->queryName()->str());
+                                parser->reportError(ERR_ASSIGN_MEMBER_DATASET, $1, "Cannot directly assign to field %s within a child dataset", str($3.queryExpr()->queryName()));
                             $$.setExpr(parser->createSelect(lhs.getClear(), $3.getExpr(), $3), $1);
                         }
     ;
@@ -2103,7 +2103,7 @@ transformDstRecord
                         {
                             OwnedHqlExpr lhs = $1.getExpr();
                             if (lhs->isDataset())
-                                parser->reportError(ERR_ASSIGN_MEMBER_DATASET, $1, "Cannot directly assign to field %s within a child dataset", $3.queryExpr()->queryName()->str());
+                                parser->reportError(ERR_ASSIGN_MEMBER_DATASET, $1, "Cannot directly assign to field %s within a child dataset", str($3.queryExpr()->queryName()));
                             $$.setExpr(parser->createSelect(lhs.getClear(), $3.getExpr(), $3), $1);
                         }
     | transformDstRecord '.' transformDstSelect leaveScope '[' expression ']'
@@ -3007,14 +3007,14 @@ hintList
 hintItem
     : hintName
                         {
-                            $$.setExpr(createExprAttribute($1.getId()->lower()));
+                            $$.setExpr(createExprAttribute(lower($1.getId())));
                             $$.setPosition($1);
                         }
     | hintName '(' beginList hintExprList ')'
                         {
                             HqlExprArray args;
                             parser->endList(args);
-                            $$.setExpr(createExprAttribute($1.getId()->lower(), args));
+                            $$.setExpr(createExprAttribute(lower($1.getId()), args));
                             $$.setPosition($1);
                         }
     ;
@@ -3060,7 +3060,7 @@ hintExpr
                         }
     | UNKNOWN_ID
                         {
-                            $$.setExpr(createAttribute($1.getId()->lower()), $1);
+                            $$.setExpr(createAttribute(lower($1.getId())), $1);
                         }
     ;
 
@@ -3931,22 +3931,22 @@ attrib
     : knownOrUnknownId EQ UNKNOWN_ID        
                         {
                             parser->reportWarning(CategoryDeprecated, SeverityError, WRN_OBSOLETED_SYNTAX,$1.pos,"Syntax obsoleted; use alternative: id = '<string constant>'");
-                            $$.setExpr(createAttribute($1.getId()->lower(), createConstant(*$3.getId())));
+                            $$.setExpr(createAttribute(lower($1.getId()), createConstant(*str($3.getId()))));
                         }
     | knownOrUnknownId EQ expr %prec reduceAttrib
                         {
                             //NOTE %prec is there to prevent a s/r error from the "SERVICE : attrib" production
-                            $$.setExpr(createExprAttribute($1.getId()->lower(), $3.getExpr()), $1);
+                            $$.setExpr(createExprAttribute(lower($1.getId()), $3.getExpr()), $1);
                         }
     | knownOrUnknownId                  
-                        {   $$.setExpr(createAttribute($1.getId()->lower()));  }
+                        {   $$.setExpr(createAttribute(lower($1.getId())));  }
     | knownOrUnknownId '(' expr ')'
                         {
-                            $$.setExpr(createExprAttribute($1.getId()->lower(), $3.getExpr()), $1);
+                            $$.setExpr(createExprAttribute(lower($1.getId()), $3.getExpr()), $1);
                         }
     | knownOrUnknownId '(' expr ',' expr ')'
                         {
-                            $$.setExpr(createExprAttribute($1.getId()->lower(), $3.getExpr(), $5.getExpr()), $1);
+                            $$.setExpr(createExprAttribute(lower($1.getId()), $3.getExpr(), $5.getExpr()), $1);
                         }
     ;
 
@@ -6237,7 +6237,7 @@ primexpr1
     | KEYUNICODE '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_unicode, false);
-                            $$.setExpr(createValue(no_keyunicode, makeDataType(UNKNOWN_LENGTH), $3.getExpr(), createConstant($3.queryExprType()->queryLocale()->str()), createConstant(3)));
+                            $$.setExpr(createValue(no_keyunicode, makeDataType(UNKNOWN_LENGTH), $3.getExpr(), createConstant(str($3.queryExprType()->queryLocale())), createConstant(3)));
                         }
     | KEYUNICODE '(' expression ',' expression ')'
                         {
@@ -6253,7 +6253,7 @@ primexpr1
                         {
                             parser->normalizeExpression($3, type_unicode, false);
                             parser->normalizeExpression($6, type_int, false);
-                            $$.setExpr(createValue(no_keyunicode, makeDataType(UNKNOWN_LENGTH), $3.getExpr(), createConstant($3.queryExprType()->queryLocale()->str()), $6.getExpr()));
+                            $$.setExpr(createValue(no_keyunicode, makeDataType(UNKNOWN_LENGTH), $3.getExpr(), createConstant(str($3.queryExprType()->queryLocale())), $6.getExpr()));
                         }
     | KEYUNICODE '(' expression ',' expression ',' expression ')'
                         {
@@ -6551,7 +6551,7 @@ primexpr1
                             parser->normalizeExpression($5, type_unicode, false);
                             ::Release(parser->checkPromoteType($3, $5));
                             IAtom * locale = parser->ensureCommonLocale($3, $5);
-                            $$.setExpr(createValue(no_unicodeorder, makeIntType(4, true), $3.getExpr(), $5.getExpr(), createConstant(locale->str()), createConstant(3)));
+                            $$.setExpr(createValue(no_unicodeorder, makeIntType(4, true), $3.getExpr(), $5.getExpr(), createConstant(str(locale)), createConstant(3)));
                         }
     | UNICODEORDER '(' expression ',' expression ',' expression ')'
                         {
@@ -6572,7 +6572,7 @@ primexpr1
                             IAtom * locale = parser->ensureCommonLocale($3, $5);
                             parser->normalizeExpression($8, type_int, false);
                             ::Release(parser->checkPromoteType($3, $5));
-                            $$.setExpr(createValue(no_unicodeorder, makeIntType(4, true), $3.getExpr(), $5.getExpr(), createConstant(locale->str()), $8.getExpr()));
+                            $$.setExpr(createValue(no_unicodeorder, makeIntType(4, true), $3.getExpr(), $5.getExpr(), createConstant(str(locale)), $8.getExpr()));
                         }
     | UNICODEORDER '(' expression ',' expression ',' expression ',' expression ')'
                         {
@@ -6670,7 +6670,7 @@ alienTypeInstance
                             else
                             {
                                 if (args)
-                                    parser->reportError(ERR_TYPE_NOPARAMNEEDED, $1, "Type does not require parameters: %s", $1.queryExpr()->queryName()->str());
+                                    parser->reportError(ERR_TYPE_NOPARAMNEEDED, $1, "Type does not require parameters: %s", str($1.queryExpr()->queryName()));
                                 alienExpr.setown($1.getExpr());
                             }
                             $$.setType(makeModifier(alienExpr->getType(), typemod_indirect, LINK(alienExpr)));
@@ -7015,7 +7015,7 @@ globalValueAttribute
                             else
                             {
                                 IIdAtom * name = parser->createFieldNameFromExpr(rhs);
-                                const char * text = name ? name->str() : "?";
+                                const char * text = name ? str(name) : "?";
                                 parser->reportError(ERR_OBJ_NOACTIVEDATASET, $1, "No active dataset to resolve field '%s'", text);
                                 $$.setExpr(createNullExpr(rhs));
                             }

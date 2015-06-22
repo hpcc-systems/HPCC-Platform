@@ -66,7 +66,7 @@ IHqlExpression* HqlGram::processAbstractDataset(IHqlExpression* _expr, IHqlExpre
                 getFriendlyTypeStr(kid,fromType);
                 getFriendlyTypeStr(match,toType);
                 reportError(ERR_DSPARAM_TYPEMISMATCH, errpos, "Can not mapping type %s(field '%s') to %s(field '%s')",
-                    fromType.str(), kid->queryName()->str(), toType.str(), match->queryName()->str());
+                    fromType.str(), str(kid->queryName()), toType.str(), str(match->queryName()));
                 hadError = true;
             }
             //MORE: This should really be mapped in a single go
@@ -75,7 +75,7 @@ IHqlExpression* HqlGram::processAbstractDataset(IHqlExpression* _expr, IHqlExpre
         }
         else if (errorIfNotFound)
         {
-            reportError(ERR_DSPARM_MISSINGFIELD,errpos,"Dataset %s has no field named '%s'", actual->queryName()->str(), mapto->str());
+            reportError(ERR_DSPARM_MISSINGFIELD,errpos,"Dataset %s has no field named '%s'", str(actual->queryName()), str(mapto));
             hadError = true;
         }
     }       
@@ -137,7 +137,7 @@ IIdAtom * HqlGram::fieldMapTo(IHqlExpression* mapping, IIdAtom * id)
     if (!mapping)
         return id;
 
-    IAtom * name = id->lower();
+    IAtom * name = lower(id);
     ForEachChild(i, mapping)
     {
         IHqlExpression * map = mapping->queryChild(i);
@@ -154,7 +154,7 @@ IIdAtom * HqlGram::fieldMapFrom(IHqlExpression* mapping, IIdAtom * id)
     if (!mapping)
         return id;
 
-    IAtom * name = id->lower();
+    IAtom * name = lower(id);
     ForEachChild(i, mapping)
     {
         IHqlExpression * map = mapping->queryChild(i);

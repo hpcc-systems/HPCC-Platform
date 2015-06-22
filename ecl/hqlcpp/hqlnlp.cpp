@@ -114,7 +114,7 @@ void MatchReference::getPath(StringBuffer & path)
     {
         if (idx)
             path.append(".");
-        path.append(queryPatternName(&names.item(idx))->lower());
+        path.append(lower(queryPatternName(&names.item(idx))));
     }
 }
 
@@ -123,10 +123,10 @@ StringBuffer & MatchReference::getDebugText(StringBuffer & out, RegexIdAllocator
     ForEachItemIn(i1, names)
     {
         IHqlExpression & curName = names.item(i1);
-        IAtom * name = queryPatternName(&curName)->lower();
+        IAtom * name = lower(queryPatternName(&curName));
         if (i1)
             out.append("/");
-        out.append(name->str());
+        out.append(str(name));
         out.append("{").append(idAllocator.queryID(curName.queryChild(0), name)).append("}");
         unsigned inst = (unsigned)indices.item(i1).queryValue()->getIntValue();
         if (inst != UNKNOWN_INSTANCE)
@@ -140,7 +140,7 @@ void MatchReference::compileMatched(RegexIdAllocator & idAllocator, UnsignedArra
     ForEachItemIn(idx, names)
     {
         IHqlExpression & curName = names.item(idx);
-        ids.append(idAllocator.queryID(curName.queryChild(0), queryPatternName(&curName)->lower()));
+        ids.append(idAllocator.queryID(curName.queryChild(0), lower(queryPatternName(&curName))));
         indexValues.append((unsigned)indices.item(idx).queryValue()->getIntValue());
     }
 }

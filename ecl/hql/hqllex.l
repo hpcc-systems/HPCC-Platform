@@ -75,7 +75,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
     if (lexer->macroParms)
     {
         StringBuffer macroval;
-        if (lexer->macroParms->getProp(name->str(), macroval))
+        if (lexer->macroParms->getProp(str(name), macroval))
         {
             lexer->pushText(macroval.str());
             return lexer->yyLex(returnToken, lookup, activeState);
@@ -99,7 +99,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         StringBuffer alternativeText;
         if (alternative && alternative->queryValue())
             alternative->queryValue()->getStringValue(alternativeText);
-        lexer->reportWarning(CategoryDeprecated, returnToken, ERR_DEPRECATED_ATTR, "Definition %s is marked as deprecated.  %s", name->str(), alternativeText.str());
+        lexer->reportWarning(CategoryDeprecated, returnToken, ERR_DEPRECATED_ATTR, "Definition %s is marked as deprecated.  %s", str(name), alternativeText.str());
     }                   
     
 #if defined(TRACE_MACRO)

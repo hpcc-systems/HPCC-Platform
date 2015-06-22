@@ -6,7 +6,7 @@
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.04
 
     Unless required by applicable law or agreed to in writing, software
     distributed under the License is distributed on an "AS IS" BASIS,
@@ -344,7 +344,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
     unsigned thisParam = (unsigned)-1;
     if (argumentId)
     {
-        IAtom * argumentName = argumentId->lower();
+        IAtom * argumentName = lower(argumentId);
         unsigned argNum = 0;
         for (unsigned i=0; i < numFormals; i++)
         {
@@ -356,7 +356,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
         }
 
         if (argNum == 0)
-            reportError(errpos, ERR_NAMED_PARAM_NOT_FOUND, "Named parameter '%s' not found in macro", argumentId->str());
+            reportError(errpos, ERR_NAMED_PARAM_NOT_FOUND, "Named parameter '%s' not found in macro", str(argumentId));
         else
             thisParam = argNum;
     }
@@ -389,7 +389,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
 //      if (macroParms->queryProp(formal->queryName()))
 //          reportError(errpos, ERR_NAMED_ALREADY_HAS_VALUE, "Parameter %s already has a value supplied", argumentName->str());
 //      else
-            macroParms->setProp(formal->queryName()->str(), curParam.str());
+            macroParms->setProp(str(formal->queryName()), curParam.str());
     }
     curParam.clear();
 }
@@ -464,7 +464,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
                     if (memicmp(text, "NAMED", 5) == 0)
                         text += 5;
                     while (isspace((byte)*text)) text++;
-                    if (strlen(possibleName->str()) == strlen(text))
+                    if (strlen(str(possibleName)) == strlen(text))
                     {
                         argumentName = possibleName;
                         possibleName = NULL;
@@ -504,7 +504,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         for (unsigned idx = parmno; idx < formalParmCt; idx++)
         {
             IHqlExpression* formal = formals->queryChild(idx);
-            if (!macroParms->queryProp(formal->queryName()->str()))
+            if (!macroParms->queryProp(str(formal->queryName())))
             {
                 IHqlExpression* def = queryDefaultValue(defaults, idx);
                 if (def)
@@ -518,7 +518,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
                         msg.append(" should be a constant value");
                         reportError(nextToken, ERR_PARAM_NODEFVALUE, "%s", msg.str());
                     }
-                    macroParms->setProp(formal->queryName()->str(), curParam.str());
+                    macroParms->setProp(str(formal->queryName()), curParam.str());
                     //PrintLog("Set macro parm: %s", curParam.str());
                     curParam.clear();
                 }
@@ -808,7 +808,7 @@ void HqlLex::doDeclare(YYSTYPE & returnToken)
         }
 
         name = returnToken.getId();
-        declareXmlSymbol(returnToken, name->getAtomNamePtr());
+        declareXmlSymbol(returnToken, str(name));
 
         tok = yyLex(returnToken, false,0);
         if (tok == ')')
@@ -902,7 +902,7 @@ void HqlLex::doSet(YYSTYPE & returnToken, bool append)
     {
         StringBuffer buf;
         value->getStringValue(buf);
-        setXmlSymbol(returnToken, name->getAtomNamePtr(), buf.str(), append);
+        setXmlSymbol(returnToken, str(name), buf.str(), append);
         value->Release();
     }
 }
@@ -1048,7 +1048,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         }
         catch (...)
         {
-            setXmlSymbol(returnToken, exportname->getAtomNamePtr(), "", false);
+            setXmlSymbol(returnToken, str(exportname), "", false);
             PrintLog("Unexpected exception in doExport()");
         }
         if (!more)
@@ -1057,9 +1057,9 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
     StringBuffer buf;
     toXML(data, buf, 0);
     if (toXml)
-        ensureTopXmlScope()->loadXML(buf.str(), exportname->getAtomNamePtr());
+        ensureTopXmlScope()->loadXML(buf.str(), str(exportname));
     else
-        setXmlSymbol(returnToken, exportname->getAtomNamePtr(), buf.str(), false);
+        setXmlSymbol(returnToken, str(exportname), buf.str(), false);
     data->Release();
 }
 
@@ -1169,7 +1169,7 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
     }
     ::Release(forLoop);
 
-    forLoop = getSubScopes(returnToken, name->getAtomNamePtr(), doAll);
+    forLoop = getSubScopes(returnToken, str(name), doAll);
     if (forFilterText.length())
         forFilter.setown(createFileContentsFromText(forFilterText, sourcePath));
     forBody.setown(createFileContentsFromText(forBodyText, sourcePath));
@@ -1396,7 +1396,7 @@ void HqlLex::doUniqueName(YYSTYPE & returnToken)
             else
                 reportError(returnToken, ERR_EXPECTED, "string expected");
         }
-        declareUniqueName(name->getAtomNamePtr(), pattern);
+        declareUniqueName(str(name), pattern);
     }
 
     if (tok != ')')

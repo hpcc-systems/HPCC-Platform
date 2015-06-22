@@ -688,14 +688,14 @@ int UnicodeValue::compare(IValue * to)
     ITypeInfo * toType = to->queryType();
     assertex(toType->getTypeCode()==type->getTypeCode());
     assertex(haveCommonLocale(type, toType));
-    char const * locale = getCommonLocale(type, toType)->str();
+    char const * locale = str(getCommonLocale(type, toType));
     return rtlCompareUnicodeUnicode(type->getStringLen(), (const UChar *)val.get(), toType->getStringLen(), (const UChar *)to->queryValue(), locale);
 }
 
 int UnicodeValue::compare(const void *mem)
 {
     size32_t len = type->getStringLen();
-    return rtlCompareUnicodeUnicode(len, (const UChar *)val.get(), len, (const UChar *)mem, type->queryLocale()->str());
+    return rtlCompareUnicodeUnicode(len, (const UChar *)val.get(), len, (const UChar *)mem, str(type->queryLocale()));
 }
 
 bool UnicodeValue::getBoolValue()
@@ -781,7 +781,7 @@ IValue *createUnicodeValue(char const * value, ITypeInfo * type)
     if(type->getSize() == UNKNOWN_LENGTH)
     {
         type->Release();
-        return createUnicodeValue(value, (size32_t)strlen(value), type->queryLocale()->str(), false);
+        return createUnicodeValue(value, (size32_t)strlen(value), str(type->queryLocale()), false);
     }
     return createUnicodeValue(value, type, type->getStringLen());
 }
@@ -791,7 +791,7 @@ IValue *createUnicodeValue(char const * value, ITypeInfo * type, unsigned srclen
     if(type->getSize() == UNKNOWN_LENGTH)
     {
         type->Release();
-        return createUnicodeValue(value, srclen, type->queryLocale()->str(), false);
+        return createUnicodeValue(value, srclen, str(type->queryLocale()), false);
     }
     UChar * buff = (UChar *)checked_malloc(type->getSize(), DEFVALUE_MALLOC_FAILED);
     rtlCodepageToUnicode(type->getStringLen(), buff, srclen, value, "US-ASCII");
@@ -917,7 +917,7 @@ int VarUnicodeValue::compare(IValue * to)
     ITypeInfo * toType = to->queryType();
     assertex(toType->getTypeCode()==type->getTypeCode());
     assertex(haveCommonLocale(type, toType));
-    char const * locale = getCommonLocale(type, toType)->str();
+    char const * locale = str(getCommonLocale(type, toType));
     UChar const * rhs = (UChar const *) to->queryValue();
     return rtlCompareUnicodeUnicode(val.length(), val.get(), rtlUnicodeStrlen(rhs), rhs, locale);
 }
@@ -925,7 +925,7 @@ int VarUnicodeValue::compare(IValue * to)
 int VarUnicodeValue::compare(const void * mem)
 {
     UChar const * rhs = (UChar const *) mem;
-    return rtlCompareUnicodeUnicode(val.length(), val.get(), rtlUnicodeStrlen(rhs), rhs, type->queryLocale()->str());
+    return rtlCompareUnicodeUnicode(val.length(), val.get(), rtlUnicodeStrlen(rhs), rhs, str(type->queryLocale()));
 }
 
 bool VarUnicodeValue::getBoolValue()
@@ -1101,7 +1101,7 @@ IValue *Utf8Value::castTo(ITypeInfo *t)
     case type_unicode:
     case type_varunicode:
         {
-            Owned<IValue> temp = createUnicodeValue(data, rtlUtf8Size(olen, data), t->queryLocale()->str(), true, false);
+            Owned<IValue> temp = createUnicodeValue(data, rtlUtf8Size(olen, data), str(t->queryLocale()), true, false);
             return temp->castTo(t);
         }
     case type_utf8:
@@ -1142,14 +1142,14 @@ int Utf8Value::compare(IValue * to)
     ITypeInfo * toType = to->queryType();
     assertex(toType->getTypeCode()==type->getTypeCode());
     assertex(haveCommonLocale(type, toType));
-    char const * locale = getCommonLocale(type, toType)->str();
+    char const * locale = str(getCommonLocale(type, toType));
     return rtlCompareUtf8Utf8(type->getStringLen(), (const char *)val.get(), toType->getStringLen(), (const char *)to->queryValue(), locale);
 }
 
 int Utf8Value::compare(const void *mem)
 {
     size32_t len = type->getStringLen();
-    return rtlCompareUtf8Utf8(len, (const char *)val.get(), len, (const char *)mem, type->queryLocale()->str());
+    return rtlCompareUtf8Utf8(len, (const char *)val.get(), len, (const char *)mem, str(type->queryLocale()));
 }
 
 bool Utf8Value::getBoolValue()

@@ -653,7 +653,7 @@ static void typeError(const char *expected, const CassValue *value, const RtlFie
 {
     VStringBuffer msg("cassandra: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", field->name->str());
+        msg.appendf(" for field %s", str(field->name));
     if (value)
         msg.appendf(", received %s", getTypeName(cass_value_type(value)));
     rtlFail(0, msg.str());
@@ -1047,7 +1047,7 @@ protected:
         else
             ret = cass_row_get_column(stmtInfo->queryRow(), colIdx++);
         if (!ret)
-            failx("Too many fields in ECL output row, reading field %s", field->name->getAtomNamePtr());
+            failx("Too many fields in ECL output row, reading field %s", str(field->name));
         return ret;
     }
     const CassandraStatementInfo *stmtInfo;

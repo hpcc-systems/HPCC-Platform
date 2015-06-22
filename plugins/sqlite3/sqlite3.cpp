@@ -94,7 +94,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("sqlite3: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", field->name->str());
+        msg.appendf(" for field %s", str(field->name));
     rtlFail(0, msg.str());
 }
 
