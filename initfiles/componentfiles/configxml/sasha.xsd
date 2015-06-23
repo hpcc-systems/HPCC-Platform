@@ -24,12 +24,12 @@
             <xs:documentation>Describes a Sasha server installation</xs:documentation>
         </xs:annotation>
         <xs:complexType>
-            <!--5/15-GP-added-for-auto-doc-build-->
-	    		         <xs:annotation>
-	    		                  <xs:appinfo>
-	    		                      <docid>sh.t1</docid>
-	    		                  </xs:appinfo>
-			        </xs:annotation>  
+        <!--DOC-Autobuild-code-->
+	<xs:annotation>
+	   <xs:appinfo>
+	    	<docid>sh.t1</docid>
+	   </xs:appinfo>
+	</xs:annotation>  
             <xs:sequence>
                 <xs:element name="Instance" maxOccurs="unbounded">
                     <xs:annotation>
@@ -199,12 +199,12 @@
         </xs:complexType>
     </xs:element>
     <xs:attributeGroup name="Archiver">
-         <!--5/15-GP-added-for-auto-doc-build-->
-         		         <xs:annotation>
-         		                  <xs:appinfo>
-         		                      <docid>sh.t2</docid>
-         		                  </xs:appinfo>
-     		                 </xs:annotation>  
+     <!--DOC-Autobuild-code-->
+     <xs:annotation>
+        <xs:appinfo>
+          <docid>sh.t2</docid>
+         </xs:appinfo>
+     	</xs:annotation>  
         <xs:attribute name="WUlimit" type="xs:nonNegativeInteger" use="optional" default="1000">
             <xs:annotation>
                 <xs:appinfo>
@@ -361,12 +361,12 @@
         </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="Coalescer">
-          <!--5/15-GP-added-for-auto-doc-build-->
-                <xs:annotation>
-                     <xs:appinfo>
-                        <docid>sh.t3</docid>
-                     </xs:appinfo>
-      	        </xs:annotation>  
+     <!--DOC-Autobuild-code-->
+      <xs:annotation>
+         <xs:appinfo>
+            <docid>sh.t3</docid>
+         </xs:appinfo>
+      </xs:annotation>  
         <xs:attribute name="coalesceInterval" type="xs:nonNegativeInteger" default="1">
             <xs:annotation>
                 <xs:appinfo>
@@ -397,12 +397,12 @@
         </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="DfuXRef">
-             <!--5/15-GP-added-for-auto-doc-build-->
-                    <xs:annotation>
-                         <xs:appinfo>
-                            <docid>sh.t4</docid>
-                         </xs:appinfo>
-          	        </xs:annotation>  
+    <!--DOC-Autobuild-code-->
+      <xs:annotation>
+         <xs:appinfo>
+            <docid>sh.t4</docid>
+         </xs:appinfo>
+       </xs:annotation>  
         <xs:attribute name="xrefInterval" type="xs:nonNegativeInteger" default="672">
             <xs:annotation>
                 <xs:appinfo>
@@ -461,12 +461,12 @@
         </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="DfuExpiry">
-             <!--5/15-GP-added-for-auto-doc-build-->
-                    <xs:annotation>
-                         <xs:appinfo>
-                            <docid>sh.t5</docid>
-                         </xs:appinfo>
-          	        </xs:annotation>  
+    <!--DOC-Autobuild-code-->
+     <xs:annotation>
+        <xs:appinfo>
+           <docid>sh.t5</docid>
+        </xs:appinfo>
+     </xs:annotation>  
         <xs:attribute name="ExpiryInterval" type="xs:nonNegativeInteger" default="24">
             <xs:annotation>
                 <xs:appinfo>
@@ -497,12 +497,12 @@
         </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="ThorQMon">
-             <!--5/15-GP-added-for-auto-doc-build-->
-                    <xs:annotation>
-                         <xs:appinfo>
-                            <docid>sh.t6</docid>
-                         </xs:appinfo>
-          	        </xs:annotation>  
+     <!--DOC-Autobuild-code-->
+      <xs:annotation>
+         <xs:appinfo>
+            <docid>sh.t6</docid>
+          </xs:appinfo>
+      </xs:annotation>  
         <xs:attribute name="thorQMonQueues" type="xs:string" use="optional" default="*">
             <xs:annotation>
                 <xs:appinfo>
@@ -526,12 +526,12 @@
         </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="DaFileSrvMonitor">
-             <!--5/15-GP-added-for-auto-doc-build-->
-                    <xs:annotation>
-                         <xs:appinfo>
-                            <docid>sh.t7</docid>
-                         </xs:appinfo>
-          	        </xs:annotation>  
+    <!--DOC-Autobuild-code-->
+      <xs:annotation>
+         <xs:appinfo>
+            <docid>sh.t7</docid>
+         </xs:appinfo>
+      </xs:annotation>  
         <xs:attribute name="dafsmonInterval" type="xs:nonNegativeInteger" default="0">
             <xs:annotation>
                 <xs:appinfo>
