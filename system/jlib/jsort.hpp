@@ -77,6 +77,7 @@ extern jlib_decl void qsortvec(void **a, size32_t n, const ICompare & compare1, 
 // Call with n rows of data in rows, index an (uninitialized) array of size n. The function will fill index with a stably sorted index into rows.
 extern jlib_decl void qsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp);
 extern jlib_decl void msortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp);
+extern jlib_decl void parmsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp, unsigned ncpus=0);
 
 
 extern jlib_decl void parqsortvec(void **a, size32_t n, const ICompare & compare, unsigned ncpus=0); // runs in parallel on multi-core

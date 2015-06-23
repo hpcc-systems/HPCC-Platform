@@ -3801,21 +3801,32 @@ void CHThorGroupSortActivity::createSorter()
         return;
     }
     if(stricmp(algoname, "quicksort") == 0)
+    {
         if((flags & TAFstable) != 0)
             sorter.setown(new CStableQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
         else
             sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
+    }
     else if(stricmp(algoname, "parquicksort") == 0)
         sorter.setown(new CParallelStableQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
     else if(stricmp(algoname, "mergesort") == 0)
-        sorter.setown(new CStableMergeSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
+    {
+        if((flags & TAFparallel) != 0)
+            sorter.setown(new CParallelStableMergeSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
+        else
+            sorter.setown(new CStableMergeSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
+    }
+    else if(stricmp(algoname, "parmergesort") == 0)
+        sorter.setown(new CParallelStableMergeSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
     else if(stricmp(algoname, "heapsort") == 0)
         sorter.setown(new CHeapSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
     else if(stricmp(algoname, "insertionsort") == 0)
+    {
         if((flags & TAFstable) != 0)
             sorter.setown(new CStableInsertionSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
         else
             sorter.setown(new CInsertionSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
+    }
     else
     {
         StringBuffer sb;
@@ -4021,6 +4032,17 @@ void CStableMergeSorter::performSort()
     {
         const void * * rows = rowsToSort.getBlock(numRows);
         msortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
+        finger = 0;
+    }
+}
+
+void CParallelStableMergeSorter::performSort()
+{
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        parmsortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
         finger = 0;
     }
 }
