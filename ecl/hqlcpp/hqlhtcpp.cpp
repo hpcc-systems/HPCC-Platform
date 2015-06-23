@@ -1661,7 +1661,7 @@ enum { createPrio = 1000, inputPrio = 3000, readyPrio = 4000, goPrio = 5000, don
 
 ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ctx, ThorActivityKind _kind, IHqlExpression * _dataset, const char * _activityArgName) :
     HqlExprAssociation(activeActivityMarkerExpr),
-    translator(_translator), classctx(ctx), startctx(ctx), createctx(ctx), nestedctx(ctx), onstartctx(ctx)
+    translator(_translator), classctx(ctx), startctx(ctx), createctx(ctx), nestedctx(ctx), onstartctx(ctx), numChildQueries(0)
 {
     dataset.set(_dataset);
     kind = _kind;
@@ -2252,6 +2252,9 @@ void ActivityInstance::buildPrefix()
 
 void ActivityInstance::buildSuffix()
 {
+    if (numChildQueries)
+        addAttributeInt("childQueries", numChildQueries);
+
     //Paranoid check to ensure that library classes aren't used when member functions were required
     if (implementationClassName && (initialGroupMarker != classGroup->numChildren()))
         throwUnexpectedX("Implementation class created, but member functions generated");

@@ -746,6 +746,7 @@ struct HqlCppOptions
     bool                expandSelectCreateRow;
     bool                obfuscateOutput;
     bool                showEclInGraph;
+    bool                showChildCountInGraph;
     bool                optimizeSortAllFields;
     bool                optimizeSortAllFieldsStrict;
     bool                alwaysReuseGlobalSpills;
