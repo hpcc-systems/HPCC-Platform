@@ -560,6 +560,8 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     case no_datasetfromrow:
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
     case no_section:
     case no_sectioninput:
         return buildNewRow(ctx, expr->queryChild(0));
@@ -2163,6 +2165,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
     case no_sorted:
     case no_nofold:
     case no_nohoist:
+    case no_nocombine:
     case no_section:
     case no_sectioninput:
         buildDataset(ctx, expr->queryChild(0), tgt, format);
@@ -2469,6 +2472,8 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     case no_sorted:
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
     case no_section:
     case no_sectioninput:
         buildDatasetAssign(ctx, target, expr->queryChild(0));
@@ -3475,6 +3480,8 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
     case no_sorted:
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
     case no_section:
     case no_sectioninput:
         buildDatasetAssign(subctx, target, expr->queryChild(0));
@@ -3936,6 +3943,8 @@ BoundRow * HqlCppTranslator::buildDatasetIterate(BuildCtx & ctx, IHqlExpression 
     case no_sorted:
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
         return buildDatasetIterate(ctx, expr->queryChild(0), needToBreak);
     case no_sectioninput:
     case no_section:
@@ -4439,6 +4448,8 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
         doBuildRowAssignNullRow(ctx, target, expr);
         return;
     case no_nofold:
+    case no_forcegraph:
+    case no_nocombine:
         buildRowAssign(ctx, target, expr->queryChild(0));
         return;
     case no_serialize:

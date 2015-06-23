@@ -312,6 +312,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   NAMESPACE
   NOBOUNDCHECK
   NOCASE
+  NOCOMBINE
   NOFOLD
   NOHOIST
   NOLOCAL
@@ -2567,6 +2568,10 @@ actionStmt
     | NOFOLD '(' action ')'
                         {
                             $$.setExpr(createValue(no_nofold, makeVoidType(), $3.getExpr()), $1);
+                        }
+    | NOCOMBINE '(' action ')'
+                        {
+                            $$.setExpr(createValue(no_nocombine, makeVoidType(), $3.getExpr()), $1);
                         }
     | NOTHOR '(' action ')'
                         {
@@ -5887,6 +5892,12 @@ primexpr1
                             IHqlExpression * expr = $3.getExpr();
                             $$.setExpr(createValue(no_nofold, expr->getType(), expr));
                         }
+    | NOCOMBINE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3);
+                            IHqlExpression * expr = $3.getExpr();
+                            $$.setExpr(createValue(no_nocombine, expr->getType(), expr));
+                        }
     | NOHOIST '(' expression ')'
                         {
                             parser->normalizeExpression($3);
@@ -7286,6 +7297,11 @@ simpleDataRow
                             $$.setExpr(createRow(no_nofold, $3.getExpr(), NULL));
                             $$.setPosition($1);
                         }
+    | NOCOMBINE '(' dataRow ')'
+                        {
+                            $$.setExpr(createRow(no_nocombine, $3.getExpr(), NULL));
+                            $$.setPosition($1);
+                        }
     | NOHOIST '(' dataRow ')'
                         {
                             $$.setExpr(createRow(no_nohoist, $3.getExpr(), NULL));
@@ -7380,6 +7396,11 @@ simpleDictionary
     | NOFOLD '(' dictionary ')'
                         {
                             $$.setExpr(createDictionary(no_nofold, $3.getExpr(), NULL));
+                            $$.setPosition($1);
+                        }
+    | NOCOMBINE '(' dictionary ')'
+                        {
+                            $$.setExpr(createDictionary(no_nocombine, $3.getExpr(), NULL));
                             $$.setPosition($1);
                         }
     | NOHOIST '(' dictionary ')'
@@ -8361,6 +8382,11 @@ simpleDataSet
     | NOFOLD '(' dataSet ')'
                         {
                             $$.setExpr(createDataset(no_nofold, $3.getExpr(), NULL));
+                            $$.setPosition($1);
+                        }
+    | NOCOMBINE '(' dataSet ')'
+                        {
+                            $$.setExpr(createDataset(no_nocombine, $3.getExpr(), NULL));
                             $$.setPosition($1);
                         }
     | NOHOIST '(' dataSet ')'

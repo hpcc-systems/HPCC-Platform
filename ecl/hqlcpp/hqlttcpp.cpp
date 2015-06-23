@@ -98,6 +98,7 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
         case no_preservemeta:
         case no_nofold:
         case no_nohoist:
+        case no_nocombine:
         case no_section:
         case no_sectioninput:
         case no_dataset_alias:
@@ -7198,6 +7199,7 @@ bool ScalarGlobalTransformer::isCandidate(IHqlExpression * expr)
         switch (op)
         {
         case no_nofold:
+        case no_nocombine:
             //try to hoist the thing that is nofolded instead
             return false;
         default:

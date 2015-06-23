@@ -2385,6 +2385,8 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
     case no_nohoist:
     case no_section:
     case no_sectioninput:
+    case no_forcegraph:
+    case no_nocombine:
         buildExprAssign(ctx, target, expr->queryChild(0));
         break;
     case no_realformat:
@@ -3251,6 +3253,8 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_section:
     case no_sectioninput:
     case no_pure:
+    case no_forcegraph:
+    case no_nocombine:
         buildExpr(ctx, expr->queryChild(0), tgt);
         return;
     case no_band:
@@ -3633,6 +3637,8 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_nothor:
     case no_section:
     case no_sectioninput:
+    case no_forcegraph:
+    case no_nocombine:
         buildStmt(ctx, expr->queryChild(0));
         return;
     case no_null:

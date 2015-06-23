@@ -363,6 +363,8 @@ IHqlExpression * KeyedJoinInfo::querySimplifiedKey(IHqlExpression * expr)
         case no_assertgrouped:
         case no_assertdistributed:
         case no_nofold:
+        case no_forcegraph:
+        case no_nocombine:
             break;
         case no_newkeyindex:
             return LINK(expr);

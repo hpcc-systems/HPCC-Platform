@@ -6593,6 +6593,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_grouped:
             case no_nofold:
             case no_nohoist:
+            case no_nocombine:
             case no_globalscope:
             case no_thisnode:
             case no_forcegraph:
@@ -8187,6 +8188,27 @@ static void unwindAddFiles(HqlExprArray & args, IHqlExpression * expr, bool isOr
         args.append(*LINK(expr));
 }
 
+static IHqlExpression * queryRootConcatActivity(IHqlExpression * expr)
+{
+    loop
+    {
+        node_operator curOp = expr->getOperator();
+        switch (curOp)
+        {
+        case no_nofold:
+        case no_section:
+        case no_sectioninput:
+        case no_preservemeta:
+        case no_nocombine:
+        case no_forcegraph:
+            break;
+        default:
+            return expr;
+        }
+        expr = expr->queryChild(0);
+    }
+}
+
 ABoundActivity * HqlCppTranslator::doBuildActivityConcat(BuildCtx & ctx, IHqlExpression * expr)
 {
     HqlExprArray inExprs;
@@ -8202,13 +8224,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityConcat(BuildCtx & ctx, IHqlExp
         IHqlExpression * cur = &inExprs.item(idx);
         bound.append(*buildCachedActivity(ctx, cur));
 
-        loop
-        {
-            node_operator curOp = cur->getOperator();
-            if ((curOp != no_nofold) && (curOp != no_section) && (curOp != no_sectioninput) && (curOp != no_preservemeta))
-                break;
-            cur = cur->queryChild(0);
-        }
+        cur = queryRootConcatActivity(cur);
 
         switch (cur->getOperator())
         {
@@ -18882,6 +18898,7 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_forcegraph:
     case no_nofold:
     case no_nohoist:
+    case no_nocombine:
     case no_actionlist:
     case no_orderedactionlist:
     case no_compound_fetch:
