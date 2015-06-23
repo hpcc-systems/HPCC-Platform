@@ -260,7 +260,7 @@ public:
         fprintf(stdout,
             "   --main=<definition>    Definition to use from legacy ECL repository\n"
             "   --snapshot,-sn=<label> Snapshot label to use from legacy ECL repository\n"
-            "   --ecl-only             Send ECL query to HPCC as text rather than as an archive\n"
+            "   --ecl-only             Send ECL query to HPCC as text rather than as a generated archive\n"
             "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
             "   -f<option>[=value]     Set an ECL option (equivalent to #option)\n"
             "   -Dname=value           Override the definition of a global attribute 'name'\n"
