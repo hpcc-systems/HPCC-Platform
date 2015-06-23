@@ -823,6 +823,8 @@ class TbbParallelMergeSorter
                 //On entry next is assumed to be used once by this function
                 if ((n <= multiThreadedBlockThreshold) || (depth >= sorter.singleThreadDepth))
                 {
+                    //Create a new task rather than calling sort directly, so that the successor is set up correctly
+                    //It would be possible to sort then if (next->decrement_ref_count()) return next; instead
                     task * sort = new (next->allocate_child()) SubSortTask(sorter, rows, n, temp, depth);
                     return sort;
                 }
@@ -839,7 +841,6 @@ class TbbParallelMergeSorter
                     task * mergeRevTask = new (next->allocate_child()) MergeRevTask(sorter.compare, result, n1, src, n2, src+n1, n2);
                     mergeRevTask->set_ref_count(1);
                     mergeTask = new (allocate_root()) SplitTask(mergeFwdTask, mergeRevTask);
-
                 }
                 else
                 {
@@ -931,7 +932,7 @@ public:
     TbbParallelMergeSorter(void * * _rows, const ICompare & _compare) : compare(_compare), baseRows(_rows)
     {
         //The following constants control the number of iterations to be performed in parallel.
-        //The sort is split into more parts than there are cpus so that the effect of delays one task tend to be evened out.
+        //The sort is split into more parts than there are cpus so that the effect of delays from one task tend to be evened out.
         //The following constants should possibly be tuned on each platform.  The following gave a good balance on a 2x8way xeon
         const unsigned extraBisectDepth = 3;
         const unsigned extraParallelMergeDepth = 3;
@@ -944,9 +945,6 @@ public:
         parallelMergeDepth = ln2NumCpus+ extraParallelMergeDepth;
         //Aim to execute in parallel until the width is 8*the maximum number of parallel task
         singleThreadDepth = ln2NumCpus + extraBisectDepth;
-    }
-    ~TbbParallelMergeSorter()
-    {
     }
 
     void sortRoot(void ** rows, size32_t n, void ** temp)
