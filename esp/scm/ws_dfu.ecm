@@ -150,6 +150,7 @@ ESPrequest [nil_remove] DFUQueryRequest
     string Prefix;
     [depr_ver("1.26")] string ClusterName;
     [min_ver("1.26")] string NodeGroup;
+    [min_ver("1.30")] string ContentType;
     string LogicalName;
     string Description;
     string Owner;
@@ -681,7 +682,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 
 //  ===========================================================================
 ESPservice [
-    version("1.29"),
+    version("1.30"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
