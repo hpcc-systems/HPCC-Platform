@@ -32,9 +32,16 @@
         <row>
           <entry><inlinegraphic fileref="../../images/caution.png" /></entry>
 
-          <entry><emphasis role="bold">You should not attempt this until you
-          have already deployed, configured, and certified the environment you
-          will use.</emphasis></entry>
+          <entry><emphasis role="bold">When implementing any form of
+          authentication, we strongly recommend that you enable your ESP
+          server to use HTTPS (SSL) and set ALL service bindings to only use
+          HTTPS. This ensures that credentials are passed over the network
+          using SSL encryption. See </emphasis><link
+          linkend="ssl4esp"><emphasis>Configuring ESP Server to use HTTPS
+          (SSL)</emphasis></link> <emphasis role="bold">for details.
+          </emphasis><para><emphasis role="bold">You should not attempt this
+          until you have already deployed, configured, and certified the
+          environment you will use. </emphasis></para></entry>
         </row>
       </tbody>
     </tgroup>
@@ -619,10 +626,10 @@
 
       <para>The <emphasis role="bold">initldap</emphasis> utility prompts you
       for LDAP Administrator credentials. Enter the appropriate values when
-      prompted. </para>
+      prompted.</para>
 
       <para>The following example of initldap for a 389DirectoryServer
-      deployment. </para>
+      deployment.</para>
 
       <para><programlisting>Enter the '389DirectoryServer' LDAP Admin User name on '10.123.456.78'...Directory Manager        
 Enter the LDAP Admin user 'Directory Manager' password...********
