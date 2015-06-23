@@ -115,7 +115,7 @@
             <entry><emphasis role="bold">NOINPUT</emphasis></entry>
 
             <entry>Optional. If NOINPUT is specified, the field is not
-            displayed on the Web form in WsECL.</entry>
+            displayed on the Web form in WsECL. </entry>
           </row>
 
           <row>
@@ -123,7 +123,9 @@
 
             <entry>Optional. If PASSWORD is specified, a password entry box is
             used on the Web form in WsECL and the field's supplied value is
-            not displayed while entering it.</entry>
+            not displayed while entering it. The value is also hidden when
+            viewing stored values in the workunit through EclWatch or from the
+            command line when extracting the WU XML.</entry>
           </row>
         </tbody>
       </tgroup>
