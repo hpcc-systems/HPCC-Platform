@@ -172,7 +172,8 @@ public:
 
     virtual void beginNode(const char *tag, offset_t startOffset)
     {
-        if (resultChildTags.getValue(tag))
+        bool *pIsResultTag = resultChildTags.getValue(tag);
+        if (pIsResultTag && *pIsResultTag)
             resultlevel++;
         if (resultlevel)
             buffer.append('<').append(tag);
@@ -224,7 +225,8 @@ public:
                     encodeUtf8XML((const char *)value, buffer);
             }
             buffer.append("</").append(tag).append('>');
-            if (resultChildTags.getValue(tag))
+            bool *pIsResultTag = resultChildTags.getValue(tag);
+            if (pIsResultTag && *pIsResultTag)
                 resultlevel--;
         }
     }
