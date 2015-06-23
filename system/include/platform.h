@@ -249,9 +249,15 @@ typedef unsigned long MaxCard;
 
 #endif // (_MSC_VER>=1400)
 
+#define likely(x)       (x)
+#define unlikely(x)     (x)
+
 // **** END   OF WIN32 SPECIFIC SECTION ****
 #else
 // **** START OF UNIX GENERAL SECTION ****
+
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
 
 #define _stdcall
 #define __stdcall

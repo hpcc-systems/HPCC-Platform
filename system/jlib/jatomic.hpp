@@ -65,6 +65,9 @@ typedef volatile long atomic_t;
 //Used to prevent a compiler reordering volatile and non-volatile loads/stores
 #define compiler_memory_barrier()           _ReadWriteBarrier()
 
+#define atomic_acquire(v)               atomic_cas(v, 1, 0)
+#define atomic_release(v)               { compiler_memory_barrier(); atomic_set(v, 0); }
+
 #elif defined(__GNUC__)
 
 typedef struct { volatile int counter; } atomic_t;
@@ -148,6 +151,28 @@ static __inline__ bool atomic_cas_ptr(void **v,void *newvalue, void *expectedval
 
 #define compiler_memory_barrier() asm volatile("": : :"memory")
 
+static __inline__ bool atomic_acquire(atomic_t *v)
+{
+#if defined(_ARCH_X86_64_) || defined(_ARCH_X86_)
+    //For some reason gcc targeting x86 generates code for atomic_cas() that requires fewer registers
+    return atomic_cas(v, 1, 0);
+#else
+    return __sync_lock_test_and_set(&v->counter, 1) == 0;
+#endif
+}
+
+static __inline__ void atomic_release(atomic_t *v)
+{
+#if defined(_ARCH_X86_64_) || defined(_ARCH_X86_)
+    //x86 has a strong memory model, so the following code is sufficient, and some older gcc compilers generate
+    //an unnecessary mfence instruction, so for x86 use the following which generates better code.
+    compiler_memory_barrier();
+    atomic_set(v, 0);
+#else
+    __sync_lock_release(&v->counter);
+#endif
+}
+
 #else // other unix
 
 //Truely awful implementations of atomic operations...
@@ -179,6 +204,9 @@ void jlib_decl poor_compiler_memory_barrier();
 #define atomic_xchg_ptr(p, v)               poor_atomic_xchg_ptr(p, v)
 #define atomic_cas_ptr(v,newvalue,expectedvalue)    poor_atomic_cas_ptr(v,newvalue,expectedvalue)
 #define compiler_memory_barrier()       poor_compiler_memory_barrier()
+
+#define atomic_acquire(v)               atomic_cas(v, 1, 0)
+#define atomic_release(v)               { compiler_memory_barrier(); atomic_set(v, 0); }
 
 #endif
 
