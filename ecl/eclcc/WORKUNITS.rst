@@ -709,6 +709,14 @@ IGlobalCodeContext
 Glossary
 --------
 
+activity
+    An activity is the basic unit of dataset processing implemented by the engines.  Each activity corresponds to a node
+    in the thor execution graph.  Instances of the activities are connnected together to create the graph.
+
+dll
+    A dynamically loaded library.  These correspond to shared objects in Linux (extension '.so'), dynamic libraries
+    in Max OS X ('.dylib'), and dynamic link libraries in windows ('.dll').
+
 superfile
     A composite file which allows a collection of files to be treated as a single compound file.
 
