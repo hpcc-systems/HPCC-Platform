@@ -640,8 +640,7 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 <row>
                   <entry>--ecl-only</entry>
 
-                  <entry>Send ecl text to hpcc without generating
-                  archive</entry>
+                  <entry>Send ECL query to HPCC as text rather than as an archive</entry>
                 </row>
 
                 <row>
@@ -937,8 +936,7 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 <row>
                   <entry>--ecl-only</entry>
 
-                  <entry>Send ecl text to hpcc without generating
-                  archive</entry>
+                  <entry>Send ECL query to HPCC as text rather than as an archive</entry>
                 </row>
 
                 <row>
