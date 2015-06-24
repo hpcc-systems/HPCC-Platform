@@ -3118,6 +3118,12 @@ void CWsDfuEx::setFileNameFilter(const char* fname, const char* prefix, StringBu
     filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(fileNameFilter.str()).append(DFUQFilterSeparator);
 }
 
+void CWsDfuEx::setFileIterateFilter(unsigned maxFiles, StringBuffer &filterBuf)
+{
+    filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFMaxFiles).append(DFUQFilterSeparator)
+        .append(maxFiles).append(DFUQFilterSeparator);
+}
+
 void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filterBuf)
 {
     setFileNameFilter(req.getLogicalName(), req.getPrefix(), filterBuf);
@@ -3485,13 +3491,22 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
         pageSize = firstN;
     }
 
+    unsigned maxFiles = 0;
+    if(!req.getMaxNumberOfFiles_isNull())
+        maxFiles = req.getMaxNumberOfFiles();
+    if (maxFiles == 0)
+        maxFiles = ITERATE_FILTEREDFILES_LIMIT;
+    if (maxFiles != ITERATE_FILTEREDFILES_LIMIT)
+        setFileIterateFilter(maxFiles, filterBuf);
+
     __int64 cacheHint = 0;
     if (!req.getCacheHint_isNull())
         cacheHint = req.getCacheHint();
 
+    bool allMatchingFilesReceived = true;
     unsigned totalFiles = 0;
     Owned<IDFAttributesIterator> it = queryDistributedFileDirectory().getLogicalFilesSorted(udesc, sortOrder, filterBuf.str(),
-        localFilters, localFilterBuf.bufferBase(), pageStart, pageSize, &cacheHint, &totalFiles);
+        localFilters, localFilterBuf.bufferBase(), pageStart, pageSize, &cacheHint, &totalFiles, &allMatchingFilesReceived);
     if(!it)
         throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
 
@@ -3499,8 +3514,14 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
     ForEach(*it)
         addToLogicalFileList(it->query(), NULL, version, logicalFiles);
 
-    if (version >= 1.24)
-        resp.setCacheHint(cacheHint);
+    if (!allMatchingFilesReceived)
+    {
+        VStringBuffer warning("The returned results (%d files) represent a subset of the total number of matches. Using a correct filter may reduce the number of matches.",
+            maxFiles);
+        resp.setWarning(warning.str());
+        resp.setIsSubsetOfFiles(!allMatchingFilesReceived);
+    }
+    resp.setCacheHint(cacheHint);
     resp.setDFULogicalFiles(logicalFiles);
     setDFUQueryResponse(context, totalFiles, sortBy, descending, pageStart, pageSize, req, resp); //This call may be removed after 5.0
 
