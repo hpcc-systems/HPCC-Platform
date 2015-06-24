@@ -376,6 +376,26 @@ log_action_end_msg () {
     log_action_end_msg_post "$@"
 }
 
+distrib_check () {
+  DISTRIB_NAME=
+  DISTRIB_VERSION=
+
+  local tmp_file=/tmp/distrib_check_$$
+  cat /etc/*release > $tmp_file
+
+  if grep -q -i ubuntu $tmp_file; then
+     DISTRIB_NAME=ubuntu
+     DISTRIB_VERSION=$(grep -e "DISTRIB_RELEASE" $tmp_file | head -n 1 | sed -n "s/^[[:space:]]*DISTRIB_RELEASE=\(.*\)/\1/p")
+  elif grep -q -i centos $tmp_file; then
+     DISTRIB_NAME=centos
+     DISTRIB_VERSION=$(grep -e "^[[:space:]]*CentOS" $tmp_file | head -1 | awk '{ print $3 }')
+  fi
+  DISTRIB_MAJOR_VERSION=$(echo $DISTRIB_VERSION | cut -d'.' -f1)
+  DISTRIB_MINOR_VERSION=$(echo $DISTRIB_VERSION | cut -d'.' -f2)
+
+  rm -rf $tmp_file
+}
+
 # Hooks for /etc/lsb-base-logging.sh
 log_daemon_msg_pre () { :; }
 log_daemon_msg_post () { :; }

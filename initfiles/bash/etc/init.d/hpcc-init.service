@@ -1,0 +1,18 @@
+# HPCC Systems Systemd Script
+# Load to systemd:  sudo systemctl daemon-reload
+# Start/stop HPCC: sudo service hpcc-init <start|stop|restart>
+#                  or sudo systemctl <start|stop|restart> hpcc-init
+# Query status: journal -u hpcc-init -t hpcc-init -f  (CRL-C to return)
+# Alternatively user can directly invoke /etc/init.d/hpcc-init <start|stop|status>
+
+[Unit]
+Description=HPCC Systems
+
+[Service]
+Type=oneshot
+ExecStart=/etc/init.d/hpcc-init start
+ExecStop=/etc/init.d/hpcc-init stop
+RemainAfterExit=yes
+#StandardOutput=tty
+#StandardError=tty
+#TTYPath=/dev/pts/0
