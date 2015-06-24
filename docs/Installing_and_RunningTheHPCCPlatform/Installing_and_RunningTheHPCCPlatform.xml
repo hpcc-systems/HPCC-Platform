@@ -2724,11 +2724,11 @@ sudo /sbin/service hpcc-init -c esp start
           later).</para>
 
           <para><emphasis role="underline"><ulink
-          url="http://www.microsoft.com/downloads/details.aspx?familyid=28494391-052b-42ff-9674-f752bdca9582&amp;displaylang=en">http://support.microsoft.com/kb/308480/en-us</ulink></emphasis></para>
+          url="http://www.microsoft.com/en-us/download/details.aspx?id=3988">http://www.microsoft.com/en-us/download/details.aspx?id=3988</ulink></emphasis></para>
         </listitem>
 
         <listitem>
-          <para>Install msxml3.msi in Wine (DOUBLE-CLICK the msi file and Wine
+          <para>Install msxml3.msi in Wine (Double-click the msi file and Wine
           will install it).</para>
         </listitem>
 
@@ -2761,7 +2761,7 @@ sudo /sbin/service hpcc-init -c esp start
         </listitem>
 
         <listitem>
-          <para>Install the HPCC ECL IDE (DOUBLE-CLICK the setup.msi file and
+          <para>Install the HPCC ECL IDE (Double-click the setup.msi file and
           Wine will install it).</para>
         </listitem>
       </orderedlist>
