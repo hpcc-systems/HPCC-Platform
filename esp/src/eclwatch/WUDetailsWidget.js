@@ -335,7 +335,7 @@ define([
             }).then(function (response) {
                 if (lang.exists("WUInfoResponse.Workunit.AllowedClusters.AllowedCluster", response)) {
                     var targetData = response.WUInfoResponse.Workunit.AllowedClusters.AllowedCluster;
-                    if (targetData.length >= 1) {
+                    if (targetData.length > 1) {
                         context.allowedClusters.options.push({
                             label: "&nbsp;",
                             value: ""
