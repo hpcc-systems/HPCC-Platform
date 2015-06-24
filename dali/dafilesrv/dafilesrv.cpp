@@ -521,9 +521,15 @@ int main(int argc,char **argv)
             SocketEndpoint listenep;
             bool useSSL;
             bool requireauthenticate;
+            unsigned maxThreads;
+            unsigned maxThreadsDelayMs;
+            unsigned maxAsyncCopy;
             unsigned parallelRequestLimit;
             unsigned throttleDelayMs;
             unsigned throttleCPULimit;
+            unsigned parallelSlowRequestLimit;
+            unsigned throttleSlowDelayMs;
+            unsigned throttleSlowCPULimit;
 
             
             class cpollthread: public Thread
@@ -546,9 +552,14 @@ int main(int argc,char **argv)
 
         public:
 
-            cserv(SocketEndpoint _listenep, bool _useSSL, unsigned _parallelRequestLimit, unsigned _throttleDelayMs, unsigned _throttleCPULimit)
-                : listenep(_listenep),useSSL(_useSSL),pollthread(this),
-                  parallelRequestLimit(_parallelRequestLimit), throttleDelayMs(_throttleDelayMs), throttleCPULimit(_throttleCPULimit)
+            cserv(SocketEndpoint _listenep, bool _useSSL,
+                        unsigned _maxThreads, unsigned _maxThreadsDelayMs, unsigned _maxAsyncCopy,
+                        unsigned _parallelRequestLimit, unsigned _throttleDelayMs, unsigned _throttleCPULimit,
+                        unsigned _parallelSlowRequestLimit, unsigned _throttleSlowDelayMs, unsigned _throttleSlowCPULimit)
+            : listenep(_listenep),useSSL(_useSSL),pollthread(this),
+                  maxThreads(_maxThreads), maxThreadsDelayMs(_maxThreadsDelayMs), maxAsyncCopy(_maxAsyncCopy),
+                  parallelRequestLimit(_parallelRequestLimit), throttleDelayMs(_throttleDelayMs), throttleCPULimit(_throttleCPULimit),
+                  parallelSlowRequestLimit(_parallelSlowRequestLimit), throttleSlowDelayMs(_throttleSlowDelayMs), throttleSlowCPULimit(_throttleSlowCPULimit)
             {
                 stopped = false;
                 started = false;
@@ -627,7 +638,10 @@ int main(int argc,char **argv)
                 PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Stopped");
                 stopped = true;
             }
-        } service(listenep, useSSL, parallelRequestLimit, throttleDelayMs, throttleCPULimit);
+        } service(listenep, useSSL,
+                maxThreads, maxThreadsDelayMs, maxAsyncCopy,
+                parallelRequestLimit, throttleDelayMs, throttleCPULimit,
+                parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
         service.start();
         return 0;
 #else

@@ -1,5 +1,5 @@
 [Desktop Entry]
-Version=3.8.x
+Version=5.x
 Name=HPCC Systems
 GenericName=HPCC Systems
 Comment=HPCC Cluster Administration
@@ -12,20 +12,20 @@ X-Ayatana-Desktop-Shortcuts=Start;Stop;Restart;Status
 
 [Start Shortcut Group]
 Name=Start HPCC Cluster
-Exec=xterm -T "Starting HPCC Cluster" -e sudo service hpcc-init start
+Exec=xterm -T "Starting HPCC Cluster" -e sudo /etc/init.d/hpcc-init start
 TargetEnvironment=Unity
 
 [Stop Shortcut Group]
 Name=Stop HPCC Cluster
-Exec=xterm -T "Stopping HPCC Cluster" -e sudo service hpcc-init stop
+Exec=xterm -T "Stopping HPCC Cluster" -e sudo /etc/init.d/hpcc-init stop
 TargetEnvironment=Unity
 
 [Restart Shortcut Group]
 Name=Restart HPCC Cluster
-Exec=xterm -T "Restarting HPCC Cluster" -e sudo service hpcc-init restart
+Exec=xterm -T "Restarting HPCC Cluster" -e sudo /etc/init.d/hpcc-init restart
 TargetEnvironment=Unity
 
 [Status Shortcut Group]
 Name=HPCC Cluster Status
-Exec=xterm -T "HPCC Status" -hold -e sudo service hpcc-init status
+Exec=xterm -T "HPCC Status" -hold -e sudo /etc/init.d/hpcc-init status
 TargetEnvironment=Unity

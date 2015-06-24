@@ -21,6 +21,12 @@
     <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="EclSchedulerProcess">
         <xs:complexType>
+        <!--DOC-Autobuild-code-->
+	 <xs:annotation>
+	    <xs:appinfo>
+		<docid>ecl.sched</docid>
+	    </xs:appinfo>
+	 </xs:annotation>  
             <xs:sequence>
                 <xs:element name="Instance" maxOccurs="unbounded">
                     <xs:annotation>

@@ -8,8 +8,9 @@
       <primary>SUM</primary>
     </indexterm><indexterm>
       <primary>SUM function</primary>
-    </indexterm>(</emphasis><emphasis> recordset, value </emphasis><emphasis
-  role="bold">[, KEYED<indexterm>
+    </indexterm>(</emphasis><emphasis>recordset, value, </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>, expression </emphasis><emphasis
+  role="bold">] [, KEYED<indexterm>
       <primary>KEYED</primary>
     </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
 
@@ -41,10 +42,12 @@
           </row>
 
           <row>
-            <entry><emphasis>valuelist</emphasis></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
-            <entry>A comma-delimited list of expressions to find the sum of.
-            This may also be a SET of values.</entry>
+            <entry>Optional. A logical expression indicating which records to
+            include in the sum. Valid only when the
+            <emphasis>recordset</emphasis> parameter is the keyword GROUP to
+            indicate summing the elements in a group.</entry>
           </row>
 
           <row>
@@ -53,6 +56,13 @@
             <entry>Optional. Specifies the activity is part of an index read
             operation, which allows the optimizer to generate optimal code for
             the operation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>valuelist</emphasis></entry>
+
+            <entry>A comma-delimited list of expressions to find the sum of.
+            This may also be a SET of values.</entry>
           </row>
 
           <row>

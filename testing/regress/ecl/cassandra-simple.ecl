@@ -247,7 +247,16 @@ integer testCassandraCount() := EMBED(cassandra : server(server),user('rchapman'
   SELECT COUNT(*) from tbl1;
 ENDEMBED;
 
+dataset(childrec) testCassandraCountPaged0() := EMBED(cassandra : user('rchapman'),keyspace('test'),pageSize(0))
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1;
+ENDEMBED;
 
+dataset(childrec) testCassandraCountPaged101() := EMBED(cassandra : user('rchapman'),keyspace('test'),pageSize(101))
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1;
+ENDEMBED;
+dataset(childrec) testCassandraCountPaged100000() := EMBED(cassandra : user('rchapman'),keyspace('test'),pageSize(100000))
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1;
+ENDEMBED;
 // Execute the tests
 
 sequential (
@@ -276,5 +285,8 @@ sequential (
   OUTPUT(testCassandraDSParam(PROJECT(init, extractName(LEFT)))),
   testCassandraBulk,
   OUTPUT(testCassandraCount()),
+  OUTPUT(COUNT(testCassandraCountPaged0())),
+  OUTPUT(COUNT(testCassandraCountPaged101())),
+  OUTPUT(COUNT(testCassandraCountPaged100000())),
   OUTPUT('Done');
 );

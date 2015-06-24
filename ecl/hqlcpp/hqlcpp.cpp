@@ -1760,6 +1760,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.expandSelectCreateRow,"expandSelectCreateRow",false),
         DebugOption(options.obfuscateOutput,"obfuscateOutput",false),
         DebugOption(options.showEclInGraph,"showEclInGraph",true),
+        DebugOption(options.showChildCountInGraph,"showChildCountInGraph",false),
         DebugOption(options.optimizeSortAllFields,"optimizeSortAllFields",true),
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
         DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),

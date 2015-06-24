@@ -434,8 +434,9 @@
               <entry><emphasis>days</emphasis></entry>
 
               <entry>Optional. The number of days from last file read after
-              which the file may be automatically deleted. If omitted, the
-              default is seven (7).</entry>
+              which the file may be automatically deleted. If EXPIRE is
+              specified without number of days, it defaults to use the
+              ExpiryDefault setting in Sasha.</entry>
             </row>
           </tbody>
         </tgroup>

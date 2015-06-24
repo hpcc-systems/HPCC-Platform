@@ -259,28 +259,11 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                 case ActionDelete:
                     ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     {
-                        int state = cw->getState();
-                        switch (state)
-                        {
-                            case WUStateWait:
-                            case WUStateAborted:
-                            case WUStateCompleted:
-                            case WUStateFailed:
-                            case WUStateArchived:
-                            case WUStateCompiled:
-                            case WUStateUploadingFiles:
-                                break;
-                            default:
-                            {
-                                WorkunitUpdate wu(&cw->lock());
-                                wu->setState(WUStateFailed);
-                            }
-                        }
                         cw.clear();
                         factory->deleteWorkUnit(wuid);
                         AuditSystemAccess(context.queryUserId(), true, "Deleted %s", wuid);
                     }
-                   break;
+                    break;
                 case ActionAbort:
                     ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     {

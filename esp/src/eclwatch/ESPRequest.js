@@ -140,6 +140,11 @@ define([
                                         severity = "Info";
                                     }
                                     break;
+                                case "WsWorkunits.WUUpdate":
+                                    if (response.Exceptions.Exception[0].Code === 20049) {
+                                        severity = "Error";
+                                    }
+                                    break;
                             }
                         }
                         topic.publish("hpcc/brToaster", {

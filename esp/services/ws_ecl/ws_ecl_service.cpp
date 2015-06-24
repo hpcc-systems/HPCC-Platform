@@ -1259,14 +1259,21 @@ int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request,
                         "<xsd:all>"
                             "<xsd:element name=\"Result\">"
                                 "<xsd:complexType>"
-                                    "<xsd:all>");
+                                    "<xsd:sequence>"
+                                       "<xsd:choice minOccurs='0' maxOccurs='unbounded'>"
+                                          "<xsd:element name='Exception' type='tns:EspException'/>"
+                                          "<xsd:element name='Info' type='tns:EspException'/>"
+                                          "<xsd:element name='Warning' type='tns:EspException'/>"
+                                          "<xsd:element name='Alert' type='tns:EspException'/>"
+                                       "</xsd:choice>"
+);
                 int count=1;
                 ForEach (*result_xsds)
                 {
                     content.appendf("<xsd:element ref=\"ds%d:Dataset\" minOccurs=\"0\"/>", count++);
                 }
                             content.append(
-                                "</xsd:all>"
+                                "</xsd:sequence>"
                                 "</xsd:complexType>"
                             "</xsd:element>"
                         "</xsd:all>"

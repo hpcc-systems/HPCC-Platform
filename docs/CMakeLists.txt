@@ -74,7 +74,8 @@ add_subdirectory(ECLWatch)
 
 # Docs automation
 if (DOCS_AUTO)
-   add_subdirectory(Automation)
+   add_subdirectory(XMLGeneration)
+   add_subdirectory(UsingConfigManager)
 endif()
 
 

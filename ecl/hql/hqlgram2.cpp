@@ -11652,13 +11652,14 @@ extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlL
     assertex(scope);
     try
     {
-        ctx.noteBeginModule(scope, contents);
+        HqlLookupContext moduleCtx(ctx);
+        moduleCtx.noteBeginModule(scope, contents);
 
-        HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
+        HqlGram parser(scope, scope, contents, moduleCtx, xmlScope, false, loadImplicit);
         parser.getLexer()->set_yyLineNo(1);
         parser.getLexer()->set_yyColumn(1);
         OwnedHqlExpr ret = parser.yyParse(false, true);
-        ctx.noteEndModule();
+        moduleCtx.noteEndModule();
     }
     catch (IException *E)
     {

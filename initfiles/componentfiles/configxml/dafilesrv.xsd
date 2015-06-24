@@ -24,6 +24,12 @@
             <xs:documentation>Describes an DFUFileSrv installation</xs:documentation>
         </xs:annotation>
         <xs:complexType>
+        <!--DOC-Autobuild-code--> 	
+        <xs:annotation>
+	    <xs:appinfo>
+	        <docid>daFs.t</docid>
+	    </xs:appinfo>
+	</xs:annotation>
             <xs:sequence>
                 <xs:element name="Instance" maxOccurs="unbounded">
                     <xs:annotation>

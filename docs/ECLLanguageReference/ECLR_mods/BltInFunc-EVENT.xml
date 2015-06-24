@@ -7,67 +7,70 @@
     </indexterm></title>
 
   <informalexample id="SchEvent">
-  <para><emphasis role="bold">EVENT<indexterm>
-      <primary>EVENT function</primary>
-    </indexterm>(</emphasis><emphasis> event , subtype </emphasis><emphasis
-  role="bold"> )</emphasis></para>
+    <para><emphasis role="bold">EVENT<indexterm>
+        <primary>EVENT function</primary>
+      </indexterm>(</emphasis><emphasis> event , subtype </emphasis><emphasis
+    role="bold"> )</emphasis></para>
 
-  <para><informaltable colsep="1" frame="all" rowsep="1">
-      <tgroup cols="2">
-        <colspec colwidth="79.30pt" />
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="79.30pt" />
 
-        <colspec />
+          <colspec />
 
-        <tbody>
-          <row>
-            <entry><emphasis>event</emphasis></entry>
+          <tbody>
+            <row>
+              <entry><emphasis>event</emphasis></entry>
 
-            <entry>A case-insensitive string constant naming the event to
-            trap.</entry>
-          </row>
+              <entry>A case-insensitive string constant naming the event to
+              trap.</entry>
+            </row>
 
-          <row>
-            <entry><emphasis>subtype</emphasis></entry>
+            <row>
+              <entry><emphasis>subtype</emphasis></entry>
 
-            <entry>A case-insensitive string constant naming the specific type
-            of event to trap. This may contain * and ? to wildcard-match the
-            event's sub-type.</entry>
-          </row>
+              <entry>A case-insensitive string constant naming the specific
+              type of event to trap. This may contain * and ? to
+              wildcard-match the event's sub-type.</entry>
+            </row>
 
-          <row>
-            <entry>Return:</entry>
+            <row>
+              <entry>Return:</entry>
 
-            <entry>EVENT returns a single event.</entry>
-          </row>
-        </tbody>
-      </tgroup>
-    </informaltable></para>
+              <entry>EVENT returns a single event.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
 
-  <para>The <emphasis role="bold">EVENT</emphasis> function returns a trigger
-  event, which may be used within the WHEN workflow service<indexterm>
-      <primary>WHEN workflow service</primary>
-    </indexterm> or the WAIT and NOTIFY actions.</para>
+    <para>The <emphasis role="bold">EVENT</emphasis> function returns a
+    trigger event, which may be used within the WHEN workflow
+    service<indexterm>
+        <primary>WHEN workflow service</primary>
+      </indexterm> or the WAIT and NOTIFY actions.</para>
 
-  <para>Example:</para>
+    <para>Example:</para>
 
-  <programlisting>EventName := 'MyFileEvent';
-FileName  := 'test::myfile';
+    <programlisting>IMPORT STD;
+MyEventName := 'MyFileEvent';
+MyFileName  := 'test::myfile';
 
-IF (FileServices.FileExists(FileName),
- FileServices.DeleteLogicalFile(FileName));
+IF (STD.File.FileExists(MyFileName),
+ STD.File.DeleteLogicalFile(MyFileName));
  //deletes the file if it already exists
 
-FileServices.MonitorLogicalFileName(EventName,FileName);
+STD.File.MonitorLogicalFileName(MyEventName,MyFileName);
  //sets up monitoring and the event name
  //to fire when the file is found
 
-OUTPUT('File Created') : WHEN(EVENT(EventName,'*'),COUNT(1));
+OUTPUT('File Created') : WHEN(EVENT(MyEventName,'*'),COUNT(1));
  //this OUTPUT occurs only after the event has fired
 
 afile := DATASET([{ 'A', '0'}], {STRING10 key,STRING10 val});
-OUTPUT(afile,,FileName);
+OUTPUT(afile,,MyFileName);
  //this creates a file that the DFU file monitor will find
  //when it periodically polls
+
 
 //**********************************
 EXPORT events := MODULE
@@ -83,5 +86,8 @@ BUILD(oldies)  : WHEN(events.dailyAt(6));
 </programlisting>
   </informalexample>
 
-  <para>See Also: <link linkend="EVENTNAME">EVENTNAME</link>, <link linkend="EVENTEXTRA">EVENTEXTRA</link>, <link linkend="CRON">CRON</link>, <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link linkend="NOTIFY">NOTIFY</link></para>
+  <para>See Also: <link linkend="EVENTNAME">EVENTNAME</link>, <link
+  linkend="EVENTEXTRA">EVENTEXTRA</link>, <link linkend="CRON">CRON</link>,
+  <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link
+  linkend="NOTIFY">NOTIFY</link></para>
 </sect1>

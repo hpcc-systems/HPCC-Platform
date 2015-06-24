@@ -1500,7 +1500,6 @@ offset_t XmlSplitter::getHeaderLength(BufferedDirectReader & reader)
                 }
             }
             break;
-            return startOfLine - startOfHeader;
         case NEWLINE:
             startOfLine = reader.tell()+matchLen;
             resetStartOfLine = false;

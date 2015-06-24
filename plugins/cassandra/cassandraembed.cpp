@@ -113,7 +113,7 @@ static void fail(const char *message)
 class CassandraCluster : public CInterface
 {
 public:
-    CassandraCluster(CassCluster *_cluster) : cluster(_cluster), batchMode((CassBatchType) -1)
+    CassandraCluster(CassCluster *_cluster) : cluster(_cluster), batchMode((CassBatchType) -1), pageSize(0)
     {
     }
     void setOptions(const StringArray &options)
@@ -146,6 +146,8 @@ public:
                     else if (stricmp(val, "COUNTER")==0)
                         batchMode = CASS_BATCH_TYPE_COUNTER;
                 }
+                else if (stricmp(optName, "pageSize")==0)
+                    pageSize = getUnsignedOption(val, "pageSize");
                 else if (stricmp(optName, "port")==0)
                 {
                     unsigned port = getUnsignedOption(val, "port");
@@ -314,8 +316,9 @@ private:
     CassCluster *cluster;
 public:
     // These are here as convenient to set from same options string. They are really properties of the session
-    // rather than the cluster, but we have one session per cluster so we get away with it.
+    // or query rather than the cluster, but we have one session per cluster so we get away with it at the moment.
     CassBatchType batchMode;
+    unsigned pageSize;
     StringAttr keyspace;
 };
 
@@ -334,7 +337,7 @@ public:
     {
         return future;
     }
-    void wait(const char *why)
+    void wait(const char *why) const
     {
         cass_future_wait(future);
         CassError rc = cass_future_error_code(future);
@@ -356,9 +359,36 @@ public:
             cass_future_free(future);
         future = _future;
     }
-private:
+protected:
     CassandraFuture(const CassandraFuture &);
     CassFuture *future;
+};
+
+class CassandraFutureResult : public CassandraFuture
+{
+public:
+    CassandraFutureResult(CassFuture *_future) : CassandraFuture(_future)
+    {
+        result = NULL;
+    }
+    ~CassandraFutureResult()
+    {
+        if (result)
+            cass_result_free(result);
+    }
+    inline operator const CassResult *() const
+    {
+        if (!result)
+        {
+            wait("FutureResult");
+            result = cass_future_get_result(future);
+        }
+        return result;
+    }
+private:
+    CassandraFutureResult(const CassandraFutureResult &);
+    mutable const CassResult *result;
+
 };
 
 class CassandraSession : public CInterface
@@ -532,11 +562,14 @@ class CassandraStatementInfo : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode)
+    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize)
     : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode)
     {
         assertex(prepared && *prepared);
         statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
+        if (pageSize)
+            cass_statement_set_paging_size(*statement, pageSize);
+
     }
     ~CassandraStatementInfo()
     {
@@ -550,9 +583,27 @@ public:
     }
     bool next()
     {
-        if (!iterator)
-            return false;
-        return cass_iterator_next(*iterator);
+        loop
+        {
+            if (!iterator)
+            {
+                if (result)
+                    iterator.setown(new CassandraIterator(cass_iterator_from_result(*result)));
+                else
+                    return false;
+            }
+            if (cass_iterator_next(*iterator))
+                return true;
+            iterator.clear();
+            if (!cass_result_has_more_pages(*result))
+            {
+                result.clear();
+                break;
+            }
+            cass_statement_set_paging_state(*statement, *result);
+            result.setown(new CassandraFutureResult(cass_session_execute(*session, *statement)));
+        }
+        return false;
     }
     void startStream()
     {
@@ -566,9 +617,7 @@ public:
     {
         if (batch)
         {
-            CassandraFuture future(cass_session_execute_batch(*session, *batch));
-            future.wait("execute");
-            result.setown(new CassandraResult(cass_future_get_result(future)));
+            result.setown(new CassandraFutureResult (cass_session_execute_batch(*session, *batch)));
             assertex (rowCount() == 0);
         }
     }
@@ -582,11 +631,7 @@ public:
         }
         else
         {
-            CassandraFuture future(cass_session_execute(*session, *statement));
-            future.wait("execute");
-            result.setown(new CassandraResult(cass_future_get_result(future)));
-            if (rowCount() > 0)
-                iterator.setown(new CassandraIterator(cass_iterator_from_result(*result)));
+            result.setown(new CassandraFutureResult(cass_session_execute(*session, *statement)));
         }
     }
     inline size_t rowCount() const
@@ -612,7 +657,7 @@ protected:
     Linked<CassandraPrepared> prepared;
     Owned<CassandraBatch> batch;
     Owned<CassandraStatement> statement;
-    Owned<CassandraResult> result;
+    Owned<CassandraFutureResult> result;
     Owned<CassandraIterator> iterator;
     unsigned numBindings;
     CassBatchType batchMode;
@@ -1801,7 +1846,7 @@ public:
                 numParams = countBindings(script);
             else
                 numParams = 0;
-            stmtInfo.setown(new CassandraStatementInfo(session, prepared, numParams, cluster->batchMode));
+            stmtInfo.setown(new CassandraStatementInfo(session, prepared, numParams, cluster->batchMode, cluster->pageSize));
         }
     }
     virtual void callFunction()

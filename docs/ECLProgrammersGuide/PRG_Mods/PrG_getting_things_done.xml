@@ -21,8 +21,9 @@
     QueryBuilder using ECL. Here’s the code (contained in the
     Default.ProgGuide MODULE attribute):</para>
 
-    <programlisting>EXPORT MAC_ScanFile(IP, infile, scansize) := MACRO
-ds := DATASET(FileServices.ExternalLogicalFileName(IP, infile),
+    <programlisting>IMPORT STD;
+EXPORT MAC_ScanFile(IP, infile, scansize) := MACRO
+ds := DATASET(Std.File.ExternalLogicalFileName(IP, infile),
      {DATA1 S},
       THOR )[1..scansize];
 OUTPUT(TABLE(ds,{hex := ds.s,txt := (STRING1)ds.s}),ALL);
@@ -55,14 +56,14 @@ ENDMACRO;
     zone the number of bytes to read (maximum 8K)</para>
 
     <para>The initial DATASET declaration uses the
-    FileServices.ExternalLogicalFileName function to name the file. Defining
-    the RECORD structure as a single DATA1 field is necessary to ensure that
-    both text and binary fields can be read correctly. Specifying the DATASET
-    as a THOR file (no matter what type of file it actually is) makes it
-    simple to read as a fixed-length record file. The square brackets at the
-    end of the DATASET declaration automatically limit the number of 1-byte
-    records read to the first <emphasis>scansize</emphasis> number of bytes in
-    the file.</para>
+    Std.File.ExternalLogicalFileName function to name the file. Defining the
+    RECORD structure as a single DATA1 field is necessary to ensure that both
+    text and binary fields can be read correctly. Specifying the DATASET as a
+    THOR file (no matter what type of file it actually is) makes it simple to
+    read as a fixed-length record file. The square brackets at the end of the
+    DATASET declaration automatically limit the number of 1-byte records read
+    to the first <emphasis>scansize</emphasis> number of bytes in the
+    file.</para>
 
     <para>The first OUTPUT action allows you to see the raw Hexadecimal data
     from the file.</para>

@@ -435,18 +435,8 @@ public:
     {
         if(dn == NULL || dn[0] == '\0')
             return;
-
-        const char* ptr = dn;
-        while(ptr && *ptr != '\0')
-        {
-            char c = *ptr;
-            if(!isspace(c))
-            {
-                c = tolower(c);
-                dnbuf.append(c);
-            }
-            ptr++;
-        }
+        dnbuf.append(dn);
+        dnbuf.toLowerCase();
     }
     
     static bool getDcName(const char* domain, StringBuffer& dc)

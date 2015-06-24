@@ -117,8 +117,8 @@ public:
     { 
         str.append("Jbuff: Out of Memory (").append((unsigned __int64)wanted);
         if (got) 
-            str.append(',').append((unsigned __int64)(got/1024));
-        return str.append("k)");
+            str.append(',').append((unsigned __int64)got);
+        return str.append(")");
     }
     MessageAudience errorAudience() const { return MSGAUD_user; }
 };

@@ -23,6 +23,12 @@
     <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="EclCCserver">
         <xs:complexType>
+    <!--DOC-Autobuild-code-->
+	 <xs:annotation>
+	    <xs:appinfo>
+		<docid>cc.t2</docid>
+	    </xs:appinfo>
+	 </xs:annotation>  
             <xs:sequence>
                 <xs:element name="Option" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
@@ -31,6 +37,12 @@
                         </xs:appinfo>
                     </xs:annotation>
                     <xs:complexType>
+                    <!--DOC-Autobuild-code-->
+		    <xs:annotation>
+		    	<xs:appinfo>
+		           <docid>cc.t1</docid>
+		    	</xs:appinfo>
+		    </xs:annotation>  
                         <xs:attribute name="name" type="xs:string" use="required">
                             <xs:annotation>
                                 <xs:appinfo>

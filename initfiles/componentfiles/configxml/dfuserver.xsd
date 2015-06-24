@@ -24,6 +24,12 @@
             <xs:documentation>Describes a DFU server installation</xs:documentation>
         </xs:annotation>
         <xs:complexType>
+        <!--DOC-Autobuild-code-->
+        <xs:annotation>
+	  <xs:appinfo>
+	     <docid>DF.t1</docid>
+	  </xs:appinfo>
+	</xs:annotation>
             <xs:sequence>
                 <xs:element name="SSH">
                     <xs:annotation>
@@ -33,6 +39,12 @@
                         </xs:appinfo>
                     </xs:annotation>
                     <xs:complexType>
+                    <!--DOC-Autobuild-code--> 	
+		    <xs:annotation>
+		    	<xs:appinfo>
+		    	   <docid>DF.t2</docid>
+		    	</xs:appinfo>
+		    </xs:annotation>
                         <xs:attribute name="SSHidentityfile" type="xs:string" use="optional" default="$HOME/.ssh/id_rsa">
                             <xs:annotation>
                                 <xs:appinfo>

@@ -136,6 +136,7 @@ public:
     bool isChildActivity()                          { return (containerActivity != NULL); }
     bool         isExternal();
     inline bool isAction() { return dataset->isAction(); }
+    void noteChildQuery()                           { numChildQueries++; }
     void         setLocal(bool value=true)          { isLocal = value; }
     void         setGrouped(bool value=true)        { isGrouped = value; }
 
@@ -180,6 +181,7 @@ protected:
 public:
     HqlCppTranslator & translator;
     unsigned     activityId;
+    unsigned     numChildQueries;
     ThorActivityKind kind;
     HqlExprAttr  dataset;
     LinkedHqlExpr sourceFileSequence;

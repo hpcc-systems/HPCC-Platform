@@ -3124,6 +3124,7 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
     setFileTypeFilter(req.getFileType(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFdescription), DFUQFTwildcardMatch, req.getDescription(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFattrowner), DFUQFTwildcardMatch, req.getOwner(), filterBuf);
+    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFkind), DFUQFTwildcardMatch, req.getContentType(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getNodeGroup(), ",", filterBuf);
     if (!req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner())
         filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
@@ -3193,6 +3194,8 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
         sortOrder[0] = DFUQRFtimemodified;
     else if (strieq(sortByPtr, "Description"))
         sortOrder[0] = DFUQRFdescription;
+    else if (strieq(sortByPtr, "ContentType"))
+        sortOrder[0] = DFUQRFkind;
     else
         sortOrder[0] = DFUQRFname;
 

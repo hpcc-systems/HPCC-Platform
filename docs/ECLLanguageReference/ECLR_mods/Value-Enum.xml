@@ -68,7 +68,7 @@ namesRecord := RECORD
 END;
        
 namesTable2 := DATASET([{'Foreman','George',GenderEnum.Male,Pflg.Foreign},
-                        {'Bin Laden','Osama',GenderEnum.Male,Pflg.Foreign+Pflg.Terrorist+Pflg.Wanted}
+                        {'Bin','O',GenderEnum.Male,Pflg.Foreign+Pflg.Terrorist+Pflg.Wanted}
                        ], namesRecord);
 OUTPUT(namesTable2);
         

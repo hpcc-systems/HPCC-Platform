@@ -3313,12 +3313,12 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const Strin
         break;
     case WUStateCompiled:
         if (getAction()==WUActionRun || getAction()==WUActionUnknown)
-            throw MakeStringException(WUERR_WorkunitActive, "%s: Workunit is active",p->queryName());
+            throw MakeStringException(WUERR_WorkunitActive, "%s: Workunit is active. Please abort before deleting this workunit.",p->queryName());
         break;
     case WUStateWait:
         throw MakeStringException(WUERR_WorkunitScheduled, "%s: Workunit is scheduled",p->queryName());
     default:
-        throw MakeStringException(WUERR_WorkunitActive, "%s: Workunit is active",p->queryName());
+        throw MakeStringException(WUERR_WorkunitActive, "%s: Workunit is active. Please abort before deleting this workunit.",p->queryName());
         break;
     }
     if (getIsQueryService())

@@ -245,7 +245,7 @@ public:
         if (!resultRowIf)
             resultRowIf.setown(createRowInterfaces(resultMeta, activityId, activity.queryCodeContext()));
         IThorResult *loopResult = results->createResult(activity, 0, resultRowIf, !activity.queryGraph().isLocalChild()); // loop output
-        IThorResult *inputResult = results->createResult(activity, 1, resultRowIf, !activity.queryGraph().isLocalChild());
+        IThorResult *inputResult = results->createResult(activity, 1, resultRowIf, !activity.queryGraph().isLocalChild()); // loop input
     }
     virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults *results, IRowWriterMultiReader *inputStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
     {
@@ -2003,7 +2003,7 @@ static bool isLocalOnly(const CGraphBase &graph) // checks all dependencies, if 
     {
         if (graph.isGlobal())
             return false;
-        Owned<IThorActivityIterator> sinkIter = graph.getSinkIterator();
+        Owned<IThorActivityIterator> sinkIter = graph.getAllSinkIterator();
         ForEach(*sinkIter)
         {
             CGraphElementBase &sink = sinkIter->query();
@@ -2869,6 +2869,9 @@ IThorResult *CJobBase::getOwnedResult(graph_id gid, activity_id ownerId, unsigne
         CGraphElementBase *container = graph->queryElement(ownerId);
         assertex(container);
         CActivityBase *activity = container->queryActivity();
+        IThorGraphResults *results = activity->queryResults();
+        if (!results)
+            throw MakeGraphException(graph, 0, "GraphGetResult: no results created (requesting: %d)", resultId);
         result.setown(activity->queryResults()->getResult(resultId));
     }
     else

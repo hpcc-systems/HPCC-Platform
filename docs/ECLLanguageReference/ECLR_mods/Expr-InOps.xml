@@ -72,7 +72,7 @@ ColorCodes := DATASET([{'Black' ,0 },
                        {'White' ,3 }], rec);
 
 CodeColorDCT  := DICTIONARY(ColorCodes,{Code =&gt; Color});
-OUTPUT(6 IN CodeColorDCT);     //true
+OUTPUT(6 IN CodeColorDCT);     //false
 
 ColorCodesDCT := DICTIONARY(ColorCodes,{Color,Code});
 OUTPUT(ROW({'Red',2},rec) IN ColorCodesDCT);

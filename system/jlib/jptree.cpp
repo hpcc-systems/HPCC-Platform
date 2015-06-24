@@ -6607,10 +6607,19 @@ public:
                 }
                 if (!checkReadNext() || !checkSkipWS())
                     break;
-                if (','!=nextChar)
+                switch (nextChar)
+                {
+                case '{': //support file formats with whitespace (usually \n) seperated objects at the root
+                case '[':
+                    break;
+                case ',':
+                    readNext();
+                    skipWS();
+                    break;
+                default:
                     expecting(",");
-                readNext();
-                skipWS();
+                    break;
+                }
             }
         }
         else
@@ -6689,6 +6698,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
 
     enum ParseStates { headerStart, nameStart, valueStart, itemStart, objAttributes, itemContent, itemEnd } state;
     bool endOfRoot;
+    bool preReadItemName;
     StringBuffer tag, value;
 
     void init()
@@ -6696,6 +6706,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
         state = headerStart;
         stateInfo = NULL;
         endOfRoot = false;
+        preReadItemName = false;
     }
 
     virtual void resetState()
@@ -6825,7 +6836,10 @@ public:
 
     void namedItem()
     {
-        readName(tag.clear());
+        if (!preReadItemName)
+            readName(tag.clear());
+        else
+            preReadItemName = false;
         skipWS();
         switch (nextChar)
         {
@@ -6867,13 +6881,19 @@ public:
             return false;
         if (!checkReadNext() || !checkSkipWS())
             return true;
-        if (','!=nextChar)
+        switch (nextChar)
+        {
+        case '{':  //support files where root level objects are separated by whitespace (usually \n)
+        case '[':
+        case ',':
+            break;
+        default:
             expecting(",");
+        }
         return true;
     }
-    void newAttribute()
+    void newNamedAttribute()
     {
-        readName(tag.clear());
         skipWS();
         readValue(value.clear());
         readNext();
@@ -6922,13 +6942,16 @@ public:
         {
             case headerStart:
             {
-                if (!checkReadNext())
-                    return false;
-                if (checkBOM())
+                if (nextChar!='{' && nextChar!='[') //already positioned at start
+                {
                     if (!checkReadNext())
                         return false;
-                if (!checkSkipWS())
-                    return false;
+                    if (checkBOM())
+                        if (!checkReadNext())
+                            return false;
+                    if (!checkSkipWS())
+                        return false;
+                }
                 if (noRoot)
                     rootItem();
                 else
@@ -6966,14 +6989,12 @@ public:
                 checkDelimiter(", or }");
                 if (nextChar != '\"')
                     expecting("\"");
-                readNext();
-                bool att = '@' == nextChar;
-                rewind(2);
-                readNext();
-                if (att)
-                    newAttribute();
+                readName(tag.clear());
+                if (tag.charAt(0)=='@')
+                    newNamedAttribute();
                 else
                 {
+                    preReadItemName = true;
                     state=itemContent;
                     stateInfo->childCount=0;
                     iEvent->beginNodeContent(stateInfo->wnsTag);
