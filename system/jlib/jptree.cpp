@@ -6607,10 +6607,19 @@ public:
                 }
                 if (!checkReadNext() || !checkSkipWS())
                     break;
-                if (','!=nextChar)
+                switch (nextChar)
+                {
+                case '{': //support file formats with whitespace (usually \n) seperated objects at the root
+                case '[':
+                    break;
+                case ',':
+                    readNext();
+                    skipWS();
+                    break;
+                default:
                     expecting(",");
-                readNext();
-                skipWS();
+                    break;
+                }
             }
         }
         else
@@ -6872,8 +6881,15 @@ public:
             return false;
         if (!checkReadNext() || !checkSkipWS())
             return true;
-        if (','!=nextChar)
+        switch (nextChar)
+        {
+        case '{':  //support files where root level objects are separated by whitespace (usually \n)
+        case '[':
+        case ',':
+            break;
+        default:
             expecting(",");
+        }
         return true;
     }
     void newNamedAttribute()
@@ -6926,13 +6942,16 @@ public:
         {
             case headerStart:
             {
-                if (!checkReadNext())
-                    return false;
-                if (checkBOM())
+                if (nextChar!='{' && nextChar!='[') //already positioned at start
+                {
                     if (!checkReadNext())
                         return false;
-                if (!checkSkipWS())
-                    return false;
+                    if (checkBOM())
+                        if (!checkReadNext())
+                            return false;
+                    if (!checkSkipWS())
+                        return false;
+                }
                 if (noRoot)
                     rootItem();
                 else
