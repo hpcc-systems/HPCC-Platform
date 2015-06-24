@@ -444,18 +444,18 @@ startCmd() {
 
     local i=0
     for element in "${limits[@]}"; do
-      flag="-${element:4:2}"
-      value=${element##*"="}
+        flag="-${element:4:2}"
+        value=${element##*"="}
 
-      default_value=$( ulimit $flag )
-      if [[ "$value" != "unlimited" ]] && ([[ "$default_value" == "unlimited" ]] || [[ "$default_value" -gt "$value" ]]); then
-        _temp=${element%%"="*}
-        _temp="${_temp}=${default_value}"
-        limits[i]=$_temp
-      fi
-      flag="-${element:5:1}"
-      ulimit $flag ${limits[i]##*"="}
-      i=$((i+1))
+        default_value=$( ulimit $flag )
+        if [[ "$value" != "unlimited" ]] && ([[ "$default_value" == "unlimited" ]] || [[ "$default_value" -gt "$value" ]]); then
+            _temp=${element%%"="*}
+            _temp="${_temp}=${default_value}"
+            limits[i]=$_temp
+        fi
+        flag="-${element:5:1}"
+        ulimit $flag ${limits[i]##*"="}
+        i=$((i+1))
     done
 
 
@@ -495,30 +495,28 @@ startCmd() {
       SENTINEL_CHECK=0
     fi
 
-    while [ ${WAITTIME} -gt 0 ]
-    do
+    while [[ ${WAITTIME} -gt 0 ]]; do
         WAITTIME=`expr ${WAITTIME} - 1`
         check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINEL_CHECK}
         RCSTART=$?
-        if [ ${RCSTART} -eq 0 ]; then
-          log_success_msg
-          return 0;
-        elif [ ${RCSTART} -eq 2 ]; then
-          COMPONENT_HAS_STARTED=1
-        else
-          if [ ${COMPONENT_HAS_STARTED} -eq 1 ]; then
-            log "${compName} failed to start cleanly"
-            log_failure_msg "${compName} failed to start cleanly"
+        if [[ ${RCSTART} -eq 0 ]]; then
+            log_success_msg
             return 0;
-          fi
+        fi
+        checkPidExist $PIDPATH
+        local initRunning=$__pidExists
+        if [[ $initRunning -eq 0 ]]; then
+            log "${compName} failed to start cleanly"
+            log "Refer to the log file for the binary ${compName} for more information"
+            log_failure_msg
+            cleanupRuntimeEnvironment
+            return 1;
         fi
         sleep 1
     done
 
-    if [ ${WAITTIME} -eq 0 ]; then
-        log_timeout_msg
-        log "${compName} has timed out, but may still be starting"
-    fi
+    log_timeout_msg
+    log "${compName} has timed out, but may still be starting"
 
     chmod 644 ${envfile}
 
