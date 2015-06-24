@@ -46,7 +46,7 @@ ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( unittests ${SRCS} )
 
-install ( TARGETS unittests DESTINATION ${OSSDIR}/bin )
+install ( TARGETS unittests RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( unittests
          jlib
          remote
