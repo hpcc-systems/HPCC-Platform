@@ -2428,6 +2428,17 @@ class CServerRemoteTree : public CRemoteTreeBase
             return ChildMap::set(key, tree);
         }
     };
+
+    static void clearTree(CServerRemoteTree &tree)
+    {
+        Owned<IPropertyTreeIterator> iter = tree.getElements("*");
+        ForEach(*iter)
+        {
+            CServerRemoteTree &child = (CServerRemoteTree &)iter->query();
+            clearTree(child);
+        }
+        tree.clear();
+    }
 public:
 
 #ifdef _POOLED_SERVER_REMOTE_TREE
@@ -2469,7 +2480,7 @@ public:
             SDSManager->notifyNodeDelete(*this);
         CHECKEDCRITICALBLOCK(SDSManager->treeRegCrit, fakeCritTimeout);
 
-        SDSManager->queryAllNodes().freeElem(serverId);
+        clear(); // NB: *should* already be cleared, when tree is removed via removeTree
     }
     virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, CServerRemoteTree)); }
 
@@ -2481,6 +2492,27 @@ public:
         assertex(!isnocase());
         CHECKEDCRITICALBLOCK(SDSManager->treeRegCrit, fakeCritTimeout);
         SDSManager->queryAllNodes().addElem(this);
+    }
+    void clear()
+    {
+        // always called inside SDSManager->treeRegCrit
+        if (serverId)
+        {
+            SDSManager->queryAllNodes().freeElem(serverId);
+            serverId = 0;
+        }
+    }
+    virtual bool removeTree(IPropertyTree *_child)
+    {
+        if (!_child)
+            return false;
+        Linked<CServerRemoteTree> child = QUERYINTERFACE(_child, CServerRemoteTree);
+        assertex(child);
+        if (!CRemoteTreeBase::removeTree(child))
+            return false;
+        CHECKEDCRITICALBLOCK(SDSManager->treeRegCrit, fakeCritTimeout);
+        clearTree(*child);
+        return true;
     }
 
     virtual bool isOrphaned() const { return IptFlagTst(flags, ipt_ext5); }
@@ -2633,7 +2665,7 @@ public:
     }
 private:
     PDState processData(IPropertyTree &changeTree, Owned<CBranchChange> &parentBranchChange, MemoryBuffer &newIds);
-    PDState checkChange(IPropertyTree &tree, CBranchChange *parentBranchChange=NULL);
+    PDState checkChange(IPropertyTree &tree, CBranchChange &parentBranchChange);
 friend class COrphanHandler;
 };
 
@@ -2858,7 +2890,7 @@ IPropertyTree *createServerTree(const char *tag=NULL)
         LOG(MCoperatorWarning, unknownJob, s.str());                                                                        \
     }
 
-PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange *parentBranchChange)
+PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange &parentBranchChange)
 {
     PDState res = PDS_None;
 
@@ -2887,15 +2919,12 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
                 {
                     e.setPropInt("@pos", pos+1);
                     mergePDState(res, PDS_Structure);
-                    if (parentBranchChange)
-                    {
-                        PDState _res = res;
-                        mergePDState(_res, PDS_Renames);
-                        Owned<CBranchChange> childChange = new CBranchChange(*(CRemoteTreeBase *)idTree);
-                        childChange->noteChange(_res, _res);
-                        childChange->Link();
-                        parentBranchChange->addChildBranch(*childChange);
-                    }
+                    PDState _res = res;
+                    mergePDState(_res, PDS_Renames);
+                    Owned<CBranchChange> childChange = new CBranchChange(*(CRemoteTreeBase *)idTree);
+                    childChange->noteChange(_res, _res);
+                    childChange->Link();
+                    parentBranchChange.addChildBranch(*childChange);
                 }
                 else
                 {
@@ -2929,14 +2958,11 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
                 if (!removeTree(idTree))
                     throw MakeSDSException(-1, "::checkChange - Failed to remove child(%s) from parent(%s) at %s(%d)", idTree->queryName(), queryName(), __FILE__, __LINE__);
                 mergePDState(res, PDS_Structure);
-                if (parentBranchChange)
-                {
-                    PDState _res = res;
-                    mergePDState(_res, PDS_Deleted);
-                    childChange->noteChange(_res, _res);
-                    childChange->Link();
-                    parentBranchChange->addChildBranch(*childChange);
-                }
+                PDState _res = res;
+                mergePDState(_res, PDS_Deleted);
+                childChange->noteChange(_res, _res);
+                childChange->Link();
+                parentBranchChange.addChildBranch(*childChange);
                 break;
             }
             case 'A':
@@ -3080,7 +3106,7 @@ PDState CServerRemoteTree::processData(IPropertyTree &changeTree, Owned<CBranchC
     Owned<CBranchChange> branchChange = new CBranchChange(*this);
 
     PDState localChange, res;
-    localChange = res = checkChange(changeTree, branchChange);
+    localChange = res = checkChange(changeTree, *branchChange);
     Owned<IPropertyTreeIterator> iter = changeTree.getElements(RESERVED_CHANGE_NODE);
     if (iter->first())
     {
