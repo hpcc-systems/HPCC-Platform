@@ -3242,7 +3242,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     friend class CFixedChunkedHeap;
 
     CriticalSection activeBufferCS; // Potentially slow
-    mutable SpinLock peakSpinLock; // Very small window, low contention so fine to be a spin lock
+    mutable NonReentrantSpinLock peakSpinLock; // Very small window, low contention so fine to be a spin lock
     mutable SpinLock fixedSpinLock; // Main potential for contention releasingEmptyHeaps and gathering peak usage.  Shouldn't be likely.
                                     // Should possibly be a ReadWriteLock - better with high contention, worse with low
     CIArrayOf<CFixedChunkedHeap> normalHeaps;
@@ -3464,7 +3464,7 @@ public:
     {
         Owned<IActivityMemoryUsageMap> map = getActivityUsage();
 
-        SpinBlock block(peakSpinLock);
+        NonReentrantSpinBlock block(peakSpinLock);
         peakUsageMap.setown(map.getClear());
     }
 
@@ -3712,7 +3712,7 @@ public:
     {
         Owned<IActivityMemoryUsageMap> map;
         {
-            SpinBlock block(peakSpinLock);
+            NonReentrantSpinBlock block(peakSpinLock);
             map.set(peakUsageMap);
         }
         if (map)
@@ -3881,7 +3881,7 @@ public:
     {
         Owned<IActivityMemoryUsageMap> map;
         {
-            SpinBlock block(peakSpinLock);
+            NonReentrantSpinBlock block(peakSpinLock);
             map.set(peakUsageMap);
         }
         if (map)
@@ -4055,7 +4055,7 @@ protected:
         {
             Owned<IActivityMemoryUsageMap> map;
             {
-                SpinBlock block(peakSpinLock);
+                NonReentrantSpinBlock block(peakSpinLock);
                 map.set(peakUsageMap);
             }
             if (map)
