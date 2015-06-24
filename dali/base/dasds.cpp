@@ -2506,8 +2506,8 @@ public:
     {
         if (!_child)
             return false;
-        Linked<CServerRemoteTree> child = QUERYINTERFACE(_child, CServerRemoteTree);
-        assertex(child);
+        dbgassertex(QUERYINTERFACE(_child, CServerRemoteTree));
+        Linked<CServerRemoteTree> child = static_cast<CServerRemoteTree *>(_child);
         if (!CRemoteTreeBase::removeTree(child))
             return false;
         CHECKEDCRITICALBLOCK(SDSManager->treeRegCrit, fakeCritTimeout);
