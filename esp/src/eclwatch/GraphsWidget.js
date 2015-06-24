@@ -28,6 +28,7 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/ESPWorkunit",
     "hpcc/ESPQuery",
+    "hpcc/ESPLogicalFile",
     "hpcc/DelayLoadWidget",
     "hpcc/TimingTreeMapWidget",
     "hpcc/ESPUtil"
@@ -35,7 +36,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 Button,
                 selector,
-                GridDetailsWidget, ESPWorkunit, ESPQuery, DelayLoadWidget, TimingTreeMapWidget, ESPUtil) {
+                GridDetailsWidget, ESPWorkunit, ESPQuery, ESPLogicalFile, DelayLoadWidget, TimingTreeMapWidget, ESPUtil) {
     return declare("GraphsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -70,9 +71,11 @@ define([
                         context.refreshGrid();
                     }
                 });
-            }
-            else if (params.QuerySetId && params.Id) {
+            } else if (params.QuerySetId && params.Id) {
                 this.query = ESPQuery.Get(params.QuerySetId, params.Id);
+                this.refreshGrid();
+            } else if (params.NodeGroup && params.LogicalName) {
+                this.logicalFile = ESPLogicalFile.Get(params.NodeGroup, params.LogicalName);
                 this.refreshGrid();
             }
 
@@ -205,7 +208,6 @@ define([
                 localParams = {
                     Wuid: this.wu.Wuid,
                     GraphName: row.Name,
-                    GraphName: row.Name,
                     SubGraphId: (params && params.SubGraphId) ? params.SubGraphId : null,
                     SafeMode: (params && params.safeMode) ? true : false
                 }
@@ -213,6 +215,13 @@ define([
                 localParams = {
                     Target: this.query.QuerySet,
                     QueryId: this.query.QueryId,
+                    GraphName: row.Name,
+                    SubGraphId: (params && params.SubGraphId) ? params.SubGraphId : null,
+                    SafeMode: (params && params.safeMode) ? true : false
+                }
+            } else if (this.logicalFile) {
+                localParams = {
+                    Wuid: this.logicalFile.Wuid,
                     GraphName: row.Name,
                     SubGraphId: (params && params.SubGraphId) ? params.SubGraphId : null,
                     SafeMode: (params && params.safeMode) ? true : false
@@ -267,6 +276,22 @@ define([
                     context.store.setData(graphs);
                     context.grid.refresh();
                 });
+            } else if (this.logicalFile) {
+                var graphs = [];
+                if (lang.exists("Graphs.ECLGraph", this.logicalFile)) {
+                    arrayUtil.forEach(this.logicalFile.Graphs.ECLGraph, function (item, idx) {
+                        var graph = {
+                            Name: item,
+                            Label: "",
+                            Completed: "",
+                            Time: 0,
+                            Type: ""
+                        };
+                        graphs.push(graph);
+                    });
+                }
+                this.store.setData(graphs);
+                this.grid.refresh();
             }
         },
 

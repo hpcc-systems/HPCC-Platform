@@ -77,6 +77,7 @@ define([
         defWidget: null,
         xmlWidget: null,
         filePartsWidget: null,
+        queriesWidget: null,
         workunitWidget: null,
         dfuWorkunitWidget: null,
         fileBelongsTo: null,
@@ -95,6 +96,7 @@ define([
             this.defWidget = registry.byId(this.id + "_DEF");
             this.xmlWidget = registry.byId(this.id + "_XML");
             this.filePartsWidget = registry.byId(this.id + "_FileParts");
+            this.queriesWidget = registry.byId(this.id + "_Queries");
             this.workunitWidget = registry.byId(this.id + "_Workunit");
             this.dfuWorkunitWidget = registry.byId(this.id + "_DFUWorkunit");
             this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
@@ -255,6 +257,11 @@ define([
                     this.widget._Queries.init({
                         LogicalName: this.logicalFile.Name
                     });
+                } else if (currSel.id == this.widget._Graphs.id && !this.widget._Graphs.__hpcc_initalized) {
+                    this.widget._Graphs.init({
+                        NodeGroup: this.logicalFile.NodeGroup,
+                        LogicalName: this.logicalFile.Name
+                    });
                 } else if (this.workunitWidget && currSel.id == this.workunitWidget.id) {
                     this.workunitWidget.init({
                         Wuid: this.logicalFile.Wuid
@@ -318,15 +325,16 @@ define([
                 this.updateInput("CopySourceName", oldValue, newValue);
                 this.updateInput("CopyTargetName", oldValue, newValue);
             } else if (name === "Ecl" && newValue) {
-                this.refreshActionState();
             } else if (name === "StateID") {
                 this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
                 domClass.remove(this.id + "StateIdImage");
                 domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
                 domAttr.set(this.id + "Name", "innerHTML", this.logicalFile.Name + (this.logicalFile.isDeleted() ? " (" + this.i18n.Deleted + ")" : "" ));
-                this.refreshActionState();
             } else if (name === "Superfiles") {
+            } else if (name === "__hpcc_changedCount" && newValue > 0) {
                 this.refreshActionState();
+                //  Force Icon to Show (I suspect its not working due to Circular Reference Loading)
+                this.queriesWidget.set("iconClass", "dijitInline dijitIcon dijitTabButtonIcon iconFind");
             }
         },
 
@@ -360,6 +368,7 @@ define([
             this.setDisabled(this.id + "_FileBelongs", this.logicalFile.isDeleted() || !this.logicalFile.Superfiles);
             this.setDisabled(this.id + "_FileParts", this.logicalFile.isDeleted());
             this.setDisabled(this.id + "_Queries", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "_Graphs", this.logicalFile.isDeleted() || !this.logicalFile.Graphs);
             this.setDisabled(this.id + "_Workunit", this.logicalFile.isDeleted());
             this.setDisabled(this.id + "_DFUWorkunit", this.logicalFile.isDeleted());
         }
