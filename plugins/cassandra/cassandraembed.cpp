@@ -340,11 +340,14 @@ class CassandraStatementInfo : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode)
+    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize)
     : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode)
     {
         assertex(prepared && *prepared);
         statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
+        if (pageSize)
+            cass_statement_set_paging_size(*statement, pageSize);
+
     }
     ~CassandraStatementInfo()
     {
@@ -358,9 +361,27 @@ public:
     }
     bool next()
     {
-        if (!iterator)
-            return false;
-        return cass_iterator_next(*iterator);
+        loop
+        {
+            if (!iterator)
+            {
+                if (result)
+                    iterator.setown(new CassandraIterator(cass_iterator_from_result(*result)));
+                else
+                    return false;
+            }
+            if (cass_iterator_next(*iterator))
+                return true;
+            iterator.clear();
+            if (!cass_result_has_more_pages(*result))
+            {
+                result.clear();
+                break;
+            }
+            cass_statement_set_paging_state(*statement, *result);
+            result.setown(new CassandraFutureResult(cass_session_execute(*session, *statement)));
+        }
+        return false;
     }
     void startStream()
     {
@@ -389,8 +410,6 @@ public:
         else
         {
             result.setown(new CassandraFutureResult(cass_session_execute(*session, *statement)));
-            if (rowCount() > 0)
-                iterator.setown(new CassandraIterator(cass_iterator_from_result(*result)));
         }
     }
     inline size_t rowCount() const
@@ -1143,7 +1162,7 @@ class CassandraEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
     CassandraEmbedFunctionContext(const IContextLogger &_logctx, unsigned _flags, const char *options)
-      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0), batchMode((CassBatchType) -1)
+      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0), batchMode((CassBatchType) -1), pageSize(0)
     {
         cluster.setown(new CassandraCluster(cass_cluster_new()));
         const char *contact_points = "localhost";
@@ -1176,6 +1195,10 @@ public:
                         batchMode = CASS_BATCH_TYPE_UNLOGGED;
                     else if (stricmp(val, "COUNTER")==0)
                         batchMode = CASS_BATCH_TYPE_COUNTER;
+                }
+                else if (stricmp(optName, "pageSize")==0)
+                {
+                    pageSize=getUnsignedOption(val, "pageSize");
                 }
                 else if (stricmp(optName, "port")==0)
                 {
@@ -1742,7 +1765,7 @@ public:
                 numParams = countBindings(script);
             else
                 numParams = 0;
-            stmtInfo.setown(new CassandraStatementInfo(session, prepared, numParams, batchMode));
+            stmtInfo.setown(new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize));
         }
     }
     virtual void callFunction()
@@ -1900,6 +1923,7 @@ protected:
     unsigned flags;
     unsigned nextParam;
     unsigned numParams;
+    unsigned pageSize;
     CassBatchType batchMode;
     StringAttr queryString;
 
