@@ -2161,7 +2161,7 @@ void WsWuInfo::getWorkunitCpp(const char *cppname, const char* description, cons
 }
 
 void WsWuInfo::getWorkunitAssociatedXml(const char* name, const char* ipAddress, const char* plainText,
-                                        const char* description, bool forDownload, MemoryBuffer& buf)
+    const char* description, bool forDownload, bool addXMLDeclaration, MemoryBuffer& buf)
 {
     if (isEmpty(description)) //'File Name' as shown in WU Details page
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "File not specified.");
@@ -2185,18 +2185,161 @@ void WsWuInfo::getWorkunitAssociatedXml(const char* name, const char* ipAddress,
     if (!ios)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read %s.", description);
 
-    const char* header;
-    if (plainText && (!stricmp(plainText, "yes")))
-        header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-    else
-        header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
+    if (addXMLDeclaration)
+    {
+        const char* header;
+        if (plainText && (!stricmp(plainText, "yes")))
+            header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+        else
+            header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
+        buf.append(strlen(header), header);
+    }
 
-    buf.append(strlen(header), header);
     appendIOStreamContent(buf, ios.get(), forDownload);
 }
 
+IPropertyTree* WsWuInfo::getWorkunitArchive()
+{
+    Owned <IConstWUQuery> query = cw->getQuery();
+    if(!query)
+        return NULL;
+
+    SCMStringBuffer name, ip;
+    Owned<IConstWUAssociatedFileIterator> iter = &query->getAssociatedFiles();
+    ForEach(*iter)
+    {
+        IConstWUAssociatedFile& cur = iter->query();
+        if (cur.getType() != FileTypeXml)
+            continue;
+
+        cur.getName(name);
+        if (name.length() < 15)
+            continue;
+        const char* pStr = name.str() + name.length() - 15;
+        if (strieq(pStr, ".archive.eclxml"))
+        {
+            cur.getIp(ip);
+            break;
+        }
+    }
+    if (!ip.length())
+        return NULL;
+
+    MemoryBuffer content;
+    getWorkunitAssociatedXml(name.str(), ip.str(), "", "WU archive eclxml", true, false, content);
+    if (!content.length())
+        return NULL;
+    return createPTreeFromXMLString(content.length(), content.toByteArray());
+}
 
 
+IEspWUArchiveFile* WsWuInfo::readArchiveFileAttr(IPropertyTree& fileTree, const char* path)
+{
+    const char* fileName = fileTree.queryProp("@name");
+    if (isEmpty(fileName))
+        return NULL;
+
+    Owned<IEspWUArchiveFile> file= createWUArchiveFile();
+    file->setName(fileName);
+    if (!isEmpty(path))
+        file->setPath(path);
+    if (fileTree.hasProp("@key"))
+        file->setKey(fileTree.queryProp("@key"));
+    if (fileTree.hasProp("@sourcePath"))
+        file->setSourcePath(fileTree.queryProp("@sourcePath"));
+    return file.getClear();
+}
+
+IEspWUArchiveModule* WsWuInfo::readArchiveModuleAttr(IPropertyTree& moduleTree, const char* path)
+{
+    const char* moduleName = moduleTree.queryProp("@name");
+    if (isEmpty(moduleName))
+        return NULL;
+
+    Owned<IEspWUArchiveModule> module= createWUArchiveModule();
+    module->setName(moduleName);
+    if (!isEmpty(path))
+        module->setPath(path);
+    if (moduleTree.hasProp("@fullName"))
+        module->setFullName(moduleTree.queryProp("@fullName"));
+    if (moduleTree.hasProp("@key"))
+        module->setKey(moduleTree.queryProp("@key"));
+    if (moduleTree.hasProp("@plugin"))
+        module->setPlugin(moduleTree.queryProp("@plugin"));
+    if (moduleTree.hasProp("@version"))
+        module->setVersion(moduleTree.queryProp("@version"));
+    if (moduleTree.hasProp("@sourcePath"))
+        module->setSourcePath(moduleTree.queryProp("@sourcePath"));
+    if (moduleTree.hasProp("@flags"))
+        module->setFlags(moduleTree.getPropInt("@flags", 0));
+    return module.getClear();
+}
+
+void WsWuInfo::readArchiveFiles(IPropertyTree* archiveTree, const char* path, IArrayOf<IEspWUArchiveFile>& files)
+{
+    Owned<IPropertyTreeIterator> iter = archiveTree->getElements("Attribute");
+    ForEach(*iter)
+    {
+        IPropertyTree& item = iter->query();
+        Owned<IEspWUArchiveFile> file = readArchiveFileAttr(item, path);
+        if (file)
+            files.append(*file.getClear());
+    }
+}
+
+void WsWuInfo::listArchiveFiles(IPropertyTree* archiveTree, const char* path, IArrayOf<IEspWUArchiveModule>& modules, IArrayOf<IEspWUArchiveFile>& files)
+{
+    if (!archiveTree)
+        return;
+
+    Owned<IPropertyTreeIterator> iter = archiveTree->getElements("Module");
+    ForEach(*iter)
+    {
+        IPropertyTree& item = iter->query();
+        Owned<IEspWUArchiveModule> module = readArchiveModuleAttr(item, path);
+        if (!module)
+            continue;
+
+        StringBuffer newPath;
+        if (isEmpty(path))
+            newPath.set(module->getName());
+        else
+            newPath.setf("%s/%s", path, module->getName());
+        IArrayOf<IEspWUArchiveModule> modulesInModule;
+        IArrayOf<IEspWUArchiveFile> filesInModule;
+        listArchiveFiles(&item, newPath.str(), modulesInModule, filesInModule);
+        if (modulesInModule.length())
+            module->setArchiveModules(modulesInModule);
+        if (filesInModule.length())
+            module->setFiles(filesInModule);
+
+        modules.append(*module.getClear());
+    }
+
+    readArchiveFiles(archiveTree, path, files);
+}
+
+void WsWuInfo::getArchiveFile(IPropertyTree* archive, const char* moduleName, const char* attrName, const char* path, StringBuffer& file)
+{
+    StringBuffer xPath;
+    if (!isEmpty(path))
+    {
+        StringArray list;
+        list.appendListUniq(path, "/");
+        ForEachItemIn(m, list)
+        {
+            const char* module = list.item(m);
+            if (!isEmpty(module))
+                xPath.appendf("Module[@name=\"%s\"]/", module);
+        }
+    }
+    if (isEmpty(moduleName))
+        xPath.appendf("Attribute[@name=\"%s\"]", attrName);
+    else
+        xPath.appendf("Module[@name=\"%s\"]/Text", moduleName);
+
+    file.set(archive->queryProp(xPath.str()));
+}
 
 WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,const char* cluster,const char* startDate,const char* endDate,const char* jobname)
 {
@@ -3056,5 +3199,4 @@ void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& inp
 
     return;
 }
-
 }

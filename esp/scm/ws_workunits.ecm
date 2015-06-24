@@ -1609,6 +1609,54 @@ ESPresponse [exceptions_inline] WUGetStatsResponse
     ESParray<ESPstruct WUStatisticItem> Statistics;
 };
 
+ESPStruct [nil_remove] WUArchiveFile
+{
+    string Name;
+    string Key;
+    string SourcePath;
+    string Path;        //nested (parent) module names for this <Attribute>
+};
+
+ESPStruct [nil_remove] WUArchiveModule
+{
+    string Name;
+    string FullName;
+    unsigned Flags;
+    string Key;
+    string Plugin;
+    string SourcePath;
+    string Version;
+    string Path;        //nested (parent) module names for this <Module>
+    ESParray<ESPstruct WUArchiveModule, ArchiveModule> ArchiveModules;
+    ESParray<ESPstruct WUArchiveFile, File> Files;
+};
+
+ESPrequest [nil_remove] WUListArchiveFilesRequest
+{
+    string WUID;
+};
+
+ESPresponse [exceptions_inline, nil_remove] WUListArchiveFilesResponse
+{
+    ESParray<ESPstruct WUArchiveModule, ArchiveModule> ArchiveModules;
+    ESParray<ESPstruct WUArchiveFile, File> Files;
+    string Message;
+};
+
+ESPrequest [nil_remove] WUGetArchiveFileRequest
+{
+    string WUID;
+    string ModuleName; //<Module @name> or
+    string FileName;   //<Attribute @name>
+    string Path;       //(nested) parent module name(s) for the <Module @name> or <Attribute @name>
+};
+
+ESPresponse [exceptions_inline, nil_remove] WUGetArchiveFileResponse
+{
+    string File;    //ECL text
+    string Message;
+};
+
 ESPservice [
     version("1.56"), default_client_version("1.56"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
@@ -1686,6 +1734,8 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
     ESPmethod WUCheckFeatures(WUCheckFeaturesRequest, WUCheckFeaturesResponse);
     ESPmethod WUGetStats(WUGetStatsRequest, WUGetStatsResponse);
+    ESPmethod WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
+    ESPmethod WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
 };
 
 

@@ -466,6 +466,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 
     dataCache.setown(new DataCache(DATA_SIZE));
     archivedWuCache.setown(new ArchivedWuCache(AWUS_CACHE_SIZE));
+    wuArchiveCache.setown(new WUArchiveCache(WUARCHIVE_CACHE_SIZE));
 
     //Create a folder for temporarily holding gzip files by WUResultBin()
     Owned<IFile> tmpdir = createIFile(TEMPZIPDIR);
@@ -2536,7 +2537,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 else
                     ptr = name;
 
-                winfo.getWorkunitAssociatedXml(name, req.getIPAddress(), req.getPlainText(), req.getDescription(), opt > 0, mb);
+                winfo.getWorkunitAssociatedXml(name, req.getIPAddress(), req.getPlainText(), req.getDescription(), opt > 0, true, mb);
                 openSaveFile(context, opt, req.getSizeLimit(), ptr, HTTP_TYPE_APPLICATION_XML, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) || strieq(File_WUECL,req.getType()))
@@ -4271,6 +4272,81 @@ bool CWsWorkunitsEx::onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &r
         winfo.getStats(filter, createDescriptions, statistics);
         resp.setStatistics(statistics);
         resp.setWUID(wuid.str());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+IPropertyTree* CWsWorkunitsEx::getWorkunitArchive(IEspContext &context, WsWuInfo& winfo, const char* wuid, unsigned cacheMinutes)
+{
+    Owned<WUArchiveCacheElement> wuArchive = wuArchiveCache->lookup(context, wuid, cacheMinutes);
+    if (wuArchive)
+        return wuArchive->archive.getLink();
+
+    Owned<IPropertyTree> archive = winfo.getWorkunitArchive();
+    if (!archive)
+        return NULL;
+
+    wuArchiveCache->add(wuid, archive.getLink());
+    return archive.getClear();
+}
+
+bool CWsWorkunitsEx::onWUListArchiveFiles(IEspContext &context, IEspWUListArchiveFilesRequest &req, IEspWUListArchiveFilesResponse &resp)
+{
+    try
+    {
+        const char* wuid = req.getWUID();
+        if (isEmpty(wuid))
+            throw MakeStringException(ECLWATCH_NO_WUID_SPECIFIED, "No workunit defined.");
+
+        WsWuInfo winfo(context, wuid);
+        Owned<IPropertyTree> archive = getWorkunitArchive(context, winfo, wuid, WUARCHIVE_CACHE_MINITES);
+        if (!archive)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"No workunit archive found for %s.", wuid);
+
+        IArrayOf<IEspWUArchiveModule> modules;
+        IArrayOf<IEspWUArchiveFile> files;
+        winfo.listArchiveFiles(archive, "", modules, files);
+        if (modules.length())
+            resp.setArchiveModules(modules);
+        if (files.length())
+            resp.setFiles(files);
+        if (!modules.length() && !files.length())
+            resp.setMessage("Files not found");
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUGetArchiveFile(IEspContext &context, IEspWUGetArchiveFileRequest &req, IEspWUGetArchiveFileResponse &resp)
+{
+    try
+    {
+        const char* wuid = req.getWUID();
+        const char* moduleName = req.getModuleName();
+        const char* attrName = req.getFileName();
+        if (isEmpty(wuid))
+            throw MakeStringException(ECLWATCH_NO_WUID_SPECIFIED, "No workunit defined.");
+        if (isEmpty(moduleName) && isEmpty(attrName))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "No file name defined.");
+
+        WsWuInfo winfo(context, wuid);
+        Owned<IPropertyTree> archive = getWorkunitArchive(context, winfo, wuid, WUARCHIVE_CACHE_MINITES);
+        if (!archive)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"No workunit archive found for %s.", wuid);
+
+        StringBuffer file;
+        winfo.getArchiveFile(archive, moduleName, attrName, req.getPath(), file);
+        if (file.length())
+            resp.setFile(file.str());
+        else
+            resp.setMessage("File not found");
     }
     catch(IException* e)
     {
