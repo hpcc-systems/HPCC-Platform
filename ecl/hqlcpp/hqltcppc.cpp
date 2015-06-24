@@ -816,7 +816,7 @@ void CMemberInfo::getXPath(StringBuffer & out)
         else
         {
             StringBuffer temp;
-            temp.append(*column->queryName()).toLowerCase();
+            temp.append(str(column->queryName())).toLowerCase();
             out.append(temp);
         }
     }
@@ -1080,7 +1080,7 @@ void CContainerInfo::getContainerXPath(StringBuffer & out)
             if (named)
                 named->queryChild(0)->queryValue()->getStringValue(temp);
             else
-                temp.append(*column->queryName()).toLowerCase();
+                temp.append(str(column->queryName())).toLowerCase();
         }
         unsigned len = temp.length();
         if (len && (temp.charAt(len-1) != '/'))

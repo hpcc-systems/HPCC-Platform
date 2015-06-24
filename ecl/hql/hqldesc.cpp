@@ -29,7 +29,7 @@ void getFullName(StringBuffer & name, IHqlExpression * expr)
     }
     else
     {
-        const char * module = expr->queryFullContainerId()->str();
+        const char * module = str(expr->queryFullContainerId());
         if (module && *module)
             name.append(module).append(".");
         name.append(expr->queryName());
@@ -54,7 +54,7 @@ void setFullNameProp(IPropertyTree * tree, const char * prop, IHqlExpression * e
     if (scope)
         tree->setProp(prop, scope->queryFullName());
     else
-        setFullNameProp(tree, prop, expr->queryFullContainerId()->lower()->str(), expr->queryName()->str());
+        setFullNameProp(tree, prop, str(lower(expr->queryFullContainerId())), str(expr->queryName()));
 }
 
 static int compareSymbolsByPosition(IInterface * const * pleft, IInterface * const * pright)
@@ -66,7 +66,7 @@ static int compareSymbolsByPosition(IInterface * const * pleft, IInterface * con
     int startRight = right->getStartLine();
     if (startLeft != startRight)
         return startLeft < startRight ? -1 : +1;
-    return stricmp(left->queryName()->str(), right->queryName()->str());
+    return stricmp(str(left->queryName()), str(right->queryName()));
 }
 
 static void setNonZeroPropInt(IPropertyTree * tree, const char * path, int value)
@@ -89,7 +89,7 @@ static void expandRecordSymbolsMeta(IPropertyTree * metaTree, IHqlExpression * r
         case no_field:
             {
                 IPropertyTree * field = metaTree->addPropTree("Field", createPTree("Field"));
-                field->setProp("@name", cur->queryName()->str());
+                field->setProp("@name", str(cur->queryName()));
                 StringBuffer ecltype;
                 cur->queryType()->getECLType(ecltype);
                 field->setProp("@type", ecltype);
@@ -106,7 +106,7 @@ static void expandRecordSymbolsMeta(IPropertyTree * metaTree, IHqlExpression * r
         case no_attr_expr:
             {
                 IPropertyTree * attr = metaTree->addPropTree("Attr", createPTree("Attr"));
-                attr->setProp("@name", cur->queryName()->str());
+                attr->setProp("@name", str(cur->queryName()));
                 break;
             }
         }
@@ -131,7 +131,7 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr)
     if (def)
     {
         IHqlNamedAnnotation * symbol = queryNameAnnotation(expr);
-        def->setProp("@name", expr->queryName()->str());
+        def->setProp("@name", str(expr->queryName()));
         def->setPropInt("@line", expr->getStartLine());
         if (expr->isExported())
             def->setPropBool("@exported", true);

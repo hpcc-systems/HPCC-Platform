@@ -500,7 +500,7 @@ void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & ta
             args.append(*translator.getBoundLength(test));
         args.append(*ensureIndexable(test.expr));
         if ((ctc==type_unicode) || (ctc == type_varunicode) || (ctc == type_utf8))
-            args.append(*createConstant(compareType->queryLocale()->str()));
+            args.append(*createConstant(str(compareType->queryLocale())));
 
         OwnedHqlExpr call = translator.bindTranslatedFunctionCall(func, args);
         OwnedHqlExpr search = createTranslated(call);

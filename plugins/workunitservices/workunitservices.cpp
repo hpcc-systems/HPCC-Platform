@@ -620,13 +620,9 @@ WORKUNITSERVICES_API void wsWorkunitTimeStamps( ICodeContext *ctx, size32_t & __
         Owned<IPropertyTreeIterator> iter = pt->getElements("TimeStamp");
         ForEach(*iter) {
             IPropertyTree &item = iter->query();
-            if (&item==NULL)
-                continue; // paranoia
             Owned<IPropertyTreeIterator> iter2 = item.getElements("*");
             ForEach(*iter2) {
                 IPropertyTree &item2 = iter2->query();
-                if (&item2==NULL)
-                    continue; // paranoia
                 fixedAppend(mb, 32, item, "@application");              // item correct here
                 fixedAppend(mb, 16, item2.queryName());                 // id
                 fixedAppend(mb,  20, item2.queryProp(NULL));            // time
@@ -648,8 +644,6 @@ WORKUNITSERVICES_API void wsWorkunitMessages( ICodeContext *ctx, size32_t & __le
         Owned<IPropertyTreeIterator> iter = pt->getElements("Exception");
         ForEach(*iter) {
             IPropertyTree &item = iter->query();
-            if (&item==NULL)
-                continue; // paranoia
             tmpu = (unsigned)item.getPropInt("@severity");
             mb.append(sizeof(tmpu),&tmpu);
             tmpi = (int)item.getPropInt("@code");
@@ -676,8 +670,6 @@ WORKUNITSERVICES_API void wsWorkunitFilesRead( ICodeContext *ctx, size32_t & __l
         Owned<IPropertyTreeIterator> iter = pt->getElements("File");
         ForEach(*iter) {
             IPropertyTree &item = iter->query();
-            if (&item==NULL)
-                continue; // paranoia
             varAppend(mb, 256, item, "@name");              
             varAppend(mb, 64, item, "@cluster");                
             byte b = item.getPropBool("@super")?1:0;
@@ -698,8 +690,6 @@ WORKUNITSERVICES_API void wsWorkunitFilesWritten( ICodeContext *ctx, size32_t & 
         Owned<IPropertyTreeIterator> iter = pt->getElements("File");
         ForEach(*iter) {
             IPropertyTree &item = iter->query();
-            if (&item==NULL)
-                continue; // paranoia
             varAppend(mb, 256, item, "@name");              
             fixedAppend(mb, 10, item, "@graph");                
             varAppend(mb, 64, item, "@cluster");                

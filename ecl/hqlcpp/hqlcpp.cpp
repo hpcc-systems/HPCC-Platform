@@ -2083,7 +2083,7 @@ void HqlCppTranslator::doReportWarning(WarnErrorCategory category, ErrorSeverity
         location = queryActiveActivityLocation();
     ErrorSeverity severity = (explicitSeverity == SeverityUnknown) ? queryDefaultSeverity(category) : explicitSeverity;
     if (location)
-        warnError.setown(createError(category, severity, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
+        warnError.setown(createError(category, severity, id, msg, str(location->querySourcePath()), location->getStartLine(), location->getStartColumn(), 0));
     else
         warnError.setown(createError(category, severity, id, msg, NULL, 0, 0, 0));
 
@@ -2124,7 +2124,7 @@ void HqlCppTranslator::addWorkunitException(ErrorSeverity severity, unsigned cod
         location = queryActiveActivityLocation();
     if (location)
     {
-        msg->setExceptionFileName(location->querySourcePath()->str());
+        msg->setExceptionFileName(str(location->querySourcePath()));
         msg->setExceptionLineNo(location->getStartLine());
         msg->setExceptionColumn(location->getStartColumn());
     }
@@ -2177,7 +2177,7 @@ void HqlCppTranslator::ThrowStringException(int code,const char *format, ...)
         va_start(args, format);
         errorMsg.valist_appendf(format, args);
         va_end(args);
-        throw createError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
+        throw createError(code, errorMsg.str(), str(location->querySourcePath()), location->getStartLine(), location->getStartColumn(), 0);
     }
 
     va_list args;
@@ -2192,7 +2192,7 @@ void HqlCppTranslator::reportErrorDirect(IHqlExpression * exprOrLocation, int co
     ECLlocation loc;
     if (!loc.extractLocationAttr(exprOrLocation))
         loc.extractLocationAttr(queryActiveActivityLocation());
-    const char * sourcePath = loc.sourcePath->str();
+    const char * sourcePath = str(loc.sourcePath);
 
     if (alwaysAbort)
         throw createError(code, msg, sourcePath, loc.lineno, loc.column, loc.position);
@@ -3376,7 +3376,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
             //This shouldn't happen we should have an no_checkconcrete wrapper inserted into the tree like checkconstant,
             //but it currently can in obscure library contexts (e.g., library3ie2.xhql)
             IAtom * name = expr->queryName();
-            throwError1(HQLERR_ConcreteMemberRequired, name ? name->str() : "");
+            throwError1(HQLERR_ConcreteMemberRequired, name ? str(name) : "");
         }
     case NO_AGGREGATEGROUP:
         throwError1(HQLERR_OutsideGroupAggregate, getOpString(op));
@@ -4379,7 +4379,7 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, BuildCtx & declareCtx, CHql
         if (location)
         {
             StringBuffer s;
-            s.append("// ").append(location->querySourcePath()->str()).append("(").append(location->getStartLine()).append(",").append(location->getStartColumn()).append(")  ").append(expr->queryName());
+            s.append("// ").append(str(location->querySourcePath())).append("(").append(location->getStartLine()).append(",").append(location->getStartColumn()).append(")  ").append(expr->queryName());
             ctx.addQuoted(s);
         }
         else if (expr->queryName())
@@ -4821,7 +4821,7 @@ void HqlCppTranslator::doBuildExprCompare(BuildCtx & ctx, IHqlExpression * expr,
                 buildCachedExpr(ctx, simpleRight, rhs);
 
                 assertex(haveCommonLocale(leftType, rightType));
-                char const * locale = getCommonLocale(leftType, rightType)->str();
+                char const * locale = str(getCommonLocale(leftType, rightType));
                 args.append(*getBoundLength(lhs));
                 args.append(*getElementPointer(lhs.expr));
                 args.append(*getBoundLength(rhs));
@@ -4836,7 +4836,7 @@ void HqlCppTranslator::doBuildExprCompare(BuildCtx & ctx, IHqlExpression * expr,
                 buildCachedExpr(ctx, left, lhs);
                 buildCachedExpr(ctx, right, rhs);
                 assertex(haveCommonLocale(leftType, rightType));
-                char const * locale = getCommonLocale(leftType, rightType)->str();
+                char const * locale = str(getCommonLocale(leftType, rightType));
                 args.append(*getElementPointer(lhs.expr));
                 args.append(*getElementPointer(rhs.expr));
                 args.append(*createConstant(locale));
@@ -4853,7 +4853,7 @@ void HqlCppTranslator::doBuildExprCompare(BuildCtx & ctx, IHqlExpression * expr,
                 buildCachedExpr(ctx, simpleRight, rhs);
 
                 assertex(haveCommonLocale(leftType, rightType));
-                char const * locale = getCommonLocale(leftType, rightType)->str();
+                char const * locale = str(getCommonLocale(leftType, rightType));
                 args.append(*getBoundLength(lhs));
                 args.append(*getElementPointer(lhs.expr));
                 args.append(*getBoundLength(rhs));
@@ -5750,7 +5750,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     if (external->hasAttribute(gctxmethodAtom) || external->hasAttribute(globalContextAtom))
     {
         if (!ctx.queryMatchExpr(globalContextMarkerExpr))
-            throwError1(HQLERR_FuncNotInGlobalContext, external->queryName()->str());
+            throwError1(HQLERR_FuncNotInGlobalContext, str(external->queryName()));
     }
 
     unsigned maxArg = formals->numChildren();
@@ -5981,7 +5981,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                 {
                     if (isVariableSizeRecord(expr->queryRecord()))
                     {
-                        const char * name = expr->queryName()->str();
+                        const char * name = str(expr->queryName());
                         throwError1(HQLERR_VariableRowMustBeLinked, name ? name : "");
                     }
                     resultRow.setown(declareTempRow(ctx, ctx, expr));
@@ -6021,8 +6021,8 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
 
         if (arg >= maxArg)
         {
-            PrintLog("Too many parameters passed to function '%s'", expr->queryName()->str());
-            throwError1(HQLERR_TooManyParameters, expr->queryName()->str());
+            PrintLog("Too many parameters passed to function '%s'", str(expr->queryName()));
+            throwError1(HQLERR_TooManyParameters, str(expr->queryName()));
         }
 
         CHqlBoundExpr bound;
@@ -6147,8 +6147,8 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     if (arg < maxArg)
     {
         //MORE: Process default parameters...
-        PrintLog("Not enough parameters passed to function '%s'", expr->queryName()->str());
-        throwError1(HQLERR_TooFewParameters, expr->queryName()->str());
+        PrintLog("Not enough parameters passed to function '%s'", str(expr->queryName()));
+        throwError1(HQLERR_TooFewParameters, str(expr->queryName()));
     }
 
     OwnedHqlExpr call = bindTranslatedFunctionCall(funcdef, args);
@@ -8394,7 +8394,7 @@ void HqlCppTranslator::doBuildAssignCompareElement(BuildCtx & ctx, EvaluateCompa
             {
                 HqlExprArray args;
                 assertex(haveCommonLocale(leftType, right->queryType()));
-                char const * locale = getCommonLocale(leftType, right->queryType())->str();
+                char const * locale = str(getCommonLocale(leftType, right->queryType()));
                 args.append(*getBoundLength(lhs));
                 args.append(*getElementPointer(lhs.expr));
                 args.append(*getBoundLength(rhs));
@@ -8407,7 +8407,7 @@ void HqlCppTranslator::doBuildAssignCompareElement(BuildCtx & ctx, EvaluateCompa
             {
                 HqlExprArray args;
                 assertex(haveCommonLocale(leftType, right->queryType()));
-                char const * locale = getCommonLocale(leftType, right->queryType())->str();
+                char const * locale = str(getCommonLocale(leftType, right->queryType()));
                 args.append(*getElementPointer(lhs.expr));
                 args.append(*getElementPointer(rhs.expr));
                 args.append(*createConstant(locale));
@@ -8418,7 +8418,7 @@ void HqlCppTranslator::doBuildAssignCompareElement(BuildCtx & ctx, EvaluateCompa
             {
                 HqlExprArray args;
                 assertex(haveCommonLocale(leftType, right->queryType()));
-                char const * locale = getCommonLocale(leftType, right->queryType())->str();
+                char const * locale = str(getCommonLocale(leftType, right->queryType()));
                 args.append(*getBoundLength(lhs));
                 args.append(*getElementPointer(lhs.expr));
                 args.append(*getBoundLength(rhs));
@@ -11523,7 +11523,7 @@ static IHqlExpression *createActualFromFormal(IHqlExpression *param)
 
     //Case is significant if these parameters are use for BEGINC++ sections
     IIdAtom * paramName = param->queryId();
-    const char * paramNameText = paramName->lower()->str();
+    const char * paramNameText = str(lower(paramName));
 
     Linked<ITypeInfo> type = paramType;
     switch (paramType->getTypeCode())
@@ -11620,7 +11620,7 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
 {
     processCppBodyDirectives(bodyCode);
     IHqlExpression * location = queryLocation(bodyCode);
-    const char * locationFilename = location ? location->querySourcePath()->str() : NULL;
+    const char * locationFilename = location ? str(location->querySourcePath()) : NULL;
     unsigned startLine = location ? location->getStartLine() : 0;
     IHqlExpression * cppBody = bodyCode->queryChild(0);
     if (cppBody->getOperator() == no_record)
@@ -11739,9 +11739,9 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         IHqlExpression * param = formals->queryChild(i);
         ITypeInfo *paramType = param->queryType();
         IIdAtom * paramId = param->queryId();
-        const char * paramNameText = paramId->str();
+        const char * paramNameText = str(paramId);
         if (!options.preserveCaseExternalParameter)
-            paramNameText = paramId->lower()->str();
+            paramNameText = str(lower(paramId));
         args.append(*createConstant(paramNameText));
         IIdAtom * bindFunc;
         switch (paramType->getTypeCode())

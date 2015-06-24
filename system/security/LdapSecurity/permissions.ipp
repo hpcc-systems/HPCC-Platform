@@ -714,9 +714,9 @@ public:
         m_ldap_client = client;
     }
     virtual bool getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>& sdlist, IArrayOf<ISecResource>& resources);
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, ISecResource* resource, SecPermissionType ptype);
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, const char* name, SecPermissionType ptype);
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, ISecResource* resource, MemoryBuffer& initial_sd);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd);
     virtual bool retrieveUserInfo(ISecUser& user);
     virtual bool retrieveGroupInfo(ISecUser& user, BufferArray& groupsids);
 

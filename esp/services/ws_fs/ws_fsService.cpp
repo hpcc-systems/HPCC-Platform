@@ -182,8 +182,6 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
 {
     if(src == NULL)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "'Source DFU workunit' doesn't exist.");
-    if(&dest == NULL)
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "'Destination DFU workunit' not valid.");
 
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();

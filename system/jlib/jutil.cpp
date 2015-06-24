@@ -1959,7 +1959,7 @@ IAuthenticatedUser *createAuthenticatedUser() { UNIMPLEMENTED; }
 
 extern jlib_decl void serializeAtom(MemoryBuffer & target, IAtom * name)
 {
-    StringBuffer lower(name->str());
+    StringBuffer lower(str(name));
     lower.toLowerCase();
     serialize(target, lower.str());
 }

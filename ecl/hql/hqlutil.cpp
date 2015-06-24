@@ -3110,7 +3110,7 @@ static void expandHintValue(StringBuffer & s, IHqlExpression * expr)
 
 void getHintNameValue(IHqlExpression * attr, StringBuffer &name, StringBuffer &value)
 {
-    name.set(attr->queryName()->str());
+    name.set(str(attr->queryName()));
     ForEachChild(i, attr)
     {
         if (i)
@@ -3424,7 +3424,7 @@ static void convertRecordToAssigns(HqlExprArray & assigns, IHqlExpression * reco
                 else
                 {
                     if (!value && !canOmit)
-                        throwError1(HQLERR_FieldHasNoDefaultValue, cur->queryId()->str());
+                        throwError1(HQLERR_FieldHasNoDefaultValue, str(cur->queryId()));
                     if (value)
                         assigns.append(*createAssign(LINK(newTargetSelector), LINK(value)));
                 }
@@ -4322,13 +4322,13 @@ int compareAtoms(IInterface * const * pleft, IInterface * const * pright)
     IAtom * left = static_cast<IAtom *>(*pleft);
     IAtom * right = static_cast<IAtom *>(*pright);
 
-    return stricmp(left->str(), right->str());
+    return stricmp(str(left), str(right));
 }
 
 int compareScopesByName(IHqlScope * left, IHqlScope * right)
 {
-    const char * leftName = left->queryName()->str();
-    const char * rightName = right->queryName()->str();
+    const char * leftName = str(left->queryName());
+    const char * rightName = str(right->queryName());
     if (leftName && rightName)
         return stricmp(leftName, rightName);
     if (leftName)
@@ -4340,7 +4340,7 @@ int compareScopesByName(IHqlScope * left, IHqlScope * right)
 
 int compareSymbolsByName(IHqlExpression * left, IHqlExpression * right)
 {
-    return stricmp(left->queryName()->str(), right->queryName()->str());
+    return stricmp(str(left->queryName()), str(right->queryName()));
 }
 
 int compareSymbolsByName(IInterface * const * pleft, IInterface * const * pright)
@@ -4348,7 +4348,7 @@ int compareSymbolsByName(IInterface * const * pleft, IInterface * const * pright
     IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
     IHqlExpression * right = static_cast<IHqlExpression *>(*pright);
 
-    return stricmp(left->queryName()->str(), right->queryName()->str());
+    return stricmp(str(left->queryName()), str(right->queryName()));
 }
 
 int compareScopesByName(IInterface * const * pleft, IInterface * const * pright)
@@ -4423,7 +4423,7 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
         }
         if (value && isExported(resolved))
         {
-            lowername.clear().append(prefix).append(name->lower()).toLowerCase();
+            lowername.clear().append(prefix).append(lower(name)).toLowerCase();
 
             node_operator op = no_none;
             if (outputOp == no_output)
@@ -4466,7 +4466,7 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
                 if (child->getOperator() != no_null)
                     outputs.append(*child.getClear());
             }
-            else if (!matchId || name->lower()==matchId->lower())
+            else if (!matchId || lower(name)==lower(matchId))
             {
                 if (op != no_none)
                 {
@@ -4516,7 +4516,7 @@ extern HQL_API IHqlExpression * createStoredModule(IHqlExpression * scopeExpr)
                     value.setown(createNullExpr(value));
 
                 IIdAtom * name = symbols.item(i).queryId();
-                OwnedHqlExpr failure = createValue(no_stored, makeVoidType(), createConstant(name->lower()->str()));
+                OwnedHqlExpr failure = createValue(no_stored, makeVoidType(), createConstant(str(lower(name))));
 
                 HqlExprArray meta;
                 value.setown(attachWorkflowOwn(meta, value.getClear(), failure, NULL));
@@ -5747,7 +5747,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                                 src.set(queryAttributeChild(expr, defaultAtom, 0));
                             if (!src)
                             {
-                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
+                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_NoDefaultProvided, str(expr->queryName()));
                                 return;
                             }
                         }
@@ -5777,7 +5777,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         {
                             if (!recordTypesMatch(src, target))
                             {
-                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, str(expr->queryName()));
                                 return;
                             }
                             if (isGrouped(src))
@@ -5788,7 +5788,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         }
                         else
                         {
-                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, str(expr->queryName()));
                             return;
                         }
                     }
@@ -5798,7 +5798,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         {
                             if (!recordTypesMatch(src, target))
                             {
-                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, str(expr->queryName()));
                                 return;
                             }
                             castValue.set(src);
@@ -5854,24 +5854,24 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                     if (!src || src->isAttribute())
                     {
                         if (expr->hasAttribute(virtualAtom))
-                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_VirtualFieldInTempTable, expr->queryName()->str());
+                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_VirtualFieldInTempTable, str(expr->queryName()));
                         else
-                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
+                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_NoDefaultProvided, str(expr->queryName()));
                         return;
                     }
                     if (src->getOperator() == no_recordlist)
                     {
-                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatiableInitailiser, expr->queryName()->str());
+                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatiableInitailiser, str(expr->queryName()));
                         return;
                     }
                     else if (type->isScalar() != src->queryType()->isScalar())
                     {
-                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, str(expr->queryName()));
                         return;
                     }
                     else if (strictTypeChecking && !type->assignableFrom(src->queryType()))
                     {
-                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, str(expr->queryName()));
                     }
                     castValue.setown(ensureExprType(src, type));
                 }
@@ -5929,7 +5929,7 @@ void TempTableTransformer::reportError(IHqlExpression * location, int code,const
     va_start(args, format);
     errorMsg.valist_appendf(format, args);
     va_end(args);
-    Owned<IError> err = createError(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
+    Owned<IError> err = createError(code, errorMsg.str(), str(where->sourcePath), where->lineno, where->column, where->position);
     errorProcessor.report(err);
 }
 
@@ -5948,7 +5948,7 @@ void TempTableTransformer::reportWarning(WarnErrorCategory category, IHqlExpress
     va_start(args, format);
     errorMsg.valist_appendf(format, args);
     va_end(args);
-    errorProcessor.reportWarning(category, code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
+    errorProcessor.reportWarning(category, code, errorMsg.str(), str(where->sourcePath), where->lineno, where->column, where->position);
 }
 
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
@@ -6098,8 +6098,8 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver & errorProcessor
                         row.append(*LINK(value));
                     else
                     {
-                        VStringBuffer msg(HQLERR_FieldHasNoDefaultValue_Text, field->queryName()->str());
-                        errorProcessor.reportError(HQLERR_FieldHasNoDefaultValue, msg.str(), location.sourcePath->str(), location.lineno, location.column, location.position);
+                        VStringBuffer msg(HQLERR_FieldHasNoDefaultValue_Text, str(field->queryName()));
+                        errorProcessor.reportError(HQLERR_FieldHasNoDefaultValue, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
                     }
                 }
             }
@@ -6367,7 +6367,7 @@ int compareLibraryParameterOrder(IHqlExpression * left, IHqlExpression * right)
     }
 
     //then by name
-    return stricmp(left->queryName()->str(), right->queryName()->str());
+    return stricmp(str(left->queryName()), str(right->queryName()));
 }
 
 
@@ -6430,7 +6430,7 @@ void LibraryInputMapper::expandParameter(IHqlExpression * expr, unsigned & nextP
 
 unsigned LibraryInputMapper::findParameter(IIdAtom * searchId)
 {
-    IAtom * searchName = searchId->lower();
+    IAtom * searchName = lower(searchId);
     ForEachItemIn(i, realParameters)
     {
         if (realParameters.item(i).queryName() == searchName)
@@ -8108,7 +8108,7 @@ extern HQL_API bool expandMissingDefaultsAsStoreds(HqlExprArray & args, IHqlExpr
             else
             {
                 OwnedHqlExpr nullValue = createNullExpr(formal->queryType());
-                OwnedHqlExpr storedName = createConstant(formal->queryName()->str());
+                OwnedHqlExpr storedName = createConstant(str(formal->queryName()));
                 OwnedHqlExpr stored = createValue(no_stored, makeVoidType(), storedName.getClear());
                 HqlExprArray colonArgs;
                 colonArgs.append(*LINK(nullValue));
@@ -8474,7 +8474,7 @@ IError * annotateExceptionWithLocation(IException * e, IHqlExpression * location
     StringBuffer errorMsg;
     e->errorMessage(errorMsg);
     unsigned code = e->errorCode();
-    return createError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
+    return createError(code, errorMsg.str(), str(location->querySourcePath()), location->getStartLine(), location->getStartColumn(), 0);
 }
 
 StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const char * suffix)
@@ -8483,7 +8483,7 @@ StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const
     {
         int line = location->getStartLine();
         int column = location->getStartColumn();
-        s.append(location->querySourcePath()->str());
+        s.append(str(location->querySourcePath()));
         if (line)
         {
             s.append("(").append(location->getStartLine());
@@ -8568,7 +8568,7 @@ IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext &
                     ctx.errs->reportError(HQLERR_CannotSubmitMacroX, "Cannot submit a MACRO with parameters that do no have default values", NULL, 1, 0, 0);
                 return NULL;
             }
-            macroParms->setProp(formal->queryName()->str(), curParam.str());
+            macroParms->setProp(str(formal->queryName()), curParam.str());
         }
         macroBodyExpr = expr->queryChild(0);
     }
@@ -8614,7 +8614,7 @@ static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLook
             {
                 //For each parameter that doesn't have a default, create a stored variable of the appropriate type
                 //with a null value as the default value, and use that.
-                const char * name = expr->queryName()->str();
+                const char * name = str(expr->queryName());
                 StringBuffer msg;
                 msg.appendf("Definition %s() does not supply default values for all parameters", name ? name : "");
                 ctx.errs->reportError(HQLERR_CannotSubmitFunction, msg.str(), NULL, 1, 0, 0);

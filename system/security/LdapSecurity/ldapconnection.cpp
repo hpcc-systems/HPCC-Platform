@@ -4544,7 +4544,7 @@ private:
         MemoryBuffer sdbuf;
         Owned<CSecurityDescriptor> default_sd = NULL;
         if(m_pp !=  NULL)
-            default_sd.setown(m_pp->createDefaultSD(*user, name, ptype));
+            default_sd.setown(m_pp->createDefaultSD(user, name, ptype));
         if(default_sd != NULL)
             sdbuf.append(default_sd->getDescriptor());
 
@@ -4667,12 +4667,12 @@ private:
             MemoryBuffer template_sd_buf;
             template_sd_buf.append(template_sd->getDescriptor());
             if(m_pp != NULL)
-                default_sd.setown(m_pp->createDefaultSD(user, resource, template_sd_buf));
+                default_sd.setown(m_pp->createDefaultSD(&user, resource, template_sd_buf));
         }
         else
         {
             if(m_pp !=  NULL)
-                default_sd.setown(m_pp->createDefaultSD(user, resource, ptype));
+                default_sd.setown(m_pp->createDefaultSD(&user, resource, ptype));
         }
 
         return addResource(rtype, user, resource, ptype, basedn, default_sd.get());
