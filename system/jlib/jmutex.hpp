@@ -410,8 +410,23 @@ public:
             nesting++;
             return;
         }
-        while (!atomic_cas(&value,1,0)) 
-            ThreadYield(); 
+
+        unsigned i = 0;
+        const unsigned maxSpins = 100;
+        for (;;)
+        {
+            if (atomic_read(&value) == 0)
+            {
+                if (atomic_cas(&value,1,0))
+                    break;
+            }
+            else if (i++ == maxSpins)
+            {
+                i = 0;
+                ThreadYield();
+            }
+        }
+
         owner.tid = self;
     }
     inline void leave()
