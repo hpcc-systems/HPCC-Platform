@@ -24,6 +24,12 @@
       <xs:documentation>Describes a Dali server installation</xs:documentation>
     </xs:annotation>
     <xs:complexType>
+    <!--DOC-Autobuild-code-->
+    <xs:annotation>
+      <xs:appinfo>
+    	<docid>da.t1</docid>
+      </xs:appinfo>
+    </xs:annotation>  
       <xs:sequence>
         <xs:element name="Instance" maxOccurs="unbounded">
           <xs:annotation>
@@ -205,6 +211,13 @@
     </xs:complexType>
   </xs:element>
   <xs:attributeGroup name="Store">
+  <!--DOC-Autobuild-code-->
+    <xs:annotation>
+      	<xs:appinfo>
+      	  <docid>da.t2</docid>
+      	</xs:appinfo>
+    </xs:annotation>  
+
     <xs:attribute name="lightweightCoalesce" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>
@@ -263,6 +276,12 @@
     </xs:attribute>
   </xs:attributeGroup>
   <xs:attributeGroup name="Backup">
+ <!--DOC-Autobuild-code-->
+   <xs:annotation>
+      <xs:appinfo>
+        <docid>da.t3</docid>
+      </xs:appinfo>
+   </xs:annotation>  
     <xs:attribute name="backupComputer" type="computerType" use="optional">
       <xs:annotation>
         <xs:appinfo>
@@ -286,6 +305,12 @@
     </xs:attribute>
   </xs:attributeGroup>
    <xs:attributeGroup name="DFS">
+    <!--DOC-Autobuild-code-->
+      <xs:annotation>
+        <xs:appinfo>
+          <docid>da.t5</docid>
+         </xs:appinfo>
+       </xs:annotation>  
     <xs:attribute name="forceGroupUpdate" type="xs:boolean" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>
@@ -302,6 +327,12 @@
     </xs:attribute>
    </xs:attributeGroup>
    <xs:attributeGroup name="LDAP">
+      <!--DOC-Autobuild-code-->
+      <xs:annotation>
+        <xs:appinfo>
+          <docid>da.t4</docid>
+         </xs:appinfo>
+       </xs:annotation>  
     <xs:attribute name="ldapServer" type="ldapServerType" use="optional">
       <xs:annotation>
         <xs:appinfo>

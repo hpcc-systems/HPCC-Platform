@@ -21,6 +21,12 @@
     <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="EspProcess">
         <xs:complexType>
+        <!--DOC-Autobuild-code-->
+     	 <xs:annotation>
+     	    <xs:appinfo>
+     	    	<docid>ESP.t6</docid>
+     	    </xs:appinfo>
+     	 </xs:annotation>  
             <xs:sequence>
                 <xs:element name="EspBinding" maxOccurs="unbounded">
                     <xs:annotation>
@@ -29,6 +35,12 @@
                         </xs:appinfo>
                     </xs:annotation>
                     <xs:complexType>
+                    <!--DOC-Autobuild-code-->
+		     <xs:annotation>
+	    	    	<xs:appinfo>
+			  <docid>ESP.t3</docid>
+			</xs:appinfo>
+		     </xs:annotation>  
                         <xs:sequence>
                             <xs:element name="Authenticate" minOccurs="0" maxOccurs="unbounded">
                                 <xs:annotation>
@@ -38,6 +50,12 @@
                                     </xs:appinfo>
                                 </xs:annotation>
                                 <xs:complexType>
+                                <!--DOC-Autobuild-code-->
+				 <xs:annotation>
+				    <xs:appinfo>
+				       <docid>ESP.t1</docid>
+				    </xs:appinfo>
+     			         </xs:annotation> 
                                     <xs:attribute name="description" type="xs:string" use="optional">
                                         <xs:annotation>
                                             <xs:appinfo>
@@ -92,6 +110,12 @@
                                     </xs:appinfo>
                                 </xs:annotation>
                                 <xs:complexType>
+                                <!--DOC-Autobuild-code-->
+				<xs:annotation>
+				  <xs:appinfo>
+				     <docid>ESP.t2</docid>
+				   </xs:appinfo>
+				 </xs:annotation>  
                                     <xs:attribute name="authenticate" use="optional" default="Yes">
                                         <xs:annotation>
                                             <xs:appinfo>
@@ -223,6 +247,12 @@
                         </xs:appinfo>
                     </xs:annotation>
                     <xs:complexType>
+                    <!--DOC-Autobuild-code-->
+		     <xs:annotation>
+		       <xs:appinfo>
+		         <docid>ESP.t4</docid>
+		        </xs:appinfo>
+		      </xs:annotation>  
                         <xs:attribute name="method" use="optional" default="none">
                             <xs:annotation>
                                 <xs:appinfo>
@@ -289,6 +319,12 @@
                 </xs:element>
                 <xs:element name="HTTPS" minOccurs="0">
                     <xs:complexType>
+                     <!--DOC-Autobuild-code-->
+		      <xs:annotation>
+		         <xs:appinfo>
+		            <docid>ESP.t5</docid>
+		         </xs:appinfo>
+		      </xs:annotation>  
                         <xs:attribute name="certificateFileName" type="xs:string" use="optional" default="certificate.cer">
                             <xs:annotation>
                                 <xs:appinfo>

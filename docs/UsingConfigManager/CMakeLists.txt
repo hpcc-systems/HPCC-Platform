@@ -13,10 +13,19 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+
+SET(XSLTPROC_DEPENDENCIES)
+FOREACH(T ${Current_Targets})
+   IF("${T}" MATCHES "xsd_to_xml" )
+      LIST(APPEND XSLTPROC_DEPENDENCIES  ${T})
+   ENDIF()
+ENDFOREACH()
+########################################################################
 # commented out per issue # HPCC-10267
 #
 #
-#DOCBOOK_TO_PDF( ${FO_XSL} UsingConfigManager.xml "UsingConfigManager")
+DOCBOOK_TO_PDF( ${FO_XSL} UsingConfigManager.xml "UsingConfigManager")
 #
 #
 ########################################################################

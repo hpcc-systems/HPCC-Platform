@@ -25,6 +25,12 @@
             <xs:documentation>Describes an ftslave installation</xs:documentation>
         </xs:annotation>
         <xs:complexType>
+         <!--DOC-Autobuild-code-->
+	 <xs:annotation>
+	    <xs:appinfo>
+	       <docid>FTS.t1</docid>
+	    </xs:appinfo>
+	 </xs:annotation>  
             <xs:sequence>
                 <xs:element name="Instance" maxOccurs="unbounded">
                     <xs:annotation>
