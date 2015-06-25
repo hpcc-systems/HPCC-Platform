@@ -58,6 +58,7 @@ ESPStruct TpLogicalCluster
     string Queue;
         [min_ver("1.14")] string LanguageVersion;
     [min_ver("1.11")] string Process;
+    [min_ver("1.22")] string Type;
 };
 //  ===========================================================================
 
@@ -583,7 +584,7 @@ ESPresponse [exceptions_inline,encode(0)] TpGetServicePluginsResponse
     ESParray<ESPstruct TpEspServicePlugin, Plugin> Plugins;
 };
 
-ESPservice [noforms, version("1.21"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [noforms, version("1.22"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
     ESPuses ESPstruct TpCluster;

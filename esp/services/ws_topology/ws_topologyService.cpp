@@ -1169,31 +1169,21 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
 
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = factory->openEnvironment();
-        Owned<IPropertyTree> root = &constEnv->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
-
         IArrayOf<IEspTpLogicalCluster> clusters;
-        Owned<IPropertyTreeIterator> clusterIterator = root->getElements("Software/Topology/Cluster");
-        if (clusterIterator->first()) 
+        CConstWUClusterInfoArray wuClusters;
+        getEnvironmentClusterInfo(wuClusters);
+        ForEachItemIn(c, wuClusters)
         {
-            do {
-                IPropertyTree &cluster0 = clusterIterator->query();
-                StringBuffer processName;
-                const char* clusterName0 = cluster0.queryProp("@name");
-                if (!clusterName0 || !*clusterName0)
-                    continue;
+            IConstWUClusterInfo& wuCluster = wuClusters.item(c);
+            SCMStringBuffer name;
+            wuCluster.getName(name);
 
-                IEspTpLogicalCluster* pService = createTpLogicalCluster("","");
-                pService->setName(clusterName0);
-                pService->setLanguageVersion("3.0.0");
-                clusters.append(*pService);
-
-            } while (clusterIterator->next());
+            Owned<IEspTpLogicalCluster> cluster = createTpLogicalCluster();
+            cluster->setName(name.str());
+            cluster->setType(clusterTypeString(wuCluster.getPlatform(), false));
+            cluster->setLanguageVersion("3.0.0");
+            clusters.append(*cluster.getClear());
         }
-
         resp.setTpLogicalClusters(clusters);
     }
     catch(IException* e)
