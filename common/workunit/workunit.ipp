@@ -28,9 +28,9 @@ public:
     IMPLEMENT_IINTERFACE;
     CLocalWUAppValue(IPropertyTree *p,unsigned child);
 
-    virtual IStringVal & getApplication(IStringVal & str) const;
-    virtual IStringVal & getName(IStringVal & str) const;
-    virtual IStringVal & getValue(IStringVal & dt) const;
+    virtual const char *queryApplication() const;
+    virtual const char *queryName() const;
+    virtual const char *queryValue() const;
 };
 
 

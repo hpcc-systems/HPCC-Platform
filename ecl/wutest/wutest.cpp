@@ -147,11 +147,13 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
 extern "C" IWorkUnitFactory *createWorkUnitFactory(const IPropertyTree *props);
 #endif
 
+Owned<IProperties> globals;
+
 int main(int argc, const char *argv[])
 {
     InitModuleObjects();
     unsigned count=0;
-    Owned<IProperties> globals = createProperties("WUTEST.INI", true);
+    globals.setown(createProperties("WUTEST.INI", true));
     for (int i = 1; i < argc; i++)
     {
         if (strchr(argv[i],'='))
@@ -206,8 +208,7 @@ int main(int argc, const char *argv[])
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
             CppUnit::TextUi::TestRunner runner;
             CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry("WuTest");
-            runner.addTest( registry.makeTest() );
-            bool wasSucessful = runner.run( "", false );
+            runner.addTest( registry.makeTest() );            bool wasSucessful = runner.run( "", false );
             return wasSucessful;
         }
         else
@@ -416,8 +417,11 @@ class WuTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(WuTest);
         CPPUNIT_TEST(testCreate);
+        CPPUNIT_TEST(testValidate);
         CPPUNIT_TEST(testList);
         CPPUNIT_TEST(testList2);
+        CPPUNIT_TEST(testListByAppValue);
+        CPPUNIT_TEST(testListByAppValueWild);
         CPPUNIT_TEST(testSet);
         CPPUNIT_TEST(testDelete);
         CPPUNIT_TEST(testCopy);
@@ -427,6 +431,12 @@ protected:
     void testCreate()
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        if (globals->getPropBool("entire", false) && globals->getPropBool("repository", false))
+        {
+            factory->deleteRepository(false);
+            factory->createRepository();
+            DBGLOG("Repository recreated\n");
+        }
         unsigned before = factory->numWorkUnits();
         unsigned start = msTick();
         for (int i = 0; i < testSize; i++)
@@ -444,15 +454,22 @@ protected:
             if (i % 3)
                 wu->setJobName(jobName);
             wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, "Total thor time", ((i+2)/2) * 1000000, 1, 0, StatsMergeReplace);
+            wu->setApplicationValue("appname", "userId", userId.str(), true);
+            wu->setApplicationValue("appname2", "clusterName", clusterName.str(), true);
             wuids.append(wu->queryWuid());
         }
         unsigned after = factory->numWorkUnits();
         DBGLOG("%u workunits created in %d ms (%d total)", testSize, msTick()-start, after);
         ASSERT(after-before==testSize);
         ASSERT(wuids.length() == testSize);
-        start = msTick();
+    }
+
+    void testValidate()
+    {
+        unsigned start = msTick();
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         ASSERT(factory->validateRepository(false)==0);
-        DBGLOG("%u workunits validated in %d ms", after, msTick()-start);
+        DBGLOG("Repository validated in %d ms", msTick()-start);
     }
 
     void testCopy()
@@ -1180,6 +1197,47 @@ protected:
         }
         DBGLOG("%d workunits descending thortime, page by page in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == testSize);
+    }
+
+    void testListByAppValue()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        bool isDali = streq(factory->queryStoreType(), "Dali");
+        unsigned start = msTick();
+        unsigned numIterated = 0;
+        // Test filter by appValue
+        WUSortField filterByAppValue[] = { WUSFappvalue, WUSFterm };
+        start = msTick();
+        Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFreverse), filterByAppValue, "appname/userId\0WuTestUser00", 0, 10000, NULL, NULL);
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryUser(), "WuTestUser00"));
+            numIterated++;
+        }
+        DBGLOG("%d workunits by appvalue in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+49)/50);
+        numIterated++;
+    }
+    void testListByAppValueWild()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        bool isDali = streq(factory->queryStoreType(), "Dali");
+        unsigned start = msTick();
+        unsigned numIterated = 0;
+        // Test filter by appValue
+        WUSortField filterByAppValueWild[] = { (WUSortField) (WUSFappvalue|WUSFwild), WUSFterm };
+        start = msTick();
+        Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFreverse), filterByAppValueWild, "appname/userId\0WuTestUser*", 0, 10000, NULL, NULL);
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryUser(), "WuTestUser00"));
+            numIterated++;
+        }
+        DBGLOG("%d workunits by appvalue wild in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == testSize);
+        numIterated++;
     }
 };
 StringArray WuTest::wuids;

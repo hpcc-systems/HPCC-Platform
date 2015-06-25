@@ -766,9 +766,9 @@ interface IConstWUTimeStampIterator : extends IScmIterator
 
 interface IConstWUAppValue : extends IInterface
 {
-    virtual IStringVal & getApplication(IStringVal & str) const = 0;
-    virtual IStringVal & getName(IStringVal & str) const = 0;
-    virtual IStringVal & getValue(IStringVal & str) const = 0;
+    virtual const char *queryApplication() const = 0;
+    virtual const char *queryName() const = 0;
+    virtual const char *queryValue() const = 0;
 };
 
 
@@ -1200,7 +1200,8 @@ enum WUSortField
     WUSFtotalthortime = 11,
     WUSFwildwuid = 12,
     WUSFecl = 13,
-    WUSFcustom = 14,
+    // WUSFcustom = 14, obsolete
+    WUSFappvalue=15,
     WUSFterm = 0,
     WUSFreverse = 256,
     WUSFnocase = 512,

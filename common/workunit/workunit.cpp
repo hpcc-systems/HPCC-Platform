@@ -2000,6 +2000,7 @@ mapEnums workunitSortFields[] =
    },
    { WUSFwuidhigh, "@" },
    { WUSFwildwuid, "@" },
+   { WUSFappvalue, "Application" },
    { WUSFterm, NULL }
 };
 
@@ -2765,8 +2766,12 @@ public:
                     namefilterhi.set(fv);
                 else if (subfmt==WUSFwildwuid)
                     namefilter.set(fv);
-                else if (subfmt==WUSFcustom)
-                    query.append("[").append(fv).append("]");
+                else if (subfmt==WUSFappvalue)
+                {
+                    query.append("[Application/").append(fv).append("=?\"");
+                    fv = fv + strlen(fv)+1;
+                    query.append(fv).append("\"]");
+                }
                 else if (!fv || !*fv)
                     unknownAttributes.append(getEnumText(subfmt,workunitSortFields));
                 else {
@@ -4211,7 +4216,6 @@ void CLocalWorkUnit::setApplicationValue(const char *app, const char *propname, 
     prop.append(app).append('/').append(propname);
     if (overwrite || !p->hasProp(prop.str()))
     {
-        // MORE - not sure these lines should be needed....
         StringBuffer sp;
         p->setProp(sp.append("Application").str(), ""); 
         p->setProp(sp.append('/').append(app).str(), ""); 
@@ -4221,17 +4225,8 @@ void CLocalWorkUnit::setApplicationValue(const char *app, const char *propname, 
 
 void CLocalWorkUnit::setApplicationValueInt(const char *app, const char *propname, int value, bool overwrite)
 {
-    CriticalBlock block(crit);
-    StringBuffer prop("Application/");
-    prop.append(app).append('/').append(propname);
-    if (overwrite || !p->hasProp(prop.str()))
-    {
-        // MORE - not sure these lines should be needed....
-        StringBuffer sp;
-        p->setProp(sp.append("Application").str(), ""); 
-        p->setProp(sp.append('/').append(app).str(), ""); 
-        p->setPropInt(prop.str(), value); 
-    }
+    VStringBuffer s("%d", value);
+    setApplicationValue(app, propname, s, overwrite);
 }
 
 void CLocalWorkUnit::setPriorityLevel(int level) 
@@ -8477,30 +8472,28 @@ void CLocalWUException::setExceptionColumn(unsigned c)
 
 //==========================================================================================
 
-CLocalWUAppValue::CLocalWUAppValue(IPropertyTree *props,unsigned child): p(props)
+CLocalWUAppValue::CLocalWUAppValue(IPropertyTree *props, unsigned child) : p(props)
 {
     StringAttrBuilder propPath(prop);
     propPath.append("*[").append(child).append("]");
 }
 
-IStringVal & CLocalWUAppValue::getApplication(IStringVal & str) const
+const char * CLocalWUAppValue::queryApplication() const
 {
-    str.set(p->queryName());
-    return str;
+    return p->queryName();
 }
 
-IStringVal & CLocalWUAppValue::getName(IStringVal & str) const
+const char * CLocalWUAppValue::queryName() const
 {
     IPropertyTree* val=p->queryPropTree(prop.str());
     if(val)
-        str.set(val->queryName());
-    return str;
+        return val->queryName();
+    return ""; // Should not happen in normal usage
 }
 
-IStringVal & CLocalWUAppValue::getValue(IStringVal & str) const
+const char * CLocalWUAppValue::queryValue() const
 {
-    str.set(p->queryProp(prop.str()));
-    return str;
+    return p->queryProp(prop.str());
 }
 
 //==========================================================================================
