@@ -696,21 +696,31 @@ class AbortHandlerInfo : public CInterface
 public:
     ThreadId installer;
     AbortHandler handler;
+    SimpleAbortHandler shandler;
     IAbortHandler *ihandler;
     AbortHandlerInfo(AbortHandler _handler)
     {
         handler = _handler;
+        shandler = NULL;
+        ihandler = NULL;
+        installer = GetCurrentThreadId();
+    }
+    AbortHandlerInfo(SimpleAbortHandler _handler)
+    {
+        handler = NULL;
+        shandler = _handler;
         ihandler = NULL;
         installer = GetCurrentThreadId();
     }
     AbortHandlerInfo(IAbortHandler *_ihandler)
     {
         handler = NULL;
+        shandler = NULL;
         ihandler = _ihandler;
         installer = GetCurrentThreadId();
     }
 
-    bool handle()
+    bool handle(ahType type)
     {
 #ifndef _WIN32
         if (installer == GetCurrentThreadId())
@@ -718,7 +728,9 @@ public:
         {
 //          DBGLOG("handle abort %x", GetCurrentThreadId());
             if (handler)
-                return handler();
+                return handler(type);
+            else if (shandler)
+                return shandler();
             else
                 return ihandler->onAbort();
         }
@@ -731,7 +743,7 @@ public:
 
 CIArrayOf<AbortHandlerInfo> handlers;
 
-bool notifyOnAbort()
+bool notifyOnAbort(ahType type)
 {
 //  DBGLOG("notifyOnAbort %x", GetCurrentThreadId());
 //      CriticalBlock c(abortCrit); You would think that this was needed, but it locks up.
@@ -739,7 +751,7 @@ bool notifyOnAbort()
     bool doExit = false;
     ForEachItemInRev(idx, handlers)
     {
-        if (handlers.item(idx).handle())
+        if (handlers.item(idx).handle(type))
             doExit = true;
     }
 //  DBGLOG("notifyOnAbort returning %d", (int) doExit);
@@ -756,13 +768,13 @@ BOOL WINAPI WindowsAbortHandler ( DWORD dwCtrlType )
         case CTRL_CLOSE_EVENT:
         {
             hadAbortSignal = true;
-            bool doExit = notifyOnAbort();
+            bool doExit = notifyOnAbort(ahInterrupt);
             return !doExit; 
         }
         case CTRL_LOGOFF_EVENT:
         case CTRL_SHUTDOWN_EVENT:
             hadAbortSignal = true;
-            notifyOnAbort();
+            notifyOnAbort(ahTerminate);
             return FALSE;
     }
     return FALSE; 
@@ -782,10 +794,14 @@ BOOL WINAPI ModuleExitHandler ( DWORD dwCtrlType )
     return FALSE; 
 } 
 #else
-static void UnixAbortHandler(int sig)
+static void UnixAbortHandler(int signo)
 {
+    ahType type = ahInterrupt;
+    if (SIGTERM == signo)
+            type = ahTerminate;
+
     hadAbortSignal = true;
-    if (handlers.length()==0 || notifyOnAbort())
+    if (handlers.length()==0 || notifyOnAbort(type))
     {
         _exit(0);
     }
@@ -850,6 +866,13 @@ void addAbortHandler(AbortHandler handler)
     handlers.append(*new AbortHandlerInfo(handler));
 }
 
+void addAbortHandler(SimpleAbortHandler handler)
+{
+    CriticalBlock c(abortCrit);
+    queryInstallAbortHandler();
+    handlers.append(*new AbortHandlerInfo(handler));
+}
+
 void addAbortHandler(IAbortHandler & handler)
 {
     CriticalBlock c(abortCrit);
@@ -863,6 +886,20 @@ void removeAbortHandler(AbortHandler handler)
     ForEachItemInRev(idx, handlers)
     {
         if (handlers.item(idx).handler == handler)
+        {
+            handlers.remove(idx);
+            break;
+        }
+    }
+    queryUninstallAbortHandler();
+}
+
+void removeAbortHandler(SimpleAbortHandler handler)
+{
+    CriticalBlock c(abortCrit);
+    ForEachItemInRev(idx, handlers)
+    {
+        if (handlers.item(idx).shandler == handler)
         {
             handlers.remove(idx);
             break;
