@@ -2321,7 +2321,7 @@ public:
 
     void reportLeaks(unsigned &leaked) const
     {
-        SpinBlock c1(crit);
+        NonReentrantSpinBlock c1(heapletLock);
         Heaplet * start = heaplets;
         if (start)
         {
@@ -2339,7 +2339,7 @@ public:
 
     void checkHeap()
     {
-        SpinBlock c1(crit);
+        NonReentrantSpinBlock c1(heapletLock);
         Heaplet * start = heaplets;
         if (start)
         {
@@ -2355,7 +2355,7 @@ public:
     unsigned allocated()
     {
         unsigned total = 0;
-        SpinBlock c1(crit);
+        NonReentrantSpinBlock c1(heapletLock);
         Heaplet * start = heaplets;
         if (start)
         {
@@ -2412,7 +2412,7 @@ public:
             return 0;
 
         unsigned total = 0;
-        SpinBlock c1(crit);
+        NonReentrantSpinBlock c1(heapletLock);
         //Check again in case other thread has also called this function and no other pages have been released.
         if (atomic_read(&possibleEmptyPages) == 0)
             return 0;
@@ -2504,7 +2504,7 @@ public:
         unsigned numPages = 0;
         memsize_t numAllocs = 0;
         {
-            SpinBlock c1(crit);
+            NonReentrantSpinBlock c1(heapletLock);
             Heaplet * start = heaplets;
             if (start)
             {
@@ -2577,8 +2577,8 @@ protected:
         //NOTE: We do not clear next/prev in the heaplet being removed.
     }
 
-    inline void internalLock() { crit.enter(); }
-    inline void internalUnlock() { crit.leave(); }
+    inline void internalLock() { heapletLock.enter(); }
+    inline void internalUnlock() { heapletLock.leave(); }
 
 protected:
     unsigned flags; // before the pointer so it packs better in 64bit.
@@ -2587,7 +2587,7 @@ protected:
     CChunkingRowManager * rowManager;
     const IRowAllocatorCache *allocatorCache;
     const IContextLogger & logctx;
-    mutable SpinLock crit;      // MORE: Can probably be a NonReentrantSpinLock if we're careful
+    mutable NonReentrantSpinLock heapletLock;
     atomic_t headMaybeSpace;  // The head of the list of heaplets which potentially have some space.
     atomic_t possibleEmptyPages;  // Are there any pages with 0 records.  Primarily here to avoid walking long page chains.
 };
@@ -2764,6 +2764,7 @@ void ChunkedHeaplet::verifySpaceList()
 
 char * ChunkedHeaplet::allocateChunk()
 {
+    //The spin lock for the heap this chunk belongs to must be held when this function is called
     char *ret;
     const size32_t size = chunkSize;
     loop
@@ -4194,7 +4195,7 @@ void * CHugeHeap::doAllocate(memsize_t _size, unsigned allocatorId, unsigned max
             (unsigned __int64) _size, (unsigned __int64) (numPages*HEAP_ALIGNMENT_SIZE), head, numPages, rowManager->pageLimit, rowManager->peakPages, this);
     }
 
-    SpinBlock b(crit);
+    NonReentrantSpinBlock b(heapletLock);
     insertHeaplet(head);
     return head->allocateHuge(_size);
 }
@@ -4246,7 +4247,7 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
             {
                 // Remove the old block from the chain
                 {
-                    SpinBlock b(crit);
+                    NonReentrantSpinBlock b(heapletLock);
                     removeHeaplet(oldhead);
                 }
 
@@ -4257,7 +4258,7 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
                 // MORE - If we were really clever, we could manipulate the page table to avoid moving ANY data here...
                 memmove(realloced, oldbase, copysize + HugeHeaplet::dataOffset());  // NOTE - assumes no trailing data (e.g. end markers)
 
-                SpinBlock b(crit);
+                NonReentrantSpinBlock b(heapletLock);
                 insertHeaplet(head);
             }
             void * ret = (char *) realloced + HugeHeaplet::dataOffset();
@@ -4311,7 +4312,7 @@ void * CChunkedHeap::inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCos
     loop
     {
         {
-            SpinBlock b(crit);
+            NonReentrantSpinBlock b(heapletLock);
             if (activeHeaplet)
             {
                 //This cast is safe because we are within a member of CChunkedHeap
@@ -4377,7 +4378,7 @@ void * CChunkedHeap::inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCos
                 chunkSize, chunkSize, donorHeaplet, rowManager->pageLimit, rowManager->peakPages, this);
 
     {
-        SpinBlock b(crit);
+        NonReentrantSpinBlock b(heapletLock);
         insertHeaplet(donorHeaplet);
 
         //While this thread was allocating a block, another thread also did the same.  Ensure that other block is
