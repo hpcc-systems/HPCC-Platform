@@ -1251,12 +1251,37 @@ public:
 
     virtual void * initChunk(char * chunk, unsigned allocatorId) = 0;
 
-    void * allocate(unsigned allocatorId)
+    void * testAllocate(unsigned allocatorId)
     {
+        //NOTE: There is no protecting lock before this call to allocate, but precreateFreeChain() has been called.
         char * ret = allocateChunk();
         if (!ret)
             return NULL;
         return initChunk(ret, allocatorId);
+    }
+
+    void precreateFreeChain()
+    {
+        //The function is to aid testing - it allows the cas code to be tested without a surrounding lock
+        //Allocate all possible rows and add them to the free space map.
+        //This is not worth doing in general because it effectively replaces atomic_sets with atomic_cas
+        unsigned nextFree = atomic_read(&freeBase);
+        unsigned nextBlock = atomic_read(&r_blocks);
+        loop
+        {
+            size32_t bytesFree = dataAreaSize() - nextFree;
+            if (bytesFree < chunkSize)
+                break;
+
+            char * ret = data() + nextFree;
+            nextFree += chunkSize;
+
+            //Add to the free chain
+            * (unsigned *)ret = nextBlock;
+            nextBlock = makeRelative(ret);
+        }
+        atomic_set(&freeBase, nextFree);
+        atomic_set(&r_blocks, nextBlock);
     }
 
     char * allocateChunk();
@@ -2762,6 +2787,7 @@ void ChunkedHeaplet::verifySpaceList()
     }
 }
 
+//This function must be called inside a protecting lock on the heap it belongs to, or after precreateFreeChain() has been called.
 char * ChunkedHeaplet::allocateChunk()
 {
     char *ret;
@@ -2790,16 +2816,13 @@ char * ChunkedHeaplet::allocateChunk()
             unsigned curFreeBase = atomic_read(&freeBase);
             //There is no ABA issue on freeBase because it is never decremented (and no next chain with it)
             size32_t bytesFree = dataAreaSize() - curFreeBase;
-            if (bytesFree >= size)
-            {
-                if (atomic_cas(&freeBase, curFreeBase + size, curFreeBase))
-                {
-                    ret = data() + curFreeBase;
-                    break;
-                }
-            }
-            else
+            if (bytesFree < size)
                 return NULL;
+
+            //This is the only place that modifies freeBase, so it can be unconditional since caller must have a lock.
+            atomic_set(&freeBase, curFreeBase + size);
+            ret = data() + curFreeBase;
+            break;
         }
     }
 
@@ -5838,7 +5861,7 @@ protected:
 
         mutable atomic_t counter;
     };
-    enum { numCasThreads = 20, numCasIter = 50, numCasAlloc = 1000 };
+    enum { numCasThreads = 20, numCasIter = 100, numCasAlloc = 500 };
     class CasAllocatorThread : public Thread
     {
     public:
@@ -5916,17 +5939,33 @@ protected:
         {
         }
 
-        virtual void * allocate() { return heaplet->allocate(ACTIVITY_FLAG_ISREGISTERED|0); }
+        virtual void * allocate() { return heaplet->testAllocate(ACTIVITY_FLAG_ISREGISTERED|0); }
         virtual void * finalize(void * ptr) { heaplet->_setDestructorFlag(ptr); return ptr; }
 
     protected:
         FixedSizeHeaplet * heaplet;
     };
+    class NullCasAllocatorThread : public CasAllocatorThread
+    {
+    public:
+        NullCasAllocatorThread(Semaphore & _sem, IRowManager * _rm) : CasAllocatorThread(_sem, _rm)
+        {
+        }
+
+        virtual void * allocate() { return temp; }
+        virtual void * finalize(void * ptr) { return ptr; }
+
+    protected:
+        char temp[32];
+    };
     void testHeapletCas()
     {
-        memsize_t maxMemory = (((memsize_t)numCasThreads * numCasIter) * numCasAlloc) * 32;
+        unsigned numThreads = FixedSizeHeaplet::dataAreaSize() / ((numCasAlloc+1) * 32);
+        if (numThreads > numCasThreads)
+            numThreads = numCasThreads;
+
         //Because this is allocating from a single heaplet check if it can overflow the memory
-        if (maxMemory > FixedSizeHeaplet::dataAreaSize())
+        if (numThreads == 0)
             return;
 
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
@@ -5934,15 +5973,19 @@ protected:
         void * memory = suballoc_aligned(1, true);
         CFixedChunkedHeap dummyHeap((CChunkingRowManager*)rowManager.get(), logctx, &rowCache, 32, 0, SpillAllCost);
         FixedSizeHeaplet * heaplet = new (memory) FixedSizeHeaplet(&dummyHeap, &rowCache, 32);
+        heaplet->precreateFreeChain();
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
-        for (unsigned i1 = 0; i1 < numCasThreads; i1++)
+        for (unsigned i1 = 0; i1 < numThreads; i1++)
             threads[i1] = new HeapletCasAllocatorThread(heaplet, sem, rowManager);
+        for (unsigned i2 = numThreads; i2 < numCasThreads; i2++)
+            threads[i2] = new NullCasAllocatorThread(sem, rowManager);
 
-        runCasTest("heaplet", sem, threads);
+        VStringBuffer label("heaplet.%u", numThreads);
+        runCasTest(label.str(), sem, threads);
 
         delete heaplet;
-        ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
+        ASSERT(atomic_read(&rowCache.counter) == 2 * numThreads * numCasIter * numCasAlloc);
     }
     class FixedCasAllocatorThread : public CasAllocatorThread
     {
