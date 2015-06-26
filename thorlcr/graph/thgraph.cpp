@@ -2960,6 +2960,7 @@ void CActivityBase::logRow(const char * prefix, IOutputMetaData & meta, const vo
     {
         StringBuffer xml;
         appendRowXml(xml, meta, row);
+        ActPrintLog("%s: %s", prefix, xml.str());
     }
 }
 

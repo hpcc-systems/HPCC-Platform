@@ -29,6 +29,7 @@
 #include <limits.h>
 
 #include "jlib.hpp"
+#include "jflz.hpp"
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
 #include "thorport.hpp"
@@ -260,14 +261,14 @@ struct PartitionInfo
             throw MakeStringException(-1,"SORT: PartitionInfo meta info mismatch(%d,%d)",guard,dsguard);
         splitkeys.kill();
         splitkeys.deserialize(left, mb.readDirect(left));
-    }   
+    }
 };
-    
+
 
 
 typedef CopyReferenceArrayOf<CSortNode> NodeArray;
 
-class CSortMaster: public IThorSorterMaster, public CSimpleInterface
+class CSortMaster : public IThorSorterMaster, public CSimpleInterface
 { 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -290,6 +291,7 @@ public:
     size32_t maxdeviance;
     Linked<IRowInterfaces> rowif;
     Linked<IRowInterfaces> auxrowif;
+    Linked<IRowInterfaces> keyIf;
 
     int AddSlave(ICommunicator *comm,rank_t rank,SocketEndpoint &endpoint,mptag_t mpTagRPC)
     {
@@ -301,14 +303,13 @@ public:
     void ConnectSlaves()
     {
         ActPrintLog(activity, "CSortMaster::ConnectSlaves");
-#ifdef CONNECT_IN_PARALLEL
         class casyncfor: public CAsyncFor
         {
         public:
             casyncfor(CSortMaster &_owner, NodeArray &_slaves) : owner(_owner), slaves(_slaves) { }
             void Do(unsigned i)
             {
-                CSortNode &slave = slaves.item(i);          
+                CSortNode &slave = slaves.item(i);
                 if (!slave.doConnect(i,slaves.ordinality())) {
                     char url[100];
                     slave.endpoint.getUrlStr(url,sizeof(url));
@@ -320,21 +321,10 @@ public:
             CSortMaster &owner;
         } afor(*this,slaves);
         afor.For(slaves.ordinality(), CONNECT_IN_PARALLEL);
-#else
-        ForEachItemIn(i,slaves) {
-            CSortNode &slave = slaves.item(i);          
-            if (!slave.doConnect(i,slaves.ordinality())) {
-                char url[100];
-                slave.endpoint.getUrlStr(url,sizeof(url));
-                throw MakeActivityException(activity,TE_CannotConnectToSlave,"CSortMaster::ConnectSlaves: Could not connect to %s",url);
-            }
-        }
-#endif
     }
 
     void InitSlaves()
     {
-#ifdef INIT_IN_PARALLEL
         class casyncfor: public CAsyncFor
         {
         public:
@@ -348,12 +338,6 @@ public:
             NodeArray &slaves;
         } afor(slaves);
         afor.For(slaves.ordinality(), INIT_IN_PARALLEL);
-#else
-        ForEachItemIn(i,slaves) {
-            CSortNode &slave = slaves.item(i);          
-            slave.init();
-        }
-#endif
     }
 
 
@@ -400,14 +384,24 @@ public:
     void SortSetup(IRowInterfaces *_rowif,ICompare *_icompare,ISortKeySerializer *_keyserializer,bool cosort,bool needconnect,const char *_cosortfilenames,IRowInterfaces *_auxrowif)
     {
         ActPrintLog(activity, "Sort setup cosort=%s, needconnect=%s %s",cosort?"true":"false",needconnect?"true":"false",_keyserializer?"has key serializer":"");
+        assertex(_icompare);
         rowif.set(_rowif);
         if (_auxrowif&&_auxrowif->queryRowMetaData())
             auxrowif.set(_auxrowif);
         else
             auxrowif.set(_rowif);
         synchronized proc(slavemutex);
-        icompare = _icompare;
         keyserializer = _keyserializer;
+        if (keyserializer)
+        {
+            keyIf.setown(createRowInterfaces(keyserializer->queryRecordSize(), activity->queryContainer().queryId(), activity->queryCodeContext()));
+            icompare = keyserializer->queryCompareKey();
+        }
+        else
+        {
+            keyIf.set(auxrowif);
+            icompare = _icompare;
+        }
         sorted = false;
         total = 0;
         stotal = 0;
@@ -416,13 +410,11 @@ public:
         maxrecsonnode = 0;
         numnodes = slaves.ordinality();
         estrecsize = 100;
-        if (!partitioninfo) { // if cosort use aux
-            if (cosort) {
+        if (!partitioninfo) // if cosort use aux
+        {
+            if (cosort)
                 ActPrintLog(activity, "Cosort with no prior partition");
-                partitioninfo = new PartitionInfo(activity, auxrowif);
-            }
-            else
-                partitioninfo = new PartitionInfo(activity, rowif);
+            partitioninfo = new PartitionInfo(activity, keyIf);
         }
         free(partitioninfo->nodes);
         free(partitioninfo->mpports);
@@ -440,11 +432,6 @@ public:
             *mpp = slave.mpport;
             mpp++;
         }
-        if (keyserializer&&cosort&&!partitioninfo->IsOK()) {
-            keyserializer = NULL; // when joining to 0 rows can't use (LHS) serializer getMinMax will tell slave
-            ActPrintLog(activity, "Suppressing key serializer on master");
-        }
-        assertex(icompare);
         if (needconnect) // if cosort set, already done!
             ConnectSlaves();
         InitSlaves();
@@ -477,7 +464,6 @@ public:
         synchronized proc(slavemutex);
         if (activity->queryAbortSoon())
             return;
-#ifdef CLOSE_IN_PARALLEL
         class casyncfor: public CAsyncFor
         {
             CActivityBase &activity;
@@ -502,11 +488,6 @@ public:
             return;
         afor.wait = true;
         afor.For(slaves.ordinality(), CLOSE_IN_PARALLEL);
-#else
-        ForEachItemInRev(i,slaves) {
-            slaves.item(i).Close();
-        }
-#endif
         ActPrintLog(activity, "Sort Done");
     }
 
@@ -541,26 +522,30 @@ public:
             CSortNode &slave = slaves.item(i);
             if (slave.numrecs==0)
                 continue;
-            CThorExpandingRowArray minmax(*activity, rowif, true);
             void *p = NULL;
             size32_t retlen = 0;
             size32_t avrecsize=0;
             rowcount_t num=slave.GetMinMax(retlen,p,avrecsize);
-            if (avrecsize) {
+            if (avrecsize)
+            {
                 ers += avrecsize;       // should probably do mode but this is OK
                 ersn++;
             }
             tot += num;
             if (num>0)
             {
-                minmax.deserialize(retlen, p);
+                OwnedConstThorRow slaveMin, slaveMax;
+                RtlDynamicRowBuilder rowBuilder(keyIf->queryRowAllocator());
+                CThorStreamDeserializerSource dsz(retlen, p);
+                size32_t sz = keyIf->queryRowDeserializer()->deserialize(rowBuilder, dsz);
+                slaveMin.setown(rowBuilder.finalizeRowClear(sz));
+                sz = keyIf->queryRowDeserializer()->deserialize(rowBuilder, dsz);
+                slaveMax.setown(rowBuilder.finalizeRowClear(sz));
                 free(p);
-                const void *p = minmax.query(0);
-                if (!min.get()||(icompare->docompare(min,p)>0)) 
-                    min.set(p);
-                p = minmax.query(1);
-                if (!max.get()||(icompare->docompare(max,p)<0)) 
-                    max.set(p);
+                if (!min.get()||(icompare->docompare(min, slaveMin)>0))
+                    min.setown(slaveMin.getClear());
+                if (!max.get()||(icompare->docompare(max, slaveMax)<0))
+                    max.setown(slaveMax.getClear());
             }
         }
         if (ersn)
@@ -569,10 +554,11 @@ public:
             estrecsize = 100;
 #ifdef _TRACE
         if (min)
-            traceKey(rowif->queryRowSerializer(),"Min",min);
+            traceKey(keyIf->queryRowSerializer(),"Min",min);
         if (max)
-            traceKey(rowif->queryRowSerializer(),"Max",max);
-        if (min&&max) {
+            traceKey(keyIf->queryRowSerializer(),"Max",max);
+        if (min&&max)
+        {
             int cmp=icompare->docompare(min,max);
             if (cmp==0) 
                 ActPrintLog(activity, "Min == Max : All keys equal!");
@@ -608,18 +594,18 @@ public:
         unsigned averagesamples = OVERSAMPLE*numnodes;  
         rowcount_t averagerecspernode = (rowcount_t)(total/numnodes);
         CriticalSection asect;
-        CThorExpandingRowArray sample(*activity, rowif, true);
-#ifdef ASYNC_PARTIONING
+        CThorExpandingRowArray sample(*activity, keyIf, true);
         class casyncfor1: public CAsyncFor
         {
+            CSortMaster &owner;
             NodeArray &slaves;
             CThorExpandingRowArray &sample;
             CriticalSection &asect;
             unsigned averagesamples;
             rowcount_t averagerecspernode;
         public:
-            casyncfor1(NodeArray &_slaves, CThorExpandingRowArray &_sample, unsigned _averagesamples, rowcount_t _averagerecspernode, CriticalSection &_asect)
-                : slaves(_slaves), sample(_sample), asect(_asect)
+            casyncfor1(CSortMaster &_owner, NodeArray &_slaves, CThorExpandingRowArray &_sample, unsigned _averagesamples, rowcount_t _averagerecspernode, CriticalSection &_asect)
+                : owner(_owner), slaves(_slaves), sample(_sample), asect(_asect)
             { 
                 averagesamples = _averagesamples;
                 averagerecspernode = _averagerecspernode;
@@ -629,32 +615,26 @@ public:
                 CSortNode &slave = slaves.item(i);
                 unsigned slavesamples = averagerecspernode?((unsigned)((averagerecspernode/2+averagesamples*slave.numrecs)/averagerecspernode)):1;
                 //PrintLog("%d samples for %d",slavesamples,i);
-                if (slavesamples) {
+                if (slavesamples)
+                {
                     size32_t samplebufsize;
                     void *samplebuf=NULL;
                     slave.GetMultiNthRow(slavesamples, samplebufsize, samplebuf);
-                    CriticalBlock block(asect);
-                    sample.deserializeExpand(samplebufsize, samplebuf);
+                    MemoryBuffer mb;
+                    fastLZDecompressToBuffer(mb, samplebuf);
                     free(samplebuf);
+                    CriticalBlock block(asect);
+                    CThorStreamDeserializerSource d(mb.length(), mb.toByteArray());
+                    while (!d.eos())
+                    {
+                        RtlDynamicRowBuilder rowBuilder(owner.keyIf->queryRowAllocator());
+                        size32_t sz = owner.keyIf->queryRowDeserializer()->deserialize(rowBuilder, d);
+                        sample.append(rowBuilder.finalizeRowClear(sz));
+                    }
                 }
             }
-        } afor1(slaves,sample,averagesamples,averagerecspernode,asect);
+        } afor1(*this, slaves,sample,averagesamples,averagerecspernode,asect);
         afor1.For(numnodes, 20, true);
-#else
-        unsigned i;
-        for (i=0;i<numnodes;i++) {
-            CSortNode &slave = slaves.item(i);
-            unsigned slavesamples = (unsigned)((count_t)averagesamples*slave.numrecs/(count_t)averagerecspernode);
-            PrintLog("%d samples for %d",slavesamples,i);
-            if (!slavesamples)
-                continue;
-            size32_t samplebufsize;
-            void *samplebuf=NULL;
-            slave.GetMultiNthRow(slavesamples,samplebufsize,samplebuf);
-            sample.deserializeExpand(samplebufsize, samplebuf);
-            free(samplebuf);
-        }   
-#endif
 #ifdef TRACE_PARTITION2
         {
             ActPrintLog(activity, "partition points");
@@ -670,9 +650,11 @@ public:
         offset_t ts=sample.serializedSize();
         estrecsize = numsamples?((size32_t)(ts/numsamples)):100;
         sample.sort(*icompare, activity->queryMaxCores());
-        CThorExpandingRowArray mid(*activity, rowif, true);
-        if (numsamples) { // could shuffle up empty nodes here
-            for (unsigned i=0;i<numsplits;i++) {
+        CThorExpandingRowArray mid(*activity, keyIf, true);
+        if (numsamples) // could shuffle up empty nodes here
+        {
+            for (unsigned i=0;i<numsplits;i++)
+            {
                 unsigned pos = (unsigned)(((count_t)numsamples*(i+1))/((count_t)numsplits+1));
                 const void *r = sample.get(pos);
                 mid.append(r);
@@ -681,11 +663,12 @@ public:
 #ifdef TRACE_PARTITION2
         {
             ActPrintLog(activity, "merged partitions");
-            for (unsigned i=0;i<mid.ordinality();i++) {
+            for (unsigned i=0;i<mid.ordinality();i++)
+            {
                 const void *k = mid.query(i);
                 StringBuffer str;
                 str.appendf("%d: ",i);
-                traceKey(rowif->queryRowSerializer(),str.str(),(const byte *)k);
+                traceKey(keyIf->queryRowSerializer(),str.str(),(const byte *)k);
             }
         }
 #endif
@@ -695,9 +678,7 @@ public:
         mid.serializeCompress(mdmb);
         mdl = mdmb.length();
         const byte *mdp=(const byte *)mdmb.bufferBase();
-        unsigned i;
-#ifdef ASYNC_PARTIONING
-        i = 0;
+        unsigned i = 0;
         class casyncfor2: public CAsyncFor
         {
             NodeArray &slaves;
@@ -718,14 +699,6 @@ public:
             }
         } afor2(slaves,mdl,mdp);
         afor2.For(numnodes, 20, true);
-#else
-        for (i=0;i<numnodes;i++) {
-            CSortNode &slave = slaves.item(i);
-            if (slave.numrecs!=0)
-                slave.MultiBinChopStart(mdl,mdp,CMPFN_NORMAL);
-        }
-#endif
-#ifdef ASYNC_PARTIONING
         class casyncfor3: public CAsyncFor
         {
             NodeArray &slaves;
@@ -751,16 +724,6 @@ public:
             }
         } afor3(slaves, splitMap, numnodes, numsplits);
         afor3.For(numnodes, 20, true);
-#else
-        for (i=0;i<numnodes;i++) {
-            CSortNode &slave = slaves.item(i);
-            if (slave.numrecs!=0) {
-                rowcount_t *res=splitMap+(i*numnodes);
-                slave.MultiBinChopStop(numsplits,res);
-                res[numnodes-1] = slave.numrecs;
-            }
-        }
-#endif
 #ifdef _TRACE
 #ifdef TRACE_PARTITION
         for (i=0;i<numnodes;i++) {
@@ -779,45 +742,48 @@ public:
 
     rowcount_t *CalcPartition(bool logging)
     {
-        CriticalBlock block(ECFcrit);       
+        CriticalBlock block(ECFcrit);
         // this is a bit long winded
 
         OwnedConstThorRow mink;
         OwnedConstThorRow maxk;
         // so as won't overflow
         OwnedMalloc<rowcount_t> splitmap(numnodes*numnodes, true);
-        if (CalcMinMax(mink,maxk)==0) {
+        if (CalcMinMax(mink, maxk)==0)
+        {
             // no partition info!
             partitioninfo->kill();
             return splitmap.getClear();
         }
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray emin(*activity, rowif, true);
-        CThorExpandingRowArray emax(*activity, rowif, true);
-        CThorExpandingRowArray totmid(*activity, rowif, true);
+        CThorExpandingRowArray emin(*activity, keyIf, true);
+        CThorExpandingRowArray emax(*activity, keyIf, true);
+        CThorExpandingRowArray totmid(*activity, keyIf, true);
         ECFarray = &totmid;
         ECFcompare = icompare;
-        CThorExpandingRowArray mid(*activity, rowif, true);
+        CThorExpandingRowArray mid(*activity, keyIf, true);
         unsigned i;
         unsigned j;
-        for(i=0;i<numsplits;i++) {
+        for(i=0;i<numsplits;i++)
+        {
             emin.append(mink.getLink());
             emax.append(maxk.getLink());
         }
         UnsignedArray amid;
         unsigned iter=0;
-        try {
+        try
+        {
             MemoryBuffer mbmn;
             MemoryBuffer mbmx;
             MemoryBuffer mbmd;
-            loop {
+            loop
+            {
 #ifdef _TRACE
                 iter++;
                 ActPrintLog(activity, "Split: %d",iter);
 #endif
                 emin.serializeCompress(mbmn.clear());
                 emax.serializeCompress(mbmx.clear());
-#ifdef ASYNC_PARTIONING
                 class casyncfor: public CAsyncFor
                 {
                     NodeArray &slaves;
@@ -836,14 +802,6 @@ public:
                     }
                 } afor(slaves,mbmn,mbmx);
                 afor.For(numnodes, 20, true);
-#else
-                for (i=0;i<numnodes;i++) {
-                    CSortNode &slave = slaves.item(i);
-                    if (slave.numrecs!=0)
-                        slave.GetMultiMidPointStart(mbmn.length(),mbmn.bufferBase(),mbmx.length(),mbmx.bufferBase());               
-                }
-#endif
-#ifdef ASYNC_PARTIONING
                 Semaphore *nextsem = new Semaphore[numnodes];
                 CriticalSection nextsect;
 
@@ -854,9 +812,10 @@ public:
                     CThorExpandingRowArray &totmid;
                     Semaphore *nextsem;
                     unsigned numsplits;
+                    IRowInterfaces *keyIf;
                 public:
-                    casyncfor2(NodeArray &_slaves, CThorExpandingRowArray &_totmid, unsigned _numsplits, Semaphore *_nextsem)
-                        : slaves(_slaves), totmid(_totmid)
+                    casyncfor2(NodeArray &_slaves, CThorExpandingRowArray &_totmid, unsigned _numsplits, Semaphore *_nextsem, IRowInterfaces *_keyIf)
+                        : slaves(_slaves), totmid(_totmid), keyIf(_keyIf)
                     { 
                         nextsem = _nextsem;
                         numsplits = _numsplits;
@@ -875,8 +834,23 @@ public:
                             unsigned base = totmid.ordinality();
                             if (p)
                             {
-                                totmid.deserializeExpand(retlen, p);
+                                MemoryBuffer mb;
+                                fastLZDecompressToBuffer(mb, p);
                                 free(p);
+                                CThorStreamDeserializerSource d(mb.length(), mb.toByteArray());
+                                while (!d.eos())
+                                {
+                                    RtlDynamicRowBuilder rowBuilder(keyIf->queryRowAllocator());
+                                    bool nullRow;
+                                    d.read(sizeof(bool),&nullRow);
+                                    if (nullRow)
+                                        totmid.append(NULL);
+                                    else
+                                    {
+                                        size32_t sz = keyIf->queryRowDeserializer()->deserialize(rowBuilder, d);
+                                        totmid.append(rowBuilder.finalizeRowClear(sz));
+                                    }
+                                }
                             }
                             while (totmid.ordinality()-base<numsplits)
                                 totmid.append(NULL);
@@ -889,42 +863,20 @@ public:
                         }
                         nextsem[i].signal();
                     }
-                } afor2(slaves, totmid, numsplits, nextsem);
+                } afor2(slaves, totmid, numsplits, nextsem, keyIf);
                 afor2.For(numnodes, 20);
+
                 delete [] nextsem;
-#else
-                for (i=0;i<numnodes;i++) {
-                    CSortNode &slave = slaves.item(i);
-                    unsigned base = totmid.ordinality();
-                    if (slave.numrecs!=0) {
-                        void *p = NULL;
-                        size32_t retlen = 0;
-                        slave.GetMultiMidPointStop(retlen,p);               
-                        totmid.deserializeExpand(retlen, p);
-                        free(p);
-#ifdef _DEBUG
-                        if (logging) {
-                            MemoryBuffer buf;
-                            for (j=0;j<numsplits;j++) {
-                                ActPrintLog(activity, "Min(%d): ",j); traceKey(rowif->queryRowSerializer(),"    ",emin.query(j));
-                                ActPrintLog(activity, "Mid(%d): ",j); traceKey(rowif->queryRowSerializer(),"    ",totmid.query(j+base));
-                                ActPrintLog(activity, "Max(%d): ",j); traceKey(rowif->queryRowSerializer(),"    ",emax.query(j));
-                            }
-                        }
-#endif
-                    }
-                    while (totmid.ordinality()-base<numsplits)
-                        totmid.append(NULL);
-                }
-#endif
                 mid.kill();
                 mbmn.clear();
                 mbmx.clear();
-                for (i=0;i<numsplits;i++) {
+                for (i=0;i<numsplits;i++)
+                {
                     amid.kill();
                     unsigned k;
                     unsigned t = i;
-                    for (k=0;k<numsplits;k++) {
+                    for (k=0;k<numsplits;k++)
+                    {
                         const void *row = totmid.query(t);
                         if (row)
                             amid.append(t);
@@ -938,11 +890,12 @@ public:
                     if (amid.ordinality()) {
                         unsigned mi = amid.item(amid.ordinality()/2);
 #ifdef _DEBUG
-                        if (logging) {
+                        if (logging)
+                        {
                             MemoryBuffer buf;
-                            const void *b =totmid.query(mi);
+                            const void *b = totmid.query(mi);
                             ActPrintLog(activity, "%d: %d %d",i,mi,amid.ordinality()/2);
-                            traceKey(rowif->queryRowSerializer(),"mid",b);
+                            traceKey(keyIf->queryRowSerializer(),"mid",b);
                         }
 #endif
                         mid.append(totmid.get(mi));
@@ -953,29 +906,33 @@ public:
 
                 // calculate split map
                 mid.serializeCompress(mbmd.clear());
-                for (i=0;i<numnodes;i++) {
+                for (i=0;i<numnodes;i++)
+                {
                     CSortNode &slave = slaves.item(i);
                     if (slave.numrecs!=0)
                         slave.MultiBinChopStart(mbmd.length(),(const byte *)mbmd.bufferBase(),CMPFN_NORMAL);
                 }
                 mbmd.clear();
-                for (i=0;i<numnodes;i++) {
+                for (i=0;i<numnodes;i++)
+                {
                     CSortNode &slave = slaves.item(i);
-                    if (slave.numrecs!=0) {
+                    if (slave.numrecs!=0)
+                    {
                         rowcount_t *res=splitmap+(i*numnodes);
                         slave.MultiBinChopStop(numsplits,res);
                         res[numnodes-1] = slave.numrecs;
                     }
                 }
 
-                CThorExpandingRowArray newmin(*activity, rowif, true);
-                CThorExpandingRowArray newmax(*activity, rowif, true);
+                CThorExpandingRowArray newmin(*activity, keyIf, true);
+                CThorExpandingRowArray newmax(*activity, keyIf, true);
                 unsigned __int64 maxerror=0;
                 unsigned __int64 nodewanted = (stotal/numnodes); // Note scaled total
                 unsigned __int64 variancelimit = estrecsize?maxdeviance/estrecsize:0;
                 if (variancelimit>nodewanted/50)
                     variancelimit=nodewanted/50; // 2%
-                for (i=0;i<numsplits;i++) {
+                for (i=0;i<numsplits;i++)
+                {
                     unsigned __int64 tot = 0;
                     unsigned __int64 loc = 0;
                     for (j=0;j<numnodes;j++) {
@@ -996,23 +953,26 @@ public:
                     unsigned __int64 error = (loc>nodewanted)?(loc-nodewanted):(nodewanted-loc);
                     if (error>maxerror)
                         maxerror = error;
-                    if (wanted<tot) {
+                    if (wanted<tot)
+                    {
                         newmin.append(emin.get(i));
                         newmax.append(mid.get(i));
                     }
-                    else if (wanted>tot) {
+                    else if (wanted>tot)
+                    {
                         newmin.append(mid.get(i));
                         newmax.append(emax.get(i));
                     }
-                    else {
+                    else
+                    {
                         newmin.append(emin.get(i));
                         newmax.append(emax.get(i));
                     }
                 }
-                if (emin.equal(icompare,newmin)&&emax.equal(icompare,newmax)) {
+                if (emin.equal(icompare,newmin)&&emax.equal(icompare,newmax))
                     break; // reached steady state 
-                }
-                if ((maxerror*10000<nodewanted)||((iter>3)&&(maxerror<variancelimit))) { // within .01% or within variancelimit 
+                if ((maxerror*10000<nodewanted)||((iter>3)&&(maxerror<variancelimit))) // within .01% or within variancelimit
+                {
                     ActPrintLog(activity, "maxerror = %" CF "d, nodewanted = %" CF "d, variancelimit=%" CF "d, estrecsize=%u, maxdeviance=%u",
                              maxerror,nodewanted,variancelimit,estrecsize,maxdeviance);
                     break;
@@ -1032,11 +992,14 @@ public:
         partitioninfo->splitkeys.transfer(mid);
         partitioninfo->numnodes = numnodes;
 #ifdef _DEBUG
-        if (logging) {
-            for (unsigned i=0;i<numnodes;i++) {
+        if (logging)
+        {
+            for (unsigned i=0;i<numnodes;i++)
+            {
                 StringBuffer str;
                 str.appendf("%d: ",i);
-                for (j=0;j<numnodes;j++) {
+                for (j=0;j<numnodes;j++)
+                {
                     str.appendf("%" RCPF "d, ",splitmap[j+i*numnodes]);
                 }
                 ActPrintLog(activity, "%s",str.str());
@@ -1053,7 +1016,8 @@ public:
 #ifdef _TRACE
 #ifdef TRACE_PARTITION
         ActPrintLog(activity, "UsePartitionInfo %s",uppercmp?"upper":"");
-        for (i=0;i<pi.splitkeys.ordinality();i++) {
+        for (i=0;i<pi.splitkeys.ordinality();i++)
+        {
             StringBuffer s;
             s.appendf("%d: ",i);
             traceKey(pi.prowif->queryRowSerializer(), s.str(), pi.splitkeys.query(i));
@@ -1067,22 +1031,26 @@ public:
         OwnedMalloc<rowcount_t> res(numsplits);
         unsigned j;
         rowcount_t *mapp=splitMap;
-        for (i=0;i<numnodes;i++) {
+        for (i=0;i<numnodes;i++)
+        {
             CSortNode &slave = slaves.item(i);
-            if (numsplits>0) {
+            if (numsplits>0)
+            {
                 MemoryBuffer mb;
                 pi.splitkeys.serialize(mb);
                 assertex(pi.splitkeys.ordinality()==numsplits);
-                slave.MultiBinChop(mb.length(),(const byte *)mb.bufferBase(),numsplits,res,uppercmp?CMPFN_UPPER:CMPFN_COLLATE,true);
+                slave.MultiBinChop(mb.length(),(const byte *)mb.bufferBase(),numsplits,res,uppercmp?CMPFN_UPPER:CMPFN_COLLATE);
                 rowcount_t *resp = res;
                 rowcount_t p=*resp;
                 *mapp = p;
                 resp++;
                 mapp++;
-                for (j=1;j<numsplits;j++) {
+                for (j=1;j<numsplits;j++)
+                {
                     rowcount_t n = *resp;
                     *mapp = n;
-                    if (p>n) {
+                    if (p>n)
+                    {
                         ActPrintLog(activity, "ERROR: Split positions out of order!");
                         throw MakeActivityException(activity, TE_SplitPostionsOutOfOrder,"CSortMaster::UsePartitionInfo: Split positions out of order!");
                     }
@@ -1098,10 +1066,12 @@ public:
 #ifdef TRACE_PARTITION
         ActPrintLog(activity, "UsePartitionInfo result");
         rowcount_t *p = splitMap;
-        for (i=0;i<numnodes;i++) {
+        for (i=0;i<numnodes;i++)
+        {
             StringBuffer s;
             s.appendf("%d: ",i);
-            for (j=0;j<numnodes;j++) {
+            for (j=0;j<numnodes;j++)
+            {
                 s.appendf(" %" RCPF "d,",*p);
                 p++;
             }
@@ -1114,26 +1084,28 @@ public:
 
     void CalcExtPartition()
     {
-        // I think this dependant on row being same format as meta
+        // I think this dependent on row being same format as meta
 
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray splits(*activity, auxrowif, true);
+        CThorExpandingRowArray splits(*activity, keyIf, true);
         char *s=cosortfilenames;
         unsigned i;
-        for(i=0;i<numnodes;i++) {
+        for(i=0;i<numnodes;i++)
+        {
             char *e=strchr(s,'|');
             if (e) 
                 *e = 0;
             else if (i!=numnodes-1)
                 return;
-            if (i) {
+            if (i)
+            {
                 CSortNode &slave = slaves.item(i);
                 byte *rowmem;
                 size32_t rowsize;
                 if (!slave.FirstRowOfFile(s,rowsize,rowmem))
                     return;
                 OwnedConstThorRow row;
-                row.deserialize(auxrowif,rowsize,rowmem);
+                row.deserialize(keyIf,rowsize,rowmem);
                 splits.append(row.getClear());
                 free(rowmem);
             }
@@ -1149,20 +1121,22 @@ public:
     {
         ActPrintLog(activity, "Previous partition");
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray splits(*activity, auxrowif, true);
+        CThorExpandingRowArray splits(*activity, keyIf, true);
         unsigned i;
-        for(i=1;i<numnodes;i++) {
+        for(i=1;i<numnodes;i++)
+        {
             CSortNode &slave = slaves.item(i);
             byte *rowmem;
             size32_t rowsize;
             if (!slave.FirstRowOfFile("",rowsize,rowmem))
                 return;
             OwnedConstThorRow row;
-            row.deserialize(auxrowif,rowsize,rowmem);
-            if (row&&rowsize) {
+            row.deserialize(keyIf, rowsize, rowmem);
+            if (row&&rowsize)
+            {
                 StringBuffer n;
                 n.append(i).append(": ");
-                traceKey(auxrowif->queryRowSerializer(),n,row);
+                traceKey(keyIf->queryRowSerializer(),n,row);
             }
             splits.append(row.getClear());
             free(rowmem);
@@ -1244,39 +1218,48 @@ public:
         bool usesampling = true;        
 #endif
         bool useAux = false; // JCSMORE using existing partioning and auxillary rowIf (only used if overflow)
-        loop {
+        loop
+        {
             OwnedMalloc<rowcount_t> splitMap, splitMapUpper;
             CTimer timer;
-            if (numnodes>1) {
+            if (numnodes>1)
+            {
                 timer.start();
-                if (cosortfilenames) {
+                if (cosortfilenames)
+                {
                     useAux = true;
                     CalcExtPartition();
                     canoptimizenullcolumns = false;
                 }
-                if (usepartitionrow) {
+                if (usepartitionrow)
+                {
                     useAux = true;
                     CalcPreviousPartition();
                     canoptimizenullcolumns = false;
                 }
-                if (partitioninfo->IsOK()) {
+                if (partitioninfo->IsOK())
+                {
                     useAux = true;
                     splitMap.setown(UsePartitionInfo(*partitioninfo, betweensort));
-                    if (betweensort) {
+                    if (betweensort)
+                    {
                         splitMapUpper.setown(UsePartitionInfo(*partitioninfo, false));
                         canoptimizenullcolumns = false;
                     }
                 }
-                else {
+                else
+                {
                     // check for small sort here
-                    if ((skewError<0.0)&&!betweensort) {
+                    if ((skewError<0.0)&&!betweensort)
+                    {
                         splitMap.setown(CalcPartitionUsingSampling());
                         skewError = -skewError;
 #ifdef USE_SAMPLE_PARTITIONING
                         usesampling = false;
 #endif
                     }
-                    else {
+                    else
+                    {
                         if (skewError<0.0)
                             skewError = -skewError;
 
@@ -1291,7 +1274,8 @@ public:
                             splitMap.setown(CalcPartition(false));
 #endif
                     }
-                    if (!partitioninfo->splitkeys.checkSorted(icompare)) {
+                    if (!partitioninfo->splitkeys.checkSorted(icompare))
+                    {
                         ActPrintLog(activity, "ERROR: Split keys out of order!");
                         partitioninfo->splitkeys.sort(*icompare, activity->queryMaxCores());
                     }
@@ -1300,18 +1284,22 @@ public:
             }
             OwnedMalloc<SocketEndpoint> endpoints(numnodes);
             SocketEndpoint *epp = endpoints;
-            for (i=0;i<numnodes;i++) {
+            for (i=0;i<numnodes;i++)
+            {
                 CSortNode &slave = slaves.item(i);
                 *epp = slave.endpoint;
                 epp++;
             }
-            if (numnodes>1) {
+            if (numnodes>1)
+            {
                 // minimize logging
                 unsigned numspilt = 0;
                 UnsignedArray spilln;
-                for (i=0;i<numnodes;i++) {
+                for (i=0;i<numnodes;i++)
+                {
                     CSortNode &slave = slaves.item(i);
-                    if (slave.overflow) {
+                    if (slave.overflow)
+                    {
                         while (spilln.ordinality()<slave.scale)
                             spilln.append(0);
                         spilln.replace(spilln.item(slave.scale-1)+1,slave.scale-1);
@@ -1324,14 +1312,19 @@ public:
                     unsigned mostspilt = 0;
                     unsigned spiltmax = 0;
                     ForEachItemIn(smi,spilln)
-                        if (spilln.item(smi)>spiltmax) {
+                    {
+                        if (spilln.item(smi)>spiltmax)
+                        {
                             spiltmax = spilln.item(smi);
                             mostspilt = smi;
                         }
+                    }
                     ActPrintLog(activity, "Gather - %d nodes spilt to disk, most %d times",numspilt,mostspilt);
-                    for (i=0;i<numnodes;i++) {
+                    for (i=0;i<numnodes;i++)
+                    {
                         CSortNode &slave = slaves.item(i);
-                        if (slave.scale!=mostspilt+1) {
+                        if (slave.scale!=mostspilt+1)
+                        {
                             char url[100];
                             slave.endpoint.getUrlStr(url,sizeof(url));
                             ActPrintLog(activity, "Gather - node %s spilled %d times to disk",url,slave.scale-1);
@@ -1339,23 +1332,28 @@ public:
                     }
                     MemoryBuffer mbsk;
                     partitioninfo->splitkeys.serialize(mbsk);
-                    for (i=0;i<numnodes;i++) {
+                    for (i=0;i<numnodes;i++)
+                    {
                         CSortNode &slave = slaves.item(i);
                         if (slave.overflow) 
                             slave.OverflowAdjustMapStart(numnodes,splitMap+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_COLLATE,useAux);
                     }
-                    for (i=0;i<numnodes;i++) {
+                    for (i=0;i<numnodes;i++)
+                    {
                         CSortNode &slave = slaves.item(i);
                         if (slave.overflow) 
                             slave.AdjustNumRecs(slave.OverflowAdjustMapStop(numnodes,splitMap+i*numnodes));
                     }
-                    if (splitMapUpper.get()) {
-                        for (i=0;i<numnodes;i++) {
+                    if (splitMapUpper.get())
+                    {
+                        for (i=0;i<numnodes;i++)
+                        {
                             CSortNode &slave = slaves.item(i);
                             if (slave.overflow) 
                                 slave.OverflowAdjustMapStart(numnodes,splitMapUpper+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_UPPER,useAux);
                         }
-                        for (i=0;i<numnodes;i++) {
+                        for (i=0;i<numnodes;i++)
+                        {
                             CSortNode &slave = slaves.item(i);
                             if (slave.overflow) 
                                 slave.OverflowAdjustMapStop(numnodes,splitMapUpper+i*numnodes);
@@ -1366,9 +1364,10 @@ public:
                 OwnedMalloc<rowcount_t> tot(numnodes, true);
                 rowcount_t max=0;
                 unsigned imax=numnodes;
-                for (i=0;i<imax;i++) {
+                for (i=0;i<imax;i++){
                     unsigned j;
-                    for (j=0;j<numnodes;j++) {
+                    for (j=0;j<numnodes;j++)
+                    {
                         if (splitMapUpper)
                             tot[i]+=splitMapUpper[i+j*numnodes];
                         else
@@ -1378,9 +1377,12 @@ public:
                     }
                     if (tot[i]>max)
                         max = tot[i];
-                    if (!betweensort&&canoptimizenullcolumns&&(tot[i]==0)) {
-                        for (j=0;j<numnodes;j++) {
-                            for (unsigned k=i+1;k<numnodes;k++) {
+                    if (!betweensort&&canoptimizenullcolumns&&(tot[i]==0))
+                    {
+                        for (j=0;j<numnodes;j++)
+                        {
+                            for (unsigned k=i+1;k<numnodes;k++)
+                            {
                                 splitMap[k+j*numnodes-1] = splitMap[k+j*numnodes];
                             }
                         }
@@ -1388,7 +1390,8 @@ public:
                         i--;
                     }
                 }
-                for (i=0;i<numnodes;i++) {
+                for (i=0;i<numnodes;i++)
+                {
                     CSortNode &slave = slaves.item(i);
                     char url[100];
                     slave.endpoint.getUrlStr(url,sizeof(url));
@@ -1402,7 +1405,8 @@ public:
                     splitMap.setown(CalcPartition(true));
 #endif
 #ifdef USE_SAMPLE_PARTITIONING
-                    if (usesampling) {
+                    if (usesampling)
+                    {
                         ActPrintLog(activity, "Partioning using sampling failed, trying iterative partitioning"); 
                         usesampling = false;
                         continue;
@@ -1411,7 +1415,8 @@ public:
                     throw e.getClear();
                 }
                 ActPrintLog(activity, "Starting Merge of %" RCPF "d records",total);
-                for (i=0;i<numnodes;i++) {
+                for (i=0;i<numnodes;i++)
+                {
                     CSortNode &slave = slaves.item(i);
                     char url[100];
                     slave.endpoint.getUrlStr(url,sizeof(url));
@@ -1422,7 +1427,8 @@ public:
     //              ActPrintLog(activity, "Merge %d started: %d rows on %s",i,tot[i],url);
                 }
             }
-            else {
+            else
+            {
                 CSortNode &slave = slaves.item(0);
                 slave.SingleMerge();
                 ActPrintLog(activity, "Merge started");

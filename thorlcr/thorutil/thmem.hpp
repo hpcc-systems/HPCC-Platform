@@ -144,7 +144,6 @@ public:
         else
             clear();
     }
-    
 private:
     const void * ptr;
 };

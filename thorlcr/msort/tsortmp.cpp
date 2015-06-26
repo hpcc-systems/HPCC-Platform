@@ -15,8 +15,6 @@ enum MPSlaveFunctions
     FN_StartGather,
     FN_GetGatherInfo,
     FN_GetMinMax,
-    FN_GetMidPoint,
-    FN_GetMultiMidPoint,
     FN_GetMultiMidPointStart,
     FN_GetMultiMidPointStop,
     FN_MultiBinChop,
@@ -126,29 +124,6 @@ rowcount_t SortSlaveMP::GetMinMax(size32_t &keybuffsize,void *&keybuff, size32_t
     return ret;
 }
 
-bool SortSlaveMP::GetMidPoint (size32_t lkeysize, const byte * lkey,size32_t hkeysize, const byte * hkey,  size32_t &mkeysize, byte * &mkey)
-{
-    CMessageBuffer mb;
-    mb.append((byte)FN_GetMidPoint );
-    serializeblk(mb,lkeysize,lkey);
-    serializeblk(mb,hkeysize,hkey);
-    sendRecv(mb);
-    deserializeblk(mb,mkeysize,mkey);
-    bool ret;
-    mb.read(ret);
-    return ret;
-}
-
-void SortSlaveMP::GetMultiMidPoint(size32_t lkeybuffsize, const void * lkeybuff,size32_t hkeybuffsize, const void * hkeybuff,  size32_t &mkeybuffsize, void * &mkeybuf)
-{
-    CMessageBuffer mb;
-    mb.append((byte)FN_GetMultiMidPoint);
-    serializeblk(mb,lkeybuffsize,lkeybuff);
-    serializeblk(mb,hkeybuffsize,hkeybuff);
-    sendRecv(mb);
-    deserializeblk(mb,mkeybuffsize,mkeybuf);
-}
-
 void SortSlaveMP::GetMultiMidPointStart(size32_t lkeybuffsize, const void * lkeybuff, size32_t hkeybuffsize, const void * hkeybuff) /* async */
 {
     CMessageBuffer mb;
@@ -166,11 +141,11 @@ void SortSlaveMP::GetMultiMidPointStop(size32_t &mkeybuffsize, void * &mkeybuf)
     deserializeblk(mb,mkeybuffsize,mkeybuf);
 }
 
-void SortSlaveMP::MultiBinChop(size32_t keybuffsize,const byte *keybuff, unsigned num,rowcount_t *pos,byte cmpfn,bool useaux)
+void SortSlaveMP::MultiBinChop(size32_t keybuffsize,const byte *keybuff, unsigned num,rowcount_t *pos,byte cmpfn)
 {
     CMessageBuffer mb;
     mb.append((byte)FN_MultiBinChop);
-    serializeblk(mb,keybuffsize,keybuff).append(num).append(cmpfn).append(useaux);
+    serializeblk(mb,keybuffsize,keybuff).append(num).append(cmpfn);
     sendRecv(mb);
     mb.read(num*sizeof(rowcount_t),pos);
 }
@@ -354,22 +329,6 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 free(keybuff);
             }
             break;
-            case FN_GetMidPoint : {
-                size32_t lkeysize;
-                byte * lkey;
-                size32_t hkeysize;
-                byte * hkey;
-                deserializeblk(mb,lkeysize,lkey);
-                deserializeblk(mb,hkeysize,hkey);
-                size32_t mkeysize=0;
-                byte * mkey=NULL;
-                bool ret = slave.GetMidPoint(lkeysize,lkey,hkeysize,hkey,mkeysize,mkey);
-                free(lkey);
-                free(hkey);
-                serializeblk(mbout,mkeysize,mkey).append(ret);
-                free(mkey);
-            }
-            break;
             case FN_GetMultiMidPointStart: {
                 replydone = true;
                 comm->reply(mbout);
@@ -382,22 +341,6 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 slave.GetMultiMidPointStart(lkeybuffsize,lkeybuff,hkeybuffsize,hkeybuff);
                 free(lkeybuff);
                 free(hkeybuff);
-            }
-            break;
-            case FN_GetMultiMidPoint: {
-                size32_t lkeybuffsize;
-                void * lkeybuff;
-                size32_t hkeybuffsize;
-                void * hkeybuff;
-                deserializeblk(mb,lkeybuffsize,lkeybuff);
-                deserializeblk(mb,hkeybuffsize,hkeybuff);
-                size32_t mkeybuffsize=0;
-                void * mkeybuff = NULL;
-                slave.GetMultiMidPoint(lkeybuffsize,lkeybuff,hkeybuffsize,hkeybuff,mkeybuffsize,mkeybuff);
-                free(lkeybuff);
-                free(hkeybuff);
-                serializeblk(mbout,mkeybuffsize,mkeybuff);
-                free(mkeybuff);
             }
             break;
             case FN_MultiBinChopStop: {
@@ -433,10 +376,9 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 deserializeblk(mb,keybuffsize,keybuff);
                 unsigned num;
                 byte cmpfn;
-                bool useaux;
-                mb.read(num).read(cmpfn).read(useaux);
+                mb.read(num).read(cmpfn);
                 void *out = mbout.reserveTruncate(num*sizeof(rowcount_t));
-                slave.MultiBinChop(keybuffsize,(const byte *)keybuff,num,(rowcount_t *)out,cmpfn,useaux);
+                slave.MultiBinChop(keybuffsize,(const byte *)keybuff,num,(rowcount_t *)out,cmpfn);
                 free(keybuff);
             }
             break;

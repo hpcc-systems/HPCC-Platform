@@ -18,6 +18,7 @@
 #include "platform.h"
 #include <limits.h>
 #include "jlib.hpp"
+#include "jflz.hpp"
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
 #include "thorport.hpp"
@@ -584,15 +585,38 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     offset_t grandtotalsize;
     rowcount_t *overflowmap, *multibinchoppos;
     bool stopping, gatherdone, nosort, isstable;
-    ICompare *icompare;
-    ICompare *icollate; // used for co-sort
-    ICompare *icollateupper; // used in between join
+    ICompare *rowCompare, *keyRowCompare;
+    ICompare *primarySecondaryCompare; // used for co-sort
+    ICompare *primarySecondaryUpperCompare; // used in between join
     ISortKeySerializer *keyserializer;      // used on partition calculation
+    Owned<IRowInterfaces> keyIf;
+    Owned<IOutputRowSerializer> rowToKeySerializer;
     void *midkeybuf;
     Semaphore startgathersem, finishedmergesem, closedownsem;
     InterruptableSemaphore startmergesem;
     size32_t transferblocksize, midkeybufsize;
 
+    class CRowToKeySerializer : public CSimpleInterfaceOf<IOutputRowSerializer>
+    {
+        ISortKeySerializer *keyConverter;
+        IRowInterfaces *rowIf, *keyIf;
+    public:
+        CRowToKeySerializer(IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, ISortKeySerializer *_keyConverter)
+            : rowIf(_rowIf), keyIf(_keyIf), keyConverter(_keyConverter)
+        {
+        }
+        // IOutputRowSerializer impl.
+        virtual void serialize(IRowSerializerTarget & out, const byte *row)
+        {
+            CSizingSerializer ssz;
+            rowIf->queryRowSerializer()->serialize(ssz, (const byte *)row);
+            size32_t recSz = ssz.size();
+            RtlDynamicRowBuilder k(keyIf->queryRowAllocator());
+            size32_t keySz = keyConverter->recordToKey(k, row, recSz);
+            OwnedConstThorRow keyRow =  k.finalizeRowClear(keySz);
+            keyIf->queryRowSerializer()->serialize(out, (const byte *)keyRow.get());
+        }
+    };
     void main()
     {
         try
@@ -626,10 +650,17 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
         stopping = true;
     }
 #ifdef _TRACE
-    void TraceKey(const char *s, const void *k)
+    void TraceRow(const char *s, const void *k)
     {
         traceKey(rowif->queryRowSerializer(), s, k);
     }
+    void TraceKey(const char *s, const void *k)
+    {
+        traceKey(keyIf->queryRowSerializer(), s, k);
+    }
+#else
+#define TraceRow(msg, row)
+#define TraceKey(msg, key)
 #endif
 
     void stop()
@@ -646,33 +677,36 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     ICompare *queryCmpFn(byte cmpfn)
     {
         switch (cmpfn) {
-        case CMPFN_NORMAL: return icompare;
-        case CMPFN_COLLATE: return icollate;
-        case CMPFN_UPPER: return icollateupper;
+        case CMPFN_NORMAL: return keyRowCompare;
+        case CMPFN_COLLATE: return primarySecondaryCompare;
+        case CMPFN_UPPER: return primarySecondaryUpperCompare;
         }
         return NULL;
     }
-    rowidx_t BinChop(const void *row, bool lesseq, bool firstdup, byte cmpfn)
+    rowidx_t BinChop(const void *key, bool lesseq, bool firstdup, byte cmpfn)
     {
         rowidx_t n = rowArray.ordinality();
         rowidx_t l=0;
         rowidx_t r=n;
         ICompare* icmp=queryCmpFn(cmpfn);
-        while (l<r) {
+        while (l<r)
+        {
             rowidx_t m = (l+r)/2;
-            const void *p = rowArray.query(m);
-            int cmp = icmp->docompare(row, p);
+            int cmp = icmp->docompare(key, rowArray.query(m));
             if (cmp < 0)
                 r = m;
             else if (cmp > 0)
                 l = m+1;
-            else {
-                if (firstdup) {
-                    while ((m>0)&&(icmp->docompare(row, rowArray.query(m-1))==0))
+            else
+            {
+                if (firstdup)
+                {
+                    while ((m>0)&&(icmp->docompare(key, rowArray.query(m-1))==0))
                         m--;
                 }
-                else {
-                    while ((m+1<n)&&(icmp->docompare(row, rowArray.query(m+1))==0))
+                else
+                {
+                    while ((m+1<n)&&(icmp->docompare(key, rowArray.query(m+1))==0))
                         m++;
                 }
                 return m;
@@ -688,7 +722,8 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
         for (unsigned n=0;n<num;n++)
         {
             unsigned i = n;
-            loop {                                      // adjustment for empty keys
+            loop                                      // adjustment for empty keys
+            {
                 if (i>=keys.ordinality())
                 {
                     pos[n] = rowArray.ordinality();
@@ -741,10 +776,10 @@ public:
     {
         numnodes = 0;
         partno = 0;
-        icompare = NULL;
+        rowCompare = keyRowCompare = NULL;
         nosort = false;
-        icollate = NULL;
-        icollateupper = NULL;
+        primarySecondaryCompare = NULL;
+        primarySecondaryUpperCompare = NULL;
         midkeybuf = NULL;
         multibinchoppos = NULL;
         transferblocksize = TRANSFERBLOCKSIZE;
@@ -782,78 +817,40 @@ public:
     {
         if (!gatherdone)
             ERRLOG("GetGatherInfo:***Error called before gather complete");
-        if (!haskeyserializer&&keyserializer) {
-            ActPrintLog(activity, "Suppressing key serializer on slave");
-            keyserializer = NULL;       // when cosorting and LHS empty
-        }
-        else if (haskeyserializer&&!keyserializer) {
-            WARNLOG("Mismatched key serializer (master has, slave doesn't");
-        }
+        if (haskeyserializer != (NULL != keyserializer))
+            throwUnexpected();
         numlocal = rowArray.ordinality(); // JCSMORE - this is sample total, why not return actual spill total?
         _overflowscale = overflowinterval;
         totalsize = grandtotalsize; // used by master, if nothing overflowed to see if can MiniSort
     }
     virtual rowcount_t GetMinMax(size32_t &keybufsize,void *&keybuf,size32_t &avrecsize)
     {
-        CThorExpandingRowArray ret(*activity, rowif, true);
         avrecsize = 0;
-        if (rowArray.ordinality()>0) {
-            const void *kp = rowArray.get(0);
-#ifdef _TRACE
-            TraceKey("Min =", kp);
-#endif
-            ret.append(kp);
-            kp = rowArray.get(rowArray.ordinality()-1);
-#ifdef _TRACE
-            TraceKey("Max =", kp);
-#endif
-            ret.append(kp);
-            avrecsize = (size32_t)(grandtotalsize/grandtotal);
-#ifdef _TRACE
-            ActPrintLog(activity, "Ave Rec Size = %u",avrecsize);
-#endif
+        if (0 == rowArray.ordinality())
+        {
+            keybufsize = 0;
+            keybuf = NULL;
+            return 0;
         }
+
         MemoryBuffer mb;
-        ret.serialize(mb);
+        CMemoryRowSerializer msz(mb);
+
+        const void *kp = rowArray.get(0);
+        TraceRow("Min =", kp);
+        rowToKeySerializer->serialize(msz, (const byte *)kp);
+
+        kp = rowArray.get(rowArray.ordinality()-1);
+        TraceRow("Max =", kp);
+        rowToKeySerializer->serialize(msz, (const byte *)kp);
+
+        avrecsize = (size32_t)(grandtotalsize/grandtotal);
+#ifdef _TRACE
+        ActPrintLog(activity, "Ave Rec Size = %u", avrecsize);
+#endif
         keybufsize = mb.length();
         keybuf = mb.detach();
-        return rowArray.ordinality();
-    }
-    virtual bool GetMidPoint(size32_t lsize,const byte *lkeymem,
-                    size32_t hsize,const byte *hkeymem,
-                    size32_t &msize,byte *&mkeymem)
-    {
-        // finds the keys within the ranges specified
-        // uses empty keys (0 size) if none found
-        // try to avoid endpoints if possible
-        if (rowArray.ordinality()!=0) {
-            OwnedConstThorRow lkey;
-            lkey.deserialize(rowif,lsize,lkeymem);
-            OwnedConstThorRow hkey;
-            hkey.deserialize(rowif,hsize,hkeymem);
-            unsigned p1 = BinChop(lkey.get(),false,false,false);
-            if (p1==(unsigned)-1)
-                p1 = 0;
-            unsigned p2 = BinChop(hkey.get(),true,true,false);
-            if (p2>=rowArray.ordinality()) 
-                p2 = rowArray.ordinality()-1;
-            if (p1<=p2) {
-                unsigned pm=(p1+p2+1)/2;
-                const void *kp=rowArray.query(pm);
-                if ((icompare->docompare(lkey,kp)<=0)&&
-                        (icompare->docompare(hkey,kp)>=0)) { // paranoia
-                    MemoryBuffer mb;
-                    CMemoryRowSerializer mbsz(mb);
-                    rowif->queryRowSerializer()->serialize(mbsz, (const byte *)kp);
-                    msize = mb.length();
-                    mkeymem = (byte *)mb.detach();;
-                    return true;
-                }
-            }
-        }
-        mkeymem = NULL;
-        msize = 0;
-        return false;
+        return 2;
     }
     virtual void GetMultiMidPoint(size32_t lbufsize,const void *lkeybuf,
                           size32_t hbufsize,const void *hkeybuf,
@@ -861,27 +858,31 @@ public:
     {
         // finds the keys within the ranges specified
         // uses empty keys (0 size) if none found
-        CThorExpandingRowArray low(*activity, rowif, true);
-        CThorExpandingRowArray high(*activity, rowif, true);
-        CThorExpandingRowArray mid(*activity, rowif, true);
+        CThorExpandingRowArray low(*activity, keyIf, true);
+        CThorExpandingRowArray high(*activity, keyIf, true);
+        CThorExpandingRowArray mid(*activity, keyIf, true);
         low.deserializeExpand(lbufsize, lkeybuf);
         high.deserializeExpand(hbufsize, hkeybuf);
         unsigned n=low.ordinality();
         assertex(n==high.ordinality());
         unsigned i;
-        for (i=0;i<n;i++) {
-            if (rowArray.ordinality()!=0) {
-                unsigned p1 = BinChop(low.query(i), false, false, false);
+        for (i=0;i<n;i++)
+        {
+            if (rowArray.ordinality()!=0)
+            {
+                unsigned p1 = BinChop(low.query(i), false, false, CMPFN_NORMAL);
                 if (p1==(unsigned)-1)
                     p1 = 0;
-                unsigned p2 = BinChop(high.query(i), true, true, false);
+                unsigned p2 = BinChop(high.query(i), true, true, CMPFN_NORMAL);
                 if (p2>=rowArray.ordinality()) 
                     p2 = rowArray.ordinality()-1;
-                if (p1<=p2) { 
+                if (p1<=p2)
+                {
                     unsigned pm=(p1+p2+1)/2;
                     OwnedConstThorRow kp = rowArray.get(pm);
-                    if ((icompare->docompare(low.query(i), kp)<=0)&&
-                        (icompare->docompare(high.query(i), kp)>=0)) { // paranoia
+                    if ((keyRowCompare->docompare(low.query(i), kp)<=0)&&
+                        (keyRowCompare->docompare(high.query(i), kp)>=0)) // paranoia
+                    {
                         mid.append(kp.getClear());
                     }
                     else
@@ -894,9 +895,22 @@ public:
                 mid.append(NULL);
         }
         MemoryBuffer mb;
-        mid.serializeCompress(mb);
-        mbufsize = mb.length();
-        mkeybuf = mb.detach();
+        CMemoryRowSerializer s(mb);
+        for (rowidx_t i=0; i<mid.ordinality(); i++)
+        {
+            const void *row = mid.query(i);
+            if (row)
+            {
+                mb.append(false);
+                rowToKeySerializer->serialize(s, (const byte *)row);
+            }
+            else
+                mb.append(true);
+        }
+        MemoryBuffer compressedMb;
+        fastLZCompressToBuffer(compressedMb, mb.length(), mb.toByteArray());
+        mbufsize = compressedMb.length();
+        mkeybuf = compressedMb.detach();
     }
     virtual void GetMultiMidPointStart(size32_t lbufsize,const void *lkeybuf,
                                size32_t hbufsize,const void *hkeybuf)
@@ -911,15 +925,15 @@ public:
         mbufsize = midkeybufsize;
         midkeybuf = NULL;
     }
-    virtual void MultiBinChop(size32_t keybufsize, const byte * keybuf, unsigned num, rowcount_t * pos, byte cmpfn, bool useaux)
+    virtual void MultiBinChop(size32_t keybufsize, const byte * keybuf, unsigned num, rowcount_t * pos, byte cmpfn)
     {
-        CThorExpandingRowArray keys(*activity, useaux?auxrowif:rowif, true);
+        CThorExpandingRowArray keys(*activity, keyIf, true);
         keys.deserialize(keybufsize, keybuf);
         doBinChop(keys, pos, num, cmpfn);
     }
     virtual void MultiBinChopStart(size32_t keybufsize, const byte * keybuf, byte cmpfn)
     {
-        CThorExpandingRowArray keys(*activity, rowif, true);
+        CThorExpandingRowArray keys(*activity, keyIf, true);
         keys.deserializeExpand(keybufsize, keybuf);
         assertex(multibinchoppos==NULL); // check for reentrancy
         multibinchopnum = keys.ordinality();
@@ -948,7 +962,7 @@ public:
         for (i=0;i<mapsize;i++)
             ActPrintLog(activity, "%" RCPF "d ",overflowmap[i]);
 #endif
-        CThorExpandingRowArray keys(*activity, useaux?auxrowif:rowif, true);
+        CThorExpandingRowArray keys(*activity, keyIf, true);
         keys.deserialize(keybufsize, keybuf);
         for (i=0;i<mapsize-1;i++)
             AdjustOverflow(overflowmap[i], keys.query(i), cmpfn);
@@ -992,32 +1006,27 @@ public:
     virtual bool FirstRowOfFile(const char *filename,
                         size32_t &rowbufsize, byte * &rowbuf)
     {
-        if (!*filename) { // partition row wanted
-            if (partitionrow) {
-                MemoryBuffer mb;
-                CMemoryRowSerializer ssz(mb);
-                auxrowif->queryRowSerializer()->serialize(ssz,(const byte *)partitionrow.get());
-                rowbufsize = mb.length();
-                rowbuf = (byte *)mb.detach();   
-                partitionrow.clear(); // only one attempt! 
-            }
-            else {
-                rowbuf = NULL;
-                rowbufsize = 0;
-            }
-            return true;
+        OwnedConstThorRow row;
+        MemoryBuffer mb;
+        CMemoryRowSerializer msz(mb);
+        if (!*filename) // partition row wanted
+        {
+            if (partitionrow)
+                row.set(partitionrow.getClear());
         }
-        Owned<IFile> file = createIFile(filename);
-        Owned<IExtRowStream> rowstream = createRowStream(file, auxrowif);
-        OwnedConstThorRow row = rowstream->nextRow();
-        if (!row) {
+        else
+        {
+            Owned<IFile> file = createIFile(filename);
+            Owned<IExtRowStream> rowstream = createRowStream(file, auxrowif);
+            row.setown(rowstream->nextRow());
+        }
+        if (!row)
+        {
             rowbuf = NULL;
             rowbufsize = 0;
             return true;
         }
-        MemoryBuffer mb;
-        CMemoryRowSerializer msz(mb);
-        auxrowif->queryRowSerializer()->serialize(msz,(const byte *)row.get());
+        rowToKeySerializer->serialize(msz, (const byte *)row.get());
         rowbufsize = mb.length();
         rowbuf = (byte *)mb.detach();
         return true;
@@ -1026,21 +1035,27 @@ public:
     {
         // actually doesn't get Nth row but numsplits samples distributed evenly through the rows
         assertex(numsplits);
-        CThorExpandingRowArray ret(*activity, rowif, true);
         unsigned numrows = rowArray.ordinality();
-        if (numrows) {
-            for (unsigned i=0;i<numsplits;i++) {
-                count_t pos = ((i*2+1)*(count_t)numrows)/(2*(count_t)numsplits);
-                if (pos>=numrows) 
-                    pos = numrows-1;
-                const void *kp = rowArray.get((unsigned)pos);
-                ret.append(kp);
-            }
+        if (0 == numrows)
+        {
+            outbufsize = 0;
+            outkeybuf = NULL;
+            return;
         }
         MemoryBuffer mb;
-        ret.serializeCompress(mb);
-        outbufsize = mb.length();
-        outkeybuf = mb.detach();
+        CMemoryRowSerializer msz(mb);
+        for (unsigned i=0;i<numsplits;i++)
+        {
+            count_t pos = ((i*2+1)*(count_t)numrows)/(2*(count_t)numsplits);
+            if (pos>=numrows)
+                pos = numrows-1;
+            const void *row = rowArray.query((unsigned)pos);
+            rowToKeySerializer->serialize(msz, (const byte *)row);
+        }
+        MemoryBuffer exp;
+        fastLZCompressToBuffer(mb, exp.length(), exp.toByteArray());
+        outbufsize = exp.length();
+        outkeybuf = exp.detach();
     }
     virtual void StartMiniSort(rowcount_t globalTotal)
     {
@@ -1050,7 +1065,7 @@ public:
         Owned<IRowStream> sortedStream;
         try
         {
-            sortedStream.setown(miniSort.sort(rowArray, globalTotal, *icompare, isstable, totalrows));
+            sortedStream.setown(miniSort.sort(rowArray, globalTotal, *rowCompare, isstable, totalrows));
         }
         catch (IException *e)
         {
@@ -1134,7 +1149,7 @@ public:
         else
         {
             Owned<IRowLinkCounter> linkcounter = new CThorRowLinkCounter;
-            merger.setown(createRowStreamMerger(readers.ordinality(), readers.getArray(), icompare, false, linkcounter));
+            merger.setown(createRowStreamMerger(readers.ordinality(), readers.getArray(), rowCompare, false, linkcounter));
         }
         ActPrintLog(activity, "Global Merger Created: %d streams", readers.ordinality());
         startmergesem.signal();
@@ -1150,9 +1165,9 @@ public:
     virtual void Gather(
         IRowInterfaces *_rowif,
         IRowStream *in,
-        ICompare *_icompare,
-        ICompare *_icollate,
-        ICompare *_icollateupper,
+        ICompare *_rowCompare,
+        ICompare *_primarySecondaryCompare,
+        ICompare *_primarySecondaryUpperCompare,
         ISortKeySerializer *_keyserializer,
         const void *_partitionrow,
         bool _nosort,
@@ -1173,10 +1188,8 @@ public:
         rowif.set(_rowif);
         rowArray.kill();
         rowArray.setup(rowif);
-        if (transferserver)
-            transferserver->setRowIF(rowif);
-        else
-            WARNLOG("SORT: transfer server not started!");
+        dbgassertex(transferserver);
+        transferserver->setRowIF(rowif);
         if (_auxrowif&&_auxrowif->queryRowMetaData())
             auxrowif.set(_auxrowif);
         else
@@ -1186,19 +1199,41 @@ public:
             auxrowif.set(_rowif);
         }
         keyserializer = _keyserializer;
-        if (!keyserializer)
+        rowCompare = _rowCompare;
+        if (keyserializer)
+        {
+            keyIf.setown(createRowInterfaces(keyserializer->queryRecordSize(), activity->queryContainer().queryId(), activity->queryCodeContext()));
+            rowToKeySerializer.setown(new CRowToKeySerializer(auxrowif, keyIf, keyserializer));
+            keyRowCompare = keyserializer->queryCompareKeyRow();
+        }
+        else
+        {
             ActPrintLog(activity, "No key serializer");
+            keyIf.set(auxrowif);
+            rowToKeySerializer.set(keyIf->queryRowSerializer());
+            keyRowCompare = rowCompare;
+        }
         nosort = _nosort;
         if (nosort)
             ActPrintLog(activity, "SORT: Gather not sorting");
         isstable = !_unstable;
         if (_unstable)
             ActPrintLog(activity, "SORT: UNSTABLE");
-        icompare = _icompare;
-        icollate = _icollate?_icollate:_icompare;
-        icollateupper = _icollateupper?_icollateupper:icollate;
 
-        Owned<IThorRowLoader> sortedloader = createThorRowLoader(*activity, rowif, nosort?NULL:icompare, isstable ? stableSort_earlyAlloc : stableSort_none, rc_allDiskOrAllMem, SPILL_PRIORITY_SELFJOIN);
+        if (_primarySecondaryCompare)
+            primarySecondaryCompare = _primarySecondaryCompare;
+        else
+            primarySecondaryCompare = keyRowCompare;
+        if (_primarySecondaryUpperCompare)
+        {
+            if (keyserializer)
+                throwUnexpected();
+            primarySecondaryUpperCompare = _primarySecondaryUpperCompare;
+        }
+        else
+            primarySecondaryUpperCompare = primarySecondaryCompare;
+
+        Owned<IThorRowLoader> sortedloader = createThorRowLoader(*activity, rowif, nosort?NULL:rowCompare, isstable ? stableSort_earlyAlloc : stableSort_none, rc_allDiskOrAllMem, SPILL_PRIORITY_SELFJOIN);
         Owned<IRowStream> overflowstream;
         memsize_t inMemUsage = 0;
         try
