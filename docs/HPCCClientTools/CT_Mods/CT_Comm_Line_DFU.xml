@@ -771,6 +771,14 @@ dfuplus action=dspray srcname=le::imagedb
                   <emphasis>srcdali</emphasis>. If omitted, the General
                   Options <emphasis>password</emphasis> is used.</entry>
                 </row>
+
+                <row>
+                  <entry><emphasis>preservecompression</emphasis></entry>
+
+                  <entry>Optional. A boolean flag (0 | 1) indicating whether
+                  to preserve the compression of the source file. If omitted,
+                  the default is 1.</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable>
