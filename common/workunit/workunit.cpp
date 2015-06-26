@@ -5723,7 +5723,7 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         else
             statTree->removeProp("@max");
     }
-    if (creatorType==SCTsummary && kind==StTimeElapsed && (scope==GLOBAL_SCOPE || strsame(scope, GLOBAL_SCOPE)))
+    if (creatorType==SCTsummary && kind==StTimeElapsed && strsame(scope, GLOBAL_SCOPE))
     {
         StringBuffer t;
         formatTimeCollatable(t, value, false);

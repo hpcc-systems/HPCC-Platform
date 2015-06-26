@@ -3825,6 +3825,8 @@ public:
     void noteWuid(const char *wuid, const char *fieldValue, unsigned row)
     {
         CriticalBlock b(crit);
+        // NOTE - we store one set of row information per page retrieved - and we normally traverse the pages
+        // in order so appending to the end is better than (for example) binchopping
         ForEachItemInRev(idx, rows)
         {
             unsigned foundRow = rows.item(idx);
@@ -3846,7 +3848,7 @@ public:
         CriticalBlock b(crit);
         result.set(_result);
     }
-    unsigned lookupStartRow(StringBuffer &wuid, StringBuffer &fieldValue, unsigned startOffset)
+    unsigned lookupStartRow(StringBuffer &wuid, StringBuffer &fieldValue, unsigned startOffset) const
     {
         // See if we can provide a base wuid to search above/below
         CriticalBlock b(crit);
@@ -3933,7 +3935,7 @@ public:
         Owned<IConstWorkUnitInfo> last = current.getClear();
         loop
         {
-            const CassandraIterator *nextSource = get_row();
+            const CassandraIterator *nextSource = nextMergedSource();
             if (!nextSource)
             {
                 if (cache && last)
@@ -3970,7 +3972,7 @@ public:
         assertex(current);
         return *current.get();
     }
-    const CassandraIterator *get_row()
+    const CassandraIterator *nextMergedSource()
     {
         return (const CassSortableIterator *) merger->nextRow();
     }
@@ -4740,19 +4742,40 @@ public:
                                                         unsigned startOffset, unsigned pageSize, __int64 * cachehint, unsigned *total,
                                                         ISecManager *secmgr, ISecUser *secuser)
     {
-        // Note that we only support a single sort order.
-        // Any sort order other than WUID ASC or WUID DESC will require post-sorting - if there are more than WUID_LOCALSORT_LIMIT we will refuse
-        // We need a single 'hard' filter, and do others by post-filtering. If the best we can do for a 'hard' filter is itself wild, we
-        // have to do two hits - one to find all the matching values, and the second to do a merge of all the results for each value.
-        // We should encourage the UI to present drop-lists of users for filtering.
-        // Any post-filter that Cassandra CAN do (via ALLOW FILTERING) it should? This seems to be an empty set unless we add secondary indexes AND give up on sorted results...
-        // Any that it can't (e.g. wild) we post-filter client-side.
-        // Wild can be translated into ranges but we then end up losing the sorting (well, we end up sorted by the filter field first, then wuid. This may actually be desirable in some situations.
-        // Alternatively we can transform into a set and merge multiple queries.
-        // Searching by files probably needs to be done differently - a separate table mapping filenames to wuids - this can be join-merged if other filters are present.
-        // Searching by application values are done as if each was a new (user-defined) attribute.
+        // To assist in the efficient implementation of this function without requiring local sorting and filtering,
+        // we maintain a couple of additional search tables in addition to the main workunit table.
+        //
+        // The workunitsSearch table allows us to map from a given field's value to a workunit - to avoid the need
+        // for a second lookup this table contains a copy of all the 'lightweight' fields in the workunit. The table
+        // has a partition key of xpath, searchPrefix allowing it to be used for range lookups provided at least
+        // 2 characters are provided, while hopefully spreading the load a little between Cassandra partitions.
+        //
+        // The uniqueValues table is used to track what values are present for some wild-searchable fields, so we do
+        // two lookups - one to translate the wildcard to a set, then others to retrieve the wus matching each value
+        // in the set. These are done as N parallel reads rather than a single query (which might naively be expected
+        // to be more efficient) for two reasons. Firstly, we can get them back sorted that way and merge the results
+        // on the fly. Secondly, it is actually more efficient, at least in the case when there are multiple Cassandra
+        // partitions, since it in-effect cuts out the step of talking to a coordinator node which would talk to
+        // multiple other nodes to get the data.
+        //
+        // We go to some lengths to avoid post-sorting if we can, but any sort order other than by wuid or totalThorTime
+        // will it. If a post-sort is required, we will fetch up to WUID_LOCALSORT_LIMIT rows, - if there are more
+        // then we should fail, and the user should be invited to add filters.
+        //
+        // We can do at most one 'hard' filter, plus a filter on wuid range - anything else will require post-filtering.
+        // Most 'wild' searches can only be done with post-filtering, but some can be translated to multiple hard values
+        // using the unique values table. In such cases we merge results in the fly to avoid a post-sort if possible
+        //
+        // Note that Cassandra does not presently support filtering before returning the values except where a
+        // key or secondary index is available - even if ALLOW FILTERING is specified. If it did, some of the post-
+        // filtering would be better off done at the Cassandra side.
+        //
+        // We should encourage the UI to present drop-lists of users for filtering, to avoid the use of wildcard
+        // searches just because people can't remember the name.
+        //
+        // Searching by files probably needs to be done differently - a separate table mapping filenames to wuids.
+        // This can perhaps be join-merged if other filters are present. This is still TBD at the moment.
 
-        // At present we assume that the order in which filters are provided indicates the best order to apply them - this may not be smart
         Owned<CCassandraWuUQueryCacheEntry> cached;
         if (cachehint && *cachehint)
         {
