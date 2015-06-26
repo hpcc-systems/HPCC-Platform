@@ -332,5 +332,9 @@ interface jlib_thrown_decl ICorruptDllException: extends IException
 {
 };
 
+struct mapEnums { int val; const char *str; };
+
+extern jlib_decl const char *getEnumText(int value, const mapEnums *map);
+
 #endif
 

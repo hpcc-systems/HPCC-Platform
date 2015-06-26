@@ -2676,6 +2676,19 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
     return target.set(dir);
 }
 
+jlib_decl const char *getEnumText(int value, const mapEnums *map)
+{
+    const char *defval = map->str;
+    while (map->str)
+    {
+        if (value==map->val)
+            return map->str;
+        map++;
+    }
+    assertex(!"Unexpected value in getEnumText");
+    return defval;
+}
+
 //#define TESTURL
 #ifdef TESTURL
 

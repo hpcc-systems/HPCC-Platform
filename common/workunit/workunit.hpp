@@ -37,6 +37,7 @@
 #include "jtime.hpp"
 #include "jsocket.hpp"
 #include "jstats.h"
+#include "jutil.hpp"
 #include "jprop.hpp"
 
 #define GLOBAL_SCOPE "workunit"
@@ -1207,6 +1208,8 @@ enum WUSortField
     WUSFwild = 2048
 };
 
+extern WORKUNIT_API const char *queryFilterXPath(WUSortField field);
+
 enum WUQueryFilterBoolean
 {
     WUQFSNo = 0,
@@ -1253,7 +1256,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField sortorder, WUSortField * filters, const void * filterbuf,
-                                                        unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total,
+                                                        unsigned startoffset, unsigned maxnum, __int64 * cachehint, unsigned *total,
                                                         ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual unsigned numWorkUnits() = 0;
     virtual IConstWorkUnitIterator *getScheduledWorkUnits(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
@@ -1267,6 +1270,8 @@ interface IWorkUnitFactory : extends IInterface
     virtual void deleteRepository(bool recreate) = 0;
     virtual void createRepository() = 0;  // If not already there...
     virtual const char *queryStoreType() const = 0; // Returns "Dali" or "Cassandra"
+
+    virtual StringArray &getUniqueValues(WUSortField field, const char *prefix, StringArray &result) const = 0;
 };
 
 interface IWorkflowScheduleConnection : extends IInterface

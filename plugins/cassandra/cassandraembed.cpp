@@ -31,6 +31,7 @@
 #include "nbcd.hpp"
 #include "jsort.hpp"
 #include "jptree.hpp"
+#include "jregexp.hpp"
 
 #include "workunit.hpp"
 #include "workunit.ipp"
@@ -2302,6 +2303,8 @@ extern void cassandraToGenericXML()
 
 //--------------------------------------------
 
+#define CASS_WU_QUERY_EXPIRES  (1000*60*5)
+#define CASS_WORKUNIT_POSTSORT_LIMIT 10000
 #define CASS_SEARCH_PREFIX_SIZE 2
 #define NUM_PARTITIONS 2
 
@@ -2565,10 +2568,10 @@ public:
     }
     virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
     {
-        return _fromXML(statement, idx, row, userVal, CASS_SEARCH_PREFIX_SIZE);
+        return _fromXML(statement, idx, row, userVal, CASS_SEARCH_PREFIX_SIZE, true);
     }
 protected:
-    static bool _fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *xpath, unsigned prefixLength)
+    static bool _fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *xpath, unsigned prefixLength, bool uc)
     {
         const char *columnVal = row->queryProp(xpath);
         if (columnVal)
@@ -2576,7 +2579,8 @@ protected:
             if (statement)
             {
                 StringBuffer buf(columnVal);
-                buf.toUpperCase();
+                if (uc)
+                    buf.toUpperCase();
                 if (prefixLength && prefixLength < buf.length())
                     check(cass_statement_bind_string_n(statement, idx, buf, prefixLength));
                 else
@@ -2594,9 +2598,18 @@ static class SearchColumnMapper : public PrefixSearchColumnMapper
 public:
     virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
     {
-        return _fromXML(statement, idx, row, userVal, 0);
+        return _fromXML(statement, idx, row, userVal, 0, true);
     }
 } searchColumnMapper;
+
+static class LCSearchColumnMapper : public PrefixSearchColumnMapper
+{
+public:
+    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
+    {
+        return _fromXML(statement, idx, row, userVal, 0, false);
+    }
+} lcSearchColumnMapper;
 
 static class IntColumnMapper : implements CassandraColumnMapper
 {
@@ -3147,7 +3160,7 @@ static const CassandraXmlMapping workunitsMappings [] =
     {"action", "text", "Action", stringColumnMapper},
     {"protected", "boolean", "@protected", boolColumnMapper},
     {"scheduled", "text", "@timeScheduled", stringColumnMapper},   // Should store as a date?
-    {"totalThorTime", "int", "@totalThorTime", intColumnMapper},
+    {"totalThorTime", "text", "@totalThorTime", stringColumnMapper},  // We store in the wu ptree as a collatable string. Need to force to one partition too
     {"appvalues", "map<text, text>", "@Application@", subTreeMapColumnMapper}, // MORE - change to a custom map to make searchable
 
     {"debug", "map<text, text>", "Debug", simpleMapColumnMapper},
@@ -3181,7 +3194,7 @@ static const CassandraXmlMapping workunitInfoMappings [] =  // A cut down versio
     {"action", "text", "Action", stringColumnMapper},
     {"protected", "boolean", "@protected", boolColumnMapper},
     {"scheduled", "text", "@timeScheduled", stringColumnMapper},   // Should store as a date?
-    {"totalThorTime", "int", "@totalThorTime", intColumnMapper},
+    {"totalThorTime", "text", "@totalThorTime", stringColumnMapper},  // We store in the wu ptree as a collatable string. Need to force to one partition too
     {"appvalues", "map<text, text>", "@Application@", subTreeMapColumnMapper}, // MORE - change to a custom map to make searchable
     { NULL, "workunits", "((partition), wuid)|CLUSTERING ORDER BY (wuid DESC)", stringColumnMapper}
 };
@@ -3204,14 +3217,28 @@ static const CassandraXmlMapping searchMappings [] =
     {"action", "text", "Action", stringColumnMapper},
     {"protected", "boolean", "@protected", boolColumnMapper},
     {"scheduled", "text", "@timeScheduled", stringColumnMapper},   // Should store as a date?
-    {"totalThorTime", "int", "@totalThorTime", intColumnMapper},
+    {"totalThorTime", "text", "@totalThorTime", stringColumnMapper},  // We store in the wu ptree as a collatable string. Need to force to one partition too
     {"appvalues", "map<text, text>", "@Application@", subTreeMapColumnMapper}, // MORE - change to a custom map to make searchable
-{ NULL, "workunitsSearch", "((xpath, fieldPrefix), fieldValue, wuid)", stringColumnMapper}
+    { NULL, "workunitsSearch", "((xpath, fieldPrefix), fieldValue, wuid)|CLUSTERING ORDER BY (fieldValue ASC, wuid DESC)", stringColumnMapper}
 };
 
-// The fields we can search by. These are a subset of the fields in the basic workunit info that is returned from a search
+// The fields we can search by. These are a subset of the fields in the basic workunit info that is returned from a search. A row is created in the search table for each of these, for each workunit.
 
-const char * searchPaths[] = { "@submitID", "@clusterName", "@jobName", "@priorityClass", "@protected", "@scope", "@state", NULL};
+const char * searchPaths[] = { "@submitID", "@clusterName", "@jobName", "@priorityClass", "@protected", "@scope", "@state", "@totalThorTime", NULL};
+
+static const CassandraXmlMapping uniqueSearchMappings [] =
+{
+    {"xpath", "text", NULL, suppliedStringColumnMapper},
+    {"fieldPrefix", "text", NULL, prefixSearchColumnMapper},  // Leading N chars, upper-cased
+    {"fieldValue", "text", NULL, searchColumnMapper},    // upper-cased
+    {"origFieldValue", "text", NULL, lcSearchColumnMapper},  // original case
+    { NULL, "uniqueSearchValues", "((xpath, fieldPrefix), fieldValue, origFieldValue)|CLUSTERING ORDER BY (fieldValue ASC)", stringColumnMapper}
+};
+
+// The fields we can wild search by. We store these in the uniqueSearchMappings table so we can translate wildcards into sets
+
+const char * wildSearchPaths[] = { "@submitID", "@clusterName", "@jobName", NULL};
+
 
 /*
  * Some thoughts on the secondary tables:
@@ -3705,6 +3732,80 @@ static IPTree *rowToPTree(const char *xpath, const char *key, const CassandraXml
     return xml.getClear();
 }
 
+/*
+ * PostFilter represents a filter to be applied to a ConstWorkUnitInfo tree representation prior to returning it from an iterator
+ */
+const char *queryFilterField(WUSortField field)
+{
+    switch (field)
+    {
+    case WUSFuser: return "submitID";
+    case WUSFcluster: return "clustername";
+    case WUSFjob: return "jobname";
+    case WUSFstate: return "state";
+    case WUSFpriority: return "priorityClass";
+    case WUSFwuid: return "wuid";
+    case WUSFwuidhigh: return "wuid";
+    case WUSFfileread: UNIMPLEMENTED;
+    case WUSFprotected: return "protected";
+    case WUSFtotalthortime: return "totalThorTime";
+    case WUSFwildwuid: return "wuid";
+    case WUSFecl: UNIMPLEMENTED;
+    default:
+        throwUnexpected();
+    }
+}
+
+class PostFilter : public CInterface
+{
+public:
+    PostFilter(WUSortField _field, const char *_value, bool _wild)
+      : field(_field), cqlField(queryFilterField(_field)), xpath(queryFilterXPath(_field)), wild(_wild)
+    {
+        setValue(_value);
+    }
+    bool matches(IPTree &p) const
+    {
+        const char *val = p.queryProp(xpath);
+        if (val)
+            return wild ? WildMatch(val, pattern) : strieq(val, pattern);
+        else
+            return false;
+    }
+    const char *queryValue() const
+    {
+        return value.str();
+    }
+    void setValue(const char *_value)
+    {
+        if (wild)
+        {
+            VStringBuffer filter("*%s*", _value);
+            pattern.set(filter);
+        }
+        else
+            pattern.set(_value);
+        value.set(_value);
+    }
+    const char *queryXPath() const
+    {
+        return xpath;
+    }
+    WUSortField queryField() const
+    {
+        return field;
+    }
+private:
+    const char *cqlField;
+    const char *xpath;
+    StringAttr pattern;
+    StringAttr value;
+    WUSortField field;
+    bool wild;
+};
+
+
+
 class CassSortableIterator : public CassandraIterator
 {
 public:
@@ -3740,21 +3841,129 @@ private:
     bool descending;
 };
 
-class CassMultiIterator : public CInterface, implements IRowProvider, implements ICompare, implements IConstWorkUnitIterator
+interface IConstWorkUnitIteratorEx : public IConstWorkUnitIterator
+{
+    virtual bool hasPostFilters() const = 0;
+    virtual bool isMerging() const = 0;
+};
+
+/*
+ *
+ * The cache entries serve two purposes:
+ *
+ * 1. They allow us to map row numbers to values for the end of each page returned, which can make forward paging efficient when not post-sorting
+ * 2. They allow us to preserve post-sort results in order to avoid having to re-retrieve them.
+ */
+
+class CCassandraWuUQueryCacheEntry : public CInterfaceOf<IInterface>
+{
+public:
+    CCassandraWuUQueryCacheEntry()
+    {
+        hint = get_cycles_now(); // MORE - should do better perhaps?
+        lastAccess = msTick();
+    }
+    __int64 queryHint() const
+    {
+        return hint;
+    }
+    void noteWuid(const char *wuid, const char *fieldValue, unsigned row)
+    {
+        CriticalBlock b(crit);
+        // NOTE - we store one set of row information per page retrieved - and we normally traverse the pages
+        // in order so appending to the end is better than (for example) binchopping
+        ForEachItemInRev(idx, rows)
+        {
+            unsigned foundRow = rows.item(idx);
+            assertex(foundRow != row);
+            if (foundRow < row)
+                break;
+        }
+        rows.add(row, idx+1);
+        wuids.add(wuid, idx+1);
+        fieldValues.add(fieldValue, idx+1);
+    }
+    IConstWorkUnitIteratorEx *getResult() const
+    {
+        CriticalBlock b(crit);
+        return result.getLink();
+    }
+    void setResult(IConstWorkUnitIteratorEx *_result)
+    {
+        CriticalBlock b(crit);
+        result.set(_result);
+    }
+    unsigned lookupStartRow(StringBuffer &wuid, StringBuffer &fieldValue, unsigned startOffset) const
+    {
+        // See if we can provide a base wuid to search above/below
+        CriticalBlock b(crit);
+        ForEachItemInRev(idx, rows)
+        {
+            unsigned foundRow = rows.item(idx);
+            if (foundRow <= startOffset)
+            {
+                wuid.set(wuids.item(idx));
+                fieldValue.set(fieldValues.item(idx));
+                return foundRow;
+            }
+        }
+        return 0;
+    }
+    void touch()
+    {
+        lastAccess = msTick();
+    }
+    inline unsigned queryLastAccess() const
+    {
+        return lastAccess;
+    }
+private:
+    mutable CriticalSection crit;  // It's POSSIBLE that we could get two queries in hitting the cache at the same time, I think...
+    UnsignedArray rows;
+    StringArray wuids;
+    StringArray fieldValues;
+    Owned<IConstWorkUnitIteratorEx> result;
+    __uint64 hint;
+    unsigned lastAccess;
+};
+
+class CassMultiIterator : public CInterface, implements IRowProvider, implements ICompare, implements IConstWorkUnitIteratorEx
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CassMultiIterator(unsigned _compareColumn, bool _descending)
+    CassMultiIterator(CCassandraWuUQueryCacheEntry *_cache, unsigned _startRowNum, unsigned _compareColumn, bool _descending)
+    : cache(_cache)
     {
         compareColumn = _compareColumn;
         descending = _descending;
+        startRowNum = _startRowNum;
     }
-
+    void setStartOffset(unsigned start)
+    {
+        startRowNum = start; // we managed to do a seek forward via a filter
+    }
     void addResult(CassandraResult &result)
     {
         results.append(result);
     }
-
+    void addPostFilters(CIArrayOf<PostFilter> &filters, unsigned start)
+    {
+        unsigned len = filters.length();
+        while (start<len)
+            postFilters.append(OLINK(filters.item(start++)));
+    }
+    void addPostFilter(PostFilter &filter)
+    {
+        postFilters.append(filter);
+    }
+    virtual bool hasPostFilters() const
+    {
+        return postFilters.length() != 0;
+    }
+    virtual bool isMerging() const
+    {
+        return results.length() > 1;
+    }
     virtual bool first()
     {
         inputs.kill();
@@ -3763,17 +3972,41 @@ public:
             inputs.append(*new CassSortableIterator(cass_iterator_from_result(results.item(idx)), compareColumn, descending));
         }
         merger.setown(createRowStreamMerger(inputs.length(), *this, this, false));
+        rowNum = startRowNum;
         return next();
     }
     virtual bool next()
     {
-        current.clear();
-        const CassandraIterator *nextSource = get_row();
-        if (!nextSource)
-            return false;
-        Owned<IPTree> wuXML = rowToPTree(NULL, NULL, workunitInfoMappings+1, cass_iterator_get_row(*nextSource));
-        current.setown(createConstWorkUnitInfo(*wuXML));
-        return true;
+        Owned<IConstWorkUnitInfo> last = current.getClear();
+        loop
+        {
+            const CassandraIterator *nextSource = nextMergedSource();
+            if (!nextSource)
+            {
+                if (cache && last)
+                {
+                    cache->noteWuid(last->queryWuid(), lastThorTime, rowNum);
+                }
+                return false;
+            }
+            Owned<IPTree> wuXML = rowToPTree(NULL, NULL, workunitInfoMappings+1, cass_iterator_get_row(*nextSource)); // NOTE - this is relying on search mappings and wuInfoMappings being the same
+            bool postFiltered = false;
+            ForEachItemIn(pfIdx, postFilters)
+            {
+                if (!postFilters.item(pfIdx).matches(*wuXML))
+                {
+                    postFiltered = true;
+                    break;
+                }
+            }
+            if (!postFiltered)
+            {
+                current.setown(createConstWorkUnitInfo(*wuXML));
+                lastThorTime.set(wuXML->queryProp("@totalThorTime"));
+                rowNum++;
+                return true;
+            }
+        }
     }
     virtual bool isValid()
     {
@@ -3784,8 +4017,7 @@ public:
         assertex(current);
         return *current.get();
     }
-
-    const CassandraIterator *get_row()
+    const CassandraIterator *nextMergedSource()
     {
         return (const CassSortableIterator *) merger->nextRow();
     }
@@ -3812,6 +4044,276 @@ private:
     Owned<IRowStream> merger;
     IArrayOf<CassandraResult> results;
     IArrayOf<CassSortableIterator> inputs;
+    CIArrayOf<PostFilter> postFilters;
+    Owned<IConstWorkUnitInfo> current;
+    Linked<CCassandraWuUQueryCacheEntry> cache;
+    StringAttr lastThorTime;
+    unsigned compareColumn;
+    unsigned startRowNum;
+    unsigned rowNum;
+    bool descending;
+};
+
+class CassPostSortIterator : public CInterfaceOf<IConstWorkUnitIteratorEx>, implements ICompare
+{
+public:
+    CassPostSortIterator(IConstWorkUnitIterator * _input, unsigned _sortorder, unsigned _limit)
+      : input(_input), sortorder(_sortorder), limit(_limit)
+    {
+        idx = 0;
+    }
+    virtual bool first()
+    {
+        if (input)
+        {
+            readFirst();
+            input.clear();
+        }
+        idx = 0;
+        return sorted.isItem(idx);
+    }
+    virtual bool next()
+    {
+        idx++;
+        return sorted.isItem(idx);
+    }
+    virtual bool isValid()
+    {
+        return sorted.isItem(idx);
+    }
+    virtual IConstWorkUnitInfo & query()
+    {
+        return sorted.item(idx);
+    }
+    virtual bool hasPostFilters() const
+    {
+        return false;  // they are done by my input. But we may want to rename this function to indicate "may return more than asked" in which case would be true
+    }
+    virtual bool isMerging() const
+    {
+        return false;
+    }
+private:
+    void readFirst()
+    {
+        ForEach(*input)
+        {
+            sorted.append(OLINK(input->query()));
+            if (sorted.length()>=limit)
+                break;
+        }
+        qsortvec((void **)sorted.getArray(0), sorted.length(), *this);
+    }
+
+    virtual int docompare(const void *a, const void *b) const
+    {
+        // a and b point to to IConstWorkUnitInfo objects
+        const IConstWorkUnitInfo *aa = (const IConstWorkUnitInfo *) a;
+        const IConstWorkUnitInfo *bb = (const IConstWorkUnitInfo *) b;
+        int diff;
+        switch (sortorder & 0xff)
+        {
+        case WUSFuser:
+            diff = stricmp(aa->queryUser(), bb->queryUser());
+            break;
+        case WUSFcluster:
+            diff = stricmp(aa->queryClusterName(), bb->queryClusterName());
+            break;
+        case WUSFjob:
+            diff = stricmp(aa->queryJobName(), bb->queryJobName());
+            break;
+        case WUSFstate:
+            diff = stricmp(aa->queryStateDesc(), bb->queryStateDesc());
+            break;
+        case WUSFprotected:
+            diff = (int) bb->isProtected() - (int) aa->isProtected();
+            break;
+        case WUSFtotalthortime:
+            diff = (int) (bb->getTotalThorTime() - bb->getTotalThorTime());
+            break;
+        case WUSFwuid:
+            diff = stricmp(aa->queryWuid(), bb->queryWuid());  // Should never happen, since we always fetch with a wuid sort
+            break;
+        default:
+            throwUnexpected();
+        }
+        if (sortorder & WUSFreverse)
+            return -diff;
+        else
+            return diff;
+    }
+
+    Owned<IConstWorkUnitIterator> input;
+    IArrayOf<IConstWorkUnitInfo> sorted;
+    unsigned sortorder;
+    unsigned idx;
+    unsigned limit;
+};
+
+class SubPageIterator : public CInterfaceOf<IConstWorkUnitIteratorEx>
+{
+public:
+    SubPageIterator(IConstWorkUnitIteratorEx *_input, unsigned _startOffset, unsigned _pageSize)
+    : input(_input), startOffset(_startOffset), pageSize(_pageSize), idx(0)
+    {
+    }
+    virtual bool first()
+    {
+        idx = 0;
+
+        // MORE - put a seek into the Ex interface
+        if (input->first())
+        {
+            for (int i = 0; i < startOffset;i++)
+            {
+                if (!input->next())
+                    return false;
+            }
+            return true;
+        }
+        else
+            return false;
+    }
+    virtual bool next()
+    {
+        if (idx >= pageSize)
+            return false;
+        idx++;
+        return input->next();
+    }
+    virtual bool isValid()
+    {
+        return idx < pageSize && input->isValid();
+    }
+    virtual IConstWorkUnitInfo & query()
+    {
+        return input->query();
+    }
+    virtual bool hasPostFilters() const
+    {
+        return false;
+    }
+    virtual bool isMerging() const
+    {
+        return false;
+    }
+private:
+    Owned<IConstWorkUnitIteratorEx> input;
+    unsigned startOffset;
+    unsigned pageSize;
+    unsigned idx;
+};
+
+class CassJoinIterator : public CInterface, implements IConstWorkUnitIteratorEx
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    CassJoinIterator(unsigned _compareColumn, bool _descending)
+    {
+        compareColumn = _compareColumn;
+        descending = _descending;
+    }
+
+    void addResult(CassandraResult &result)
+    {
+        results.append(result);
+    }
+
+    void addPostFilter(PostFilter &post)
+    {
+        postFilters.append(post);
+    }
+
+    virtual bool first()
+    {
+        if (!results.length())
+            return false;
+        inputs.kill();
+        ForEachItemIn(idx, results)
+        {
+            Owned <CassSortableIterator> input = new CassSortableIterator(cass_iterator_from_result(results.item(idx)), compareColumn, descending);
+            if (!input->nextRow())
+                return false;
+            inputs.append(*input.getClear());
+
+        }
+        return next();
+    }
+    virtual bool next()
+    {
+        current.clear();
+        loop
+        {
+            unsigned idx = 0;
+            unsigned target = 0;
+            unsigned matches = 1;  // I always match myself!
+            unsigned sources = inputs.length();
+            if (!sources)
+                return false;
+            while (matches < sources)
+            {
+                idx++;
+                if (idx==sources)
+                    idx = 0;
+                int diff;
+                loop
+                {
+                    assert(idx != target);
+                    diff = inputs.item(idx).compare(&inputs.item(target));
+                    if (diff >= 0)
+                        break;
+                    if (!inputs.item(idx).nextRow())
+                    {
+                        inputs.kill(); // Once any reaches EOF, we are done
+                        return false;
+                    }
+                }
+                if (diff > 0)
+                {
+                    target = idx;
+                    matches = 1;
+                }
+                else
+                    matches++;
+            }
+            Owned<IPTree> wuXML = rowToPTree(NULL, NULL, workunitInfoMappings+1, cass_iterator_get_row(inputs.item(0)));
+            bool postFiltered = false;
+            ForEachItemIn(pfIdx, postFilters)
+            {
+                if (!postFilters.item(pfIdx).matches(*wuXML))
+                {
+                    postFiltered = true;
+                    break;
+                }
+            }
+            if (!postFiltered)
+            {
+                current.setown(createConstWorkUnitInfo(*wuXML));
+                ForEachItemIn(idx2, inputs)
+                {
+                    if (!inputs.item(idx2).nextRow())
+                    {
+                        inputs.clear(); // Make sure next() fails next time it is called
+                        break;
+                    }
+                }
+                return true;
+            }
+        }
+    }
+    virtual bool isValid()
+    {
+        return current != NULL;
+    }
+    virtual IConstWorkUnitInfo & query()
+    {
+        assertex(current);
+        return *current.get();
+    }
+private:
+    IArrayOf<CassandraResult> results;
+    IArrayOf<CassSortableIterator> inputs;
+    CIArrayOf<PostFilter> postFilters;
     Owned<IConstWorkUnitInfo> current;
     unsigned compareColumn;
     bool descending;
@@ -4108,8 +4610,14 @@ protected:
 
     void updateSecondaries(const char *wuid)
     {
-        for (const char * const *search = searchPaths; *search; search++)
+        const char * const *search;
+        for (search = searchPaths; *search; search++)
             updateSecondaryTable(*search, prev->queryProp(*search), wuid);
+        for (search = wildSearchPaths; *search; search++)
+        {
+            if (p->hasProp(*search))
+                simpleXMLtoCassandra(sessionCache, *batch, uniqueSearchMappings, p, *search);
+        }
     }
 
     // Keep track of previously committed values for fields that we have a secondary table for, so that we can update them appropriately when we commit
@@ -4161,7 +4669,7 @@ class CCasssandraWorkUnitFactory : public CWorkUnitFactory, implements ICassandr
 {
     IMPLEMENT_IINTERFACE;
 public:
-    CCasssandraWorkUnitFactory(const IPropertyTree *props) : cluster(cass_cluster_new()), randomizeSuffix(0), randState((unsigned) get_cycles_now())
+    CCasssandraWorkUnitFactory(const IPropertyTree *props) : cluster(cass_cluster_new()), randomizeSuffix(0), randState((unsigned) get_cycles_now()), cacheRetirer(*this)
     {
         StringArray options;
         Owned<IPTreeIterator> it = props->getElements("Option");
@@ -4187,10 +4695,13 @@ public:
         if (cluster.keyspace.isEmpty())
             cluster.keyspace.set("hpcc");
         connect();
+        cacheRetirer.start();
     }
 
     ~CCasssandraWorkUnitFactory()
     {
+        cacheRetirer.stop();
+        cacheRetirer.join();
     }
 
     virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
@@ -4270,14 +4781,239 @@ public:
     }
     virtual IConstWorkUnitIterator * getScheduledWorkUnits(ISecManager *secmgr, ISecUser *secuser)
     {
-        return getWorkUnitsByXXX("@state", getWorkunitStateStr(WUStateScheduled), secmgr, secuser);
+        return getWorkUnitsByXXX("@state", getWorkunitStateStr(WUStateScheduled), secmgr, secuser); // MORE - there may be more efficient ways to do this?
     }
     virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField sortorder, WUSortField * filters, const void * filterbuf,
-                                                        unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total,
+                                                        unsigned startOffset, unsigned pageSize, __int64 * cachehint, unsigned *total,
                                                         ISecManager *secmgr, ISecUser *secuser)
     {
-        // Note that we only support a single sort order - which makes life easier!
-        UNIMPLEMENTED;
+        // To assist in the efficient implementation of this function without requiring local sorting and filtering,
+        // we maintain a couple of additional search tables in addition to the main workunit table.
+        //
+        // The workunitsSearch table allows us to map from a given field's value to a workunit - to avoid the need
+        // for a second lookup this table contains a copy of all the 'lightweight' fields in the workunit. The table
+        // has a partition key of xpath, searchPrefix allowing it to be used for range lookups provided at least
+        // 2 characters are provided, while hopefully spreading the load a little between Cassandra partitions.
+        //
+        // The uniqueValues table is used to track what values are present for some wild-searchable fields, so we do
+        // two lookups - one to translate the wildcard to a set, then others to retrieve the wus matching each value
+        // in the set. These are done as N parallel reads rather than a single query (which might naively be expected
+        // to be more efficient) for two reasons. Firstly, we can get them back sorted that way and merge the results
+        // on the fly. Secondly, it is actually more efficient, at least in the case when there are multiple Cassandra
+        // partitions, since it in-effect cuts out the step of talking to a coordinator node which would talk to
+        // multiple other nodes to get the data.
+        //
+        // We go to some lengths to avoid post-sorting if we can, but any sort order other than by wuid or totalThorTime
+        // will it. If a post-sort is required, we will fetch up to WUID_LOCALSORT_LIMIT rows, - if there are more
+        // then we should fail, and the user should be invited to add filters.
+        //
+        // We can do at most one 'hard' filter, plus a filter on wuid range - anything else will require post-filtering.
+        // Most 'wild' searches can only be done with post-filtering, but some can be translated to multiple hard values
+        // using the unique values table. In such cases we merge results in the fly to avoid a post-sort if possible
+        //
+        // Note that Cassandra does not presently support filtering before returning the values except where a
+        // key or secondary index is available - even if ALLOW FILTERING is specified. If it did, some of the post-
+        // filtering would be better off done at the Cassandra side.
+        //
+        // We should encourage the UI to present drop-lists of users for filtering, to avoid the use of wildcard
+        // searches just because people can't remember the name.
+        //
+        // Searching by files probably needs to be done differently - a separate table mapping filenames to wuids.
+        // This can perhaps be join-merged if other filters are present. This is still TBD at the moment.
+
+        Owned<CCassandraWuUQueryCacheEntry> cached;
+        if (cachehint && *cachehint)
+        {
+            CriticalBlock b(cacheCrit);
+            cached.set(cacheIdMap.getValue(*cachehint));
+        }
+        if (cached)
+            cached->touch();
+        else
+            cached.setown(new CCassandraWuUQueryCacheEntry());
+        const WUSortField *thisFilter = filters;
+        CIArrayOf<PostFilter> goodFilters;
+        CIArrayOf<PostFilter> wuidFilters;
+        CIArrayOf<PostFilter> poorFilters;
+        CIArrayOf<PostFilter> remoteWildFilters;
+        Owned<IConstWorkUnitIteratorEx> result;
+        WUSortField baseSort = (WUSortField) (sortorder & 0xff);
+        StringBuffer thorTimeThreshold;
+        bool sortByThorTime = (baseSort == WUSFtotalthortime);
+        bool needsPostSort = (baseSort != WUSFwuid && baseSort != WUSFtotalthortime);
+        bool sortDescending = (sortorder & WUSFreverse) || needsPostSort;
+        if (!result)
+        {
+            Owned<CassMultiIterator> merger = new CassMultiIterator(needsPostSort ? NULL : cached, 0, 0, sortDescending); // We always merge by wuid // MORE - except when we merge by thor time....
+            if (startOffset)
+            {
+                StringBuffer startWuid;
+                unsigned found = cached->lookupStartRow(startWuid, thorTimeThreshold, startOffset);
+                if (found)
+                {
+                    if (!sortByThorTime)
+                    {
+                        if (sortDescending)
+                            startWuid.setCharAt(startWuid.length()-1, startWuid.charAt(startWuid.length()-1)-1);  // we want to find the last wuid BEFORE
+                        else
+                            startWuid.append('\x21');  // we want to find the first wuid AFTER. This is printable but not going to be in any wuid
+                        thorTimeThreshold.clear();
+                    }
+                    wuidFilters.append(*new PostFilter(sortorder==WUSFwuid ? WUSFwuid : WUSFwuidhigh, startWuid, true));
+                    startOffset -= found;
+                    merger->setStartOffset(found);
+                }
+            }
+            const char *fv = (const char *) filterbuf;
+            while (thisFilter && *thisFilter)
+            {
+                WUSortField field = (WUSortField) (*thisFilter & 0xff);
+                bool isWild = (*thisFilter & WUSFwild) != 0;
+
+                switch (field)
+                {
+                case WUSFuser:
+                case WUSFcluster:
+                case WUSFjob:
+                    if (isWild)
+                    {
+                        StringBuffer s(fv);
+                        if (s.charAt(s.length()-1)== '*')
+                            s.remove(s.length()-1, 1);
+                        if (s.length())
+                            remoteWildFilters.append(*new PostFilter(field, s, true));  // Trailing-only wildcards can be done remotely
+                    }
+                    else
+                        goodFilters.append(*new PostFilter(field, fv, false));
+                    break;
+                case WUSFstate:
+                case WUSFpriority:
+                case WUSFprotected:
+                    // These can't be wild, but are not very good filters
+                    poorFilters.append(*new PostFilter(field, fv, false));
+                    break;
+                case WUSFwuid: // Acts as wuidLo when specified as a filter
+                case WUSFwuidhigh:
+                    // Wuid filters can be added to good and poor filters, and to remoteWild if they are done via merged sets rather than ranges...
+                    if (sortByThorTime)
+                        remoteWildFilters.append(*new PostFilter(field, fv, true));
+                    else
+                        mergeFilter(wuidFilters, field, fv);
+                    break;
+                case WUSFfileread:
+                    UNIMPLEMENTED;
+                case WUSFtotalthortime:
+                    // This should be treated as a low value - i.e. return only wu's that took longer than the supplied value
+                    if (thorTimeThreshold.isEmpty()) // If not a continuation
+                        formatTimeCollatable(thorTimeThreshold, milliToNano(atoi(fv)), false);
+                    break;
+                case WUSFwildwuid:
+                    // Translate into a range - note that we only support trailing * wildcard.
+                    if (fv && *fv)
+                    {
+                        StringBuffer s(fv);
+                        if (s.charAt(s.length()-1)== '*')
+                            s.remove(s.length()-1, 1);
+                        if (s.length())
+                        {
+                            mergeFilter(wuidFilters, WUSFwuid, s);
+                            s.append('\x7e');  // '~' - higher than anything that should occur in a wuid (but still printable)
+                            mergeFilter(wuidFilters, WUSFwuidhigh, s);
+                        }
+                    }
+                    break;
+                case WUSFcustom:
+                    UNIMPLEMENTED;
+                case WUSFecl: // This is different...
+                    if (isWild)
+                        merger->addPostFilter(*new PostFilter(field, fv, true)); // Wildcards on ECL are trailing and leading - no way to do remotely
+                    else
+                        goodFilters.append(*new PostFilter(field, fv, false)); // A hard filter on exact ecl match is possible but very unlikely
+                }
+                thisFilter++;
+                fv = fv + strlen(fv)+1;
+            }
+
+            if (sortByThorTime)
+            {
+                merger->addPostFilters(goodFilters, 0);
+                merger->addPostFilters(poorFilters, 0);
+                merger->addPostFilters(remoteWildFilters, 0);
+                if (wuidFilters.length())
+                {
+                    // We are doing a continuation of a prior search that is sorted by a searchField, which may not be unique
+                    // We need two queries - one where searchField==startSearchField and wuid > startWuid,
+                    // and one where searchField > startSearchField. We know that there are no other filters in play (as Cassandra would not support them)
+                    // though there may be postfilters
+                    assertex(wuidFilters.length()==1);
+                    merger->addResult(*new CassandraResult(fetchMoreDataByThorTime(thorTimeThreshold, wuidFilters.item(0).queryValue(), sortDescending, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                    merger->addResult(*new CassandraResult(fetchMoreDataByThorTime(thorTimeThreshold, NULL, sortDescending, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                }
+                else
+                    merger->addResult(*new CassandraResult(fetchDataByThorTime(thorTimeThreshold, sortDescending, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+            }
+            else if (goodFilters.length())
+            {
+                merger->addPostFilters(goodFilters, 1);
+                merger->addPostFilters(poorFilters, 0);
+                merger->addPostFilters(remoteWildFilters, 0);
+                merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(goodFilters.item(0), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+            }
+            else if (poorFilters.length())
+            {
+                merger->addPostFilters(poorFilters, 1);
+                merger->addPostFilters(remoteWildFilters, 0);
+                merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(poorFilters.item(0), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+            }
+            else if (remoteWildFilters.length())
+            {
+                merger->addPostFilters(remoteWildFilters, 1);  // Any other filters have to be done locally
+                // Convert into a value IN [] which we do via a merge
+                // MORE - If we want sorted by filter (or don't care about sort order), we could do directly as a range - but the wuid range filters then don't work, and the merger would be invalid
+                StringArray fieldValues;
+                PostFilter &best= remoteWildFilters.item(0);
+                _getUniqueValues(best.queryXPath(), best.queryValue(), fieldValues);
+                ForEachItemIn(idx, fieldValues)
+                {
+                    PostFilter p(best.queryField(), fieldValues.item(idx), false);
+                    merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(p, wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                }
+            }
+            else
+            {
+                // If all we have is a wuid range (or nothing), search the wuid table and/or return everything
+                for (int i = 0; i < NUM_PARTITIONS; i++)
+                {
+                    merger->addResult(*new CassandraResult(fetchDataByPartition(workunitInfoMappings, i, wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                }
+            }
+
+            // The result we have will be sorted by wuid (ascending or descending)
+            if (needsPostSort)
+            {
+                // A post-sort will be required.
+                // Result should be limited in (to CASS_WORKUNIT_POSTSORT_LIMIT * number of results being merged)
+                result.setown(new CassPostSortIterator(merger.getClear(), sortorder, pageSize > CASS_WORKUNIT_POSTSORT_LIMIT ? pageSize : CASS_WORKUNIT_POSTSORT_LIMIT));
+                cached->setResult(result);
+            }
+            else
+                result.setown(merger.getClear());
+        }
+        if (startOffset || needsPostSort || result->hasPostFilters() || result->isMerging()) // we need a subpage if we have fetched anything other than exactly the rows requested
+            result.setown(new SubPageIterator(result.getClear(), startOffset, pageSize));
+        if (cachehint)
+        {
+            *cachehint = cached->queryHint();
+            CriticalBlock b(cacheCrit);
+            cacheIdMap.setValue(*cachehint, cached.getClear());
+        }
+        if (total)
+            *total = 0; // We don't know
+        return result.getClear();
+    }
+    virtual StringArray &getUniqueValues(WUSortField field, const char *prefix, StringArray &result) const
+    {
+        return _getUniqueValues(queryFilterXPath(field), prefix, result);
     }
     virtual unsigned numWorkUnits()
     {
@@ -4354,6 +5090,12 @@ public:
         // 1. Check that every entry in main wu table has matching entries in secondary tables
         CassandraResult result(fetchData(workunitInfoMappings+1));
         CassandraIterator rows(cass_iterator_from_result(result));
+        if (batch)
+        {
+            // Delete the unique values table - the validate process recreates it afresh
+            CassandraStatement truncate(cass_statement_new("TRUNCATE uniqueSearchValues", 0));
+            check(cass_batch_add_statement(batch, truncate));
+        }
         while (cass_iterator_next(rows))
         {
             Owned<IPTree> wuXML = rowToPTree(NULL, NULL, workunitInfoMappings+1, cass_iterator_get_row(rows));
@@ -4399,6 +5141,7 @@ public:
         connect();
         ensureTable(session, workunitsMappings);
         ensureTable(session, searchMappings);
+        ensureTable(session, uniqueSearchMappings);
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             ensureTable(session, table[0]->mappings);
     }
@@ -4453,37 +5196,55 @@ private:
         CassandraResult result(cass_future_get_result(future));
         return getUnsignedResult(NULL, getSingleResult(result)) != 0; // Shouldn't be more than 1, either
     }
-
-    IConstWorkUnitIterator * getSortedWorkUnits(ISecManager *secmgr, ISecUser *secuser)
+    void mergeFilter(CIArrayOf<PostFilter> &filters, WUSortField field, const char *value)
     {
-        // Hack in some test code to test stream merging
-        Owned<IPTree> parent = createPTree("WorkUnits");
-        Owned<CassMultiIterator> merger = new CassMultiIterator(0, true); // Merge by wuid (note that we didn't fetch partition...)
-        for (int i = 0; i < NUM_PARTITIONS; i++)
+        // Combine multiple filters on wuid - Cassandra doesn't like seeing more than one.
+        ForEachItemIn(idx, filters)
         {
-            merger->addResult(*new CassandraResult(fetchDataByPartition(workunitInfoMappings, i)));
+            PostFilter &filter = filters.item(idx);
+            if (filter.queryField()==field)
+            {
+                const char *prevLimit = filter.queryValue();
+                int diff = strcmp(prevLimit, value);
+                if (diff && ((diff < 0) == (field==WUSFwuid)))
+                    filter.setValue(value);
+                return;
+            }
         }
-        return createSecureConstWUIterator(merger.getClear(), secmgr, secuser);
+        // Not found - add new filter
+        filters.append(*new PostFilter(field, value, true));
     }
-
     IConstWorkUnitIterator * getWorkUnitsByXXX(const char *xpath, const char *key, ISecManager *secmgr, ISecUser *secuser)
     {
+        Owned<CassMultiIterator> merger = new CassMultiIterator(NULL, 0, 0, true); // Merge by wuid
         if (!key || !*key)
-            return getSortedWorkUnits(secmgr, secuser);
-        const CassandraXmlMapping *mappings = searchMappings+3;  // Don't return the xpath, searchPrefix or searchValue fields
-        Owned<CassandraResult> result = new CassandraResult(fetchDataForKey(xpath, key));
-        Owned<IPTree> parent = createPTree("WorkUnits");
-        CassandraIterator rows(cass_iterator_from_result(*result));
-        while (cass_iterator_next(rows))
         {
-            Owned<IPTree> wuXML = rowToPTree(xpath, key, mappings, cass_iterator_get_row(rows));
-            const char *wuid = wuXML->queryName();
-            parent->addPropTree(wuid, wuXML.getClear());
+            CIArrayOf<PostFilter> wuidFilters;
+            for (int i = 0; i < NUM_PARTITIONS; i++)
+            {
+                merger->addResult(*new CassandraResult(fetchDataByPartition(workunitInfoMappings, i, wuidFilters)));
+            }
         }
-        Owned<IPropertyTreeIterator> iter = parent->getElements("*");
-        return createSecureConstWUIterator(iter.getClear(), secmgr, secuser);
+        else
+            merger->addResult(*new CassandraResult(fetchDataForKey(xpath, key)));
+        return createSecureConstWUIterator(merger.getClear(), secmgr, secuser);
     }
-
+    StringArray &_getUniqueValues(const char *xpath, const char *prefix, StringArray &result) const
+    {
+        if (prefix && strlen(prefix) >= CASS_SEARCH_PREFIX_SIZE)
+        {
+            CassandraResult r(fetchDataForWildSearch(xpath, prefix, uniqueSearchMappings));
+            CassandraIterator rows(cass_iterator_from_result(r));
+            StringBuffer value;
+            while (cass_iterator_next(rows))
+            {
+                const CassRow *row = cass_iterator_get_row(rows);
+                getCassString(value.clear(), cass_row_get_column(row, 0));
+                result.append(value);
+            }
+        }
+        return result;
+    }
     unsigned validateSearch(const char *xpath, const char *wuid, IPTree *wuXML, CassBatch *batch)
     {
         unsigned errCount = 0;
@@ -4491,6 +5252,8 @@ private:
         if (childKey && *childKey)
         {
             CassandraResult result(fetchDataForKeyAndWuid(xpath, childKey, wuid));
+            if (batch)
+                simpleXMLtoCassandra(this, batch, uniqueSearchMappings, wuXML, xpath);
             switch (cass_result_row_count(result))
             {
             case 0:
@@ -4597,12 +5360,35 @@ private:
 
     // Fetch all rows from a single partition of a table
 
-    const CassResult *fetchDataByPartition(const CassandraXmlMapping *mappings, int partition) const
+    const CassResult *fetchDataByPartition(const CassandraXmlMapping *mappings, int partition, const CIArrayOf<PostFilter> &wuidFilters, unsigned sortOrder=WUSFwuid|WUSFreverse, unsigned limit=0) const
     {
         StringBuffer names;
         StringBuffer tableName;
         getFieldNames(mappings+1, names, tableName); // Don't fetch partition column
-        VStringBuffer selectQuery("select %s from %s where partition=%d;", names.str()+1, tableName.str(), partition);
+        VStringBuffer selectQuery("select %s from %s where partition=%d", names.str()+1, tableName.str(), partition);
+        ForEachItemIn(idx, wuidFilters)
+        {
+            const PostFilter &wuidFilter = wuidFilters.item(idx);
+            selectQuery.appendf(" and wuid %s '%s'", wuidFilter.queryField()==WUSFwuidhigh ? "<=" : ">=", wuidFilter.queryValue());
+        }
+        switch (sortOrder)
+        {
+        case WUSFwuid:
+            selectQuery.append(" ORDER BY WUID ASC");
+            break;
+        case WUSFwuid|WUSFreverse:
+            // If not wuid, descending, we will have to post-sort
+            selectQuery.append(" ORDER BY WUID DESC");
+            break;
+        default:
+            // If not wuid, descending, we will have to post-sort. We still need in wuid desc order for the merge though.
+            selectQuery.append(" ORDER BY WUID DESC");
+            if (!limit)
+                limit = CASS_WORKUNIT_POSTSORT_LIMIT;
+            break;
+        }
+        if (limit)
+            selectQuery.appendf(" LIMIT %u", limit);
         selectQuery.append(';');
         if (traceLevel >= 2)
             DBGLOG("%s", selectQuery.str());
@@ -4625,7 +5411,7 @@ private:
         return executeQuery(session, statement);
     }
 
-    // Fetch matching rows from the search table, for all wuids
+    // Fetch matching rows from the search table, for all wuids, sorted by wuid
 
     const CassResult *fetchDataForKey(const char *xpath, const char *key) const
     {
@@ -4635,7 +5421,128 @@ private:
         StringBuffer ucKey(key);
         ucKey.toUpperCase();
         getFieldNames(searchMappings+3, names, tableName);  // mappings+3 means we don't return the key columns (xpath, upper(keyPrefix), upper(key))
-        VStringBuffer selectQuery("select %s from %s where xpath='%s' and fieldPrefix='%.*s' and fieldValue ='%s';", names.str()+1, tableName.str(), xpath, CASS_SEARCH_PREFIX_SIZE, ucKey.str(), ucKey.str()); // MORE - should consider using prepared/bind for this - is it faster?
+        VStringBuffer selectQuery("select %s from %s where xpath='%s' and fieldPrefix='%.*s' and fieldValue ='%s'", names.str()+1, tableName.str(), xpath, CASS_SEARCH_PREFIX_SIZE, ucKey.str(), ucKey.str()); // MORE - should consider using prepared/bind for this - is it faster?
+        selectQuery.append(" ORDER BY fieldValue ASC, WUID desc;");
+        if (traceLevel >= 2)
+            DBGLOG("%s", selectQuery.str());
+        CassandraStatement statement(cass_statement_new(selectQuery.str(), 0));
+        return executeQuery(session, statement);
+    }
+
+    // Fetch matching rows from the search table, for all wuids, sorted by wuid
+
+    const CassResult *fetchDataForKeyWithFilter(const PostFilter &filter, const CIArrayOf<PostFilter> &wuidFilters, unsigned sortOrder, unsigned limit) const
+    {
+        const char *xpath = filter.queryXPath();
+        const char *key = filter.queryValue();
+        assertex(key);
+        StringBuffer names;
+        StringBuffer tableName;
+        StringBuffer ucKey(key);
+        ucKey.toUpperCase();
+        getFieldNames(searchMappings+3, names, tableName);  // mappings+3 means we don't return the key columns (xpath, upper(keyPrefix), upper(key))
+        VStringBuffer selectQuery("select %s from %s where xpath='%s' and fieldPrefix='%.*s' and fieldValue ='%s'", names.str()+1, tableName.str(), xpath, CASS_SEARCH_PREFIX_SIZE, ucKey.str(), ucKey.str());
+        ForEachItemIn(idx, wuidFilters)
+        {
+            const PostFilter &wuidFilter = wuidFilters.item(idx);
+            selectQuery.appendf(" and wuid %s '%s'", wuidFilter.queryField()==WUSFwuidhigh ? "<=" : ">=", wuidFilter.queryValue());
+        }
+        switch (sortOrder)
+        {
+        case WUSFwuid:
+            selectQuery.append(" ORDER BY fieldValue DESC, WUID ASC");
+            break;
+        case WUSFwuid|WUSFreverse:
+            selectQuery.append(" ORDER BY fieldValue ASC, WUID DESC");
+            break;
+        default:
+            // If not wuid, descending, we will have to post-sort. We still need in wuid desc order for the merge though.
+            selectQuery.appendf(" ORDER BY fieldvalue ASC, WUID DESC");
+            limit = CASS_WORKUNIT_POSTSORT_LIMIT;
+            break;
+        }
+        if (limit)
+            selectQuery.appendf(" LIMIT %u", limit);
+        if (traceLevel >= 2)
+            DBGLOG("%s", selectQuery.str());
+        CassandraStatement statement(cass_statement_new(selectQuery.str(), 0));
+        return executeQuery(session, statement);
+    }
+
+    // Fetch matching rows from the search or uniqueSearch table, for a given prefix
+
+    const CassResult *fetchDataForWildSearch(const char *xpath, const char *prefix, const CassandraXmlMapping *mappings) const
+    {
+        assertex(prefix && *prefix);
+        StringBuffer names;
+        StringBuffer tableName;
+        StringBuffer ucKey(prefix);
+        ucKey.toUpperCase();
+        StringBuffer ucKeyEnd(ucKey);
+        size32_t len = ucKeyEnd.length();
+        assertex(len);
+        ucKeyEnd.setCharAt(len-1, ucKeyEnd.charAt(len-1)+1);
+        getFieldNames(mappings+3, names, tableName);  // mappings+3 means we don't return the key columns (xpath, upper(keyPrefix), upper(key))
+        VStringBuffer selectQuery("select %s from %s where xpath='%s' and fieldPrefix='%.*s' and fieldValue >='%s' and fieldValue < '%s';", names.str()+1, tableName.str(), xpath, CASS_SEARCH_PREFIX_SIZE, ucKey.str(), ucKey.str(), ucKeyEnd.str()); // MORE - should consider using prepared/bind for this - is it faster?
+        if (traceLevel >= 2)
+            DBGLOG("%s", selectQuery.str());
+        CassandraStatement statement(cass_statement_new(selectQuery.str(), 0));
+        return executeQuery(session, statement);
+    }
+
+    // Fetch rows from the search table, by thorTime, above a threshold
+
+    const CassResult *fetchDataByThorTime(const char *threshold, bool descending, unsigned limit) const
+    {
+        StringBuffer names;
+        StringBuffer tableName;
+        getFieldNames(searchMappings+3, names, tableName);  // mappings+3 means we don't return the key columns (xpath, upper(keyPrefix), upper(key))
+        VStringBuffer selectQuery("select %s from %s where xpath='@totalThorTime' and fieldPrefix='%*s'", names.str()+1, tableName.str(), CASS_SEARCH_PREFIX_SIZE, "");
+        if (threshold && *threshold)
+            selectQuery.appendf(" where fieldValue >= '%s'", threshold);
+        if (descending)
+            selectQuery.append(" ORDER BY fieldValue DESC, wuid ASC");
+        else
+            selectQuery.append(" ORDER BY fieldValue ASC, wuid DESC");
+        if (limit)
+            selectQuery.appendf(" LIMIT %u", limit);
+        selectQuery.append(';');
+        if (traceLevel >= 2)
+            DBGLOG("%s", selectQuery.str());
+        CassandraStatement statement(cass_statement_new(selectQuery.str(), 0));
+        return executeQuery(session, statement);
+    }
+
+    // Fetch rows from the search table, continuing a previous query that was sorted by thor time - part one
+    // This technique only works for thor time where we have forced to a single partition. Otherwise it gets even more complicated, and not worth it.
+
+    const CassResult *fetchMoreDataByThorTime(const char *threshold, const char *wuid, bool descending, unsigned limit) const
+    {
+        StringBuffer names;
+        StringBuffer tableName;
+        getFieldNames(searchMappings+3, names, tableName);  // mappings+3 means we don't return the key columns (xpath, upper(keyPrefix), upper(key))
+        const char *wuidTest;
+        const char *fieldTest;
+        if (descending)
+        {
+            wuidTest = ">";
+            fieldTest = wuid ? "=" : "<";
+        }
+        else
+        {
+            wuidTest = "<";
+            fieldTest = wuid ? "=" : ">";
+        }
+        VStringBuffer selectQuery("select %s from %s where xpath='@totalThorTime' and fieldPrefix='%*s' and fieldValue %s '%s'", names.str()+1, tableName.str(), CASS_SEARCH_PREFIX_SIZE, "", fieldTest, threshold);
+        if (wuid)
+            selectQuery.appendf(" and wuid %s '%s'", wuidTest, wuid);
+        if (descending)
+            selectQuery.append(" ORDER BY fieldValue DESC, WUID ASC");
+        else
+            selectQuery.append(" ORDER BY fieldValue ASC, WUID DESC");
+        if (limit)
+            selectQuery.appendf(" LIMIT %u", limit);
+        selectQuery.append(';');
         if (traceLevel >= 2)
             DBGLOG("%s", selectQuery.str());
         CassandraStatement statement(cass_statement_new(selectQuery.str(), 0));
@@ -4674,14 +5581,66 @@ private:
         check(cass_batch_add_statement(batch, update));
     }
 
+    unsigned retireCache()
+    {
+        CriticalBlock b(cacheCrit); // Is this too coarse-grained?
+        unsigned expires = CASS_WU_QUERY_EXPIRES;
+        unsigned now = msTick();
+        ICopyArrayOf<CCassandraWuUQueryCacheEntry> goers;
+        HashIterator iter(cacheIdMap);
+        ForEach(iter)
+        {
+            CCassandraWuUQueryCacheEntry *entry = cacheIdMap.mapToValue(&iter.query());
+            unsigned age = now - entry->queryLastAccess();
+            int ttl = CASS_WU_QUERY_EXPIRES-age;
+            if (ttl<= 0)
+                goers.append(*entry);
+            else if (ttl< expires)
+                expires = ttl;
+        }
+        ForEachItemIn(idx, goers)
+        {
+            DBGLOG("Expiring cache entry %p", &goers.item(idx));
+            cacheIdMap.remove(goers.item(idx).queryHint());
+        }
+        return expires;
+    }
+
+    class CacheRetirer : public Thread
+    {
+    public:
+        CacheRetirer(CCasssandraWorkUnitFactory &_parent) : Thread("WorkunitListCacheRetirer"), parent(_parent)
+        {
+            stopping = false;
+        }
+        virtual int run()
+        {
+            while (!stopping)
+            {
+                unsigned delay = parent.retireCache();
+                sem.wait(delay);
+            }
+            return 0;
+        }
+        void stop()
+        {
+            stopping = true;
+            sem.signal();
+        }
+    private:
+        Semaphore sem;
+        CCasssandraWorkUnitFactory &parent;
+        bool stopping;
+    } cacheRetirer;
 
     unsigned randomizeSuffix;
     unsigned traceLevel;
     unsigned randState;
     CassandraCluster cluster;
     CassandraSession session;
-    mutable CriticalSection cacheCrit;
+    mutable CriticalSection cacheCrit;  // protects both of the caches below... we could separate
     mutable MapStringToMyClass<CassandraPrepared> preparedCache;
+    mutable MapXToMyClass<__uint64, __uint64, CCassandraWuUQueryCacheEntry> cacheIdMap;
 };
 
 

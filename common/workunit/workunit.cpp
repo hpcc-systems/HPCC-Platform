@@ -948,8 +948,6 @@ private:
 
 //--------------------------------------------------------------------------------------------------------------------
 
-struct mapEnums { int val; const char *str; };
-
 mapEnums states[] = {
    { WUStateUnknown, "unknown" },
    { WUStateCompiled, "compiled" },
@@ -987,19 +985,6 @@ const char * getWorkunitStateStr(WUState state)
 {
     dbgassertex(state < WUStateSize);
     return states[state].str; // MORE - should be using getEnumText, or need to take steps to ensure values remain contiguous and in order.
-}
-
-const char *getEnumText(int value, const mapEnums *map)
-{
-    const char *defval = map->str;
-    while (map->str)
-    {
-        if (value==map->val)
-            return map->str;
-        map++;
-    }
-    assertex(!"Unexpected value in setEnum");
-    return defval;
 }
 
 void setEnum(IPropertyTree *p, const char *propname, int value, const mapEnums *map)
@@ -1054,7 +1039,7 @@ public:
         action = (WUAction) getEnum(&p, "Action", actions);
         wuscope.set(p.queryProp("@scope"));
         appvalues.load(&p,"Application/*");
-        totalThorTime = p.getPropInt("@totalThorTime", 0);
+        totalThorTime = nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), false));
         _isProtected = p.getPropBool("@protected", false);
     }
     virtual const char *queryWuid() const { return wuid.str(); }
@@ -2013,8 +1998,15 @@ mapEnums workunitSortFields[] =
                         "Statistics/Statistic[@desc='Total thor time']/@value|"
                         "Timings/Timing[@name='Total thor time']/@duration"                                 //Use Statistics first. If not found, use Timings
    },
+   { WUSFwuidhigh, "@" },
+   { WUSFwildwuid, "@" },
    { WUSFterm, NULL }
 };
+
+extern const char *queryFilterXPath(WUSortField field)
+{
+    return getEnumText(field, workunitSortFields);
+}
 
 mapEnums querySortFields[] =
 {
@@ -2686,7 +2678,6 @@ public:
                                                 const void *filterbuf,  // (appended) string values for filters
                                                 unsigned startoffset,
                                                 unsigned maxnum,
-                                                const char *queryowner,
                                                 __int64 *cachehint,
                                                 unsigned *total,
                                                 ISecManager *secmgr,
@@ -2804,7 +2795,7 @@ public:
         }
         IArrayOf<IPropertyTree> results;
         Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
-        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,queryowner,cachehint,results,total);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,"",cachehint,results,total);
         return new CConstWUArrayIterator(results);
     }
 
@@ -3066,6 +3057,10 @@ public:
     {
         return baseFactory->queryStoreType();
     }
+    virtual StringArray &getUniqueValues(WUSortField field, const char *prefix, StringArray &result) const
+    {
+        return baseFactory->getUniqueValues(field, prefix, result);
+    }
 
     virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
     {
@@ -3133,14 +3128,13 @@ public:
                                                         const void *filterbuf,  // (appended) string values for filters
                                                         unsigned startoffset,
                                                         unsigned maxnum,
-                                                        const char *queryowner, 
                                                         __int64 *cachehint,
                                                         unsigned *total,
                                                         ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
         if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, total, secMgr, secUser);
+        return baseFactory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint, total, secMgr, secUser);
     }
 
     virtual IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder,
@@ -3813,7 +3807,7 @@ unsigned CLocalWorkUnit::getDebugAgentListenerPort() const
 unsigned CLocalWorkUnit::getTotalThorTime() const
 {
     CriticalBlock block(crit);
-    return p->getPropInt("@totalThorTime", 0);
+    return nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), false));
 }
 
 void CLocalWorkUnit::setDebugAgentListenerPort(unsigned port)
@@ -5729,10 +5723,11 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         else
             statTree->removeProp("@max");
     }
-    if (creatorType==SCTsummary && scope==GLOBAL_SCOPE && kind==StTimeElapsed)
+    if (creatorType==SCTsummary && kind==StTimeElapsed && strsame(scope, GLOBAL_SCOPE))
     {
-        assertex(mergeAction==StatsMergeReplace);
-        p->setPropInt("@totalThorTime", (int) nanoToMilli(value));
+        StringBuffer t;
+        formatTimeCollatable(t, value, false);
+        p->setProp("@totalThorTime", t);
     }
 }
 

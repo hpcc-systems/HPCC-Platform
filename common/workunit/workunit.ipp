@@ -588,7 +588,6 @@ public:
                                                 const void *filterbuf,  // (appended) string values for filters
                                                 unsigned startoffset,
                                                 unsigned maxnum,
-                                                const char *queryowner,
                                                 __int64 *cachehint,
                                                 unsigned *total,
                                                 ISecManager *secmgr,
@@ -600,6 +599,11 @@ public:
     virtual bool isAborting(const char *wuid) const;
     virtual void clearAborting(const char *wuid);
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState) = 0;
+
+    virtual StringArray &getUniqueValues(WUSortField field, const char *prefix, StringArray &result) const
+    {
+        return result; // Default behaviour if we can't implement efficiently is to return empty list
+    }
 
 protected:
     // These need to be implemented by the derived classes

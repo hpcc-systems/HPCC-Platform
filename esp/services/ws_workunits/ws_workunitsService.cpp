@@ -1731,6 +1731,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     unsigned short filterCount = 0;
     MemoryBuffer filterbuf;
 
+    // Query filters should be added in order of expected power - add the most restrictive filters first
+
     bool bDoubleCheckState = false;
     if(req.getState() && *req.getState())
     {
@@ -1772,7 +1774,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     unsigned numWUs;
-    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), begin, pagesize+1, "", &cacheHint, &numWUs);
+    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), begin, pagesize+1, &cacheHint, &numWUs); // MORE - need security flags here!
     if (version >= 1.41)
         resp.setCacheHint(cacheHint);
 

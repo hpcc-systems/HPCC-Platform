@@ -190,6 +190,47 @@ static void formatTime(StringBuffer & out, unsigned __int64 value)
     }
 }
 
+extern void formatTimeCollatable(StringBuffer & out, unsigned __int64 value, bool nano)
+{
+    unsigned days = (unsigned)(value / oneDay);
+    value = value % oneDay;
+    unsigned hours = (unsigned)(value / oneHour);
+    value = value % oneHour;
+    unsigned mins = (unsigned)(value / oneMinute);
+    value = value % oneMinute;
+    unsigned secs = (unsigned)(value / oneSecond);
+    unsigned ns = (unsigned)(value % oneSecond);
+
+    if (days)
+        out.appendf("  %3ud ", days); // Two leading spaces helps the cassandra driver force to a single partition
+    else
+        out.appendf("       ");
+    if (nano)
+        out.appendf("%2u:%02u:%02u.%09u", hours, mins, secs, ns);
+    else
+        out.appendf("%2u:%02u:%02u.%03u", hours, mins, secs, ns/1000000);
+    // More than 999 days, I don't care that it goes wrong.
+}
+
+extern unsigned __int64 extractTimeCollatable(const char *s, bool nano)
+{
+    if (!s)
+        return 0;
+    unsigned days,hours,mins,secs,fracs;
+    if (sscanf(s, " %ud %u:%u:%u.%u", &days, &hours, &mins, &secs, &fracs)!=5)
+    {
+        days = 0;
+        if (sscanf(s, " %u:%u:%u.%u", &hours, &mins, &secs, &fracs) != 4)
+            return 0;
+    }
+    unsigned __int64 ret = days*oneDay + hours*oneHour + mins*oneMinute + secs*oneSecond;
+    if (nano)
+        ret += fracs;
+    else
+        ret += milliToNano(fracs);
+    return ret;
+}
+
 static void formatTimeStamp(StringBuffer & out, unsigned __int64 value)
 {
     time_t seconds = value / 1000000;
