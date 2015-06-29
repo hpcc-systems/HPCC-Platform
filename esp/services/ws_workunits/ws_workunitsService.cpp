@@ -1656,7 +1656,7 @@ bool addWUQueryFilterApplication(WUSortField *filters, unsigned short &count, Me
 {
     if (isEmpty(appname))
         return false;  // appname must be specified
-    if (isEmpty(appkey) && isEmpty(appdata)) //one or other is required ( MORE - see if cassandra can relaax that)
+    if (isEmpty(appkey) && isEmpty(appdata)) //one or other is required ( MORE - see if cassandra can relax that)
         return false;
     VStringBuffer path("%s/%s", appname, appkey && *appkey ? appkey : "*");
     buff.append(path.str());

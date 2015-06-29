@@ -208,7 +208,8 @@ int main(int argc, const char *argv[])
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
             CppUnit::TextUi::TestRunner runner;
             CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry("WuTest");
-            runner.addTest( registry.makeTest() );            bool wasSucessful = runner.run( "", false );
+            runner.addTest( registry.makeTest() );
+            bool wasSucessful = runner.run( "", false );
             return wasSucessful;
         }
         else

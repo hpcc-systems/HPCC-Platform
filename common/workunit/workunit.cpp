@@ -2768,7 +2768,7 @@ public:
                     namefilter.set(fv);
                 else if (subfmt==WUSFappvalue)
                 {
-                    query.append("[Application/").append(fv).append("=?\"");
+                    query.append("[Application/").append(fv).append("=?~\"");
                     fv = fv + strlen(fv)+1;
                     query.append(fv).append("\"]");
                 }
