@@ -1654,13 +1654,14 @@ bool addWUQueryFilterTime(WUSortField *filters, unsigned short &count, MemoryBuf
 
 bool addWUQueryFilterApplication(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *appname, const char *appkey, const char *appdata)
 {
-    if (isEmpty(appname) && isEmpty(appkey) && isEmpty(appdata)) //no application filter
+    if (isEmpty(appname))
+        return false;  // appname must be specified
+    if (isEmpty(appkey) && isEmpty(appdata)) //one or other is required ( MORE - see if cassandra can relax that)
         return false;
-    VStringBuffer path("Application/%s/%s", appname && *appname ? appname : "*", appkey && *appkey ? appkey : "*");
-    if(appdata && *appdata)
-        path.append("=?~\"").append(appdata).append("\"");
-    filters[count++] = WUSFcustom;
+    VStringBuffer path("%s/%s", appname, appkey && *appkey ? appkey : "*");
     buff.append(path.str());
+    buff.append(appdata);
+    filters[count++] = WUSFappvalue;
     return true;
 }
 
@@ -1833,12 +1834,10 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             ForEach(*app)
             {
                 IConstWUAppValue& val=app->query();
-                SCMStringBuffer buf;
-
                 Owned<IEspApplicationValue> t= createApplicationValue("","");
-                t->setApplication(val.getApplication(buf).str());
-                t->setName(val.getName(buf).str());
-                t->setValue(val.getValue(buf).str());
+                t->setApplication(val.queryApplication());
+                t->setName(val.queryName());
+                t->setValue(val.queryValue());
                 av.append(*t.getLink());
 
             }

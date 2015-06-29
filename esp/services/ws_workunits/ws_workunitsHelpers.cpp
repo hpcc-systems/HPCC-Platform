@@ -595,12 +595,10 @@ void WsWuInfo::getApplicationValues(IEspECLWorkunit &info, unsigned flags)
         ForEach(*app)
         {
             IConstWUAppValue& val=app->query();
-            SCMStringBuffer buf;
-
             Owned<IEspApplicationValue> t= createApplicationValue("","");
-            t->setApplication(val.getApplication(buf).str());
-            t->setName(val.getName(buf).str());
-            t->setValue(val.getValue(buf).str());
+            t->setApplication(val.queryApplication());
+            t->setName(val.queryName());
+            t->setValue(val.queryValue());
             av.append(*t.getLink());
 
         }

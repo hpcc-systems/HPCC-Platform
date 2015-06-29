@@ -109,6 +109,14 @@ static void fail(const char *message)
     rtlFail(0, msg.str());
 }
 
+void check(CassError rc)
+{
+    if (rc != CASS_OK)
+    {
+        fail(cass_error_desc(rc));
+    }
+}
+
 // Wrappers to Cassandra structures that require corresponding releases
 
 class CassandraCluster : public CInterface
@@ -460,6 +468,16 @@ public:
     {
         return statement;
     }
+    inline void bindString(unsigned idx, const char *value)
+    {
+        //DBGLOG("bind %d %s", idx, value);
+        check(cass_statement_bind_string(statement, idx, value));
+    }
+    inline void bindString_n(unsigned idx, const char *value, unsigned len)
+    {
+        //DBGLOG("bind %d %.*s", idx, len, value);
+        check(cass_statement_bind_string_n(statement, idx, value, len));
+    }
 private:
     CassandraStatement(const CassandraStatement &);
     CassStatement *statement;
@@ -550,14 +568,6 @@ private:
     CassandraCollection(const CassandraCollection &);
     CassCollection *collection;
 };
-
-void check(CassError rc)
-{
-    if (rc != CASS_OK)
-    {
-        fail(cass_error_desc(rc));
-    }
-}
 
 class CassandraStatementInfo : public CInterface
 {
@@ -2329,7 +2339,7 @@ struct CassandraColumnMapper
 {
     virtual ~CassandraColumnMapper() {}
     virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) = 0;
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) = 0;
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) = 0;
 };
 
 static class StringColumnMapper : implements CassandraColumnMapper
@@ -2344,13 +2354,13 @@ public:
         row->setProp(name, s);
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         const char *value = row->queryProp(name);
         if (!value)
             return false;
         if (statement)
-            check(cass_statement_bind_string(statement, idx, value));
+            statement->bindString(idx, value);
         return true;
     }
 } stringColumnMapper;
@@ -2358,13 +2368,13 @@ public:
 static class RequiredStringColumnMapper : public StringColumnMapper
 {
 public:
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         const char *value = row->queryProp(name);
         if (!value)
             value = "";
         if (statement)
-            check(cass_statement_bind_string(statement, idx, value));
+            statement->bindString(idx, value);
         return true;
     }
 } requiredStringColumnMapper;
@@ -2372,10 +2382,10 @@ public:
 static class SuppliedStringColumnMapper : public StringColumnMapper
 {
 public:
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
     {
         if (statement)
-            check(cass_statement_bind_string(statement, idx, userVal));
+            statement->bindString(idx, userVal);
         return true;
     }
 } suppliedStringColumnMapper;
@@ -2391,14 +2401,14 @@ public:
         row->setPropBin(name, chars, str.getbytes());
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
     {
         MemoryBuffer value;
         row->getPropBin(name, value);
         if (value.length())
         {
             if (statement)
-                check(cass_statement_bind_bytes(statement, idx, (const cass_byte_t *) value.toByteArray(), value.length()));
+                check(cass_statement_bind_bytes(*statement, idx, (const cass_byte_t *) value.toByteArray(), value.length()));
             return true;
         }
         else
@@ -2414,7 +2424,7 @@ public:
         // never fetched (that may change?)
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
     {
         // never bound, but does need to be included in the ?
         return true;
@@ -2428,12 +2438,12 @@ public:
     {
         throwUnexpected(); // we never return the partition column
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
     {
         if (statement)
         {
             int hash = rtlHash32VStr(row->queryName(), 0) % NUM_PARTITIONS;
-            check(cass_statement_bind_int32(statement, idx, hash));
+            check(cass_statement_bind_int32(*statement, idx, hash));
         }
         return true;
     }
@@ -2451,12 +2461,12 @@ public:
         row->renameProp("/", s);
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
     {
         if (statement)
         {
             const char *value = row->queryName();
-            check(cass_statement_bind_string(statement, idx, value));
+            statement->bindString(idx, value);
         }
         return true;
     }
@@ -2472,7 +2482,7 @@ public:
     {
         throwUnexpected();
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
     {
         throwUnexpected();
     }
@@ -2496,13 +2506,13 @@ public:
             return row->queryPropTree(s);
         }
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
     {
         const char *value = row->queryName();
         if (!value)
             return false;
         if (statement)
-            check(cass_statement_bind_string(statement, idx, value));
+            statement->bindString(idx, value);
         return true;
     }
 } graphIdColumnMapper;
@@ -2519,7 +2529,7 @@ public:
         row->addPropTree(child->queryName(), child);
         return child;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
     {
         // MORE - may need to read, and probably should write, compressed.
         StringBuffer value;
@@ -2527,7 +2537,7 @@ public:
         if (value.length())
         {
             if (statement)
-                check(cass_statement_bind_bytes(statement, idx, (const cass_byte_t *) value.str(), value.length()));
+                check(cass_statement_bind_bytes(*statement, idx, (const cass_byte_t *) value.str(), value.length()));
             return true;
         }
         else
@@ -2543,14 +2553,14 @@ public:
         row->addPropBool(name, getBooleanResult(NULL, value));
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
     {
         if (row->hasProp(name))
         {
             if (statement)
             {
                 bool value = row->getPropBool(name, false);
-                check(cass_statement_bind_bool(statement, idx, value ? cass_true : cass_false));
+                check(cass_statement_bind_bool(*statement, idx, value ? cass_true : cass_false));
             }
             return true;
         }
@@ -2566,12 +2576,12 @@ public:
     {
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
     {
         return _fromXML(statement, idx, row, userVal, CASS_SEARCH_PREFIX_SIZE, true);
     }
 protected:
-    static bool _fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *xpath, unsigned prefixLength, bool uc)
+    static bool _fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *xpath, unsigned prefixLength, bool uc)
     {
         const char *columnVal = row->queryProp(xpath);
         if (columnVal)
@@ -2582,9 +2592,9 @@ protected:
                 if (uc)
                     buf.toUpperCase();
                 if (prefixLength && prefixLength < buf.length())
-                    check(cass_statement_bind_string_n(statement, idx, buf, prefixLength));
+                    statement->bindString_n(idx, buf, prefixLength);
                 else
-                    check(cass_statement_bind_string(statement, idx, buf));
+                    statement->bindString(idx, buf);
             }
             return true;
         }
@@ -2596,7 +2606,7 @@ protected:
 static class SearchColumnMapper : public PrefixSearchColumnMapper
 {
 public:
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
     {
         return _fromXML(statement, idx, row, userVal, 0, true);
     }
@@ -2605,7 +2615,7 @@ public:
 static class LCSearchColumnMapper : public PrefixSearchColumnMapper
 {
 public:
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
     {
         return _fromXML(statement, idx, row, userVal, 0, false);
     }
@@ -2620,14 +2630,14 @@ public:
             row->addPropInt(name, getSignedResult(NULL, value));
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         if (row->hasProp(name))
         {
             if (statement)
             {
                 int value = row->getPropInt(name);
-                check(cass_statement_bind_int32(statement, idx, value));
+                check(cass_statement_bind_int32(*statement, idx, value));
             }
             return true;
         }
@@ -2639,12 +2649,12 @@ public:
 static class DefaultedIntColumnMapper : public IntColumnMapper
 {
 public:
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char * defaultValue)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * defaultValue)
     {
         if (statement)
         {
             int value = row->getPropInt(name, atoi(defaultValue));
-            check(cass_statement_bind_int32(statement, idx, value));
+            check(cass_statement_bind_int32(*statement, idx, value));
         }
         return true;
     }
@@ -2658,14 +2668,14 @@ public:
         row->addPropInt64(name, getSignedResult(NULL, value));
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         if (row->hasProp(name))
         {
             if (statement)
             {
                 __int64 value = row->getPropInt64(name);
-                check(cass_statement_bind_int64(statement, idx, value));
+                check(cass_statement_bind_int64(*statement, idx, value));
             }
             return true;
         }
@@ -2684,12 +2694,12 @@ public:
             row->addPropInt64(name, id);
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         if (statement)
         {
             int value = row->getPropInt(name);
-            check(cass_statement_bind_int64(statement, idx, value));
+            check(cass_statement_bind_int64(*statement, idx, value));
         }
         return true;
     }
@@ -2713,7 +2723,7 @@ public:
         row->addPropTree(name, map.getClear());
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         Owned<IPTree> child = row->getPropTree(name);
         if (child)
@@ -2736,7 +2746,7 @@ public:
                             check(cass_collection_append_string(collection, value));
                         }
                     }
-                    check(cass_statement_bind_collection(statement, idx, collection));
+                    check(cass_statement_bind_collection(*statement, idx, collection));
                 }
                 return true;
             }
@@ -2762,7 +2772,7 @@ public:
         }
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         // NOTE - name here provides a list of attributes that we should NOT be mapping
         Owned<IAttributeIterator> attrs = row->getAttributes();
@@ -2790,7 +2800,7 @@ public:
                         check(cass_collection_append_string(collection, value));
                     }
                 }
-                check(cass_statement_bind_collection(statement, idx, collection));
+                check(cass_statement_bind_collection(*statement, idx, collection));
             }
             return true;
         }
@@ -2815,7 +2825,7 @@ public:
         }
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         // NOTE - name here provides a list of elements that we should NOT be mapping
         Owned<IPTreeIterator> elems = row->getElements("*");
@@ -2854,7 +2864,7 @@ public:
                         }
                     }
                 }
-                check(cass_statement_bind_collection(statement, idx, collection));
+                check(cass_statement_bind_collection(*statement, idx, collection));
             }
             return true;
         }
@@ -2883,7 +2893,7 @@ public:
         }
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         // NOTE - name here provides a list of elements that we SHOULD be mapping
         Owned<IPTreeIterator> elems = row->getElements("*");
@@ -2922,7 +2932,7 @@ public:
                         }
                     }
                 }
-                check(cass_statement_bind_collection(statement, idx, collection));
+                check(cass_statement_bind_collection(*statement, idx, collection));
             }
             return true;
         }
@@ -2970,7 +2980,7 @@ public:
         row->addPropTree(name, map.getClear());
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         Owned<IPTree> child = row->getPropTree(name);
         if (child)
@@ -2995,7 +3005,7 @@ public:
                             check(cass_collection_append_string(collection, value));
                         }
                     }
-                    check(cass_statement_bind_collection(statement, idx, collection));
+                    check(cass_statement_bind_collection(*statement, idx, collection));
                 }
                 return true;
             }
@@ -3053,7 +3063,7 @@ public:
         }
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         if (!row->hasProp("OnWarnings/OnWarning"))
             return false;
@@ -3074,7 +3084,7 @@ public:
                         check(cass_collection_append_string(collection, value));
                     }
                 }
-                check(cass_statement_bind_collection(statement, idx, collection));
+                check(cass_statement_bind_collection(*statement, idx, collection));
             }
             return true;
         }
@@ -3101,7 +3111,7 @@ public:
         row->addPropTree(name, map.getClear());
         return row;
     }
-    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
     {
         Owned<IPTree> child = row->getPropTree(name);
         if (child)
@@ -3120,7 +3130,7 @@ public:
                         if (value)
                             check(cass_collection_append_string(collection, value));
                     }
-                    check(cass_statement_bind_collection(statement, idx, collection));
+                    check(cass_statement_bind_collection(*statement, idx, collection));
                 }
                 return true;
             }
@@ -3236,6 +3246,7 @@ static const CassandraXmlMapping uniqueSearchMappings [] =
 };
 
 // The fields we can wild search by. We store these in the uniqueSearchMappings table so we can translate wildcards into sets
+// We also add application name/key combinations, but we have to special-case that
 
 const char * wildSearchPaths[] = { "@submitID", "@clusterName", "@jobName", NULL};
 
@@ -3384,7 +3395,7 @@ void getBoundFieldNames(const CassandraXmlMapping *mappings, StringBuffer &names
 {
     while (mappings->columnName)
     {
-        if (mappings->mapper.fromXML(NULL, 0, inXML, mappings->xpath, userVal))
+        if (!inXML || mappings->mapper.fromXML(NULL, 0, inXML, mappings->xpath, userVal))
         {
             names.appendf(",%s", mappings->columnName);
             if (strcmp(mappings->columnType, "timeuuid")==0)
@@ -3459,13 +3470,13 @@ void deleteSecondaryByKey(const char * xpath, const char *key, const char *wuid,
         VStringBuffer deleteQuery("DELETE from %s where xpath=? and fieldPrefix=? and fieldValue=? and wuid=?;", tableName.str());
         Owned<CassandraPrepared> prepared = sessionCache->prepareStatement(deleteQuery);
         CassandraStatement update(cass_prepared_bind(*prepared));
-        check(cass_statement_bind_string(update, 0, xpath));
+        update.bindString(0, xpath);
         if (ucKey.length() < CASS_SEARCH_PREFIX_SIZE)
-            check(cass_statement_bind_string(update, 1, ucKey));
+            update.bindString(1, ucKey);
         else
-            check(cass_statement_bind_string_n(update, 1, ucKey, CASS_SEARCH_PREFIX_SIZE));
-        check(cass_statement_bind_string(update, 2, ucKey));
-        check(cass_statement_bind_string(update, 3, wuid));
+            update.bindString_n(1, ucKey, CASS_SEARCH_PREFIX_SIZE);
+        update.bindString(2, ucKey);
+        update.bindString(3, wuid);
         check(cass_batch_add_statement(batch, update));
     }
 }
@@ -3495,10 +3506,31 @@ extern void simpleXMLtoCassandra(const ICassandraSession *session, CassBatch *ba
     unsigned bindidx = 0;
     while (mappings->columnName)
     {
-        if (mappings->mapper.fromXML(update, bindidx, inXML, mappings->xpath, userVal))
+        if (mappings->mapper.fromXML(&update, bindidx, inXML, mappings->xpath, userVal))
             bindidx++;
         mappings++;
     }
+    check(cass_batch_add_statement(batch, update));
+}
+
+extern void addUniqueValue(const ICassandraSession *session, CassBatch *batch, const char *xpath, const char *value)
+{
+    StringBuffer bindings;
+    StringBuffer names;
+    StringBuffer tableName;
+    getBoundFieldNames(uniqueSearchMappings, names, bindings, NULL, NULL, tableName);
+    VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
+    Owned<CassandraPrepared> prepared = session->prepareStatement(insertQuery);
+    CassandraStatement update(cass_prepared_bind(*prepared));
+    update.bindString(0, xpath);
+    StringBuffer ucValue(value);
+    ucValue.toUpperCase();
+    if (ucValue.length() < CASS_SEARCH_PREFIX_SIZE)
+        update.bindString(1, ucValue);
+    else
+        update.bindString_n(1, ucValue, CASS_SEARCH_PREFIX_SIZE);
+    update.bindString(2, ucValue);
+    update.bindString(3, value);
     check(cass_batch_add_statement(batch, update));
 }
 
@@ -3512,12 +3544,12 @@ extern void childXMLRowtoCassandra(const ICassandraSession *session, CassBatch *
     Owned<CassandraPrepared> prepared = session->prepareStatement(insertQuery);
     CassandraStatement update(cass_prepared_bind(*prepared));
     check(cass_statement_bind_int32(update, 0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS));
-    check(cass_statement_bind_string(update, 1, wuid));
+    update.bindString(1, wuid);
     unsigned bindidx = 2; // We already bound wuid and partition
     unsigned colidx = 2; // We already bound wuid and partition
     while (mappings[colidx].columnName)
     {
-        if (mappings[colidx].mapper.fromXML(update, bindidx, &row, mappings[colidx].xpath, userVal))
+        if (mappings[colidx].mapper.fromXML(&update, bindidx, &row, mappings[colidx].xpath, userVal))
             bindidx++;
         colidx++;
     }
@@ -3735,36 +3767,24 @@ static IPTree *rowToPTree(const char *xpath, const char *key, const CassandraXml
 /*
  * PostFilter represents a filter to be applied to a ConstWorkUnitInfo tree representation prior to returning it from an iterator
  */
-const char *queryFilterField(WUSortField field)
-{
-    switch (field)
-    {
-    case WUSFuser: return "submitID";
-    case WUSFcluster: return "clustername";
-    case WUSFjob: return "jobname";
-    case WUSFstate: return "state";
-    case WUSFpriority: return "priorityClass";
-    case WUSFwuid: return "wuid";
-    case WUSFwuidhigh: return "wuid";
-    case WUSFfileread: UNIMPLEMENTED;
-    case WUSFprotected: return "protected";
-    case WUSFtotalthortime: return "totalThorTime";
-    case WUSFwildwuid: return "wuid";
-    case WUSFecl: UNIMPLEMENTED;
-    default:
-        throwUnexpected();
-    }
-}
 
-class PostFilter : public CInterface
+interface IPostFilter : public IInterface
+{
+    virtual bool matches(IPTree &p) const = 0;
+    virtual const char *queryValue() const = 0;
+    virtual const char *queryXPath() const = 0;
+    virtual WUSortField queryField() const = 0;
+};
+
+class PostFilter : public CInterfaceOf<IPostFilter>
 {
 public:
     PostFilter(WUSortField _field, const char *_value, bool _wild)
-      : field(_field), cqlField(queryFilterField(_field)), xpath(queryFilterXPath(_field)), wild(_wild)
+      : field(_field), xpath(queryFilterXPath(_field)), wild(_wild)
     {
         setValue(_value);
     }
-    bool matches(IPTree &p) const
+    virtual bool matches(IPTree &p) const
     {
         const char *val = p.queryProp(xpath);
         if (val)
@@ -3772,7 +3792,7 @@ public:
         else
             return false;
     }
-    const char *queryValue() const
+    virtual const char *queryValue() const
     {
         return value.str();
     }
@@ -3787,16 +3807,15 @@ public:
             pattern.set(_value);
         value.set(_value);
     }
-    const char *queryXPath() const
+    virtual const char *queryXPath() const
     {
         return xpath;
     }
-    WUSortField queryField() const
+    virtual WUSortField queryField() const
     {
         return field;
     }
 private:
-    const char *cqlField;
     const char *xpath;
     StringAttr pattern;
     StringAttr value;
@@ -3804,6 +3823,51 @@ private:
     bool wild;
 };
 
+class AppValuePostFilter : public CInterfaceOf<IPostFilter>
+{
+public:
+    AppValuePostFilter(const char *_name, const char *_value, bool _wild) : wild(_wild)
+    {
+        xpath.appendf("Application/%s", _name);
+        setValue(_value);
+    }
+    virtual bool matches(IPTree &p) const
+    {
+        const char *val = p.queryProp(xpath);
+        if (val)
+            return wild ? WildMatch(val, pattern) : strieq(val, pattern);
+        else
+            return false;
+    }
+    virtual const char *queryValue() const
+    {
+        return value.str();
+    }
+    void setValue(const char *_value)
+    {
+        if (wild)
+        {
+            VStringBuffer filter("*%s*", _value);
+            pattern.set(filter);
+        }
+        else
+            pattern.set(_value);
+        value.set(_value);
+    }
+    virtual const char *queryXPath() const
+    {
+        return xpath;
+    }
+    virtual WUSortField queryField() const
+    {
+        return WUSFappvalue;
+    }
+private:
+    StringBuffer xpath;
+    StringAttr pattern;
+    StringAttr value;
+    bool wild;
+};
 
 
 class CassSortableIterator : public CassandraIterator
@@ -3946,7 +4010,7 @@ public:
     {
         results.append(result);
     }
-    void addPostFilters(CIArrayOf<PostFilter> &filters, unsigned start)
+    void addPostFilters(IArrayOf<IPostFilter> &filters, unsigned start)
     {
         unsigned len = filters.length();
         while (start<len)
@@ -4022,8 +4086,8 @@ public:
         return (const CassSortableIterator *) merger->nextRow();
     }
 protected:
-    virtual void linkRow(const void *row) { throwUnexpected(); }  // The 'rows' we pass around are CassSortableIterator objects - we CAN link them if we have to
-    virtual void releaseRow(const void *row) { throwUnexpected(); }
+    virtual void linkRow(const void *row) {  }
+    virtual void releaseRow(const void *row) {  }
     virtual const void *nextRow(unsigned idx)
     {
         CassSortableIterator &it = inputs.item(idx);
@@ -4041,10 +4105,10 @@ protected:
         return aa->compare(bb);
     }
 private:
-    Owned<IRowStream> merger;
     IArrayOf<CassandraResult> results;
     IArrayOf<CassSortableIterator> inputs;
-    CIArrayOf<PostFilter> postFilters;
+    Owned<IRowStream> merger; // NOTE - must be destroyed before inputs is destroyed
+    IArrayOf<IPostFilter> postFilters;
     Owned<IConstWorkUnitInfo> current;
     Linked<CCassandraWuUQueryCacheEntry> cache;
     StringAttr lastThorTime;
@@ -4219,7 +4283,7 @@ public:
         results.append(result);
     }
 
-    void addPostFilter(PostFilter &post)
+    void addPostFilter(IPostFilter &post)
     {
         postFilters.append(post);
     }
@@ -4313,7 +4377,7 @@ public:
 private:
     IArrayOf<CassandraResult> results;
     IArrayOf<CassSortableIterator> inputs;
-    CIArrayOf<PostFilter> postFilters;
+    IArrayOf<IPostFilter> postFilters;
     Owned<IConstWorkUnitInfo> current;
     unsigned compareColumn;
     bool descending;
@@ -4354,7 +4418,7 @@ public:
         Owned<CassandraPrepared> prepared = sessionCache->prepareStatement("DELETE from workunits where partition=? and wuid=?;");
         CassandraStatement update(cass_prepared_bind(*prepared));
         check(cass_statement_bind_int32(update, 0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS));
-        check(cass_statement_bind_string(update, 1, wuid));
+        update.bindString(1, wuid);
         check(cass_batch_add_statement(*batch, update));
         CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), *batch));
         futureBatch.wait("execute");
@@ -4444,6 +4508,12 @@ public:
     {
         if (trackSecondaryChange(getWorkunitStateStr(state), "@state"))
             CLocalWorkUnit::setState(state);
+    }
+    virtual void setApplicationValue(const char *app, const char *propname, const char *value, bool overwrite)
+    {
+        VStringBuffer xpath("Application/%s/%s", app, propname);
+        if (trackSecondaryChange(value, xpath))
+            CLocalWorkUnit::setApplicationValue(app, propname, value, overwrite);
     }
 
     virtual void _lockRemote()
@@ -4597,15 +4667,42 @@ protected:
 
     void updateSecondaryTable(const char *xpath, const char *prevKey, const char *wuid)
     {
-        deleteSecondaryByKey(xpath, prevKey, wuid, sessionCache, *batch);
+        if (prevKey && *prevKey)
+            deleteSecondaryByKey(xpath, prevKey, wuid, sessionCache, *batch);
         if (p->hasProp(xpath))
             simpleXMLtoCassandra(sessionCache, *batch, searchMappings, p, xpath);
+    }
+
+    void deleteAppSecondaries(IPTree &pt, const char *wuid)
+    {
+        Owned<IPTreeIterator> apps = pt.getElements("Application");
+        ForEach(*apps)
+        {
+            IPTree &app = apps->query();
+            Owned<IPTreeIterator> names = app.getElements("*");
+            ForEach(*names)
+            {
+                IPTree &name = names->query();
+                Owned<IPTreeIterator> values = name.getElements("*");
+                ForEach(*values)
+                {
+                    IPTree &value = values->query();
+                    const char *appValue = value.queryProp(".");
+                    if (appValue && *appValue)
+                    {
+                        VStringBuffer xpath("%s/%s/%s", app.queryName(), name.queryName(), value.queryName());
+                        deleteSecondaryByKey(xpath, appValue, wuid, sessionCache, *batch);
+                    }
+                }
+            }
+        }
     }
 
     void deleteSecondaries(const char *wuid)
     {
         for (const char * const *search = searchPaths; *search; search++)
             deleteSecondaryByKey(*search, p->queryProp(*search), wuid, sessionCache, *batch);
+        deleteAppSecondaries(*p, wuid);
     }
 
     void updateSecondaries(const char *wuid)
@@ -4615,8 +4712,21 @@ protected:
             updateSecondaryTable(*search, prev->queryProp(*search), wuid);
         for (search = wildSearchPaths; *search; search++)
         {
-            if (p->hasProp(*search))
-                simpleXMLtoCassandra(sessionCache, *batch, uniqueSearchMappings, p, *search);
+            const char *value = p->queryProp(*search);
+            if (value)
+                addUniqueValue(sessionCache, *batch, *search, value);
+        }
+        deleteAppSecondaries(*prev, wuid);
+        Owned<IConstWUAppValueIterator> appValues = &getApplicationValues();
+        ForEach(*appValues)
+        {
+            IConstWUAppValue& val=appValues->query();
+            addUniqueValue(sessionCache, *batch, "Application", val.queryApplication());  // Used to populate droplists of applications
+            VStringBuffer key("@@%s", val.queryApplication());
+            addUniqueValue(sessionCache, *batch, key, val.queryName());  // Used to populate droplists of value names for a given application
+            VStringBuffer xpath("Application/%s/%s", val.queryApplication(), val.queryName());
+            addUniqueValue(sessionCache, *batch, xpath, val.queryValue());  // Used to get lists of values for a given app and name, and for filtering
+            simpleXMLtoCassandra(sessionCache, *batch, searchMappings, p, xpath);
         }
     }
 
@@ -4631,13 +4741,24 @@ protected:
              oldval = "";
         if (streq(newval, oldval))
             return false;  // No change
+        bool add;
         if (!prev)
         {
             prev.setown(createPTree());
-            prev->setProp(xpath, oldval);
+            add = true;
         }
-        else if (!prev->hasProp(xpath))
-            prev->setProp(xpath, oldval);
+        else add = !prev->hasProp(xpath);
+        if (add)
+        {
+            const char *tailptr = strrchr(xpath, '/');
+            if (tailptr)
+            {
+                StringBuffer head(tailptr-xpath, xpath);
+                ensurePTree(prev, head)->setProp(tailptr+1, oldval);
+            }
+            else
+                prev->setProp(xpath, oldval);
+        }
         return true;
     }
     IWUResult *noteDirty(IWUResult *result)
@@ -4734,7 +4855,7 @@ public:
             }
             CassandraStatement statement(cass_prepared_bind(*prepared));
             check(cass_statement_bind_int32(statement, 0, rtlHash32VStr(useWuid.str(), 0) % NUM_PARTITIONS));
-            check(cass_statement_bind_string(statement, 1, useWuid.str()));
+            statement.bindString(1, useWuid.str());
             if (traceLevel >= 2)
                 DBGLOG("Try creating %s", useWuid.str());
             CassandraFuture future(cass_session_execute(session, statement));
@@ -4804,8 +4925,8 @@ public:
         // multiple other nodes to get the data.
         //
         // We go to some lengths to avoid post-sorting if we can, but any sort order other than by wuid or totalThorTime
-        // will it. If a post-sort is required, we will fetch up to WUID_LOCALSORT_LIMIT rows, - if there are more
-        // then we should fail, and the user should be invited to add filters.
+        // will post-sort it. If a post-sort is required, we will fetch up to WUID_LOCALSORT_LIMIT rows, - if there are
+        // more then we should fail, and the user should be invited to add filters.
         //
         // We can do at most one 'hard' filter, plus a filter on wuid range - anything else will require post-filtering.
         // Most 'wild' searches can only be done with post-filtering, but some can be translated to multiple hard values
@@ -4832,10 +4953,10 @@ public:
         else
             cached.setown(new CCassandraWuUQueryCacheEntry());
         const WUSortField *thisFilter = filters;
-        CIArrayOf<PostFilter> goodFilters;
-        CIArrayOf<PostFilter> wuidFilters;
-        CIArrayOf<PostFilter> poorFilters;
-        CIArrayOf<PostFilter> remoteWildFilters;
+        IArrayOf<IPostFilter> goodFilters;
+        IArrayOf<IPostFilter> wuidFilters;
+        IArrayOf<IPostFilter> poorFilters;
+        IArrayOf<IPostFilter> remoteWildFilters;
         Owned<IConstWorkUnitIteratorEx> result;
         WUSortField baseSort = (WUSortField) (sortorder & 0xff);
         StringBuffer thorTimeThreshold;
@@ -4872,6 +4993,22 @@ public:
 
                 switch (field)
                 {
+                case WUSFappvalue:
+                {
+                    const char *name = fv;
+                    fv = fv + strlen(fv)+1;
+                    if (isWild)
+                    {
+                        StringBuffer s(fv);
+                        if (s.charAt(s.length()-1)== '*')
+                            s.remove(s.length()-1, 1);
+                        if (s.length())
+                            remoteWildFilters.append(*new AppValuePostFilter(name, s, true)); // Should we allow wild on the app and/or name too? Not at the moment
+                    }
+                    else
+                        goodFilters.append(*new AppValuePostFilter(name, fv, false));
+                    break;
+                }
                 case WUSFuser:
                 case WUSFcluster:
                 case WUSFjob:
@@ -4922,13 +5059,13 @@ public:
                         }
                     }
                     break;
-                case WUSFcustom:
-                    UNIMPLEMENTED;
                 case WUSFecl: // This is different...
                     if (isWild)
                         merger->addPostFilter(*new PostFilter(field, fv, true)); // Wildcards on ECL are trailing and leading - no way to do remotely
                     else
                         goodFilters.append(*new PostFilter(field, fv, false)); // A hard filter on exact ecl match is possible but very unlikely
+                default:
+                    UNSUPPORTED("Workunit filter criteria");
                 }
                 thisFilter++;
                 fv = fv + strlen(fv)+1;
@@ -4957,13 +5094,15 @@ public:
                 merger->addPostFilters(goodFilters, 1);
                 merger->addPostFilters(poorFilters, 0);
                 merger->addPostFilters(remoteWildFilters, 0);
-                merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(goodFilters.item(0), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                const IPostFilter &best = goodFilters.item(0);
+                merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(best.queryXPath(), best.queryValue(), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
             }
             else if (poorFilters.length())
             {
                 merger->addPostFilters(poorFilters, 1);
                 merger->addPostFilters(remoteWildFilters, 0);
-                merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(poorFilters.item(0), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                const IPostFilter &best= poorFilters.item(0);
+                merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(best.queryXPath(), best.queryValue(), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
             }
             else if (remoteWildFilters.length())
             {
@@ -4971,12 +5110,11 @@ public:
                 // Convert into a value IN [] which we do via a merge
                 // MORE - If we want sorted by filter (or don't care about sort order), we could do directly as a range - but the wuid range filters then don't work, and the merger would be invalid
                 StringArray fieldValues;
-                PostFilter &best= remoteWildFilters.item(0);
+                const IPostFilter &best= remoteWildFilters.item(0);
                 _getUniqueValues(best.queryXPath(), best.queryValue(), fieldValues);
                 ForEachItemIn(idx, fieldValues)
                 {
-                    PostFilter p(best.queryField(), fieldValues.item(idx), false);
-                    merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(p, wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                    merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(best.queryXPath(), fieldValues.item(idx), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
                 }
             }
             else
@@ -5196,12 +5334,12 @@ private:
         CassandraResult result(cass_future_get_result(future));
         return getUnsignedResult(NULL, getSingleResult(result)) != 0; // Shouldn't be more than 1, either
     }
-    void mergeFilter(CIArrayOf<PostFilter> &filters, WUSortField field, const char *value)
+    void mergeFilter(IArrayOf<IPostFilter> &filters, WUSortField field, const char *value)
     {
         // Combine multiple filters on wuid - Cassandra doesn't like seeing more than one.
         ForEachItemIn(idx, filters)
         {
-            PostFilter &filter = filters.item(idx);
+            PostFilter &filter = static_cast<PostFilter &>(filters.item(idx));
             if (filter.queryField()==field)
             {
                 const char *prevLimit = filter.queryValue();
@@ -5219,7 +5357,7 @@ private:
         Owned<CassMultiIterator> merger = new CassMultiIterator(NULL, 0, 0, true); // Merge by wuid
         if (!key || !*key)
         {
-            CIArrayOf<PostFilter> wuidFilters;
+            IArrayOf<IPostFilter> wuidFilters;
             for (int i = 0; i < NUM_PARTITIONS; i++)
             {
                 merger->addResult(*new CassandraResult(fetchDataByPartition(workunitInfoMappings, i, wuidFilters)));
@@ -5360,7 +5498,7 @@ private:
 
     // Fetch all rows from a single partition of a table
 
-    const CassResult *fetchDataByPartition(const CassandraXmlMapping *mappings, int partition, const CIArrayOf<PostFilter> &wuidFilters, unsigned sortOrder=WUSFwuid|WUSFreverse, unsigned limit=0) const
+    const CassResult *fetchDataByPartition(const CassandraXmlMapping *mappings, int partition, const IArrayOf<IPostFilter> &wuidFilters, unsigned sortOrder=WUSFwuid|WUSFreverse, unsigned limit=0) const
     {
         StringBuffer names;
         StringBuffer tableName;
@@ -5368,7 +5506,7 @@ private:
         VStringBuffer selectQuery("select %s from %s where partition=%d", names.str()+1, tableName.str(), partition);
         ForEachItemIn(idx, wuidFilters)
         {
-            const PostFilter &wuidFilter = wuidFilters.item(idx);
+            const IPostFilter &wuidFilter = wuidFilters.item(idx);
             selectQuery.appendf(" and wuid %s '%s'", wuidFilter.queryField()==WUSFwuidhigh ? "<=" : ">=", wuidFilter.queryValue());
         }
         switch (sortOrder)
@@ -5431,11 +5569,8 @@ private:
 
     // Fetch matching rows from the search table, for all wuids, sorted by wuid
 
-    const CassResult *fetchDataForKeyWithFilter(const PostFilter &filter, const CIArrayOf<PostFilter> &wuidFilters, unsigned sortOrder, unsigned limit) const
+    const CassResult *fetchDataForKeyWithFilter(const char *xpath, const char *key, const IArrayOf<IPostFilter> &wuidFilters, unsigned sortOrder, unsigned limit) const
     {
-        const char *xpath = filter.queryXPath();
-        const char *key = filter.queryValue();
-        assertex(key);
         StringBuffer names;
         StringBuffer tableName;
         StringBuffer ucKey(key);
@@ -5444,7 +5579,7 @@ private:
         VStringBuffer selectQuery("select %s from %s where xpath='%s' and fieldPrefix='%.*s' and fieldValue ='%s'", names.str()+1, tableName.str(), xpath, CASS_SEARCH_PREFIX_SIZE, ucKey.str(), ucKey.str());
         ForEachItemIn(idx, wuidFilters)
         {
-            const PostFilter &wuidFilter = wuidFilters.item(idx);
+            const IPostFilter &wuidFilter = wuidFilters.item(idx);
             selectQuery.appendf(" and wuid %s '%s'", wuidFilter.queryField()==WUSFwuidhigh ? "<=" : ">=", wuidFilter.queryValue());
         }
         switch (sortOrder)
