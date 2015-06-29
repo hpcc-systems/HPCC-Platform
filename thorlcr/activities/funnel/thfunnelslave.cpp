@@ -715,12 +715,14 @@ public:
     {
         helper = (IHThorNonEmptyArg *) queryHelper();
         sendReceiving = false;
+        masterMpTag = TAG_NULL;
     }
 
 // IThorSlaveActivity overloaded methods
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        masterMpTag = container.queryJob().deserializeMPTag(data);
+        if (!container.queryLocalOrGrouped())
+            masterMpTag = container.queryJob().deserializeMPTag(data);
         appendOutputLinked(this);
     }
     void abort()

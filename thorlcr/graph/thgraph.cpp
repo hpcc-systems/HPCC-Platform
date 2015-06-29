@@ -974,6 +974,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKchildcount:
         case TAKwhen_dataset:
         case TAKwhen_action:
+        case TAKnonempty:
             if (!container.queryLocalOrGrouped())
                 return true;
             break;
@@ -1064,7 +1065,6 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKrowresult:
         case TAKremotegraph:
         case TAKlibrarycall:
-        case TAKnonempty:
         default:
             return true; // if in doubt
     }
