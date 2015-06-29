@@ -277,8 +277,8 @@ interface IAbortRequestCallback
 class LocalAbortHandler
 {
 public:
-    LocalAbortHandler(AbortHandler _handler=NULL)   { handler = _handler; shandler = NULL; addAbortHandler(handler); }
-    LocalAbortHandler(SimpleAbortHandler _handler=NULL) { shandler = _handler; handler = NULL; addAbortHandler(shandler); }
+    LocalAbortHandler(AbortHandler _handler)   { handler = _handler; shandler = NULL; addAbortHandler(handler); }
+    LocalAbortHandler(SimpleAbortHandler _handler) { shandler = _handler; handler = NULL; addAbortHandler(shandler); }
     ~LocalAbortHandler()                            { if (handler) { removeAbortHandler(handler); } else removeAbortHandler(shandler); }
 private:
     AbortHandler            handler;
