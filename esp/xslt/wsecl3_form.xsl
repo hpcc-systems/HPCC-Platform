@@ -669,6 +669,7 @@ function switchInputForm()
                 <xsl:choose>
                     <xsl:when test="count($ems)=1 and ($cpxType/xsd:sequence/@maxOccurs='unbounded' or $ems[1]/@maxOccurs='unbounded')">
                         <xsl:variable name="stype" select="$ems[1]/@type"/>
+                        <xsl:variable name="itemname" select="$ems[1]/@name"/>
                         <xsl:choose>
                             <xsl:when test="$ems/xsd:complexType">
                                 <xsl:variable name="btype" select="$ems/@name"/>
@@ -704,6 +705,8 @@ function switchInputForm()
                                     <xsl:text disable-output-escaping="yes"><![CDATA[[Enter one item per line]<br/>]]></xsl:text>
                                     <xsl:text disable-output-escaping="yes"><![CDATA[<textarea name=']]></xsl:text>
                                     <xsl:value-of select="$fieldId"/>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[.]]></xsl:text>
+                                    <xsl:value-of select="$itemname"/>
                                     <xsl:text disable-output-escaping="yes"><![CDATA[$' id=']]></xsl:text><!--Note $ at end of name not id marks field as array input via textarea-->
                                     <xsl:value-of select="$fieldId"/>
                                     <xsl:text disable-output-escaping="yes"><![CDATA[' cols=']]></xsl:text>
