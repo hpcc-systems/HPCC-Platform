@@ -17,6 +17,21 @@
 
 ###<REPLACE>###
 
+# Restore install link if it was present
+#######################
+linkf=/tmp/.hpccinslink
+if [[ -f ${linkf} ]] ; then
+   if [[ -n ${INSTALL_DIR} ]] ; then
+      if [[ ! -d ${INSTALL_DIR} ]] ; then
+         linkinfo=$(cat "${linkf}")
+         if [[ -n ${linkinfo} ]] ; then
+            ln -s ${linkinfo}
+         fi
+      fi
+   fi
+   rm -f ${linkf}
+fi
+
 # On some systems, when running an update (as opposed to a remove) the postinstall script does
 # not get run. To work around that issue, we run the post-install actions in the post-remove script
 # (which IS run)
