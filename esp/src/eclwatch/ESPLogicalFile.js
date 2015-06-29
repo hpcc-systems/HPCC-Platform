@@ -214,7 +214,7 @@ define([
                     if (lang.exists("DFUFileParts.DFUPart", DFUFilePartsOnCluster)) {
                         arrayUtil.forEach(DFUFilePartsOnCluster.DFUFileParts.DFUPart, function (DFUPart, idx) {
                             DFUFileParts.DFUPart.push(lang.mixin({
-                                __hpcc__id: DFUPart.Id + "--" + DFUPart.Copy,
+                                __hpcc_id: DFUPart.Id + "--" + DFUPart.Copy,
                                 Cluster: DFUFilePartsOnCluster.Cluster
                             }, DFUPart));
                         }, this);
