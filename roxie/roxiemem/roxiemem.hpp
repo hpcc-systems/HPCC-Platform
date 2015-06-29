@@ -17,11 +17,17 @@
 
 #ifndef _ROXIEMEM_INCL
 #define _ROXIEMEM_INCL
+#include "platform.h"
 #include "jlib.hpp"
 #include "jlog.hpp"
 #include "jdebug.hpp"
 #include "jstats.h"
 #include "errorlist.h"
+
+#if defined(_USE_TBB)
+//Release blocks of rows in parallel - always likely to improve performance
+#define PARALLEL_SYNC_RELEASE
+#endif
 
 #ifdef _WIN32
  #ifdef ROXIEMEM_EXPORTS
@@ -299,12 +305,9 @@ public:
 #define RoxieRowAllocatorId(row) roxiemem::HeapletBase::getAllocatorId(row)
 #define RoxieRowIsShared(row)  roxiemem::HeapletBase::isShared(row)
 
-inline void ReleaseRoxieRows(ConstPointerArray &data)
-{
-    ForEachItemIn(idx, data)
-        ReleaseRoxieRow(data.item(idx));
-    data.kill();
-}
+void roxiemem_decl ReleaseRoxieRowArray(size_t count, const void * * rows);
+void roxiemem_decl ReleaseRoxieRowRange(const void * * rows, size_t from, size_t to);
+void roxiemem_decl ReleaseRoxieRows(ConstPointerArray &rows);
 
 
 class OwnedRoxieRow;

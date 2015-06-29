@@ -2261,11 +2261,7 @@ class CLookupHT : public CHTBase
     }
     void releaseHTRows()
     {
-        for (rowidx_t r=0; r<htSize; r++)
-        {
-            if (ht[r])
-                ReleaseThorRow(ht[r]);
-        }
+        roxiemem::ReleaseRoxieRowArray(htSize, ht);
     }
 public:
     CLookupHT()

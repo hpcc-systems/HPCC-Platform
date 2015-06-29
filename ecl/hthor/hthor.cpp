@@ -26,6 +26,7 @@
 #include "jisem.hpp"
 #include "roxiedebug.hpp"
 #include "roxierow.hpp"
+#include "roxiemem.hpp"
 #include "eclhelper.hpp"
 #include "workunit.hpp"
 #include "jfile.hpp"
@@ -7085,8 +7086,7 @@ CHThorTopNActivity::CHThorTopNActivity(IAgentContext & _agent, unsigned _activit
 
 CHThorTopNActivity::~CHThorTopNActivity()
 {
-    while(curIndex < sortedCount)
-        ReleaseRoxieRow(sorted[curIndex++]);
+    roxiemem::ReleaseRoxieRowRange(sorted, curIndex, sortedCount);
     free(sorted);
 }
 
@@ -7105,10 +7105,10 @@ void CHThorTopNActivity::ready()
 void CHThorTopNActivity::done()
 {
     CHThorSimpleActivityBase::done();
-    while(curIndex < sortedCount)
-        ReleaseRoxieRow(sorted[curIndex++]);
+    roxiemem::ReleaseRoxieRowRange(sorted, curIndex, sortedCount);
     free(sorted);
     sorted = NULL;
+    curIndex = 0;
 }
 
 const void * CHThorTopNActivity::nextInGroup()

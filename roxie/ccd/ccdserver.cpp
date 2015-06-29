@@ -4377,9 +4377,9 @@ public:
 
     virtual void onReset()
     {
-        while (buff.isItem(index))
-            ReleaseRoxieRow(buff.item(index++));
+        roxiemem::ReleaseRoxieRowRange(buff.getArray(), index, buff.ordinality());
         buff.kill();
+        index = 0;
         pulled = false;
         exception.clear();
         CRemoteResultAdaptor::onReset();
@@ -9110,9 +9110,9 @@ public:
 
     inline void releaseGathered()
     {
-        while (gathered.isItem(curIndex))
-            ReleaseRoxieRow(gathered.item(curIndex++));
+        roxiemem::ReleaseRoxieRowRange(gathered.getArray(), curIndex, gathered.ordinality());
         gathered.kill();
+        curIndex = 0;
     }
 
     virtual const void * nextInGroup()
@@ -9607,9 +9607,9 @@ public:
         setCounts = NULL;
         free(limits);
         limits = NULL;
-        while (gathered.isItem(curIndex))
-            ReleaseRoxieRow(gathered.item(curIndex++));
+        roxiemem::ReleaseRoxieRowRange(gathered.getArray(), curIndex, gathered.ordinality());
         gathered.kill();
+        curIndex = 0;
         CRoxieServerActivity::reset();
     }
 
@@ -16899,9 +16899,7 @@ private:
 
         ~DedupLookupTable()
         {
-            unsigned i;
-            for(i=0; i<size; i++)
-                ReleaseRoxieRow(table[i]);
+            roxiemem::ReleaseRoxieRowArray(size, table);
             free(table);
         }
 
@@ -16966,9 +16964,7 @@ private:
 
         ~FewLookupTable()
         {
-            unsigned i;
-            for(i=0; i<size; i++)
-                ReleaseRoxieRow(table[i]);
+            roxiemem::ReleaseRoxieRowArray(size, table);
             free(table);
         }
 
@@ -17064,10 +17060,7 @@ private:
 
         ~ManyLookupTable()
         {
-            ForEachItemIn(idx, rowtable)
-            {
-                ReleaseRoxieRow(rowtable.item(idx));
-            }
+            roxiemem::ReleaseRoxieRows(rowtable);
             free(table);
         }
 
@@ -17243,8 +17236,7 @@ public:
         }
         catch (...)
         {
-            ForEachItemIn(idx, rightset)
-                ReleaseRoxieRow(rightset.item(idx));
+            roxiemem::ReleaseRoxieRows(rightset);
             throw;
         }
     };
@@ -18093,11 +18085,12 @@ public:
     {
         if (sorted)
         {
-            while(curIndex < sortedCount)
-                ReleaseRoxieRow(sorted[curIndex++]);
+            roxiemem::ReleaseRoxieRowRange(sorted, curIndex, sortedCount);
+            curIndex = 0;
+            sortedCount = 0;
             ReleaseRoxieRow(sorted);
+            sorted = NULL;
         }
-        sorted = NULL;
         CRoxieServerLateStartActivity::reset();
     }
 
@@ -18324,9 +18317,9 @@ public:
 
     virtual void reset()
     {
-        while (buff.isItem(index))
-            ReleaseRoxieRow(buff.item(index++));
+        roxiemem::ReleaseRoxieRowRange(buff.getArray(), index, buff.ordinality());
         buff.kill();
+        index = 0;
         started = false;
         CRoxieServerLimitActivity::reset();
     }
@@ -18512,9 +18505,9 @@ public:
 
     virtual void reset()
     {
-        while (buff.isItem(index))
-            ReleaseRoxieRow(buff.item(index++));
+        roxiemem::ReleaseRoxieRowRange(buff.getArray(), index, buff.ordinality());
         buff.kill();
+        index = 0;
         started = false;
         CRoxieServerActivity::reset();
     }
@@ -20304,8 +20297,7 @@ public:
 
     virtual void reset()
     {
-        while (readrows.isItem(readIndex))
-            ReleaseRoxieRow(readrows.item(readIndex++));
+        roxiemem::ReleaseRoxieRowRange(readrows.getArray(), readIndex, readrows.ordinality());
         readrows.kill();
         readAheadDone = false;
         readIndex = 0;
@@ -20331,9 +20323,9 @@ public:
                     if (preprocessed > rowLimit)
                     {
                         ReleaseRoxieRow(row);
-                        while (readrows.isItem(readIndex))
-                            ReleaseRoxieRow(readrows.item(readIndex++));
+                        roxiemem::ReleaseRoxieRowRange(readrows.getArray(), readIndex, readrows.ordinality());
                         readrows.kill();
+                        readIndex = 0;
                         eof = true;
                         if (ctx->queryDebugContext())
                             ctx->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
@@ -23527,8 +23519,7 @@ public:
         if (left)
         {
             ReleaseRoxieRow(left);
-            ForEachItemIn(idx, rows)
-                ReleaseRoxieRow(rows.item(idx));
+            roxiemem::ReleaseRoxieRowArray(rows.ordinality(), (const void * *)rows.getArray());
             rows.kill();
         }
     }
