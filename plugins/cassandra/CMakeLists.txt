@@ -70,7 +70,10 @@ if (USE_CASSANDRA)
     add_dependencies( cassandra libuv )
     SET (CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
 
-    set(SRCS cassandraembed.cpp)
+    set ( SRCS
+      cassandraembed.cpp
+      cassandrawu.cpp
+    )
 
     include_directories (
          ./../../system/include
