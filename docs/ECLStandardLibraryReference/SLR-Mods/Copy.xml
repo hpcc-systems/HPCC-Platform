@@ -24,8 +24,9 @@
   <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
   <emphasis role="bold">] [</emphasis> <emphasis>,forcePush</emphasis>
   <emphasis role="bold">] [</emphasis>
-  <emphasis>,transferBufferSize</emphasis> <emphasis
-  role="bold">]);</emphasis><emphasis></emphasis></para>
+  <emphasis>,transferBufferSize</emphasis> <emphasis role="bold">] 
+  [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
+  role="bold">]);</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fCopy<indexterm>
@@ -48,7 +49,8 @@
   <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
   <emphasis role="bold">] [</emphasis> <emphasis>,forcePush</emphasis>
   <emphasis role="bold">] [</emphasis>
-  <emphasis>,transferBufferSize</emphasis> <emphasis
+  <emphasis>,transferBufferSize</emphasis> 
+  <emphasis role="bold">] [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
   role="bold">]);</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -163,6 +165,14 @@
 
           <entry>Optional. An integer value to override the DFU Server's
           buffer size value (default is 64k)</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>preserveCompression </emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          preserve the compression of the old file when copying. If omitted,
+          the default is TRUE.</entry>
         </row>
 
         <row>
