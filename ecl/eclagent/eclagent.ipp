@@ -236,6 +236,11 @@ public:
 
     virtual void updateWULogfile()                  { return ctx->updateWULogfile(); }
 
+    virtual roxiemem::IRowManager * queryRowManager() const
+    {
+        return ctx->queryRowManager();
+    }
+
 protected:
     IAgentContext * ctx;
 };
@@ -626,6 +631,10 @@ public:
     IGroup *getHThorGroup(StringBuffer &out);
     
     virtual void updateWULogfile();
+    virtual roxiemem::IRowManager * queryRowManager() const
+    {
+        return rowManager.get();
+    }
 
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
     virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const

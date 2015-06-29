@@ -20,6 +20,10 @@
 #include "jlog.hpp"
 #include "jset.hpp"
 #include <new>
+#ifdef _USE_TBBXXXX
+#include "tbb/task.h"
+#include "tbb/task_scheduler_init.h"
+#endif
 
 #ifndef _WIN32
 #include <sys/mman.h>
@@ -1098,6 +1102,16 @@ bool HeapletBase::hasDestructor(const void *ptr)
     else
         return false;
 }
+
+//================================================================================
+
+void ReleaseRoxieRowArray(size_t count, const void * * rows)
+{
+    for (size_t i = 0; i < count; i++)
+        ReleaseRoxieRow(rows[i]);
+}
+
+//================================================================================
 
 class CHeap;
 static void noteEmptyPage(CHeap * heap);
@@ -3254,6 +3268,41 @@ void initAllocSizeMappings(const unsigned * sizes)
     numDirectBuckets = bucket+1;
 }
 
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CHeapBlockedRowReleaser : public CBlockedRowReleaser
+{
+public:
+    CHeapBlockedRowReleaser(unsigned _max) : CBlockedRowReleaser(_max, new const void * [_max])
+    {
+    }
+    ~CHeapBlockedRowReleaser()
+    {
+        releaseAllRows();
+        delete [] rows;
+    }
+};
+
+#ifdef _USE_TBBXXXX
+class releaser_task : public tbb::task
+{
+public:
+    releaser_task(IBlockedRowReleaser * _releaser) : releaser(_releaser) {}
+
+    virtual task * execute()
+    {
+        releaser->releaseRows(true);
+        releaser.clear();
+        return NULL;
+    }
+
+public:
+    Owned<IBlockedRowReleaser> releaser;
+};
+
+#endif
+
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -3288,17 +3337,24 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     const IRowAllocatorCache *allocatorCache;
     unsigned __int64 cyclesChecked;       // When we last checked timelimit
     unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
+    unsigned releaseGranularity;
     bool ignoreLeaks;
     bool outputOOMReports;
     bool trackMemoryByActivity;
     bool minimizeFootprint;
     bool minimizeFootprintCritical;
+    Semaphore releaserSem;
+
+#ifdef _USE_TBBXXXX
+    tbb::task * blocks_released;
+#endif
 
     inline unsigned getActivityId(unsigned rawId) const
     {
         return getRealActivityId(rawId, allocatorCache);
     }
 
+    unsigned maxReleasers;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -3347,11 +3403,33 @@ public:
             cyclesChecked = 0;
             cyclesCheckInterval = 0;
         }
+
+        const char * granularity = getenv("RELEASE_GRANULARITY");
+        releaseGranularity = granularity ? atoi(granularity) : 1000;
+
+        const char * threads = getenv("RELEASE_THREADS");
+#ifdef _USE_TBBXXXX
+        unsigned numReleaseTasks = threads ? atoi(threads) : tbb::task_scheduler_init::default_num_threads();
+        blocks_released = new (tbb::task::allocate_root()) tbb::empty_task();
+        blocks_released->set_ref_count(1);
+        releaserSem.reinit(numReleaseTasks);
+#endif
+        maxReleasers = 0;
     }
 
     ~CChunkingRowManager()
     {
         callbacks.stopReleaseBufferThread();
+
+        printf("%d releasers", maxReleasers);
+#ifdef _USE_TBBXXXX
+        //Ensure all parallel block releases are completed before the row manager is destroyed
+        //MORE: Investigate how to abort a set of tasks
+        blocks_released->wait_for_all();
+        tbb::task::destroy(*blocks_released);
+#endif
+
+        killRowReleasers();
 
         if (memTraceLevel >= 2)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p", 
@@ -3923,6 +4001,68 @@ public:
         return callbacks.releaseBuffers(maxSpillCost, critical, false, 0);
     }
 
+    class CRowManagerRowReleaser : public CHeapBlockedRowReleaser
+    {
+        friend class CChunkingRowManager;
+    public:
+        CRowManagerRowReleaser(CChunkingRowManager * _rowManager, unsigned _max)
+        : CHeapBlockedRowReleaser(_max), rowManager(_rowManager)
+        {
+        }
+
+        virtual void releaseRows(bool recycle)
+        {
+            releaseAllRows();
+            if (recycle)
+                rowManager->recycleReleaser(this);
+        }
+
+    protected:
+        Owned<CRowManagerRowReleaser> next;
+        CChunkingRowManager * rowManager;
+    };
+
+    virtual CBlockedRowReleaser * createBlockedRowReleaser()
+    {
+        {
+            NonReentrantSpinBlock block(releaseSpin);
+            if (freeList)
+            {
+                CRowManagerRowReleaser * ret = freeList.getClear();
+                freeList.setown(ret->next.getClear());
+                return ret;
+            }
+            maxReleasers++;
+        }
+
+        return new CRowManagerRowReleaser(this, releaseGranularity);
+    }
+
+    virtual void releaseBlocked(IBlockedRowReleaser * ownedRows)
+    {
+#ifdef _USE_TBBXXXX
+        releaserSem.wait();
+        tbb::task * next = new (tbb::task::allocate_additional_child_of(*blocks_released)) releaser_task(ownedRows);
+        tbb::task::spawn(*next);
+#else
+        ownedRows->releaseRows(true);
+        ownedRows->Release();
+#endif
+    }
+
+
+    void recycleReleaser(CRowManagerRowReleaser * releaser)
+    {
+        {
+            NonReentrantSpinBlock block(releaseSpin);
+            releaser->next.setown(freeList.getClear());
+            freeList.set(releaser);
+        }
+#ifdef _USE_TBBXXXX
+        releaserSem.signal();
+#endif
+    }
+
 protected:
     CRoxieFixedRowHeapBase * doCreateFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags, unsigned maxSpillCost)
     {
@@ -4127,6 +4267,20 @@ protected:
         size32_t heapSize = ROUNDEDSIZE(rounded);
         return heapSize;
     }
+
+    void killRowReleasers()
+    {
+        while (freeList)
+        {
+            Owned<CRowManagerRowReleaser> head = freeList.getClear();
+            freeList.setown(head->next.getClear());
+        }
+    }
+
+
+protected:
+    Owned<CRowManagerRowReleaser> freeList;
+    NonReentrantSpinLock releaseSpin;
 };
 
 

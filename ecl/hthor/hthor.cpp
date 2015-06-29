@@ -26,6 +26,7 @@
 #include "jisem.hpp"
 #include "roxiedebug.hpp"
 #include "roxierow.hpp"
+#include "roxiemem.hpp"
 #include "eclhelper.hpp"
 #include "workunit.hpp"
 #include "jfile.hpp"
@@ -3206,6 +3207,8 @@ const void * CHThorAggregateActivity::nextInGroup()
         return NULL;
     }
     
+    roxiemem::IRowManager * rowManager = agent.queryRowManager();
+    Owned<roxiemem::CBlockedRowReleaser> releaser = rowManager->createBlockedRowReleaser();
     RtlDynamicRowBuilder rowBuilder(rowAllocator);
     helper.clearAggregate(rowBuilder);
     
@@ -3224,7 +3227,9 @@ const void * CHThorAggregateActivity::nextInGroup()
                     break;
 
                 helper.processNext(rowBuilder, next);
-                ReleaseRoxieRow(next);
+                releaser->appendRow(next);
+                if (releaser->isFull())
+                    releaser.setown(getNextRowReleaser(rowManager, releaser.getClear()));
             }
         }
     }
@@ -4045,9 +4050,11 @@ void CParallelStableMergeSorter::performSort()
     size32_t numRows = rowsToSort.numCommitted();
     if (numRows)
     {
+        DBGLOG("Prepare to sort %u", numRows);
         const void * * rows = rowsToSort.getBlock(numRows);
         parmsortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
         finger = 0;
+        DBGLOG("sorted");
     }
 }
 

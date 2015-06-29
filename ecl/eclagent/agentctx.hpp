@@ -22,6 +22,7 @@
 #include "eclhelper.hpp"
 #include "workunit.hpp"
 #include "layouttrans.hpp"
+#include "roxiemem.hpp"
 
 #if (ECLAGENT_ERROR_START != 5400 || ECLAGENT_ERROR_END != 5499)
 #error "ECLAGENT_ERROR_START has changed"
@@ -119,6 +120,7 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual const char *queryWuid() = 0;
 
     virtual void updateWULogfile() = 0;
+    virtual roxiemem::IRowManager * queryRowManager() const = 0;
 };
 
 #endif // AGENTCTX_HPP_INCL
