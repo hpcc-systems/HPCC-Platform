@@ -438,3 +438,17 @@ void ThreadYield()
         sched_yield();
 #endif
 }
+
+void spinUntilReady(atomic_t &value)
+{
+    unsigned i = 0;
+    const unsigned maxSpins = 10;
+    while (atomic_read(&value))
+    {
+        if (i++ == maxSpins)
+        {
+            i = 0;
+            ThreadYield();
+        }
+    }
+}

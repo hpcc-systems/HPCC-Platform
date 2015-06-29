@@ -26,6 +26,7 @@
 #include "jsem.hpp"
 
 extern jlib_decl void ThreadYield();
+extern jlib_decl void spinUntilReady(atomic_t &value);
 
 
 #ifdef _DEBUG
@@ -411,7 +412,7 @@ public:
             return;
         }
         while (unlikely(!atomic_acquire(&value)))
-            ThreadYield();
+            spinUntilReady(value);
         owner.tid = self;
     }
     inline void leave()
@@ -471,7 +472,7 @@ public:
         ThreadId self = GetCurrentThreadId(); 
         assertex(self!=owner.tid); // check for reentrancy
         while (unlikely(!atomic_acquire(&value)))
-            ThreadYield();
+            spinUntilReady(value);
         owner.tid = self;
     }
     inline void leave()
@@ -496,7 +497,7 @@ public:
     inline void enter()       
     { 
         while (unlikely(!atomic_acquire(&value)))
-            ThreadYield();
+            spinUntilReady(value);
     }
     inline void leave()
     { 
