@@ -3453,13 +3453,12 @@ hash64_t rtlHash64Data(size32_t len, const void *buf, hash64_t hval)
         unsigned next = *(const unsigned *)bp;
         bp += sizeof(unsigned);
 
-        APPLY_FNV64(hval, (byte)next);
-        next >>= 8;
-        APPLY_FNV64(hval, (byte)next);
-        next >>= 8;
-        APPLY_FNV64(hval, (byte)next);
-        next >>= 8;
-        APPLY_FNV64(hval, (byte)next);
+        for (unsigned i=0; i < sizeof(unsigned); i++)
+        {
+            APPLY_FNV64(hval, (byte)next);
+            next >>= 8;
+        }
+
         len -= sizeof(unsigned);
     }
 #endif
@@ -3546,13 +3545,12 @@ unsigned rtlHash32Data(size32_t len, const void *buf, unsigned hval)
         unsigned next = *(const unsigned *)bp;
         bp += sizeof(unsigned);
 
-        APPLY_FNV32(hval, (byte)next);
-        next >>= 8;
-        APPLY_FNV32(hval, (byte)next);
-        next >>= 8;
-        APPLY_FNV32(hval, (byte)next);
-        next >>= 8;
-        APPLY_FNV32(hval, (byte)next);
+        for (unsigned i=0; i < sizeof(unsigned); i++)
+        {
+            APPLY_FNV32(hval, (byte)next);
+            next >>= 8;
+        }
+
         len -= sizeof(unsigned);
     }
 #endif
