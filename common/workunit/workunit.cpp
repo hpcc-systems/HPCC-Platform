@@ -1991,7 +1991,7 @@ mapEnums workunitSortFields[] =
    { WUSFwuid, "@" },
    { WUSFecl, "Query/Text" },
    { WUSFfileread, "FilesRead/File/@name" },
-   { WUSFtotalthortime, "@totalClusterTime|"
+   { WUSFtotalthortime, "@totalThorTime|"
                         "Statistics/Statistic[@c='summary'][@creator='thor'][@kind='TimeElapsed']/@value|"
                         "Statistics/Statistic[@c='summary'][@creator='hthor'][@kind='TimeElapsed']/@value|"
                         "Statistics/Statistic[@c='summary'][@creator='roxie'][@kind='TimeElapsed']/@value|"
@@ -2773,7 +2773,11 @@ public:
                     query.append(fv).append("\"]");
                 }
                 else if (!fv || !*fv)
+                {
                     unknownAttributes.append(getEnumText(subfmt,workunitSortFields));
+                    if (subfmt==WUSFtotalthortime)
+                        sortorder = (WUSortField) (sortorder | WUSFnumeric);
+                }
                 else {
                     query.append('[').append(getEnumText(subfmt,workunitSortFields)).append('=');
                     if (fmt&WUSFnocase)

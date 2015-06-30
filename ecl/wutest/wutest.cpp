@@ -508,6 +508,12 @@ protected:
                 "  <standaloneexe>1</standaloneexe>"
                 "  <targetclustertype>hthor</targetclustertype>"
                 " </Debug>"
+                " <FilesRead>"
+                "  <File name='myfile' useCount='2' cluster = 'mycluster'/>"
+                "  <File name='mysuperfile' useCount='2' cluster = 'mycluster'>"
+                "   <Subfile name='myfile'/>"
+                "  </File>"
+                "</FilesRead>"
                 " <Graphs>"
                 "  <Graph name='graph1' type='activities'>"
                 "   <xgmml>"
@@ -718,6 +724,7 @@ protected:
         // Checking that temporaries and tracing were not copied
         p1->removeProp("Temporaries");
         p1->removeProp("Tracing");
+        p1->removeProp("FilesRead"); // Check this is not copied
         // Checking that variables were reset by the copy
         p1->removeProp("Variables/Variable[@name='one']/rowCount");
         p1->removeProp("Variables/Variable[@name='one']/totalRowCount");
@@ -1229,11 +1236,14 @@ protected:
         // Test filter by appValue
         WUSortField filterByAppValueWild[] = { (WUSortField) (WUSFappvalue|WUSFwild), WUSFterm };
         start = msTick();
+        StringAttr prevValue;
         Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFreverse), filterByAppValueWild, "appname/userId\0WuTestUser*", 0, 10000, NULL, NULL);
         ForEach(*wus)
         {
             IConstWorkUnitInfo &wu = wus->query();
-            ASSERT(streq(wu.queryUser(), "WuTestUser00"));
+            if (numIterated)
+                ASSERT(strcmp(wu.queryWuid(), prevValue)<0);
+            prevValue.set(wu.queryWuid());
             numIterated++;
         }
         DBGLOG("%d workunits by appvalue wild in %d ms", numIterated, msTick()-start);
