@@ -5947,7 +5947,6 @@ void CLocalWorkUnit::_loadResults() const
 
 void CLocalWorkUnit::loadResults() const
 {
-    CriticalBlock block(crit);
     if (!resultsCached)
     {
         assertex(results.length() == 0);
@@ -6269,13 +6268,22 @@ static void _noteFileRead(IDistributedFile *file, IPropertyTree *filesRead)
     }
 }
 
+void CLocalWorkUnit::_loadFilesRead() const
+{
+    // Nothing to do
+}
+
 void CLocalWorkUnit::noteFileRead(IDistributedFile *file)
 {
-    CriticalBlock block(crit);
-    IPropertyTree *files = p->queryPropTree("FilesRead");
-    if (!files)
-        files = p->addPropTree("FilesRead", createPTree());
-    _noteFileRead(file, files);
+    if (file)
+    {
+        CriticalBlock block(crit);
+        _loadFilesRead();
+        IPropertyTree *files = p->queryPropTree("FilesRead");
+        if (!files)
+            files = p->addPropTree("FilesRead", createPTree());
+        _noteFileRead(file, files);
+    }
 }
 
 static void addFile(IPropertyTree *files, const char *fileName, const char *cluster, unsigned usageCount, WUFileKind fileKind, const char *graphOwner)
@@ -6409,6 +6417,7 @@ IPropertyTreeIterator & CLocalWorkUnit::getFileIterator() const
 IPropertyTreeIterator & CLocalWorkUnit::getFilesReadIterator() const
 {
     CriticalBlock block(crit);
+    _loadFilesRead();
     return * p->getElements("FilesRead/File");
 }
 
@@ -6559,6 +6568,7 @@ unsigned CLocalWorkUnit::getGraphCount() const
 unsigned CLocalWorkUnit::getSourceFileCount() const
 {
     CriticalBlock block(crit);
+    _loadFilesRead();
     if (p->hasProp("FilesRead"))
     {
         return p->queryPropTree("FilesRead")->numChildren();

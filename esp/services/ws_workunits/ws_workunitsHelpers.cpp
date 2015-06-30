@@ -247,7 +247,7 @@ void WsWuInfo::getSourceFiles(IEspECLWorkunit &info, unsigned flags)
                 bool bFound = false;
                 if (fileName && *fileName && (fileNames.length() > 0))
                 {
-                    for (unsigned i = 0; i < fileNames.length(); i++ )
+                    for (unsigned i = 0; i < fileNames.length(); i++ ) // MORE - unnecessary n^2 process
                     {
                         const char *fileName0 = fileNames.item(i);
                         if (!stricmp(fileName, fileName0))
@@ -1706,7 +1706,7 @@ void WsWuInfo::getSubFiles(IPropertyTreeIterator* f, IEspECLSourceFile* eclSuper
         int fileCount = query.getPropInt("@useCount");
 
         bool bFound = false;
-        if (fileName && *fileName && (fileNames.length() > 0))
+        if (fileName && *fileName && (fileNames.length() > 0)) // MORE - this is an n^2 process and as far as I can tell unnecessary as there will be no dups
         {
             for (unsigned i = 0; i < fileNames.length(); i++ )
             {
@@ -1736,7 +1736,7 @@ void WsWuInfo::getSubFiles(IPropertyTreeIterator* f, IEspECLSourceFile* eclSuper
 
         file->setCount(fileCount);
 
-        Owned<IPropertyTreeIterator> filetrees= query.getElements("Subfile");
+        Owned<IPropertyTreeIterator> filetrees= query.getElements("Subfile"); // We do not store subfiles of subfiles like this - so this code will never be triggered
         if (filetrees->first())
         {
             file->setIsSuperFile(true);
