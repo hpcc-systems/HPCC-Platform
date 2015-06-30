@@ -399,7 +399,7 @@ protected:
 
 public:
     virtual IHqlExpression *clone(HqlExprArray &newkids);
-    virtual IAtom * queryName() const { return id ? id->queryLower() : NULL; }
+    virtual IAtom * queryName() const { return lower(id); }
     virtual IIdAtom * queryId() const { return id; }
 };
 
