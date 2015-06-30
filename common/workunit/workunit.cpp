@@ -10149,6 +10149,23 @@ extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr
     return false;
 }
 
+bool isResultASet(IWUResult *r)
+{
+    SCMStringBuffer schema;
+    r->getResultEclSchema(schema);
+    return !strnicmp(schema.str(), "RECORD set of", strlen("RECORD set of"));
+}
+
+bool isSuppliedParamSimpleScalar(IWUResult *r, IPropertyTree &curVal, bool &isSet)
+{
+    if (!r->isResultScalar())
+        return false;
+    if (!curVal.hasChildren())
+        return true;
+    isSet = isResultASet(r);
+    return !isSet;
+}
+
 void updateSuppliedXmlParams(IWorkUnit * w)
 {
     Owned<const IPropertyTree> params = w->getXmlParams();
@@ -10162,8 +10179,9 @@ void updateSuppliedXmlParams(IWorkUnit * w)
         Owned<IWUResult> r = updateWorkUnitResult(w, name, -1);
         if (r)
         {
+            bool isSet = false;
             StringBuffer s;
-            if (r->isResultScalar() && !curVal.hasChildren())
+            if (isSuppliedParamSimpleScalar(r, curVal, isSet))
             {
                 curVal.getProp(".", s);
                 r->setResultXML(s);
@@ -10172,7 +10190,8 @@ void updateSuppliedXmlParams(IWorkUnit * w)
             else
             {
                 toXML(&curVal, s);
-                bool isSet = (curVal.hasProp("Item") || curVal.hasProp("string"));
+                if (!isSet)
+                    isSet = isResultASet(r);
                 r->setResultRaw(s.length(), s.str(), isSet ? ResultFormatXmlSet : ResultFormatXml);
             }
         }
