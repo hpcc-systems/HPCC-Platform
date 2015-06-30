@@ -810,11 +810,11 @@ public:
                     else
                         throwError1(DFUERR_DSuperFileDoesntContainSub, subfiles[i1]);
         }
+        if (removesuperfile && toremove.ordinality()!=superfile->numSubFiles())
+            removesuperfile = false;
         // Do we have something to delete?
-        if (toremove.ordinality()) {
+        if (toremove.ordinality() || removesuperfile) {
             transaction->start();
-            if (removesuperfile && toremove.ordinality()!=superfile->numSubFiles())
-                removesuperfile = false;
             ForEachItemIn(i2,toremove)
                 superfile->removeSubFile(toremove.item(i2).text.get(),delsub,false,transaction);
             // Delete superfile if empty
