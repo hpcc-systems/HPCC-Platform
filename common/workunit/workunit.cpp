@@ -2466,6 +2466,7 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
             sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
             return conn.getClear();
         }
+        virtual bool allMatchingElementsReceived() { return true; } //For now, dali always returns all of matched Queries.
     };
     StringAttr querySet;
     StringBuffer xPath;
@@ -2518,7 +2519,7 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
     }
     IArrayOf<IPropertyTree> results;
     Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, postFilters, unknownAttributes, _subset);
-    Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total);
+    Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total,NULL);
     return new CConstQuerySetQueryIterator(results);
 }
 
@@ -2712,6 +2713,7 @@ public:
                 sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), unknownAttributes, elements);
                 return conn.getClear();
             }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, dali always returns all of matched WUs.
         };
         class CScopeChecker : public CSimpleInterface, implements ISortedElementsTreeFilter
         {
@@ -2800,7 +2802,7 @@ public:
         }
         IArrayOf<IPropertyTree> results;
         Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
-        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,"",cachehint,results,total);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,"",cachehint,results,total,NULL);
         return new CConstWUArrayIterator(results);
     }
 

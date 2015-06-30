@@ -78,6 +78,7 @@ private:
     bool addDFUQueryFilter(DFUQResultField *filters, unsigned short &count, MemoryBuffer &buff, const char* value, DFUQResultField name);
     void appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, StringBuffer& filterBuf);
     void appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, const char *valueHigh, StringBuffer& filterBuf);
+    void setFileIterateFilter(unsigned maxFiles, StringBuffer &filterBuf);
     void setFileTypeFilter(const char* fileType, StringBuffer& filterBuf);
     void setFileNameFilter(const char* fname, const char* prefix, StringBuffer &buff);
     void setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filterBuf);

@@ -172,6 +172,7 @@ ESPrequest [nil_remove] DFUQueryRequest
 
     bool OneLevelDirFileReturn(false);
     [min_ver("1.24")] int64 CacheHint;
+    [min_ver("1.30")] int MaxNumberOfFiles;
     [min_ver("1.30")] bool IncludeSuperOwner;
 };
 
@@ -211,6 +212,8 @@ DFUQueryResponse
     string ParametersForPaging;
     string Filters;
     [min_ver("1.24")] int64 CacheHint;
+    [min_ver("1.30")] bool IsSubsetOfFiles;
+    [min_ver("1.30")] string Warning;
 };
 
 ESPrequest 

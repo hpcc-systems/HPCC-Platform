@@ -1004,7 +1004,7 @@ public:
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user);
     IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout);
     IPropertyTreeIterator *getDFAttributesTreeIterator(const char *filters, DFUQResultField* localFilters, const char *localFilterBuf,
-        IUserDescriptor *user, INode *foreigndali,unsigned foreigndalitimeout);
+        IUserDescriptor *user, bool& allMatchingFilesReceived, INode *foreigndali,unsigned foreigndalitimeout);
     IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT)
     {
         Owned<INode> foreign;
@@ -1076,7 +1076,7 @@ public:
     bool getProtectedInfo(const CDfsLogicalFileName &logicalname, StringArray &names, UnsignedArray &counts);
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
     IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void *filterBuf, DFUQResultField *specialFilters,
-            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total);
+            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived);
 
     void setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
@@ -8525,6 +8525,7 @@ class CIterateFileFilterContainer : public CInterface
 {
     StringAttr filterBuf; //Hold original filter string just in case
     StringAttr wildNameFilter;
+    unsigned maxFilesFilter;
     DFUQFileTypeFilter fileTypeFilter;
     CIArrayOf<CDFUSFFilter> filters;
     //The 'filters' contains the file scan filters other than wildNameFilter and fileTypeFilter. Those filters are used for
@@ -8608,7 +8609,7 @@ class CIterateFileFilterContainer : public CInterface
             return;
         if (!isdigit(*attr))
         {
-            PROGLOG("Unsupported Speical Filter: %s", attr);
+            PROGLOG("Unsupported Special Filter: %s", attr);
             return;
         }
         DFUQSpecialFilter filterName = (DFUQSpecialFilter) atoi(attr);
@@ -8621,10 +8622,16 @@ class CIterateFileFilterContainer : public CInterface
             if (isdigit(*value))
                 fileTypeFilter = (DFUQFileTypeFilter) atoi(value);
             else
-                PROGLOG("Unsupported Speical Filter: %s, value %s", attr, value);
+                PROGLOG("Unsupported Special Filter: %s, value %s", attr, value);
+            break;
+        case DFUQSFMaxFiles:
+            if (isdigit(*value))
+                maxFilesFilter = atoi(value);
+            else
+                PROGLOG("Unsupported Special Filter: %s, value %s", attr, value);
             break;
         default:
-            PROGLOG("Unsupported Speical Filter: %d", filterName);
+            PROGLOG("Unsupported Special Filter: %d", filterName);
             break;
         }
     }
@@ -8640,6 +8647,7 @@ class CIterateFileFilterContainer : public CInterface
 public:
     CIterateFileFilterContainer()
     {
+        maxFilesFilter = ITERATE_FILTEREDFILES_LIMIT;
         fileTypeFilter = DFUQFFTall;
         wildNameFilter.set("*");
         filterBuf.clear();
@@ -8716,6 +8724,7 @@ public:
     }
 
     DFUQFileTypeFilter getFileTypeFilter() { return fileTypeFilter; }
+    unsigned getMaxFilesFilter() { return maxFilesFilter; }
     void setFileTypeFilter(DFUQFileTypeFilter _fileType)
     {
         fileTypeFilter = _fileType;
@@ -8899,7 +8908,8 @@ public:
         currentScope = NULL;
         processScopes(*sroot->queryPropTree(querySdsFilesRoot()),name);
     }
-    void _getResults(bool auth, IUserDescriptor *user, CScope &scope, CFileMatchArray &matchingFiles, StringArray &authScopes, unsigned &count)
+    void _getResults(bool auth, IUserDescriptor *user, CScope &scope, CFileMatchArray &matchingFiles, StringArray &authScopes,
+        unsigned &count, bool checkFileCount)
     {
         if (auth)
         {
@@ -8911,6 +8921,10 @@ public:
         CFileMatchArray &files = scope.queryFiles();
         ForEachItemIn(f, files)
         {
+            if (checkFileCount && (count == iterateFileFilterContainer->getMaxFilesFilter()))
+                throw MakeStringException(DFSERR_PassIterateFilesLimit, "CFileScanner::_getResults() found >%d files.",
+                    iterateFileFilterContainer->getMaxFilesFilter());
+
             CFileMatch *match = &files.item(f);
             matchingFiles.append(*LINK(match));
             ++count;
@@ -8919,13 +8933,12 @@ public:
         ForEachItemIn(s, subScopes)
         {
             CScope &subScope = subScopes.item(s);
-            _getResults(auth, user, subScope, matchingFiles, authScopes, count);
+            _getResults(auth, user, subScope, matchingFiles, authScopes, count, checkFileCount);
         }
     }
-    unsigned getResults(bool auth, IUserDescriptor *user, CFileMatchArray &matchingFiles, StringArray &authScopes)
+    unsigned getResults(bool auth, IUserDescriptor *user, CFileMatchArray &matchingFiles, StringArray &authScopes, unsigned &count, bool checkFileCount)
     {
-        unsigned count = 0;
-        _getResults(auth, user, *topLevelScope, matchingFiles, authScopes, count);
+        _getResults(auth, user, *topLevelScope, matchingFiles, authScopes, count, checkFileCount);
         return count;
     }
 };
@@ -9612,7 +9625,7 @@ public:
         StringArray authScopes;
         CIArrayOf<CFileMatch> matchingFiles;
         start = msTick();
-        count = scanner.getResults(auth, udesc, matchingFiles, authScopes);
+        scanner.getResults(auth, udesc, matchingFiles, authScopes, count, false);
         tookMs = msTick()-start;
         if (tookMs>100)
             PROGLOG("TIMING(LDAP): %s: took %dms, %d lookups, file matches = %d", trc.str(), tookMs, authScopes.ordinality(), count);
@@ -9669,7 +9682,20 @@ public:
         StringArray authScopes;
         CIArrayOf<CFileMatch> matchingFiles;
         start = msTick();
-        count = scanner.getResults(auth, udesc, matchingFiles, authScopes);
+        bool returnAllMatchingFiles = true;
+        try
+        {
+            scanner.getResults(auth, udesc, matchingFiles, authScopes, count, true);
+        }
+        catch(IException *e)
+        {
+            if (DFSERR_PassIterateFilesLimit != e->errorCode())
+                throw;
+            e->Release();
+            returnAllMatchingFiles = false;
+        }
+        mb.append(returnAllMatchingFiles);
+
         tookMs = msTick()-start;
         if (tookMs>100)
             PROGLOG("TIMING(LDAP): %s: took %dms, %d lookups, file matches = %d", trc.str(), tookMs, authScopes.ordinality(), count);
@@ -11961,12 +11987,14 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
         IMPLEMENT_IINTERFACE;
         MemoryBuffer mb;
         unsigned numfiles;
+        bool allMatchingFilesReceived;
         StringArray nodeGroupFilter;
 
         bool first()
         {
             mb.reset();
             mb.read(numfiles);
+            mb.read(allMatchingFilesReceived);
 
             return next();
         }
@@ -12021,7 +12049,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
 }
 
 IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(const char* filters, DFUQResultField* localFilters,
-    const char* localFilterBuf, IUserDescriptor* user, INode* foreigndali, unsigned foreigndalitimeout)
+    const char* localFilterBuf, IUserDescriptor* user, bool& allMatchingFilesReceived, INode* foreigndali, unsigned foreigndalitimeout)
 {
     CMessageBuffer mb;
     mb.append((int)MDFS_ITERATE_FILTEREDFILES).append(filters).append(true);
@@ -12034,6 +12062,9 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
         queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
     checkDfsReplyException(mb);
 
+    unsigned numfiles;
+    mb.read(numfiles);
+    mb.read(allMatchingFilesReceived);
     return deserializeFileAttrIterator(mb, localFilters, localFilterBuf);
 }
 
@@ -12046,7 +12077,8 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
     unsigned startOffset,
     unsigned maxNum,
     __int64 *cacheHint,
-    unsigned *total)
+    unsigned *total,
+    bool *allMatchingFiles)
 {
     class CDFUPager : public CSimpleInterface, implements IElementsPager
     {
@@ -12056,6 +12088,7 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
         DFUQResultField *localFilters;
         StringAttr localFilterBuf;
         StringAttr sortOrder;
+        bool allMatchingFilesReceived;
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -12064,15 +12097,17 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
             const char*_sortOrder) : udesc(_udesc), filters(_filters), localFilters(_localFilters), localFilterBuf(_localFilterBuf),
             sortOrder(_sortOrder)
         {
+            allMatchingFilesReceived = true;
         }
         virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
         {
             Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesTreeIterator(filters.get(),
-                localFilters, localFilterBuf.get(), udesc);
+                localFilters, localFilterBuf.get(), udesc, allMatchingFilesReceived);
             StringArray unknownAttributes;
             sortElements(fi, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
             return NULL;
         }
+        virtual bool allMatchingElementsReceived() { return allMatchingFilesReceived; }
     };
 
     StringBuffer so;
@@ -12095,7 +12130,7 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
     IArrayOf<IPropertyTree> results;
     Owned<IElementsPager> elementsPager = new CDFUPager(udesc, (const char*) filters, localFilters, (const char*) localFilterBuf,
         so.length()?so.str():NULL );
-    getElementsPaged(elementsPager,startOffset,maxNum,NULL,"",cacheHint,results,total,false);
+    Owned<IRemoteConnection> conn = getElementsPaged(elementsPager,startOffset,maxNum,NULL,"",cacheHint,results,total,allMatchingFiles,false);
     return new CDFAttributeIterator(results);
 }
 #ifdef _USE_CPPUNIT

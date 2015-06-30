@@ -48,7 +48,7 @@ interface IUserDescriptor;
 #define S_LINK_RELATIONSHIP_KIND "link"
 #define S_VIEW_RELATIONSHIP_KIND "view"
 
-
+#define ITERATE_FILTEREDFILES_LIMIT 100000
 
 interface IDistributedSuperFile;
 interface IDistributedFile;
@@ -192,7 +192,8 @@ enum DFUQSerializeFileAttrOption
 enum DFUQSpecialFilter
 {
     DFUQSFFileNameWithPrefix = 1,
-    DFUQSFFileType = 2
+    DFUQSFFileType = 2,
+    DFUQSFMaxFiles = 3
 };
 
 enum DFUQFileTypeFilter
@@ -560,7 +561,7 @@ interface IDistributedFileDirectory: extends IInterface
             // wildname is in form scope/name and may contain wild components for either
     virtual IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
     virtual IPropertyTreeIterator *getDFAttributesTreeIterator(const char *filters, DFUQResultField* localFilters,
-        const char *localFilterBuf, IUserDescriptor *user, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+        const char *localFilterBuf, IUserDescriptor *user, bool& allMatchingFilesReceived, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
     virtual IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
 
     virtual IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope=NULL,bool recursive=true,bool includeempty=false)=0;
@@ -665,7 +666,7 @@ interface IDistributedFileDirectory: extends IInterface
 
     virtual IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false)=0; // if owner = NULL then all
     virtual IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void* filters, DFUQResultField *localFilters,
-            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total) = 0;
+            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived) = 0;
 
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                // sets default timeout for SDS connections and locking
                                                                                             // returns previous value
@@ -733,7 +734,8 @@ enum DistributedFileSystemError
     DFSERR_ClusterNotFound,
     DFSERR_ClusterAlreadyExists,
     DFSERR_LookupConnectionTimout,       // only raised if timeout specified on lookup etc.
-    DFSERR_FailedToDeleteFile
+    DFSERR_FailedToDeleteFile,
+    DFSERR_PassIterateFilesLimit
 };
 
 

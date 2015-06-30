@@ -1965,6 +1965,7 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
                                      __int64 *hint,
                                      IArrayOf<IPropertyTree> &results,
                                      unsigned *total,
+                                     bool *allMatchingElementsReceived,
                                      bool checkConn)
 {
     if ((pagesize==0) || !elementsPager)
@@ -2038,6 +2039,8 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
             results.append(item);
         }
     }
+    if (allMatchingElementsReceived)
+        *allMatchingElementsReceived = elementsPager->allMatchingElementsReceived();
     IRemoteConnection *ret = NULL;
     if (elem->conn)
         ret = elem->conn.getLink();
