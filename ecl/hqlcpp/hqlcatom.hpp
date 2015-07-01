@@ -451,6 +451,7 @@ extern IIdAtom * newDegroupArgId;
 extern IIdAtom * newExistsAggregateArgId;
 extern IIdAtom * newFunnelArgId;
 extern IIdAtom * newGraphLoopResultWriteArgId;
+extern IIdAtom * newLibraryConstantRawIteratorArgId;
 extern IIdAtom * newLocalResultReadArgId;
 extern IIdAtom * newLocalResultSpillArgId;
 extern IIdAtom * newMemorySpillReadArgId;
