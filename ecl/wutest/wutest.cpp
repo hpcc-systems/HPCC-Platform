@@ -425,6 +425,7 @@ class WuTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testListByAppValueWild);
         CPPUNIT_TEST(testListByFilesRead);
         CPPUNIT_TEST(testSet);
+        CPPUNIT_TEST(testResults);
         CPPUNIT_TEST(testDelete);
         CPPUNIT_TEST(testCopy);
     CPPUNIT_TEST_SUITE_END();
@@ -460,7 +461,7 @@ protected:
             wu->setApplicationValue("appname2", "clusterName", clusterName.str(), true);
             wuids.append(wu->queryWuid());
 
-            // We should reall be doing a noteFileRead here but the API is such a pain that we'll do it this way
+            // We should really be doing a noteFileRead here but the API is such a pain that we'll do it this way
             IPropertyTree *p = queryExtendedWU(wu)->queryPTree();
             VStringBuffer fileinfo(" <FilesRead>"
                 "  <File name='myfile%02d' useCount='2' cluster = 'mycluster'/>"
@@ -950,6 +951,38 @@ protected:
         end = msTick();
         DBGLOG("%u workunits reread in %d ms", testSize, end-start);
         start = end;
+    }
+
+    void testResults()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned start = msTick();
+        int i;
+        for (i = 0; i < testSize; i++)
+        {
+            Owned<IWorkUnit> wu = factory->updateWorkUnit(wuids.item(i));
+            Owned<IWUResult> result = wu->updateResultByName("Result 1");
+            Owned<IWUResult> temporary = wu->updateTemporaryByName("Temporary 1");
+            result->setResultScalar(true);
+            result->setResultSequence(0);
+            result->setResultInt(i);
+        }
+        unsigned end = msTick();
+        DBGLOG("%u workunits results updated in %d ms", testSize, end-start);
+        start = msTick();
+        for (i = 0; i < testSize; i++)
+        {
+            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuids.item(i), false);
+            Owned<IConstWUResult> result = wu->getResultByName("Result 1");
+            ASSERT(result);
+            ASSERT(result->isResultScalar());
+            ASSERT(result->getResultInt()==i);
+            result.setown(wu->getTemporaryByName("Temporary 1"));
+            ASSERT(result);
+            ASSERT(result->getResultStatus()==ResultStatusUndefined);
+        }
+        end = msTick();
+        DBGLOG("%u workunits results checked in %d ms", testSize, end-start);
     }
 
     void testList()
