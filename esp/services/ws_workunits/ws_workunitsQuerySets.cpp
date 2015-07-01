@@ -33,6 +33,7 @@
 
 const unsigned ROXIECONNECTIONTIMEOUT = 1000;   //1 second
 const unsigned ROXIECONTROLQUERYTIMEOUT = 3000; //3 second
+const unsigned ROXIECONTROLQUERIESTIMEOUT = 30000; //30 second
 const unsigned ROXIELOCKCONNECTIONTIMEOUT = 60000; //60 second
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
@@ -1071,7 +1072,7 @@ IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset)
     try
     {
         Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIECONNECTIONTIMEOUT);
-        return sendRoxieControlAllNodes(sock, "<control:queries/>", true, ROXIECONTROLQUERYTIMEOUT);
+        return sendRoxieControlAllNodes(sock, "<control:queries/>", false, ROXIECONTROLQUERIESTIMEOUT);
     }
     catch(IException* e)
     {
