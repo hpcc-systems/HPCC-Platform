@@ -91,6 +91,7 @@ protected:
     void generateStmtAssign(IHqlStmt * assign, bool link);
     void generateStmtAssignModify(IHqlStmt * assign);
     void generateStmtCase(IHqlStmt * stmt);
+    void generateStmtCatch(IHqlStmt * stmt);
     void generateStmtDeclare(IHqlStmt * declare);
     void generateStmtFilter(IHqlStmt * stmt);
     void generateStmtFunction(IHqlStmt * stmt);

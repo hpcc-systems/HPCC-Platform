@@ -99,6 +99,7 @@ public:
     IHqlStmt *                  addBlock();
     IHqlStmt *                  addBreak();
     IHqlStmt *                  addCase(IHqlStmt * owner, IHqlExpression * condition);
+    IHqlStmt *                  addCatch(IHqlExpression * caught);
     IHqlStmt *                  addConditionalGroup(IHqlStmt * stmt); // generated if stmt->isIncluded() is true
     IHqlStmt *                  addContinue();
     IHqlStmt *                  addDeclare(IHqlExpression * name, IHqlExpression * value=NULL);
@@ -125,6 +126,8 @@ public:
     IHqlStmt *                  addQuoted(StringBuffer & text)              { return addQuoted(text.str()); }
     IHqlStmt *                  addQuotedCompound(StringBuffer & text, const char * extra = NULL){ return addQuotedCompound(text.str(), extra); }
     IHqlStmt *                  addSwitch(IHqlExpression * condition);
+    IHqlStmt *                  addThrow(IHqlExpression * thrown);
+    IHqlStmt *                  addTry();
     void                        associate(HqlExprAssociation & next);
     void                        associateOwn(HqlExprAssociation & next);
     HqlExprAssociation *        associateExpr(IHqlExpression * represents, IHqlExpression * expr);
@@ -199,6 +202,9 @@ enum StmtKind {
              continue_stmt,
              function_stmt,
              assign_link_stmt,
+             try_stmt,
+             catch_stmt,
+             throw_stmt,
 };
 
 
