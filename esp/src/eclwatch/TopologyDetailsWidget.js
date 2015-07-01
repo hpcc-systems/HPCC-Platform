@@ -189,7 +189,7 @@ define([
                 });
             } else if (currSel.id == this.widget._Logs.id && !this.widget._Logs.__hpcc_initalized) {
                 this.widget._Logs.__hpcc_initalized = true;
-                this.widget._Logs.init(this.params.__hpcc_treeItem);
+                this.widget._Logs.init(this.params);
             }
         },
 
