@@ -60,7 +60,7 @@
     </mediaobject>
   </bookinfo>
 
-  <chapter>
+  <chapter id="HPCC_Systems_Administration">
     <title>Introducing HPCC Systems<superscript>®</superscript>
     Administraton</title>
 
@@ -124,13 +124,13 @@
       <para>The data retrieval process (despraying) places the file back on
       the landing zone.</para>
 
-      <sect2 role="brk">
+      <sect2 id="HPCC_Clusters" role="brk">
         <title>Clusters</title>
 
         <para>HPCC environment contains clusters which you define and use
         according to your needs. The types of clusters used in HPCC:</para>
 
-        <sect3>
+        <sect3 id="SysAdm_Thor_Cluster">
           <title>Thor</title>
 
           <para>Data Refinery (Thor) – Used to process every one of billions
@@ -139,7 +139,7 @@
           inefficient use of the Thor cluster.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_Roxie_Cluster">
           <title>Roxie</title>
 
           <para>Rapid Data Delivery Engine (Roxie) – Used to search quickly
@@ -151,7 +151,7 @@
           data into play.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_Clusters_ECLAgent">
           <title>ECL Agent</title>
 
           <para>The ECL Agent's primary function is to send the job to execute
@@ -171,14 +171,14 @@
         </sect3>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="SysAdm_SystemServers" role="brk">
         <title>System Servers</title>
 
         <para>The System Servers are integral middleware components of an HPCC
         system. They are used to control workflow and intercomponent
         communication.</para>
 
-        <sect3>
+        <sect3 id="SysAdm_Dali">
           <title>Dali</title>
 
           <para>Dali is also known as the system data store. It manages
@@ -190,7 +190,7 @@
           restrictions.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_Sahsa">
           <title>Sasha</title>
 
           <para>The Sasha server is a companion “housekeeping” server to the
@@ -205,7 +205,7 @@
           cached workunits and DFU recovery files.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_DFU">
           <title>DFU Server</title>
 
           <para>DFU server controls the spraying and despraying operations
@@ -227,7 +227,7 @@
             </itemizedlist></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_ECLCCSvr">
           <title>ECLCC Server</title>
 
           <para>ECLCC Server is the compiler that translates ECL code. When
@@ -251,7 +251,7 @@
           required.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_ECLAgent">
           <title>ECL Agent</title>
 
           <para>ECL Agent (hThor) is a single node process for executing
@@ -262,7 +262,7 @@
           spawned on-demand when you submit a workunit.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_ESPServer">
           <title>ESP Server</title>
 
           <para>ESP (Enterprise Service Platform) Server is the
@@ -291,7 +291,7 @@
           <!--formerly : protocols - HTTP, HTTPS, SOAP, and JSON - -->
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_LDAP">
           <title>LDAP</title>
 
           <para>You can incorporate a Lightweight Directory Access Protocol
@@ -320,13 +320,13 @@
         END COMMENT ***-->
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_ClienInterfaces">
         <title>Client Interfaces</title>
 
         <para>The following Client Interfaces are available to interact with
         the HPCC Platform.</para>
 
-        <sect3>
+        <sect3 id="SysAdm_Eclipse">
           <title>Eclipse</title>
 
           <para>With the ECL plug-in for Eclipse, you can use the Eclipse IDE
@@ -337,7 +337,7 @@
           open-source.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_ECLIDE">
           <title>ECL IDE</title>
 
           <para>ECL IDE is a full-featured GUI providing access to your ECL
@@ -350,7 +350,7 @@
           Once defined, they can be used in succeeding ECL definitions.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_Int_ECLWatch">
           <title>ECL Watch</title>
 
           <para>ECL Watch is a web-based query execution, monitoring, and file
@@ -389,7 +389,7 @@
           details.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_ComLine">
           <title><emphasis role="bold">Command Line Tools</emphasis></title>
 
           <para>Command line tools: <emphasis role="bold">ECL, DFU
@@ -407,7 +407,7 @@
     <!--Inclusion-from-ClientTool-As-Sect1: REMOVED-->
   </chapter>
 
-  <chapter>
+  <chapter id="SysAdm_HW_and_SW-Req">
     <title>Hardware and Software Requirements</title>
 
     <para>This chapter consists of various Hardware and Software requirements
@@ -448,7 +448,7 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="SysAdm_HWSizing">
     <title>Hardware and Component Sizing</title>
 
     <para>This section provides some insight as to what sort of hardware and
@@ -467,7 +467,7 @@
     to run HPCC processes of a particular type, for example Thor, Roxie, or
     Dali, on a host configured specifically for that type of process.</para>
 
-    <sect1>
+    <sect1 id="SysAdm_ThorHW">
       <title>Thor Hardware</title>
 
       <para>Thor slave nodes require a proper balance of CPU, RAM, network,
@@ -503,7 +503,7 @@
       RAID1, RAID10, RAID5 (preferred), and RAID6.</para>
     </sect1>
 
-    <sect1>
+    <sect1 id="SysAdm_RoxieHW">
       <title>Roxie Hardware Configurations</title>
 
       <para>HPCC Roxie processes require require a proper, yet different (from
@@ -528,7 +528,7 @@
       distribution of file parts from Thor to Roxie.</para>
     </sect1>
 
-    <sect1>
+    <sect1 id="SysAdm_Dali_Sasha">
       <title>Dali and Sasha Hardware Configurations</title>
 
       <para>HPCC Dali processes store cluster metadata in RAM. For optimal
@@ -547,7 +547,7 @@
       the same node.</para>
     </sect1>
 
-    <sect1>
+    <sect1 id="SysAdm_OtherHPCCcomponents">
       <title>Other HPCC Components</title>
 
       <para>ECL Agent, ECLCC Server, DFU Server, the Thor master, and ECL
@@ -606,7 +606,7 @@
       <!--***CAN TIE THIS ALL TOGETHER - as part of routine maint. clean up some data files... archive data... etc. ***TO COME***-->
     </sect1>
 
-    <sect1 role="nobrk">
+    <sect1 id="SysAdm_BackUpData" role="nobrk">
       <title>Back Up Data</title>
 
       <para>An integral part of routine maintenance is the back up of
@@ -615,7 +615,7 @@
       strategy, instead this section supplements it by outlining special
       considerations for HPCC Systems<superscript>®</superscript>.</para>
 
-      <sect2>
+      <sect2 id="SysAdm_BackUpConsider">
         <title>Back Up Considerations</title>
 
         <para>You probably already have some sort of a back up strategy in
@@ -624,7 +624,7 @@
         aware of. The following sections discuss back up considerations for
         the individual HPCC system components.</para>
 
-        <sect3>
+        <sect3 id="SysAdm_BkU_Dali">
           <title>Dali</title>
 
           <para>Dali can be configured to create its own back up, ideally you
@@ -638,7 +638,7 @@
           traditional back up methods.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BkUp_Sasha">
           <title>Sasha</title>
 
           <para>Sasha itself generates no original data but archives workunits
@@ -652,14 +652,14 @@
           methods.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BkUp_DFUSvr">
           <title>DFU Server</title>
 
           <para>DFU Server has no data. DFU workunits are stored in Dali until
           they are archived by Sasha.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BkUp_ECLCCSvr">
           <title>ECLCC Server</title>
 
           <para>ECLCC Server stores no data. ECL workunits are stored in Dali
@@ -670,20 +670,20 @@
           however you must have a C++ compiler to use on your system. </para> -->
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BkUp_ECLAgent">
           <title>ECL Agent</title>
 
           <para>ECL Agent stores no data.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BkUp_ECLSched">
           <title>ECL Scheduler</title>
 
           <para>ECL Scheduler stores no data. ECL Workunits are stored in
           Dali.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BkUp_ESPsvr">
           <title>ESP Server</title>
 
           <para>ESP Server stores no data. If you are using SSL certificates,
@@ -691,7 +691,7 @@
           methods.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BkUp_Thor">
           <title>Thor</title>
 
           <para>Thor, the data refinery, as one of the critical components of
@@ -752,7 +752,7 @@
 00000029 2014-02-19 12:01:08 26457 26457 "backupnode finished" </programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BkUp_Roxie">
           <title>Roxie</title>
 
           <para>Roxie data is protected by three forms of redundancy:</para>
@@ -789,7 +789,7 @@
           </itemizedlist>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BkUp_LandZone">
           <title>Landing Zone</title>
 
           <para>The Landing Zone is used to host incoming and outgoing files.
@@ -797,7 +797,7 @@
           system level back ups.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BkUp_Misc">
           <title>Misc</title>
 
           <para>Back up of any additional component add-ons, your environment
@@ -807,7 +807,7 @@
       </sect2>
     </sect1>
 
-    <sect1 id="Log_Files">
+    <sect1 id="SysAdm_Log_Files">
       <title>Log Files</title>
 
       <para>You can review system messages and see any error messages as they
@@ -815,7 +815,7 @@
       understanding what is occurring on the system and useful in
       troubleshooting.</para>
 
-      <sect2 id="Component_Logs">
+      <sect2 id="SysAdm_Component_Logs">
         <title>Component Logs</title>
 
         <para>There are log files for each component in directories below
@@ -845,7 +845,7 @@
         and remove the older log files.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_AccessLogFiles">
         <title>Accessing Log Files</title>
 
         <para>You can access and view the log files directly by going to the
@@ -980,7 +980,7 @@
                 xpointer="configuring-a-multi-node-system"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <sect1>
+    <sect1 id="SysAdm_Env.conf">
       <title>Environment.conf</title>
 
       <para>Another component of HPCC system configuration is the
@@ -1050,7 +1050,7 @@ interface=*
 use_epoll=true
 </programlisting></para>
 
-      <sect2>
+      <sect2 id="SysAdm_Paths">
         <title>Path considerations</title>
 
         <para>Most of the directories are defined as absolute paths:</para>
@@ -1075,7 +1075,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         the HPCCSystems path.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_OtherEnv.conf">
         <title>Other Environment.conf items</title>
 
         <para>Some other items used by or referred to in
@@ -1119,7 +1119,8 @@ lock=/var/lock/HPCCSystems</programlisting>
     </sect1>
 
     <!--Inclusions-As-Sect1-->
- <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -1127,7 +1128,7 @@ lock=/var/lock/HPCCSystems</programlisting>
                 xpointer="User_Security_Maint"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <sect1>
+    <sect1 id="SysAdm_WUs_ActiveDir">
       <title>Workunits and Active Directory</title>
 
       <para>The performance of your system can vary depending on how some
@@ -1151,7 +1152,7 @@ lock=/var/lock/HPCCSystems</programlisting>
       appropriate for your environment. Now you can assign users to their
       appropriate group(s).</para>
 
-      <sect2>
+      <sect2 id="SysAdm_AD_and_LDAP">
         <title>Active Directory, and LDAP Commonality</title>
 
         <para>There are components that are common to both Active Directory
@@ -1295,7 +1296,7 @@ lock=/var/lock/HPCCSystems</programlisting>
           </tgroup>
         </informaltable></para>
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_Dali">
         <title>Dali</title>
 
         <para>Dali should be run in an active/passive configuration.
@@ -1310,7 +1311,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         passive node and restart the Dali service.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_DFUsvr">
         <title>DFU Server</title>
 
         <para>You can run multiple instances of the DFU Server. You can run
@@ -1320,7 +1321,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         the other(s) will continue to pull new workunits.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_ECLCCSvr_">
         <title>ECLCC Server</title>
 
         <para>You can run multiple active instances of the ECLCC Server for
@@ -1329,7 +1330,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         fail, the other(s) will continue to compile.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_ESP_ECLWatch_WSECL">
         <title>ESP/ECL Watch/WsECL</title>
 
         <para>To establish redundancy, place the ESP Servers in a VIP. For an
@@ -1341,7 +1342,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         server.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_ECLAgent">
         <title>ECL Agent</title>
 
         <para>You can run multiple active instances of the ECL Agent. No need
@@ -1350,7 +1351,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         workunits.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_Sasha">
         <title>Sasha</title>
 
         <para>Sasha should be run in an active/passive configuration.
@@ -1358,7 +1359,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         primary (active), and the other standing by.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_ECLSched">
         <title>ECL Scheduler</title>
 
         <para>No need for a load balancer, runs active/active. Each instance
@@ -1366,7 +1367,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         continue to schdeule workunits.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_ThorMaster">
         <title>Thormaster</title>
 
         <para>Set up Thor in an active/passive configuration. Active/passive
@@ -1377,7 +1378,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         requests.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_DropZone">
         <title>Dropzone</title>
 
         <para>This is just a fileserver that runs the dafilesrv process.
@@ -1421,7 +1422,7 @@ lock=/var/lock/HPCCSystems</programlisting>
           have two of everything.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_HA_ThorUpside">
           <title>The Upside</title>
 
           <para>Almost 100% of the time you can utilize the additional
@@ -1429,7 +1430,7 @@ lock=/var/lock/HPCCSystems</programlisting>
           etc.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_HA_ThorDR">
           <title>Disaster Recovery concerns</title>
 
           <para>The important factor to consider for disaster recovery (DR) is
@@ -1468,7 +1469,7 @@ lock=/var/lock/HPCCSystems</programlisting>
           the costs of preventing against it.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_HA_ThorConclusion">
           <title>Conclusion</title>
 
           <para>Disaster recovery is a calculation. The cost of failure, times
@@ -1512,7 +1513,7 @@ lock=/var/lock/HPCCSystems</programlisting>
       </sect2>
     </sect1>
 
-    <sect1>
+    <sect1 id="SysAdm_BestPrac">
       <title>Best Practice Considerations</title>
 
       <para>There are several other aspects to best practice considerations,
@@ -1525,7 +1526,7 @@ lock=/var/lock/HPCCSystems</programlisting>
 
       <!--/*Further elaboration of both User permissions, and permission settings... also some hardware set up best practices. Suggested***/-->
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_MultiThor">
         <title>Multiple Thors</title>
 
         <para>You can run multiple Thors on the same physical hardware.
@@ -1546,6 +1547,56 @@ lock=/var/lock/HPCCSystems</programlisting>
         than number of cores. One good rule is to use a formula where the
         number of cores divided by two is the maximum number of Thor clusters
         to use.</para>
+      </sect2>
+
+      <sect2 id="SysAdm_BestPrac_HugePages">
+        <title>Huge Pages</title>
+
+        <para>Your system may run faster and benefit from setting up huge page
+        support. Huge pages of the appropriate type and size need to be
+        allocated from the operating system. Set up huge page support in the
+        OS then enable the huge page support setting(s) in your HPCC
+        configuration. A newer operating system typically has Transparent Huge
+        Pages (THP) available by default. </para>
+
+        <para>Thor, Roxie, and ECL Agent clusters all have options in the
+        configuration to enable huge page support. The Transparent Huge Pages
+        are enabled for Thor, Roxie, and ECL Agent clusters in the default
+        HPCC environment. Thor clusters stand to benefit more from huge pages
+        than can Roxie. </para>
+
+        <para>Determine if your OS supports transparent huge pages or huge
+        page support. Consult your OS documentation and determine how to
+        enable huge page support. For example, the administrator can allocate
+        persistent huge pages (for the appropriate OS) on the kernel boot
+        command line by specifying the "hugepages=N" parameter at boot.
+        </para>
+
+        <para>You can use Transparent Huge Pages (THP), as long as the OS is
+        set up for it, and just about all current OS support it by default.
+        You can check the file /sys/kernel/mm/transparent_hugepage/enabled to
+        see what the OS setting is. With THP you do not have to explicitly set
+        a size. </para>
+
+        <sect3 id="SysAdm_BestPrac_SetUpHuge_Pgs">
+          <title>Setting up Huge Pages</title>
+
+          <para>In HPCC, there are three places in the configuration manager
+          to set the attributes to use Huge Pages or Transparent Huge
+          Pages.</para>
+
+          <para>There are attributes in each component, in the ECL Agent
+          attributes, in Roxie attributes, and in Thor attributes. In each
+          component there are two values: </para>
+
+          <programlisting>heapUseHugePages  
+heapUseTransparentHugePages</programlisting>
+
+          <para>Disable the THP settings in your HPCC configuration if your
+          system is not using THP. Enable Huge Pages for the component(s) you
+          wish, after verifying that the support is enabled in your OS.
+          </para>
+        </sect3>
       </sect2>
     </sect1>
 
@@ -1578,7 +1629,7 @@ lock=/var/lock/HPCCSystems</programlisting>
       images, source code, documentation, and tutorials.</para>
     </sect1>
 
-    <sect1>
+    <sect1 id="SysAdm_Addl_Resources">
       <title>Additional Resources</title>
 
       <para>Additional help with HPCC and Learning ECL is also available.

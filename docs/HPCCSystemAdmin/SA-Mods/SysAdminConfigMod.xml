@@ -552,9 +552,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         be about ¼ the size of Thor. This is because the data is compressed
         and the system does not hold any transient data in Roxie. Remember
         that you do not want the number of Roxie nodes to exceed the number of
-        Thor nodes. </para>
+        Thor nodes.</para>
 
-        <sect3>
+        <sect3 id="SysAdm_SmplSiz_HiDataThor">
           <title>High Data Thor sizing considerations</title>
 
           <para>Each Thor node can hold about 2.5 TB of data (MAX), so plan
@@ -568,7 +568,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           copies.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BestPrac_HiDataRoxie">
           <title>High Data Roxie sizing considerations</title>
 
           <para>Roxie keeps most of its data in memory, so you should allocate
@@ -586,7 +586,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
       </sect2>
 
-      <sect2>
+      <sect2 id="SysAdm_BestPrac_HevyProc_LowData">
         <title>Sample Sizing for Heavy Processing on Low Data Volume</title>
 
         <para>The following section provides some sample sizing for heavy
@@ -605,7 +605,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>Total = 13 nodes</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BestPrac_1250GB">
           <title>1250 GB of Raw Data</title>
 
           <para>Thor = 6 (slaves) + 2 (management) = 8 Nodes</para>
@@ -618,7 +618,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>Total = 17 nodes</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BestPrac_2000GB">
           <title>2000 GB of Raw Data</title>
 
           <para>Thor = 8 (slaves) + 3 (management) = 11 Nodes</para>
@@ -631,7 +631,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>Total = 20 nodes</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="SysAdm_BestPrac_3500GB">
           <title>3500 GB of Raw Data</title>
 
           <para>Thor = 12 (slaves) + 5 (management) = 17 Nodes</para>
