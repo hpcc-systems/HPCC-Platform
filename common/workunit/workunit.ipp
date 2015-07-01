@@ -558,6 +558,7 @@ protected:
     virtual void _lockRemote() {};
     virtual void _unlockRemote() {};
     virtual void unsubscribe();
+    virtual void _loadFilesRead() const;
     virtual void _loadResults() const;
     virtual void _loadStatistics() const;
     virtual void _loadExceptions() const;

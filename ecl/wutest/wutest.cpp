@@ -423,6 +423,7 @@ class WuTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testList2);
         CPPUNIT_TEST(testListByAppValue);
         CPPUNIT_TEST(testListByAppValueWild);
+        CPPUNIT_TEST(testListByFilesRead);
         CPPUNIT_TEST(testSet);
         CPPUNIT_TEST(testDelete);
         CPPUNIT_TEST(testCopy);
@@ -458,6 +459,17 @@ protected:
             wu->setApplicationValue("appname", "userId", userId.str(), true);
             wu->setApplicationValue("appname2", "clusterName", clusterName.str(), true);
             wuids.append(wu->queryWuid());
+
+            // We should reall be doing a noteFileRead here but the API is such a pain that we'll do it this way
+            IPropertyTree *p = queryExtendedWU(wu)->queryPTree();
+            VStringBuffer fileinfo(" <FilesRead>"
+                "  <File name='myfile%02d' useCount='2' cluster = 'mycluster'/>"
+                "  <File name='mysuperfile' useCount='2' cluster = 'mycluster'>"
+                "   <Subfile name='myfile%02d'/>"
+                "  </File>"
+                " </FilesRead>", i % 10, i % 10);
+            p->setPropTree("FilesRead", createPTreeFromXMLString(fileinfo));
+            wu->noteFileRead(NULL); // Make sure we notice that it was modified
         }
         unsigned after = factory->numWorkUnits();
         DBGLOG("%u workunits created in %d ms (%d total)", testSize, msTick()-start, after);
@@ -508,6 +520,12 @@ protected:
                 "  <standaloneexe>1</standaloneexe>"
                 "  <targetclustertype>hthor</targetclustertype>"
                 " </Debug>"
+                " <FilesRead>"
+                "  <File name='myfile' useCount='2' cluster = 'mycluster'/>"
+                "  <File name='mysuperfile' useCount='2' cluster = 'mycluster'>"
+                "   <Subfile name='myfile'/>"
+                "  </File>"
+                "</FilesRead>"
                 " <Graphs>"
                 "  <Graph name='graph1' type='activities'>"
                 "   <xgmml>"
@@ -718,6 +736,7 @@ protected:
         // Checking that temporaries and tracing were not copied
         p1->removeProp("Temporaries");
         p1->removeProp("Tracing");
+        p1->removeProp("FilesRead"); // Check this is not copied
         // Checking that variables were reset by the copy
         p1->removeProp("Variables/Variable[@name='one']/rowCount");
         p1->removeProp("Variables/Variable[@name='one']/totalRowCount");
@@ -894,6 +913,23 @@ protected:
             ASSERT(streq(wu->queryWuScope(), "scope"));
             ASSERT(streq(wu->getSnapshot(s).str(),"snap"));
             ASSERT(wu->getWarningSeverity(1234, SeverityInformation) == SeverityFatal);
+
+            ASSERT(wu->getSourceFileCount()==2);
+            Owned<IPropertyTreeIterator> sourceFiles = &wu->getFilesReadIterator();
+            ForEach(*sourceFiles)
+            {
+                IPTree &file = sourceFiles->query();
+                ASSERT(file.getPropInt("@useCount") == 2);
+                if (streq(file.queryProp("@name"), "mysuperfile"))
+                {
+                    ASSERT(strncmp(file.queryProp("Subfile/@name"), "myfile", 6)==0);
+                }
+                else
+                {
+                    ASSERT(strncmp(file.queryProp("@name"), "myfile", 6)==0);
+                    ASSERT(!file.hasProp("Subfile"));
+                }
+            }
         }
         end = msTick();
         DBGLOG("%u workunits reread in %d ms", testSize, end-start);
@@ -1118,7 +1154,8 @@ protected:
                 ASSERT(strcmp(wu.queryStateDesc(), prevValue)<=0);
             prevValue.set(wu.queryStateDesc());
             numIterated++;
-            ASSERT(!wus->next());
+            bool nextSeen = wus->next();
+            ASSERT(!nextSeen);
             startRow++;
         }
         DBGLOG("%d workunits filtered by cluster, descending state, page by page in %d ms", numIterated, msTick()-start);
@@ -1140,7 +1177,8 @@ protected:
                 ASSERT(strcmp(wu.queryWuid(), prevValue)<0);
             prevValue.set(wu.queryWuid());
             numIterated++;
-            ASSERT(!wus->next());
+            bool nextSeen = wus->next();
+            ASSERT(!nextSeen);
             startRow++;
         }
         DBGLOG("%d workunits filtered by cluster, descending wuid, page by page in %d ms", numIterated, msTick()-start);
@@ -1162,7 +1200,8 @@ protected:
                 ASSERT(strcmp(wu.queryWuid(), prevValue)>0);
             prevValue.set(wu.queryWuid());
             numIterated++;
-            ASSERT(!wus->next());
+            bool nextSeen = wus->next();
+            ASSERT(!nextSeen);
             startRow++;
         }
         DBGLOG("%d workunits filtered by cluster, ascending wuid, page by page in %d ms", numIterated, msTick()-start);
@@ -1193,7 +1232,9 @@ protected:
                 ASSERT(wu.getTotalThorTime()<=prevThorTime);
             prevThorTime = wu.getTotalThorTime();
             numIterated++;
-            ASSERT(!wus->next());
+            bool nextSeen = wus->next();
+            ASSERT(!nextSeen);
+            wus.clear();
             startRow++;
         }
         DBGLOG("%d workunits descending thortime, page by page in %d ms", numIterated, msTick()-start);
@@ -1223,21 +1264,45 @@ protected:
     void testListByAppValueWild()
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        bool isDali = streq(factory->queryStoreType(), "Dali");
         unsigned start = msTick();
         unsigned numIterated = 0;
         // Test filter by appValue
         WUSortField filterByAppValueWild[] = { (WUSortField) (WUSFappvalue|WUSFwild), WUSFterm };
         start = msTick();
+        StringAttr prevValue;
         Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFreverse), filterByAppValueWild, "appname/userId\0WuTestUser*", 0, 10000, NULL, NULL);
         ForEach(*wus)
         {
             IConstWorkUnitInfo &wu = wus->query();
-            ASSERT(streq(wu.queryUser(), "WuTestUser00"));
+            if (numIterated)
+                ASSERT(strcmp(wu.queryWuid(), prevValue)<0);
+            prevValue.set(wu.queryWuid());
             numIterated++;
         }
         DBGLOG("%d workunits by appvalue wild in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == testSize);
+        numIterated++;
+    }
+    void testListByFilesRead()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned start = msTick();
+        unsigned numIterated = 0;
+        // Test filter by filesRead
+        WUSortField filterByFilesRead[] = { WUSFfileread, WUSFterm };
+        start = msTick();
+        StringAttr prevValue;
+        Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFreverse), filterByFilesRead, "myfile00", 0, 10000, NULL, NULL);
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            if (numIterated)
+                ASSERT(strcmp(wu.queryWuid(), prevValue)<0);
+            prevValue.set(wu.queryWuid());
+            numIterated++;
+        }
+        DBGLOG("%d workunits by fileread wild in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+9)/10);
         numIterated++;
     }
 };
