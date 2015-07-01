@@ -727,7 +727,7 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
             cred.setPassword(pass1);
         try
         {
-	    if (user.get())
+            if (user.get())
                 secmgr->addUser(*user.get());
         }
         catch(IException* e)

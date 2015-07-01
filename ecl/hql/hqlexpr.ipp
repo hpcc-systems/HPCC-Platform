@@ -593,7 +593,7 @@ class HQL_API CHqlSymbolAnnotation : public CHqlAnnotation, public IHqlNamedAnno
 public:
     IMPLEMENT_IINTERFACE_USING(CHqlAnnotation)
 
-    virtual IAtom * queryName() const { return id ? id->queryLower() : NULL; }
+    virtual IAtom * queryName() const { return lower(id); }
     virtual IIdAtom * queryId() const { return id; }
     virtual IIdAtom * queryFullContainerId() const { return moduleId; }
     virtual IHqlExpression *queryFunctionDefinition() const;
@@ -799,7 +799,7 @@ public:
 //  virtual StringBuffer &toSQL(StringBuffer &, bool paren, IHqlDataset *scope, bool useAliases, node_operator op = no_none);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual StringBuffer &printAliases(StringBuffer &s, unsigned, bool &) { return s; }
-    virtual IAtom * queryName() const { return id ? id->queryLower() : NULL; }
+    virtual IAtom * queryName() const { return lower(id); }
     virtual IIdAtom * queryId() const { return id; }
 };
 
@@ -826,7 +826,7 @@ class CHqlExternal: public CHqlExpressionWithType
     virtual bool equals(const IHqlExpression & other) const;
 public:
     static CHqlExternal *makeExternalReference(IIdAtom * id, ITypeInfo *, HqlExprArray &_ownedOperands);
-    virtual IAtom * queryName() const { return id ? id->queryLower() : NULL;  }
+    virtual IAtom * queryName() const { return lower(id);  }
     virtual IIdAtom * queryId() const { return id; }
 };
 
@@ -952,7 +952,7 @@ typedef HashIterator SymbolTableIterator;
 
 inline IHqlExpression * lookupSymbol(SymbolTable & symbols, IIdAtom * searchName, bool sharedOK)
 {
-    OwnedHqlExpr ret = symbols.getLinkedValue(searchName ? searchName->queryLower() : NULL );
+    OwnedHqlExpr ret = symbols.getLinkedValue(lower(searchName));
 
     if (!ret)
         return NULL; 
@@ -1078,7 +1078,7 @@ public:
 
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
 
-    virtual IAtom * queryName() const {return id ? id->queryLower() : NULL;}
+    virtual IAtom * queryName() const {return lower(id);}
     virtual IIdAtom * queryId() const { return id; }
     virtual const char * queryFullName() const  { return fullName; }
     virtual IIdAtom * queryFullContainerId() const { return containerId; }
@@ -1291,10 +1291,10 @@ public:
     CHqlContextScope(IHqlScope* scope);
 
     virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value,bool exported, bool shared, unsigned symbolFlags)
-    {  defined.setValue(id ? id->queryLower() : NULL,value);  }
+    {  defined.setValue(lower(id),value);  }
 
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
-{  return defined.getLinkedValue(searchName ? searchName->queryLower() : NULL ); }
+{  return defined.getLinkedValue(lower(searchName)); }
 
     virtual IHqlScope * queryConcreteScope()    { return this; }
     virtual bool allBasesFullyBound() const { return false; }
@@ -1366,7 +1366,7 @@ public:
     StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual IHqlSimpleScope *querySimpleScope();
-    virtual IAtom * queryName() const { return id ? id->queryLower() : NULL;  }
+    virtual IAtom * queryName() const { return lower(id);  }
     virtual IIdAtom * queryId() const { return id; }
     virtual unsigned __int64 querySequenceExtra() { return idx; }
 };
@@ -1630,7 +1630,7 @@ public:
     virtual IHqlExpression *addOperand(IHqlExpression *field);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual bool equals(const IHqlExpression & other) const;
-virtual IAtom * queryName() const { return unnamedId ? unnamedId->queryLower() : NULL; }
+    virtual IAtom * queryName() const { return lower(unnamedId); }
     virtual void sethash();
     virtual ITypeInfo *queryType() const;
     virtual ITypeInfo *getType();
@@ -1776,7 +1776,7 @@ public:
     virtual IValue * castFrom(double value)  { return NULL; }
     virtual IValue * castFrom(size32_t len, const char * text)  { return NULL; }
     virtual IValue * castFrom(size32_t len, const UChar * text)  { return NULL; }
-    virtual StringBuffer &getECLType(StringBuffer & out)  { return out.append(id ? id->queryLower() : NULL); }
+    virtual StringBuffer &getECLType(StringBuffer & out)  { return out.append(lower(id)); }
     virtual StringBuffer &getDescriptiveType(StringBuffer & out)  { return getECLType(out); }
     virtual const char *queryTypeName()         { return id ? str(id->queryLower()) : NULL ; }
     virtual unsigned getCardinality();
@@ -1788,7 +1788,7 @@ public:
     virtual ICharsetInfo * queryCharset()       { return logical->queryCharset(); }
     virtual ICollationInfo * queryCollation()   { return logical->queryCollation(); }
     virtual IAtom * queryLocale()                 { return logical->queryLocale(); }
-    virtual IAtom * queryName() const { return id ? id->queryLower() : NULL;  }
+    virtual IAtom * queryName() const { return lower(id);  }
     virtual IIdAtom * queryId() const { return id; }
     virtual ITypeInfo * queryChildType() { return logical; }
     virtual ITypeInfo * queryPromotedType()     { return logical->queryPromotedType(); }

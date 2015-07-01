@@ -2022,7 +2022,7 @@ void RegexNamedPattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
 {
     RegexPattern::toXMLattr(out, state);
     if (def->queryName())
-        out.appendf(" name=\"%s\"", str(def->queryName()));
+        out.appendf(" name=\"%s\"", def->queryName()->queryStr());
     out.appendf(" body=\"%d\"", state.named.find(*def));
 }
 

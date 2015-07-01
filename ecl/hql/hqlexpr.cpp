@@ -7948,10 +7948,10 @@ void CHqlScope::throwRecursiveError(IIdAtom * searchName)
     StringBuffer filename;
     if (fullName)
         filename.append(fullName).append('.');
-    filename.append(*str(searchName));
+    filename.append(str(searchName));
 
     StringBuffer msg("Definition of ");
-    msg.append(*str(searchName)).append(" contains a recursive dependency");
+    msg.append(str(searchName)).append(" contains a recursive dependency");
     throw createError(ERR_RECURSIVE_DEPENDENCY, msg.str(), filename, 0, 0, 1);
 }
 
@@ -8143,13 +8143,13 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     StringBuffer filename;
     if (fullName)
         filename.append(fullName).append('.');
-    filename.append(*str(searchName));
+    filename.append(str(searchName));
 
     IFileContents * contents = ret->queryDefinitionText();
     if (!contents || (contents->length() == 0))
     {
         StringBuffer msg("Definition for ");
-        msg.append(*str(searchName)).append(" contains no text");
+        msg.append(str(searchName)).append(" contains no text");
         throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
     }
 
@@ -8175,7 +8175,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
         if (newSymbol)
             resolved->removeSymbol(searchName);
         StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
-        msg.append(*str(searchName));
+        msg.append(str(searchName));
         throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
     }
 
