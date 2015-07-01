@@ -3931,7 +3931,7 @@ attrib
     : knownOrUnknownId EQ UNKNOWN_ID        
                         {
                             parser->reportWarning(CategoryDeprecated, SeverityError, WRN_OBSOLETED_SYNTAX,$1.pos,"Syntax obsoleted; use alternative: id = '<string constant>'");
-                            $$.setExpr(createAttribute(lower($1.getId()), createConstant(*str($3.getId()))));
+                            $$.setExpr(createAttribute(lower($1.getId()), createConstant(str($3.getId()))));
                         }
     | knownOrUnknownId EQ expr %prec reduceAttrib
                         {

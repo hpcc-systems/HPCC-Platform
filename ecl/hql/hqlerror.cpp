@@ -206,7 +206,7 @@ public:
 
         StringBuffer msg;
         error->errorMessage(msg);
-        if (!filename) filename = isError(severity) ? "" : str(unknownAtom);
+        if (!filename) filename = isError(severity) ? "" : unknownAtom->queryStr();
         fprintf(f, "%s(%d,%d): %s C%04d: %s\n", filename, line, column, severityText, code, msg.str());
     }
 

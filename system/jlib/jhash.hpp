@@ -48,9 +48,9 @@ interface jlib_decl IMapping : extends IObservable
 interface jlib_decl IAtom : extends IMapping
 {
  public:
-    virtual const char * getNamePtr() const = 0;
+    virtual const char * queryStr() const = 0;
 };
-inline jlib_decl const char * str(const IAtom * atom) { return atom ? atom->getNamePtr() : NULL; }
+inline jlib_decl const char * str(const IAtom * atom) { return atom ? atom->queryStr() : NULL; }
 
 //This interface represents an atom which preserves its case, but also stores a lower case representation
 //for efficient case insensitive comparison.
@@ -58,11 +58,11 @@ inline jlib_decl const char * str(const IAtom * atom) { return atom ? atom->getN
 interface jlib_decl IIdAtom : extends IMapping
 {
  public:
-    virtual const char * getNamePtr() const = 0;
+    virtual const char * queryStr() const = 0;
  public:
     virtual IAtom * queryLower() const = 0;
 };
-inline jlib_decl const char * str(const IIdAtom * atom) { return atom ? atom->getNamePtr() : NULL; }
+inline jlib_decl const char * str(const IIdAtom * atom) { return atom ? atom->queryStr() : NULL; }
 inline jlib_decl IAtom * lower(const IIdAtom * atom) { return atom ? atom->queryLower() : NULL; }
 
 #ifdef _MSC_VER
