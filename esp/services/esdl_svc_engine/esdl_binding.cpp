@@ -529,13 +529,7 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
         soapmsg.append("<soap:Body>").append(req).append("</soap:Body>");
     }
     soapmsg.append("</soap:Envelope>");
-    IProperties* pProperties = context.queryRequestParameters();
 
-    if( !pProperties )
-        throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP",
-                    "EsdlServiceImpl::handleFinalRequest() queryRequestParameters missing");
-
-    const char *querytype = tgtcfg->queryProp("@querytype");
     const char *tgtUrl = tgtcfg->queryProp("@url");
     if (tgtUrl && *tgtUrl)
         sendTargetSOAP(context, tgtcfg.get(), soapmsg.str(), out, isproxy, NULL);
