@@ -334,9 +334,15 @@ void CDiskWriteSlaveActivityBase::open()
     if (query && compress)
         UNIMPLEMENTED;
 
-    bool direct = query || (external && !firstNode());
-    bool rename = !external || (!query && lastNode());
-    Owned<IFileIO> iFileIO = createMultipleWrite(this, *partDesc, diskRowMinSz, compress, extend||(external&&!query), ecomp, this, direct, rename, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
+    unsigned twFlags = external ? TW_External : 0;
+    if (query || (external && !firstNode()))
+        twFlags |= TW_Direct;
+    if (!external || (!query && lastNode()))
+        twFlags |= TW_RenameToPrimary;
+    if (extend||(external&&!query))
+        twFlags |= TW_Extend;
+
+    Owned<IFileIO> iFileIO = createMultipleWrite(this, *partDesc, diskRowMinSz, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
 
     if (compress)
     {
