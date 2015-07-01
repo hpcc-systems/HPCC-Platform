@@ -184,7 +184,7 @@ void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const c
 
 //////////////////////////////////////////////////////////
 
-void addPackageMapInfo(const char *xml, StringArray &filesNotFound, const char *process, const char *target, const char *pmid, const char *packageSetName, const char *lookupDaliIp, const char *srcCluster, const char *prefix, bool activate, bool overWrite, IUserDescriptor* userdesc, bool allowForeignFiles)
+void addPackageMapInfo(const char *xml, StringArray &filesNotFound, const char *process, const char *target, const char *pmid, const char *packageSetName, const char *lookupDaliIp, const char *srcCluster, const char *prefix, bool activate, bool overWrite, IUserDescriptor* userdesc, bool allowForeignFiles, bool preloadAll)
 {
     if (!xml || !*xml)
         throw MakeStringExceptionDirect(PKG_INFO_NOT_DEFINED, "PackageMap info not provided");
@@ -211,6 +211,8 @@ void addPackageMapInfo(const char *xml, StringArray &filesNotFound, const char *
     ForEach(*iter)
     {
         IPropertyTree &item = iter->query();
+        if (preloadAll)
+            item.setPropBool("@preload", true);
         Owned<IPropertyTreeIterator> superFiles = item.getElements("SuperFile");
         ForEach(*superFiles)
         {
@@ -563,7 +565,7 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     buildPkgSetId(pkgSetId, processName.get());
 
     StringArray filesNotFound;
-    addPackageMapInfo(req.getInfo(), filesNotFound, processName, target, pmid, pkgSetId, daliip, srcCluster, prefix, activate, overWrite, userdesc, req.getAllowForeignFiles());
+    addPackageMapInfo(req.getInfo(), filesNotFound, processName, target, pmid, pkgSetId, daliip, srcCluster, prefix, activate, overWrite, userdesc, req.getAllowForeignFiles(), req.getPreloadAllPackages());
     resp.setFilesNotFound(filesNotFound);
 
     StringBuffer msg;

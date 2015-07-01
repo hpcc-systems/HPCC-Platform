@@ -498,7 +498,7 @@ private:
 class EclCmdPackageAdd : public EclCmdCommon
 {
 public:
-    EclCmdPackageAdd() : optActivate(false), optOverWrite(false), optGlobalScope(false), optAllowForeign(false)
+    EclCmdPackageAdd() : optActivate(false), optOverWrite(false), optGlobalScope(false), optAllowForeign(false), optPreloadAll(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -538,6 +538,8 @@ public:
             if (iter.matchFlag(optGlobalScope, ECLOPT_GLOBAL_SCOPE))
                 continue;
             if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
+                continue;
+            if (iter.matchFlag(optPreloadAll, ECLOPT_PRELOAD_ALL_PACKAGES))
                 continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -595,6 +597,7 @@ public:
         request->setGlobalScope(optGlobalScope);
         request->setSourceProcess(optSourceProcess);
         request->setAllowForeignFiles(optAllowForeign);
+        request->setPreloadAllPackages(optPreloadAll);
 
         Owned<IClientAddPackageResponse> resp = packageProcessClient->AddPackage(request);
         if (resp->getExceptions().ordinality())
@@ -627,6 +630,7 @@ public:
                     "   --global-scope              The specified packagemap can be shared across multiple targets\n"
                     "   --source-process            Process cluster to copy files from\n"
                     "   --allow-foreign             Do not fail if foreign files are used in packagemap\n"
+                    "   --preload-all               Set preload files option for all packages\n"
                     "   <target>                    Name of target to use when adding package map information\n"
                     "   <filename>                  Name of file containing package map information\n",
                     stdout);
@@ -645,6 +649,7 @@ private:
     bool optOverWrite;
     bool optGlobalScope;
     bool optAllowForeign;
+    bool optPreloadAll;
 };
 
 class EclCmdPackageValidate : public EclCmdCommon
