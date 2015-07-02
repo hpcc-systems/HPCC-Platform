@@ -3445,8 +3445,25 @@ void rtlStrToEStrX(unsigned & tlen, char * & tgt, unsigned slen, const char * sr
 hash64_t rtlHash64Data(size32_t len, const void *buf, hash64_t hval)
 {
     const unsigned char *bp = (const unsigned char *)buf;   /* start of buffer */
-    const unsigned char *be = bp + len;     /* beyond end of buffer */
 
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    //This possibly breaks the aliasing rules for c++, but I can't see it causing any problems
+    while (len >= sizeof(unsigned))
+    {
+        unsigned next = *(const unsigned *)bp;
+        bp += sizeof(unsigned);
+
+        for (unsigned i=0; i < sizeof(unsigned); i++)
+        {
+            APPLY_FNV64(hval, (byte)next);
+            next >>= 8;
+        }
+
+        len -= sizeof(unsigned);
+    }
+#endif
+
+    const unsigned char *be = bp + len;     /* beyond end of buffer */
     while (bp < be) 
     {
         APPLY_FNV64(hval, *bp++);
@@ -3520,8 +3537,25 @@ hash64_t rtlHash64VUnicode(UChar const * k, hash64_t initval)
 unsigned rtlHash32Data(size32_t len, const void *buf, unsigned hval)
 {
     const unsigned char *bp = (const unsigned char *)buf;   /* start of buffer */
-    const unsigned char *be = bp + len;     /* beyond end of buffer */
 
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    //This possibly breaks the aliasing rules for c++, but I can't see it causing any problems
+    while (len >= sizeof(unsigned))
+    {
+        unsigned next = *(const unsigned *)bp;
+        bp += sizeof(unsigned);
+
+        for (unsigned i=0; i < sizeof(unsigned); i++)
+        {
+            APPLY_FNV32(hval, (byte)next);
+            next >>= 8;
+        }
+
+        len -= sizeof(unsigned);
+    }
+#endif
+
+    const unsigned char *be = bp + len;     /* beyond end of buffer */
     while (bp < be) 
     {
         APPLY_FNV32(hval, *bp++);
