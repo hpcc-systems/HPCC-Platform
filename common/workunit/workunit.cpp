@@ -2058,7 +2058,6 @@ class CLocalWUResult : public CInterface, implements IWUResult
     mutable CriticalSection crit;
     Owned<IPropertyTree> p;
     Owned<IProperties> xmlns;
-    void getSchema(TypeInfoArray &types, StringAttrArray &names, IStringVal * ecl=NULL) const;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -2097,7 +2096,7 @@ public:
     virtual bool        getResultIsAll() const;
     virtual IProperties *queryResultXmlns();
     virtual IStringVal& getResultFieldOpt(const char *name, IStringVal &str) const;
-
+    virtual void getSchema(IArrayOf<ITypeInfo> &types, StringAttrArray &names, IStringVal * ecl=NULL) const;
 
     // interface IWUResult
     virtual void        setResultStatus(WUResultStatus status);
@@ -8081,7 +8080,7 @@ bool findSize(int size, IntArray &sizes)
     return false;
 }
 
-void CLocalWUResult::getSchema(TypeInfoArray &types, StringAttrArray &names, IStringVal * eclText) const
+void CLocalWUResult::getSchema(IArrayOf<ITypeInfo> &types, StringAttrArray &names, IStringVal * eclText) const
 {
     MemoryBuffer schema;
     p->getPropBin("SchemaRaw", schema);
@@ -10149,21 +10148,23 @@ extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr
     return false;
 }
 
-bool isResultASet(IWUResult *r)
+void getSimpleResultType(IWUResult *r, Owned<ITypeInfo> &type)
 {
-    SCMStringBuffer schema;
-    r->getResultEclSchema(schema);
-    return !strnicmp(schema.str(), "RECORD set of", strlen("RECORD set of"));
+    TypeInfoArray types;
+    StringAttrArray names;
+    r->getSchema(types, names, NULL);
+    if (types.ordinality()==1)
+        type.set(&types.item(0));
 }
 
-bool isSuppliedParamSimpleScalar(IWUResult *r, IPropertyTree &curVal, bool &isSet)
+bool isSuppliedParamScalar(IWUResult *r, IPropertyTree &curVal, Owned<ITypeInfo> &type)
 {
     if (!r->isResultScalar())
         return false;
     if (!curVal.hasChildren())
         return true;
-    isSet = isResultASet(r);
-    return !isSet;
+    getSimpleResultType(r, type);
+    return type && type->isScalar();
 }
 
 void updateSuppliedXmlParams(IWorkUnit * w)
@@ -10179,9 +10180,9 @@ void updateSuppliedXmlParams(IWorkUnit * w)
         Owned<IWUResult> r = updateWorkUnitResult(w, name, -1);
         if (r)
         {
-            bool isSet = false;
+            Owned<ITypeInfo> type;
             StringBuffer s;
-            if (isSuppliedParamSimpleScalar(r, curVal, isSet))
+            if (isSuppliedParamScalar(r, curVal, type))
             {
                 curVal.getProp(".", s);
                 r->setResultXML(s);
@@ -10190,8 +10191,9 @@ void updateSuppliedXmlParams(IWorkUnit * w)
             else
             {
                 toXML(&curVal, s);
-                if (!isSet)
-                    isSet = isResultASet(r);
+                if (!type)
+                    getSimpleResultType(r, type);
+                bool isSet = (type && type->getTypeCode()==type_set);
                 r->setResultRaw(s.length(), s.str(), isSet ? ResultFormatXmlSet : ResultFormatXml);
             }
         }
