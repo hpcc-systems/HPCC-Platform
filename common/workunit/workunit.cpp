@@ -5958,36 +5958,44 @@ void CLocalWorkUnit::loadResults() const
     }
 }
 
+void CLocalWorkUnit::_loadVariables() const
+{
+    Owned<IPropertyTreeIterator> r = p->getElements("Variables/Variable");
+    for (r->first(); r->isValid(); r->next())
+    {
+        IPropertyTree *rp = &r->query();
+        rp->Link();
+        variables.append(*new CLocalWUResult(rp));
+    }
+}
+
 void CLocalWorkUnit::loadVariables() const
 {
-    CriticalBlock block(crit);
     if (!variablesCached)
     {
         assertex(variables.length() == 0);
-        Owned<IPropertyTreeIterator> r = p->getElements("Variables/Variable");
-        for (r->first(); r->isValid(); r->next())
-        {
-            IPropertyTree *rp = &r->query();
-            rp->Link();
-            variables.append(*new CLocalWUResult(rp));
-        }
+        _loadVariables();
         variablesCached = true;
+    }
+}
+
+void CLocalWorkUnit::_loadTemporaries() const
+{
+    Owned<IPropertyTreeIterator> r = p->getElements("Temporaries/Variable");
+    for (r->first(); r->isValid(); r->next())
+    {
+        IPropertyTree *rp = &r->query();
+        rp->Link();
+        temporaries.append(*new CLocalWUResult(rp));
     }
 }
 
 void CLocalWorkUnit::loadTemporaries() const
 {
-    CriticalBlock block(crit);
     if (!temporariesCached)
     {
         assertex(temporaries.length() == 0);
-        Owned<IPropertyTreeIterator> r = p->getElements("Temporaries/Variable");
-        for (r->first(); r->isValid(); r->next())
-        {
-            IPropertyTree *rp = &r->query();
-            rp->Link();
-            temporaries.append(*new CLocalWUResult(rp));
-        }
+        _loadTemporaries();
         temporariesCached = true;
     }
 }
@@ -6168,6 +6176,7 @@ IWUResult* CLocalWorkUnit::updateTemporaryByName(const char *qname)
     q->Link();
     temporaries.append(*q);
     q->setResultName(qname);
+    q->setResultSequence(ResultSequenceInternal);
     return q;
 }
 
@@ -6186,6 +6195,7 @@ IWUResult* CLocalWorkUnit::updateVariableByName(const char *qname)
     q->Link();
     variables.append(*q);
     q->setResultName(qname);
+    q->setResultSequence(ResultSequenceStored);
     return q;
 }
 

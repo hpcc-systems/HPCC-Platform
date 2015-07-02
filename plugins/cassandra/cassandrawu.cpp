@@ -1304,7 +1304,7 @@ static const CassandraXmlMapping filesReadSearchMappings [] =
 
 // The following describe child tables - all keyed by wuid
 
-enum ChildTablesEnum { WuExceptionsChild, WuStatisticsChild, WuGraphProgressChild, WuResultsChild, WuVariablesChild, WuFilesReadChild,ChildTablesSize };
+enum ChildTablesEnum { WuExceptionsChild, WuStatisticsChild, WuGraphProgressChild, WuResultsChild, WuVariablesChild, WuTemporariesChild, WuFilesReadChild,ChildTablesSize };
 
 struct ChildTableInfo
 {
@@ -1368,20 +1368,23 @@ static const ChildTableInfo wuGraphProgressTable =
     wuGraphProgressMappings
 };
 
+#define resultTableFields \
+        {"partition", "int", NULL, hashRootNameColumnMapper},  \
+        {"wuid", "text", NULL, rootNameColumnMapper},          \
+        {"sequence", "int", "@sequence", defaultedIntColumnMapper},     \
+        {"name", "text", "@name", stringColumnMapper},         \
+        {"format", "text", "@format", stringColumnMapper},     /* xml, xmlset, csv, or null to mean raw. Could probably switch to int if we wanted, or drop altogether since included in attributes? */ \
+        {"status", "text", "@status", stringColumnMapper},     \
+        {"attributes", "map<text, text>", "@sequence@name@format@status@", attributeMapColumnMapper},  /* name is the suppression list. We could consider folding format/status into this? */ \
+        {"rowcount", "int", "rowCount", intColumnMapper},      /* This is the number of rows in result (which may be stored in a file rather than in value) */ \
+        {"totalrowcount", "bigint", "totalRowCount", bigintColumnMapper},  /* This is the number of rows in value */ \
+        {"schemaRaw", "blob", "SchemaRaw", blobColumnMapper},              \
+        {"logicalName", "text", "logicalName", stringColumnMapper},        /* either this or value will be present once result status is "calculated" */ \
+        {"value", "blob", "Value", blobColumnMapper}
+
 static const CassandraXmlMapping wuResultsMappings [] =
 {
-    {"partition", "int", NULL, hashRootNameColumnMapper},
-    {"wuid", "text", NULL, rootNameColumnMapper},
-    {"sequence", "int", "@sequence", intColumnMapper},
-    {"name", "text", "@name", stringColumnMapper},
-    {"format", "text", "@format", stringColumnMapper},  // xml, xmlset, csv, or null to mean raw. Could probably switch to int if we wanted
-    {"status", "text", "@status", stringColumnMapper},
-    {"attributes", "map<text, text>", "@sequence@name@format@status@", attributeMapColumnMapper},  // name is the suppression list. We could consider folding format/status into this?
-    {"rowcount", "int", "rowCount", intColumnMapper}, // This is the number of rows in result (which may be stored in a file rather than in value)
-    {"totalrowcount", "bigint", "totalRowCount", bigintColumnMapper},// This is the number of rows in value
-    {"schemaRaw", "blob", "SchemaRaw", blobColumnMapper},
-    {"logicalName", "text", "logicalName", stringColumnMapper},  // either this or value will be present once result status is "calculated"
-    {"value", "blob", "Value", blobColumnMapper},
+    resultTableFields,
     { NULL, "wuResults", "((partition, wuid), sequence)", stringColumnMapper}
 };
 
@@ -1396,25 +1399,30 @@ static const ChildTableInfo wuResultsTable =
 
 static const CassandraXmlMapping wuVariablesMappings [] =
 {
-    {"partition", "int", NULL, hashRootNameColumnMapper},
-    {"wuid", "text", NULL, rootNameColumnMapper},
-    {"sequence", "int", "@sequence", defaultedIntColumnMapper},  // Note - should be either variable or temporary...
-    {"name", "text", "@name", requiredStringColumnMapper},
-    {"format", "text", "@format", stringColumnMapper},  // xml, xmlset, csv, or null to mean raw. Could probably switch to int if we wanted
-    {"status", "text", "@status", stringColumnMapper},
-    {"rowcount", "int", "rowCount", intColumnMapper}, // This is the number of rows in result (which may be stored in a file rather than in value)
-    {"totalrowcount", "bigint", "totalRowCount", bigintColumnMapper},// This is the number of rows in value
-    {"schemaRaw", "blob", "SchemaRaw", blobColumnMapper},
-    {"logicalName", "text", "logicalName", stringColumnMapper},  // either this or value will be present once result status is "calculated"
-    {"value", "blob", "Value", blobColumnMapper},
+    resultTableFields,
     { NULL, "wuVariables", "((partition, wuid), sequence, name)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuVariablesTable =
 {
-    "Variables", "Variable", // Actually sometimes uses Variables, sometimes Temporaries.... MORE - think about how to fix that...
+    "Variables", "Variable",
     WuVariablesChild,
     wuVariablesMappings
+};
+
+// Again, very similar, but mapped to a different area of the XML
+
+static const CassandraXmlMapping wuTemporariesMappings [] =
+{
+    resultTableFields,
+    { NULL, "wuTemporaries", "((partition, wuid), sequence, name)", stringColumnMapper}
+};
+
+static const ChildTableInfo wuTemporariesTable =
+{
+    "Temporaries", "Variable",
+    WuTemporariesChild,
+    wuTemporariesMappings
 };
 
 static const CassandraXmlMapping wuFilesReadMappings [] =
@@ -1436,7 +1444,7 @@ static const ChildTableInfo wuFilesReadTable =
 };
 
 // Order should match the enum above
-static const ChildTableInfo * const childTables [] = { &wuExceptionsTable, &wuStatisticsTable, &wuGraphProgressTable, &wuResultsTable, &wuVariablesTable, &wuFilesReadTable, NULL };
+static const ChildTableInfo * const childTables [] = { &wuExceptionsTable, &wuStatisticsTable, &wuGraphProgressTable, &wuResultsTable, &wuVariablesTable, &wuTemporariesTable, &wuFilesReadTable, NULL };
 
 interface ICassandraSession : public IInterface  // MORE - rename!
 {
@@ -1649,69 +1657,6 @@ extern void childXMLtoCassandra(const ICassandraSession *session, CassBatch *bat
     childXMLtoCassandra(session, batch, mappings, inXML->queryName(), elements, defaultValue);
 }
 
-extern void wuResultsXMLtoCassandra(const ICassandraSession *session, CassBatch *batch, IPTree *inXML, const char *xpath)
-{
-    childXMLtoCassandra(session, batch, wuResultsMappings, inXML, xpath, NULL);
-}
-
-extern void wuVariablesXMLtoCassandra(const ICassandraSession *session, CassBatch *batch, IPTree *inXML, const char *xpath, const char *defaultSequence)
-{
-    childXMLtoCassandra(session, batch, wuVariablesMappings, inXML, xpath, defaultSequence);
-}
-
-/*
-extern void cassandraToWuVariablesXML(CassSession *session, const char *wuid, IPTree *wuTree)
-{
-    CassandraResult result(fetchDataForWuid(wuid, session, wuVariablesMappings));
-    Owned<IPTree> variables;
-    Owned<IPTree> temporaries;
-    CassandraIterator rows(cass_iterator_from_result(result));
-    while (cass_iterator_next(rows))
-    {
-        CassandraIterator cols(cass_iterator_from_row(cass_iterator_get_row(rows)));
-        if (!cass_iterator_next(cols))
-            fail("No column found reading wuvariables.sequence");
-        const CassValue *sequenceValue = cass_iterator_get_column(cols);
-        int sequence = getSignedResult(NULL, sequenceValue);
-        Owned<IPTree> child;
-        IPTree *parent;
-        switch (sequence)
-        {
-        case ResultSequenceStored:
-            if (!variables)
-                variables.setown(createPTree("Variables"));
-            child.setown(createPTree("Variable"));
-            parent = variables;
-            break;
-        case ResultSequenceInternal:
-        case ResultSequenceOnce:
-            if (!temporaries)
-                temporaries.setown(createPTree("Temporaries"));
-            child.setown(createPTree("Variable"));
-            parent = temporaries;
-            break;
-        default:
-            throwUnexpected();
-            break;
-        }
-        unsigned colidx = 2;
-        while (cass_iterator_next(cols))
-        {
-            assertex(wuVariablesMappings[colidx].columnName);
-            const CassValue *value = cass_iterator_get_column(cols);
-            if (value && !cass_value_is_null(value))
-                wuVariablesMappings[colidx].mapper.toXML(child, wuVariablesMappings[colidx].xpath, value);
-            colidx++;
-        }
-        const char *childName = child->queryName();
-        parent->addPropTree(childName, child.getClear());
-    }
-    if (variables)
-        wuTree->addPropTree("Variables", variables.getClear());
-    if (temporaries)
-        wuTree->addPropTree("Temporaries", temporaries.getClear());
-}
-*/
 /*
 extern void graphProgressXMLtoCassandra(CassSession *session, IPTree *inXML)
 {
@@ -1815,11 +1760,6 @@ extern void cassandraTestGraphProgressXML()
     cassandraToGraphProgressXML(session, wuid);
 }
 
-extern void cassandraTest()
-{
-    cassandraTestWorkunitXML();
-    //cassandraTestGraphProgressXML();
-}
 */
 
 static IPTree *rowToPTree(const char *xpath, const char *key, const CassandraXmlMapping *mappings, const CassRow *row)
@@ -2555,9 +2495,9 @@ public:
                 // empty newly-created WU, it is unnecessary.
                 //deleteChildren(wuid);
 
-                wuResultsXMLtoCassandra(sessionCache, *batch, p, "Results/Result");
-                wuVariablesXMLtoCassandra(sessionCache, *batch, p, "Variables/Variable", "-1");  // ResultSequenceStored
-                wuVariablesXMLtoCassandra(sessionCache, *batch, p, "Temporaries/Variable", "-3"); // ResultSequenceInternal // NOTE - lookups may also request ResultSequenceOnce
+                childXMLtoCassandra(sessionCache, *batch, wuResultsMappings, p, "Results/Result", "0");
+                childXMLtoCassandra(sessionCache, *batch, wuVariablesMappings, p, "Variables/Variable", "-1"); // ResultSequenceStored
+                childXMLtoCassandra(sessionCache, *batch, wuTemporariesMappings, p, "Temporaries/Variable", "-3"); // ResultSequenceInternal // NOTE - lookups may also request ResultSequenceOnce
                 childXMLtoCassandra(sessionCache, *batch, wuExceptionsMappings, p, "Exceptions/Exception", 0);
                 childXMLtoCassandra(sessionCache, *batch, wuStatisticsMappings, p, "Statistics/Statistic", 0);
                 childXMLtoCassandra(sessionCache, *batch, wuFilesReadMappings, p, "FilesRead/File", 0);
@@ -2587,6 +2527,23 @@ public:
                             toXML(p, xml);
                             DBGLOG("Missing dirty element %s in %s", path, xml.str());
                         }
+                    }
+                }
+                ForEachItemIn(d, dirtyResults)
+                {
+                    IWUResult &result = dirtyResults.item(d);
+                    switch (result.getResultSequence())
+                    {
+                    case ResultSequenceStored:
+                        childXMLRowtoCassandra(sessionCache, *batch, wuVariablesMappings,  wuid, *result.queryPTree(), "-1");
+                        break;
+                    case ResultSequenceInternal:
+                    case ResultSequenceOnce:
+                        childXMLRowtoCassandra(sessionCache, *batch, wuTemporariesMappings,  wuid, *result.queryPTree(), "-3");
+                        break;
+                    default:
+                        childXMLRowtoCassandra(sessionCache, *batch, wuResultsMappings, wuid, *result.queryPTree(), "0");
+                        break;
                     }
                 }
             }
@@ -2729,6 +2686,18 @@ public:
     {
         checkChildLoaded(wuResultsTable);        // Lazy populate the Results branch of p from Cassandra
         CLocalWorkUnit::_loadResults();
+    }
+
+    virtual void _loadVariables() const
+    {
+        checkChildLoaded(wuVariablesTable);        // Lazy populate the Variables branch of p from Cassandra
+        CLocalWorkUnit::_loadVariables();
+    }
+
+    virtual void _loadTemporaries() const
+    {
+        checkChildLoaded(wuTemporariesTable);        // Lazy populate the Temporaries branch of p from Cassandra
+        CLocalWorkUnit::_loadTemporaries();
     }
 
     virtual void _loadStatistics() const
@@ -2914,10 +2883,7 @@ protected:
     IWUResult *noteDirty(IWUResult *result)
     {
         if (result)
-        {
-            VStringBuffer xpath("Results/Result[@sequence='%d']", result->getResultSequence());
-            noteDirty(xpath, wuResultsMappings);
-        }
+            dirtyResults.append(*LINK(result));
         return result;
     }
 
@@ -2934,6 +2900,7 @@ protected:
 
     Owned<CassandraBatch> batch;
     MapStringTo<const CassandraXmlMapping *> dirtyPaths;
+    IArrayOf<IWUResult> dirtyResults;
 };
 
 class CCasssandraWorkUnitFactory : public CWorkUnitFactory, implements ICassandraSession
