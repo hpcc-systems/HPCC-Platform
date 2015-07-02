@@ -3353,8 +3353,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 break;
             case no_inlinetable:
                 {
-                    if (transformContainsSkip(transform))
-                        break;
                     IHqlExpression * ret = optimizeProjectInlineTable(transformed, shared);
                     if (ret)
                         return ret;

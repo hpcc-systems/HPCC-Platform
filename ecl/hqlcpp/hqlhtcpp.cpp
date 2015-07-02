@@ -16904,7 +16904,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     IHqlExpression * self = selfCursor->querySelector();
 
     if (isDataset)
-        associateSkipReturnMarker(funcctx, queryBoolExpr(false), selfCursor);
+        associateSkipReturnMarker(funcctx, queryZero(), selfCursor);
 
     LinkedHqlExpr cseExpr = expr;
     if (options.spotCSE)
@@ -16939,6 +16939,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
 
     BuildCtx funcctx(instance->startctx);
     funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row)");
+    associateSkipReturnMarker(funcctx, queryZero(), NULL);
+
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
