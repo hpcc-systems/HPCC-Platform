@@ -15691,7 +15691,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySectionInput(BuildCtx & ctx, I
 ABoundActivity * HqlCppTranslator::doBuildActivityMetaActivity(BuildCtx & ctx, IHqlExpression * expr)
 {
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, expr->queryChild(0));
-    if (!targetThor())
+    if (targetHThor())
         return boundDataset.getClear();
 
     assertex(expr->hasAttribute(pullAtom));
