@@ -151,6 +151,7 @@ Owned<IProperties> globals;
 
 int main(int argc, const char *argv[])
 {
+    int ret = 0;
     InitModuleObjects();
     unsigned count=0;
     globals.setown(createProperties("WUTEST.INI", true));
@@ -209,8 +210,7 @@ int main(int argc, const char *argv[])
             CppUnit::TextUi::TestRunner runner;
             CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry("WuTest");
             runner.addTest( registry.makeTest() );
-            bool wasSucessful = runner.run( "", false );
-            return wasSucessful;
+            ret = runner.run( "", false );
         }
         else
 #endif
@@ -394,6 +394,7 @@ int main(int argc, const char *argv[])
     }
     closeDllServer();   
     closeEnvironment(); 
+    clientShutdownWorkUnit();
     closedownClientProcess();   // dali client closedown
     if (queryActiveTimer())
     {
@@ -401,7 +402,7 @@ int main(int argc, const char *argv[])
         queryActiveTimer()->reset();
     }
     releaseAtoms();
-    return 0;
+    return ret;
 }
 
 #ifdef _USE_CPPUNIT

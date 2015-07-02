@@ -1141,8 +1141,6 @@ public:
     {
         try
         {
-            //MORE: I'm not convinced this is useful...
-            setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, NULL, StWhenWorkunitModified, NULL, getTimeStampNowValue(), 1, 0, StatsMergeReplace);
             try
             {
                 connection->commit();
@@ -3763,10 +3761,7 @@ void CLocalWorkUnit::unlockRemote()
 {
     CriticalBlock block(crit);
     locked.unlock();
-    if (IsShared())  // Is this right? Doesn't feel right! Commit on last unlock would seem smarter
-    {
-        _unlockRemote();
-    }
+    _unlockRemote();
 }
 
 IWorkUnit &CLocalWorkUnit::lockRemote(bool commit)
