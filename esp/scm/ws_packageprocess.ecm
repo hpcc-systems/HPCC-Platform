@@ -37,6 +37,7 @@ ESPrequest AddPackageRequest
     bool GlobalScope(0);
     string SourceProcess;
     bool AllowForeignFiles(true);
+    [min_ver("1.02")] bool PreloadAllPackages(false);
 };
 
 
@@ -232,7 +233,7 @@ ESPresponse [exceptions_inline] GetPackageMapSelectOptionsResponse
     ESParray<string> ProcessFilters;
 };
 
-ESPservice [version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
+ESPservice [version("1.02"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod AddPackage(AddPackageRequest, AddPackageResponse);
