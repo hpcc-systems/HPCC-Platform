@@ -554,7 +554,13 @@ void CGraphElementBase::onCreate()
     if (!nullAct)
     {
         CGraphElementBase *ownerActivity = owner->queryOwner() ? owner->queryOwner()->queryElement(ownerId) : NULL;
-        baseHelper->onCreate(queryCodeContext(), ownerActivity ? ownerActivity->queryHelper() : NULL, haveCreateCtx?&createCtxMb:NULL);
+        if (ownerActivity)
+        {
+            ownerActivity->onCreate(); // ensure owner created, might not be if this is child query inside another child query.
+            baseHelper->onCreate(queryCodeContext(), ownerActivity->queryHelper(), haveCreateCtx?&createCtxMb:NULL);
+        }
+        else
+            baseHelper->onCreate(queryCodeContext(), NULL, haveCreateCtx?&createCtxMb:NULL);
     }
 }
 
@@ -974,6 +980,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKchildcount:
         case TAKwhen_dataset:
         case TAKwhen_action:
+        case TAKnonempty:
             if (!container.queryLocalOrGrouped())
                 return true;
             break;
@@ -1064,7 +1071,6 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKrowresult:
         case TAKremotegraph:
         case TAKlibrarycall:
-        case TAKnonempty:
         default:
             return true; // if in doubt
     }

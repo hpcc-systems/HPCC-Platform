@@ -25,6 +25,7 @@ FILE(GLOB XSD_FILES RELATIVE "${XSD_SOURCE_DIR}" "${XSD_SOURCE_DIR}/*.xsd")
 
 # Skip some files which cause problem
 LIST(REMOVE_ITEM XSD_FILES "esp_service_wsecl2.xsd")
+LIST(REMOVE_ITEM XSD_FILES "ftslave_linux.xsd")
 
 # process and copy *.xsd.in files
 FOREACH( XSD_TEMPLATE_FILE  ${XSD_TEMPLATE_FILES} )

@@ -1723,7 +1723,6 @@ class CLocalWUResult : public CInterface, implements IWUResult
     mutable CriticalSection crit;
     Owned<IPropertyTree> p;
     Owned<IProperties> xmlns;
-    void getSchema(TypeInfoArray &types, StringAttrArray &names, IStringVal * ecl=NULL) const;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1762,7 +1761,7 @@ public:
     virtual bool        getResultIsAll() const;
     virtual IProperties *queryResultXmlns();
     virtual IStringVal& getResultFieldOpt(const char *name, IStringVal &str) const;
-
+    virtual void getSchema(IArrayOf<ITypeInfo> &types, StringAttrArray &names, IStringVal * ecl=NULL) const;
 
     // interface IWUResult
     virtual void        setResultStatus(WUResultStatus status);
@@ -7545,7 +7544,7 @@ bool findSize(int size, IntArray &sizes)
     return false;
 }
 
-void CLocalWUResult::getSchema(TypeInfoArray &types, StringAttrArray &names, IStringVal * eclText) const
+void CLocalWUResult::getSchema(IArrayOf<ITypeInfo> &types, StringAttrArray &names, IStringVal * eclText) const
 {
     MemoryBuffer schema;
     p->getPropBin("SchemaRaw", schema);
@@ -9470,6 +9469,25 @@ extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr
     return false;
 }
 
+void getSimpleResultType(IWUResult *r, Owned<ITypeInfo> &type)
+{
+    TypeInfoArray types;
+    StringAttrArray names;
+    r->getSchema(types, names, NULL);
+    if (types.ordinality()==1)
+        type.set(&types.item(0));
+}
+
+bool isSuppliedParamScalar(IWUResult *r, IPropertyTree &curVal, Owned<ITypeInfo> &type)
+{
+    if (!r->isResultScalar())
+        return false;
+    if (!curVal.hasChildren())
+        return true;
+    getSimpleResultType(r, type);
+    return type && type->isScalar();
+}
+
 void updateSuppliedXmlParams(IWorkUnit * w)
 {
     Owned<const IPropertyTree> params = w->getXmlParams();
@@ -9483,8 +9501,9 @@ void updateSuppliedXmlParams(IWorkUnit * w)
         Owned<IWUResult> r = updateWorkUnitResult(w, name, -1);
         if (r)
         {
+            Owned<ITypeInfo> type;
             StringBuffer s;
-            if (r->isResultScalar() && !curVal.hasChildren())
+            if (isSuppliedParamScalar(r, curVal, type))
             {
                 curVal.getProp(".", s);
                 r->setResultXML(s);
@@ -9493,7 +9512,9 @@ void updateSuppliedXmlParams(IWorkUnit * w)
             else
             {
                 toXML(&curVal, s);
-                bool isSet = (curVal.hasProp("Item") || curVal.hasProp("string"));
+                if (!type)
+                    getSimpleResultType(r, type);
+                bool isSet = (type && type->getTypeCode()==type_set);
                 r->setResultRaw(s.length(), s.str(), isSet ? ResultFormatXmlSet : ResultFormatXml);
             }
         }

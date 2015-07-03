@@ -47,5 +47,15 @@ if [ -f ${CONFIG_DIR}/installed ] ; then
     rm ${CONFIG_DIR}/installed
 fi
 
+# Check if install dir is a link
+#######################
+if [[ -n ${INSTALL_DIR} ]] ; then
+#  trim for readlink
+   ins_dir=$(echo "${INSTALL_DIR}" | sed 's/\/*$//')
+   if [[ -h ${ins_dir} ]] ; then
+       echo "$(readlink "${ins_dir}") ${INSTALL_DIR}" > /tmp/.hpccinslink
+   fi
+fi
+
 exit 0
  

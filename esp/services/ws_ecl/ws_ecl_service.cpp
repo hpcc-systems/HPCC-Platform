@@ -1157,7 +1157,7 @@ void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wuinfo, IPropertyTree *parmTre
             }
 
             schema.appendf("<xsd:element minOccurs=\"0\" maxOccurs=\"1\" name=\"%s\" type=\"%s\"", name, type.str());
-            if (part.hasProp("@width") || part.hasProp("@height"))
+            if (part.hasProp("@width") || part.hasProp("@height") || part.hasProp("@password"))
             {
                 schema.append("><xsd:annotation><xsd:appinfo><form");
                 unsigned rows = part.getPropInt("@height");

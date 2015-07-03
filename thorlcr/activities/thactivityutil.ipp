@@ -190,8 +190,12 @@ StringBuffer &locateFilePartPath(CActivityBase *activity, const char *logicalFil
 void doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFileProgress *iProgress=NULL);
 void cancelReplicates(CActivityBase *activity, IPartDescriptor &partDesc);
 
+#define TW_Extend 0x01
+#define TW_Direct 0x02
+#define TW_External 0x04
+#define TW_RenameToPrimary 0x08
 interface IPartDescriptor;
-IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned recordSize, bool &compress, bool extend, ICompressor *ecomp, ICopyFileProgress *iProgress, bool direct, bool renameToPrimary, bool *aborted, StringBuffer *_locationName=NULL);
+IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned recordSize, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_locationName=NULL);
 
 
 #endif

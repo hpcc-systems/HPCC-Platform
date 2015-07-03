@@ -196,6 +196,7 @@ define([
                             break;
                         case "Workunit XML":
                         case "Archive Query":
+                        case "xml":
                             sourceMode = "xml";
                             break;
                     }
@@ -208,7 +209,7 @@ define([
                             params: {
                                 Wuid: Wuid,
                                 sourceMode: sourceMode,
-                                sourceURL: this._getURL(row)
+                                sourceURL: this._getURL(row, id)
                             }
                         }
                     });

@@ -109,6 +109,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_COMMENT "--comment"
 
 #define ECLOPT_CHECK_PACKAGEMAPS "--check-packagemaps"
+#define ECLOPT_PRELOAD_ALL_PACKAGES "--preload-all"
 
 #define ECLOPT_EXCEPTION_LEVEL "--exception-level"
 #define ECLOPT_RESULT_LIMIT "--limit"
