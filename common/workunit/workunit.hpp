@@ -268,6 +268,7 @@ enum WUResultFormat
 };
 
 
+interface ITypeInfo;
 
 interface IConstWUResult : extends IInterface
 {
@@ -302,6 +303,7 @@ interface IConstWUResult : extends IInterface
     virtual bool getResultIsAll() const = 0;
     virtual const IProperties *queryResultXmlns() = 0;
     virtual IStringVal &getResultFieldOpt(const char *name, IStringVal &str) const = 0;
+    virtual void getSchema(IArrayOf<ITypeInfo> &types, StringAttrArray &names, IStringVal * eclText) const = 0;
 };
 
 
