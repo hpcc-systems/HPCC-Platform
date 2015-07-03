@@ -318,7 +318,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("mysql: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", field->name->str());
+        msg.appendf(" for field %s", field->name->queryStr());
     rtlFail(0, msg.str());
 }
 
@@ -604,7 +604,7 @@ protected:
             fail("Too many fields in ECL output row");
         const MYSQL_BIND &column = resultInfo.queryColumn(colIdx);
         if (*column.error)
-            failx("Error fetching column %s", field->name->str());
+            failx("Error fetching column %s", field->name->queryStr());
         return column;
     }
     const MySQLBindingArray &resultInfo;

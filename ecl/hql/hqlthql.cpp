@@ -214,7 +214,7 @@ HqltHql::~HqltHql()
 StringBuffer & HqltHql::appendId(StringBuffer & s, IIdAtom * id)
 {
     //MORE: We may want to lose the case conversion and use return s.append(id->str());
-    return s.append(id->lower()->str());
+    return s.append(str(lower(id)));
 }
 
 
@@ -229,7 +229,7 @@ StringBuffer &HqltHql::makeUniqueName(IHqlExpression * expr, StringBuffer &s)
                 appendId(s, moduleName).append(".");
             else
             {
-                const char * moduleNameText = moduleName->lower()->str();
+                const char * moduleNameText = str(lower(moduleName));
                 loop
                 {
                     const char * dot = strchr(moduleNameText, '.');
@@ -286,7 +286,7 @@ IHqlExpression * HqltHql::queryMapped(IHqlExpression * expr)
         IHqlExpression * extra = (IHqlExpression *)expr->queryTransformExtra();
         if (!extra || extra->isAttribute() || extra == expr)
             return expr;
-        if (expr->queryName() == unnamedId->lower())
+        if (expr->queryName() == lower(unnamedId))
             return expr;
         expr = extra;
     }
@@ -410,7 +410,7 @@ IHqlExpression * HqltHql::querySymbolDefined(IHqlExpression * expr)
 
         if(extra->queryName() && xxx.length())
         {
-            if(!stricmp(extra->queryName()->str(), xxx.str()))
+            if(!stricmp(str(extra->queryName()), xxx.str()))
                 return item;
         }
     }
@@ -878,7 +878,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             callEclFunction(s, expr, inType);
         }
     }
-    else if (!expandNamed && !expr->isAttribute() && expr->queryId() && expr->queryId()->lower() != unnamedId->lower() )
+    else if (!expandNamed && !expr->isAttribute() && expr->queryId() && lower(expr->queryId()) != lower(unnamedId) )
     {
         appendId(s, expr->queryId());
     }
@@ -2836,7 +2836,7 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
         }
 
         StringBuffer tmp;
-        if(expr->queryName()==unnamedId->lower())
+        if(expr->queryName()==lower(unnamedId))
         {
             HqlExprArray * visited = findVisitedArray();
             for (unsigned idx = 0; idx < visited->ordinality(); idx++)

@@ -580,14 +580,14 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     {
         if (foldOptions & HFOthrowerror)
             throw MakeStringException(ERR_PARAM_TOOMANY,"Too many parameters passed to function '%s': expected %d, given %d", 
-                                      expr->queryName()->str(), numParam, numArg);
+                                      str(expr->queryName()), numParam, numArg);
         return NULL;
     }
     else if(numParam < numArg) 
     {
         if (foldOptions & HFOthrowerror)
             throw MakeStringException(ERR_PARAM_TOOFEW,"Not enough parameters passed to function '%s': expected %d, given %d", 
-                                      expr->queryName()->str(), numParam, numArg);
+                                      str(expr->queryName()), numParam, numArg);
         return NULL;
     }
 
@@ -4233,9 +4233,9 @@ IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
     MemoryAttr lower(size);
     memcpy(lower.bufferBase(), data, size);
     if (type->getTypeCode() == type_utf8)
-        rtlUtf8ToLower(stringLen, (char *)lower.get(), type->queryLocale()->str());
+        rtlUtf8ToLower(stringLen, (char *)lower.get(), str(type->queryLocale()));
     else if (isUnicodeType(type))
-        rtlUnicodeToLower(stringLen, (UChar *)lower.get(), type->queryLocale()->str());
+        rtlUnicodeToLower(stringLen, (UChar *)lower.get(), str(type->queryLocale()));
     else
     {
         if (type->queryCharset()->queryName() == ebcdicAtom)
@@ -4739,7 +4739,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                                 //Following would be sensible, but can't call transform at this point, so replace arg, and wait for it to re-iterate
                                 IIdAtom * nameF = expr->queryId();
                                 IIdAtom * nameP = child->queryId();
-                                DBGLOG("Folder: Combining FILTER %s with %s %s produces constant filter", nameF ? nameF->str() : "", getOpString(child->getOperator()), nameP ? nameP->str() : "");
+                                DBGLOG("Folder: Combining FILTER %s with %s %s produces constant filter", nameF ? str(nameF) : "", getOpString(child->getOperator()), nameP ? str(nameP) : "");
                                 expandedFilter.setown(transformExpanded(expandedFilter));
                                 IValue * value = expandedFilter->queryValue();
                                 if (value)

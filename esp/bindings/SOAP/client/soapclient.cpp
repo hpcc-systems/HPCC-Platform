@@ -168,6 +168,8 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
         }
     }
 
+    if (!soap_request.get() || !soap_response.get())
+        throw MakeStringException(-1, "request or response is NULL");
     m_transportclient->postRequest(*soap_request.get(), *soap_response.get());
 
     int retstatus = soap_response->get_status();
@@ -353,6 +355,8 @@ int CSoapClient::postRequest(IRpcMessage & rpccall, StringBuffer & responsebuf, 
         }
     }
 
+    if (!soap_request.get() || !soap_response.get())
+        throw MakeStringException(-1, "request or response is NULL");
     m_transportclient->postRequest(*soap_request.get(), *soap_response.get());
 
     int retstatus = soap_response->get_status();
