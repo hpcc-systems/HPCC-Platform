@@ -285,7 +285,7 @@ public:
 protected:
     void addField(const RtlFieldInfo * field)
     {
-        namevec.push_back(field->name->str());
+        namevec.push_back(field->name->queryStr());
     }
 };
 
