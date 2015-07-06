@@ -847,8 +847,9 @@ define([
                 request: {
                     Wuid: this.Wuid,
                     GraphName: this.graphs[idx].Name
-                },
-                load: function (response) {
+                }
+            }).then(function (response) {
+                if (lang.exists("WUGetGraphResponse.Graphs.ECLGraphEx", response) && response.WUGetGraphResponse.Graphs.ECLGraphEx.length) {
                     context.graphs[idx].xgmml = response.WUGetGraphResponse.Graphs.ECLGraphEx[0].Graph;
                     onFetchGraphXgmml(context.graphs[idx].xgmml, context.graphs[idx].svg);
                 }
