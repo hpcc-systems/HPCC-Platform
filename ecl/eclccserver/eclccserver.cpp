@@ -355,6 +355,22 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             workunit->getDebugValue(debugStr.str(), valueStr);
             processOption(debugStr.str(), valueStr.str(), eclccCmd, eclccProgName, *pipe, true);
         }
+        // Process cpp options
+        Owned<IStringIterator> cppOptions = &workunit->getCppOptions();
+        ForEach (*cppOptions)
+        {
+            SCMStringBuffer cppOptStr;
+            cppOptions->str(cppOptStr);
+            const char * opt = cppOptStr.str();
+            if ( workunit->getCppOption(opt, false))
+            {
+                if ('f' == *opt)
+                    eclccCmd.appendf(" -Wc,-").appendf(opt);
+                else if ('l' == *opt)
+                    eclccCmd.appendf(" -Wl,-").appendf(opt);
+            }
+        }
+
         if (workunit->getResultLimit())
         {
             eclccCmd.appendf(" -fapplyInstantEclTransformations=1 -fapplyInstantEclTransformationsLimit=%u", workunit->getResultLimit());

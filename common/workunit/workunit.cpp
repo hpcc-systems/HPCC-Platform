@@ -1636,6 +1636,14 @@ public:
             { c->setResultDecimal(name, sequence, len,  precision, isSigned, val); }
     virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend)
             { c->setResultDataset(name, sequence, len, val, numRows, extend); }
+    virtual bool getCppOption(const char * propname, bool defVal) const
+            { return c->getCppOption(propname, defVal); }
+    virtual IStringIterator & getCppOptions() const
+            { return c->getCppOptions(NULL); }
+    virtual IStringIterator & getCppOptions(const char * prop) const
+            { return c->getCppOptions(prop); }
+    virtual void setCppOption(const char * propname, bool value, bool overwrite)
+            { c->setCppOption(propname, value, overwrite); }
 };
 
 class CLocalWUAssociated : public CInterface, implements IConstWUAssociatedFile
@@ -5292,6 +5300,36 @@ IStringVal& CLocalWorkUnit::getDebugValue(const char *propname, IStringVal &str)
     return str;
 }
 
+bool CLocalWorkUnit::getCppOption(const char * propname, bool defVal) const
+{
+    StringBuffer lower;
+    lower.append(propname).toLowerCase();
+    CriticalBlock block(crit);
+    StringBuffer prop("CppOpt/");
+    prop.append(lower);
+    return p->getPropBool(prop.str(), defVal);
+}
+
+IStringIterator & CLocalWorkUnit::getCppOptions() const
+{
+    return getCppOptions(NULL);
+}
+
+IStringIterator & CLocalWorkUnit::getCppOptions(const char * prop) const
+{
+    CriticalBlock block(crit);
+        StringBuffer path("CppOpt/");
+        if (prop)
+        {
+            StringBuffer lower;
+            lower.append(prop).toLowerCase();
+            path.append(lower);
+        }
+        else
+            path.append("*");
+        return *new CStringPTreeTagIterator(p->getElements(path.str()));
+}
+
 IStringIterator& CLocalWorkUnit::getDebugValues() const
 {
     return getDebugValues(NULL);
@@ -5410,6 +5448,21 @@ void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool
         // MORE - not sure this line should be needed....
         p->setProp("Debug", ""); 
         p->setProp(prop.str(), value); 
+    }
+}
+
+void CLocalWorkUnit::setCppOption(const char * propname, bool value, bool overwrite)
+{
+    StringBuffer lower;
+    lower.append(propname).toLowerCase();
+    CriticalBlock block(crit);
+    StringBuffer prop("CppOpt/");
+    prop.append(lower);
+    if (overwrite || !p->hasProp(prop.str()))
+    {
+        // MORE - not sure this line should be needed....
+        p->setProp("CppOpt", "");
+        p->setPropBool(prop.str(), value);
     }
 }
 

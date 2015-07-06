@@ -2986,7 +2986,7 @@ void WsWuHelpers::setXmlParameters(IWorkUnit *wu, const char *xml, IArrayOf<ICon
 }
 
 void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, bool resetVariables,
-    const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
+    const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs, IArrayOf<IConstNamedValue> *cppOptions)
 {
     ensureWsWorkunitAccess(context, *cw, SecAccess_Write);
     switch(cw->getState())
@@ -3040,6 +3040,25 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
             wu->setDebugValue(name, value, true);
         }
     }
+    if (cppOptions && cppOptions->length())
+        {
+            ForEachItemIn(i, *cppOptions)
+            {
+                IConstNamedValue &item = cppOptions->item(i);
+                const char *name = item.getName();
+                // Skip 'Wc-,-' or 'Wl,-' part of the option name
+                name += 5;
+                const char *value = item.getValue();
+                if (!name || !*name)
+                    continue;
+                if (!value)
+                {
+                    wu->setCppOption(name, true, true);
+                    continue;
+                }
+                wu->setCppOption(name, value, true);
+            }
+        }
 
     if (resetWorkflow)
         wu->resetWorkflow();
@@ -3075,13 +3094,13 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
 }
 
 void WsWuHelpers::submitWsWorkunit(IEspContext& context, const char *wuid, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, bool resetVariables,
-    const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
+    const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs, IArrayOf<IConstNamedValue> *cppOptions)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
     if(!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
-    return submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, resetVariables, paramXml, variables, debugs);
+    return submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, resetVariables, paramXml, variables, debugs, cppOptions);
 }
 
 

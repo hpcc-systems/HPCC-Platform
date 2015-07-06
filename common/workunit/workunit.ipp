@@ -503,6 +503,11 @@ public:
         }
     }
 
+    virtual void setCppOption(const char * propname, bool value, bool overwrite);
+    virtual bool getCppOption(const char * propname, bool defVal) const;
+    virtual IStringIterator & getCppOptions() const;
+    virtual IStringIterator & getCppOptions(const char * prop) const;
+
 protected:
     IWUResult *updateResult(const char *name, unsigned sequence)
     {

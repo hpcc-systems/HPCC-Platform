@@ -135,6 +135,11 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
     if (cmd.optSnapshot.length())
         req->setSnapshot(cmd.optSnapshot);
     expandDefintionsAsDebugValues(cmd.definitions, cmd.debugValues);
+    if (cmd.cppOptions.length())
+    {
+        req->setCppOptions(cmd.cppOptions);
+        cmd.cppOptions.kill();
+    }
     if (cmd.debugValues.length())
     {
         req->setDebugValues(cmd.debugValues);
