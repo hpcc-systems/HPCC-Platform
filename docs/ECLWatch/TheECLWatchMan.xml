@@ -111,9 +111,9 @@
       <!--***Note specific Activity task details have been REMOVED (to DocShare/WKSPCE/ECLWa400)***-->
 
       <para>When ECL Watch starts it defaults to the Activity page. To access
-      the Activity page from any other page in ECL Watch click on the HPCC
-      Platform image at the top of any page, as indicated the preceding
-      image.</para>
+      the Activity page from any other page in ECL Watch click on the
+      <emphasis role="bold">ECL Watch</emphasis> image at the top of any page,
+      as indicated the preceding image.</para>
 
       <para>Activity related tasks can also be initiated from the workunit tab
       for the specific job in question.</para>
@@ -198,10 +198,26 @@
       </sect2>
 
       <sect2 id="AutoRefresh">
-        <title>Autorefresh</title>
+        <title>Auto Refresh</title>
 
-        <para>Autorefresh on the Activity page is disabled by default. To
-        enable autorefresh, toggle the autorefresh button. </para>
+        <para><figure>
+            <title>Auto Refresh</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA011b.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>The Auto Refresh feature will refresh any active ECL or DFU
+        workunits either running or in the queue on your cluster in real time.
+        </para>
+
+        <para>Auto Refresh on the <emphasis role="bold">Activity</emphasis>
+        page is disabled by default. To enable Auto Refresh, toggle the Auto
+        Refresh button. </para>
+
+        <para>In an environment with a large number of active users, Auto
+        Refresh could impact performance of your ESP server.</para>
       </sect2>
     </sect1>
 
