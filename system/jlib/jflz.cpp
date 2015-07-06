@@ -606,22 +606,25 @@ static FASTLZ_INLINE int FASTLZ_DECOMPRESSOR(const void* input, int length, void
 class jlib_decl CFastLZCompressor : public CInterface, public ICompressor
 {
     HTAB_T ht;
-    size32_t blksz;         
+    size32_t blksz;
     size32_t bufalloc;
-    MemoryAttr inma;        // equals blksize len
+    MemoryBuffer inma;      // equals blksize len
+    MemoryBuffer *outBufMb; // used when dynamic output buffer (when open() used)
+    size32_t outBufStart;
     byte *inbuf;
     size32_t inmax;         // remaining
-    size32_t inlen;         
+    size32_t inlen;
     size32_t inlenblk;      // set to COMMITTED when so
     bool trailing;
     byte *outbuf;
     size32_t outlen;
     size32_t wrmax;
+    size32_t dynamicOutSz;
 
     inline void setinmax()
     {
         inmax = blksz-outlen-sizeof(size32_t);
-        if (inmax<256)      
+        if (inmax<256)
             trailing = true;    // too small to bother compressing
         else {
             trailing = false;
@@ -640,16 +643,29 @@ class jlib_decl CFastLZCompressor : public CInterface, public ICompressor
         size32_t toflush = (inlenblk==COMMITTED)?inlen:inlenblk;
         if (toflush == 0)
             return;
-        assertex(outlen+sizeof(size32_t)*2+toflush+fastlzSlack(toflush)<=blksz);
+        size32_t outSzRequired = outlen+sizeof(size32_t)*2+toflush+fastlzSlack(toflush);
+        if (!dynamicOutSz)
+            assertex(outSzRequired<=blksz);
+        else
+        {
+            if (outSzRequired>dynamicOutSz)
+            {
+                verifyex(outBufMb->ensureCapacity(outBufStart+outSzRequired));
+                dynamicOutSz = outBufMb->capacity();
+                outbuf = ((byte *)outBufMb->bufferBase()+outBufStart);
+            }
+        }
         size32_t *cmpsize = (size32_t *)(outbuf+outlen);
         byte *out = (byte *)(cmpsize+1);
         *cmpsize = (size32_t)fastlz_compress(inbuf, (int)toflush, out, ht);
-        if (*cmpsize<toflush) {
+        if (*cmpsize<toflush)
+        {
             *(size32_t *)outbuf += toflush;
             outlen += *cmpsize+sizeof(size32_t);
             if (inlenblk==COMMITTED)
                 inlen = 0;
-            else {
+            else
+            {
                 inlen -= inlenblk;
                 memmove(inbuf,inbuf+toflush,inlen);
             }
@@ -659,7 +675,15 @@ class jlib_decl CFastLZCompressor : public CInterface, public ICompressor
         trailing = true;
     }
 
-
+    void initCommon()
+    {
+        blksz = inma.capacity();
+        *(size32_t *)outbuf = 0;
+        outlen = sizeof(size32_t);
+        inlen = 0;
+        inlenblk = COMMITTED;
+        setinmax();
+    }
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -669,6 +693,10 @@ public:
         outbuf = NULL;      // only set on close
         bufalloc = 0;
         wrmax = 0;          // set at open
+        dynamicOutSz = 0;
+        outBufMb = NULL;
+        outBufStart = 0;
+        inbuf = NULL;
     }
 
     virtual ~CFastLZCompressor()
@@ -680,34 +708,50 @@ public:
 
     virtual void open(void *buf,size32_t max)
     {
+        if (max<1024)
+            throw MakeStringException(-1,"CFastLZCompressor::open - block size (%d) not large enough", blksz);
         wrmax = max;
-        if (buf) {
-            if (bufalloc) {
+        if (buf)
+        {
+            if (bufalloc)
                 free(outbuf);
-            }
             bufalloc = 0;
             outbuf = (byte *)buf;
         }
-        else if (max>bufalloc) {
+        else if (max>bufalloc)
+        {
             if (bufalloc)
                 free(outbuf);
             bufalloc = max;
             outbuf = (byte *)malloc(bufalloc);
         }
-        blksz = max;
-        if (blksz!=inma.length())
-            inbuf = (byte *)inma.allocate(blksz);
-        else
-            inbuf = (byte *)inma.bufferBase();
-        if (blksz<1024)
-            throw MakeStringException(-1,"CFastLZCompressor::open - block size (%d) not large enough", blksz);
-        *(size32_t *)outbuf = 0;
-        outlen = sizeof(size32_t);
-        inlen = 0;
-        inlenblk = COMMITTED;
-        setinmax();
+        outBufMb = NULL;
+        outBufStart = 0;
+        dynamicOutSz = 0;
+        inbuf = (byte *)inma.ensureCapacity(max);
+        initCommon();
     }
-    
+
+    virtual void open(MemoryBuffer &mb, size32_t initialSize)
+    {
+        if (!initialSize)
+            initialSize = 0x100000; // 1MB
+        if (initialSize<1024)
+            throw MakeStringException(-1,"CFastLZCompressor::open - block size (%d) not large enough", initialSize);
+        wrmax = initialSize;
+        if (bufalloc)
+        {
+            free(outbuf);
+            bufalloc = 0;
+        }
+        inbuf = (byte *)inma.ensureCapacity(initialSize);
+        outBufMb = &mb;
+        outBufStart = mb.length();
+        outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
+        dynamicOutSz = outBufMb->capacity();
+        initCommon();
+    }
+
     virtual void close()
     {
         if (inlenblk!=COMMITTED) {
@@ -723,12 +767,17 @@ public:
         outlen = totlen;
         *(size32_t *)outbuf += inlen;
         inbuf = NULL;
+        if (outBufMb)
+        {
+            outBufMb->setWritePos(outBufStart+outlen);
+            outBufMb = NULL;
+        }
     }
 
 
     size32_t write(const void *buf,size32_t len)
     {
-        // no more than wrmax per write
+        // no more than wrmax per write (unless dynamically sizing)
         size32_t lenb = wrmax;
         byte *b = (byte *)buf;
         size32_t written = 0;
@@ -736,12 +785,26 @@ public:
         {
             if (len < lenb)
                 lenb = len;
-            if (lenb+inlen>inmax) {
+            if (lenb+inlen>inmax)
+            {
                 if (trailing)
                     return written;
                 flushcommitted();
                 if (lenb+inlen>inmax)
+                {
+                    if (outBufMb) // sizing input buffer, but outBufMb!=NULL is condition of whether in use or not
+                    {
+                        blksz += len > 0x100000 ? len : 0x100000;
+                        verifyex(inma.ensureCapacity(blksz));
+                        blksz = inma.capacity();
+                        inbuf = (byte *)inma.bufferBase();
+                        wrmax = blksz;
+                        setinmax();
+                    }
                     lenb = inmax-inlen;
+                    if (len < lenb)
+                        lenb = len;
+                }
             }
             if (lenb == 0)
                 return written;

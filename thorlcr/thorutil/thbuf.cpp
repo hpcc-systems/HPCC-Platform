@@ -473,9 +473,6 @@ public:
         size32_t sz = 0;
         if (row) {
             sz = thorRowMemoryFootprint(rowIf->queryRowSerializer(), row);
-#ifdef _DEBUG
-            assertex(sz<0x1000000);
-#endif
             assertex((int)sz>=0); // trap invalid sizes a bit earlier
 
 #ifdef _TRACE_SMART_PUTGET
