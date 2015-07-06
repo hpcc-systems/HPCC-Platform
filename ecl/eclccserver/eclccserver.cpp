@@ -274,6 +274,8 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             }
             else if (stricmp(optName, "compileOption") == 0)
                 eclccCmd.appendf(" -Wc,%s", value);
+            else if (stricmp(optName, "linkOption") == 0)
+                eclccCmd.appendf(" -Wl,%s", value);
             else if (stricmp(optName, "includeLibraryPath") == 0)
                 eclccCmd.appendf(" -I%s", value);
             else if (stricmp(optName, "libraryPath") == 0)
