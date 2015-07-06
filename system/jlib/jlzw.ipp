@@ -46,6 +46,7 @@ public:
 
     CLZWCompressor(bool _supportbigendian);
     virtual         ~CLZWCompressor();
+    virtual void    open(MemoryBuffer &mb, size32_t initialSize);
     virtual void    open(void *blk,size32_t blksize);
     virtual void    close();
     virtual size32_t    write(const void *buf,size32_t len);
@@ -56,6 +57,8 @@ public:
 
 protected:
     void flushbuf();
+    void initCommon();
+    void ensure(size32_t sz);
     virtual void initdict();
     size32_t inlen;
     size32_t inlenblk;
@@ -67,10 +70,11 @@ protected:
     unsigned char *outbytes;  // byte output
     unsigned char *outbits;   // for trailing bits
     unsigned char *outnext;   // next block
-    unsigned char *inlast;    // for xoring
     unsigned char inuseflag;
     unsigned char outbitbuf;
     unsigned curShift;
+    size32_t outBufStart;
+    MemoryBuffer *outBufMb;
 
     LZWDictionary dict;
     unsigned char dictinuse[LZW_HASH_TABLE_SIZE];
