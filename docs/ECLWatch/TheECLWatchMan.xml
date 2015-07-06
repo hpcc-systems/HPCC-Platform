@@ -205,16 +205,16 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/ECLWA011b.jpg" />
+                <imagedata fileref="images/ECLWA011.jpg" />
               </imageobject>
             </mediaobject>
-          </figure>The Auto Refresh feature will refresh any active ECL or DFU
-        workunits either running or in the queue on your cluster in real time.
-        </para>
+          </figure>The <emphasis role="bold">Activity</emphasis> page displays
+        active ECL or DFU workunits either running or in the queue on your
+        cluster. To refresh the list, press the <emphasis
+        role="bold">Refresh</emphasis> button. Auto Refresh shows the list in
+        real-time, but this feature is disabled by default. </para>
 
-        <para>Auto Refresh on the <emphasis role="bold">Activity</emphasis>
-        page is disabled by default. To enable Auto Refresh, toggle the Auto
-        Refresh button. </para>
+        <para>To enable Auto Refresh, toggle the Auto Refresh button. </para>
 
         <para>In an environment with a large number of active users, Auto
         Refresh could impact performance of your ESP server.</para>
