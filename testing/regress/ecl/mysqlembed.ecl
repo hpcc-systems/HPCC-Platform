@@ -31,7 +31,8 @@ childrec := RECORD
    DATA d {default (D'999999')},
    DECIMAL10_2 ddd {default(9.99)},
    UTF8 u1 {default(U'9999 ß')},
-   UNICODE8 u2 {default(U'9999 ßßßß')}
+   UNICODE8 u2 {default(U'9999 ßßßß')},
+   STRING19 dt {default('1963-11-22 12:30:00')},
 END;
 
 stringrec := RECORD
@@ -43,18 +44,18 @@ stringrec extractName(childrec l) := TRANSFORM
 END;
 
 init := DATASET([{'name1', 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße'},
-                 {'name2', 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là'}], childrec);
+                 {'name2', 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là', '2015-12-25 01:23:45' }], childrec);
 
 drop() := EMBED(mysql : user('rchapman'),database('test'))
   DROP TABLE IF EXISTS tbl1;
 ENDEMBED;
 
 create() := EMBED(mysql : user('rchapman'),database('test'))
-  CREATE TABLE tbl1 ( name VARCHAR(20), value INT, boolval TINYINT, r8 DOUBLE, r4 FLOAT, d BLOB, ddd DECIMAL(10,2), u1 VARCHAR(10), u2 VARCHAR(10) );
+  CREATE TABLE tbl1 ( name VARCHAR(20), value INT, boolval TINYINT, r8 DOUBLE, r4 FLOAT, d BLOB, ddd DECIMAL(10,2), u1 VARCHAR(10), u2 VARCHAR(10), dt DATETIME );
 ENDEMBED;
 
 initialize(dataset(childrec) values) := EMBED(mysql : user(myUser),database(myDb))
-  INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?);
+  INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 ENDEMBED;
 
 initializeNulls() := EMBED(mysql : user('rchapman'),database(myDb))
@@ -62,7 +63,7 @@ initializeNulls() := EMBED(mysql : user('rchapman'),database(myDb))
 ENDEMBED;
 
 initializeUtf8() := EMBED(mysql : user(myUser),database('test'))
-  INSERT INTO tbl1 values ('utf8test', 1, 1, 1.2, 3.4, 'aa55aa55', 1234567.89, 'Straße', 'Straße');
+  INSERT INTO tbl1 values ('utf8test', 1, 1, 1.2, 3.4, 'aa55aa55', 1234567.89, 'Straße', 'Straße', '2019-02-01 23:59:59');
 ENDEMBED;
 
 dataset(childrec) testMySQLDS() := EMBED(mysql : user('rchapman'),database('test'))
@@ -125,6 +126,16 @@ UNICODE testMySQLUnicode() := EMBED(mysql : user('rchapman'),database('test'))
   SELECT max(u2) from tbl1;
 ENDEMBED;
 
+datetimerec := RECORD
+   UNSIGNED8 dt1;
+   STRING19 dt2;
+END;
+
+dataset(datetimerec) testMySQLDateTime() := EMBED(mysql : user('rchapman'),database('test'))
+  SELECT dt, dt from tbl1;
+ENDEMBED;
+
+
 sequential (
   drop(),
   create(),
@@ -143,5 +154,6 @@ sequential (
   OUTPUT(testMySQLReal4()),
   OUTPUT(testMySQLData()),
   OUTPUT(testMySQLUtf8()),
-  OUTPUT(testMySQLUnicode())
+  OUTPUT(testMySQLUnicode()),
+  OUTPUT(testMySQLDateTime())
 );
