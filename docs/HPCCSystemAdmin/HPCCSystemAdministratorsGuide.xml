@@ -1552,50 +1552,46 @@ lock=/var/lock/HPCCSystems</programlisting>
       <sect2 id="SysAdm_BestPrac_HugePages">
         <title>Huge Pages</title>
 
-        <para>Your system may run faster and benefit from setting up huge page
-        support. Huge pages of the appropriate type and size need to be
-        allocated from the operating system. Set up huge page support in the
-        OS then enable the huge page support setting(s) in your HPCC
-        configuration. A newer operating system typically has Transparent Huge
-        Pages (THP) available by default. </para>
+        <para>Linux uses pages as its basic units of memory. Your system may
+        run faster and benefit from huge page support. Huge pages of the
+        appropriate type and size need to be allocated from the operating
+        system. Almost all current Linux systems are set up with Transparent
+        Huge Pages (THP) available by default. </para>
 
         <para>Thor, Roxie, and ECL Agent clusters all have options in the
         configuration to enable huge page support. The Transparent Huge Pages
         are enabled for Thor, Roxie, and ECL Agent clusters in the default
-        HPCC environment. Thor clusters stand to benefit more from huge pages
-        than can Roxie. </para>
+        HPCC environment. Thor clusters can stand to benefit more from huge
+        pages than can Roxie.</para>
 
-        <para>Determine if your OS supports transparent huge pages or huge
-        page support. Consult your OS documentation and determine how to
-        enable huge page support. For example, the administrator can allocate
-        persistent huge pages (for the appropriate OS) on the kernel boot
-        command line by specifying the "hugepages=N" parameter at boot.
-        </para>
-
-        <para>You can use Transparent Huge Pages (THP), as long as the OS is
-        set up for it, and just about all current OS support it by default.
-        You can check the file /sys/kernel/mm/transparent_hugepage/enabled to
-        see what the OS setting is. With THP you do not have to explicitly set
-        a size. </para>
+        <para>You can check the file
+        /sys/kernel/mm/transparent_hugepage/enabled to see what your OS
+        setting is. With THP you do not have to explicitly set a size. If your
+        system is not configured to use THP, then you may want to implement
+        Huge Pages. </para>
 
         <sect3 id="SysAdm_BestPrac_SetUpHuge_Pgs">
           <title>Setting up Huge Pages</title>
 
+          <para>To set up huge page support, consult your OS documentation and
+          determine how to enable huge page support. For example, the
+          administrator can allocate persistent huge pages (for the
+          appropriate OS) on the kernel boot command line by specifying the
+          "hugepages=N" parameter at boot. With huge pages you also need to
+          explicitly allocate the size. </para>
+
           <para>In HPCC, there are three places in the configuration manager
-          to set the attributes to use Huge Pages or Transparent Huge
-          Pages.</para>
+          to set the attributes to use Huge Pages. </para>
 
           <para>There are attributes in each component, in the ECL Agent
           attributes, in Roxie attributes, and in Thor attributes. In each
-          component there are two values: </para>
+          component there are two values:</para>
 
           <programlisting>heapUseHugePages  
 heapUseTransparentHugePages</programlisting>
 
-          <para>Disable the THP settings in your HPCC configuration if your
-          system is not using THP. Enable Huge Pages for the component(s) you
-          wish, after verifying that the support is enabled in your OS.
-          </para>
+          <para>Enable Huge Pages in your operating system, then configure
+          HPCC for the component(s) you wish.</para>
         </sect3>
       </sect2>
     </sect1>
