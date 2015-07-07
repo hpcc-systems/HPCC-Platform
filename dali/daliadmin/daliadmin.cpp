@@ -2416,14 +2416,14 @@ static void unlock(const char *pattern)
 static void dumpWorkunit(const char *wuid, bool includeProgress)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
     exportWorkUnitToXMLFile(workunit, "stdout:", 0, true, includeProgress, true);
 }
 
 static void dumpProgress(const char *wuid, const char * graph)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
     if (!workunit)
         return;
     Owned<IConstWUGraphProgress> progress = workunit->getGraphProgress(graph);
@@ -2443,7 +2443,7 @@ static const char * checkDash(const char * s)
 static void dumpStats(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
     if (!workunit)
         return;
 
@@ -2516,7 +2516,7 @@ static void wuidCompress(const char *match, const char *type, bool compress)
     ForEach(*iter)
     {
         const char *wuid = iter->query().queryName();
-        IConstWorkUnit &wu = *factory->openWorkUnit(wuid, false);
+        IConstWorkUnit &wu = *factory->openWorkUnit(wuid);
 
         StringArray graphNames;
         Owned<IConstWUGraphIterator> graphIter = &wu.getGraphs(GraphTypeAny);

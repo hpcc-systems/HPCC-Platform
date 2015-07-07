@@ -1217,7 +1217,7 @@ public:
     virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence)
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid, false);
+        Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid);
         externalWU->remoteCheckAccess(userDesc, false);
         return getWorkUnitResult(externalWU, name, sequence);
     }

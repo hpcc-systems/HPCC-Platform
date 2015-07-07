@@ -804,7 +804,7 @@ void WuWebView::setWorkunit(IConstWorkUnit &_cw)
 void WuWebView::setWorkunit(const char *wuid)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
     if (!wu)
         throw MakeStringException(WUWEBERR_WorkUnitNotFound, "Workunit not found %s", wuid);
     setWorkunit(*wu);

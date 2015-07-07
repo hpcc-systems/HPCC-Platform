@@ -69,7 +69,7 @@ bool QueryDataSource::createBrowseWU()
     returnedRecord.set(browseWUcode->queryChild(0)->queryRecord());
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> parent = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> parent = factory->openWorkUnit(wuid);
 
     const char *user = parent->queryUser();
     Owned<IWorkUnit> workunit = factory->createWorkUnit("fileViewer", user);
@@ -152,7 +152,7 @@ bool QueryDataSource::loadBlock(__int64 startRow, offset_t startOffset)
 
     //Now extract the results...
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> wu = factory->openWorkUnit(browseWuid, false);
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(browseWuid);
     Owned<IConstWUResult> dataResult = wu->getResultBySequence(0);
     MemoryBuffer2IDataVal xxx(temp); dataResult->getResultRaw(xxx, NULL, NULL);
 

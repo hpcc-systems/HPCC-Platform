@@ -410,7 +410,7 @@ public:
             throw MakeStringException(PACKAGE_QUERY_NOT_FOUND, "Query %s not found", queryname);
         Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, true, false);
         Owned<IWorkUnitFactory> wufactory = getWorkUnitFactory(NULL, NULL);
-        Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(query->queryProp("@wuid"), false);
+        Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(query->queryProp("@wuid"));
 
         const IHpccPackage *pkg = matchPackage(query->queryProp("@id"));
         filelist->addFilesFromQuery(cw, pkg);
@@ -503,7 +503,7 @@ public:
             if (queryid && *queryid)
             {
                 Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, true, false);
-                Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(queries->query().queryProp("@wuid"), false);
+                Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(queries->query().queryProp("@wuid"));
 
                 StringArray libnames, unresolvedLibs;
                 gatherLibraryNames(libnames, unresolvedLibs, *wufactory, *cw, qs);

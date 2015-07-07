@@ -1976,7 +1976,7 @@ protected:
                 if (daliHelper && daliHelper->connected())
                 {
                     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                    Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid, false);
+                    Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid);
                     externalWU->remoteCheckAccess(queryUserDescriptor(), false);
                     Owned<IConstWUResult> wuResult = getWorkUnitResult(externalWU, stepname, sequence);
                     if (!wuResult)

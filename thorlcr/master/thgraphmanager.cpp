@@ -214,7 +214,7 @@ static int getRunningMaxPriority(const char *qname)
                             const char* wuid=wu.queryProp(NULL);
                             if (wuid&&*wuid) {
                                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                                Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+                                Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
                                 if (workunit) {
                                     int priority = workunit->getPriorityValue();
                                     if (priority>maxpriority)
@@ -496,7 +496,7 @@ void CJobManager::run()
         try
         {
             factory.setown(getWorkUnitFactory());
-            workunit.setown(factory->openWorkUnit(wuid, false));
+            workunit.setown(factory->openWorkUnit(wuid));
             if (!workunit) // check workunit is available and ready to run.
                 throw MakeStringException(0, "Could not locate workunit %s", wuid);
             if (workunit->getCodeVersion() == 0)

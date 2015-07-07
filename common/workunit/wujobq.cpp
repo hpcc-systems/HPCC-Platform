@@ -2123,7 +2123,7 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *cluster)
 extern bool WORKUNIT_API runWorkUnit(const char *wuid)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid);
     if (w)
     {
         StringAttr clusterName = (w->queryClusterName());

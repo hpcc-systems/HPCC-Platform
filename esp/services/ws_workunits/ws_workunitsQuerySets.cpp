@@ -348,7 +348,7 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
         }
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
         if (!cw)
             continue;
 
@@ -441,7 +441,7 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
     WsWuHelpers::checkAndTrimWorkunit("WUCopyLogicalFiles", wuid);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
     if (!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s", wuid.str());
 
@@ -744,7 +744,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     WsWuHelpers::checkAndTrimWorkunit("WUPublishWorkunit", wuid);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
     if (!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot find the workunit %s", wuid.str());
 
@@ -1552,7 +1552,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     if (version >= 1.46)
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.",wuid);
 
@@ -2389,7 +2389,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     }
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
 
     if (!req.getDontCopyFiles())
     {
