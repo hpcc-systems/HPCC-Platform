@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="DaliServerProcess_mod">
+<title>DaliServerProcess</title>
+<para><emphasis role="bold">Describes a Dali server installation</emphasis></para>
+<para><emphasis role="bold"></emphasis></para>
+<para><emphasis role="bold">Attributes</emphasis></para>
+<informaltable colsep="1" rowsep="1" id="UNDEFINED-1">
+<tgroup cols="4" align="left">
+<colspec colwidth="155pt" /><colspec colwidth="2*" /><colspec colwidth="1*" /><colspec colwidth="0.5*" />
+<thead><row>
+<entry>attribute</entry>
+<entry>values</entry>
+<entry>default</entry>
+<entry>required</entry>
+</row>
+</thead><tbody>
+<row>
+<entry>name</entry>
+<entry>Name for this process</entry>
+<entry></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>description</entry>
+<entry>Description for this process</entry>
+<entry>Dali Server process</entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>msgLevel</entry>
+<entry>Severity threshold for reporting errors in log file</entry>
+<entry>100</entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>dataPath</entry>
+<entry>Directory in which dali's data files will be written to</entry>
+<entry></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>LogDir</entry>
+<entry>Directory in which to store server log files</entry>
+<entry></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>AuditLogDir</entry>
+<entry>Directory in which to store audit log files</entry>
+<entry></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>environment</entry>
+<entry>Path to an xml file containing an Environment to use</entry>
+<entry></entry>
+<entry></entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+<para><emphasis role="bold">Store</emphasis></para>
+<para><emphasis role="bold"></emphasis></para>
+<informaltable colsep="1" rowsep="1" id="UNDEFINED-6">
+<tgroup cols="4" align="left">
+<colspec colwidth="155pt" /><colspec colwidth="2*" /><colspec colwidth="1*" /><colspec colwidth="0.5*" />
+<thead><row>
+<entry>attribute</entry>
+<entry>values</entry>
+<entry>default</entry>
+<entry>required</entry>
+</row>
+</thead><tbody>
+<row>
+<entry>lightweightCoalesce</entry>
+<entry>Enable non memory loaded consolidation of store</entry>
+<entry>true</entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>IdlePeriod</entry>
+<entry>Period of client to server quiet time to trigger store save</entry>
+<entry>600</entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>IdleRate</entry>
+<entry>Number of transaction per minute to be considered quiet time</entry>
+<entry>10</entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>MinTime</entry>
+<entry>Minimum amount of time between lightweight store saves</entry>
+<entry>86400</entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>StartTime</entry>
+<entry>Start time of lightweight coalesce checking</entry>
+<entry></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>EndTime</entry>
+<entry>End time of lightweight coalesce checking</entry>
+<entry></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>keepStores</entry>
+<entry>Number of old saved stores to keep</entry>
+<entry>10</entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>recoverFromIncErrors</entry>
+<entry>Switch on to auto recover from corruption to delta files on load</entry>
+<entry>true</entry>
+<entry></entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+<para><emphasis role="bold">Backup</emphasis></para>
+<para><emphasis role="bold"></emphasis></para>
+<informaltable colsep="1" rowsep="1" id="UNDEFINED-7">
+<tgroup cols="4" align="left">
+<colspec colwidth="155pt" /><colspec colwidth="2*" /><colspec colwidth="1*" /><colspec colwidth="0.5*" />
+<thead><row>
+<entry>attribute</entry>
+<entry>values</entry>
+<entry>default</entry>
+<entry>required</entry>
+</row>
+</thead><tbody>
+<row>
+<entry>backupComputer</entry>
+<entry>Backup computer</entry>
+<entry></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>asyncBackup</entry>
+<entry>Asynchronous backup of transactions</entry>
+<entry>true</entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>useNFSBackupMount</entry>
+<entry>Create and use a NFS mount point for backups</entry>
+<entry>false</entry>
+<entry>optional</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+<para><emphasis role="bold">LDAP</emphasis></para>
+<para><emphasis role="bold"></emphasis></para>
+<informaltable colsep="1" rowsep="1" id="UNDEFINED-8">
+<tgroup cols="4" align="left">
+<colspec colwidth="155pt" /><colspec colwidth="2*" /><colspec colwidth="1*" /><colspec colwidth="0.5*" />
+<thead><row>
+<entry>attribute</entry>
+<entry>values</entry>
+<entry>default</entry>
+<entry>required</entry>
+</row>
+</thead><tbody>
+<row>
+<entry>ldapServer</entry>
+<entry>The ldap server to be used for authentication.</entry>
+<entry></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>ldapProtocol</entry>
+<entry>The protocol to use - standard ldap or ldap over SSL.</entry>
+<entry>ldap<para>
+Choices are: 
+<?linebreak?>* ldap <?linebreak?>
+* ldaps <?linebreak?>
+*  <?linebreak?>
+</para></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>authMethod</entry>
+<entry>The protocol to use for LDAP authentication.</entry>
+<entry>kerberos<para>
+Choices are: 
+<?linebreak?>* kerberos <?linebreak?>
+* simple <?linebreak?>
+*  <?linebreak?>
+</para></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>filesDefaultUser</entry>
+<entry>The default username for Files access (ActiveDirectory).</entry>
+<entry></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>filesDefaultPassword</entry>
+<entry>The default password for filesDefaultUser.</entry>
+<entry></entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>checkScopeScans</entry>
+<entry>Enable LDAP checking for all logical file listings</entry>
+<entry>true</entry>
+<entry>optional</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+<para><emphasis role="bold">DFS</emphasis></para>
+<para><emphasis role="bold"></emphasis></para>
+<informaltable colsep="1" rowsep="1" id="UNDEFINED-9">
+<tgroup cols="4" align="left">
+<colspec colwidth="155pt" /><colspec colwidth="2*" /><colspec colwidth="1*" /><colspec colwidth="0.5*" />
+<thead><row>
+<entry>attribute</entry>
+<entry>values</entry>
+<entry>default</entry>
+<entry>required</entry>
+</row>
+</thead><tbody>
+<row>
+<entry>forceGroupUpdate</entry>
+<entry>Force group updates on startup, if environment mismatch</entry>
+<entry>false</entry>
+<entry>optional</entry>
+</row>
+<row>
+<entry>numThreads</entry>
+<entry>Number of threads to use to process DFS requests</entry>
+<entry>30</entry>
+<entry>optional</entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+</sect2>

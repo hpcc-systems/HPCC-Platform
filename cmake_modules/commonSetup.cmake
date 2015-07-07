@@ -91,6 +91,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_RINSIDE "Enable R support" ON)
   option(USE_MEMCACHED "Enable Memcached support" ON)
   option(USE_REDIS "Enable Redis support" ON)
+  option(MAKE_CONFIGURATOR "Build Configurator" ON)
+  option(CONFIGURATOR_LIB "Build Configurator static library (.a)" OFF)
+  option(CONFIGURATOR_QT_UI "Build Configurator with QT based UI" OFF)
+
+  if (CONFIGURATOR_QT_UI OR CONFIGURATOR_LIB )
+        set( MAKE_CONFIGURATOR ON )
+  endif()
+
+  if ( (CONFIGURATOR_QT_UI AND CONFIGURATOR_LIB) )
+        MESSAGE( FATAL_ERROR "Only 1 type of configurator target possible" )
+  endif()
 
   if (APPLE OR WIN32)
       option(USE_TBB "Enable Threading Building Block support" OFF)

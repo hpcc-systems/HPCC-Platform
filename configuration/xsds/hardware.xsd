@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:element name="Hardware_NEW">
+        <xs:annotation>
+        <xs:documentation>Describes HPCC Hardware</xs:documentation>
+        </xs:annotation>
+
+        <xs:complexType>
+            <xs:sequence>
+
+                <xs:element name="ComputerType">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <title>Computer Types</title>
+                    </xs:appinfo>
+                </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="ComputerType" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:attribute name="name" use="required">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <title>Name</title>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="manufacturer" type="xs:string" use="optional">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <title>Manufacturer</title>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="computerType" type="xs:string" use="optional">
+                                      <xs:annotation>
+                                        <xs:appinfo>
+                                          <title>Computer Type</title>
+                                        </xs:appinfo>
+                                      </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="opSys" type="xs:string" use="optional">
+                                      <xs:annotation>
+                                        <xs:appinfo>
+                                          <title>opSys</title>
+                                        </xs:appinfo>
+                                      </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+
+
+            </xs:sequence>
+            <xs:attribute name="attrib1name">
+                <xs:annotation>
+                                                        <xs:appinfo>
+                                                            <toolTip>Manufacturer</toolTip>
+                                                        </xs:appinfo>
+                                                    </xs:annotation>
+                                                    </xs:attribute>
+            <xs:attribute name="attrib2name"/>
+            <xs:attribute name="attrib3name"/>
+        </xs:complexType>
+   </xs:element>
+</xs:schema>
