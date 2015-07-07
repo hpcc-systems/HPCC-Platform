@@ -156,43 +156,11 @@ private:
     CassBatch *batch;
 };
 
-class CassandraStatement : public CInterface
-{
-public:
-    inline CassandraStatement(CassStatement *_statement) : statement(_statement)
-    {
-    }
-    inline CassandraStatement(const char *simple) : statement(cass_statement_new(simple, 0))
-    {
-    }
-    inline ~CassandraStatement()
-    {
-        if (statement)
-            cass_statement_free(statement);
-    }
-    inline operator CassStatement *() const
-    {
-        return statement;
-    }
-    inline void bindString(unsigned idx, const char *value)
-    {
-        //DBGLOG("bind %d %s", idx, value);
-        check(cass_statement_bind_string(statement, idx, value));
-    }
-    inline void bindString_n(unsigned idx, const char *value, unsigned len)
-    {
-        //DBGLOG("bind %d %.*s", idx, len, value);
-        check(cass_statement_bind_string_n(statement, idx, value, len));
-    }
-private:
-    CassandraStatement(const CassandraStatement &);
-    CassStatement *statement;
-};
-
 class CassandraPrepared : public CInterfaceOf<IInterface>
 {
 public:
-    inline CassandraPrepared(const CassPrepared *_prepared) : prepared(_prepared)
+    inline CassandraPrepared(const CassPrepared *_prepared, const char *_queryString)
+    : prepared(_prepared), queryString(_queryString)
     {
     }
     inline ~CassandraPrepared()
@@ -204,9 +172,117 @@ public:
     {
         return prepared;
     }
+    inline const char *queryQueryString() const
+    {
+        return queryString;
+    }
 private:
     CassandraPrepared(const CassandraPrepared &);
+    StringAttr queryString;
     const CassPrepared *prepared;
+};
+
+class CassandraStatement : public CInterface
+{
+public:
+    inline CassandraStatement(CassStatement *_statement) : statement(_statement)
+    {
+    }
+    inline CassandraStatement(const char *simple) : statement(cass_statement_new(simple, 0))
+    {
+    }
+    inline CassandraStatement(const CassandraPrepared *_prepared) : statement(cass_prepared_bind(*_prepared))
+    {
+        const char *queryString = _prepared->queryQueryString(); // Only set when tracing..
+        if (queryString)
+            query.set(queryString);
+        _prepared->Release();
+    }
+    inline ~CassandraStatement()
+    {
+        if (statement)
+            cass_statement_free(statement);
+    }
+    operator CassStatement *() const
+    {
+        if (query.length())
+            DBGLOG("Executing %s", query.str());
+        return statement;
+    }
+    void bindBool(unsigned idx, cass_bool_t value)
+    {
+        if (query.length())
+            traceBind(idx, "%s", value ? "true" : "false");
+        check(cass_statement_bind_bool(statement, idx, value));
+    }
+    void bindInt32(unsigned idx, __int32 value)
+    {
+        if (query.length())
+            traceBind(idx, "%d", value);
+        check(cass_statement_bind_int32(statement, idx, value));
+    }
+    void bindInt64(unsigned idx, __int64 value)
+    {
+        if (query.length())
+            traceBind(idx, "%" I64F "d", value);
+        check(cass_statement_bind_int64(statement, idx, value));
+    }
+    void bindString(unsigned idx, const char *value)
+    {
+        if (query.length())
+            traceBind(idx, "'%s'", value);
+        check(cass_statement_bind_string(statement, idx, value));
+    }
+    void bindString_n(unsigned idx, const char *value, unsigned len)
+    {
+        if (strlen(value)<len)
+        {
+            if (query.length())
+                traceBind(idx, "'%s'", value);
+            check(cass_statement_bind_string(statement, idx, value));
+        }
+        else
+        {
+            if (query.length())
+                traceBind(idx, "'%.*s'", len, value);
+            check(cass_statement_bind_string_n(statement, idx, value, len));
+        }
+    }
+    void bindBytes(unsigned idx, const cass_byte_t *value, unsigned len)
+    {
+        if (query.length())
+            traceBind(idx, "(bytes)");
+        check(cass_statement_bind_bytes(statement, idx, value, len));
+    }
+    void bindCollection(unsigned idx, const CassCollection *value)
+    {
+        if (query.length())
+            traceBind(idx, "(collection)");
+        check(cass_statement_bind_collection(statement, idx, value));
+    }
+private:
+    void traceBind(unsigned idx, const char *format, ...)
+    {
+        assert(query.length());
+        StringBuffer bound;
+        va_list args;
+        va_start(args, format);
+        bound.valist_appendf(format, args);
+        va_end(args);
+        const char *pos = query;
+        do
+        {
+            pos = strchr(pos, '?');
+            assert(pos);
+            if (!pos)
+                return;
+            pos++;
+        } while (idx--);
+        query.insert(pos-query, bound);
+    }
+    CassandraStatement(const CassandraStatement &);
+    StringBuffer query;
+    CassStatement *statement;
 };
 
 class CassandraResult : public CInterfaceOf<IInterface>

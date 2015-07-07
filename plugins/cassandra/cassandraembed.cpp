@@ -1582,7 +1582,7 @@ public:
             // MORE - can cache this, perhaps, if script is same as last time?
             CassandraFuture future(cass_session_prepare(*session, script));
             future.wait("prepare statement");
-            Owned<CassandraPrepared> prepared = new CassandraPrepared(cass_future_get_prepared(future));
+            Owned<CassandraPrepared> prepared = new CassandraPrepared(cass_future_get_prepared(future), NULL);
             if ((flags & EFnoparams) == 0)
                 numParams = countBindings(script);
             else
