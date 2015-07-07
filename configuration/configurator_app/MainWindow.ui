@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1020</width>
+    <height>663</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Configurator Central</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <widget class="QScrollArea" name="scrollArea_2">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>20</y>
+      <width>981</width>
+      <height>931</height>
+     </rect>
+    </property>
+    <property name="widgetResizable">
+     <bool>true</bool>
+    </property>
+    <widget class="QWidget" name="scrollAreaWidgetContents_2">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>979</width>
+       <height>929</height>
+      </rect>
+     </property>
+     <widget class="QWidget" name="verticalLayoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>981</width>
+        <height>941</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>1</number>
+       </property>
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
+      </layout>
+     </widget>
+    </widget>
+   </widget>
+   <widget class="QTreeView" name="treeView">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>20</y>
+      <width>291</width>
+      <height>301</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelConfigurationFile">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>0</y>
+      <width>321</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>&lt;Open a file&gt;</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>0</y>
+      <width>41</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>File:</string>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="notificationTableWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>330</y>
+      <width>291</width>
+      <height>261</height>
+     </rect>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1020</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionReload"/>
+    <addaction name="actionRecent"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSave_As"/>
+    <addaction name="actionClose"/>
+   </widget>
+   <widget class="QMenu" name="menuAdd_Component">
+    <property name="title">
+     <string>Add Component</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuAdd_Service">
+    <property name="title">
+     <string>Add Service</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionUndo"/>
+    <addaction name="actionRedo"/>
+   </widget>
+   <widget class="QMenu" name="menuWizards">
+    <property name="title">
+     <string>Wizards</string>
+    </property>
+    <widget class="QMenu" name="menuMacros">
+     <property name="title">
+      <string>Macros</string>
+     </property>
+     <addaction name="actionStart_Macro_Capture"/>
+     <addaction name="actionStop_Macro_Capture"/>
+     <addaction name="actionSave_Macro"/>
+    </widget>
+    <addaction name="separator"/>
+    <addaction name="actionAdd_Roxie"/>
+    <addaction name="actionAdd_Thor_s"/>
+    <addaction name="separator"/>
+    <addaction name="menuMacros"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionRegenerate_QML"/>
+   </widget>
+   <widget class="QMenu" name="menuValidation">
+    <property name="title">
+     <string>Validation</string>
+    </property>
+    <addaction name="actionCheck_For_Issues"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionGenerate_QML"/>
+    <addaction name="actionGenerate_DockBook"/>
+    <addaction name="separator"/>
+    <addaction name="actionGenerate_Internal_Data_Structure_Debug"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionShow_Action_List"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuView"/>
+   <addaction name="menuAdd_Component"/>
+   <addaction name="menuAdd_Service"/>
+   <addaction name="menuWizards"/>
+   <addaction name="menuSettings"/>
+   <addaction name="menuValidation"/>
+   <addaction name="menuTools"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionRecent">
+   <property name="text">
+    <string>Recent</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionSave_As">
+   <property name="text">
+    <string>Save As</string>
+   </property>
+  </action>
+  <action name="actionClose">
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionUndo">
+   <property name="text">
+    <string>Undo</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="text">
+    <string>Redo</string>
+   </property>
+  </action>
+  <action name="actionStart_Macro_Capture">
+   <property name="text">
+    <string>Start Macro Capture</string>
+   </property>
+  </action>
+  <action name="actionStop_Macro_Capture">
+   <property name="text">
+    <string>Stop Macro Capture</string>
+   </property>
+  </action>
+  <action name="actionSave_Macro">
+   <property name="text">
+    <string>Save Macro</string>
+   </property>
+  </action>
+  <action name="actionAdd_Roxie">
+   <property name="text">
+    <string>Add New Hardware and Configure</string>
+   </property>
+  </action>
+  <action name="actionAdd_Thor_s">
+   <property name="text">
+    <string>Reconfigure Existing Hardware</string>
+   </property>
+  </action>
+  <action name="actionReload">
+   <property name="text">
+    <string>Reload</string>
+   </property>
+  </action>
+  <action name="actionGenerate_QML">
+   <property name="text">
+    <string>Generate QML</string>
+   </property>
+  </action>
+  <action name="actionGenerate_DockBook">
+   <property name="text">
+    <string>Generate DocBook</string>
+   </property>
+   <property name="toolTip">
+    <string>Generate DocBook formatted documentation for XSD component definitions.</string>
+   </property>
+  </action>
+  <action name="actionGenerate_Dojo">
+   <property name="text">
+    <string>Generate Dojo</string>
+   </property>
+  </action>
+  <action name="actionGenerate_Internal_Data_Structure_Debug">
+   <property name="text">
+    <string>Generate Internal Data Structure (Debug)</string>
+   </property>
+  </action>
+  <action name="actionShow_Action_List">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Action List</string>
+   </property>
+  </action>
+  <action name="actionCheck_For_Issues">
+   <property name="text">
+    <string>Check For Issues</string>
+   </property>
+  </action>
+  <action name="actionRegenerate_QML">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Regenerate QML</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>
