@@ -11718,7 +11718,14 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     {
         OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
         OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
-        OwnedHqlExpr folded = foldHqlExpression(replaceInlineParameters(funcdef, cast));
+
+        // It's not legal to use parameters in the options, since it becomes ambiguous whether they should be bound to embed variables or not.
+        // Check that they didn't and give a sensible error message
+        OwnedHqlExpr boundCast = replaceInlineParameters(funcdef, cast);
+        if (cast != boundCast)
+            throwError(HQLERR_EmbedParamNotSupportedInOptions);
+
+        OwnedHqlExpr folded = foldHqlExpression(cast);
         CHqlBoundExpr bound;
         buildExpr(funcctx, folded, bound);
         createParam.append(",");
