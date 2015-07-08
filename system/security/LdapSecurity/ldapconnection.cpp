@@ -3446,8 +3446,10 @@ public:
         
         attrs[ind++] = &cn_attr;
         attrs[ind++] = &oc_attr;
-        attrs[ind++] = &owner_attr;
-        attrs[ind++] = &desc_attr;
+        if (groupOwner && *groupOwner)
+            attrs[ind++] = &owner_attr;
+        if (groupDesc && *groupDesc)
+            attrs[ind++] = &desc_attr;
         attrs[ind] = NULL;
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
