@@ -1124,9 +1124,9 @@ bool CLdapSecManager::updateUserPassword(const char* username, const char* newPa
     return m_ldap_client->updateUserPassword(username, newPassword);
 }
 
-void CLdapSecManager::getAllGroups(StringArray & groups)
+void CLdapSecManager::getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions)
 {
-    m_ldap_client->getAllGroups(groups);
+    m_ldap_client->getAllGroups(groups, managedBy, descriptions);
 }
 
 bool CLdapSecManager::getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions)
@@ -1134,9 +1134,9 @@ bool CLdapSecManager::getPermissionsArray(const char* basedn, SecResourceType rt
     return m_ldap_client->getPermissionsArray(basedn, rtype, name, permissions);
 }
 
-void CLdapSecManager::addGroup(const char* groupname)
+void CLdapSecManager::addGroup(const char* groupname, const char * groupOwner, const char * groupDesc)
 {
-    m_ldap_client->addGroup(groupname);
+    m_ldap_client->addGroup(groupname, groupOwner, groupDesc);
 }
 
 void CLdapSecManager::deleteGroup(const char* groupname)

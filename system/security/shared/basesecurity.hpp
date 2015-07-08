@@ -244,7 +244,7 @@ public:
 
     virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword = NULL);
     virtual bool IsPasswordExpired(ISecUser& user){return false;}
-    void getAllGroups(StringArray & groups) { UNIMPLEMENTED;}
+    void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions) { UNIMPLEMENTED;}
     
     virtual void deleteResource(SecResourceType rtype, const char * name, const char * basedn)
     {

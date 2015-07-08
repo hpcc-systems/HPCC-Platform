@@ -387,12 +387,12 @@ public:
     virtual void cacheSwitch(SecResourceType rtype, bool on);
 
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions);
-    virtual void getAllGroups(StringArray & groups);
+    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions);
     virtual void getGroups(const char* username, StringArray & groups);
     virtual bool changePermission(CPermissionAction& action);
     virtual void changeUserGroup(const char* action, const char* username, const char* groupname);
     virtual bool deleteUser(ISecUser* user);
-    virtual void addGroup(const char* groupname);
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc);
     virtual void deleteGroup(const char* groupname);
     virtual void getGroupMembers(const char* groupname, StringArray & users);
     virtual void deleteResource(SecResourceType rtype, const char * name, const char * basedn);

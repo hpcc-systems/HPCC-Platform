@@ -532,7 +532,9 @@ bool Cws_accessEx::onUserGroupEditInput(IEspContext &context, IEspUserGroupEditI
         }
 
         StringArray groupnames;
-        ldapsecmgr->getAllGroups(groupnames);
+        StringArray managedBy;
+        StringArray descriptions;
+        ldapsecmgr->getAllGroups(groupnames, managedBy, descriptions);
         IArrayOf<IEspGroupInfo> groups;
         for(i = 0; i < groupnames.length(); i++)
         {
@@ -543,6 +545,8 @@ bool Cws_accessEx::onUserGroupEditInput(IEspContext &context, IEspUserGroupEditI
             {
                 Owned<IEspGroupInfo> onegrp = createGroupInfo();
                 onegrp->setName(grpname);
+                onegrp->setGroupDesc(descriptions.item(i));
+                onegrp->setGroupOwner(managedBy.item(i));
                 groups.append(*onegrp.getLink());
             }
         }
@@ -632,11 +636,13 @@ bool Cws_accessEx::onGroups(IEspContext &context, IEspGroupRequest &req, IEspGro
         checkUser(context);
 
         StringArray groupnames;
+        StringArray groupManagedBy;
+        StringArray groupDescriptions;
         ISecManager* secmgr = context.querySecManager();
         if(secmgr == NULL)
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
-        secmgr->getAllGroups(groupnames);
+        secmgr->getAllGroups(groupnames, groupManagedBy, groupDescriptions);
         ///groupnames.append("Administrators");
         ///groupnames.append("Full_Access_TestingOnly");
         //groupnames.kill();
@@ -651,6 +657,8 @@ bool Cws_accessEx::onGroups(IEspContext &context, IEspGroupRequest &req, IEspGro
                     continue;
                 Owned<IEspGroupInfo> onegrp = createGroupInfo();
                 onegrp->setName(grpname);
+                onegrp->setGroupDesc(groupDescriptions.item(i));
+                onegrp->setGroupOwner(groupManagedBy.item(i));
                 groups.append(*onegrp.getLink());
             }
 
@@ -821,9 +829,18 @@ bool Cws_accessEx::onGroupAdd(IEspContext &context, IEspGroupAddRequest &req, IE
 
         resp.setGroupname(groupname);
 
+        double version = context.getClientVersion();
+        const char * groupDesc = NULL;
+        const char * groupOwner = NULL;
+        if (version >= 1.09)
+        {
+            groupDesc = req.getGroupDesc();
+            groupOwner = req.getGroupOwner();
+        }
+
         try
         {
-            secmgr->addGroup(groupname);
+            secmgr->addGroup(groupname, groupOwner, groupDesc);
         }
         catch(IException* e)
         {
@@ -1932,7 +1949,9 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
             groups.append(*onegrp.getLink());
         }
         StringArray grpnames;
-        secmgr->getAllGroups(grpnames);
+        StringArray managedBy;
+        StringArray descriptions;
+        secmgr->getAllGroups(grpnames, managedBy, descriptions);
         for(unsigned i = 0; i < grpnames.length(); i++)
         {
             const char* grpname = grpnames.item(i);
@@ -1940,6 +1959,8 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
                 continue;
             Owned<IEspGroupInfo> onegrp = createGroupInfo();
             onegrp->setName(grpname);
+            onegrp->setGroupDesc(descriptions.item(i));
+            onegrp->setGroupOwner(managedBy.item(i));
             groups.append(*onegrp.getLink());
         }
 
@@ -2343,7 +2364,9 @@ bool Cws_accessEx::permissionAddInputOnResource(IEspContext &context, IEspPermis
         groups.append(*onegrp.getLink());
     }
     StringArray grpnames;
-    secmgr->getAllGroups(grpnames);
+    StringArray managedBy;
+    StringArray descriptions;
+    secmgr->getAllGroups(grpnames, managedBy, descriptions);
     for(unsigned i = 0; i < grpnames.length(); i++)
     {
         const char* grpname = grpnames.item(i);
@@ -2351,6 +2374,8 @@ bool Cws_accessEx::permissionAddInputOnResource(IEspContext &context, IEspPermis
             continue;
         Owned<IEspGroupInfo> onegrp = createGroupInfo();
         onegrp->setName(grpname);
+        onegrp->setGroupDesc(descriptions.item(i));
+        onegrp->setGroupOwner(managedBy.item(i));
         groups.append(*onegrp.getLink());
     }
 
@@ -3415,7 +3440,9 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
 
         //Get all groups for input form
         StringArray groupnames;
-        secmgr->getAllGroups(groupnames);
+        StringArray managedBy;
+        StringArray descriptions;
+        secmgr->getAllGroups(groupnames, managedBy, descriptions);
         ///groupnames.append("Authenticated Users");
         ///groupnames.append("Administrators");
         if (groupnames.length() > 0)
@@ -3428,6 +3455,8 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                     continue;
                 Owned<IEspGroupInfo> onegrp = createGroupInfo();
                 onegrp->setName(grpname);
+                onegrp->setGroupDesc(descriptions.item(i));
+                onegrp->setGroupOwner(managedBy.item(i));
                 groups.append(*onegrp.getLink());
             }
 

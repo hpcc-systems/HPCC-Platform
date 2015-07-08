@@ -1132,7 +1132,7 @@ public:
             }
             try
             {
-                addGroup("Directory Administrators", m_ldapconfig->getBasedn());
+                addGroup("Directory Administrators", NULL, NULL, m_ldapconfig->getBasedn());
             }
             catch(...)
             {
@@ -3056,16 +3056,22 @@ public:
         return true;
     }
 
-    virtual void getAllGroups(StringArray & groups)
+    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions)
     {
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
         {
             groups.append("Authenticated Users");
+            managedBy.append("");
+            descriptions.append("");
             groups.append("Administrators");
+            managedBy.append("");
+            descriptions.append("");
         }
         else
         {
             groups.append("Directory Administrators");
+            managedBy.append("");
+            descriptions.append("");
         }
 
         char        *attribute;
@@ -3082,8 +3088,7 @@ public:
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-
-        char        *attrs[] = {"cn", NULL};
+        char *attrs[] = {"cn", "managedBy", "description", NULL};
         CLDAPMessage searchResult;
         int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
 
@@ -3101,12 +3106,19 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
+                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                if (!vals.hasValues())
+                    continue;
                 if(stricmp(attribute, "cn") == 0)
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
-                    if (vals.hasValues())
-                        groups.append(vals.queryValues()[0]);
+                    groups.append(vals.queryValues()[0]);
+                    managedBy.append("");
+                    descriptions.append("");
                 }
+                else if(stricmp(attribute, "managedBy") == 0)
+                    managedBy.replace(vals.queryValues()[0], groups.length() - 1);
+                else if(stricmp(attribute, "description") == 0)
+                    descriptions.replace(vals.queryValues()[0], groups.length() - 1);
             }
         }
     }
@@ -3288,7 +3300,9 @@ public:
         else
         {
             StringArray allgroups;
-            getAllGroups(allgroups);
+            StringArray allgroupManagedBy;
+            StringArray allgroupDescription;
+            getAllGroups(allgroups, allgroupManagedBy, allgroupDescription);
             for(unsigned i = 0; i < allgroups.length(); i++)
             {
                 const char* grp = allgroups.item(i);
@@ -3352,15 +3366,15 @@ public:
         return true;
     }
 
-    virtual void addGroup(const char* groupname)
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc)
     {
         if(groupname == NULL || *groupname == '\0')
             throw MakeStringException(-1, "Can't add group, groupname is empty");
 
-        addGroup(groupname, m_ldapconfig->getGroupBasedn());
+        addGroup(groupname, groupOwner, groupDesc, m_ldapconfig->getGroupBasedn());
     }
 
-    virtual void addGroup(const char* groupname, const char* basedn)
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn)
     {
         if(groupname == NULL || *groupname == '\0')
             return;
@@ -3413,11 +3427,27 @@ public:
             member_values
         };
 
-        LDAPMod *attrs[5];
+        char *owner_values[] = {(char*)groupOwner, NULL};
+        LDAPMod owner_attr =
+        {
+            LDAP_MOD_ADD,
+            "managedBy",
+            owner_values
+        };
+        char *desc_values[] = {(char*)groupDesc, NULL};
+        LDAPMod desc_attr =
+        {
+            LDAP_MOD_ADD,
+            "description",
+            desc_values
+        };
+        LDAPMod *attrs[6];
         int ind = 0;
         
         attrs[ind++] = &cn_attr;
         attrs[ind++] = &oc_attr;
+        attrs[ind++] = &owner_attr;
+        attrs[ind++] = &desc_attr;
         attrs[ind] = NULL;
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
