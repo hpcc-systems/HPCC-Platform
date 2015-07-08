@@ -613,7 +613,7 @@ public:
         }
         w->commit();
         w.clear();
-        return wuFactory->openWorkUnit(wuid, false);
+        return wuFactory->openWorkUnit(wuid);
     }
 
     virtual void noteWorkunitRunning(const char *wuid, bool running)

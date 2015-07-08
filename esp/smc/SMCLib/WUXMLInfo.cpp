@@ -113,7 +113,7 @@ bool CWUXMLInfo::buildXmlWuidInfo(const char* wuid, IEspECLWorkunit& wuStructure
 {
     try{
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false);
+        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
         if (wu)
         {
             return buildXmlWuidInfo(*wu.get(),wuStructure,bDescription);

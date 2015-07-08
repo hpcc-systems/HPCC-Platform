@@ -146,7 +146,7 @@ public:
         wuid.set(wuid_);
         version = context.getClientVersion();
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(ctx.querySecManager(), ctx.queryUser());
-        cw.setown(factory->openWorkUnit(wuid_, false));
+        cw.setown(factory->openWorkUnit(wuid_));
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", wuid_);
     }

@@ -526,7 +526,7 @@ CWsSMCTargetCluster* CActivityInfo::findWUClusterInfo(const char* wuid, bool isO
     try
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
         if (!cw)
             return NULL;
         clusterName.set(cw->queryClusterName());

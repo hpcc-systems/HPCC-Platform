@@ -18,7 +18,10 @@
 #ifndef WORKUNIT_IPP_INCL
 #include "seclib.hpp"
 #include "dasess.hpp"  /// For IUserDescriptor
+#include "dasds.hpp"
 #include "workunit.hpp"
+
+#define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
 
 class CLocalWUAppValue : public CInterface, implements IConstWUAppValue
 {
@@ -210,7 +213,7 @@ public:
     ISecManager *querySecMgr() { return secMgr.get(); }
     ISecUser *querySecUser() { return secUser.get(); }
 
-    virtual bool aborting() const;
+    virtual bool aborting() const { return false; }
     virtual void forceReload() {};
     virtual WUAction getAction() const;
     virtual const char *queryActionDesc() const;
@@ -289,7 +292,6 @@ public:
     virtual bool isPausing() const;
     virtual IWorkUnit& lock();
     virtual void requestAbort();
-    virtual void subscribe(WUSubscribeOptions options);
     virtual unsigned calculateHash(unsigned prevHash);
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all);
     virtual IPropertyTree *queryPTree() const;
@@ -376,6 +378,7 @@ public:
     void deleteTemporaries();
     void addDiskUsageStats(__int64 avgNodeUsage, unsigned minNode, __int64 minNodeUsage, unsigned maxNode, __int64 maxNodeUsage, __int64 graphId);
     void setTimeScheduled(const IJlibDateTime &val);
+    virtual void subscribe(WUSubscribeOptions options) {};
 
 // ILocalWorkUnit - used for debugging etc
     void loadXML(const char *xml);
@@ -503,7 +506,6 @@ public:
         }
     }
 
-protected:
     IWUResult *updateResult(const char *name, unsigned sequence)
     {
         Owned <IWUResult> result = updateWorkUnitResult(this, name, sequence);
@@ -555,15 +557,96 @@ protected:
     }
 
     // Implemented by derived classes
+    virtual void unsubscribe() {};
     virtual void _lockRemote() {};
     virtual void _unlockRemote() {};
-    virtual void unsubscribe();
     virtual void _loadFilesRead() const;
     virtual void _loadResults() const;
     virtual void _loadVariables() const;
     virtual void _loadTemporaries() const;
     virtual void _loadStatistics() const;
     virtual void _loadExceptions() const;
+};
+
+class CPersistedWorkUnit : public CLocalWorkUnit
+{
+public:
+    CPersistedWorkUnit(ISecManager *secmgr, ISecUser *secuser) : CLocalWorkUnit(secmgr, secuser)
+{
+        abortDirty = true;
+        abortState = false;
+    }
+
+    virtual void subscribe(WUSubscribeOptions options)
+    {
+        CriticalBlock block(crit);
+        assertex(options==SubscribeOptionAbort);
+        if (!abortWatcher)
+        {
+            abortWatcher.setown(new CWorkUnitAbortWatcher(this, p->queryName()));
+            abortDirty = true;
+        }
+    }
+    virtual void unsubscribe()
+    {
+        CriticalBlock block(crit);
+        if (abortWatcher)
+        {
+            abortWatcher->unsubscribe();
+            abortWatcher.clear();
+        }
+    }
+
+    virtual bool aborting() const
+    {
+        CriticalBlock block(crit);
+        if (abortDirty)
+        {
+            StringBuffer apath;
+            apath.append("/WorkUnitAborts/").append(p->queryName());
+            Owned<IRemoteConnection> acon = querySDS().connect(apath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+            if (acon)
+                abortState = acon->queryRoot()->getPropInt(NULL) != 0;
+            else
+                abortState = false;
+            abortDirty = false;
+        }
+        return abortState;
+    }
+
+protected:
+    class CWorkUnitAbortWatcher : public CInterface, implements ISDSSubscription
+    {
+        CPersistedWorkUnit *parent; // not linked - it links me
+        SubscriptionId abort;
+    public:
+        IMPLEMENT_IINTERFACE;
+        CWorkUnitAbortWatcher(CPersistedWorkUnit *_parent, const char *wuid) : parent(_parent)
+        {
+            StringBuffer wuRoot;
+            wuRoot.append("/WorkUnitAborts/").append(wuid);
+            abort = querySDS().subscribe(wuRoot.str(), *this);
+        }
+        ~CWorkUnitAbortWatcher()
+        {
+            assertex(abort==0);
+        }
+
+        void unsubscribe()
+        {
+            querySDS().unsubscribe(abort);
+            abort = 0;
+        }
+
+        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+        {
+            parent->abortDirty = true;
+        }
+    };
+
+    Owned<CWorkUnitAbortWatcher> abortWatcher;
+    mutable bool abortDirty;
+    mutable bool abortState;
 };
 
 interface ISDSManager; // MORE - can remove once dali split out
@@ -580,7 +663,7 @@ public:
 
     virtual IWorkUnit * createWorkUnit(const char * app, const char * user, ISecManager *secmgr, ISecUser *secuser);
     virtual bool deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
-    virtual IConstWorkUnit * openWorkUnit(const char * wuid, bool lock, ISecManager *secmgr, ISecUser *secuser);
+    virtual IConstWorkUnit * openWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual int setTracingLevel(int newlevel);
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *scope, ISecManager *secmgr, ISecUser *secuser);
@@ -611,7 +694,7 @@ public:
 protected:
     // These need to be implemented by the derived classes
     virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;
-    virtual CLocalWorkUnit* _openWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser) = 0;  // for read access
+    virtual CLocalWorkUnit* _openWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;  // for read access
     virtual CLocalWorkUnit* _updateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;  // for write access
 
 };

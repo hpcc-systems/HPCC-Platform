@@ -37,7 +37,7 @@ IConstWorkUnit *WsEclWuInfo::ensureWorkUnit()
     if (wu)
         return wu;
     Owned<IWorkUnitFactory> wf = getWorkUnitFactory();
-    wu.setown(wf->openWorkUnit(wuid.str(), false));
+    wu.setown(wf->openWorkUnit(wuid.str()));
     if (!wu)
         throw MakeStringException(-1, "Could not open workunit: %s", wuid.str());
     if (isLibrary(wu))

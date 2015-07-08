@@ -167,7 +167,7 @@ static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     StringAttr wuid;
     wuid.setown(ctx->getWuid());
-    return factory->openWorkUnit(wuid, false);
+    return factory->openWorkUnit(wuid);
 }
 
 static IConstEnvironment * openDaliEnvironment()

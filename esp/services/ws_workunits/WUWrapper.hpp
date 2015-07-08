@@ -32,13 +32,13 @@ class CWUWrapper : public CInterface
 public:
     CWUWrapper() {}
     CWUWrapper(const char* wuid, IEspContext &context): 
-        factory(getWorkUnitFactory()), wu(factory->openWorkUnit(wuid, false, context.querySecManager(), context.queryUser()))
+        factory(getWorkUnitFactory()), wu(factory->openWorkUnit(wuid, context.querySecManager(), context.queryUser()))
     {
         if(!wu)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Could not open workunit %s",wuid);
     }
 
-    CWUWrapper(const char* wuid): factory(getWorkUnitFactory()), wu(factory->openWorkUnit(wuid, false))
+    CWUWrapper(const char* wuid): factory(getWorkUnitFactory()), wu(factory->openWorkUnit(wuid))
     {
         if(!wu)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Could not open workunit %s",wuid);

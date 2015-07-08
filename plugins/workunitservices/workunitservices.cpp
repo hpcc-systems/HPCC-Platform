@@ -219,7 +219,7 @@ static IWorkUnitFactory * getWorkunitFactory(ICodeContext * ctx)
 static IConstWorkUnit * getWorkunit(ICodeContext * ctx, const char * wuid)
 {
     Owned<IWorkUnitFactory> wuFactory = getWorkunitFactory(ctx);
-    return wuFactory->openWorkUnit(wuid, false);
+    return wuFactory->openWorkUnit(wuid);
 }
 
 static IConstWorkUnit * getWorkunit(ICodeContext * ctx)

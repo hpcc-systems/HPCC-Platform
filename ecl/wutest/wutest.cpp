@@ -306,7 +306,7 @@ int main(int argc, const char *argv[])
                 {
                     IPropertyTree &thisProgress = iter->query();
                     const char *wuid = thisProgress.queryName();
-                    Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid, false);
+                    Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid);
                     if (!w)
                     {
                         printf("Orphaned graph info %s\n", wuid);
@@ -333,7 +333,7 @@ int main(int argc, const char *argv[])
                         splitFilename(filename, NULL, NULL, &wuid, NULL);
                         if (wuid.charAt(0)=='W' && wuid.charAt(1)=='2' && wuid.charAt(2)=='0') // Beware the Y2100 bug...
                         {
-                            Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid.str(), false);
+                            Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid.str());
                             if (!w)
                             {
                                 printf("Orphaned dll info %s\n", wuid.str());
@@ -368,7 +368,7 @@ int main(int argc, const char *argv[])
                     printf("failed to restore %s\n", wuid);
             }
             else {
-                Owned<IConstWorkUnit> w = factory->openWorkUnit(globals->queryProp("WUID"), false);
+                Owned<IConstWorkUnit> w = factory->openWorkUnit(globals->queryProp("WUID"));
                 if (w)
                     dump(*w, globals);
             }
@@ -379,7 +379,7 @@ int main(int argc, const char *argv[])
             ForEach(*it)
             {
                 IConstWorkUnitInfo& wi = it->query();
-                Owned<IConstWorkUnit> w = factory->openWorkUnit(wi.queryWuid(), false);
+                Owned<IConstWorkUnit> w = factory->openWorkUnit(wi.queryWuid());
                 if (!dump(*w, globals))
                     break;
             }
@@ -712,7 +712,7 @@ protected:
         createWu.clear();
 
         // Now try to re-read
-        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false);
+        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
         ASSERT(streq(wu->queryWuid(), wuid));
         ASSERT(streq(wu->queryJobName(), embeddedWU->queryJobName()));
         exportWorkUnitToXML(wu, xml3, false, false, false);
@@ -854,7 +854,7 @@ protected:
         SCMStringBuffer s;
         for (i = 0; i < testSize; i++)
         {
-            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuids.item(i), false);
+            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuids.item(i));
             if (false)
             {
                 StringBuffer wuXML;
@@ -946,7 +946,7 @@ protected:
         start = end;
         for (i = 0; i < testSize; i++)
         {
-            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuids.item(i), false);
+            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuids.item(i));
             ASSERT(wu->getExceptionCount() == 0);
         }
         end = msTick();
@@ -973,7 +973,7 @@ protected:
         start = msTick();
         for (i = 0; i < testSize; i++)
         {
-            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuids.item(i), false);
+            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuids.item(i));
             Owned<IConstWUResult> result = wu->getResultByName("Result 1");
             ASSERT(result);
             ASSERT(result->isResultScalar());

@@ -53,8 +53,6 @@
 
 #define GLOBAL_WORKUNIT "global"
 
-#define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
-
 static int workUnitTraceLevel = 1;
 
 static StringBuffer &getXPath(StringBuffer &wuRoot, const char *wuid)
@@ -1075,27 +1073,25 @@ extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
     return new CLightweightWorkunitInfo(p);
 }
 
-class CDaliWorkUnit : public CLocalWorkUnit
+class CDaliWorkUnit : public CPersistedWorkUnit
 {
 public:
     IMPLEMENT_IINTERFACE;
     CDaliWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser)
-        : connection(_conn), CLocalWorkUnit(secmgr, secuser)
+        : connection(_conn), CPersistedWorkUnit(secmgr, secuser)
     {
         loadPTree(connection->getRoot());
-        abortDirty = true;
-        abortState = false;
     }
     ~CDaliWorkUnit()
     {
         // NOTE - order is important - we need to construct connection before p and (especially) destroy after p
-        // We use the beforeDIspose() in base class to help ensure this
+        // We use the beforeDispose() in base class to help ensure this
         p.clear();
     }
 
     virtual void forceReload()
     {
-        synchronized sync(locked); // protect locked workunits (uncommited writes) from reload
+        synchronized sync(locked); // protect locked workunits (uncommitted writes) from reload
         StringBuffer wuRoot;
         getXPath(wuRoot, p->queryName());
         IRemoteConnection *newconn = querySDS().connect(wuRoot.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
@@ -1110,14 +1106,14 @@ public:
 
     virtual void cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteExclusions)
     {
-        CLocalWorkUnit::cleanupAndDelete(deldll, deleteOwned, deleteExclusions);
+        CPersistedWorkUnit::cleanupAndDelete(deldll, deleteOwned, deleteExclusions);
         connection->close(true);
         connection.clear();
     }
 
     virtual void commit()
     {
-        CLocalWorkUnit::commit();
+        CPersistedWorkUnit::commit();
         if (connection)
             connection->commit();
     }
@@ -1133,7 +1129,6 @@ public:
         if (!connection)
             throw MakeStringException(WUERR_LockFailed, "Failed to get connection for xpath %s", wuRoot.str());
         clearCached(true);
-        abortDirty = true;
         p.setown(connection->getRoot());
     }
 
@@ -1161,80 +1156,8 @@ public:
             throw;
         }
     }
-
-    virtual void subscribe(WUSubscribeOptions options)
-    {
-        CriticalBlock block(crit);
-        assertex(options==SubscribeOptionAbort);
-        if (!abortWatcher)
-        {
-            abortWatcher.setown(new CWorkUnitAbortWatcher(this, p->queryName()));
-            abortDirty = true;
-        }
-    }
-
-    virtual void unsubscribe()
-    {
-        CriticalBlock block(crit);
-        if (abortWatcher)
-        {
-            abortWatcher->unsubscribe();
-            abortWatcher.clear();
-        }
-    }
-
-    virtual bool aborting() const
-    {
-        CriticalBlock block(crit);
-        if (abortDirty)
-        {
-            StringBuffer apath;
-            apath.append("/WorkUnitAborts/").append(p->queryName());
-            Owned<IRemoteConnection> acon = querySDS().connect(apath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-            if (acon)
-                abortState = acon->queryRoot()->getPropInt(NULL) != 0;
-            else
-                abortState = false;
-            abortDirty = false;
-        }
-        return abortState;
-    }
-
 protected:
-    class CWorkUnitAbortWatcher : public CInterface, implements ISDSSubscription
-    {
-        CDaliWorkUnit *parent; // not linked - it links me
-        SubscriptionId abort;
-    public:
-        IMPLEMENT_IINTERFACE;
-        CWorkUnitAbortWatcher(CDaliWorkUnit *_parent, const char *wuid) : parent(_parent)
-        {
-            StringBuffer wuRoot;
-            wuRoot.append("/WorkUnitAborts/").append(wuid);
-            abort = querySDS().subscribe(wuRoot.str(), *this);
-        }
-        ~CWorkUnitAbortWatcher()
-        {
-            assertex(abort==0);
-        }
-
-        void unsubscribe()
-        {
-            querySDS().unsubscribe(abort);
-            abort = 0;
-        }
-
-        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-        {
-            parent->abortDirty = true;
-        }
-    };
-
     Owned<IRemoteConnection> connection;
-    Owned<CWorkUnitAbortWatcher> abortWatcher;
-
-    mutable bool abortDirty;
-    mutable bool abortState;
 };
 
 class CLockedWorkUnit : public CInterface, implements ILocalWorkUnit, implements IExtendedWUInterface
@@ -2270,7 +2193,7 @@ bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, IS
     return true;
 }
 
-IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser)
+IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
 {
     StringBuffer wuidStr(wuid);
     wuidStr.trim();
@@ -2287,7 +2210,7 @@ IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, bool lock, ISec
 
     if (workUnitTraceLevel > 1)
         PrintLog("openWorkUnit %s", wuidStr.str());
-    Owned<IConstWorkUnit> wu = _openWorkUnit(wuid, lock, secmgr, secuser);
+    Owned<IConstWorkUnit> wu = _openWorkUnit(wuid, secmgr, secuser);
     if (wu)
     {
         if (!checkWuSecAccess(*wu, secmgr, secuser, SecAccess_Read, "opening", true, true))
@@ -2616,11 +2539,11 @@ public:
         return new CDaliWorkUnit(conn, secmgr, secuser);
     }
 
-    virtual CLocalWorkUnit* _openWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser)
+    virtual CLocalWorkUnit* _openWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
-        IRemoteConnection* conn = sdsManager->connect(wuRoot.str(), session, lock ? RTM_LOCK_READ|RTM_LOCK_SUB : 0, SDS_LOCK_TIMEOUT);
+        IRemoteConnection* conn = sdsManager->connect(wuRoot.str(), session, 0, SDS_LOCK_TIMEOUT);
         if (conn)
             return new CDaliWorkUnit(conn, secmgr, secuser);
         else
@@ -3088,11 +3011,11 @@ public:
         if (!secUser) secUser = defaultSecUser.get();
         return baseFactory->deleteWorkUnit(wuid, secMgr, secUser);
     }
-    virtual IConstWorkUnit* openWorkUnit(const char *wuid, bool lock, ISecManager *secMgr, ISecUser *secUser)
+    virtual IConstWorkUnit* openWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
         if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->openWorkUnit(wuid, lock, secMgr, secUser);
+        return baseFactory->openWorkUnit(wuid, secMgr, secUser);
     }
     virtual IWorkUnit* updateWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser)
     {
@@ -3753,10 +3676,6 @@ void CLocalWorkUnit::requestAbort()
     abortWorkUnit(p->queryName());
 }
 
-void CLocalWorkUnit::subscribe(WUSubscribeOptions options)
-{
-}
-
 void CLocalWorkUnit::unlockRemote()
 {
     CriticalBlock block(crit);
@@ -4038,11 +3957,6 @@ void CLocalWorkUnit::setAgentSession(__int64 sessionId)
 {
     CriticalBlock block(crit);
     p->setPropInt64("@agentSession", sessionId);
-}
-
-bool CLocalWorkUnit::aborting() const 
-{
-    return false;
 }
 
 bool CLocalWorkUnit::getIsQueryService() const 
@@ -5812,11 +5726,6 @@ IWULibrary* CLocalWorkUnit::updateLibraryByName(const char *qname)
     libraries.append(*q);
     q->setName(qname);
     return q;
-}
-
-void CLocalWorkUnit::unsubscribe()
-{
-    // Only overriding versions need to do anything
 }
 
 void CLocalWorkUnit::_loadExceptions() const
@@ -9434,7 +9343,7 @@ extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr
 {
     if (strnicmp(command, "<debug:", 7) == 0 && checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Debug", false, true))
     {
-        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false, &secmgr, &secuser);
+        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, &secmgr, &secuser);
         SCMStringBuffer ip;
         unsigned port;
         port = wu->getDebugAgentListenerPort();
@@ -10332,7 +10241,7 @@ extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unr
         if (query && query->getPropBool("@isLibrary"))
         {
             const char *wuid = query->queryProp("@wuid");
-            Owned<IConstWorkUnit> libcw = workunitFactory.openWorkUnit(wuid, false);
+            Owned<IConstWorkUnit> libcw = workunitFactory.openWorkUnit(wuid);
             if (libcw)
             {
                 names.appendUniq(libname.str());

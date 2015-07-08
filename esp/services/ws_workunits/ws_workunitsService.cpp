@@ -226,7 +226,7 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
             else
             {
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-                Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+                Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
                 if(!cw)
                     throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
 
@@ -373,7 +373,7 @@ static void checkUpdateQuerysetLibraries()
             const char *wuid = query.queryProp("@wuid");
             if (!wuid || !*wuid)
                 continue;
-            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
             if (!cw)
                 continue;
             checkAddLibrariesToQueryEntry(&query, cw);
@@ -547,14 +547,14 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Write);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.",wuid.str());
         if(req.getProtected() != req.getProtectedOrig())
         {
             cw->protect(req.getProtected());
             cw.clear();
-            cw.setown(factory->openWorkUnit(wuid.str(), false));
+            cw.setown(factory->openWorkUnit(wuid.str()));
             if(!cw)
                 throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.",wuid.str());
         }
@@ -848,7 +848,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
                 if(req.getCloneWorkunit() || req.getRecompile())
                 {
-                    Owned<IConstWorkUnit> src(factory->openWorkUnit(wuid.str(), false));
+                    Owned<IConstWorkUnit> src(factory->openWorkUnit(wuid.str()));
                     NewWsWorkunit wu(factory, context);
                     wuid.set(wu->queryWuid());
                     queryExtendedWU(wu)->copyWorkUnit(src, false);
@@ -859,7 +859,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
 
                 wuids.append(wuid.str());
 
-                Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str(), false));
+                Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str()));
                 if(!cw)
                     throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
@@ -1007,7 +1007,7 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
             throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
@@ -1091,7 +1091,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
             waitForWorkUnitToComplete(wuid.str(), timeToWait);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if (!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.", wuid.str());
 
@@ -1132,7 +1132,7 @@ bool CWsWorkunitsEx::onWUWaitCompiled(IEspContext &context, IEspWUWaitRequest &r
         WsWuHelpers::checkAndTrimWorkunit("WUWaitCompiled", wuid);
         secWaitForWorkUnitToCompile(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getWait());
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
         resp.setStateID(cw->getState());
@@ -1205,7 +1205,7 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false, false);
         waitForWorkUnitToComplete(wuid.str(), req.getTimeToWait());
 
-        Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str(), false));
+        Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str()));
         WsWUExceptions errors(*cw);
         resp.setErrors(errors);
         cw.clear();
@@ -1253,7 +1253,7 @@ bool CWsWorkunitsEx::onWUCompileECL(IEspContext &context, IEspWUCompileECLReques
         WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false, false);
         waitForWorkUnitToComplete(wuid.str(),req.getTimeToWait());
 
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
 
         SCMStringBuffer s;
         cw->getDebugValue("__Calculated__Complexity__",s);
@@ -1350,7 +1350,7 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
         WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false, false);
 
         int state = waitForWorkUnitToComplete(wuid.str(), timeMilliSec);
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
 
         WsWUExceptions errors(*cw);
         resp.setErrors(errors);
@@ -1615,7 +1615,7 @@ void doWUQueryByFile(IEspContext &context, const char *logicalFile, IEspWUQueryR
         throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT,"Cannot find the workunit for file %s.", logicalFile);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw= factory->openWorkUnit(wuid.str(), false);
+    Owned<IConstWorkUnit> cw= factory->openWorkUnit(wuid.str());
     if (!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot find the workunit for file %s.", logicalFile);
     if (getWsWorkunitAccess(context, *cw) < SecAccess_Read)
@@ -2290,7 +2290,7 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     WUState& wuState, bool xsd=true)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
     if(!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
     Owned<IConstWUResult> result;
@@ -2698,7 +2698,7 @@ bool CWsWorkunitsEx::onWUResultSummary(IEspContext &context, IEspWUResultSummary
         WsWuHelpers::checkAndTrimWorkunit("WUResultSummary", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
         ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
@@ -2744,7 +2744,7 @@ void getWorkunitCluster(IEspContext &context, const char* wuid, SCMStringBuffer&
         return;
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
     if (cw)
         cluster.set(cw->queryClusterName());
     else if (checkArchiveWUs)
@@ -2851,7 +2851,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
                     throw MakeStringException(ECLWATCH_INVALID_INPUT,"Need valid target cluster to browse file %s.",logicalName);
 
                 Owned<IWorkUnitFactory> wf = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-                Owned<IConstWorkUnit> cw = wf->openWorkUnit(lwuid.str(), false);
+                Owned<IConstWorkUnit> cw = wf->openWorkUnit(lwuid.str());
                 if (cw)
                     wuState = cw->getState();
             }
@@ -2930,7 +2930,7 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *ser
                         SCMStringBuffer state;
                         try
                         {
-                            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+                            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
                             if (!cw && (!stateReq || !*stateReq))
                             	match = true;
                             else if (cw)
@@ -3074,7 +3074,7 @@ bool CWsWorkunitsEx::onWUExport(IEspContext &context, IEspWUExportRequest &req, 
         StringBuffer xml("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Workunits>");
         for(WsWuSearch::iterator it=ws.begin(); it!=ws.end(); it++)
         {
-            Owned<IConstWorkUnit> cw = factory->openWorkUnit(it->c_str(), false);
+            Owned<IConstWorkUnit> cw = factory->openWorkUnit(it->c_str());
             if (cw)
                 exportWorkUnitToXML(cw, xml, true, false, true);
         }
@@ -3102,7 +3102,7 @@ bool CWsWorkunitsEx::onWUListLocalFileRequired(IEspContext& context, IEspWUListL
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if (!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Workunit %s not found.", wuid.str());
 
@@ -3321,7 +3321,7 @@ bool CWsWorkunitsEx::onWUProcessGraph(IEspContext &context,IEspWUProcessGraphReq
         WsWuHelpers::checkAndTrimWorkunit("WUProcessGraph", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
         ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
@@ -3410,7 +3410,7 @@ bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& r
         WsWuHelpers::checkAndTrimWorkunit("WUGetGraph", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
         ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
@@ -3469,7 +3469,7 @@ bool CWsWorkunitsEx::onWUGraphInfo(IEspContext &context,IEspWUGraphInfoRequest &
         WsWuHelpers::checkAndTrimWorkunit("WUGraphInfo", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
@@ -3498,7 +3498,7 @@ bool CWsWorkunitsEx::onWUGVCGraphInfo(IEspContext &context,IEspWUGVCGraphInfoReq
         WsWuHelpers::checkAndTrimWorkunit("WUGVCGraphInfo", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
@@ -3538,7 +3538,7 @@ bool CWsWorkunitsEx::onWUGraphTiming(IEspContext &context, IEspWUGraphTimingRequ
         WsWuHelpers::checkAndTrimWorkunit("WUGraphTiming", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.",wuid.str());
         ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
@@ -3768,7 +3768,7 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
             if (crc)
             {
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-                Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+                Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
                 if (cw)
                 {
                     //is this a previous copy of same query, or a WUID collision?
@@ -4056,7 +4056,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
     try
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cwu = factory->openWorkUnit(req.getWuid(), false);
+        Owned<IConstWorkUnit> cwu = factory->openWorkUnit(req.getWuid());
         if(!cwu.get())
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit %s.", req.getWuid());
 
@@ -4133,7 +4133,7 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
         WsWuHelpers::checkAndTrimWorkunit("WUGetZAPInfo", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 

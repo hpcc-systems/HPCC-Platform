@@ -725,7 +725,7 @@ IConstWUResult *EclAgent::getExternalResult(const char * wuid, const char *name,
 {
     LOG(MCsetresult, unknownJob, "EclAgent::getExternalResult(wuid:'%s',name='%s',sequence:%d)", nullText(wuid), nullText(name), sequence);
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid);
     if (externalWU)
     {
         externalWU->remoteCheckAccess(queryUserDescriptor(), false);
@@ -1703,7 +1703,7 @@ IConstWorkUnit * EclAgent::resolveLibrary(const char * libraryName, unsigned exp
     const char * libraryWuid = resolved->queryProp("@wuid");
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> wu = factory->openWorkUnit(libraryWuid, false);
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(libraryWuid);
     if (!wu)
         throw MakeStringException(0, "Could not open workunit %s implementing library %s", libraryWuid, libraryName);
 
@@ -2003,7 +2003,7 @@ void EclAgent::doProcess()
             // a final attempt to commit the original error (only) to the workunit
             // since unlockWorkUnit( which commits ) can error due to the nature of the transaction.
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid.get(), false);
+            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid.get());
             Owned<IWorkUnit> w = &wu->lock();
             StringBuffer m("System error ");
             m.append(e->errorCode()).append(": ");
@@ -3434,7 +3434,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 #ifdef _DEBUG
                 factory->setTracingLevel(10);
 #endif
-                w = factory->openWorkUnit(wuid.str(), false);
+                w = factory->openWorkUnit(wuid.str());
             }
             else
                 w = standAloneWorkUnit.getClear();

@@ -94,7 +94,7 @@ void ensureWsWorkunitAccess(IEspContext& cxt, IConstWorkUnit& cw, SecAccessFlags
 void ensureWsWorkunitAccess(IEspContext& context, const char* wuid, SecAccessFlags minAccess)
 {
     Owned<IWorkUnitFactory> wf = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = wf->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> cw = wf->openWorkUnit(wuid);
     if (!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Failed to open workunit %s when ensuring workunit access", wuid);
     ensureWsWorkunitAccess(context, *cw, minAccess);
@@ -3078,7 +3078,7 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, const char *wuid, const
     const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
     if(!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
     return submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, resetVariables, paramXml, variables, debugs);
@@ -3088,7 +3088,7 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, const char *wuid, const
 void WsWuHelpers::copyWsWorkunit(IEspContext &context, IWorkUnit &wu, const char *srcWuid)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> src(factory->openWorkUnit(srcWuid, false));
+    Owned<IConstWorkUnit> src(factory->openWorkUnit(srcWuid));
 
     queryExtendedWU(&wu)->copyWorkUnit(src, false);
 

@@ -601,9 +601,9 @@ static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, Stri
         res.append("BACKUP: ");
     res.append(wuid).append(" ");
     if (wufactory) {
-        Owned<IConstWorkUnit> wu;
+        Owned<IWorkUnit> wu;
         try {
-            wu.setown(wufactory->openWorkUnit(wuid, true));
+            wu.setown(wufactory->updateWorkUnit(wuid));
         }
         catch (IException *e) { // probably locked
             e->errorMessage(res);
