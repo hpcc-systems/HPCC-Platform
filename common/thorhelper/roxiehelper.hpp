@@ -99,7 +99,11 @@ public:
 
 //==============================================================================================================
 
-typedef enum {heapSortAlgorithm, insertionSortAlgorithm, quickSortAlgorithm, stableQuickSortAlgorithm, spillingQuickSortAlgorithm, stableSpillingQuickSortAlgorithm, unknownSortAlgorithm } RoxieSortAlgorithm;
+typedef enum { heapSortAlgorithm, insertionSortAlgorithm,
+              quickSortAlgorithm, stableQuickSortAlgorithm, spillingQuickSortAlgorithm, stableSpillingQuickSortAlgorithm,
+              mergeSortAlgorithm, spillingMergeSortAlgorithm,
+              parallelMergeSortAlgorithm, spillingParallelMergeSortAlgorithm,
+              unknownSortAlgorithm } RoxieSortAlgorithm;
 
 interface ISortAlgorithm : extends IInterface
 {
