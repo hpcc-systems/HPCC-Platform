@@ -16,6 +16,7 @@
 ############################################################################## */
 
 //class=embedded
+//class=3rdparty
 
 IMPORT cassandra;
 
@@ -26,6 +27,8 @@ IMPORT cassandra;
 // This is the record structure in ECL that will correspond to the rows in the Cassabdra dataset
 // Note that the default values specified in the fields will be used when a NULL value is being
 // returned from Cassandra
+
+server := '127.0.0.1';
 
 maprec := RECORD
    string fromVal => string toVal
@@ -60,11 +63,11 @@ init2 := ROW({'name4' , 3, true, 9.10, 11.12, D'aa55aa55', 987.65, U'Baße', U'B
 
 // Note that server will default to localhost if not specified...
 
-createks() := EMBED(cassandra : server('127.0.0.1'),user('rchapman'))
+createks() := EMBED(cassandra : server(server),user('rchapman'))
   CREATE KEYSPACE IF NOT EXISTS test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3' } ;
 ENDEMBED;
 
-createTables() := EMBED(cassandra : server('127.0.0.1'),user('rchapman'),keyspace('test'))
+createTables() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   DROP TABLE IF EXISTS tbl1;
 
   // Note that an ECL SET can map to either a SET or a LIST in Cassandra (it's actually closer to a LIST since repeated values are allowed and order is preserved)
@@ -95,23 +98,23 @@ ENDEMBED;
 // has restrictions about what can be done in a batch, we can't default to using batch
 // unless told to...
 
-initialize(dataset(childrec) values) := EMBED(cassandra : user('rchapman'),keyspace('test'),batch('unlogged'))
+initialize(dataset(childrec) values) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'),batch('unlogged'))
   INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1) values (?,?,?,?,?,?,?,?,?,?,?,?,?);
 ENDEMBED;
 
-initialize2(row(childrec) values) := EMBED(cassandra : user('rchapman'),keyspace('test'))
+initialize2(row(childrec) values) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1) values (?,?,?,?,?,?,?,?,?,?,?,?,?);
 ENDEMBED;
 
 // Returning a dataset
 
-dataset(childrec) testCassandraDS() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+dataset(childrec) testCassandraDS() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1;
 ENDEMBED;
 
 // Returning a single row
 
-childrec testCassandraRow() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+childrec testCassandraRow() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 LIMIT 1;
 ENDEMBED;
 
@@ -137,64 +140,68 @@ testCassandraParms(
    // Note we can't pass a dataset as a paramter to bind to a collection field - it would be interpreted as 'execute once per value in the dataset'
    // You have to pass a record containing the field as a child dataset
    ROW(mapwrapper) map1
-   ) := EMBED(cassandra : user('rchapman'),keyspace('test'))
+   ) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1) values (?,?,?,?,?,?,'8.76543',?,?,?,?,?,?);
 ENDEMBED;
 
 // Returning scalars
 
-string testCassandraString() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+string testCassandraString() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT name from tbl1 LIMIT 1;
 ENDEMBED;
 
-dataset(childrec) testCassandraStringParam(string filter) := EMBED(cassandra : user('rchapman'),keyspace('test'))
+dataset(childrec) testCassandraStringParam(string filter) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 where name = ?;
 ENDEMBED;
 
-integer testCassandraInt() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+dataset(childrec) testCassandraStringSetParam(set of string filter) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 where name IN ?;
+ENDEMBED;
+
+integer testCassandraInt() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT value from tbl1 LIMIT 1;
 ENDEMBED;
 
-boolean testCassandraBool() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+boolean testCassandraBool() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT boolval from tbl1 WHERE name='name1';
 ENDEMBED;
 
-real8 testCassandraReal8() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+real8 testCassandraReal8() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT r8 from tbl1 WHERE name='name1';
 ENDEMBED;
 
-real4 testCassandraReal4() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+real4 testCassandraReal4() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT r4 from tbl1 WHERE name='name1';
 ENDEMBED;
 
-data testCassandraData() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+data testCassandraData() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT d from tbl1 WHERE name='name1';
 ENDEMBED;
 
-UTF8 testCassandraUtf8() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+UTF8 testCassandraUtf8() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT u1 from tbl1 WHERE name='name1';
 ENDEMBED;
 
-UNICODE testCassandraUnicode() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+UNICODE testCassandraUnicode() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT u2 from tbl1 WHERE name='name1';
 ENDEMBED;
 
-STRING testCassandraAscii() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+STRING testCassandraAscii() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT a from tbl1 WHERE name='name1';
 ENDEMBED;
 
-SET OF STRING testCassandraSet() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+SET OF STRING testCassandraSet() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT set1 from tbl1 WHERE name='name1';
 ENDEMBED;
 
-SET OF INTEGER4 testCassandraList() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+SET OF INTEGER4 testCassandraList() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT list1 from tbl1 WHERE name='name1';
 ENDEMBED;
 
 // Just as you can't pass a dataset parameter to bind to a map column (only a child dataset of a record),
 // if you wanted to return just a map column you have to do so via a child dataset
 
-MapWrapper testCassandraMap() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+MapWrapper testCassandraMap() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT map1 from tbl1 WHERE name='name1';
 ENDEMBED;
 
@@ -204,7 +211,7 @@ stringrec := RECORD
    string name
 END;
 
-TRANSFORM(childrec) t(stringrec L) := EMBED(cassandra : user('rchapman'),keyspace('test'))
+TRANSFORM(childrec) t(stringrec L) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 where name = ?;
 ENDEMBED;
 
@@ -219,7 +226,7 @@ stringrec extractName(childrec l) := TRANSFORM
   SELF := l;
 END;
 
-dataset(childrec) testCassandraDSParam(dataset(stringrec) inrecs) := EMBED(cassandra : user('rchapman'),keyspace('test'))
+dataset(childrec) testCassandraDSParam(dataset(stringrec) inrecs) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 where name = ?;
 ENDEMBED;
 
@@ -236,13 +243,16 @@ testCassandraBulk := initialize(s1);
 
 // Check that 25000 got inserted
 
-integer testCassandraCount() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+integer testCassandraCount() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
   SELECT COUNT(*) from tbl1;
 ENDEMBED;
 
-dataset(childrec) testCassandraCountPaged(UNSIGNED ps) := EMBED(cassandra : user('rchapman'),keyspace('test'),pageSize(ps))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1;
-ENDEMBED;
+dataset(childrec) testCassandraCountPaged(INTEGER ps) := FUNCTION
+  dataset(childrec) r() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'),pageSize(ps))
+    SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1;
+  ENDEMBED;
+  return r();
+END;
 
 // Execute the tests
 
@@ -257,6 +267,7 @@ sequential (
   OUTPUT(testCassandraRow().name),
   OUTPUT(testCassandraString()),
   OUTPUT(testCassandraStringParam(testCassandraString())),
+  OUTPUT(testCassandraStringSetParam(['name1', 'name2'])),
   OUTPUT(testCassandraInt()),
   OUTPUT(testCassandraBool()),
   OUTPUT(testCassandraReal8()),
