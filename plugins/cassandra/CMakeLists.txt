@@ -118,6 +118,7 @@ if (USE_CASSANDRA)
         cassandra
         eclrtl
         roxiemem
+        dalibase
         workunit
         jlib
         )
