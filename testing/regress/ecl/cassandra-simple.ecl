@@ -247,9 +247,12 @@ integer testCassandraCount() := EMBED(cassandra : server(server),user('rchapman'
   SELECT COUNT(*) from tbl1;
 ENDEMBED;
 
-dataset(childrec) testCassandraCountPaged(UNSIGNED ps) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'),pageSize(ps))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1;
-ENDEMBED;
+dataset(childrec) testCassandraCountPaged(INTEGER ps) := FUNCTION
+  dataset(childrec) r() := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'),pageSize(ps))
+    SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1;
+  ENDEMBED;
+  return r();
+END;
 
 // Execute the tests
 

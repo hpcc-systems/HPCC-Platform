@@ -111,9 +111,9 @@
       <!--***Note specific Activity task details have been REMOVED (to DocShare/WKSPCE/ECLWa400)***-->
 
       <para>When ECL Watch starts it defaults to the Activity page. To access
-      the Activity page from any other page in ECL Watch click on the HPCC
-      Platform image at the top of any page, as indicated the preceding
-      image.</para>
+      the Activity page from any other page in ECL Watch click on the
+      <emphasis role="bold">ECL Watch</emphasis> image at the top of any page,
+      as indicated the preceding image.</para>
 
       <para>Activity related tasks can also be initiated from the workunit tab
       for the specific job in question.</para>
@@ -195,6 +195,29 @@
 
         <para>You can search for workunits, users, files, or even ECL, using
         the search box. The search box supports wild cards.</para>
+      </sect2>
+
+      <sect2 id="AutoRefresh">
+        <title>Auto Refresh</title>
+
+        <para><figure>
+            <title>Auto Refresh</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA011.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>The <emphasis role="bold">Activity</emphasis> page displays
+        active ECL or DFU workunits either running or in the queue on your
+        cluster. To refresh the list, press the <emphasis
+        role="bold">Refresh</emphasis> button. Auto Refresh shows the list in
+        real-time, but this feature is disabled by default. </para>
+
+        <para>To enable Auto Refresh, toggle the Auto Refresh button. </para>
+
+        <para>In an environment with a large number of active users, Auto
+        Refresh could impact performance of your ESP server.</para>
       </sect2>
     </sect1>
 
@@ -341,14 +364,10 @@
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                   xpointer="Spray_XML"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
- 
-
- 
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                   xpointer="Spray_JSON"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
-               
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                   xpointer="Spray_Variable"
