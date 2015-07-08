@@ -31,6 +31,7 @@ enum
     FVFFdataset     = 5,
     FVFFset         = 6,
     FVFFvirtual     = 7,
+    FVFFblob        = 8
 };
 
 interface IFvDataSource;

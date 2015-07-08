@@ -10088,28 +10088,6 @@ protected:
 };
 
 
-static HqlTransformerInfo cHqlBlobTransformerInfo("CHqlBlobTransformer");
-class CHqlBlobTransformer : public QuickHqlTransformer
-{
-public:
-    CHqlBlobTransformer() : QuickHqlTransformer(cHqlBlobTransformerInfo, NULL) {}
-
-    virtual IHqlExpression * createTransformed(IHqlExpression * expr)
-    {
-        OwnedHqlExpr transformed = QuickHqlTransformer::createTransformed(expr);
-        if ((expr->getOperator() == no_field) && expr->hasAttribute(blobAtom))
-            return appendOwnedOperand(transformed, createAttribute(_isBlobInIndex_Atom));
-        return transformed.getClear();
-    }
-};
-
-IHqlExpression * annotateIndexBlobs(IHqlExpression * expr)
-{
-    CHqlBlobTransformer transformer;
-    return transformer.transform(expr);
-}
-
-
 IDefRecordElement * HqlCppTranslator::createMetaRecord(IHqlExpression * record)
 {
     TranslatorMaxSizeCallback callback(*this);
