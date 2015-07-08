@@ -31,6 +31,7 @@
 #include "nbcd.hpp"
 #include "jsort.hpp"
 #include "jptree.hpp"
+#include "jlzw.hpp"
 #include "jregexp.hpp"
 #include "dadfs.hpp"
 #include "dasds.hpp"
@@ -152,6 +153,43 @@ public:
             return false;
     }
 } blobColumnMapper;
+
+static class compressTreeColumnMapper : implements CassandraColumnMapper
+{
+public:
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    {
+        rtlDataAttr str;
+        unsigned chars;
+        getDataResult(NULL, value, chars, str.refdata());
+        if (chars)
+        {
+            MemoryBuffer compressed, decompressed;
+            compressed.setBuffer(chars, str.getbytes(), false);
+            decompressToBuffer(decompressed, compressed);
+            Owned<IPTree> p = createPTree(decompressed);
+            row->setPropTree(name, p.getClear());
+        }
+        return row;
+    }
+    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    {
+        IPTree *child = row->queryPropTree(name);
+        if (child && child->hasChildren())
+        {
+            if (statement)
+            {
+                MemoryBuffer decompressed, compressed;
+                child->serialize(decompressed);
+                compressToBuffer(compressed, decompressed.length(), decompressed.toByteArray());
+                statement->bindBytes(idx, (const cass_byte_t *) compressed.toByteArray(), compressed.length());
+            }
+            return true;
+        }
+        else
+            return false;
+    }
+} compressTreeColumnMapper;
 
 static class TimeStampColumnMapper : implements CassandraColumnMapper
 {
@@ -916,7 +954,6 @@ static const CassandraXmlMapping workunitsMappings [] =
 
     {"debug", "map<text, text>", "Debug", simpleMapColumnMapper},
     {"attributes", "map<text, text>", "@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state@timeScheduled@totalThorTime@", attributeMapColumnMapper},  // name is the suppression list, note trailing @
-    {"graphs", "map<text, text>", "Graphs", graphMapColumnMapper}, // MORE - make me lazy...
     {"plugins", "list<text>", "Plugins", pluginListColumnMapper},
     {"query", "text", "Query/Text", queryTextColumnMapper},        // MORE - make me lazy...
     {"associations", "map<text, text>", "Query/Associated", associationsMapColumnMapper},
@@ -1006,13 +1043,13 @@ static const CassandraXmlMapping filesReadSearchMappings [] =
  *    I'm not sure it really changes a lot - adds a bit of noise into the partitioner...
  *    Actually, it does mean that the updates and deletes can all be done with a single Cassandra query, though whether that has any advantages over multiple in a batch I don't know
  *    It MAY well make it easier to make sure that searches are case-insensitive, since we'll generally need to separate out the search field from the display field to achieve that
- * 3. Sort orders are tricky - I can use the secondary table to deliver sorted by one field as long as it is the one I am filtering by (but if is is I probably don't need it sorted!
+ * 3. Sort orders are tricky - I can use the secondary table to deliver sorted by one field as long as it is the one I am filtering by (but if is is I probably don't need it sorted!)
  *
  */
 
 // The following describe child tables - all keyed by wuid
 
-enum ChildTablesEnum { WuExceptionsChild, WuStatisticsChild, WuGraphProgressChild, WuResultsChild, WuVariablesChild, WuTemporariesChild, WuFilesReadChild,ChildTablesSize };
+enum ChildTablesEnum { WuExceptionsChild, WuStatisticsChild, WuGraphsChild, WuGraphProgressChild, WuResultsChild, WuVariablesChild, WuTemporariesChild, WuFilesReadChild,ChildTablesSize };
 
 struct ChildTableInfo
 {
@@ -1074,6 +1111,41 @@ static const ChildTableInfo wuGraphProgressTable =
     "Bit of a", "Special case",
     WuGraphProgressChild,
     wuGraphProgressMappings
+};
+
+static const CassandraXmlMapping wuGraphsMappings [] =
+{
+    {"partition", "int", NULL, hashRootNameColumnMapper},
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"name", "text", "@name", stringColumnMapper},
+    {"attributes", "map<text, text>", "@name@", attributeMapColumnMapper},
+    {"xgmml", "blob", "xgmml", compressTreeColumnMapper},
+    { NULL, "wuGraphs", "((partition, wuid), name)", stringColumnMapper}  // Note - we do occasionally search by type - but that is done in a postfilter having preloaded/cached all
+};
+
+static const ChildTableInfo wuGraphsTable =
+{
+    "Graphs", "Graph",
+    WuGraphsChild,
+    wuGraphsMappings
+};
+
+// A cut down version of the above - note this does not represent a different table!
+
+static const CassandraXmlMapping wuGraphMetasMappings [] =
+{
+    {"partition", "int", NULL, hashRootNameColumnMapper},
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"name", "text", "@name", stringColumnMapper},
+    {"attributes", "map<text, text>", "@name@", attributeMapColumnMapper},
+    { NULL, "wuGraphs", "((partition, wuid), name)", stringColumnMapper}
+};
+
+static const ChildTableInfo wuGraphMetasTable =
+{
+    "Graphs", "Graph",
+    WuGraphsChild,
+    wuGraphMetasMappings
 };
 
 #define resultTableFields \
@@ -1150,7 +1222,7 @@ static const ChildTableInfo wuFilesReadTable =
 };
 
 // Order should match the enum above
-static const ChildTableInfo * const childTables [] = { &wuExceptionsTable, &wuStatisticsTable, &wuGraphProgressTable, &wuResultsTable, &wuVariablesTable, &wuTemporariesTable, &wuFilesReadTable, NULL };
+static const ChildTableInfo * const childTables [] = { &wuExceptionsTable, &wuStatisticsTable, &wuGraphsTable, &wuGraphProgressTable, &wuResultsTable, &wuVariablesTable, &wuTemporariesTable, &wuFilesReadTable, NULL };
 
 interface ICassandraSession : public IInterface  // MORE - rename!
 {
@@ -1159,6 +1231,7 @@ interface ICassandraSession : public IInterface  // MORE - rename!
     virtual unsigned queryTraceLevel() const = 0;
 
     virtual const CassResult *fetchDataForWuid(const CassandraXmlMapping *mappings, const char *wuid, bool includeWuid) const = 0;
+    virtual const CassResult *fetchDataForWuidAndKey(const CassandraXmlMapping *mappings, const char *wuid, const char *key) const = 0;
     virtual void deleteChildByWuid(const CassandraXmlMapping *mappings, const char *wuid, CassBatch *batch) const = 0;
     virtual IPTree *cassandraToWorkunitXML(const char *wuid) const = 0;
 };
@@ -2203,6 +2276,8 @@ public:
                 // empty newly-created WU, it is unnecessary.
                 //deleteChildren(wuid);
 
+                // MORE can use the table
+                childXMLtoCassandra(sessionCache, *batch, wuGraphsMappings, p, "Graphs/Graph", 0);
                 childXMLtoCassandra(sessionCache, *batch, wuResultsMappings, p, "Results/Result", "0");
                 childXMLtoCassandra(sessionCache, *batch, wuVariablesMappings, p, "Variables/Variable", "-1"); // ResultSequenceStored
                 childXMLtoCassandra(sessionCache, *batch, wuTemporariesMappings, p, "Temporaries/Variable", "-3"); // ResultSequenceInternal // NOTE - lookups may also request ResultSequenceOnce
@@ -2265,6 +2340,30 @@ public:
         else
             DBGLOG("No batch present??");
     }
+    virtual IConstWUGraph *getGraph(const char *qname) const
+    {
+        // Just because we read one graph, does not mean we are likely to read more. So don't cache this result.
+        // Also note that graphs are generally read-only
+        CassandraResult result(sessionCache->fetchDataForWuidAndKey(wuGraphsMappings, queryWuid(), qname));
+        const CassRow *row = cass_result_first_row(result);
+        if (row)
+        {
+            Owned<IPTree> graph = createPTree("Graph");
+            unsigned colidx = 2;  // We did not fetch wuid or partition
+            CassandraIterator cols(cass_iterator_from_row(row));
+            while (cass_iterator_next(cols))
+            {
+                assertex(wuGraphsMappings[colidx].columnName);
+                const CassValue *value = cass_iterator_get_column(cols);
+                if (value && !cass_value_is_null(value))
+                    wuGraphsMappings[colidx].mapper.toXML(graph, wuGraphsMappings[colidx].xpath, value);
+                colidx++;
+            }
+            return new CLocalWUGraph(*this, graph.getClear());
+        }
+        else
+            return NULL;
+    }
 
     virtual void setUser(const char *user)
     {
@@ -2310,6 +2409,12 @@ public:
         }
     }
 
+    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml)
+    {
+        CPersistedWorkUnit::createGraph(name, label, type, xgmml);
+        VStringBuffer xpath("Graphs/Graph[@name='%s']", name);
+        noteDirty(xpath, wuGraphsMappings);
+    }
     virtual IWUResult * updateResultByName(const char * name)
     {
         return noteDirty(CPersistedWorkUnit::updateResultByName(name));
@@ -2375,6 +2480,26 @@ public:
     {
         checkChildLoaded(wuResultsTable);        // Lazy populate the Results branch of p from Cassandra
         CPersistedWorkUnit::_loadResults();
+    }
+
+    virtual void _loadGraphs(bool heavy) const
+    {
+        // Lazy populate the Graphs branch of p from Cassandra
+        if (heavy)
+        {
+            // If we loaded light before, and are now loading heavy, we need to force the reload. Unlikely to happen in practice.
+            if (graphsCached==1)
+            {
+                p->removeProp("Graphs");
+                childLoaded[WuGraphsChild] = false;
+            }
+            checkChildLoaded(wuGraphsTable);
+        }
+        else
+        {
+            checkChildLoaded(wuGraphMetasTable);
+        }
+        CPersistedWorkUnit::_loadGraphs(heavy);
     }
 
     virtual void _loadVariables() const
@@ -2679,6 +2804,7 @@ public:
                 // If there are multiple columns it will be '[applied]' (value false) and the fields of the existing row
                 Owned<IPTree> wuXML = createPTree(useWuid);
                 wuXML->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+                wuXML->setPropInt("@wuidVersion", WUID_VERSION);  // we implement the latest version.
                 Owned<IRemoteConnection> daliLock;
                 lockWuid(daliLock, useWuid);
                 Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), secmgr, secuser, daliLock.getClear());
@@ -3380,7 +3506,20 @@ private:
         select.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         select.bindString(1, wuid);
         return executeQuery(session, select);
+    }
 
+    const CassResult *fetchDataForWuidAndKey(const CassandraXmlMapping *mappings, const char *wuid, const char *key) const
+    {
+        assertex(wuid && *wuid);
+        StringBuffer names;
+        StringBuffer tableName;
+        getFieldNames(mappings+2, names, tableName);  // mappings+3 means we don't return the partition or wuid columns. We do return the key.
+        VStringBuffer selectQuery("select %s from %s where partition=? and wuid=? and %s=?;", names.str()+1, tableName.str(), mappings[2].columnName);
+        CassandraStatement select(prepareStatement(selectQuery));
+        select.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        select.bindString(1, wuid);
+        select.bindString(2, key);
+        return executeQuery(session, select);
     }
 
     // Fetch matching rows from the search table, for all wuids, sorted by wuid
@@ -3659,4 +3798,3 @@ extern "C" EXPORT IWorkUnitFactory *createWorkUnitFactory(const IPropertyTree *p
 {
     return new cassandraembed::CCasssandraWorkUnitFactory(props);
 }
-

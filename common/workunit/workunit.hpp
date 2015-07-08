@@ -208,16 +208,6 @@ interface IConstWUGraph : extends IConstWUGraphMeta
     virtual IPropertyTree * getXGMMLTreeRaw() const = 0;
 };
 
-interface IWUGraph : extends IConstWUGraph
-{
-    virtual void setXGMML(const char * text) = 0;
-    virtual void setXGMMLTree(IPropertyTree * tree, bool compress=true) = 0;
-    virtual void setName(const char * name) = 0;
-    virtual void setLabel(const char * name) = 0;
-    virtual void setType(WUGraphType type) = 0;
-};
-
-
 interface IConstWUGraphIterator : extends IScmIterator
 {
     virtual IConstWUGraph & query() = 0;
@@ -1106,8 +1096,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void deschedule() = 0;
     virtual unsigned addLocalFileUpload(LocalFileUploadType type, const char * source, const char * destination, const char * eventTag) = 0;
     virtual IWUResult * updateGlobalByName(const char * name) = 0;
-    virtual IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml) = 0;
-    virtual IWUGraph * updateGraph(const char * name) = 0;
+    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml) = 0;
     virtual IWUQuery * updateQuery() = 0;
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create) = 0;
     virtual IWUPlugin * updatePluginByName(const char * name) = 0;
@@ -1295,7 +1284,6 @@ interface IExtendedWUInterface
     virtual unsigned calculateHash(unsigned prevHash) = 0;
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all) = 0;
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned) = 0;
-    virtual void packWorkUnit(bool pack=true) = 0;
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const = 0;
     virtual IPropertyTree *queryPTree() const = 0;
     

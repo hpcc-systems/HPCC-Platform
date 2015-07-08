@@ -167,9 +167,12 @@ void doDescheduleWorkkunit(char const * wuid)
     do more = root->removeProp(xpath.str()); while(more);
 }
 
+//======================================================
+/*
+ * Graph progress support
+ */
+
 #define PROGRESS_FORMAT_V 2
-
-
 
 class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
 {
@@ -274,7 +277,6 @@ public:
     void connect()
     {
         clearConnection();
-        packProgress(wuid,false);
         conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
 
         progress.set(conn->queryRoot());
@@ -289,8 +291,6 @@ public:
         // JCSMORE - look at using changeMode here.
         if (conn)
             clearConnection();
-        else
-            packProgress(wuid,false);
         conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
         progress.set(conn->queryRoot());
         if (!progress->hasChildren()) // i.e. blank.
@@ -391,41 +391,6 @@ public:
     {
         if (!connected) connect();
         return formatVersion;
-    }
-
-    static bool packProgress(const char *wuid,bool pack)
-    {
-        //MORE: This function could be deleted, because progress information is never actually packed
-        StringBuffer path;
-        path.append("/GraphProgress/").append(wuid);
-        Owned<IRemoteConnection> conn(querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
-        if (!conn) 
-            return false;
-        Owned<IPropertyTree> newt;
-        MemoryBuffer buf;
-        IPropertyTree *root = conn->queryRoot();
-        if (root->getPropBin("Packed",buf)) {
-            if (pack)
-                return true;
-            newt.setown(createPTree(buf));
-            IPropertyTree *running = root->queryPropTree("Running");
-            if (running)
-                newt->setPropTree("Running",createPTreeFromIPT(running));
-        }
-        else {
-            if (!pack)
-                return true;
-            newt.setown(createPTree(wuid));
-            IPropertyTree *running = root->queryPropTree("Running");
-            if (running) {
-                newt->setPropTree("Running",createPTreeFromIPT(running));
-                root->removeTree(running);
-            }
-            root->serialize(buf);
-            newt->setPropBin("Packed",buf.length(),buf.bufferBase());
-        }
-        root->setPropTree(NULL,newt.getClear());
-        return true;
     }
 
 private:
@@ -1350,8 +1315,6 @@ public:
             { return queryExtendedWU(c)->getUnpackedTree(includeProgress); }
     virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned)
             { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned); }
-    virtual void packWorkUnit(bool pack)
-            { queryExtendedWU(c)->packWorkUnit(pack); }
     virtual unsigned queryFileUsage(const char *filename) const
             { return c->queryFileUsage(filename); }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const
@@ -1451,10 +1414,8 @@ public:
             { return c->addLocalFileUpload(type, source, destination, eventTag); }
     virtual IWUResult * updateGlobalByName(const char * name)
             { return c->updateGlobalByName(name); }
-    virtual IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml)
-            { return c->createGraph(name, type, xgmml); }
-    virtual IWUGraph * updateGraph(const char * name) 
-            { return c->updateGraph(name); }
+    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml)
+            { c->createGraph(name, label, type, xgmml); }
     virtual IWUQuery * updateQuery()
             { return c->updateQuery(); }
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create)
@@ -1746,36 +1707,6 @@ public:
 
     virtual IStringVal & getName(IStringVal & str) const;
     virtual void setName(const char * str);
-};
-
-class CLocalWUGraph : public CInterface, implements IWUGraph
-{
-    const CLocalWorkUnit &owner;
-    Owned<IPropertyTree> p;
-    mutable Owned<IPropertyTree> graph; // cached copy of graph xgmml
-    mutable Linked<IConstWUGraphProgress> progress;
-    unsigned wuidVersion;
-
-    void mergeProgress(IPropertyTree &tree, IPropertyTree &progressTree, const unsigned &progressV) const;
-
-public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWUGraph(const CLocalWorkUnit &owner, IPropertyTree *p);
-
-    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const;
-    virtual IStringVal & getName(IStringVal & ret) const;
-    virtual IStringVal & getLabel(IStringVal & ret) const;
-    virtual IStringVal & getTypeName(IStringVal & ret) const;
-    virtual WUGraphType getType() const;
-    virtual WUGraphState getState() const;
-    virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const;
-    virtual IPropertyTree * getXGMMLTreeRaw() const;
-
-    virtual void setName(const char *str);
-    virtual void setLabel(const char *str);
-    virtual void setType(WUGraphType type);
-    virtual void setXGMML(const char *str);
-    virtual void setXGMMLTree(IPropertyTree * tree, bool compress=true);
 };
 
 class CLocalWUException : public CInterface, implements IWUException
@@ -2128,8 +2059,6 @@ private:
         return perm >= SecAccess_Read;
     }
 };
-
-#define WUID_VERSION 2 // recorded in each wuid created, useful for bkwd compat. checks
 
 CWorkUnitFactory::CWorkUnitFactory()
 {
@@ -3160,6 +3089,7 @@ CLocalWorkUnit::CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser)
     secUser.set(secuser);
     workflowIteratorCached = false;
     resultsCached = false;
+    graphsCached = false;
     temporariesCached = false;
     variablesCached = false;
     exceptionsCached = false;
@@ -3175,7 +3105,6 @@ void CLocalWorkUnit::clearCached(bool clearTree)
     query.clear();
     webServicesInfo.clear();
     workflowIterator.clear();
-    cachedGraphs.clear();
 
     graphs.kill();
     results.kill();
@@ -3192,6 +3121,7 @@ void CLocalWorkUnit::clearCached(bool clearTree)
 
     workflowIteratorCached = false;
     resultsCached = false;
+    graphsCached = false;
     temporariesCached = false;
     variablesCached = false;
     exceptionsCached = false;
@@ -3486,33 +3416,6 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
     }
 
     return true;
-}
-
-void CLocalWorkUnit::packWorkUnit(bool pack)
-{
-    // only packs Graph info currently
-    CriticalBlock block(crit);
-    if (!p)
-        return;
-    const char *wuid = p->queryName();
-    if (!wuid||!*wuid)
-        return;
-    if (pack) {
-        if (!p->hasProp("PackedGraphs")) {
-            cachedGraphs.clear();
-            IPropertyTree *t = p->queryPropTree("Graphs");
-            if (t) {
-                MemoryBuffer buf;
-                t->serialize(buf);
-                p->setPropBin("PackedGraphs",buf.length(),buf.bufferBase());
-                p->removeTree(t);
-            }
-        }
-    }
-    else {
-        ensureGraphsUnpacked();
-    }
-    CConstGraphProgress::packProgress(wuid,pack);
 }
 
 IPropertyTree * pruneBranch(IPropertyTree * from, char const * xpath)
@@ -6390,27 +6293,24 @@ IPropertyTree *CLocalWorkUnit::getUnpackedTree(bool includeProgress) const
     }
     return ret.getClear();
 }
-void CLocalWorkUnit::loadGraphs() const
+
+void CLocalWorkUnit::_loadGraphs(bool heavy) const
 {
-    CriticalBlock block(crit);
-    if (!cachedGraphs.get())
+    Owned<IPropertyTreeIterator> iter = p->getElements("Graphs/Graph");
+    ForEach(*iter)
     {
-        MemoryBuffer buf;
-        IPropertyTree *t = p->queryPropTree("PackedGraphs");
-        if (t&&t->getPropBin(NULL,buf)) {
-            cachedGraphs.setown(createPTree(buf));
-        }
-        else
-            cachedGraphs.set(p->queryPropTree("Graphs"));
-        if (cachedGraphs.get())
-        {
-            Owned<IPropertyTreeIterator> iter = cachedGraphs->getElements("Graph");
-            ForEach(*iter)
-            {
-                IPropertyTree &graph = iter->query();
-                graphs.append(*new CLocalWUGraph(*this, LINK(&graph)));
-            }
-        }
+        IPropertyTree &graph = iter->query();
+        graphs.append(*new CLocalWUGraph(*this, LINK(&graph)));
+    }
+}
+
+void CLocalWorkUnit::loadGraphs(bool heavy) const
+{
+    if (graphsCached < (heavy ? 2 : 1))
+    {
+        graphs.kill();
+        _loadGraphs(heavy);
+        graphsCached = (heavy ? 2 : 1);
     }
 }
 
@@ -6616,7 +6516,7 @@ IConstWUGraphMetaIterator& CLocalWorkUnit::getGraphsMeta(WUGraphType type) const
      */
 
     CriticalBlock block(crit);
-    loadGraphs();
+    loadGraphs(false);
 
     class CConstWUGraphMetaIterator: public CInterface, implements IConstWUGraphMetaIterator, implements IConstWUGraphMeta
     {
@@ -6723,7 +6623,7 @@ IConstWUGraphMetaIterator& CLocalWorkUnit::getGraphsMeta(WUGraphType type) const
 IConstWUGraphIterator& CLocalWorkUnit::getGraphs(WUGraphType type) const
 {
     CriticalBlock block(crit);
-    loadGraphs();
+    loadGraphs(true);
     IConstWUGraphIterator *giter = new CArrayIteratorOf<IConstWUGraph,IConstWUGraphIterator> (graphs, 0, (IConstWorkUnit *) this);
     if (type!=GraphTypeAny) {
         class CConstWUGraphIterator: public CInterface, implements IConstWUGraphIterator
@@ -6773,63 +6673,27 @@ IConstWUGraphIterator& CLocalWorkUnit::getGraphs(WUGraphType type) const
 IConstWUGraph* CLocalWorkUnit::getGraph(const char *qname) const
 {
     CriticalBlock block(crit);
-    loadGraphs();
-    ForEachItemIn(idx, graphs)
-    {
-        SCMStringBuffer name;
-        IConstWUGraph &cur = graphs.item(idx);
-        cur.getName(name);
-        if (stricmp(name.str(), qname)==0)
-        {
-            cur.Link();
-            return &cur;
-        }
-    }
+    VStringBuffer xpath("Graphs/Graph[@name='%s']", qname);
+    // NOTE - this would go wrong if we had other graphs of same name but different type. Ignore for now.
+    IPTree *graph = p->queryPropTree(xpath);
+    if (graph)
+        return new CLocalWUGraph(*this, LINK(graph));
     return NULL;
 }
 
-IWUGraph* CLocalWorkUnit::createGraph()
-{
-    // For this to be legally called, we must have the write-able interface. So we are already locked for write.
-    CriticalBlock block(crit);
-    ensureGraphsUnpacked();
-    loadGraphs();
-    if (!graphs.ordinality())
-        p->addPropTree("Graphs", createPTree("Graphs"));
-    IPropertyTree *r = p->queryPropTree("Graphs");
-    IPropertyTree *s = r->addPropTree("Graph", createPTree());
-    s->Link();
-    IWUGraph* q = new CLocalWUGraph(*this, s);
-    q->Link();
-    graphs.append(*q);
-    return q;
-}
-
-IWUGraph * CLocalWorkUnit::createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml)
+void CLocalWorkUnit::createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml)
 {
     CriticalBlock block(crit);
-    ensureGraphsUnpacked();
-    Linked<IConstWUGraph> existing = getGraph(name);
-    if (existing)
-        throwUnexpected();
-
     if (!graphs.length())
         p->addPropTree("Graphs", createPTree("Graphs"));
     IPropertyTree *r = p->queryPropTree("Graphs");
     IPropertyTree *s = r->addPropTree("Graph", createPTree());
-    IWUGraph* q = new CLocalWUGraph(*this, LINK(s));
-    graphs.append(*LINK(q));
+    CLocalWUGraph *q = new CLocalWUGraph(*this, LINK(s));
     q->setName(name);
-    q->setXGMMLTree(xgmml);
+    q->setLabel(label);
     q->setType(type);
-    return q;
-}
-
-IWUGraph * CLocalWorkUnit::updateGraph(const char * name)
-{
-    CriticalBlock block(crit);
-    ensureGraphsUnpacked();
-    return (IWUGraph *)getGraph(name);
+    q->setXGMMLTree(xgmml);
+    graphs.append(*q);
 }
 
 IConstWUGraphProgress *CLocalWorkUnit::getGraphProgress(const char *name) const
@@ -6855,19 +6719,16 @@ void CLocalWUGraph::setXGMML(const char *str)
     setXGMMLTree(createPTreeFromXMLString(str));
 }
 
-void CLocalWUGraph::setXGMMLTree(IPropertyTree *_graph, bool compress)
+void CLocalWUGraph::setXGMMLTree(IPropertyTree *_graph)
 {
     assertex(strcmp(_graph->queryName(), "graph")==0);
     IPropertyTree *xgmml = p->setPropTree("xgmml", createPTree());
-    if (compress)
-    {
-        MemoryBuffer mb;
-        _graph->serialize(mb);
-        xgmml->setPropBin("graphBin", mb.length(), mb.toByteArray());
-        graph.setown(_graph);
-    }
-    else
-        xgmml->setPropTree("graph", _graph);
+    MemoryBuffer mb;
+    _graph->serialize(mb);
+    // Note - we could compress further but that would introduce compatibility concerns, so don't bother
+    // Cassandra workunit code actually lzw compresses the parent anyway
+    xgmml->setPropBin("graphBin", mb.length(), mb.toByteArray());
+    graph.setown(_graph);
 }
 
 static void expandAttributes(IPropertyTree & targetNode, IPropertyTree & progressNode)

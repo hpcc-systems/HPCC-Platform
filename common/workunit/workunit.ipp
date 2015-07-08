@@ -22,6 +22,7 @@
 #include "workunit.hpp"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
+#define WUID_VERSION 2 // recorded in each wuid created, useful for bkwd compat. checks
 
 class CLocalWUAppValue : public CInterface, implements IConstWUAppValue
 {
@@ -175,6 +176,7 @@ protected:
     mutable Owned<IWorkflowItemIterator> workflowIterator;
     mutable bool workflowIteratorCached;
     mutable bool resultsCached;
+    mutable unsigned char graphsCached;  // 0 means uncached, 1 means light, 2 means heavy
     mutable bool temporariesCached;
     mutable bool variablesCached;
     mutable bool exceptionsCached;
@@ -186,7 +188,7 @@ protected:
     mutable IArrayOf<IWUPlugin> plugins;
     mutable IArrayOf<IWULibrary> libraries;
     mutable IArrayOf<IWUException> exceptions;
-    mutable IArrayOf<IWUGraph> graphs;
+    mutable IArrayOf<IConstWUGraph> graphs;
     mutable IArrayOf<IWUResult> results;
     mutable IArrayOf<IWUResult> temporaries;
     mutable IArrayOf<IWUResult> variables;
@@ -197,7 +199,6 @@ protected:
     Mutex locked;
     Owned<ISecManager> secMgr;
     Owned<ISecUser> secUser;
-    mutable Owned<IPropertyTree> cachedGraphs;
 
 protected:
     
@@ -304,7 +305,6 @@ public:
     virtual IPropertyTree * getDiskUsageStats();
     virtual IPropertyTreeIterator & getFileIterator() const;
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned);
-    virtual void packWorkUnit(bool pack=true);
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const;
     virtual IPropertyTreeIterator & getFilesReadIterator() const;
     virtual void protect(bool protectMode);
@@ -358,8 +358,7 @@ public:
     void deschedule();
     unsigned addLocalFileUpload(LocalFileUploadType type, char const * source, char const * destination, char const * eventTag);
     IWUResult * updateGlobalByName(const char * name);
-    IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml);
-    IWUGraph * updateGraph(const char * name);
+    void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml);
     IWUQuery * updateQuery();
     IWUWebServicesInfo* updateWebServicesInfo(bool create);
 
@@ -530,9 +529,8 @@ public:
 
 protected:
     void clearCached(bool clearTree);
-    IWUGraph *createGraph();
     IWUResult *createResult();
-    void loadGraphs() const;
+    void loadGraphs(bool heavy) const;
     void loadResults() const;
     void loadTemporaries() const;
     void loadVariables() const;
@@ -542,25 +540,12 @@ protected:
     void loadClusters() const;
     void checkAgentRunning(WUState & state);
 
-    void ensureGraphsUnpacked()
-    {
-        IPropertyTree *t = p->queryPropTree("PackedGraphs");
-        MemoryBuffer buf;
-        if (t&&t->getPropBin(NULL,buf)) {
-            cachedGraphs.clear();
-            IPropertyTree *st = createPTree(buf);
-            if (st) {
-                p->setPropTree("Graphs",st);
-                p->removeTree(t);
-            }
-        }
-    }
-
     // Implemented by derived classes
     virtual void unsubscribe() {};
     virtual void _lockRemote() {};
     virtual void _unlockRemote() {};
     virtual void _loadFilesRead() const;
+    virtual void _loadGraphs(bool heavy) const;
     virtual void _loadResults() const;
     virtual void _loadVariables() const;
     virtual void _loadTemporaries() const;
@@ -698,4 +683,35 @@ protected:
     virtual CLocalWorkUnit* _updateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;  // for write access
 
 };
+
+class CLocalWUGraph : public CInterface, implements IConstWUGraph
+{
+    const CLocalWorkUnit &owner;
+    Owned<IPropertyTree> p;
+    mutable Owned<IPropertyTree> graph; // cached copy of graph xgmml
+    mutable Linked<IConstWUGraphProgress> progress;
+    unsigned wuidVersion;
+
+    void mergeProgress(IPropertyTree &tree, IPropertyTree &progressTree, const unsigned &progressV) const;
+
+public:
+    IMPLEMENT_IINTERFACE;
+    CLocalWUGraph(const CLocalWorkUnit &owner, IPropertyTree *p);
+
+    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const;
+    virtual IStringVal & getName(IStringVal & ret) const;
+    virtual IStringVal & getLabel(IStringVal & ret) const;
+    virtual IStringVal & getTypeName(IStringVal & ret) const;
+    virtual WUGraphType getType() const;
+    virtual WUGraphState getState() const;
+    virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const;
+    virtual IPropertyTree * getXGMMLTreeRaw() const;
+
+    void setName(const char *str);
+    void setLabel(const char *str);
+    void setType(WUGraphType type);
+    void setXGMML(const char *str);
+    void setXGMMLTree(IPropertyTree * tree);
+};
+
 #endif
