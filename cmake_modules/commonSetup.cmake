@@ -674,7 +674,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif()
       else()
         add_definitions (-D_NO_MYSQL_REPOSITORY)
-        set(MYSQL_INCLUDE_DIR "")
       endif(USE_MYSQL_REPOSITORY)
 
       if(USE_APR)

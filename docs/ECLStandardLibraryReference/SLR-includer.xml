@@ -426,7 +426,7 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WUID.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Cluster.xml"
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Target.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/JobName.xml"

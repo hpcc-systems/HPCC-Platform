@@ -194,15 +194,24 @@ public:
         for (int i = 0; i < columns; i++)
         {
             MYSQL_FIELD *col = mysql_fetch_field_direct(res, i);
-            if (col->type == MYSQL_TYPE_DECIMAL || col->type == MYSQL_TYPE_NEWDECIMAL)
+            switch (col->type)
             {
+            case MYSQL_TYPE_DECIMAL:
+            case MYSQL_TYPE_NEWDECIMAL:
                 bindinfo[i].buffer_type = MYSQL_TYPE_STRING;
                 bindinfo[i].buffer_length = 100;  // MORE - is there a better guess?
-            }
-            else
-            {
+                break;
+            case MYSQL_TYPE_TIMESTAMP:
+            case MYSQL_TYPE_DATETIME:
+            case MYSQL_TYPE_TIME:
+            case MYSQL_TYPE_DATE:
+                bindinfo[i].buffer_type = col->type;
+                bindinfo[i].buffer_length = sizeof(MYSQL_TIME);
+                break;
+            default:
                 bindinfo[i].buffer_type = col->type;
                 bindinfo[i].buffer_length = col->length;
+                break;
             }
             bindinfo[i].buffer = rtlMalloc(bindinfo[i].buffer_length);
         }
@@ -332,13 +341,81 @@ static bool isInteger(enum_field_types type)
     case MYSQL_TYPE_LONGLONG:
     case MYSQL_TYPE_INT24:
         return true;
-    case MYSQL_TYPE_TIMESTAMP:
-    case MYSQL_TYPE_DATE:
-    case MYSQL_TYPE_TIME:
-        return false; // Who knows...
     default:
         return false;
     }
+}
+
+static bool isDateTime(enum_field_types type)
+{
+    switch (type)
+    {
+    case MYSQL_TYPE_TIMESTAMP:
+    case MYSQL_TYPE_DATETIME:
+    case MYSQL_TYPE_DATE:
+    case MYSQL_TYPE_TIME:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool isString(enum_field_types type)
+{
+    switch (type)
+    {
+    case MYSQL_TYPE_TINY_BLOB:
+    case MYSQL_TYPE_MEDIUM_BLOB:
+    case MYSQL_TYPE_LONG_BLOB:
+    case MYSQL_TYPE_BLOB:
+    case MYSQL_TYPE_STRING:
+    case MYSQL_TYPE_VAR_STRING:
+        return true;
+    default:
+        return false;
+    }
+}
+
+
+static unsigned __int64 getDateTimeValue(const MYSQL_BIND &bound)
+{
+    const MYSQL_TIME * time = (const MYSQL_TIME *) bound.buffer;
+    switch (bound.buffer_type)
+    {
+    case MYSQL_TYPE_TIMESTAMP:
+    case MYSQL_TYPE_DATETIME:
+        //What format should this be?  Possibly a timestamp_t
+        return (unsigned __int64)((time->year * 10000) + (time->month * 100) + (time->day)) * 1000000 +
+               (time->hour * 10000) + (time->minute * 100) + (time->second);
+    case MYSQL_TYPE_DATE:
+        return (time->year * 10000) + (time->month * 100) + (time->day);
+    case MYSQL_TYPE_TIME:
+        return (time->hour * 10000) + (time->minute * 100) + (time->second);
+    default:
+        throwUnexpected();
+    }
+}
+
+static void getDateTimeText(const MYSQL_BIND &bound, size32_t &chars, char * &result)
+{
+    const MYSQL_TIME * time = (const MYSQL_TIME *) bound.buffer;
+    char temp[20];
+    switch (bound.buffer_type)
+    {
+    case MYSQL_TYPE_TIMESTAMP:
+    case MYSQL_TYPE_DATETIME:
+        _snprintf(temp, sizeof(temp), "%4u-%02u-%02u %02u:%02u:%02u", time->year, time->month, time->day, time->hour, time->minute, time->second);
+        break;
+    case MYSQL_TYPE_DATE:
+        _snprintf(temp, sizeof(temp), "%4u-%02u-%02u", time->year, time->month, time->day);
+        break;
+    case MYSQL_TYPE_TIME:
+        _snprintf(temp, sizeof(temp), "%02u:%02u:%02u", time->hour, time->minute, time->second);
+        break;
+    default:
+        throwUnexpected();
+    }
+    rtlStrToStrX(chars, result, strlen(temp), temp);
 }
 
 static bool getBooleanResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
@@ -361,13 +438,7 @@ static void getDataResult(const RtlFieldInfo *field, const MYSQL_BIND &bound, si
         rtlStrToDataX(chars, result, p.resultChars, p.stringResult);
         return;
     }
-    if (bound.buffer_type == MYSQL_TYPE_TINY_BLOB ||
-        bound.buffer_type == MYSQL_TYPE_MEDIUM_BLOB ||
-        bound.buffer_type == MYSQL_TYPE_LONG_BLOB ||
-        bound.buffer_type == MYSQL_TYPE_BLOB ||
-        bound.buffer_type == MYSQL_TYPE_STRING ||
-        bound.buffer_type == MYSQL_TYPE_VAR_STRING
-       )
+    if (isString(bound.buffer_type))
         rtlStrToDataX(chars, result, *bound.length, bound.buffer);   // This feels like it may not work to me - will preallocate rather larger than we want
     else
         typeError("blob", field);
@@ -405,6 +476,8 @@ static __int64 getSignedResult(const RtlFieldInfo *field, const MYSQL_BIND &boun
         NullFieldProcessor p(field);
         return p.intResult;
     }
+    if (isDateTime(bound.buffer_type))
+        return getDateTimeValue(bound);
     if (isInteger(bound.buffer_type))
     {
         if (bound.is_unsigned)
@@ -423,6 +496,8 @@ static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const MYSQL
         NullFieldProcessor p(field);
         return p.uintResult;
     }
+    if (isDateTime(bound.buffer_type))
+        return getDateTimeValue(bound);
     if (!isInteger(bound.buffer_type))
         typeError("integer", field);
     if (bound.is_unsigned)
@@ -439,8 +514,15 @@ static void getStringResult(const RtlFieldInfo *field, const MYSQL_BIND &bound, 
         rtlStrToStrX(chars, result, p.resultChars, p.stringResult);
         return;
     }
-    if (bound.buffer_type != MYSQL_TYPE_STRING && bound.buffer_type != MYSQL_TYPE_VAR_STRING)
+
+    if (isDateTime(bound.buffer_type))
+    {
+        getDateTimeText(bound, chars, result);
+        return;
+    }
+    if (!isString(bound.buffer_type))
         typeError("string", field);
+
     const char *text = (const char *) bound.buffer;
     unsigned long bytes = *bound.length;
     unsigned numchars = rtlUtf8Length(bytes, text);  // MORE - is it a good assumption that it is utf8 ? Depends how the database is configured I think
@@ -455,8 +537,15 @@ static void getUTF8Result(const RtlFieldInfo *field, const MYSQL_BIND &bound, si
         rtlUtf8ToUtf8X(chars, result, p.resultChars, p.stringResult);
         return;
     }
-    if (bound.buffer_type != MYSQL_TYPE_STRING && bound.buffer_type != MYSQL_TYPE_VAR_STRING)
+
+    if (isDateTime(bound.buffer_type))
+    {
+        getDateTimeText(bound, chars, result);
+        return;
+    }
+    if (!isString(bound.buffer_type))
         typeError("string", field);
+
     const char *text = (const char *) bound.buffer;
     unsigned long bytes = *bound.length;
     unsigned numchars = rtlUtf8Length(bytes, text);  // MORE - is it a good assumption that it is utf8 ? Depends how the database is configured I think

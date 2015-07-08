@@ -11717,7 +11717,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     {
         OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
         OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
-        OwnedHqlExpr folded = foldHqlExpression(cast);
+        OwnedHqlExpr folded = foldHqlExpression(replaceInlineParameters(funcdef, cast));
         CHqlBoundExpr bound;
         buildExpr(funcctx, folded, bound);
         createParam.append(",");

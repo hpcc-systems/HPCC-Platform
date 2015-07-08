@@ -276,6 +276,7 @@ typedef unsigned long MaxCard;
 #define _llseek     ::lseek
 #define _lseeki64   ::lseek
 #define _vsnprintf  vsnprintf
+#define _snprintf   snprintf
 #define strnicmp    strncasecmp
 #define INFINITE    0xFFFFFFFF
 

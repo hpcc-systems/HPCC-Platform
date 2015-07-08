@@ -366,6 +366,13 @@ const char *ThrottleStrings[] =
     ThrottleText(ThrottleStd),
     ThrottleText(ThrottleSlow),
 };
+
+// very high upper limits that configure can't exceed
+#define THROTTLE_MAX_LIMIT 1000000
+#define THROTTLE_MAX_DELAYMS 3600000
+#define THROTTLE_MAX_CPUTHRESHOLD 100
+#define THROTTLE_MAX_QUEUELIMIT 10000000
+
 static const char *getThrottleClassText(ThrottleClass throttleClass) { return ThrottleStrings[throttleClass]; }
 
 typedef enum { ACScontinue, ACSdone, ACSerror} AsyncCommandStatus;
@@ -3467,6 +3474,10 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
         }
         void configure(unsigned _limit, unsigned _delayMs, unsigned _cpuThreshold, unsigned _queueLimit)
         {
+            if (_limit > THROTTLE_MAX_LIMIT || _delayMs > THROTTLE_MAX_DELAYMS || _cpuThreshold > THROTTLE_MAX_CPUTHRESHOLD || _queueLimit > THROTTLE_MAX_QUEUELIMIT)
+                throw MakeStringException(0, "Throttler(%s), rejecting configure command: limit=%u (max permitted=%u), delayMs=%u (max permitted=%u), cpuThreshold=%u (max permitted=%u), queueLimit=%u (max permitted=%u)",
+                                              title.str(), _limit, THROTTLE_MAX_LIMIT, _delayMs, THROTTLE_MAX_DELAYMS, _cpuThreshold,
+                                              THROTTLE_MAX_CPUTHRESHOLD, _queueLimit, THROTTLE_MAX_QUEUELIMIT);
             CriticalBlock b(configureCrit);
             int delta = 0;
             if (_limit)
@@ -3482,7 +3493,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
             }
             else if (0 == disabledLimit)
             {
-                PROGLOG("Throttler(%s): disabled, previous limit: %d", title.get(), limit);
+                PROGLOG("Throttler(%s): disabled, previous limit: %u", title.get(), limit);
                 /* disabling - set limit immediately to let all new transaction through.
                  * NB: the semaphore signals are not consumed in this case, because transactions could be waiting on it.
                  * Instead the existing 'limit' is kept in 'disabledLimit', so that if/when throttling is
@@ -3493,14 +3504,14 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
             }
             if (delta > 0)
             {
-                PROGLOG("Throttler(%s): Increasing limit from %d to %d", title.get(), limit, _limit);
+                PROGLOG("Throttler(%s): Increasing limit from %u to %u", title.get(), limit, _limit);
                 sem.signal(delta);
                 limit = _limit;
                 // NB: If throttling was off, this doesn't effect transactions in progress, i.e. will only throttle new transactions coming in.
             }
             else if (delta < 0)
             {
-                PROGLOG("Throttler(%s): Reducing limit from %d to %d", title.get(), limit, _limit);
+                PROGLOG("Throttler(%s): Reducing limit from %u to %u", title.get(), limit, _limit);
                 // NB: This is not expected to take long
                 CCycleTimer timer;
                 while (delta < 0)
@@ -3508,7 +3519,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
                     if (sem.wait(1000))
                         ++delta;
                     else
-                        PROGLOG("Throttler(%s): Waited %0.2f seconds so far for up to a maximum of %d (previous limit) transactions to complete, %d completed", title.get(), ((double)timer.elapsedMs())/1000, limit, -delta);
+                        PROGLOG("Throttler(%s): Waited %0.2f seconds so far for up to a maximum of %u (previous limit) transactions to complete, %u completed", title.get(), ((double)timer.elapsedMs())/1000, limit, -delta);
                 }
                 limit = _limit;
                 // NB: doesn't include transactions in progress, i.e. will only throttle new transactions coming in.
@@ -3582,7 +3593,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
                             CriticalBlock b(crit);
                             totalThrottleDelay += ms;
                         }
-                        PROGLOG("Throttler(%s): transaction delayed [cmd=%s] for : %d milliseconds, proceeding as cpu(%u)<throttleCPULimit(%u)", title.get(), getRFCText(cmd), cpu, ms, cpuThreshold);
+                        PROGLOG("Throttler(%s): transaction delayed [cmd=%s] for : %u milliseconds, proceeding as cpu(%u)<throttleCPULimit(%u)", title.get(), getRFCText(cmd), cpu, ms, cpuThreshold);
                         hadSem = false;
                     }
                     else
@@ -3651,7 +3662,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
                 if (ms >= 1000)
                 {
                     if (ms>delayMs)
-                        PROGLOG("Throttler(%s): transaction delayed [cmd=%s] for : %d seconds", title.get(), getRFCText(currentCmd), ms/1000);
+                        PROGLOG("Throttler(%s): transaction delayed [cmd=%s] for : %u seconds", title.get(), getRFCText(currentCmd), ms/1000);
                 }
                 {
                     CriticalBlock b(crit);

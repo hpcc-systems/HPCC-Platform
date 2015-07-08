@@ -50,8 +50,8 @@
           <row>
             <entry><emphasis>cluster</emphasis></entry>
 
-            <entry>The value parameter specifies the name of the cluster on
-            which the workunit executes.</entry>
+            <entry>The value parameter is a string constant containing the
+            name of the target cluster on which the workunit executes.</entry>
           </row>
 
           <row>
@@ -83,7 +83,7 @@
             <entry>The value parameter is a string constant containing the
             scope value to use to override the workunit's default scope (the
             user ID of the submitting person). This is a Workunit Security
-            feature.</entry>
+            feature and requires a system which is LDAP-enabled. </entry>
           </row>
         </tbody>
       </tgroup>
@@ -91,11 +91,11 @@
 
   <para>Example:</para>
 
-  <programlisting>#WORKUNIT('cluster',400way);   //run the job on the 400-way cluster
-#WORKUNIT('protect',true);     //disallow deletion
+  <programlisting>#WORKUNIT('cluster','400way'); //run the job on the 400-way target cluster
+#WORKUNIT('protect',true);     //disallow deletion or archiving by Sasha 
 #WORKUNIT('name','My Job');    //name it "My Job"
 #WORKUNIT('priority','high');  //run before other lower-priority jobs
 #WORKUNIT('priority',10);      //run before other high-priority jobs
-#WORKUNIT('scope','NewVal');   //override the default scope
+#WORKUNIT('scope','NewVal');   //override the default scope (on an LDAP enabled system)
 </programlisting>
 </sect1>

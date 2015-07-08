@@ -795,6 +795,12 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
         LOG(MCdebugProgress, thorJob, "aborting any current active job");
         if (jM)
             jM->fireException(e);
+        if (errCode == TEC_Clean)
+        {
+            LOG(MCdebugProgress, thorJob, "Removing sentinel upon normal shutdown");
+            Owned<IFile> sentinelFile = createSentinelTarget();
+            removeSentinelFile(sentinelFile);
+        }
     }
 }
 
