@@ -65,7 +65,9 @@ if (USE_CASSANDRA)
     option(CASS_BUILD_EXAMPLES "Build examples" OFF)
     set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS FALSE)
     SET (_SAVE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-nonliteral") # Work around cassandra build error
+    if (NOT WIN32)
+       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-nonliteral") # Work around cassandra build error
+    endif()
     add_subdirectory (cpp-driver ${PROJECT_BINARY_DIR}/cassandra)
     add_dependencies( cassandra libuv )
     SET (CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
