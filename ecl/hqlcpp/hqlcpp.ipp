@@ -790,6 +790,7 @@ class AliasExpansionInfo;
 class HashCodeCreator;
 class ParentExtract;
 class ConstantRowArray;
+class SerializeKeyInfo;
 
 enum PEtype {
     PETnone,
@@ -1815,9 +1816,11 @@ protected:
 
     void doFilterAssignment(BuildCtx & ctx, TransformBuilder * builder, HqlExprArray & assigns, IHqlExpression * expr);
     void doFilterAssignments(BuildCtx & ctx, TransformBuilder * builder, HqlExprArray & assigns, IHqlExpression * expr);
+    bool extractSerializeKey(SerializeKeyInfo & info, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal);
     void generateSerializeAssigns(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * selector, IHqlExpression * selfSelect, IHqlExpression * leftSelect, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, bool needToClear, node_operator serializeOp, IAtom * serialForm);
     void generateSerializeFunction(BuildCtx & ctx, const char * funcName, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, node_operator serializeOp, IAtom * serialForm);
-    void generateSerializeKey(BuildCtx & ctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal, bool generateCompares, bool canReuseLeft);             //NB: sorts are ats.xyz
+    void generateSerializeKey(BuildCtx & nestedctx, node_operator side, SerializeKeyInfo & keyInfo, const DatasetReference & dataset, bool generateCompares);
+    void generateSerializeKey(BuildCtx & ctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal, bool generateCompares);             //NB: sorts are ats.xyz
     void generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator index, const DatasetReference & dataset, const HqlExprArray & sorts, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal);
     void addSchemaField(IHqlExpression *field, MemoryBuffer &schema, IHqlExpression *selector);
     void addSchemaFields(IHqlExpression * record, MemoryBuffer &schema, IHqlExpression *selector);
