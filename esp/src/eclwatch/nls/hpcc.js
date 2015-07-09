@@ -344,6 +344,7 @@ define({root:
     Port: "Port",
     Prefix: "Prefix",
     PrefixPlaceholder: "filename{:length}, filesize{:[B|L][1-8]}",
+    PreserveCompression: "Preserve Compression",
     Preview: "Preview",
     Priority: "Priority",
     Process: "Process",
