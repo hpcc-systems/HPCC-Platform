@@ -7376,6 +7376,10 @@ public:
             sortAlgorithm = heapSortAlgorithm; // NOTE - we do allow UNSTABLE('heapsort') in order to facilitate runtime selection. Also explicit selection of heapsort overrides request to spill
         else if (stricmp(algorithmName, "insertionsort")==0)
             sortAlgorithm = insertionSortAlgorithm;
+        else if (stricmp(algorithmName, "mergesort")==0)
+            sortAlgorithm = (sortFlags & TAFspill) ? spillingMergeSortAlgorithm : mergeSortAlgorithm;
+        else if (stricmp(algorithmName, "parmergesort")==0)
+            sortAlgorithm = (sortFlags & TAFspill) ? spillingParallelMergeSortAlgorithm : parallelMergeSortAlgorithm;
         else
         {
             if (*algorithmName)
