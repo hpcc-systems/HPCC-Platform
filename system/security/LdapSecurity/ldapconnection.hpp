@@ -162,7 +162,7 @@ interface ILdapClient : extends IInterface
     virtual void setPermissionProcessor(IPermissionProcessor* pp) = 0;
     virtual bool retrieveUsers(IUserArray& users) = 0;
     virtual bool retrieveUsers(const char* searchstr, IUserArray& users) = 0;
-    virtual void getAllGroups(StringArray & groups) = 0;
+    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions) = 0;
     virtual void setResourceBasedn(const char* rbasedn, SecResourceType rtype = RT_DEFAULT) = 0;
     virtual ILdapConfig* getLdapConfig() = 0;
     virtual bool userInGroup(const char* userdn, const char* groupdn) = 0;
@@ -175,7 +175,7 @@ interface ILdapClient : extends IInterface
     virtual bool changePermission(CPermissionAction& action) = 0;
     virtual void changeUserGroup(const char* action, const char* username, const char* groupname) = 0;
     virtual bool deleteUser(ISecUser* user) = 0;
-    virtual void addGroup(const char* groupname) = 0;
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc) = 0;
     virtual void deleteGroup(const char* groupname) = 0;
     virtual void getGroupMembers(const char* groupname, StringArray & users) = 0;
     virtual void deleteResource(SecResourceType rtype, const char* name, const char* basedn) = 0;

@@ -289,7 +289,7 @@ interface ISecManager : extends IInterface
     virtual ISecUser * findUser(const char * username) = 0;
     virtual ISecUser * lookupUser(unsigned uid) = 0;
     virtual ISecUserIterator * getAllUsers() = 0;
-    virtual void getAllGroups(StringArray & groups) = 0;
+    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions ) = 0;
     virtual bool updateUserPassword(ISecUser & user, const char * newPassword, const char* currPassword = 0) = 0;
     virtual bool initUser(ISecUser & user) = 0;
     virtual void setExtraParam(const char * name, const char * value) = 0;
