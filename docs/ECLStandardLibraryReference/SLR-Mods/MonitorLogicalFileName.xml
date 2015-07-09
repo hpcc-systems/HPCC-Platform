@@ -49,7 +49,7 @@
           <entry><emphasis>filename</emphasis></entry>
 
           <entry>A null-terminated string containing the name of the logical
-          file in the DFU to monitor. </entry>
+          file in the DFU to monitor.</entry>
         </row>
 
         <row>
@@ -97,9 +97,9 @@
   <emphasis>event</emphasis> with the name of the triggering object as the
   event subtype (see the EVENT function).</para>
 
-  <para>This function does not support wildcard characters. To monitor for
-  files using wildcards, use the <link
-  linkend="MonitorFile">MonitorFile</link> function. </para>
+  <para>This function does not support wildcard characters. To monitor
+  physical files or directories using wildcards, use the <link
+  linkend="MonitorFile">MonitorFile</link> function.</para>
 
   <para>This process continues until either:</para>
 
