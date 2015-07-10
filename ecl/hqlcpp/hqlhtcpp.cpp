@@ -11711,7 +11711,7 @@ void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator 
     buildMetaMember(classctx, keyInfo.keyRecord, false, "queryRecordSize");
 
     buildCompareMember(classctx, "CompareKey", keyOrder, keyActiveRef);
-    doCompareLeftRight(classctx, "CompareRowKey", dataset, keyActiveRef, keyInfo.filteredSorts, keyInfo.keyCompares);
+    doCompareLeftRight(classctx, "CompareKeyRow", keyActiveRef, dataset, keyInfo.keyCompares, keyInfo.filteredSorts);
 
     endNestedClass();
 
@@ -11720,10 +11720,8 @@ void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator 
 
     if (generateCompares)
     {
-        s.clear().append("virtual ICompare * queryCompareKey() { return ").append(memberName).append(".queryCompareKey(); }");
-        nestedctx.addQuoted(s);
-        s.clear().append("virtual ICompare * queryCompareRowKey() { return ").append(memberName).append(".queryCompareRowKey(); }");
-        nestedctx.addQuoted(s);
+        buildCompareMember(nestedctx, "CompareKey", keyOrder, keyActiveRef);
+        doCompareLeftRight(nestedctx, "CompareRowKey", dataset, keyActiveRef, keyInfo.filteredSorts, keyInfo.keyCompares);
     }
 }
 
@@ -12110,7 +12108,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
-    bool partitionRight = expr->hasAttribute(partitionRightAtom) && (kind != TAKselfjoin) && (joinInfo.slidingMatches.ordinality() == 0);
+    bool partitionRight = expr->hasAttribute(partitionRightAtom) && (kind != TAKselfjoin) && !joinInfo.isSlidingJoin();
     DatasetReference lhsDsRef(dataset1, no_activetable, NULL);
     DatasetReference rhsDsRef(dataset2, no_activetable, NULL);
 
@@ -12130,7 +12128,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, joinInfo.queryRightSort(), noSortAttr, canReuseLeftCompare, isLightweight, isLocalSort);
 
         //Only joins that partition need the serialization functions
-        if (!isHashJoin && !isLookupJoin)
+        if (!isHashJoin && !isLookupJoin && !joinInfo.isSlidingJoin())
         {
             bool isGlobal = !isLocalJoin && !instance->isChildActivity();
             BuildCtx nestedctx(instance->nestedctx);
@@ -12178,7 +12176,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         flags.append("|JFmatchAbortLimitSkips");
     if (rowlimit && rowlimit->hasAttribute(countAtom))
         flags.append("|JFcountmatchabortlimit");
-    if (joinInfo.slidingMatches.ordinality()) flags.append("|JFslidingmatch");
+    if (joinInfo.isSlidingJoin()) flags.append("|JFslidingmatch");
     if (joinInfo.extraMatch) flags.append("|JFmatchrequired");
     if (isLookupJoin && isManyLookup) flags.append("|JFmanylookup");
     if (expr->hasAttribute(onFailAtom))
@@ -12274,7 +12272,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         buildClearRecordMember(instance->createctx, "Right", dataset2);
     buildJoinMatchFunction(instance->startctx, "match", dataset1, dataset2, joinInfo.extraMatch, selSeq);
 
-    if (joinInfo.slidingMatches.ordinality())
+    if (joinInfo.isSlidingJoin())
     {
         buildSlidingMatchFunction(instance->nestedctx, joinInfo.queryLeftSort(), joinInfo.queryRightSort(), joinInfo.slidingMatches, "CompareLeftRightLower", 1, lhsDsRef, rhsDsRef);
         buildSlidingMatchFunction(instance->nestedctx, joinInfo.queryLeftSort(), joinInfo.queryRightSort(), joinInfo.slidingMatches, "CompareLeftRightUpper", 2, lhsDsRef, rhsDsRef);

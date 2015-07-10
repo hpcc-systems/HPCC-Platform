@@ -1079,7 +1079,7 @@ struct ISortKeySerializer
     virtual size32_t recordToKey(ARowBuilder & rowBuilder, const void * _record, size32_t & recordSize) = 0;        // record size in 3rd parameter
     virtual IOutputMetaData * queryRecordSize() = 0;
     virtual ICompare * queryCompareKey() = 0;
-    virtual ICompare * queryCompareRowKey() = 0;
+    virtual ICompare * queryCompareKeyRow() = 0;
 };
 
 
