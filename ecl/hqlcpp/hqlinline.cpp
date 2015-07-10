@@ -63,7 +63,7 @@ enum
 #define canIterateNoSpill(childFlags)       ((childFlags & HEFiterateinline) == HEFiterateinline)
 #define canEvaluateNoSpill(childFlags)      ((childFlags & HEFevaluateinline) == HEFevaluateinline)
 
-// assign is superset of iterate, iterate is a superset of evaluate
+// assign is a subset of iterate, iterate is a subset of evaluate
 
 
 static unsigned getInlineFlags(BuildCtx * ctx, IHqlExpression * expr);
