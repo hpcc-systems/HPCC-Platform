@@ -454,6 +454,13 @@ void CHThorDiskWriteActivity::resolve()
                         throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", full.str());
                     file->remove();
                 }
+
+                //Ensure target folder exists
+                if (!recursiveCreateDirectoryForFile(filename.get()))
+                {
+                    throw MakeStringException(99, "Cannot create file folder for %s", filename.str());
+                }
+
                 PROGLOG("Writing to file %s", filename.get());
             }
             f.clear();

@@ -1620,11 +1620,27 @@ IHqlExpression * getExpandSelectExpr(IHqlExpression * expr)
 
 IHqlExpression * replaceChildDataset(IHqlExpression * expr, IHqlExpression * newChild, unsigned whichChild)
 {
-    HqlMapTransformer mapper;
+    if (!(getChildDatasetType(expr) & childdataset_hasdataset))
+    {
+        HqlExprArray args;
+        unwindChildren(args, expr);
+        args.replace(*LINK(newChild), whichChild);
+        return expr->clone(args);
+    }
+
     IHqlExpression * oldChild = expr->queryChild(whichChild);
-    mapper.setMapping(oldChild, newChild);
-    mapper.setSelectorMapping(oldChild, newChild);
-    return mapper.transformRoot(expr);
+    HqlMapSelectorTransformer mapper(oldChild, newChild);
+    HqlExprArray args;
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (i == whichChild)
+            args.append(*LINK(newChild));
+        else
+            args.append(*mapper.transformRoot(cur));
+    }
+
+    return expr->clone(args);
 }
 
 IHqlExpression * insertChildDataset(IHqlExpression * expr, IHqlExpression * newChild, unsigned whichChild)

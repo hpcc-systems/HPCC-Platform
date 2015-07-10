@@ -245,8 +245,8 @@ extern jlib_decl void setPasswordProvider(IPasswordProvider * provider);
 extern jlib_decl size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer);
 extern jlib_decl void copyFile(const char *target, const char *source, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL,CFflags copyFlags=CFnone);
 extern jlib_decl void copyFile(IFile * target, IFile * source,size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL,CFflags copyFlags=CFnone);
-extern jlib_decl bool recursiveCreateDirectory(const char * path);              // only works locally, use IFile::createDirectory() for remote
-extern jlib_decl bool recursiveCreateDirectoryForFile(const char *filename);    // only works locally, use IFile::createDirectory() for remote
+extern jlib_decl bool recursiveCreateDirectory(const char * path);
+extern jlib_decl bool recursiveCreateDirectoryForFile(const char *filename);
 
 extern jlib_decl void splitFilename(const char * filename, StringBuffer * drive, StringBuffer * path, StringBuffer * tail, StringBuffer * ext, bool longExt = false);
 extern jlib_decl bool splitUNCFilename(const char * filename, StringBuffer * machine, StringBuffer * path, StringBuffer * tail, StringBuffer * ext);

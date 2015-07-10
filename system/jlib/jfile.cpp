@@ -3967,11 +3967,6 @@ void setDefaultUser(const char * username,const char *password)
 
 bool recursiveCreateDirectory(const char * path)
 {
-#ifndef _WIN32
-#ifdef USE_SAMBA
-    return localCreateDirectory(path);
-#endif
-#endif
     Owned<IFile> file = createIFile(path);
     return file->createDirectory();
 }
