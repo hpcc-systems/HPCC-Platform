@@ -9065,10 +9065,14 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
                     if (expr->hasAttribute(embeddedAtom) || queryAttribute(type, embeddedAtom) || expr->hasAttribute(countAtom) || expr->hasAttribute(sizeofAtom))
                         throwError1(HQLERR_InconsistentEmbedded, expr->queryId()->str());
                 }
-                if (expr->hasAttribute(embeddedAtom))
+                if (expr->hasAttribute(embeddedAtom) || queryAttribute(type, embeddedAtom))
                 {
-                    OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
-                    return removeAttribute(transformed, embeddedAtom);
+                    HqlExprArray args;
+                    transformChildren(expr, args);
+                    removeAttribute(args, embeddedAtom);
+                    OwnedITypeInfo newType = transformType(type);
+                    OwnedITypeInfo cleanType = removeAttribute(newType, embeddedAtom);
+                    return createField(expr->queryId(), cleanType.getClear(), args);
                 }
                 if (implicitLinkedChildRows && !expr->hasAttribute(_linkCounted_Atom) && !queryAttribute(type, embeddedAtom))
                 {
@@ -9105,6 +9109,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             }
         }
         break;
+    case no_attr:
     case no_embedbody:
         //Don't change the type of an embed body - otherwise result it will become link counted when not expected.
         return LINK(expr);
