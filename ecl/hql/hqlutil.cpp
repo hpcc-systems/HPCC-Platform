@@ -8851,6 +8851,8 @@ IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression
                 IHqlExpression * lhs = cur->queryChild(0)->queryChild(1);
                 if (lhs == searchField)
                     return cur;
+                if (lhs->queryId() == searchField->queryId())
+                    return cur;
                 break;
             }
         }
