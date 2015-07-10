@@ -1843,7 +1843,7 @@ void EclAgent::doProcess()
             if (isRemoteWorkunit)
             {
                 w->setAgentSession(myProcessSession());
-                w->clearGraphProgress();
+                w->clearGraphProgress();  // Should Roxie do this too??
             }
             if (debugContext)   
             {

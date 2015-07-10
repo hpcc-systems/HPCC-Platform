@@ -126,14 +126,13 @@ private:
             try
             {
                 IConstWorkUnit &currentWU = activeGraphs.item(0).queryJob().queryWorkUnit();
-                Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)activeGraphs.item(0).queryJob()).getGraphProgress();
+                const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    Owned<IWUGraphStats> stats = graphProgress->update(SCTthor, queryStatisticsComponentName(), graph.queryGraphId());
+                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), graph.queryGraphId());
                     reportGraph(stats->queryStatsBuilder(), &graph, finished);
                 }
-                graphProgress.clear();
                 Owned<IWorkUnit> wu = &currentWU.lock();
                 ForEachItemIn (g2, activeGraphs)
                 {
@@ -156,14 +155,11 @@ private:
         try
         {
             IConstWorkUnit &currentWU = graph->queryJob().queryWorkUnit();
-            Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)graph->queryJob()).getGraphProgress();
-
+            const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
             {
-                Owned<IWUGraphStats> stats = graphProgress->update(SCTthor, queryStatisticsComponentName(), graph->queryGraphId());
+                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), graph->queryGraphId());
                 reportGraph(stats->queryStatsBuilder(), graph, finished);
             }
-
-            graphProgress.clear();
 
             Owned<IWorkUnit> wu = &currentWU.lock();
             reportStatus(wu, *graph, startTime, finished, success);

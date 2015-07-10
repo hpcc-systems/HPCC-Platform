@@ -722,10 +722,6 @@ interface IPropertyTree;
 interface IConstWUGraphProgress : extends IInterface
 {
     virtual IPropertyTree * getProgressTree() = 0;
-    virtual WUGraphState queryGraphState() = 0;
-    virtual WUGraphState queryNodeState(WUGraphIDType nodeId) = 0;
-    virtual IWUGraphProgress * update() = 0;
-    virtual IWUGraphStats * update(StatisticCreatorType creatorType, const char * creator, unsigned subgraph) = 0;
     virtual unsigned queryFormatVersion() = 0;
 };
 
@@ -733,12 +729,6 @@ interface IConstWUGraphProgress : extends IInterface
 interface IWUGraphStats : public IInterface
 {
     virtual IStatisticGatherer & queryStatsBuilder() = 0;
-};
-
-interface IWUGraphProgress : extends IConstWUGraphProgress
-{
-    virtual void setGraphState(WUGraphState state) = 0;
-    virtual void setNodeState(WUGraphIDType nodeId, WUGraphState state) = 0;
 };
 
 
@@ -1053,6 +1043,16 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IStringIterator *getLogs(const char *type, const char *instance=NULL) const = 0;
     virtual IStringIterator *getProcesses(const char *type) const = 0;
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const = 0;
+
+    // Note that these don't read/modify the workunit itself, but rather the associated progress info.
+    // As such they can be called without locking the workunit, and are 'const' as far as the WU is concerned.
+
+    virtual WUGraphState queryGraphState(const char *graphName) const = 0;
+    virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const = 0;
+    virtual void setGraphState(const char *graphName, WUGraphState state) const = 0;
+    virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const = 0;
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const = 0;
+    virtual void clearGraphProgress() const = 0;
 };
 
 
@@ -1115,7 +1115,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setIsClone(bool value) = 0;
     virtual void setTimeScheduled(const IJlibDateTime & val) = 0;
     virtual void noteFileRead(IDistributedFile * file) = 0;
-    virtual void clearGraphProgress() = 0;
     virtual void resetBeforeGeneration() = 0;
     virtual bool switchThorQueue(const char * newcluster, IQueueSwitcher * qs) = 0;
     virtual void setAllowedClusters(const char * value) = 0;
@@ -1134,7 +1133,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultVarUnicode(const char * stepname, unsigned sequence, UChar const *val) = 0;
     virtual void setResultString(const char * stepname, unsigned sequence, int len, const char *val) = 0;
     virtual void setResultData(const char * stepname, unsigned sequence, int len, const void *val) = 0;
-//  virtual void doSetResultString(type_t type, const char *name, unsigned sequence, int len, const char *val) = 0;
     virtual void setResultRaw(const char * name, unsigned sequence, int len, const void *val) = 0;
     virtual void setResultSet(const char * name, unsigned sequence, bool isAll, size32_t len, const void *val, ISetToXmlTransformer *) = 0;
     virtual void setResultUnicode(const char * name, unsigned sequence, int len, UChar const * val) = 0;
