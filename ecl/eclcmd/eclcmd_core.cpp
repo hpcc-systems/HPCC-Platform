@@ -262,15 +262,15 @@ public:
             "text, file, archive, shared object, or dll.  The workunit will be created in\n"
             "the 'compiled' state.\n"
             "\n"
-            "ecl deploy --target=<val> --name=<val> <ecl_file|->\n"
-            "ecl deploy --target=<val> --name=<val> <archive|->\n"
-            "ecl deploy [--target=<val>] [--name=<val>] <so|dll|->\n\n"
+            "ecl deploy <target> <file> [--name=<val>]\n"
+            "ecl deploy <target> <archive> [--name=<val>]\n"
+            "ecl deploy <target> <so|dll> [--name=<val>]\n"
+            "ecl deploy <target> - [--name=<val>]\n\n"
             "   -                      specifies object should be read from stdin\n"
-            "   <ecl_file|->           ecl text file to deploy\n"
-            "   <archive|->            ecl archive to deploy\n"
-            "   <so|dll|->             workunit dll or shared object to deploy\n"
+            "   <file>                 ecl text file to deploy\n"
+            "   <archive>              ecl archive to deploy\n"
+            "   <so|dll>               workunit dll or shared object to deploy\n"
             " Options:\n"
-            "   -t, --target=<val>     target cluster to associate workunit with\n"
             "   -n, --name=<val>       workunit job name\n",
             stdout);
         EclCmdWithEclTarget::usage();
@@ -456,18 +456,17 @@ public:
             "If the query is being created from an ECL file, archive, shared object, dll,\n"
             "or text, a workunit is first created and then published to the queryset.\n"
             "\n"
-            "ecl publish [--target=<val>] [--name=<val>] [--activate] <wuid>\n"
-            "ecl publish [--target=<val>] [--name=<val>] [--activate] <so|dll|->\n"
-            "ecl publish --target=<val> --name=<val> [--activate] <archive|->\n"
-            "ecl publish --target=<val> --name=<val> [--activate] <ecl_file|->\n\n"
+            "ecl publish <target> <wuid> --name=<val>\n"
+            "ecl publish <target> <so|dll> --name=<val>\n"
+            "ecl publish <target> <archive> --name=<val>\n"
+            "ecl publish <target> <file> --name=<val>\n"
+            "ecl publish <target> - --name=<val>\n\n"
             "   -                      specifies object should be read from stdin\n"
             "   <wuid>                 workunit to publish\n"
-            "   <archive|->            archive to publish\n"
-            "   <ecl_file|->           ECL text file to publish\n"
-            "   <so|dll|->             workunit dll or shared object to publish\n"
+            "   <archive>              archive to publish\n"
+            "   <file>                 ECL text file to publish\n"
+            "   <so|dll>               workunit dll or shared object to publish\n"
             " Options:\n"
-            "   -t, --target=<val>     target cluster to publish workunit to\n"
-            "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
             "   -A, --activate         Activate query when published (default)\n"
             "   -sp, --suspend-prev    Suspend previously active query\n"
@@ -572,7 +571,6 @@ public:
 
         StringBuffer wuid;
         StringBuffer wuCluster;
-        StringBuffer queryset;
         StringBuffer query;
 
         if (optObj.type==eclObjWuid)
@@ -583,10 +581,10 @@ public:
         }
         else if (optObj.type==eclObjQuery)
         {
-            req->setQuerySet(queryset.set(optObj.value.get()).str());
+            req->setQuerySet(optTargetCluster);
             req->setQuery(query.set(optObj.query.get()).str());
             if (optVerbose)
-                fprintf(stdout, "Running query %s/%s\n", queryset.str(), query.str());
+                fprintf(stdout, "Running query %s/%s\n", optTargetCluster.str(), query.str());
         }
         else
         {
@@ -631,25 +629,24 @@ public:
     {
         fputs("\nUsage:\n"
             "\n"
-            "The 'run' command exectues an ECL workunit, text, file, archive, shared\n"
-            "object, or dll on the specified HPCC target cluster.\n"
+            "The 'run' command exectues an ECL workunit, text, file, archive, query,\n"
+            "shared object, or dll on the specified HPCC target cluster.\n"
             "\n"
             "Query input can be provided in xml form via the --input parameter.  Input\n"
             "xml can be provided directly or by refrencing a file\n"
             "\n"
-            "ecl run [--target=<val>][--input=<file|xml>][--wait=<ms>] <wuid>\n"
-            "ecl run [--target=<c>][--input=<file|xml>][--wait=<ms>] <queryset> <query>\n"
-            "ecl run [--target=<c>][--name=<nm>][--input=<file|xml>][--wait=<i>] <dll|->\n"
-            "ecl run --target=<c> --name=<nm> [--input=<file|xml>][--wait=<i>] <archive|->\n"
-            "ecl run --target=<c> --name=<nm> [--input=<file|xml>][--wait=<i>] <eclfile|->\n\n"
+            "ecl run <target> <wuid> [--input=<file|xml>][--wait=<ms>]\n"
+            "ecl run <target> <query> [--input=<file|xml>][--wait=<ms>]\n"
+            "ecl run <target> <dll> [--name=<nm>][--input=<file|xml>][--wait=<i>]\n"
+            "ecl run <target> <archive> --name=<nm> [--input=<file|xml>][--wait=<i>]\n"
+            "ecl run <target> <eclfile> --name=<nm> [--input=<file|xml>][--wait=<i>]\n"
+            "ecl run <target> - --name=<nm> [--input=<file|xml>][--wait=<i>]\n\n"
             "   -                      specifies object should be read from stdin\n"
             "   <wuid>                 workunit to publish\n"
-            "   <archive|->            archive to publish\n"
-            "   <ecl_file|->           ECL text file to publish\n"
-            "   <so|dll|->             workunit dll or shared object to publish\n"
+            "   <archive>              archive to publish\n"
+            "   <eclfile>              ECL text file to publish\n"
+            "   <so|dll>               workunit dll or shared object to publish\n"
             " Options:\n"
-            "   -t, --target=<val>        target cluster to run job on\n"
-            "                             (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>          job name\n"
             "   -in,--input=<file|xml>    file or xml content to use as query input\n"
             "   -X<name>=<value>          sets the stored input value (stored('name'))\n"
@@ -721,9 +718,9 @@ public:
             "The 'activate' command assigns a query to the active alias with the same\n"
             "name as the query.\n"
             "\n"
-            "ecl activate <queryset> <query_id>\n"
+            "ecl activate <target> <query_id>\n"
             " Options:\n"
-            "   <queryset>             name of queryset containing query to activate\n"
+            "   <target>               name of target queryset containing query to activate\n"
             "   <query_id>             query to activate\n",
             stdout);
         EclCmdWithQueryTarget::usage();
@@ -765,11 +762,11 @@ public:
     {
         fputs("\nUsage:\n"
             "\n"
-            "The 'unpublish' command removes a query from a queryset.\n"
+            "The 'unpublish' command removes a query from a target queryset.\n"
             "\n"
-            "ecl unpublish <queryset> <query_id>\n"
+            "ecl unpublish <target> <query_id>\n"
             " Options:\n"
-            "   <queryset>             name of queryset containing the query to remove\n"
+            "   <target>               name of target queryset containing the query to remove\n"
             "   <query_id>             query to remove from the queryset\n",
             stdout);
         EclCmdWithQueryTarget::usage();
@@ -817,12 +814,12 @@ public:
     {
         fputs("\nUsage:\n"
             "\n"
-            "The 'deactivate' command removes an active query alias from the given queryset.\n"
+            "The 'deactivate' command removes an active query alias from the given target.\n"
             "\n"
-            "ecl deactivate <queryset> <active_alias>\n"
+            "ecl deactivate <target> <active_alias>\n"
             "\n"
             " Options:\n"
-            "   <queryset>             queryset containing alias to deactivate\n"
+            "   <target>               target queryset containing alias to deactivate\n"
             "   <active_alias>         active alias to be removed from the queryset\n",
             stdout);
         EclCmdWithQueryTarget::usage();
