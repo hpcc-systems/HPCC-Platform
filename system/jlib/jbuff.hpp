@@ -214,7 +214,7 @@ public:
     void *          insertDirect(unsigned offset, size32_t len); // insert len bytes at offset returning address to area inserted
     inline void     Release() const                         { delete this; }    // for consistency even though not link counted
 
-    inline void *   bufferBase() const { return curLen ? buffer : NULL; }
+    inline void *   bufferBase() const { return buffer; }
 
 
 protected:

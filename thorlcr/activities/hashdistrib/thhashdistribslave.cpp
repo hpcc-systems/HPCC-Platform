@@ -226,8 +226,7 @@ protected:
             size32_t compSz = 0;
             size32_t dstPos = dstMb.length();
             dstMb.append(compSz); // placeholder
-            void *dst = dstMb.reserve(owner.bucketSendSize * 2); // allow for worst case
-            compressor.open(dst, owner.bucketSendSize * 2);
+            compressor.open(dstMb, owner.bucketSendSize * 2);
             loop
             {
                 OwnedConstThorRow row = nextRow();

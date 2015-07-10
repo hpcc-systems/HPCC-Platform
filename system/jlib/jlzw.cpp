@@ -102,6 +102,8 @@ CLZWCompressor::CLZWCompressor(bool _supportbigendian)
     bufalloc = 0;
     inuseflag=0xff;
     supportbigendian = _supportbigendian;
+    outBufStart = 0;
+    outBufMb = NULL;
 }
 
 CLZWCompressor::~CLZWCompressor()
@@ -223,6 +225,21 @@ static struct __initShiftArray {
   curShift = shift;                                          \
 }
 
+void CLZWCompressor::initCommon()
+{
+    ASSERT(dict.curbits==0);   // check for open called twice with no close
+    initdict();
+    curcode = -1;
+    inlen = 0;
+    inlenblk = COMMITTED;
+    memset(outbuf,0,sizeof(size32_t));
+    outlen = sizeof(size32_t)+dict.curbits;
+    outbytes = (unsigned char *)outbuf+sizeof(size32_t);
+    outbits = outbytes+8;
+    outnext = outbytes+dict.curbits;
+    curShift=0; //outmask = 0x80;
+    outbitbuf = 0;
+}
 
 void CLZWCompressor::flushbuf()
 {
@@ -237,43 +254,56 @@ void CLZWCompressor::flushbuf()
     } while (outbytes+(dict.curbits-8)!=outnext);
 }
 
+void CLZWCompressor::ensure(size32_t sz)
+{
+    dbgassertex(outBufMb);
+    size32_t outBytesOffset = outbytes-(byte *)outbuf;
+    size32_t outBitsOffset = outbits-(byte *)outbuf;
+    size32_t outNextOffset = outnext-(byte *)outbuf;
+    outbuf = (byte *)outBufMb->ensureCapacity(sz);
+    maxlen = outBufMb->capacity()-SAFETY_MARGIN;
+    outbytes = (byte *)outbuf+outBytesOffset;
+    outbits = (byte *)outbuf+outBitsOffset;
+    outnext = (byte *)outbuf+outNextOffset;
+}
 
+void CLZWCompressor::open(MemoryBuffer &mb, size32_t initialSize)
+{
+    if (bufalloc)
+        free(outbuf);
+    bufalloc = 0;
+    outBufMb = &mb;
+    outBufStart = mb.length();
+    outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
+    maxlen = outBufMb->capacity()-SAFETY_MARGIN;
+    initCommon();
+}
 
 void CLZWCompressor::open(void *buf,size32_t max)
 {
-
 #ifdef STATS
     st_thistime = msTick();
     st_thiswrites=0;
 #endif
 
-    if (buf) {
-        if (bufalloc) {
+    if (buf)
+    {
+        if (bufalloc)
             free(outbuf);
-        }
         bufalloc = 0;
         outbuf = buf;
     }
-    else if (max>bufalloc) {
+    else if (max>bufalloc)
+    {
         if (bufalloc)
             free(outbuf);
         bufalloc = max;
         outbuf = malloc(bufalloc);
     }
+    outBufMb = NULL;
     ASSERT(max>SAFETY_MARGIN+sizeof(size32_t)); // minimum required
     maxlen=max-SAFETY_MARGIN;
-    ASSERT(dict.curbits==0);   // check for open called twice with no close
-    initdict();
-    curcode = -1;
-    inlen = 0;
-    inlenblk = COMMITTED;
-    memset(outbuf,0,sizeof(size32_t));
-    outlen = sizeof(size32_t)+dict.curbits;
-    outbytes = (unsigned char *)outbuf+sizeof(size32_t);
-    outbits = outbytes+8;
-    outnext = outbytes+dict.curbits;
-    curShift=0; //outmask = 0x80;
-    outbitbuf = 0;
+    initCommon();
 }
 
 
@@ -295,40 +325,49 @@ size32_t CLZWCompressor::write(const void *buf,size32_t buflen)
 #endif
 
     size32_t len=buflen;
-    if (curcode==-1) {
+    if (curcode==-1)
+    {
         curcode = *(in++);
         len--;
     }
-    while (len--) {
-
+    while (len--)
+    {
         int ch = *(in++);
         int index = HASHC(curcode,ch);
-        for (;;) {
-            
-            if (dictinuse[index]!=inuseflag) {
+        for (;;)
+        {
+            if (dictinuse[index]!=inuseflag)
+            {
                 dictinuse[index] = inuseflag;
                 dictcode[index] = dict.nextcode++;
                 dict.dictparent[index] = curcode;
                 dict.dictchar[index] = (unsigned char) ch;
                 PUTCODE(curcode);
-                if ((outlen>=maxlen)) {
-                    size32_t ret;
-                    if (inlenblk==COMMITTED) {
-                        ret = in-(unsigned char *)buf-1;
-                        inlen += in-(unsigned char *)buf-1;
-                    }
+                if ((outlen>=maxlen))
+                {
+                    if (outBufMb)
+                        ensure(outlen+0x10000);
                     else
-                        ret = 0;
-                    close();
-                    return ret;
+                    {
+                        size32_t ret;
+                        if (inlenblk==COMMITTED)
+                        {
+                            ret = in-(unsigned char *)buf-1;
+                            inlen += in-(unsigned char *)buf-1;
+                        }
+                        else
+                            ret = 0;
+                        close();
+                        return ret;
+                    }
                 }
-                if (dict.nextcode == dict.nextbump) {
+                if (dict.nextcode == dict.nextbump)
+                {
                     PUTCODE(BUMP_CODE);
                     flushbuf();
                     bool eodict = !dict.bumpbits();
-                    if (eodict) {
+                    if (eodict)
                         initdict();
-                    }
                     outbytes = outnext;
                     outbits = outbytes+8;
                     outnext += dict.curbits;
@@ -340,14 +379,14 @@ size32_t CLZWCompressor::write(const void *buf,size32_t buflen)
                 break;
             }
             if (dict.dictparent[index] == curcode &&
-                dict.dictchar[index] == (unsigned char)ch) {
+                dict.dictchar[index] == (unsigned char)ch)
+            {
                 curcode = dictcode[index];
                 break;
             }
             index--;
-            if (index<0) {
+            if (index<0)
                 index = LZW_HASH_TABLE_SIZE-1;
-            }
         }
     }
     inlen += buflen;
@@ -366,7 +405,8 @@ void CLZWCompressor::commitblock()
 
 void CLZWCompressor::close()
 {
-    if (dict.curbits) {
+    if (dict.curbits)
+    {
         PUTCODE(curcode);
         flushbuf();
         dict.curbits = 0;
@@ -386,6 +426,11 @@ void CLZWCompressor::close()
         st_totread += (inlen+511)/1024;
         st_totblocks++;
 #endif
+        if (outBufMb)
+        {
+            outBufMb->setWritePos(outBufStart+outlen);
+            outBufMb = NULL;
+        }
     }
 }
 
@@ -1227,7 +1272,9 @@ class jlib_decl CRDiffCompressor : public CInterface, public ICompressor
     size32_t bufalloc;
     size32_t remaining;
     void *outbuf;
-    unsigned char *out; 
+    unsigned char *out;
+    MemoryBuffer *outBufMb;
+    size32_t outBufStart;
 
     size32_t recsize;       // assumed fixed length rows
     // assumes a transaction is a record
@@ -1235,6 +1282,25 @@ class jlib_decl CRDiffCompressor : public CInterface, public ICompressor
     size32_t maxrecsize;  // maximum size diff compress 
     unsigned char *prev;
 
+    void initCommon()
+    {
+        inlen = 0;
+        memset(outbuf, 0, sizeof(size32_t)*2);
+        outlen = sizeof(size32_t)*2;
+        out = (byte *)outbuf+outlen;
+        free(prev);
+        prev = NULL;
+    }
+    inline void ensure(size32_t sz)
+    {
+        if (NULL == outBufMb)
+            throw MakeStringException(-3,"CRDiffCompressor row doesn't fit in buffer!");
+        dbgassertex(remaining<sz);
+        verifyex(outBufMb->ensureCapacity(outBufMb->capacity()+(sz-remaining)));
+        outbuf = ((byte *)outBufMb->bufferBase())+outBufStart;
+        out = (byte *)outbuf+outlen;
+        remaining = outBufMb->capacity()-outlen;
+    }
 public:
     IMPLEMENT_IINTERFACE;
     CRDiffCompressor()
@@ -1245,8 +1311,9 @@ public:
         recsize = 0;
         bufalloc = 0;
         prev = NULL;
+        outBufMb = NULL;
     }
-        
+
     ~CRDiffCompressor()
     {
         free(prev);
@@ -1254,36 +1321,48 @@ public:
             free(outbuf);
     }
 
+    void open(MemoryBuffer &mb, size32_t initialSize)
+    {
+        outBufMb = &mb;
+        outBufStart = mb.length();
+        outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
+        bufalloc = 0;
+        initCommon();
+        remaining = outBufMb->capacity()-outlen;
+    }
+
     void open(void *buf,size32_t max)
     {
-        if (buf) {
-            if (bufalloc) {
+        if (buf)
+        {
+            if (bufalloc)
                 free(outbuf);
-            }
             bufalloc = 0;
             outbuf = buf;
         }
-        else if (max>bufalloc) {
+        else if (max>bufalloc)
+        {
             if (bufalloc)
                 free(outbuf);
             bufalloc = max;
             outbuf = malloc(bufalloc);
         }
+        outBufMb = NULL;
         ASSERT(max>2+sizeof(size32_t)*2); // minimum required (actually will need enough for recsize so only a guess)
-        inlen = 0;
-        memset(outbuf,0,sizeof(size32_t)*2);
-        outlen = sizeof(size32_t)*2;
+        initCommon();
         remaining = max-outlen;
-        out = (unsigned char *)outbuf+sizeof(size32_t)*2;
-        free(prev);
-        prev = NULL;
     }
 
     void close()
     {
         transbuf.clear();
         memcpy(outbuf,&inlen,sizeof(inlen));        // expanded size
-        memcpy((unsigned char *)outbuf+sizeof(inlen),&recsize,sizeof(recsize));
+        memcpy((byte *)outbuf+sizeof(inlen),&recsize,sizeof(recsize));
+        if (outBufMb)
+        {
+            outBufMb->setWritePos(outBufStart+outlen);
+            outBufMb = NULL;
+        }
     }
 
     inline size32_t maxcompsize(size32_t s) { return s+((s+254)/255)*2; }
@@ -1291,14 +1370,22 @@ public:
     size32_t write(const void *buf,size32_t buflen)
     {
         // assumes a transaction is a row and at least one row fits in
-        if (prev) {
-            if ((transbuf.length()==0)&&(remaining<maxrecsize))  // this is a bit odd because no incremental diffcomp
-                return 0;
+        if (prev)
+        {
+            if (transbuf.length()==0)
+            {
+                if (remaining<maxrecsize)  // this is a bit odd because no incremental diffcomp
+                {
+                    if (NULL == outBufMb)
+                        return 0;
+                }
+            }
             transbuf.append(buflen,buf);
         }
-        else { // first row
-            if (buflen>remaining)
-                throw MakeStringException(-3,"CRDiffCompressor row doesn't fit in buffer!");
+        else // first row
+        {
+            if (remaining<buflen)
+                ensure(buflen);
             memcpy(out,buf,buflen);
             out += buflen;
             outlen += buflen;
@@ -1316,19 +1403,23 @@ public:
 
     void commitblock()
     {
-        if (prev) {
+        if (prev)
+        {
             if (recsize!=transbuf.length())
                 throw MakeStringException(-1,"CRDiffCompressor used with variable sized row");
+            if (remaining<maxrecsize)
+                ensure(maxrecsize-remaining);
             size32_t sz = DiffCompress(transbuf.toByteArray(),out,prev,recsize);
             transbuf.clear();
             out += sz;
             outlen += sz;
             remaining -= sz;
         }
-        else {
+        else
+        {
             recsize = outlen-sizeof(size32_t)*2;
             maxrecsize = maxcompsize(recsize);
-            prev = (unsigned char *)malloc(recsize);
+            prev = (byte *)malloc(recsize);
             memcpy(prev,out-recsize,recsize);
             remaining -= recsize;
         }
@@ -1463,6 +1554,19 @@ class jlib_decl CRandRDiffCompressor : public CInterface, public ICompressor
     size32_t maxdiffsize;
     size32_t recsize;
     size32_t compsize;
+    size32_t outBufStart;
+    MemoryBuffer *outBufMb;
+
+    void initCommon()
+    {
+        header = (RRDheader *)outbuf;
+        inlen = 0;
+        memset(header,0,MIN_RRDHEADER_SIZE);
+        diffbuf.clear();
+        firstrec.clear();
+        firstrle.clear();
+        rowbuf.clear();
+    }
 public:
     IMPLEMENT_IINTERFACE;
     CRandRDiffCompressor()
@@ -1473,12 +1577,23 @@ public:
         max = 0;
         maxdiffsize = 0;
         recsize = 0;
+        outBufStart = 0;
+        outBufMb = NULL;
     }
         
     ~CRandRDiffCompressor()
     {
         if (bufalloc)
             free(outbuf);
+    }
+
+    void open(MemoryBuffer &mb, size32_t initialSize)
+    {
+        outBufMb = &mb;
+        outBufStart = mb.length();
+        outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
+        bufalloc = 0;
+        initCommon();
     }
 
     void open(void *buf,size32_t _max)
@@ -1497,14 +1612,9 @@ public:
             bufalloc = max;
             outbuf = malloc(bufalloc);
         }
+        outBufMb = NULL;
         ASSERT(max>MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3); // hopefully a lot bigger!
-        header = (RRDheader *)outbuf;
-        inlen = 0;
-        memset(header,0,MIN_RRDHEADER_SIZE);
-        diffbuf.clear();
-        firstrec.clear();
-        firstrle.clear();
-        rowbuf.clear();
+        initCommon();
     }
 
     void close()
@@ -1513,6 +1623,12 @@ public:
         ASSERT((size32_t)(header->totsize+header->firstrlesize)<=max);
         unsigned short hofs = header->hsize();
         ASSERT(header->totsize==hofs+diffbuf.length());
+        if (outBufMb)
+        {
+            outbuf = (byte *)outBufMb->ensureCapacity(header->totsize+header->firstrlesize);
+            outBufMb->setWritePos(outBufStart+header->totsize+header->firstrlesize);
+            outBufMb = NULL;
+        }
         byte *out = (byte *)outbuf+hofs;
         memcpy(out,diffbuf.toByteArray(),diffbuf.length());
         out += diffbuf.length();
@@ -2299,12 +2415,13 @@ ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bo
 class CAESCompressor : public CInterface, implements ICompressor
 {
     Owned<ICompressor> comp;    // base compressor
-    MemoryAttr compattr;        // compressed buffer
+    MemoryBuffer compattr;      // compressed buffer
     MemoryAttr outattr;         // compressed and encrypted (if outblk NULL)
     void *outbuf;               // dest
     size32_t outlen;
     size32_t outmax;
     MemoryAttr key;
+    MemoryBuffer *outBufMb;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -2313,6 +2430,17 @@ public:
     {
         comp.setown(createLZWCompressor(true));
         outlen = 0;
+        outmax = 0;
+        outBufMb = NULL;
+    }
+
+    void open(MemoryBuffer &mb, size32_t initialSize)
+    {
+        outlen = 0;
+        outmax = initialSize;
+        outbuf = NULL;
+        outBufMb = &mb;
+        comp->open(compattr, initialSize);
     }
 
     void open(void *blk,size32_t blksize)
@@ -2323,23 +2451,29 @@ public:
             outbuf = blk;
         else
             outbuf = outattr.allocate(blksize);
+        outBufMb = NULL;
         size32_t subsz = blksize-AES_PADDING_SIZE-sizeof(size32_t);
-        comp->open(compattr.allocate(subsz),subsz);
+        comp->open(compattr.reserveTruncate(subsz),subsz);
     }
 
     void close()
     {
         comp->close();
         // now encrypt
-        byte *p = (byte *)comp->bufptr();
-        size32_t bl = comp->buflen();
         MemoryBuffer buf;
         aesEncrypt(key.get(), key.length(), comp->bufptr(), comp->buflen(), buf);
         outlen = buf.length();
+        if (outBufMb)
+        {
+            outmax = sizeof(size32_t)+outlen;
+            outbuf = outBufMb->reserveTruncate(outmax);
+            outBufMb = NULL;
+        }
         memcpy(outbuf,&outlen,sizeof(size32_t));
         outlen += sizeof(size32_t);
         assertex(outlen<=outmax);
         memcpy((byte *)outbuf+sizeof(size32_t),buf.bufferBase(),buf.length());
+        outmax = 0;
     }
 
     size32_t write(const void *buf,size32_t len)
@@ -2347,15 +2481,15 @@ public:
         return comp->write(buf,len);
     }
 
-
-
     void * bufptr()
     {
+        assertex(0 == outmax); // i.e. closed
         return outbuf;
     }
 
     size32_t buflen()
     {
+        assertex(0 == outmax); // i.e. closed
         return outlen;
     }
 
@@ -2565,10 +2699,18 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         virtual ICompressor *getCompressor(const char *options) { return createRDiffCompressor(); }
         virtual IExpander *getExpander(const char *options) { return createRDiffExpander(); }
     };
+    class CLZWCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        CLZWCompressHandler() : CCompressHandlerBase("LZW") { }
+        virtual ICompressor *getCompressor(const char *options) { return createLZWCompressor(true); }
+        virtual IExpander *getExpander(const char *options) { return createLZWExpander(true); }
+    };
     ICompressHandler *flzCompressor = new CFLZCompressHandler();
     addCompressorHandler(flzCompressor);
     addCompressorHandler(new CAESCompressHandler());
     addCompressorHandler(new CDiffCompressHandler());
+    addCompressorHandler(new CLZWCompressHandler());
     defaultCompressor.set(flzCompressor);
     return true;
 }
