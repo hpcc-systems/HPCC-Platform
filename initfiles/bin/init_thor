@@ -205,31 +205,35 @@ while [[ 1 ]]; do
         1)  log "Thormaster ($thorpid) Interrupted, Ctrl-C caught"
             killed
             ;;
-        # TEC_Idle, TEC_Watchdog, TEC_Swap, TEC_DaliDown
-        2|3|5|6)    [[ $errcode -eq 2 ]] && log "Thormaster ($thorpid) Idle"
-                    [[ $errcode -eq 3 ]] && log "Thormaster ($thorpid) Lost connection to slave(s)"
-                    [[ $errcode -eq 5 ]] && log "Thormaster ($thorpid) Swap node required"
-                    [[ $errcode -eq 6 ]] && log "Thormaster ($thorpid) Unable to connect to Dali"
-                    log "Stopping thorslave(s) for restart"
-                    kill_slaves
-                    if [[ 0 != $autoSwapNode ]]; then
-                        log "Running autoswap $THORNAME :: ($thorpid)"
-                        swapnode auto $DALISERVER $component
-                        errcode=$?
-                        if [[ 0 != ${errcode} ]]; then
-                            log "auto swap node failed, errcode=${errcode}"
-                            killed
-                        fi
-                    fi
-                # restarting thormaster
-                ;;
         # TEC_SlaveInit
         4)  log "Thormaster ($thorpid) Slaves failed to initialize"
             log "Shutting down"
             killed
             ;;
-        *)  log "Thormaster ($thorpid) Unknown error code.  Stopping"
-            killed
+        # TEC_Idle=2, TEC_Watchdog=3, TEC_Swap=5, TEC_DaliDown=6
+        *)  if [[ $errcode -eq 2 ]]; then
+                log "Thormaster ($thorpid) Idle"
+            elif [[ $errcode -eq 3 ]]; then
+                log "Thormaster ($thorpid) Lost connection to slave(s)"
+            elif [[ $errcode -eq 5 ]]; then
+                log "Thormaster ($thorpid) Swap node required"
+            elif [[ $errcode -eq 6 ]]; then
+                log "Thormaster ($thorpid) Unable to connect to Dali"
+            else
+                log "Thormaster ($thorpid) Unknown error code: [$errcode]"
+            fi
+            log "Stopping thorslave(s) for restart"
+            kill_slaves
+            if [[ 0 != $autoSwapNode ]]; then
+                log "Running autoswap $THORNAME :: ($thorpid)"
+                swapnode auto $DALISERVER $component
+                errcode=$?
+                if [[ 0 != ${errcode} ]]; then
+                    log "auto swap node failed, errcode=${errcode}"
+                    killed
+                fi
+            fi
+            # restarting thormaster
             ;;
         esac
     else
