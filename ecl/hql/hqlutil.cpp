@@ -5530,6 +5530,24 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
         char next = buffer[i];
         switch (next)
         {
+        case '*':
+            if ('/' == prev) // Ignore directives in multi-line comments
+            {
+                i+=2;
+                while (i < lenBuffer && ('*' != buffer[i-1] || '/' != buffer[i])) 
+                    ++i;
+                next = 0;    // subsequent processing ignore the current '/' character
+            }
+            break;
+        case '/':
+            if ('/' == prev) // Ignore directives in single line comments
+            {
+                ++i;
+                while (i < lenBuffer && !iseol(buffer[i]))
+                    ++i;
+                next = 0;    // subsequent processing ignore the current '/' character
+            }
+            break;
         case ' ': case '\t':
             // allow whitespace in front of #option
             break;
@@ -5571,11 +5589,8 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                     }
                 }
             }
-            //fallthrough
-        default:
-            prev = next;
-            break;
         }
+        prev = next;
     }
     return attrs.getClear();
 }
