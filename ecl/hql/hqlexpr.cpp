@@ -10606,11 +10606,6 @@ extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, IHqlExpression 
     return createAttribute(no_attr_link, name, value, value2, value3);
 }
 
-extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, HqlExprArray & args)
-{
-    return createAttribute(no_attr_link, name, args);
-}
-
 extern HQL_API IHqlExpression *createUnknown(node_operator op, ITypeInfo * type, IAtom * name, IInterface * extra)
 {
     IHqlExpression * ret = CHqlUnknown::makeUnknown(op, type, name, extra);
@@ -13060,6 +13055,7 @@ static IHqlExpression * processPseudoWorkflow(SharedHqlExpr & expr, HqlExprArray
             return LINK(workflow);
         }
     case no_attr:
+    case no_attr_expr:
         {
             IAtom * name = workflow->queryName();
             if (name == sectionAtom)
