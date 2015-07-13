@@ -5097,11 +5097,16 @@ void addDatasetResultXmlNamespaces(IWUResult &result, HqlExprArray &xmlnsAttrs, 
         StringBuffer xmlnsURI;
         getUTF8Value(xmlnsPrefix, xmlns.queryChild(0));
         getUTF8Value(xmlnsURI, xmlns.queryChild(1));
+
         if (xmlnsURI.length())
         {
-            result.setResultXmlns(xmlnsPrefix, xmlnsURI);
             if (xmlnsPrefix.length() && declaredPrefixes.find(xmlnsPrefix)==NotFound)
+            {
+                if (!validateXMLTag(xmlnsPrefix))
+                    throwError1(HQLERR_InvalidXmlnsPrefix, xmlnsPrefix.str());
                 declaredPrefixes.append(xmlnsPrefix);
+            }
+            result.setResultXmlns(xmlnsPrefix, xmlnsURI);
         }
     }
     StringArray usedPrefixes;
