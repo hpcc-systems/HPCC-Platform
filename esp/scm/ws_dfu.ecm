@@ -123,6 +123,7 @@ ESPStruct DFUFileDetail
     [min_ver("1.22")] int64 CompressedFileSize;
     [min_ver("1.22")] bool IsCompressed(false);
     [min_ver("1.28")] bool BrowseData(true);
+    [min_ver("1.31")] bool Replicate;
 };
 
 ESPStruct DFUSpaceItem
@@ -682,7 +683,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 
 //  ===========================================================================
 ESPservice [
-    version("1.30"),
+    version("1.31"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

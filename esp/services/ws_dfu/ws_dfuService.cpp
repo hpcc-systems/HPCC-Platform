@@ -1905,6 +1905,25 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     if (version >= 1.28)
         FileDetails.setNumParts(df->numParts());
 
+    if (version >= 1.31)
+    {
+        const char* clusterName = NULL;
+        if (cluster && *cluster)
+            clusterName = cluster;
+        else if (clusters.length() == 1)
+            clusterName = clusters.item(0);
+        if (clusterName)
+        {
+            Owned<IFileDescriptor> fdesc = df->getFileDescriptor();
+            if (fdesc)
+            {
+                IClusterInfo* c = fdesc->queryCluster(clusterName);
+                if (c)
+                    FileDetails.setReplicate(c->queryPartDiskMapping().isReplicated());
+            }
+        }
+    }
+
     //#17430
     {
         IArrayOf<IEspDFULogicalFile> LogicalFiles;
