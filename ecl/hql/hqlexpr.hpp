@@ -1862,4 +1862,7 @@ void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ct
 //The following is only here to provide information about the source file being compiled when reporting leaks
 extern HQL_API void setActiveSource(const char * filename);
 
+extern HQL_API IHqlExpression * annotateIndexBlobs(IHqlExpression * expr);
+
+
 #endif

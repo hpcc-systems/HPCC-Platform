@@ -146,8 +146,9 @@ IFvDataSource * createFileDataSource(IDistributedFile * df, const char * logical
         const char * kind = properties.queryProp("@kind");
         if (kind && (stricmp(kind, "key") == 0))
         {
-            if (isSimplifiedRecord(diskRecord, true))
-                ds.setown(new IndexDataSource(logicalName, diskRecord, username, password));
+            OwnedHqlExpr indexRecord = annotateIndexBlobs(diskRecord);
+            if (isSimplifiedRecord(indexRecord, true))
+                ds.setown(new IndexDataSource(logicalName, indexRecord, username, password));
             else
                 throwError1(FVERR_ViewComplexKey, logicalName);
         }
@@ -656,6 +657,14 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
                 }
                 break;
             }
+        case FVFFblob: //for now FileViewer will output the string "[blob]"
+            {
+                Owned<ITypeInfo> stringType = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
+                if (useXPath)
+                    fvSplitXPath(meta->queryXPath(idx), xname, name);
+                builder.addField(name, *stringType, idx < keyedCount);
+            }
+            break;
         default:
             {
                 ITypeInfo & type = *column.type;
@@ -1528,6 +1537,9 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
     unsigned flags = column.flag;
     switch (flags)
     {
+    case FVFFblob:
+        writer.outputCString("[blob]", name);
+        return;
     case FVFFbeginif:
     case FVFFendif:
         return;
@@ -1759,6 +1771,7 @@ void CResultSetCursor::writeXmlRow(IXmlWriter &writer)
         case FVFFvirtual:
         case FVFFdataset:
         case FVFFset:
+        case FVFFblob:
             if (ignoreNesting == 0)
                 writeXmlText(writer, col);
             break;

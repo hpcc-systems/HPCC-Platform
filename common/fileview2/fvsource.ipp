@@ -141,7 +141,7 @@ public:
     virtual size32_t getMinRecordSize() const;
 
 protected:
-    void addSimpleField(const char * name, const char * xpath, ITypeInfo * type);
+    void addSimpleField(const char * name, const char * xpath, ITypeInfo * type, unsigned flag=FVFFnone);
     void gatherFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent);
     void gatherChildFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent);
     void gatherAttributes();
