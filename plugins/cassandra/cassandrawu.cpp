@@ -3513,7 +3513,7 @@ private:
         assertex(wuid && *wuid);
         StringBuffer names;
         StringBuffer tableName;
-        getFieldNames(mappings+2, names, tableName);  // mappings+3 means we don't return the partition or wuid columns. We do return the key.
+        getFieldNames(mappings+2, names, tableName);  // mappings+2 means we don't return the partition or wuid columns. We do return the key.
         VStringBuffer selectQuery("select %s from %s where partition=? and wuid=? and %s=?;", names.str()+1, tableName.str(), mappings[2].columnName);
         CassandraStatement select(prepareStatement(selectQuery));
         select.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);

@@ -800,6 +800,7 @@ protected:
         {
             ASSERT(it2->query().getType() == GraphTypeActivities);
             ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
+            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
             numIterated++;
         }
         ASSERT(numIterated==2);
@@ -811,6 +812,7 @@ protected:
         ForEach (*it2)
         {
             ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
+            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
             numIterated++;
         }
         ASSERT(numIterated==3);
@@ -823,7 +825,7 @@ protected:
         ForEach (*it)
         {
             ASSERT(it->query().getType() == GraphTypeActivities);
-            ASSERT(streq(graph->getLabel(s).str(),"graphLabel"));
+            ASSERT(streq(it->query().getLabel(s).str(),"graphLabel"));
             numIterated++;
         }
         ASSERT(numIterated==2);
@@ -834,6 +836,7 @@ protected:
         {
             ASSERT(it2->query().getType() == GraphTypeActivities);
             ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
+            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
             numIterated++;
         }
         ASSERT(numIterated==2);
@@ -847,6 +850,7 @@ protected:
         {
             ASSERT(it2->query().getType() == GraphTypeActivities);
             ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
+            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
             numIterated++;
         }
         ASSERT(numIterated==2);
@@ -856,7 +860,7 @@ protected:
         ForEach (*it)
         {
             ASSERT(it->query().getType() == GraphTypeActivities);
-            ASSERT(streq(graph->getLabel(s).str(),"graphLabel"));
+            ASSERT(streq(it->query().getLabel(s).str(),"graphLabel"));
             numIterated++;
         }
         ASSERT(numIterated==2);
