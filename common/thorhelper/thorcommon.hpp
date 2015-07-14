@@ -89,7 +89,9 @@ enum RowReaderWriterFlags
     rw_compressblkcrc = 0x10, // block compression, this sets/checks crc's at block level
     rw_fastlz         = 0x20, // if rw_compress
     rw_autoflush      = 0x40,
-    rw_buffered       = 0x80
+    rw_buffered       = 0x80,
+    rw_lz4            = 0x100, // if rw_compress
+    rw_den            = 0x200  // if rw_compress
 };
 #define DEFAULT_RWFLAGS (rw_buffered|rw_autoflush|rw_compressblkcrc)
 inline bool TestRwFlag(unsigned flags, RowReaderWriterFlags flag) { return 0 != (flags & flag); }

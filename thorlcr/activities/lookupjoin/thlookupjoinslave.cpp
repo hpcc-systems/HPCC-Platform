@@ -1378,6 +1378,7 @@ protected:
     using PARENT::doBroadcastStop;
     using PARENT::getGlobalRHSTotal;
     using PARENT::getOptBool;
+    using PARENT::getOpt;
     using PARENT::broadcaster;
     using PARENT::inputs;
     using PARENT::queryHelper;
@@ -1781,7 +1782,22 @@ protected:
                     {
                         unsigned rwFlags = DEFAULT_RWFLAGS;
                         if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
+                        {
                             rwFlags |= rw_compress;
+                            StringBuffer compType;
+                            getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+                            if (compType.length())
+                            {
+                                if (0 == stricmp("FLZ", compType))
+                                    rwFlags |= rw_fastlz;
+                                else if (0 == stricmp("LZ4", compType))
+                                    rwFlags |= rw_lz4;
+                                else if (0 == stricmp("DEN", compType))
+                                    rwFlags |= rw_den;
+                            }
+                            else
+                                rwFlags |= rw_lz4;
+                        }
                         ActPrintLog("Reading overflow RHS broadcast rows : %" RCPF "d", overflowWriteCount);
                         Owned<IRowStream> overflowStream = createRowStream(&overflowWriteFile->queryIFile(), queryRowInterfaces(rightITDL), rwFlags);
                         rightStreams.append(* overflowStream.getClear());
@@ -2183,7 +2199,22 @@ public:
             {
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
+                {
                     rwFlags |= rw_compress;
+                    StringBuffer compType;
+                    getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+                    if (compType.length())
+                    {
+                        if (0 == stricmp("FLZ", compType))
+                            rwFlags |= rw_fastlz;
+                        else if (0 == stricmp("LZ4", compType))
+                            rwFlags |= rw_lz4;
+                        else if (0 == stricmp("DEN", compType))
+                            rwFlags |= rw_den;
+                    }
+                    else
+                        rwFlags |= rw_lz4;
+                }
                 StringBuffer tempFilename;
                 GetTempName(tempFilename, "lookup_local", true);
                 ActPrintLog("Overflowing RHS broadcast rows to spill file: %s", tempFilename.str());

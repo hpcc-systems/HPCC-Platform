@@ -25,6 +25,7 @@
 #include "jio.hpp"
 #include "jflz.hpp"
 #include "jlz4.hpp"
+#include "jden.hpp"
 
 IFEflags extraFlags = IFEnone;
 
@@ -40,12 +41,14 @@ void usage(bool isHelp)
     printf("   copyexp <file>                     -- returns compress type\n");
     printf("   copyexp <file> <destination>       -- copies file to destination\n");
     printf("                                         (expanding as needed)\n");
-    printf("   copyexp -z <file> <dest>           -- compresses file (LZW)\n");
-    printf("   copyexp -r <recsz> <file> <dest>   -- compresses file (RowDif)\n");
-    printf("   copyexp -f <file> <dest>           -- compresses file (FastLZ)\n");
+    printf("   copyexp -z  <file> <dest>          -- compresses file (LZW)\n");
+    printf("   copyexp -r  <recsz> <file> <dest>  -- compresses file (RowDif)\n");
+    printf("   copyexp -f  <file> <dest>          -- compresses file (FastLZ)\n");
     printf("   copyexp -fs <file> <dest>          -- compresses file (FastLZ stream)\n");
-    printf("   copyexp -l <file> <dest>           -- compresses file (LZ4)\n");
+    printf("   copyexp -l  <file> <dest>          -- compresses file (LZ4)\n");
     printf("   copyexp -ls <file> <dest>          -- compresses file (LZ4 stream)\n");
+    printf("   copyexp -w  <file> <dest>          -- compresses file (Density)\n");
+    printf("   copyexp -ws <file> <dest>          -- compresses file (Density stream)\n");
     printf("           -s                         -- timing stats\n");
     printf("           -d                         -- do not cache files in OS\n");
     doexit(isHelp ? 0 : 2);
@@ -53,7 +56,7 @@ void usage(bool isHelp)
 
 #define BUFFERSIZE (0x10000)
 
-void printCompDetails(const char *fname,IFileIO *baseio,ICompressedFileIO *cmpio,IFileIOStream *strm, bool flzstrm, bool lz4strm)
+void printCompDetails(const char *fname,IFileIO *baseio,ICompressedFileIO *cmpio,IFileIOStream *strm, bool flzstrm, bool lz4strm, bool denstrm)
 {
     const char *method = "Unknown Method";
     offset_t expsize = 0;
@@ -63,6 +66,8 @@ void printCompDetails(const char *fname,IFileIO *baseio,ICompressedFileIO *cmpio
             method = "FLZSTREAM";
         else if (lz4strm)
             method = "LZ4STREAM";
+        else if (denstrm)
+            method = "DENSTREAM";
         expsize = strm->size();
     }
     else
@@ -73,12 +78,15 @@ void printCompDetails(const char *fname,IFileIO *baseio,ICompressedFileIO *cmpio
             case COMPRESS_METHOD_LZW:     method = "LZW"; break;
             case COMPRESS_METHOD_FASTLZ:  method = "FASTLZ"; break;
             case COMPRESS_METHOD_LZ4:     method = "LZ4"; break;
+            case COMPRESS_METHOD_DEN:     method = "DEN"; break;
         }
         expsize = cmpio->size();
     }
     printf("%s: is %s compressed, size= %" I64F "d, expanded= %" I64F "d",fname,method,baseio->size(),expsize);
+    if (!strm&&cmpio)
+        printf(", block size= %d",cmpio->blockSize());
     if (!strm&&cmpio&&cmpio->recordSize())
-        printf(", record size = %d",cmpio->recordSize());
+        printf(", record size= %d",cmpio->recordSize());
     printf("\n");
 }
 
@@ -112,7 +120,7 @@ static void printStats(offset_t filesize,unsigned start,unsigned startu)
     if (!elapsedu)
         elapsedu = 1;
     if (elapsed<1000)
-        printf("%" I64F "d Bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsedu)*1000000,formatTimeU(elapsedu,tmp));
+        printf("%" I64F "d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsedu)*1000000,formatTimeU(elapsedu,tmp));
     else
         printf("%" I64F "d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsed)*1000,formatTime(elapsed,tmp));
 }
@@ -129,6 +137,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
     Owned<IFileIOStream> strmsrc;
     bool flzstrm = false;
     bool lz4strm = false;
+    bool denstrm = false;
     if (!cmpio)
     {
         strmsrc.setown(createFastLZStreamRead(srcio));
@@ -139,12 +148,18 @@ int copyExpanded(const char *from, const char *to, bool stats)
             strmsrc.setown(createLZ4StreamRead(srcio));
             if (strmsrc)
                 lz4strm = true;
+            else
+            {
+                strmsrc.setown(createDENStreamRead(srcio));
+                if (strmsrc)
+                    denstrm = true;
+            }
         }
     }
 
     int ret = 0;
     if (cmpio||strmsrc)
-        printCompDetails(from,srcio,cmpio,strmsrc,flzstrm,lz4strm);
+        printCompDetails(from,srcio,cmpio,strmsrc,flzstrm,lz4strm,denstrm);
     else {
         ret = 1;
         printf("%s is not compressed, size= %" I64F "d\n",from,srcio->size());
@@ -224,7 +239,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
 }
 
 
-void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast, bool flzstrm, bool lz4, bool lz4strm, bool stats)
+void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast, bool flzstrm, bool lz4, bool lz4strm, bool den, bool denstrm, bool stats)
 {
     Owned<IFile> srcfile = createIFile(from);
     Owned<IFileIO> baseio = srcfile->open(IFOread, extraFlags);
@@ -239,7 +254,11 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
     {
         strmsrc.setown(createFastLZStreamRead(baseio));
         if (!strmsrc)
+        {
             strmsrc.setown(createLZ4StreamRead(baseio));
+            if (!strmsrc)
+                strmsrc.setown(createDENStreamRead(baseio));
+        }
     }
 
     bool plaincopy = false;
@@ -255,10 +274,12 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
                 plaincopy = true;
             else if (!fast&&(cmpio->method()==COMPRESS_METHOD_LZ4))
                 plaincopy = true;
+            else if (!fast&&(cmpio->method()==COMPRESS_METHOD_DEN))
+                plaincopy = true;
         }
     }
     else if (strmsrc) {
-        if (flzstrm||lz4strm)
+        if (flzstrm||lz4strm|denstrm)
             plaincopy = true;
     }
     else
@@ -293,7 +314,7 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
 
     Owned<IFileIOStream> strmdst;
 
-    if (plaincopy||flzstrm||lz4strm) {
+    if (plaincopy||flzstrm||lz4strm||denstrm) {
         dstio.setown(dstfile->open(IFOcreate, extraFlags));
         if (dstio&&!plaincopy)
         {
@@ -301,16 +322,20 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
                 strmdst.setown(createFastLZStreamWrite(dstio));
             else if (lz4strm)
                 strmdst.setown(createLZ4StreamWrite(dstio));
+            else if (denstrm)
+                strmdst.setown(createDENStreamWrite(dstio));
         }
     }
     else 
     {
-        __int64 compType = COMPRESS_METHOD_LZW;
+        __int64 compMethod = COMPRESS_METHOD_LZW;
         if (fast)
-            compType = COMPRESS_METHOD_FASTLZ;
-        else if(lz4)
-            compType = COMPRESS_METHOD_LZ4;
-        dstio.setown(createCompressedFileWriter(dstfile,rowsize,false,true,NULL,compType,extraFlags));
+            compMethod = COMPRESS_METHOD_FASTLZ;
+        else if (lz4)
+            compMethod = COMPRESS_METHOD_LZ4;
+        else if (den)
+            compMethod = COMPRESS_METHOD_DEN;
+        dstio.setown(createCompressedFileWriter(dstfile,rowsize,false,true,NULL,compMethod,extraFlags));
     }
 
     if (!dstio) {
@@ -374,10 +399,14 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
             {
                 strmchk.setown(createFastLZStreamRead(dstio));
                 if (!strmchk)
+                {
                     strmchk.setown(createLZ4StreamRead(dstio));
+                    if (!strmchk)
+                        strmchk.setown(createDENStreamRead(dstio));
+                }
             }
             if (cmpio||strmchk)
-                printCompDetails(to,dstio,cmpio,strmchk,flzstrm,lz4strm);
+                printCompDetails(to,dstio,cmpio,strmchk,flzstrm,lz4strm,denstrm);
             else 
                 printf("destination %s not compressed\n",to);
         }
@@ -405,6 +434,8 @@ int main(int argc, char * const * argv)
         bool flzstrm = false;
         bool lz4 = false;
         bool lz4strm = false;
+        bool den = false;
+        bool denstrm = false;
         bool stats = false;
         size32_t rowsz = 0;
         for (int a = 1; a<argc; a++) {
@@ -444,6 +475,14 @@ int main(int argc, char * const * argv)
                     lz4strm = true;
                     continue;
                 }
+                else if(strcmp(arg, "-w") == 0) {
+                    den = true;
+                    continue;
+                }
+                else if(strcmp(arg, "-ws") == 0) {
+                    denstrm = true;
+                    continue;
+                }
                 else if(strcmp(arg, "-r") == 0) {
                     if (a+1<argc) {
                         rowsz = atoi(argv[a+1]);
@@ -472,10 +511,10 @@ int main(int argc, char * const * argv)
         if (!fname1.length())
             usage(true);
 
-        if (!fast&&!lzw&&!rowsz&&!flzstrm&&!lz4&&!lz4strm)
+        if (!fast&&!lzw&&!rowsz&&!flzstrm&&!lz4&&!lz4strm&&!den&&!denstrm)
             copyExpanded(fname1.str(),fname2.str(),stats);
         else
-            copyCompress(fname1.str(),fname2.str(),rowsz,fast,flzstrm,lz4,lz4strm,stats);
+            copyCompress(fname1.str(),fname2.str(),rowsz,fast,flzstrm,lz4,lz4strm,den,denstrm,stats);
     }
     catch(IException * e)
     {

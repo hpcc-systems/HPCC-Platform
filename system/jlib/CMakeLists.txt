@@ -46,7 +46,7 @@ set (    SRCS
          jfile.cpp 
          jflz.cpp 
          jlz4.cpp
-         lz4.c
+         jden.cpp
          jhash.cpp 
          jiface.cpp 
          jio.cpp 
@@ -103,7 +103,7 @@ set (    INCLUDES
         jfile.ipp
         jflz.hpp
         jlz4.hpp
-        lz4.h
+        jden.hpp
         jhash.hpp
         jhash.ipp
         jheap.hpp
@@ -158,11 +158,11 @@ set (    INCLUDES
 
 set_source_files_properties (jmalloc.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
 
-
 include_directories ( 
          ../../system/win32 
          ../../system/include 
          ../../system/lzma
+         ../../system/lz4
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
@@ -175,7 +175,19 @@ HPCC_ADD_LIBRARY( jlib SHARED ${SRCS} ${INCLUDES} )
 install ( TARGETS jlib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( jlib
         lzma
+        lz4
        )
+
+if ( USE_DENSITY )
+   include_directories (
+        ../../system/density
+        ../../system/spookyhash
+   )
+   target_link_libraries ( jlib
+        density
+        spookyhash
+   )
+endif()
 
 if ( ${USE_TBB} )
    target_link_libraries ( jlib ${TBB_LIBRARIES})

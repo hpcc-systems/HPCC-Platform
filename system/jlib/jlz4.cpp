@@ -17,14 +17,23 @@
 
 #include "platform.h"
 #include "jlz4.hpp"
+#include "../lz4/lz4.h"
 
 #define COMMITTED ((size32_t)-1)
+
+/* Format:
+    size32_t totalexpsize;
+    { size32_t subcmpsize; bytes subcmpdata; }
+    size32_t trailsize; bytes traildata;    // unexpanded
+*/
 
 class jlib_decl CLZ4Compressor : public CInterface, public ICompressor
 {
     size32_t blksz;
     size32_t bufalloc;
-    MemoryAttr inma;        // equals blksize len
+    MemoryBuffer inma;      // equals blksize len
+    MemoryBuffer *outBufMb; // used when dynamic output buffer (when open() used)
+    size32_t outBufStart;
     byte *inbuf;
     size32_t inmax;         // remaining
     size32_t inlen;
@@ -33,17 +42,22 @@ class jlib_decl CLZ4Compressor : public CInterface, public ICompressor
     byte *outbuf;
     size32_t outlen;
     size32_t wrmax;
+    size32_t dynamicOutSz;
 
     inline void setinmax()
     {
         inmax = blksz-outlen-sizeof(size32_t);
         if (inmax<256)
             trailing = true;    // too small to bother compressing
-        else {
+        else
+        {
             trailing = false;
-            // inmax -= (fastlzSlack(inmax) + sizeof(size32_t));
             size32_t slack = LZ4_COMPRESSBOUND(inmax) - inmax;
-            inmax -= (slack + sizeof(size32_t));
+            int inmax2 = inmax - (slack + sizeof(size32_t));
+            if (inmax2<256)
+                trailing = true;
+            else
+                inmax = inmax2;
         }
     }
 
@@ -56,21 +70,36 @@ class jlib_decl CLZ4Compressor : public CInterface, public ICompressor
         if (toflush == 0)
             return;
 
-        // printf("flushcommited() inlenblk=%d inlen=%d blksz=%d outlen=%d\n", inlenblk, inlen, blksz, outlen);
+        if (toflush < 256)
+        {
+            trailing = true;
+            return;
+        }
 
-        assertex(outlen+sizeof(size32_t)*2+LZ4_COMPRESSBOUND(toflush)<=blksz);
-
+        size32_t outSzRequired = outlen+sizeof(size32_t)*2+LZ4_COMPRESSBOUND(toflush);
+        if (!dynamicOutSz)
+            assertex(outSzRequired<=blksz);
+        else
+        {
+            if (outSzRequired>dynamicOutSz)
+            {
+                verifyex(outBufMb->ensureCapacity(outBufStart+outSzRequired));
+                dynamicOutSz = outBufMb->capacity();
+                outbuf = ((byte *)outBufMb->bufferBase()+outBufStart);
+            }
+        }
         size32_t *cmpsize = (size32_t *)(outbuf+outlen);
         byte *out = (byte *)(cmpsize+1);
 
-        *cmpsize = LZ4_compress((const char *)inbuf, (char *)out, toflush);
-
-        if (*cmpsize<toflush) {
+        *cmpsize = LZ4_compress_default((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush));
+        if (*cmpsize && *cmpsize<toflush)
+        {
             *(size32_t *)outbuf += toflush;
             outlen += *cmpsize+sizeof(size32_t);
             if (inlenblk==COMMITTED)
                 inlen = 0;
-            else {
+            else
+            {
                 inlen -= inlenblk;
                 memmove(inbuf,inbuf+toflush,inlen);
             }
@@ -80,7 +109,15 @@ class jlib_decl CLZ4Compressor : public CInterface, public ICompressor
         trailing = true;
     }
 
-
+    void initCommon()
+    {
+        blksz = inma.capacity();
+        *(size32_t *)outbuf = 0;
+        outlen = sizeof(size32_t);
+        inlen = 0;
+        inlenblk = COMMITTED;
+        setinmax();
+    }
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -90,6 +127,10 @@ public:
         outbuf = NULL;      // only set on close
         bufalloc = 0;
         wrmax = 0;          // set at open
+        dynamicOutSz = 0;
+        outBufMb = NULL;
+        outBufStart = 0;
+        inbuf = NULL;
     }
 
     virtual ~CLZ4Compressor()
@@ -101,33 +142,48 @@ public:
 
     virtual void open(void *buf,size32_t max)
     {
-        if (buf) {
-            if (bufalloc) {
+        if (max<1024)
+            throw MakeStringException(-1,"CLZ4Compressor::open - block size (%d) not large enough", blksz);
+        wrmax = max;
+        if (buf)
+        {
+            if (bufalloc)
                 free(outbuf);
-            }
             bufalloc = 0;
             outbuf = (byte *)buf;
         }
-        else if (max>bufalloc) {
+        else if (max>bufalloc)
+        {
             if (bufalloc)
                 free(outbuf);
             bufalloc = max;
             outbuf = (byte *)malloc(bufalloc);
         }
-        blksz = max;
-        if (blksz!=inma.length())
-            inbuf = (byte *)inma.allocate(blksz);
-        else
-            inbuf = (byte *)inma.bufferBase();
-        if (blksz<1024)
-            throw MakeStringException(-1,"CLZ4Compressor::open - block size (%d) not large enough", blksz);
-        *(size32_t *)outbuf = 0;
-        outlen = sizeof(size32_t);
-        inlen = 0;
-        inlenblk = COMMITTED;
-        setinmax();
-        wrmax = inmax;
-        // printf("open() inlenblk=%d inlen=%d trailing=%d blksz=%d outlen=%d\n", inlenblk, inlen, trailing, blksz, outlen);
+        outBufMb = NULL;
+        outBufStart = 0;
+        dynamicOutSz = 0;
+        inbuf = (byte *)inma.ensureCapacity(max);
+        initCommon();
+    }
+
+    virtual void open(MemoryBuffer &mb, size32_t initialSize)
+    {
+        if (!initialSize)
+            initialSize = 0x100000; // 1MB
+        if (initialSize<1024)
+            throw MakeStringException(-1,"CLZ4Compressor::open - block size (%d) not large enough", initialSize);
+        wrmax = initialSize;
+        if (bufalloc)
+        {
+            free(outbuf);
+            bufalloc = 0;
+        }
+        inbuf = (byte *)inma.ensureCapacity(initialSize);
+        outBufMb = &mb;
+        outBufStart = mb.length();
+        outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
+        dynamicOutSz = outBufMb->capacity();
+        initCommon();
     }
 
     virtual void close()
@@ -137,7 +193,6 @@ public:
             inlenblk = COMMITTED;
         }
         flushcommitted();
-        // printf("close() inlenblk=%d inlen=%d trailing=%d blksz=%d outlen=%d\n", inlenblk, inlen, trailing, blksz, outlen);
         size32_t totlen = outlen+sizeof(size32_t)+inlen;
         assertex(blksz>=totlen);
         size32_t *tsize = (size32_t *)(outbuf+outlen);
@@ -146,12 +201,17 @@ public:
         outlen = totlen;
         *(size32_t *)outbuf += inlen;
         inbuf = NULL;
+        if (outBufMb)
+        {
+            outBufMb->setWritePos(outBufStart+outlen);
+            outBufMb = NULL;
+        }
     }
 
 
     size32_t write(const void *buf,size32_t len)
     {
-        // no more than wrmax per write
+        // no more than wrmax per write (unless dynamically sizing)
         size32_t lenb = wrmax;
         byte *b = (byte *)buf;
         size32_t written = 0;
@@ -159,22 +219,26 @@ public:
         {
             if (len < lenb)
                 lenb = len;
-            if (lenb+inlen>inmax) {
+            if (lenb+inlen>inmax)
+            {
                 if (trailing)
                     return written;
-                size32_t lenb2 = inmax - inlen;
-                if (lenb2 >= 0x2000) {
-                    memcpy(inbuf+inlen,b,lenb2);
-                    b += lenb2;
-                    inlen += lenb2;
-                    len -= lenb2;
-                    written += lenb2;
+                flushcommitted();
+                if (lenb+inlen>inmax)
+                {
+                    if (outBufMb) // sizing input buffer, but outBufMb!=NULL is condition of whether in use or not
+                    {
+                        blksz += len > 0x100000 ? len : 0x100000;
+                        verifyex(inma.ensureCapacity(blksz));
+                        blksz = inma.capacity();
+                        inbuf = (byte *)inma.bufferBase();
+                        wrmax = blksz;
+                        setinmax();
+                    }
+                    lenb = inmax-inlen;
                     if (len < lenb)
                         lenb = len;
                 }
-                flushcommitted();
-                if (lenb+inlen>inmax)
-                    lenb = inmax-inlen;
             }
             if (lenb == 0)
                 return written;
@@ -208,6 +272,7 @@ public:
 
 
 };
+
 
 class jlib_decl CLZ4Expander : public CInterface, public IExpander
 {
@@ -264,9 +329,7 @@ public:
             const size32_t szchunk = *in;
             in++;
             if (szchunk+done<outlen) {
-
                 size32_t written = LZ4_decompress_safe((const char *)in, (char *)((byte *)buf+done), szchunk, outlen-done);
-
                 done += written;
                 if (!written||(done>outlen))
                     throw MakeStringException(0, "LZ4Expander - corrupt data(1) %d %d",written,szchunk);
@@ -288,17 +351,22 @@ public:
 void LZ4CompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
 {
     size32_t outbase = out.length();
-
     size32_t *sz = (size32_t *)out.reserve(LZ4_COMPRESSBOUND(len)+sizeof(size32_t)*2);
-
     *sz = len;
     sz++;
-
-    *sz = (len>16)?LZ4_compress((const char *)src, (char *)(sz+1), len):16;
-
-    if (*sz>=len) {
+    if (len < 64)
+    {
         *sz = len;
         memcpy(sz+1,src,len);
+    }
+    else
+    {
+        *sz = LZ4_compress_default((const char *)src, (char *)(sz+1), len, LZ4_COMPRESSBOUND(len));
+        if (!*sz)
+        {
+            *sz = len;
+            memcpy(sz+1,src,len);
+        }
     }
     out.setLength(outbase+*sz+sizeof(size32_t)*2);
 }
@@ -310,9 +378,7 @@ void LZ4DecompressToBuffer(MemoryBuffer & out, const void * src)
     size32_t cmpsz = *(sz++);
     void *o = out.reserve(expsz);
     if (cmpsz!=expsz) {
-
         size32_t written = LZ4_decompress_safe((const char *)sz, (char *)o, cmpsz, expsz);
-
         if (written!=expsz)
             throw MakeStringException(0, "LZ4DecompressToBuffer - corrupt data(1) %d %d",written,expsz);
     }
@@ -327,9 +393,7 @@ void LZ4DecompressToBuffer(MemoryBuffer & out, MemoryBuffer & in)
     in.read(expsz).read(cmpsz);
     void *o = out.reserve(expsz);
     if (cmpsz!=expsz) {
-
         size32_t written = LZ4_decompress_safe((const char *)in.readDirect(cmpsz), (char *)o, cmpsz, expsz);
-
         if (written!=expsz)
             throw MakeStringException(0, "LZ4DecompressToBuffer - corrupt data(3) %d %d",written,expsz);
     }
@@ -344,9 +408,7 @@ void LZ4DecompressToAttr(MemoryAttr & out, const void * src)
     size32_t cmpsz = *(sz++);
     void *o = out.allocate(expsz);
     if (cmpsz!=expsz) {
-
         size32_t written = LZ4_decompress_safe((const char *)sz, (char *)o, cmpsz, expsz);
-
         if (written!=expsz)
             throw MakeStringException(0, "LZ4DecompressToBuffer - corrupt data(2) %d %d",written,expsz);
     }
@@ -361,9 +423,7 @@ void LZ4DecompressToBuffer(MemoryAttr & out, MemoryBuffer & in)
     in.read(expsz).read(cmpsz);
     void *o = out.allocate(expsz);
     if (cmpsz!=expsz) {
-
         size32_t written = LZ4_decompress_safe((const char *)in.readDirect(cmpsz), (char *)o, cmpsz, expsz);
-
         if (written!=expsz)
             throw MakeStringException(0, "LZ4DecompressToBuffer - corrupt data(4) %d %d",written,expsz);
     }
@@ -384,7 +444,7 @@ IExpander *createLZ4Expander()
 
 #define LZ4_BUFFER_SIZE (0x100000)
 
-#define LZ4STRMCOMPRESSEDFILEFLAG (I64C(0xc3526de42f15da57)) // mck - what is an ok value ?
+#define LZ4STRMCOMPRESSEDFILEFLAG (I64C(0xc3526de42f15da57))
 
 
 struct LZ4CompressedFileTrailer
@@ -426,12 +486,9 @@ class CLZ4Stream : public CInterface, implements IFileIOStream
         byte *cmpbuf = (byte *)cmpma.allocate(sz[1]);
         if (baseio->read(cmpOffset,sz[1],cmpbuf)!=sz[1])
             throw MakeStringException(-1,"CLZ4Stream: file corrupt.1");
-
         size32_t amnt = LZ4_decompress_safe((const char *)cmpbuf, (char *)ma.bufferBase(), sz[1], bufsize);
-
         if (amnt!=bufsize)
             throw MakeStringException(-1,"CLZ4Stream: file corrupt.2");
-
         cmpOffset += sz[1];
         return true;
     }
@@ -440,11 +497,13 @@ class CLZ4Stream : public CInterface, implements IFileIOStream
     {
         if (bufsize) {
             MemoryAttr dstma;
-
             byte *dst = (byte *)dstma.allocate(sizeof(size32_t)*2+LZ4_COMPRESSBOUND(bufsize));
-
-            size32_t sz = LZ4_compress((const char *)ma.get(), (char *)(sizeof(size32_t)*2+dst), bufsize);
-
+            size32_t sz = LZ4_compress_default((const char *)ma.get(), (char *)(sizeof(size32_t)*2+dst), bufsize, LZ4_COMPRESSBOUND(bufsize));
+            if (!sz)
+            {
+                sz = bufsize;
+                memcpy((sizeof(size32_t)*2+dst), ma.get(), bufsize);
+            }
             memcpy(dst,&bufsize,sizeof(size32_t));
             memcpy(dst+sizeof(size32_t),&sz,sizeof(size32_t));
             baseio->write(cmpOffset,sz+sizeof(size32_t)*2,dst);
