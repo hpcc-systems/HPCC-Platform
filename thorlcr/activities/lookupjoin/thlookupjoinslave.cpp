@@ -1574,6 +1574,7 @@ protected:
     using PARENT::doBroadcastStop;
     using PARENT::getGlobalRHSTotal;
     using PARENT::getOptBool;
+    using PARENT::getOpt;
     using PARENT::broadcaster;
     using PARENT::inputs;
     using PARENT::queryHelper;
@@ -1606,7 +1607,7 @@ protected:
     // Handling failover to a) hashed local lookupjoin b) hash distributed standard join
     bool smart;
     bool rhsCollated, rhsCompacted;
-    bool compressSpills;
+    unsigned spillCompInfo;
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
     ICompare *compareLeft;
     atomic_t failedOverToLocal, failedOverToStandard;
@@ -1714,11 +1715,14 @@ protected:
                     VStringBuffer spillPrefixStr("clearAllNonLocalRows(%d)", SPILL_PRIORITY_SPILLABLE_STREAM);
 
                     // 3rd param. is skipNulls = true, the row arrays may have had the non-local rows delete already.
-                    rows.save(file->queryIFile(), compressSpills, true, spillPrefixStr.str()); // saves committed rows
+                    rows.save(file->queryIFile(), spillCompInfo, true, spillPrefixStr.str()); // saves committed rows
 
                     unsigned rwFlags = DEFAULT_RWFLAGS;
-                    if (compressSpills)
+                    if (spillCompInfo)
+                    {
                         rwFlags |= rw_compress;
+                        rwFlags |= spillCompInfo;
+                    }
                     gatheredRHSNodeStreams.append(* createRowStream(&file->queryIFile(), queryRowInterfaces(rightITDL), rwFlags));
                     return true;
                 }
@@ -1781,7 +1785,7 @@ protected:
                  * fail over to standard join and it is better to 1st spill a smaller channel collection
                  * that this will feed, than this larger stream.
                  */
-                return spillableRHS.createRowStream(SPILL_PRIORITY_LOOKUPJOIN+10, compressSpills);
+                return spillableRHS.createRowStream(SPILL_PRIORITY_LOOKUPJOIN+10, spillCompInfo);
             }
         }
         else
@@ -1812,14 +1816,17 @@ protected:
                      * fail over to standard join and it is better to 1st spill a smaller channel collection
                      * that this will feed, than these larger stream.
                      */
-                    gatheredRHSNodeStreams.append(* rows.createRowStream(SPILL_PRIORITY_LOOKUPJOIN+10, compressSpills)); // NB: default SPILL_PRIORITY_SPILLABLE_STREAM is lower than SPILL_PRIORITY_LOOKUPJOIN
+                    gatheredRHSNodeStreams.append(* rows.createRowStream(SPILL_PRIORITY_LOOKUPJOIN+10, spillCompInfo)); // NB: default SPILL_PRIORITY_SPILLABLE_STREAM is lower than SPILL_PRIORITY_LOOKUPJOIN
                 }
             }
             if (overflowWriteFile)
             {
                 unsigned rwFlags = DEFAULT_RWFLAGS;
-                if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
+                if (spillCompInfo)
+                {
                     rwFlags |= rw_compress;
+                    rwFlags |= spillCompInfo;
+                }
                 ActPrintLog("Reading overflow RHS broadcast rows : %" RCPF "d", overflowWriteCount);
                 Owned<IRowStream> overflowStream = createRowStream(&overflowWriteFile->queryIFile(), queryRowInterfaces(rightITDL), rwFlags);
                 gatheredRHSNodeStreams.append(* overflowStream.getClear());
@@ -2389,7 +2396,13 @@ public:
                 break;
         }
         overflowWriteCount = 0;
-        compressSpills = getOptBool(THOROPT_COMPRESS_SPILLS, true);
+        spillCompInfo = 0x0;
+        if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
+        {
+            StringBuffer compType;
+            getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+            setCompFlag(compType, spillCompInfo);
+        }
         ActPrintLog("Smart join = %s", smart?"true":"false");
     }
     bool exceedsLimit(rowidx_t count, const void *left, const void *right, const void *&failRow)
@@ -2601,8 +2614,11 @@ public:
             if (!overflowWriteFile)
             {
                 unsigned rwFlags = DEFAULT_RWFLAGS;
-                if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
+                if (spillCompInfo)
+                {
                     rwFlags |= rw_compress;
+                    rwFlags |= spillCompInfo;
+                }
                 StringBuffer tempFilename;
                 GetTempName(tempFilename, "lookup_local", true);
                 ActPrintLog("Overflowing RHS broadcast rows to spill file: %s", tempFilename.str());

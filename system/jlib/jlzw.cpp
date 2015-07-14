@@ -1841,20 +1841,23 @@ struct CompressedFileTrailer
     offset_t        expandedSize;
     offset_t        indexPos;       // end of blocks
     size32_t        blockSize;
-    size32_t        recordSize;     // 0 is lzw or fast (flz) or lz4 compressed
+    size32_t        recordSize;     // 0 is lzw or fastlz or lz4
     __int64         compressedType;
     unsigned        crc;                // must be last
     unsigned numBlocks() { return (unsigned)((indexPos+blockSize-1)/blockSize); }
     unsigned method()
     {
-        if (recordSize)
-            return COMPRESS_METHOD_ROWDIF;
-        if (compressedType==COMPRESSEDFILEFLAG)
-            return COMPRESS_METHOD_LZW;
         if (compressedType==FASTCOMPRESSEDFILEFLAG)
             return COMPRESS_METHOD_FASTLZ;
         if (compressedType==LZ4COMPRESSEDFILEFLAG)
             return COMPRESS_METHOD_LZ4;
+        if (compressedType==COMPRESSEDFILEFLAG)
+        {
+            if (recordSize)
+                return COMPRESS_METHOD_ROWDIF;
+            else
+                return COMPRESS_METHOD_LZW;
+        }
         return 0;
     }
 
@@ -1864,7 +1867,7 @@ struct CompressedFileTrailer
         tree.setPropInt64("@expandedSize",expandedSize);
         tree.setPropInt64("@indexPos",indexPos);
         tree.setPropInt("@blockSize",blockSize);
-        tree.setPropInt("@recordSize",recordSize);      // 0 is lzw compressed
+        tree.setPropInt("@recordSize",recordSize);      // 0 is lzw or fastlz or lz4
         tree.setPropInt64("@compressedType",compressedType);
         tree.setPropInt("@method",method());
         tree.setPropInt("@crc",crc);                
@@ -1880,7 +1883,7 @@ struct WinCompressedFileTrailer
     offset_t        expandedSize;
     offset_t        indexPos;       // end of blocks
     size32_t        blockSize;
-    size32_t        recordSize;     // 0 is lzw compressed
+    size32_t        recordSize;     // 0 is lzw or fastlz or lz4
     __int64         compressedType;
     unsigned        crc;            // must be last
     unsigned        filler2;
@@ -1928,7 +1931,7 @@ class CCompressedFile : public CInterface, implements ICompressedFileIO
     bool writeException;
     Owned<ICompressor> compressor;
     Owned<IExpander> expander;
-    __int64 compType;
+    unsigned compMethod;
 
     unsigned indexNum() { return indexbuf.length()/sizeof(offset_t); }
 
@@ -2029,7 +2032,7 @@ class CCompressedFile : public CInterface, implements ICompressedFileIO
     virtual void expand(const void *compbuf,MemoryBuffer &expbuf,size32_t expsize)
     {
         size32_t rs = trailer.recordSize;
-        if (rs) { // diff compress
+        if (rs) { // diff expand
             const byte *src = (const byte *)compbuf;
             byte *dst = (byte *)expbuf.reserve(expsize);
             if (expsize) {
@@ -2046,7 +2049,7 @@ class CCompressedFile : public CInterface, implements ICompressedFileIO
                 }
             }
         }
-        else { // lzw or fastlz (flz) or lz4
+        else { // lzw or fastlz or lz4
             assertex(expander.get());
             size32_t exp = expander->init(compbuf);
             if (exp!=expsize) {
@@ -2106,14 +2109,16 @@ class CCompressedFile : public CInterface, implements ICompressedFileIO
                 src += len;
             }
         }
-        else // lzw or fastlz (flz) or lz4
+        else // lzw or fastlz or lz4
+        {
             src += compressor->write(src, len);
+        }
         return (size32_t)(src-(const byte *)expbuf);
     }
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCompressedFile(IFileIO *_fileio,IMemoryMappedFile *_mmfile,CompressedFileTrailer &_trailer,ICFmode _mode, bool _setcrc,ICompressor *_compressor,IExpander *_expander, __int64 _compType)
+    CCompressedFile(IFileIO *_fileio,IMemoryMappedFile *_mmfile,CompressedFileTrailer &_trailer,ICFmode _mode, bool _setcrc,ICompressor *_compressor,IExpander *_expander, unsigned _compMethod)
         : fileio(_fileio), mmfile(_mmfile)
     {
         compressor.set(_compressor);
@@ -2124,7 +2129,7 @@ public:
         mode = _mode;
         curblockpos = 0;
         curblocknum = (unsigned)-1; // relies on wrap
-        compType = _compType;
+        compMethod = _compMethod;
         if (mode!=ICFread) {
             if (!_fileio&&_mmfile)
                 throw MakeStringException(-1,"Compressed Write not supported on memory mapped files");
@@ -2140,12 +2145,16 @@ public:
             if (trailer.recordSize==0) {
                 if (!compressor)
                 {
-                    if (compType == COMPRESS_METHOD_FASTLZ)
+                    if (compMethod == COMPRESS_METHOD_FASTLZ)
                         compressor.setown(createFastLZCompressor());
-                    else if (compType == COMPRESS_METHOD_LZ4)
+                    else if (compMethod == COMPRESS_METHOD_LZ4)
                         compressor.setown(createLZ4Compressor());
-                    else // COMPRESS_METHOD_LZW
+                    else // fallback
+                    {
+                        compMethod = COMPRESS_METHOD_LZW;
+                        trailer.compressedType = COMPRESSEDFILEFLAG;
                         compressor.setown(createLZWCompressor(true));
+                    }
                 }
                 compressor->open(compblkptr, trailer.blockSize);
             }
@@ -2170,12 +2179,15 @@ public:
             }
             if (trailer.recordSize==0) {
                 if (!expander) {
-                    if (compType == COMPRESS_METHOD_FASTLZ)
+                    if (compMethod == COMPRESS_METHOD_FASTLZ)
                         expander.setown(createFastLZExpander());
-                    else if (compType == COMPRESS_METHOD_LZ4)
+                    else if (compMethod == COMPRESS_METHOD_LZ4)
                         expander.setown(createLZ4Expander());
-                    else // COMPRESS_METHOD_LZW
+                    else // fallback
+                    {
+                        compMethod = COMPRESS_METHOD_LZW;
                         expander.setown(createLZWExpander(true));
+                    }
                 }
             }
         }
@@ -2333,12 +2345,12 @@ ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expande
                     if (expander&&(trailer.recordSize!=0)) {
                         throw MakeStringException(-1, "Compressed file format error(%d), Encrypted?",trailer.recordSize);
                     }
-                    __int64 compType1 = COMPRESS_METHOD_LZW;
+                    unsigned compMethod1 = COMPRESS_METHOD_LZW;
                     if (trailer.compressedType == FASTCOMPRESSEDFILEFLAG)
-                        compType1 = COMPRESS_METHOD_FASTLZ;
+                        compMethod1 = COMPRESS_METHOD_FASTLZ;
                     else if (trailer.compressedType == LZ4COMPRESSEDFILEFLAG)
-                        compType1 = COMPRESS_METHOD_LZ4;
-                    CCompressedFile *cfile = new CCompressedFile(fileio,NULL,trailer,ICFread,false,NULL,expander,compType1);
+                        compMethod1 = COMPRESS_METHOD_LZ4;
+                    CCompressedFile *cfile = new CCompressedFile(fileio,NULL,trailer,ICFread,false,NULL,expander,compMethod1);
                     return cfile;
                 }
             }
@@ -2367,12 +2379,12 @@ ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, b
                         if (expander&&(trailer.recordSize!=0)) {
                             throw MakeStringException(-1, "Compressed file format error(%d), Encrypted?",trailer.recordSize);
                         }
-                        __int64 compType1 = COMPRESS_METHOD_LZW;
+                        unsigned compMethod1 = COMPRESS_METHOD_LZW;
                         if (trailer.compressedType == FASTCOMPRESSEDFILEFLAG)
-                            compType1 = COMPRESS_METHOD_FASTLZ;
+                            compMethod1 = COMPRESS_METHOD_FASTLZ;
                         else if (trailer.compressedType == LZ4COMPRESSEDFILEFLAG)
-                            compType1 = COMPRESS_METHOD_LZ4;
-                        CCompressedFile *cfile = new CCompressedFile(NULL,mmfile,trailer,ICFread,false,NULL,expander,compType1);
+                            compMethod1 = COMPRESS_METHOD_LZ4;
+                        CCompressedFile *cfile = new CCompressedFile(NULL,mmfile,trailer,ICFread,false,NULL,expander,compMethod1);
                         return cfile;
                     }
                 }
@@ -2388,7 +2400,7 @@ ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, b
 
 
 
-ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsize,bool _setcrc,ICompressor *compressor, __int64 _compType)
+ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsize,bool _setcrc,ICompressor *compressor, unsigned _compMethod)
 {
     CompressedFileTrailer trailer;
     offset_t fsize = fileio->size();
@@ -2403,15 +2415,15 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsiz
                          (trailer.compressedType==FASTCOMPRESSEDFILEFLAG) ||
                          (trailer.compressedType==LZ4COMPRESSEDFILEFLAG) )
                     {
-                        // mck - check trailer.compressedType against _compType ?
-                        __int64 compType1 = 0;
+                        // check trailer.compressedType against _compMethod
+                        unsigned compMethod1 = 0;
                         if (trailer.compressedType == COMPRESSEDFILEFLAG)
-                            compType1 = COMPRESS_METHOD_LZW;
+                            compMethod1 = COMPRESS_METHOD_LZW;
                         else if (trailer.compressedType == FASTCOMPRESSEDFILEFLAG)
-                            compType1 = COMPRESS_METHOD_FASTLZ;
+                            compMethod1 = COMPRESS_METHOD_FASTLZ;
                         else if (trailer.compressedType == LZ4COMPRESSEDFILEFLAG)
-                            compType1 = COMPRESS_METHOD_LZ4;
-                        if (_compType != compType1)
+                            compMethod1 = COMPRESS_METHOD_LZ4;
+                        if (_compMethod != compMethod1)
                             throw MakeStringException(-1,"Appending to file with different compression method");
                         if ((recordsize==trailer.recordSize)||!trailer.recordSize)
                             break;
@@ -2425,37 +2437,40 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsiz
     else {
         memset(&trailer,0,sizeof(trailer));
         trailer.crc = ~0U;
-        if (_compType == COMPRESS_METHOD_FASTLZ)
+        if (_compMethod == COMPRESS_METHOD_FASTLZ)
         {
             trailer.compressedType = FASTCOMPRESSEDFILEFLAG;
             trailer.blockSize = FASTCOMPRESSEDFILEBLOCKSIZE;
+            trailer.recordSize = 0;
         }
-        else if (_compType == COMPRESS_METHOD_LZ4)
+        else if (_compMethod == COMPRESS_METHOD_LZ4)
         {
             trailer.compressedType = LZ4COMPRESSEDFILEFLAG;
             trailer.blockSize = LZ4COMPRESSEDFILEBLOCKSIZE;
+            trailer.recordSize = 0;
         }
-        else // lzw
+        else // fallback
         {
             trailer.compressedType = COMPRESSEDFILEFLAG;
             trailer.blockSize = COMPRESSEDFILEBLOCKSIZE;
+            trailer.recordSize = recordsize;
         }
-        trailer.recordSize = recordsize;
     }
+    // MCK - may present compatibility issue if passing in compressor and wanting row comp
     if (compressor)
         trailer.recordSize = 0; // force not row compressed if compressor specified
-    CCompressedFile *cfile = new CCompressedFile(fileio,NULL,trailer,fsize?ICFappend:ICFcreate,_setcrc,compressor,NULL,_compType);
+    CCompressedFile *cfile = new CCompressedFile(fileio,NULL,trailer,fsize?ICFappend:ICFcreate,_setcrc,compressor,NULL,_compMethod);
     return cfile;
 }
 
-ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append,bool _setcrc,ICompressor *compressor, __int64 _compType, IFEflags extraFlags)
+ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append,bool _setcrc,ICompressor *compressor, unsigned _compMethod, IFEflags extraFlags)
 {
     if (file) {
         if (append&&!file->exists())
             append = false;
         Owned<IFileIO> fileio = file->open(append?IFOreadwrite:IFOcreate, extraFlags);
         if (fileio) 
-            return createCompressedFileWriter(fileio,recordsize,_setcrc,compressor,_compType);
+            return createCompressedFileWriter(fileio,recordsize,_setcrc,compressor,_compMethod);
     }
     return NULL;
 }
@@ -2655,9 +2670,10 @@ IPropertyTree *getBlockedFileDetails(IFile *file)
             CompressedFileTrailer trailer;
             if (fileio->read(fsize-sizeof(WinCompressedFileTrailer),sizeof(WinCompressedFileTrailer),&wintrailer)==sizeof(WinCompressedFileTrailer)) {
                 wintrailer.translate(trailer);
-                if ((trailer.compressedType==COMPRESSEDFILEFLAG) ||
-                    (trailer.compressedType==FASTCOMPRESSEDFILEFLAG) ||
-                    (trailer.compressedType==LZ4COMPRESSEDFILEFLAG)) {
+                if ( (trailer.compressedType==COMPRESSEDFILEFLAG) ||
+                     (trailer.compressedType==FASTCOMPRESSEDFILEFLAG) ||
+                     (trailer.compressedType==LZ4COMPRESSEDFILEFLAG) )
+                {
                     trailer.setDetails(*tree);
                     unsigned nb = trailer.numBlocks();
                     MemoryAttr indexbuf;
@@ -2771,14 +2787,13 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         virtual ICompressor *getCompressor(const char *options) { return createLZWCompressor(true); }
         virtual IExpander *getExpander(const char *options) { return createLZWExpander(true); }
     };
-    addCompressorHandler(new CFLZCompressHandler());
+    ICompressHandler *flzCompressor = new CFLZCompressHandler();
+    addCompressorHandler(flzCompressor);
     addCompressorHandler(new CAESCompressHandler());
     addCompressorHandler(new CDiffCompressHandler());
     addCompressorHandler(new CLZWCompressHandler());
-    addCompressorHandler(new CDENCompressHandler());
-    ICompressHandler *lz4Compressor = new CLZ4CompressHandler();
-    addCompressorHandler(lz4Compressor);
-    defaultCompressor.set(lz4Compressor);
+    addCompressorHandler(new CLZ4CompressHandler());
+    defaultCompressor.set(flzCompressor);
     return true;
 }
 

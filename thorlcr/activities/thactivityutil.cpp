@@ -786,9 +786,29 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
     Owned<IFileIO> fileio;
     if (compress)
     {
-        if (activity->getOptBool(THOROPT_COMP_FORCELZW, false))
-            recordSize = 0; // by default if fixed length (recordSize set), row diff compression is used. This forces LZW
-        fileio.setown(createCompressedFileWriter(file, recordSize, 0 != (twFlags & TW_Extend), true, ecomp));
+        unsigned compMethod = COMPRESS_METHOD_LZW;
+        // rowdif used if recordSize > 0, else fallback to compMethod
+        if (!ecomp)
+        {
+            if (twFlags & TW_Temporary)
+            {
+                // if temp file then can use newer compressor
+                StringBuffer compType;
+                activity->getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+                compMethod = getCompMethod(compType);
+            }
+            // force
+            if (activity->getOptBool(THOROPT_COMP_FORCELZW, false))
+            {
+                recordSize = 0; // by default if fixed length (recordSize set), row diff compression is used. This forces compMethod.
+                compMethod = COMPRESS_METHOD_LZW;
+            }
+            else if (activity->getOptBool(THOROPT_COMP_FORCEFLZ, false))
+                compMethod = COMPRESS_METHOD_FASTLZ;
+            else if (activity->getOptBool(THOROPT_COMP_FORCELZ4, false))
+                compMethod = COMPRESS_METHOD_LZ4;
+        }
+        fileio.setown(createCompressedFileWriter(file, recordSize, 0 != (twFlags & TW_Extend), true, ecomp, compMethod));
         if (!fileio)
         {
             compress = false;
@@ -801,7 +821,31 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
         fileio.setown(file->open((twFlags & TW_Extend)&&file->exists()?IFOwrite:IFOcreate));
     if (!fileio)
         throw MakeActivityException(activity, TE_FileCreationFailed, "Failed to create file for write (%s) error = %d", outLocationName.str(), GetLastError());
-    ActPrintLog(activity, "Writing to file: %s, compress=%s, rdiff=%s", file->queryFilename(), compress ? "true" : "false", (compress && recordSize) ? "true" : "false");
+    StringBuffer compStr;
+    if (compress)
+    {
+        ICompressedFileIO *icompfio = QUERYINTERFACE(fileio.get(), ICompressedFileIO);
+        if (icompfio)
+        {
+            unsigned compMeth2 = icompfio->method();
+            if (COMPRESS_METHOD_FASTLZ == compMeth2)
+                compStr.append("flz");
+            else if (COMPRESS_METHOD_LZ4 == compMeth2)
+                compStr.append("lz4");
+            else if (COMPRESS_METHOD_LZW == compMeth2)
+                compStr.append("lzw");
+            else if (COMPRESS_METHOD_ROWDIF == compMeth2)
+                compStr.append("rdiff");
+            else
+                compStr.append("unknown");
+        }
+        else
+            compStr.append("unknown");
+    }
+    else
+        compStr.append("false");
+
+    ActPrintLog(activity, "Writing to file: %s, compress=%s", file->queryFilename(), compStr.str());
     return new CWriteHandler(*activity, partDesc, file, fileio, iProgress, twFlags, aborted);
 }
 

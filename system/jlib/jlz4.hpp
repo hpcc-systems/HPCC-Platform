@@ -19,9 +19,8 @@
 #define JLZ4_INCL
 
 #include "jlzw.hpp"
-#include "lz4.h"
 
-#define LZ4COMPRESSEDFILEBLOCKSIZE (0x10000)
+#define LZ4COMPRESSEDFILEBLOCKSIZE (0x100000)
 
 extern jlib_decl ICompressor *createLZ4Compressor();
 extern jlib_decl IExpander   *createLZ4Expander();

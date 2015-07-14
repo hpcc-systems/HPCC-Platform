@@ -48,6 +48,7 @@
 
 /// Thor options, that can be hints, workunit options, or global settings
 #define THOROPT_COMPRESS_SPILLS       "compressInternalSpills"  // Compress internal spills, e.g. spills created by lookahead or sort gathering  (default = true)
+#define THOROPT_COMPRESS_SPILL_TYPE   "spillCompressorType"     // Compress spill type, e.g. FLZ, LZ4 (or other to get previous)                 (default = LZ4)
 #define THOROPT_HDIST_SPILL           "hdistSpill"              // Allow distribute receiver to spill to disk, rather than blocking              (default = true)
 #define THOROPT_HDIST_WRITE_POOL_SIZE "hdistSendPoolSize"       // Distribute send thread pool size                                              (default = 16)
 #define THOROPT_HDIST_BUCKET_SIZE     "hdOutBufferSize"         // Distribute target bucket send size                                            (default = 1MB)
@@ -55,7 +56,7 @@
 #define THOROPT_HDIST_PULLBUFFER_SIZE "hdPullBufferSize"        // Distribute pull buffer size (receiver side limit, before spilling)
 #define THOROPT_HDIST_CANDIDATELIMIT  "hdCandidateLimit"        // Limits # of buckets to push to the writers when send buffer is full           (default = is 50% largest)
 #define THOROPT_HDIST_TARGETWRITELIMIT "hdTargetLimit"          // Limit # of writer threads working on a single target                          (default = unbound, but picks round-robin)
-#define THOROPT_HDIST_COMP            "hdCompressorType"        // Distribute compressor to use                                                  (default = "LZ4")
+#define THOROPT_HDIST_COMP            "hdCompressorType"        // Distribute compressor to use                                                  (default = "FLZ")
 #define THOROPT_HDIST_COMPOPTIONS     "hdCompressorOptions"     // Distribute compressor options, e.g. AES key                                   (default = "")
 #define THOROPT_SPLITTER_SPILL        "splitterSpill"           // Force splitters to spill or not, default is to adhere to helper setting       (default = -1)
 #define THOROPT_LOOP_MAX_EMPTY        "loopMaxEmpty"            // Max # of iterations that LOOP can cycle through with 0 results before errors  (default = 1000)
@@ -70,6 +71,8 @@
 #define THOROPT_LKJOIN_HASHJOINFAILOVER "lkjoin_hashjoinfailover" // Force SMART to failover to hash join (for testing only)                     (default = false)
 #define THOROPT_MAX_KERNLOG           "max_kern_level"          // Max kernel logging level, to push to workunit, -1 to disable                  (default = 3)
 #define THOROPT_COMP_FORCELZW         "forceLZW"                // Forces file compression to use LZW                                            (default = false)
+#define THOROPT_COMP_FORCEFLZ         "forceFLZ"                // Forces file compression to use FLZ                                            (default = false)
+#define THOROPT_COMP_FORCELZ4         "forceLZ4"                // Forces file compression to use LZ4                                            (default = false)
 #define THOROPT_TRACE_ENABLED         "traceEnabled"            // Output from TRACE activity enabled                                            (default = false)
 #define THOROPT_TRACE_LIMIT           "traceLimit"              // Number of rows from TRACE activity                                            (default = 10)
 #define THOROPT_READ_CRC              "crcReadEnabled"          // Enabled CRC validation on disk reads if file CRC are available                (default = true)
