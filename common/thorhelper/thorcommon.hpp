@@ -20,6 +20,7 @@
 
 #include "jiface.hpp"
 #include "jcrc.hpp"
+#include "jlzw.hpp"
 #include "jsort.hpp"
 #include "jdebug.hpp"
 #include "jfile.hpp"
@@ -90,10 +91,65 @@ enum RowReaderWriterFlags
     rw_compressblkcrc = 0x10, // block compression, this sets/checks crc's at block level
     rw_fastlz         = 0x20, // if rw_compress
     rw_autoflush      = 0x40,
-    rw_buffered       = 0x80
+    rw_buffered       = 0x80,
+    rw_lz4            = 0x100, // if rw_compress
 };
 #define DEFAULT_RWFLAGS (rw_buffered|rw_autoflush|rw_compressblkcrc)
 inline bool TestRwFlag(unsigned flags, RowReaderWriterFlags flag) { return 0 != (flags & flag); }
+
+#define COMP_MASK (rw_compress|rw_compressblkcrc|rw_fastlz|rw_lz4)
+inline void setCompFlag(const StringBuffer compStr, unsigned &flags)
+{
+    if (compStr.length())
+    {
+        if (0 == stricmp("FLZ", compStr))
+        {
+            flags &= ~rw_lz4;
+            flags |= rw_fastlz;
+        }
+        else if (0 == stricmp("LZ4", compStr))
+        {
+            flags &= ~rw_fastlz;
+            flags |= rw_lz4;
+        }
+        else
+        {
+            flags &= ~rw_fastlz;
+            flags &= ~rw_lz4;
+        }
+    }
+    else
+    {
+        // default
+        flags &= ~rw_fastlz;
+        flags |= rw_lz4;
+    }
+}
+
+inline unsigned __int64 getCompMethod(unsigned flags)
+{
+    unsigned __int64 compMethod = COMPRESS_METHOD_LZW;
+    if (TestRwFlag(flags, rw_fastlz))
+        compMethod = COMPRESS_METHOD_FASTLZ;
+    else if (TestRwFlag(flags, rw_lz4))
+        compMethod = COMPRESS_METHOD_LZ4;
+    return compMethod;
+}
+
+inline unsigned __int64 getCompMethod(const StringBuffer compStr)
+{
+    unsigned __int64 compMethod = COMPRESS_METHOD_LZW;
+    if (compStr.length())
+    {
+        if (0 == stricmp("FLZ", compStr))
+            compMethod = COMPRESS_METHOD_FASTLZ;
+        else if (0 == stricmp("LZ4", compStr))
+            compMethod = COMPRESS_METHOD_LZ4;
+    }
+    else
+        compMethod = COMPRESS_METHOD_LZ4;
+    return compMethod;
+}
 
 interface IExtRowStream: extends IRowStream
 {

@@ -40,18 +40,18 @@ void usage(bool isHelp)
     printf("   copyexp <file>                     -- returns compress type\n");
     printf("   copyexp <file> <destination>       -- copies file to destination\n");
     printf("                                         (expanding as needed)\n");
-    printf("   copyexp -z <file> <dest>           -- compresses file (LZW)\n");
-    printf("   copyexp -r <recsz> <file> <dest>   -- compresses file (RowDif)\n");
-    printf("   copyexp -f <file> <dest>           -- compresses file (FastLZ)\n");
+    printf("   copyexp -z  <file> <dest>          -- compresses file (LZW)\n");
+    printf("   copyexp -r  <recsz> <file> <dest>  -- compresses file (RowDif)\n");
+    printf("   copyexp -f  <file> <dest>          -- compresses file (FastLZ)\n");
     printf("   copyexp -fs <file> <dest>          -- compresses file (FastLZ stream)\n");
-    printf("   copyexp -l <file> <dest>           -- compresses file (LZ4)\n");
+    printf("   copyexp -l  <file> <dest>          -- compresses file (LZ4)\n");
     printf("   copyexp -ls <file> <dest>          -- compresses file (LZ4 stream)\n");
     printf("           -s                         -- timing stats\n");
     printf("           -d                         -- do not cache files in OS\n");
     doexit(isHelp ? 0 : 2);
 }
 
-#define BUFFERSIZE (0x10000)
+#define BUFFERSIZE (0x100000)
 
 void printCompDetails(const char *fname,IFileIO *baseio,ICompressedFileIO *cmpio,IFileIOStream *strm, bool flzstrm, bool lz4strm)
 {
@@ -77,8 +77,10 @@ void printCompDetails(const char *fname,IFileIO *baseio,ICompressedFileIO *cmpio
         expsize = cmpio->size();
     }
     printf("%s: is %s compressed, size= %" I64F "d, expanded= %" I64F "d",fname,method,baseio->size(),expsize);
+    if (!strm&&cmpio)
+        printf(", block size= %d",cmpio->blockSize());
     if (!strm&&cmpio&&cmpio->recordSize())
-        printf(", record size = %d",cmpio->recordSize());
+        printf(", record size= %d",cmpio->recordSize());
     printf("\n");
 }
 
@@ -112,7 +114,7 @@ static void printStats(offset_t filesize,unsigned start,unsigned startu)
     if (!elapsedu)
         elapsedu = 1;
     if (elapsed<1000)
-        printf("%" I64F "d Bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsedu)*1000000,formatTimeU(elapsedu,tmp));
+        printf("%" I64F "d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsedu)*1000000,formatTimeU(elapsedu,tmp));
     else
         printf("%" I64F "d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsed)*1000,formatTime(elapsed,tmp));
 }
@@ -219,7 +221,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
     CDateTime createTime, modifiedTime;
     if (srcfile->getTime(&createTime, &modifiedTime, NULL))
         dstfile->setTime(&createTime, &modifiedTime, NULL);
-    printf("copied %s to %s%s\n",from,to,cmpio.get()?" expanding":"");
+    printf("copied %s to %s%s\n",from,to,(cmpio.get()||strmsrc)?" expanding":"");
     return 0;
 }
 
@@ -305,12 +307,12 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
     }
     else 
     {
-        __int64 compType = COMPRESS_METHOD_LZW;
+        __int64 compMethod = COMPRESS_METHOD_LZW;
         if (fast)
-            compType = COMPRESS_METHOD_FASTLZ;
-        else if(lz4)
-            compType = COMPRESS_METHOD_LZ4;
-        dstio.setown(createCompressedFileWriter(dstfile,rowsize,false,true,NULL,compType,extraFlags));
+            compMethod = COMPRESS_METHOD_FASTLZ;
+        else if (lz4)
+            compMethod = COMPRESS_METHOD_LZ4;
+        dstio.setown(createCompressedFileWriter(dstfile,rowsize,false,true,NULL,compMethod,extraFlags));
     }
 
     if (!dstio) {

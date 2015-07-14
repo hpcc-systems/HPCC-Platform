@@ -786,9 +786,26 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
     Owned<IFileIO> fileio;
     if (compress)
     {
+        unsigned __int64 compMethod = COMPRESS_METHOD_LZW;
+        // rowdif used if recordSize > 0, else fallback to compMethod
+        if (twFlags & TW_Temporary)
+        {
+            // if temp file then can use newer compressor
+            StringBuffer compType;
+            activity->getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+            compMethod = getCompMethod(compType);
+        }
+        // force
         if (activity->getOptBool(THOROPT_COMP_FORCELZW, false))
-            recordSize = 0; // by default if fixed length (recordSize set), row diff compression is used. This forces LZW
-        fileio.setown(createCompressedFileWriter(file, recordSize, 0 != (twFlags & TW_Extend), true, ecomp));
+        {
+            recordSize = 0; // by default if fixed length (recordSize set), row diff compression is used. This forces compMethod.
+            compMethod = COMPRESS_METHOD_LZW;
+        }
+        else if (activity->getOptBool(THOROPT_COMP_FORCEFLZ, false))
+            compMethod = COMPRESS_METHOD_FASTLZ;
+        else if (activity->getOptBool(THOROPT_COMP_FORCELZ4, false))
+            compMethod = COMPRESS_METHOD_LZ4;
+        fileio.setown(createCompressedFileWriter(file, recordSize, 0 != (twFlags & TW_Extend), true, ecomp, compMethod));
         if (!fileio)
         {
             compress = false;

@@ -112,8 +112,8 @@ interface ICompressedFileIO: extends IFileIO
 
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander=NULL, bool memorymapped=false, IFEflags extraFlags=IFEnone);
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expander=NULL);
-extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append=false,bool setcrc=true,ICompressor *compressor=NULL, __int64 compType=COMPRESS_METHOD_LZW, IFEflags extraFlags=IFEnone);
-extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsize,bool setcrc=true,ICompressor *compressor=NULL, __int64 compType=COMPRESS_METHOD_LZW);
+extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append=false,bool setcrc=true,ICompressor *compressor=NULL, __int64 compMethod=COMPRESS_METHOD_LZW, IFEflags extraFlags=IFEnone);
+extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsize,bool setcrc=true,ICompressor *compressor=NULL, __int64 compMethod=COMPRESS_METHOD_LZW);
 
 #define COMPRESSEDFILECRC (~0U)
 
