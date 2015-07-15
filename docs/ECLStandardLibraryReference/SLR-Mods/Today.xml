@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Today">
+  <title>Today</title>
+
+  <para><emphasis role="bold">STD.Date.Today<indexterm>
+      <primary>STD.Date.Today</primary>
+    </indexterm><indexterm>
+      <primary>Today</primary>
+    </indexterm>(</emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Return:</entry>
+
+          <entry>Today returns date_t (an UNSIGNED4 containing a date value in
+          YYYYMMDD format) representing the current date.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Today</emphasis> function returns the
+  current date in the local time zone. </para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+  
+D1 := STD.Date.Today();
+     //D1 contains today's date
+</programlisting>
+
+  <para></para>
+</sect1>
