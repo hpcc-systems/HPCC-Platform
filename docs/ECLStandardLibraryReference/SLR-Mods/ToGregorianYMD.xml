@@ -27,7 +27,8 @@
         <row>
           <entry>Return:</entry>
 
-          <entry>ToGregorianYMD returns a Date_t value.</entry>
+          <entry>ToGregorianYMD returns separate values for Year, Month, and
+          Day.</entry>
         </row>
       </tbody>
     </tgroup>
