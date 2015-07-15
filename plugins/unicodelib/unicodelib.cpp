@@ -614,14 +614,6 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
     unsigned leftLen = left.length();
     unsigned rightLen = right.length();
 
-    // this shortcut is not applicable in the bi mode because unicode characters could take more than 2 UChars
-    if (!bi)
-    {
-        unsigned minED = (leftLen < rightLen)? rightLen - leftLen: leftLen - rightLen;
-        if (minED > radius)
-            return minED>255?255:minED;
-    }
-
     if (leftLen > 255)
         leftLen = 255;
 
@@ -640,8 +632,13 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
     if (leftCs.isInvalid() || rightCs.isInvalid())
         return DISTANCE_ON_ERROR;
 
+    // get Unicode character lengths
     leftLen = leftCs.length();
     rightLen = rightCs.length();
+
+    unsigned minED = (leftLen < rightLen)? rightLen - leftLen: leftLen - rightLen;
+    if (minED > radius)
+        return minED;
 
     /*
     This function applies two optimizations over the function above.
