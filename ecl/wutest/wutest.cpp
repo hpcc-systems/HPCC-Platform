@@ -117,17 +117,6 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
         else
             printf("archive of %s failed\n", wuid.str());
     }
-    else if ((stricmp(action, "pack")==0)||(stricmp(action, "unpack")==0))
-    {
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        StringAttr wuid(w.queryWuid());
-        bool pack = (stricmp(action, "pack")==0);
-        QUERYINTERFACE(&w, IExtendedWUInterface)->packWorkUnit(pack);
-        if (pack)
-            printf("packed %s \n", wuid.str());
-        else
-            printf("unpacked %s\n", wuid.str());
-    }
     else if (stricmp(action, "getWebServicesInfo")==0)
     {
         Owned<IConstWUWebServicesInfo> q = w.getWebServicesInfo();
@@ -429,6 +418,7 @@ class WuTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testResults);
         CPPUNIT_TEST(testDelete);
         CPPUNIT_TEST(testCopy);
+        CPPUNIT_TEST(testGraph);
     CPPUNIT_TEST_SUITE_END();
 protected:
     static StringArray wuids;
@@ -755,6 +745,127 @@ protected:
         factory->deleteWorkUnit(wuid);
     }
 
+    void testGraph()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        Owned<IWorkUnit> createWu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
+        StringBuffer wuid(createWu->queryWuid());
+        createWu->createGraph("Graph1", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph/>"));
+        createWu->createGraph("Graph2", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph/>"));
+        createWu->createGraph("Graph3", "graphLabel", GraphTypeEcl, createPTreeFromXMLString("<graph/>"));
+        createWu->setState(WUStateCompleted);
+        createWu->commit();
+        createWu.clear();
+        // Now try to reread a single graph....
+        SCMStringBuffer s;
+        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
+        ASSERT(streq(wu->queryWuid(), wuid));
+        Owned<IConstWUGraph> graph = wu->getGraph("Graph1");
+        ASSERT(graph != NULL);
+        ASSERT(graph->getType() == GraphTypeActivities);
+        ASSERT(streq(graph->getName(s).str(),"Graph1"));
+        ASSERT(streq(graph->getLabel(s).str(),"graphLabel"));
+        ASSERT(streq(graph->getXGMML(s, false).str(), "<graph/>\n"));
+
+        // Then the lightweight meta....
+        wu.setown(factory->openWorkUnit(wuid));
+        ASSERT(streq(wu->queryWuid(), wuid));
+        Owned<IConstWUGraphMetaIterator> it = &wu->getGraphsMeta(GraphTypeActivities);
+        unsigned numIterated = 0;
+        ForEach (*it)
+        {
+            ASSERT(it->query().getType() == GraphTypeActivities);
+            ASSERT(streq(graph->getLabel(s).str(),"graphLabel"));
+            numIterated++;
+        }
+        ASSERT(numIterated==2);
+
+        wu.setown(factory->openWorkUnit(wuid));
+        ASSERT(streq(wu->queryWuid(), wuid));
+        it.setown(&wu->getGraphsMeta(GraphTypeAny));
+        numIterated = 0;
+        ForEach (*it)
+        {
+            ASSERT(streq(it->query().getLabel(s).str(),"graphLabel"));
+            numIterated++;
+        }
+        ASSERT(numIterated==3);
+
+        // then the heavy meta
+        wu.setown(factory->openWorkUnit(wuid));
+        ASSERT(streq(wu->queryWuid(), wuid));
+        Owned<IConstWUGraphIterator> it2 = &wu->getGraphs(GraphTypeActivities);
+        numIterated = 0;
+        ForEach (*it2)
+        {
+            ASSERT(it2->query().getType() == GraphTypeActivities);
+            ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
+            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
+            numIterated++;
+        }
+        ASSERT(numIterated==2);
+
+        wu.setown(factory->openWorkUnit(wuid));
+        ASSERT(streq(wu->queryWuid(), wuid));
+        it2.setown(&wu->getGraphs(GraphTypeAny));
+        numIterated = 0;
+        ForEach (*it2)
+        {
+            ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
+            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
+            numIterated++;
+        }
+        ASSERT(numIterated==3);
+
+        // Light then heavy from a single wu
+        wu.setown(factory->openWorkUnit(wuid));
+        ASSERT(streq(wu->queryWuid(), wuid));
+        it.setown(&wu->getGraphsMeta(GraphTypeActivities));
+        numIterated = 0;
+        ForEach (*it)
+        {
+            ASSERT(it->query().getType() == GraphTypeActivities);
+            ASSERT(streq(it->query().getLabel(s).str(),"graphLabel"));
+            numIterated++;
+        }
+        ASSERT(numIterated==2);
+
+        it2.setown(&wu->getGraphs(GraphTypeActivities));
+        numIterated = 0;
+        ForEach (*it2)
+        {
+            ASSERT(it2->query().getType() == GraphTypeActivities);
+            ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
+            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
+            numIterated++;
+        }
+        ASSERT(numIterated==2);
+
+        // Heavy then light from a single wu
+        wu.setown(factory->openWorkUnit(wuid));
+        ASSERT(streq(wu->queryWuid(), wuid));
+        it2.setown(&wu->getGraphs(GraphTypeActivities));
+        numIterated = 0;
+        ForEach (*it2)
+        {
+            ASSERT(it2->query().getType() == GraphTypeActivities);
+            ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
+            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
+            numIterated++;
+        }
+        ASSERT(numIterated==2);
+
+        it.setown(&wu->getGraphsMeta(GraphTypeActivities));
+        numIterated = 0;
+        ForEach (*it)
+        {
+            ASSERT(it->query().getType() == GraphTypeActivities);
+            ASSERT(streq(it->query().getLabel(s).str(),"graphLabel"));
+            numIterated++;
+        }
+        ASSERT(numIterated==2);
+
+}
     void sortStatistics(StringBuffer &xml)
     {
         Owned<IPropertyTree> p = createPTreeFromXMLString(xml);
