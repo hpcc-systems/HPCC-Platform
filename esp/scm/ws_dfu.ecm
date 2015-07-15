@@ -80,7 +80,7 @@ ESPStruct DFUFilePartsOnCluster
     ESParray<ESPstruct DFUPart> DFUFileParts;
 };
 
-ESPStruct DFUFileDetail
+ESPStruct [nil_remove] DFUFileDetail
 {
     string Name;
     string Filename;
