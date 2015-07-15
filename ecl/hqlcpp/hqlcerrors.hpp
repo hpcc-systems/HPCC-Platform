@@ -217,6 +217,7 @@
 #define HQLERR_InconsistentEmbedded             4197
 #define HQLERR_UnsupportedRowDiffType           4198
 #define HQLERR_EmbedParamNotSupportedInOptions  4199
+#define HQLERR_InvalidXmlnsPrefix               4200
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -508,6 +509,7 @@
 #define HQLERR_StreamInputUsedDirectly_Text     "Library input used directly in a child query"
 #define HQLERR_UnsupportedRowDiffType_Text      "ROWDIFF: Does not support type '%s' for field %s"
 #define HQLERR_EmbedParamNotSupportedInOptions_Text   "Cannot use bound parameter in embed options - try adding a FUNCTION wrapper"
+#define HQLERR_InvalidXmlnsPrefix_Text          "Invalid XMLNS prefix: %s"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"

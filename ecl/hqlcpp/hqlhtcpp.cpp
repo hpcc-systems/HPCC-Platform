@@ -5096,11 +5096,16 @@ void addDatasetResultXmlNamespaces(IWUResult &result, HqlExprArray &xmlnsAttrs, 
         StringBuffer xmlnsURI;
         getUTF8Value(xmlnsPrefix, xmlns.queryChild(0));
         getUTF8Value(xmlnsURI, xmlns.queryChild(1));
+
         if (xmlnsURI.length())
         {
-            result.setResultXmlns(xmlnsPrefix, xmlnsURI);
             if (xmlnsPrefix.length() && declaredPrefixes.find(xmlnsPrefix)==NotFound)
+            {
+                if (!validateXMLTag(xmlnsPrefix))
+                    throwError1(HQLERR_InvalidXmlnsPrefix, xmlnsPrefix.str());
                 declaredPrefixes.append(xmlnsPrefix);
+            }
+            result.setResultXmlns(xmlnsPrefix, xmlnsURI);
         }
     }
     StringArray usedPrefixes;
@@ -10086,28 +10091,6 @@ public:
 protected:
     HqlCppTranslator & translator;
 };
-
-
-static HqlTransformerInfo cHqlBlobTransformerInfo("CHqlBlobTransformer");
-class CHqlBlobTransformer : public QuickHqlTransformer
-{
-public:
-    CHqlBlobTransformer() : QuickHqlTransformer(cHqlBlobTransformerInfo, NULL) {}
-
-    virtual IHqlExpression * createTransformed(IHqlExpression * expr)
-    {
-        OwnedHqlExpr transformed = QuickHqlTransformer::createTransformed(expr);
-        if ((expr->getOperator() == no_field) && expr->hasAttribute(blobAtom))
-            return appendOwnedOperand(transformed, createAttribute(_isBlobInIndex_Atom));
-        return transformed.getClear();
-    }
-};
-
-IHqlExpression * annotateIndexBlobs(IHqlExpression * expr)
-{
-    CHqlBlobTransformer transformer;
-    return transformer.transform(expr);
-}
 
 
 IDefRecordElement * HqlCppTranslator::createMetaRecord(IHqlExpression * record)

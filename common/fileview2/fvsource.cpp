@@ -249,7 +249,7 @@ void DataSourceMetaData::addFileposition()
     addVirtualField("__fileposition__", NULL, makeIntType(8, false));
 }
 
-void DataSourceMetaData::addSimpleField(const char * name, const char * xpath, ITypeInfo * type)
+void DataSourceMetaData::addSimpleField(const char * name, const char * xpath, ITypeInfo * type, unsigned flag)
 {
     ITypeInfo * promoted = type->queryPromotedType();
     unsigned size = promoted->getSize();
@@ -291,7 +291,7 @@ void DataSourceMetaData::addSimpleField(const char * name, const char * xpath, I
         minRecordSize += size;
     if (thisBits == 0)
         bitsRemaining = 0;
-    fields.append(*new DataSourceMetaItem(FVFFnone, name, xpath, type));
+    fields.append(*new DataSourceMetaItem(flag, name, xpath, type));
 }
 
 
@@ -369,9 +369,12 @@ void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional,
             IHqlExpression * xpathAttr = expr->queryAttribute(xpathAtom);
             if (xpathAttr && xpathAttr->queryChild(0)->queryValue())
                 xpath = xpathAttr->queryChild(0)->queryValue()->getStringValue(xpathtext);
-
+            unsigned flag = FVFFnone;
             if (isKey() && expr->hasAttribute(blobAtom))
+            {
                 type.setown(makeIntType(8, false));
+                flag = FVFFblob;
+            }
             type_t tc = type->getTypeCode();
             if (tc == type_row)
             {
@@ -407,7 +410,7 @@ void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional,
                 }
                 if (pMixedContent && xpath && !*xpath)
                     *pMixedContent = true;
-                addSimpleField(outname, xpath, type);
+                addSimpleField(outname, xpath, type, flag);
             }
             break;
         }
