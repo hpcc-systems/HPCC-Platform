@@ -6054,34 +6054,36 @@ static void _noteFileRead(IDistributedFile *file, IPropertyTree *filesRead)
     IDistributedSuperFile *super = file->querySuperFile();
     StringBuffer fname;
     file->getLogicalName(fname);
-    StringBuffer path("File[@name=\"");
-    path.append(fname).append("\"]");
-    IPropertyTree *fileTree = filesRead->queryPropTree(path.str());
-    if (fileTree)
-        fileTree->setPropInt("@useCount", fileTree->getPropInt("@useCount")+1);
-    else
+    if (fname.length())
     {
-        StringBuffer cluster;
-        file->getClusterName(0,cluster);
-        fileTree = createPTree();
-        fileTree->setProp("@name", fname.str());
-        fileTree->setProp("@cluster", cluster.str());
-        fileTree->setPropInt("@useCount", 1);
-        fileTree = filesRead->addPropTree("File", fileTree);
-    }
-    
-    if (super)
-    {
-        Owned<IDistributedFileIterator> iter = super->getSubFileIterator(false);
-        ForEach (*iter)
+        StringBuffer path("File[@name=\"");
+        path.append(fname).append("\"]");
+        IPropertyTree *fileTree = filesRead->queryPropTree(path.str());
+        if (fileTree)
+            fileTree->setPropInt("@useCount", fileTree->getPropInt("@useCount")+1);
+        else
         {
-            IDistributedFile &file = iter->query();
-            StringBuffer fname;
-            file.getLogicalName(fname);
-            Owned<IPropertyTree> subfile = createPTree();
-            subfile->setProp("@name", fname.str());
-            fileTree->addPropTree("Subfile", subfile.getClear());
-            _noteFileRead(&file, filesRead);
+            StringBuffer cluster;
+            file->getClusterName(0,cluster);
+            fileTree = createPTree();
+            fileTree->setProp("@name", fname.str());
+            fileTree->setProp("@cluster", cluster.str());
+            fileTree->setPropInt("@useCount", 1);
+            fileTree = filesRead->addPropTree("File", fileTree);
+        }
+        if (super)
+        {
+            Owned<IDistributedFileIterator> iter = super->getSubFileIterator(false);
+            ForEach (*iter)
+            {
+                IDistributedFile &file = iter->query();
+                StringBuffer fname;
+                file.getLogicalName(fname);
+                Owned<IPropertyTree> subfile = createPTree();
+                subfile->setProp("@name", fname.str());
+                fileTree->addPropTree("Subfile", subfile.getClear());
+                _noteFileRead(&file, filesRead);
+            }
         }
     }
 }
