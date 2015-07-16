@@ -1871,8 +1871,8 @@ private:
 
 //////////
 
-class CLockInfo;
-typedef ThreadSafeOwningSimpleHashTableOf<CLockInfo, __int64> CLockInfoTable;
+class CLock;
+typedef ThreadSafeOwningSimpleHashTableOf<CLock, __int64> CLockTable;
 
 
 //////////
@@ -1939,7 +1939,7 @@ public:
     void changeLockMode(CServerConnection &connection, unsigned newMode, unsigned timeout);
     void clearSDSLocks();
     void lock(CServerRemoteTree &tree, const char *xpath, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &callback);
-    CLockInfo *queryLockInfo(__int64 id) { return lockTable.find(&id); }
+    CLock *queryLock(__int64 id) { return lockTable.find(&id); }
     CSubscriberTable &querySubscriberTable() { return subscribers; }
     IExternalHandler *queryExternalHandler(const char *handler) { if (!handler) return NULL; CExternalHandlerMapping *mapping = externalHandlers.find(handler); return mapping ? &mapping->query() : NULL; }
     void handleNotify(CSubscriberContainerBase &subscriber, MemoryBuffer &notifyData);
@@ -2052,7 +2052,7 @@ public: // data
     Owned<IPropertyTree> properties;
 private:
     void validateBackup();
-    LockStatus establishLock(CLockInfo &lockInfo, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback);
+    LockStatus establishLock(CLock &lock, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback);
     void _getChildren(CRemoteTreeBase &parent, CServerRemoteTree &serverParent, CRemoteConnection &connection, unsigned levels);
     void matchServerTree(CClientRemoteTree *local, IPropertyTree &matchTree, bool allTail);
 
@@ -2066,7 +2066,7 @@ private:
     Owned<ICoalesce> coalesce;
     unsigned __int64 nextExternal;
     unsigned externalSizeThreshold;
-    CLockInfoTable lockTable;
+    CLockTable lockTable;
     CNotifyHandlerTable nodeNotifyHandlers;
     Owned<IThreadPool> scanNotifyPool, notifyPool;
     CExternalHandlerTable externalHandlers;
@@ -3165,20 +3165,20 @@ PDState CServerRemoteTree::processData(IPropertyTree &changeTree, Owned<CBranchC
 
 class CPendingLockBlock
 {
-    CLockInfo &lockInfo;
+    CLock &lock;
 public:
-    CPendingLockBlock(CLockInfo &_lockInfo);
+    CPendingLockBlock(CLock &_lock);
     ~CPendingLockBlock();
 };
 
 typedef Int64Array IdPath;
 typedef MapBetween<ConnectionId, ConnectionId, LockData, LockData> ConnectionInfoMap;
 #define LOCKSESSCHECK (1000*60*5)
-class CLockInfo : public CInterface, implements IInterface
+class CLock : public CInterface, implements IInterface
 {
     DECL_NAMEDCOUNT;
 
-    CLockInfoTable &table;
+    CLockTable &table;
     unsigned sub, readLocks, holdLocks, pending, waiting;
     IdPath idPath;
     ConnectionInfoMap connectionInfo;
@@ -3475,7 +3475,7 @@ class CLockInfo : public CInterface, implements IInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLockInfo(CLockInfoTable &_table, __int64 _treeId, IdPath &_idPath, const char *_xpath, unsigned mode, ConnectionId id, SessionId sessId)
+    CLock(CLockTable &_table, __int64 _treeId, IdPath &_idPath, const char *_xpath, unsigned mode, ConnectionId id, SessionId sessId)
         : table(_table), treeId(_treeId), xpath(_xpath), exclusive(false), sub(0), readLocks(0), holdLocks(0), waiting(0), pending(0)
     {
         INIT_NAMEDCOUNT;
@@ -3484,7 +3484,7 @@ public:
             idPath.append(_idPath.item(i));
     }
 
-    ~CLockInfo()
+    ~CLock()
     {
         if (parent)
             clearLastRef();
@@ -3585,7 +3585,7 @@ public:
 
     inline void removePending()
     {
-        Linked<CLockInfo> destroy;
+        Linked<CLock> destroy;
         {
             CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
             pending--;
@@ -3708,23 +3708,21 @@ public:
     }
 };
 
-CPendingLockBlock::CPendingLockBlock(CLockInfo &_lockInfo) : lockInfo(_lockInfo)
+CPendingLockBlock::CPendingLockBlock(CLock &_lock) : lock(_lock)
 {
-    lockInfo.addPending();
+    lock.addPending();
 }
 
 CPendingLockBlock::~CPendingLockBlock()
 {
-    lockInfo.removePending();
+    lock.removePending();
 }
-
-typedef ICopyArrayOf<CLockInfo> CLockInfoArray;
 
 ///////////
 
-template <> void CLockInfoTable::onRemove(void *et)
+template <> void CLockTable::onRemove(void *et)
 {
-    ((CLockInfo*)et)->Release();
+    ((CLock*)et)->Release();
 }
 
 
@@ -4675,7 +4673,7 @@ IPropertyTree *CServerConnection::queryRoot()
 }
 ////////////////
 
-void CLockInfo::clearLastRef()
+void CLock::clearLastRef()
 {
     if (parent)
     {
@@ -7332,8 +7330,8 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
 void CCovenSDSManager::clearSDSLocks()
 {
     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-    SuperHashIteratorOf<CLockInfo> iter(lockTable.queryBaseTable());
-    ICopyArrayOf<CLockInfo> locks;
+    SuperHashIteratorOf<CLock> iter(lockTable.queryBaseTable());
+    ICopyArrayOf<CLock> locks;
     ForEach(iter)
         locks.append(iter.query());
     ForEachItemIn(l, locks)
@@ -7350,10 +7348,10 @@ void CCovenSDSManager::changeLockMode(CServerConnection &connection, unsigned ne
     CUnlockCallback callback(connection.queryXPath(), connectionId, *tree);
     {
         CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-        CLockInfo *lockInfo = queryLockInfo(treeId);
-        if (lockInfo)
+        CLock *lock = queryLock(treeId);
+        if (lock)
         {
-            lockInfo->changeMode(connectionId, connection.querySessionId(), newMode, timeout, callback);
+            lock->changeMode(connectionId, connection.querySessionId(), newMode, timeout, callback);
             connection.setMode(newMode);
             return;
         }
@@ -7382,9 +7380,9 @@ bool CCovenSDSManager::unlock(__int64 connectionId, bool close, StringBuffer &co
         PROGLOG("forcing unlock for connection : %s", connectionInfo.str());
         __int64 nodeId = ((CRemoteTreeBase *)connection->queryRoot())->queryServerId();
         CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-        CLockInfo *lockInfo = queryLockInfo(nodeId);
-        if (lockInfo)
-            lockInfo->unlock(connectionId);
+        CLock *lock = queryLock(nodeId);
+        if (lock)
+            lock->unlock(connectionId);
     }
     return true;
 }
@@ -7392,26 +7390,26 @@ bool CCovenSDSManager::unlock(__int64 connectionId, bool close, StringBuffer &co
 bool CCovenSDSManager::unlock(__int64 treeId, ConnectionId connectionId, bool delayDelete)
 {
     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-    CLockInfo *lockInfo = queryLockInfo(treeId);
-    if (lockInfo)
-        return lockInfo->unlock(connectionId, delayDelete);
+    CLock *lock = queryLock(treeId);
+    if (lock)
+        return lock->unlock(connectionId, delayDelete);
     return false;
 }
 
 void CCovenSDSManager::unlockAll(__int64 treeId)
 {
     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-    CLockInfo *lockInfo = queryLockInfo(treeId);
-    if (lockInfo)
-        lockInfo->unlockAll();
+    CLock *lock = queryLock(treeId);
+    if (lock)
+        lock->unlockAll();
 }
 
-LockStatus CCovenSDSManager::establishLock(CLockInfo &lockInfo, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback)
+LockStatus CCovenSDSManager::establishLock(CLock &lock, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback)
 {
-    LockStatus res = lockInfo.lock(mode, timeout, connectionId, sessionId, lockCallback);
+    LockStatus res = lock.lock(mode, timeout, connectionId, sessionId, lockCallback);
     if (res == LockSucceeded && server.queryStopped())
     {
-        lockInfo.unlock(connectionId);
+        lock.unlock(connectionId);
         throw MakeSDSException(SDSExcpt_ServerStoppedLockAborted);
     }
     return res;
@@ -7419,9 +7417,9 @@ LockStatus CCovenSDSManager::establishLock(CLockInfo &lockInfo, __int64 treeId, 
 
 void CCovenSDSManager::lock(CServerRemoteTree &tree, const char *__xpath, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &callback)
 {
-    if (0 == ((RTM_LOCK_READ | RTM_LOCK_WRITE) & mode)) // no point in creating lockInfo.
+    if (0 == ((RTM_LOCK_READ | RTM_LOCK_WRITE) & mode)) // no point in creating lock.
         return;
-    CLockInfo *lockInfo = NULL;
+    CLock *lock = NULL;
     StringAttr sxpath;
     char *_xpath = (char *) (('/' == *__xpath) ? __xpath+1 : __xpath);
     char *xpath;
@@ -7439,18 +7437,18 @@ void CCovenSDSManager::lock(CServerRemoteTree &tree, const char *__xpath, Connec
 
     __int64 treeId = tree.queryServerId();
     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-    lockInfo = lockTable.find(&treeId);
+    lock = lockTable.find(&treeId);
     
-    if (!lockInfo)
+    if (!lock)
     {
         IdPath idPath;
-        lockInfo = new CLockInfo(lockTable, treeId, idPath, xpath, mode, connectionId, sessionId);
-        lockTable.replace(*lockInfo);
+        lock = new CLock(lockTable, treeId, idPath, xpath, mode, connectionId, sessionId);
+        lockTable.replace(*lock);
     }
     else
     {
-        Linked<CLockInfo> tmp = lockInfo; // keep it alive could be destroyed whilst blocked in call below.
-        LockStatus result = establishLock(*lockInfo, treeId, connectionId, sessionId, mode, timeout, callback);
+        Linked<CLock> tmp = lock; // keep it alive could be destroyed whilst blocked in call below.
+        LockStatus result = establishLock(*lock, treeId, connectionId, sessionId, mode, timeout, callback);
         if (result != LockSucceeded)
         {
             if (!queryConnection(connectionId)) return; // connection aborted.
@@ -7460,9 +7458,9 @@ void CCovenSDSManager::lock(CServerRemoteTree &tree, const char *__xpath, Connec
             case LockFailed:
                 throw MakeSDSException(SDSExcpt_ConnectionAbsent, "Lost connection trying to establish lock on connection to : %s", xpath);
             case LockTimedOut:
-                throw MakeSDSException(SDSExcpt_LockTimeout, "Lock timeout trying to establish lock to %s, existing lock info: %s", xpath, lockInfo->getLockInfo(s).str());
+                throw MakeSDSException(SDSExcpt_LockTimeout, "Lock timeout trying to establish lock to %s, existing lock info: %s", xpath, lock->getLockInfo(s).str());
             case LockHeld:
-                throw MakeSDSException(SDSExcpt_LockHeld, "Lock is held trying to establish lock to %s, existing lock info: %s", xpath, lockInfo->getLockInfo(s).str());
+                throw MakeSDSException(SDSExcpt_LockHeld, "Lock is held trying to establish lock to %s, existing lock info: %s", xpath, lock->getLockInfo(s).str());
             }
         }
     }
@@ -7582,24 +7580,24 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
                                     {
                                         if (tm.timedout(&remaining))
                                         {
-                                            Linked<CLockInfo> lockInfo;
+                                            Linked<CLock> lock;
                                             VStringBuffer timeoutMsg("Failed to establish lock to %s, timeout whilst retrying connection to orphaned connection path", xpath);
                                             ForEachItemIn(f, freeExistingLocks.existingLockTrees)
                                             {
                                                 CServerRemoteTree &e = freeExistingLocks.existingLockTrees.item(f);
                                                 {
                                                     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-                                                    CLockInfo *_lockInfo = queryLockInfo(e.queryServerId());
-                                                    if (_lockInfo)
+                                                    CLock *_lock = queryLock(e.queryServerId());
+                                                    if (_lock)
                                                     {
-                                                        if (!lockInfo)
+                                                        if (!lock)
                                                             timeoutMsg.append(", existing lock info: ");
                                                         timeoutMsg.newline();
-                                                        lockInfo.set(_lockInfo);
+                                                        lock.set(_lock);
                                                     }
                                                 }
-                                                if (lockInfo)
-                                                    lockInfo->getLockInfo(timeoutMsg);
+                                                if (lock)
+                                                    lock->getLockInfo(timeoutMsg);
                                             }
                                             throw MakeSDSException(SDSExcpt_LockTimeout, "%s", timeoutMsg.str());
                                         }
@@ -7785,11 +7783,11 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
         if (deleteRoot || RTM_MODE(connection->queryMode(), RTM_DELETE_ON_DISCONNECT))
         {
             CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-            CLockInfo *lockInfo = queryLockInfo(tree->queryServerId());
-            if (lockInfo)
+            CLock *lock = queryLock(tree->queryServerId());
+            if (lock)
             {
                 deleteRoot = false;
-                lockInfo->setDROLR((CServerRemoteTree *)connection->queryParent(), tree);
+                lock->setDROLR((CServerRemoteTree *)connection->queryParent(), tree);
             }
             else
                 deleteRoot = true;
@@ -7852,13 +7850,13 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
 StringBuffer &CCovenSDSManager::getLocks(StringBuffer &out)
 {
     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-    SuperHashIteratorOf<CLockInfo> iter(lockTable.queryBaseTable());    
+    SuperHashIteratorOf<CLock> iter(lockTable.queryBaseTable());
     iter.first();
     while (iter.isValid())
     {
-        CLockInfo &lockInfo = iter.query();
-        if (lockInfo.lockCount())
-            lockInfo.getLockInfo(out);
+        CLock &lock = iter.query();
+        if (lock.lockCount())
+            lock.getLockInfo(out);
         if (!iter.next())
             break;
         if (out.length()) out.newline();
@@ -7969,10 +7967,10 @@ unsigned CCovenSDSManager::countActiveLocks()
 {
     unsigned activeLocks = 0;
     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-    SuperHashIteratorOf<CLockInfo> iter(lockTable.queryBaseTable());    
+    SuperHashIteratorOf<CLock> iter(lockTable.queryBaseTable());
     ForEach(iter) {
-        CLockInfo &lockInfo = iter.query();
-        if (lockInfo.lockCount()) activeLocks++;
+        CLock &lock = iter.query();
+        if (lock.lockCount()) activeLocks++;
     }
     return activeLocks;
 }
@@ -7984,11 +7982,11 @@ MemoryBuffer &CCovenSDSManager::collectUsageStats(MemoryBuffer &out)
     }
     unsigned activeLocks = 0;
     { CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-        SuperHashIteratorOf<CLockInfo> iter(lockTable.queryBaseTable());    
+        SuperHashIteratorOf<CLock> iter(lockTable.queryBaseTable());
         ForEach(iter)
         {
-            CLockInfo &lockInfo = iter.query();
-            if (lockInfo.lockCount()) activeLocks++;
+            CLock &lock = iter.query();
+            if (lock.lockCount()) activeLocks++;
         }
     }
     out.append(activeLocks);
