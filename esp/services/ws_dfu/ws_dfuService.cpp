@@ -1741,6 +1741,7 @@ bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udes
 void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterReq, StringArray& clusters, IDistributedFile* df, IEspDFUFileDetail& FileDetails,
     offset_t& mn, offset_t& mx, offset_t& sum, offset_t& count)
 {
+    double version = context.getClientVersion();
     IArrayOf<IConstDFUFilePartsOnCluster>& partsOnClusters = FileDetails.getDFUFilePartsOnClusters();
     ForEachItemIn(i, clusters)
     {
@@ -1790,6 +1791,24 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
             }
         }
 
+        if (version >= 1.31)
+        {
+            IClusterInfo* clusterInfo = fdesc->queryCluster(clusterName);
+            if (clusterInfo) //Should be valid. But, check it just in case.
+            {
+                partsOnCluster->setReplicate(clusterInfo->queryPartDiskMapping().isReplicated());
+                const char* defaultDir = fdesc->queryDefaultDir();
+                if (defaultDir && *defaultDir)
+                {
+                    DFD_OS os = SepCharBaseOs(getPathSepChar(defaultDir));
+                    StringBuffer baseDir, repDir;
+                    clusterInfo->getBaseDir(baseDir, os);
+                    clusterInfo->getReplicateDir(repDir, os);
+                    partsOnCluster->setBaseDir(baseDir.str());
+                    partsOnCluster->setReplicateDir(baseDir.str());
+                }
+            }
+        }
         partsOnClusters.append(*partsOnCluster.getClear());
     }
 }
@@ -1904,25 +1923,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     FileDetails.setWuid(df->queryAttributes().queryProp("@workunit"));
     if (version >= 1.28)
         FileDetails.setNumParts(df->numParts());
-
-    if (version >= 1.31)
-    {
-        const char* clusterName = NULL;
-        if (cluster && *cluster)
-            clusterName = cluster;
-        else if (clusters.length() == 1)
-            clusterName = clusters.item(0);
-        if (clusterName)
-        {
-            Owned<IFileDescriptor> fdesc = df->getFileDescriptor();
-            if (fdesc)
-            {
-                IClusterInfo* c = fdesc->queryCluster(clusterName);
-                if (c)
-                    FileDetails.setReplicate(c->queryPartDiskMapping().isReplicated());
-            }
-        }
-    }
 
     //#17430
     {
