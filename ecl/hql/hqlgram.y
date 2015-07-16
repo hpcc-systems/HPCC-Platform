@@ -12033,8 +12033,12 @@ pattern0
                             parser->checkPattern($$, args);
                             $$.setExpr(parser->createPatternOr(args, $3));
                         }
-    | TOK_PATTERN '(' stringOrUnicodeConstExpr ')'
+    | TOK_PATTERN '(' expr ')'
                         {
+                            parser->normalizeExpression($3, type_stringorunicode, true);
+                            if (!$3.queryExpr()->isConstant())
+                                parser->reportError(ERR_EXPECTED_CONST, $3, "Pattern requires a constant argument");
+
                             IHqlExpression * pattern = parser->convertPatternToExpression($3);
                             $$.setExpr(createValue(no_pat_pattern, makePatternType(), $3.getExpr(), pattern));
                             parser->checkPattern($$, false);

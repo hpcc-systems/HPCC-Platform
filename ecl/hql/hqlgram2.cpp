@@ -4580,6 +4580,8 @@ IHqlExpression * HqlGram::convertPatternToExpression(attribute & text)
     try
     {
         IValue * value = expr->queryValue();
+        if (!value)
+            return NULL;
         unsigned len = value->queryType()->getStringLen();
         const void * data = value->queryValue();
         switch (expr->queryType()->getTypeCode())
