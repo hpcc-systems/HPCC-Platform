@@ -109,6 +109,17 @@ define([
             }
         },
 
+        getNetaddress: function () {
+            if (this.Netaddress) {
+                return this.Netaddress;
+            } else if (this.__hpcc_parent) {
+                if (this.__hpcc_parent.Netaddress) {
+                    return this.__hpcc_parent.Netaddress;
+                }
+            }
+            return "";
+        },
+
         getLogDirectory: function () {
             if (this.LogDirectory) {
                 return this.LogDirectory;
@@ -424,7 +435,27 @@ define([
                 });
             };
             retVal.hasLogs = function () {
-                return this.__hpcc_treeItem.getLogDirectory && this.__hpcc_treeItem.getLogDirectory();
+                return this.getNetaddress() && this.getLogDirectory();
+            };
+            retVal.getOS = function () {
+                return this.__hpcc_treeItem.OS;
+            };
+            retVal.getNetaddress = function () {
+                var retVal = null;
+                if (this.__hpcc_treeItem.getNetaddress) {
+                    retVal = this.__hpcc_treeItem.getNetaddress();
+                }
+                if (!retVal && parentNode && parentNode.__hpcc_treeItem.getNetaddress) {
+                    retVal = parentNode.__hpcc_treeItem.getNetaddress();
+                }
+                return retVal;
+            };
+            retVal.getLogDirectory = function () {
+                var retVal = null;
+                if (this.__hpcc_treeItem.getLogDirectory) {
+                    retVal = this.__hpcc_treeItem.getLogDirectory();
+                }
+                return retVal;
             };
             return retVal;
         },
