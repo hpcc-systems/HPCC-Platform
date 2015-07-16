@@ -1,0 +1,4 @@
+<Dataset name='Result 1'>
+ <Row><key>1</key><pos>1</pos><len>6</len><tok>abc, Z</tok></Row>
+ <Row><key>2</key><pos>1</pos><len>7</len><tok>abc def</tok></Row>
+</Dataset>

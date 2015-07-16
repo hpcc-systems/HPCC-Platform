@@ -3906,7 +3906,7 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
     ITypeInfo *t2 = a2.queryExprType();
 
     Owned<ITypeInfo> type = ::getPromotedECLType(t1, t2);
-    if (isStringType(type) && (t1->getStringLen() != t2->getStringLen()))
+    if ((isStringType(type) || isUnicodeType(type)) && (t1->getStringLen() != t2->getStringLen()))
         type.setown(getStretchedType(UNKNOWN_LENGTH, type));
 
     ensureType(a1, type);
