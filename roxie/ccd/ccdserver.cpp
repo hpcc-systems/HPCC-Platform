@@ -6650,7 +6650,7 @@ public:
             MemoryAttr indexbuff(max*sizeof(void *));
             void ** temp = (void **)indexbuff.bufferBase();
             void * *rows = const_cast<void * *>(group.getArray());
-            qsortvecstableinplace(rows, max, *primaryCompare, temp);
+            msortvecstableinplace(rows, max, *primaryCompare, temp);
             unsigned first = 0;
             for (unsigned idx = 1; idx < max; idx++)
             {
@@ -16971,7 +16971,7 @@ public:
                             MemoryAttr tempAttr(rightord*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
                             void **temp = (void **) tempAttr.bufferBase();
                             void **_rows = const_cast<void * *>(rightset.getArray());
-                            qsortvecstableinplace(_rows, rightord, *helper.queryCompareRight(), temp);
+                            msortvecstableinplace(_rows, rightord, *helper.queryCompareRight(), temp);
                         }
                     }
                     table.setown(new ManyLookupTable(rightset, helper));  // NOTE - takes ownership of rightset

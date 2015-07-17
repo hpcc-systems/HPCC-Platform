@@ -2528,7 +2528,7 @@ bool CHThorGroupDedupAllActivity::calcNextDedupAll()
         MemoryAttr indexbuff(max*sizeof(void *));
         void ** temp = (void **)indexbuff.bufferBase();
         void ** rows = (void * *)group.getArray();
-        qsortvecstableinplace(rows, max, *primaryCompare, temp);
+        msortvecstableinplace(rows, max, *primaryCompare, temp);
         unsigned first = 0;
         for (unsigned idx = 1; idx < max; idx++)
         {

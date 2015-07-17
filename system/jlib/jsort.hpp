@@ -95,7 +95,14 @@ extern jlib_decl bool heap_push_up(unsigned c, unsigned * heap, const void ** ro
 
 
 
-
+inline void parsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** stableTablePtr, unsigned maxCores=0)
+{
+#ifdef _USE_TBB
+    parmsortvecstableinplace(rows, n, compare, stableTablePtr, maxCores);
+#else
+    parqsortvecstableinplace(rows, n, compare, stableTablePtr, maxCores);
+#endif
+}
 
 
 
