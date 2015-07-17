@@ -1027,12 +1027,10 @@ void HeapletBase::releaseRowset(unsigned count, byte * * rowset)
     if (rowset)
     {
         //MORE: There is a small window of simultaneous releases that could lead to the children being leaked
+        //This should really implemented as a destructor, possibly of a special activity number
         if (!isShared(rowset))
-        {
-            byte * * finger = rowset;
-            while (count--)
-                release(*finger++);
-        }
+            ReleaseRoxieRowArray(count, (const void * *)rowset);
+
         release(rowset);
     }
 }
@@ -1108,6 +1106,13 @@ bool HeapletBase::hasDestructor(const void *ptr)
 void ReleaseRoxieRowArray(size_t count, const void * * rows)
 {
     for (size_t i = 0; i < count; i++)
+        ReleaseRoxieRow(rows[i]);
+}
+
+//Not implemented as ReleaseRoxieRowArray(to - from, rows + from) to avoid from > to wrapping issues
+void roxiemem_decl ReleaseRoxieRowRange(const void * * rows, size_t from, size_t to)
+{
+    for (size_t i = from; i < to; i++)
         ReleaseRoxieRow(rows[i]);
 }
 
@@ -5089,8 +5094,7 @@ public:
         if (numCommitted == 0)
             return false;
         const void * * committed = rows.getBlock(numCommitted);
-        for (unsigned i=0; i < numCommitted; i++)
-            ReleaseRoxieRow(committed[i]);
+        ReleaseRoxieRowArray(numCommitted, committed);
         rows.noteSpilled(numCommitted);
         return true;
     }
@@ -5127,18 +5131,17 @@ public:
 
     void addRow(const void * row)
     {
-        rows.append((void *)row);
+        rows.append(row);
     }
 
     void kill()
     {
-        ForEachItemIn(i, rows)
-            ReleaseRoxieRow(rows.item(i));
+        ReleaseRoxieRowArray(rows.ordinality(), rows.getArray());
         rows.kill();
     }
 
 protected:
-    PointerArray rows;
+    ConstPointerArray rows;
     unsigned cost;
 };
 

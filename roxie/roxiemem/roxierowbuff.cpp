@@ -107,8 +107,7 @@ void RoxieOutputRowArray::flush()
 
 void RoxieOutputRowArray::clearRows()
 {
-    for (rowidx_t i = firstRow; i < numRows; i++)
-        ReleaseRoxieRow(rows[i]);
+    roxiemem::ReleaseRoxieRowRange(rows, firstRow, numRows);
     firstRow = 0;
     numRows = 0;
     commitRows = 0;
@@ -205,8 +204,7 @@ void RoxieSimpleInputRowArray::kill()
 {
     if (rows)
     {
-        for (rowidx_t i = firstRow; i < numRows; i++)
-            ReleaseRoxieRow(rows[i]);
+        roxiemem::ReleaseRoxieRowRange(rows, firstRow, numRows);
         firstRow = 0;
         numRows = 0;
         ReleaseRoxieRow(rows);

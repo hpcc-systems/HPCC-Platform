@@ -302,12 +302,17 @@ public:
 #define RoxieRowIsShared(row)  roxiemem::HeapletBase::isShared(row)
 
 void roxiemem_decl ReleaseRoxieRowArray(size_t count, const void * * rows);
+void roxiemem_decl ReleaseRoxieRowRange(const void * * rows, size_t from, size_t to);
 
-inline void ReleaseRoxieRows(ConstPointerArray &data)
+inline void ReleaseRoxieRows(ConstPointerArray &rows)
 {
-    ForEachItemIn(idx, data)
-        ReleaseRoxieRow(data.item(idx));
-    data.kill();
+    ReleaseRoxieRowArray(rows.ordinality(), rows.getArray());
+    rows.kill();
+}
+inline void ReleaseRoxieRows(ConstPointerArray & rows, size_t first)
+{
+    ReleaseRoxieRowRange(rows.getArray(), first, rows.ordinality());
+    rows.kill();
 }
 
 

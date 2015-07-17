@@ -33,16 +33,13 @@ unsigned traceLevel = 0;
 //OwnedRowArray
 void OwnedRowArray::clear()
 {
-    ForEachItemIn(idx, buff)
-        ReleaseRoxieRow(buff.item(idx));
+    roxiemem::ReleaseRoxieRowArray(buff.ordinality(), buff.getArray());
     buff.kill();
 }
 
 void OwnedRowArray::clearPart(aindex_t from, aindex_t to)
 {
-    aindex_t idx;
-    for(idx = from; idx < to; idx++)
-        ReleaseRoxieRow(buff.item(idx));
+    roxiemem::ReleaseRoxieRowRange(buff.getArray(), from, to);
     buff.removen(from, to-from);
 }
 
@@ -655,8 +652,7 @@ public:
 
     virtual void reset()
     {
-        while (sorted.isItem(curIndex))
-            ReleaseRoxieRow(sorted.item(curIndex++));
+        roxiemem::ReleaseRoxieRowRange(sorted.getArray(), curIndex, sorted.ordinality());
         curIndex = 0;
         sorted.kill();
     }
@@ -756,8 +752,7 @@ public:
 
     ~SortedBlock()
     {
-        while (pos < length)
-            ReleaseRoxieRow(rows[pos++]);
+        roxiemem::ReleaseRoxieRowRange(rows, pos, length);
         ReleaseRoxieRow(rows);
     }
 
@@ -1107,9 +1102,7 @@ public:
         eof = false;
         if (inputAlreadySorted)
         {
-            while (sorted.isItem(curIndex))
-                ReleaseRoxieRow(sorted.item(curIndex++));
-            sorted.kill();
+            roxiemem::ReleaseRoxieRows(sorted, curIndex);
         }
         else
         {
