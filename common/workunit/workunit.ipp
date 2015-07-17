@@ -23,6 +23,7 @@
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
 #define WUID_VERSION 2 // recorded in each wuid created, useful for bkwd compat. checks
+#define GLOBAL_WORKUNIT "global"
 
 class CLocalWUAppValue : public CInterface, implements IConstWUAppValue
 {

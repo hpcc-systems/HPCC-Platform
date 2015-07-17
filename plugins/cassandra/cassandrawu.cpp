@@ -2834,7 +2834,13 @@ public:
         return wu.getClear();
     }
 
-    virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) { UNIMPLEMENTED; }
+    virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL)
+    {
+        // MORE - should it check security? Dali version never did...
+        Owned<CLocalWorkUnit> cw = _updateWorkUnit(GLOBAL_WORKUNIT, NULL, NULL);
+        assertex(cw);
+        return &cw->lockRemote(false);
+    }
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser)
     {
         return getWorkUnitsByXXX("@submitID", owner, secmgr, secuser);
@@ -3244,6 +3250,15 @@ public:
         ensureTable(session, wuGraphProgressMappings);
         ensureTable(session, wuGraphStateMappings);
         ensureTable(session, wuGraphRunningMappings);
+        // Create the global workunit - saves having to check if it is there every time we want it...
+        Owned<IPTree> wuXML = createPTree(GLOBAL_WORKUNIT);
+        wuXML->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+        wuXML->setPropInt("@wuidVersion", WUID_VERSION);  // we implement the latest version.
+        Owned<IRemoteConnection> daliLock;
+        lockWuid(daliLock, GLOBAL_WORKUNIT);
+        Owned<CCassandraWorkUnit> global = new CCassandraWorkUnit(this, wuXML.getClear(), NULL, NULL, daliLock.getClear());
+        global->commit();
+        global.clear();
     }
 
     virtual const char *queryStoreType() const
