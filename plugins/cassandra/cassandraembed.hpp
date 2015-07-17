@@ -230,7 +230,12 @@ public:
     void bindString(unsigned idx, const char *value)
     {
         if (query.length())
-            traceBind(idx, "'%s'", value);
+        {
+            unsigned l = strlen(value);
+            if (l > 100)
+                l = 100;
+            traceBind(idx, "'%.*s'", l, value);
+        }
         check(cass_statement_bind_string(statement, idx, value));
     }
     void bindString_n(unsigned idx, const char *value, unsigned len)
@@ -244,7 +249,7 @@ public:
         else
         {
             if (query.length())
-                traceBind(idx, "'%.*s'", len, value);
+                traceBind(idx, "'%.*s'", len>100?100:len, value);
             check(cass_statement_bind_string_n(statement, idx, value, len));
         }
     }

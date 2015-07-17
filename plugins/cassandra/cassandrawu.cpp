@@ -963,7 +963,7 @@ static const CassandraXmlMapping workunitsMappings [] =
     // These are catchalls for anything not processed above or in a child table
 
     {"elements", "map<text, text>", "@Action@Application@Debug@Exceptions@FilesRead@Graphs@Results@Statistics@Plugins@Query@Variables@Temporaries@Workflow@", elementMapColumnMapper},  // name is the suppression list, note trailing @
-    {"subtrees", "map<text, text>", "@Process@Tracing@", subTreeMapColumnMapper},  // name is the INCLUSION list, note trailing @
+    {"subtrees", "map<text, text>", "@Parameters@Process@Tracing@", subTreeMapColumnMapper},  // name is the INCLUSION list, note trailing @
 
     { NULL, "workunits", "((partition), wuid)|CLUSTERING ORDER BY (wuid DESC)", stringColumnMapper}
 };
@@ -1741,7 +1741,7 @@ public:
         }
         rows.add(row, idx+1);
         wuids.add(wuid, idx+1);
-        fieldValues.add(fieldValue, idx+1);
+        fieldValues.add(fieldValue ? fieldValue : "", idx+1);
     }
     IConstWorkUnitIteratorEx *getResult() const
     {
@@ -2330,6 +2330,8 @@ public:
                     }
                 }
             }
+            if (sessionCache->queryTraceLevel() > 1)
+                DBGLOG("Executing batch");
             CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), *batch));
             futureBatch.wait("execute");
             batch.setown(new CassandraBatch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED))); // Commit leaves it locked...
@@ -2544,6 +2546,8 @@ public:
 protected:
     void createBatch()
     {
+        if (sessionCache->queryTraceLevel() > 1)
+            DBGLOG("Creating batch");
         batch.setown(new CassandraBatch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED)));
     }
     // Delete child table rows
