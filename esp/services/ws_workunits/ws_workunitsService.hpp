@@ -287,7 +287,6 @@ private:
     Owned<IPropertyTree> directories;
     int maxRequestEntityLength;
     Owned<IThreadPool> clusterQueryStatePool;
-    StringAttr authMethod;
 public:
     QueryFilesInUse filesInUse;
 };
