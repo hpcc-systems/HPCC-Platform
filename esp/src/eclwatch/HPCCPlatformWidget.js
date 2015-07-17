@@ -20,10 +20,12 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
+    "dojo/dom-class",
     "dojo/dom-form",
     "dojo/dom-style",
     "dojo/dom-geometry",
     "dojo/cookie",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/Tooltip",
@@ -40,6 +42,7 @@ define([
     "hpcc/WsTopology",
     "hpcc/GraphWidget",
     "hpcc/DelayLoadWidget",
+    "hpcc/ws_machine",
 
     "dojo/text!../templates/HPCCPlatformWidget.html",
 
@@ -61,10 +64,10 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domStyle, domGeo, cookie,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, domStyle, domGeo, cookie, topic,
                 registry, Tooltip,
                 UpgradeBar, ColorPicker,
-                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget,
+                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget, WsMachine,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -83,6 +86,7 @@ define([
             this.mainPage = registry.byId(this.id + "_Main");
             this.errWarnPage = registry.byId(this.id + "_ErrWarn");
             this.pluginsPage = registry.byId(this.id + "_Plugins");
+            this.operationsPage = registry.byId(this.id + "_OPS");
             registry.byId(this.id + "SetBanner").set("disabled", true);
 
             this.upgradeBar = new UpgradeBar({
@@ -140,6 +144,16 @@ define([
                 return;
 
             var context = this;
+
+            WsMachine.GetComponentStatus({
+                request: {}
+            }).then(function (response) {
+                if (lang.exists("GetComponentStatusResponse.ComponentStatus", response)) {
+                    var status = response.GetComponentStatusResponse.ComponentStatus
+                    context.checkMonitoring(status);
+                }
+            });
+
             WsAccount.MyAccount({
             }).then(function (response) {
                 if (lang.exists("MyAccountResponse.username", response)) {
@@ -197,6 +211,10 @@ define([
             this.createStackControllerTooltip(this.id + "_OPS", this.i18n.Operations);
             this.createStackControllerTooltip(this.id + "_Plugins", this.i18n.Plugins);
             this.initTab();
+
+            topic.subscribe("hpcc/monitoring_component_update", function (topic) {
+                context.checkMonitoring(topic.status);
+            });
         },
 
         initTab: function () {
@@ -212,10 +230,18 @@ define([
             return "ECL Watch";
         },
 
+        checkMonitoring: function (status) {
+            if (status) {
+                domClass.remove("MonitorStatus", status);
+                domClass.add("MonitorStatus", status);
+            }
+        },
+
         checkIfAdmin: function (user) {
             var context = this;
             if(user == null){
                 registry.byId(context.id + "SetBanner").set("disabled", false);
+                dojo.destroy(this.monitorStatus);
             }else{
                 WsAccess.UserEdit({
                     suppressExceptionToaster: true,
@@ -309,7 +335,7 @@ define([
             }
             this.stackContainer.selectChild(this.widget._Config);
         },
-        
+
         _onOpenErrWarn: function (evt) {
             this.stackContainer.selectChild(this.errWarnPage);
         },
@@ -380,6 +406,13 @@ define([
 
         _onAboutClose: function (evt) {
             this.aboutDialog.hide();
+        },
+
+        _onMonitoring: function (evt) {
+            this.stackContainer.selectChild(this.operationsPage);
+            this.operationsPage.ensureWidget().then(function (operationsPage) {
+                operationsPage.widget.TabContainer.selectChild(operationsPage.widget._Monitoring);
+            });
         },
 
         _onSetBanner: function (evt) {

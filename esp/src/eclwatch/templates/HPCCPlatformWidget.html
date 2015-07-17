@@ -3,8 +3,8 @@
         <div id="${id}Titlebar" class="hpccTitlebar" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
             <div id="${id}StackController" class="left glow" data-dojo-props="containerId:'${id}TabContainer'" data-dojo-type="dijit.layout.StackController"></div>
             <div class="searchUserMoreComponents">
-                <div id="${id}plugin_32-32" class="left" style="margin-top:9px;width:32px;height:32px;overflow:hidden">
-                </div>
+                <div id="${id}plugin_32-32" class="left" style="margin-top:9px;width:32px;height:32px;overflow:hidden"></div>
+                <div id="MonitorStatus" class="None" data-dojo-attach-event="onClick:_onMonitoring"></div>
                 <div class="seperator grey"></div>
                 <form id="search-form" onsubmit="return false;">
                     <input id="${id}FindText" class="roundForm" data-dojo-props="placeHolder: '${i18n.PlaceholderFindText}', trim: true" data-dojo-type="dijit.form.TextBox" />

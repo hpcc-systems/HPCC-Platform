@@ -472,6 +472,50 @@ hr.dashedLine {
     width: 16px;
     height: 16px;
 }
+
+.None{
+    background: url("../img/nodata.png") no-repeat; 
+    width: 16px;
+    height: 16px;
+    display: block;
+    float: left;
+    margin-top: 17px;
+    padding-right: 0px;
+    cursor: pointer;
+}
+
+.Normal{
+    background: url("../img/normal.png") no-repeat; 
+    width: 16px;
+    height: 16px;
+    display: block;
+    float: left;
+    margin-top: 17px;
+    padding-right: 0px;
+    cursor: pointer;
+}
+
+.Warning{
+    background: url("../img/warning.png") no-repeat; 
+    width: 16px;
+    height: 16px;
+    display: block;
+    float: left;
+    margin-top: 17px;
+    padding-right: 0px;
+    cursor: pointer;
+}
+
+.Error{
+    background: url("../img/error.png") no-repeat; 
+    width: 16px;
+    height: 16px;
+    display: block;
+    float: left;
+    margin-top: 17px;
+    padding-right: 0px;
+    cursor: pointer;
+}
 /*###############################*/
 #appLayout {
     height: 100%;
@@ -1004,6 +1048,10 @@ margin-left:-20px;
 
 .WarningCell{
     background: yellow;
+}
+
+.NormalCell{
+    background: rgba(0,181,0,1);
 }
 
 .Prompt{
