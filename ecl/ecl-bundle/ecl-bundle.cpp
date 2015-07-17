@@ -949,7 +949,6 @@ public:
         if (optBundle.isEmpty() && bundleCompulsory)
         {
             printf("Missing bundle name\n");
-            usage();
             return false;
         }
         if (!EclCmdCommon::finalizeOptions(globals))
@@ -1527,7 +1526,6 @@ public:
         if (optVersion.isEmpty())
         {
             printf("Version must be specified\n");
-            usage();
             return false;
         }
         return EclCmdBundleBaseWithVersion::finalizeOptions(globals);

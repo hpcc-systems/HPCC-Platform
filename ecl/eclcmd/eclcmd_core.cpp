@@ -222,10 +222,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -292,10 +289,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -360,7 +354,7 @@ public:
         }
         if (optNoActivate && (optSuspendPrevious || optDeletePrevious))
         {
-            fputs("invalid --suspend-prev and --delete-prev require activation.\n\n", stderr);
+            fputs("invalid --suspend-prev and --delete-prev require activation.\n", stderr);
             return false;
         }
         if (!optSuspendPrevious && !optDeletePrevious)
@@ -371,17 +365,17 @@ public:
         }
         if (optSuspendPrevious && optDeletePrevious)
         {
-            fputs("invalid --suspend-prev and --delete-prev are mutually exclusive options.\n\n", stderr);
+            fputs("invalid --suspend-prev and --delete-prev are mutually exclusive options.\n", stderr);
             return false;
         }
         if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
         {
-            fprintf(stderr, "invalid --memoryLimit value of %s.\n\n", optMemoryLimit.get());
+            fprintf(stderr, "invalid --memoryLimit value of %s.\n", optMemoryLimit.get());
             return false;
         }
         if (optPriority.length() && !isValidPriorityValue(optPriority))
         {
-            fprintf(stderr, "invalid --priority value of %s.\n\n", optPriority.get());
+            fprintf(stderr, "invalid --priority value of %s.\n", optPriority.get());
             return false;
         }
         return true;
@@ -519,10 +513,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -837,10 +828,7 @@ public:
     {
         bool retVal = false;
         if (iter.done())
-        {
-            usage();
-            return retVal;
-        }
+            return false;
 
         for (; !iter.done(); iter.next())
         {
@@ -970,10 +958,7 @@ public:
     {
         bool retVal = false;
         if (iter.done())
-        {
-            usage();
-            return retVal;
-        }
+            return false;
 
         for (; !iter.done(); iter.next())
         {
@@ -1056,10 +1041,7 @@ public:
     {
         bool retVal = false;
         if (iter.done())
-        {
-            usage();
-            return retVal;
-        }
+            return false;
 
         for (; !iter.done(); iter.next())
         {
@@ -1142,10 +1124,7 @@ public:
     {
         bool retVal = false;
         if (iter.done())
-        {
-            usage();
-            return retVal;
-        }
+            return false;
 
         for (; !iter.done(); iter.next())
         {
