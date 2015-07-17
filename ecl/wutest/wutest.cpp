@@ -407,6 +407,7 @@ inline int min(int a, int b)
 class WuTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(WuTest);
+        CPPUNIT_TEST(testInit);
         CPPUNIT_TEST(testCreate);
         CPPUNIT_TEST(testValidate);
         CPPUNIT_TEST(testList);
@@ -418,12 +419,13 @@ class WuTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testResults);
         CPPUNIT_TEST(testDelete);
         CPPUNIT_TEST(testCopy);
+        CPPUNIT_TEST(testQuery);
         CPPUNIT_TEST(testGraph);
         CPPUNIT_TEST(testGraphProgress);
     CPPUNIT_TEST_SUITE_END();
 protected:
     static StringArray wuids;
-    void testCreate()
+    void testInit()
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         if (globals->getPropBool("entire", false) && globals->getPropBool("repository", false))
@@ -432,6 +434,10 @@ protected:
             factory->createRepository();
             DBGLOG("Repository recreated\n");
         }
+    }
+    void testCreate()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         unsigned before = factory->numWorkUnits();
         unsigned start = msTick();
         for (int i = 0; i < testSize; i++)
@@ -742,6 +748,42 @@ protected:
         toXML(p2, xml2.clear(), 0, XML_Format|XML_SortTags);
         DBGLOG("Comparing xml1 and xml2");
         checkStringsMatch(xml1, xml2);
+        wu.clear();
+        factory->deleteWorkUnit(wuid);
+    }
+
+    void testQuery()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        Owned<IWorkUnit> createWu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
+        StringBuffer wuid(createWu->queryWuid());
+        {
+            Owned<IWUQuery> query = createWu->updateQuery();
+            ASSERT(query);
+            query->setQueryText("Hello");
+            query->setQueryName("qname");
+            query->setQueryMainDefinition("fred");
+            query->setQueryType(QueryTypeEcl);
+            query->addAssociatedFile(FileTypeCpp, "myfile", "1.2.3.4", "Description", 53);
+            createWu.clear();
+        }
+
+        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
+        ASSERT(streq(wu->queryWuid(), wuid));
+        Owned<IConstWUQuery> query = wu->getQuery();
+        ASSERT(query);
+        SCMStringBuffer s;
+        ASSERT(streq(query->getQueryText(s).str(), "Hello"));
+        ASSERT(streq(query->getQueryName(s).str(), "qname"));
+        ASSERT(streq(query->getQueryMainDefinition(s).str(),"fred"));
+        ASSERT(query->getQueryType()==QueryTypeEcl);
+        Owned <IConstWUAssociatedFile> file = query->getAssociatedFile(FileTypeCpp, 0);
+        ASSERT(file);
+        ASSERT(streq(file->getDescription(s).str(), "Description"));
+        ASSERT(streq(file->getName(s).str(), "myfile"));
+        ASSERT(file->getCrc()==53);
+        ASSERT(file->getType()==FileTypeCpp);
+        ASSERT(streq(file->getIp(s).str(), "1.2.3.4"));
         wu.clear();
         factory->deleteWorkUnit(wuid);
     }

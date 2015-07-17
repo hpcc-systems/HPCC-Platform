@@ -1538,6 +1538,7 @@ public:
     virtual IStringVal& getQueryResTxtName(IStringVal &str) const;
     virtual IConstWUAssociatedFile * getAssociatedFile(WUFileType type, unsigned index) const;
     virtual IConstWUAssociatedFileIterator& getAssociatedFiles() const;
+    virtual bool isArchive() const;
 
     virtual void        setQueryType(WUQueryType qt);
     virtual void        setQueryText(const char *pstr);
@@ -5257,7 +5258,7 @@ IWUQuery* CLocalWorkUnit::updateQuery()
     {
         IPropertyTree *s = p->queryPropTree("Query");
         if (!s)
-            s = p->addPropTree("Query", createPTreeFromXMLString("<Query fetchEntire='1'/>"));
+            s = p->addPropTree("Query", createPTreeFromXMLString("<Query fetchEntire='1'/>")); // Is this really desirable (the fetchEntire) ?
         s->Link();
         query.setown(new CLocalWUQuery(s)); 
     }
@@ -6847,23 +6848,37 @@ IStringVal& CLocalWUQuery::getQueryText(IStringVal &str) const
 
 IStringVal& CLocalWUQuery::getQueryShortText(IStringVal &str) const
 {
-    const char * text = p->queryProp("Text");
-    if (isArchiveQuery(text))
+    const char * text = p->queryProp("ShortText");
+    if (text)
+        str.set(text);
+    else
     {
-        Owned<IPropertyTree> xml = createPTreeFromXMLString(text, ipt_caseInsensitive);
-        const char * path = xml->queryProp("Query/@attributePath");
-        if (path)
+        text = p->queryProp("Text");
+        if (isArchiveQuery(text))
         {
-            IPropertyTree * resolved = resolveDefinitionInArchive(xml, path);
-            if (resolved)
-                str.set(resolved->queryProp(NULL));
+            Owned<IPropertyTree> xml = createPTreeFromXMLString(text, ipt_caseInsensitive);
+            const char * path = xml->queryProp("Query/@attributePath");
+            if (path)
+            {
+                IPropertyTree * resolved = resolveDefinitionInArchive(xml, path);
+                if (resolved)
+                    str.set(resolved->queryProp(NULL));
+            }
+            else
+                str.set(xml->queryProp("Query"));
         }
         else
-            str.set(xml->queryProp("Query"));
+            str.set(text);
     }
-    else
-        str.set(text);
     return str;
+}
+
+bool CLocalWUQuery::isArchive() const
+{
+    if (p->hasProp("@isArchive"))
+        return p->getPropBool("@isArchive");
+    const char *text = p->queryProp("Text");
+    return isArchiveQuery(text);
 }
 
 IStringVal& CLocalWUQuery::getQueryName(IStringVal &str) const
@@ -6913,6 +6928,21 @@ unsigned CLocalWUQuery::getQueryDllCrc() const
 void CLocalWUQuery::setQueryText(const char *text)
 {
     p->setProp("Text", text);
+    bool isArchive = isArchiveQuery(text);
+    if (isArchive)
+    {
+        Owned<IPropertyTree> xml = createPTreeFromXMLString(text, ipt_caseInsensitive);
+        const char * path = xml->queryProp("Query/@attributePath");
+        if (path)
+        {
+            IPropertyTree * resolved = resolveDefinitionInArchive(xml, path);
+            if (resolved)
+                p->setProp("ShortText", resolved->queryProp(NULL));
+        }
+        else
+            p->setProp("ShortText", xml->queryProp("Query"));
+    }
+    p->setPropBool("@isArchive", isArchive);
 }
 
 void CLocalWUQuery::setQueryName(const char *qname)
