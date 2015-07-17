@@ -51,8 +51,6 @@
 #include "environment.hpp"
 #include "workunit.ipp"
 
-#define GLOBAL_WORKUNIT "global"
-
 static int workUnitTraceLevel = 1;
 
 static StringBuffer &getXPath(StringBuffer &wuRoot, const char *wuid)

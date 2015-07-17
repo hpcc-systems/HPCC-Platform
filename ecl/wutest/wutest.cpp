@@ -420,6 +420,7 @@ class WuTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testCopy);
         CPPUNIT_TEST(testGraph);
         CPPUNIT_TEST(testGraphProgress);
+        CPPUNIT_TEST(testGlobal);
     CPPUNIT_TEST_SUITE_END();
 protected:
     static StringArray wuids;
@@ -1488,7 +1489,6 @@ protected:
         unsigned numIterated = 0;
         // Test filter by filesRead
         WUSortField filterByFilesRead[] = { WUSFfileread, WUSFterm };
-        start = msTick();
         StringAttr prevValue;
         Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFreverse), filterByFilesRead, "myfile00", 0, 10000, NULL, NULL);
         ForEach(*wus)
@@ -1502,6 +1502,15 @@ protected:
         DBGLOG("%d workunits by fileread wild in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == (testSize+9)/10);
         numIterated++;
+    }
+    void testGlobal()
+    {
+        // Is global workunit ever actually used any more? For scalar persists, perhaps
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        StringAttr prevValue;
+        Owned<IWorkUnit> global = factory->getGlobalWorkUnit(NULL, NULL);
+        ASSERT(global != NULL);
+        ASSERT(streq(global->queryWuid(), "global"));
     }
 };
 StringArray WuTest::wuids;
