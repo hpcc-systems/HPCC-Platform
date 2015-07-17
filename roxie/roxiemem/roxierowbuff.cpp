@@ -154,7 +154,10 @@ bool DynamicRoxieOutputRowArray::ensure(rowidx_t requiredRows)
             rowidx_t nextSize = newSize + newSize / 4;
             //check to see if it has wrapped
             if (nextSize < newSize)
+            {
                 newSize = requiredRows;
+                break;
+            }
             else
                 newSize = nextSize;
         }
@@ -169,7 +172,7 @@ bool DynamicRoxieOutputRowArray::ensure(rowidx_t requiredRows)
     }
     catch (IException * e)
     {
-        //Pahological cases - not enough memory to reallocate the target row buffer, or no contiguous pages available.
+        //Pathological cases - not enough memory to reallocate the target row buffer, or no contiguous pages available.
         unsigned code = e->errorCode();
         if ((code == ROXIEMM_MEMORY_LIMIT_EXCEEDED) || (code == ROXIEMM_MEMORY_POOL_EXHAUSTED))
         {
