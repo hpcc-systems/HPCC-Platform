@@ -49,5 +49,5 @@ cntBad := COUNT(ds(assertTrue(seq > 10, 'seq > 10'))) + NOFOLD(100000);
 //Problem1: Converting this to a filtered disk read means that cntBad is evaluated always
 cond1 := IF(trueValue, ds, NOFOLD(ds)(seq != cntBad));
 cond2 := IF(falseValue, NOFOLD(ds)(seq != cntBad), ds);
-output(cond1+cond2);
+output(cond1 & cond2);
 
