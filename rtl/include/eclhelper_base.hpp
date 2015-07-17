@@ -1788,6 +1788,8 @@ class CThorJoinArg : public CThorArg, implements IHThorJoinArg
     virtual ICompare * queryCompareLeftRightLower()     { return NULL; }
     virtual ICompare * queryCompareLeftRightUpper()     { return NULL; }
     virtual ICompare * queryPrefixCompare()             { return NULL; }
+    virtual ICompare * queryCompareLeftKeyRightRow()    { return NULL; }
+    virtual ICompare * queryCompareRightKeyLeftRow()    { return NULL; }
 
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
 
@@ -1880,6 +1882,8 @@ class CThorHashJoinArg : public CThorArg, implements IHThorHashJoinArg
     virtual ICompare * queryCompareLeft()               { return NULL; }        // not needed for lookup
     virtual ICompare * queryCompareRight()              { return NULL; }        // not needed for many lookup
     virtual ICompare * queryPrefixCompare()             { return NULL; }
+    virtual ICompare * queryCompareLeftKeyRightRow()    { return NULL; }
+    virtual ICompare * queryCompareRightKeyLeftRow()    { return NULL; }
 
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
 

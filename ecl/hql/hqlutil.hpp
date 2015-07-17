@@ -720,6 +720,7 @@ public:
     inline const HqlExprArray & queryRightOpt() { return rightOpt; }
     inline const HqlExprArray & queryLeftSort() { initSorts(); return leftSorts; }
     inline const HqlExprArray & queryRightSort() { initSorts(); return rightSorts; }
+    inline bool isSlidingJoin() const { return (slidingMatches.ordinality() != 0); }
     inline unsigned numRequiredEqualities() const { return leftReq.ordinality(); }
 
     bool neverMatchSelf() const;

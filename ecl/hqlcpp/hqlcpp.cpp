@@ -8115,10 +8115,17 @@ void HqlCppTranslator::expandSimpleOrder(IHqlExpression * left, IHqlExpression *
 
     if (left->isDatarow())
     {
-        IHqlExpression * record = left->queryRecord();
-        assertex(right->isDatarow() && (record == right->queryRecord()));
-        expandRowOrder(left, record, leftValues, !isActiveRow(left) && (left->getOperator() != no_select));
-        expandRowOrder(right, record, rightValues, !isActiveRow(right) && (right->getOperator() != no_select));
+        IHqlExpression * leftRecord = left->queryRecord();
+        IHqlExpression * rightRecord = right->queryRecord();
+        assertex(right->isDatarow());
+        if (leftRecord != rightRecord)
+        {
+            OwnedHqlExpr leftSerialRecord = getSerializedForm(leftRecord, diskAtom);
+            OwnedHqlExpr rightSerialRecord = getSerializedForm(rightRecord, diskAtom);
+            assertex(leftSerialRecord  == rightSerialRecord);
+        }
+        expandRowOrder(left, leftRecord, leftValues, !isActiveRow(left) && (left->getOperator() != no_select));
+        expandRowOrder(right, rightRecord, rightValues, !isActiveRow(right) && (right->getOperator() != no_select));
     }
     else
     {

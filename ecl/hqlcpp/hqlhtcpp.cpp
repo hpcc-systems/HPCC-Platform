@@ -8292,7 +8292,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityMerge(BuildCtx & ctx, IHqlExpr
         DatasetReference dsRef(dataset, no_activetable, NULL);
         buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
         if (!instance->isLocal)
-            generateSerializeKey(instance->nestedctx, no_none, dsRef, sorts, !instance->isChildActivity(), true, false);
+            generateSerializeKey(instance->nestedctx, no_none, dsRef, sorts, !instance->isChildActivity(), true);
     }
     else
         throwError(HQLERR_InputMergeNotSorted);
@@ -11598,95 +11598,122 @@ void HqlCppTranslator::generateSerializeFunction(BuildCtx & ctx, const char * fu
     buildReturnRecordSize(r2kctx, serialize ? tgtCursor : srcCursor);
 }
 
-void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal, bool generateCompares, bool canReuseLeft)
+class SerializeKeyInfo
 {
-    //check if there are any ifblocks, and if so don't allow it.  Even more accurate would be no join fields used in ifblocks
-    IHqlExpression * record = dataset.queryDataset()->queryRecord();
-    bool canSerialize = targetThor() && isGlobal && !recordContainsIfBlock(record);
-    const char * sideText = (side == no_none) ? "" : (side == no_left) ? "Left" : "Right";
-    StringBuffer s, s2;
-
+public:
     HqlExprArray keyFields;
     HqlExprArray keySelects;
-    HqlExprArray datasetSelects;
     HqlExprArray keyCompares;
-    if (canSerialize)
-    {
-        ForEachItemIn(idx, sorts)
-        {
-            //MORE: Nested - this won't serialize the key if sorting by a field in a nested record
-            //      If this is a problem we will need to create new fields for each value.
-            IHqlExpression & cur = sorts.item(idx);
-            IHqlExpression * value = &cur;
-            if (value->getOperator() == no_negate)
-                value=value->queryChild(0);
-            if ((value->getOperator() == no_select) && (value->queryChild(0)->queryNormalizedSelector() == dataset.querySelector()))
-            {
-                if (value->queryType()->getTypeCode() == type_alien)
-                {
-                    //MORE: Really should check if a self contained alien data type.
-                    canSerialize = false;
-                    break;
-                }
+    HqlExprArray allKeyCompares;
+    HqlExprArray datasetSelects;
+    HqlExprArray filteredSorts;
+    OwnedHqlExpr keyRecord;
+    OwnedHqlExpr keyDataset;
+};
 
-                OwnedHqlExpr serializedField = getSerializedForm(value->queryChild(1), diskAtom); // Could be internal, but may require serialized compare
-                OwnedHqlExpr mappedSelect = dataset.mapScalar(value,queryActiveTableSelector());
-                keyFields.append(*LINK(serializedField));
-                keySelects.append(*createSelectExpr(LINK(mappedSelect->queryChild(0)), LINK(serializedField)));
-                datasetSelects.append(*LINK(value));
-                keyCompares.append(*dataset.mapScalar(&cur,queryActiveTableSelector()));
-            }
-            else if (!value->isConstant())
+bool HqlCppTranslator::extractSerializeKey(SerializeKeyInfo & info, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal)
+{
+    if (!targetThor() || !isGlobal)
+        return false;
+
+    //check if there are any ifblocks, and if so don't allow it.  Even more accurate would be no join fields used in ifblocks
+    //This test could be removed if keyToRecord() wasn't generated anymore
+    IHqlExpression * record = dataset.queryDataset()->queryRecord();
+    if (recordContainsIfBlock(record))
+        return false;
+
+    ForEachItemIn(idx, sorts)
+    {
+        //MORE: Nested - this won't serialize the key if sorting by a field in a nested record
+        //      If this is a problem we will need to create new fields for each value.
+        IHqlExpression & cur = sorts.item(idx);
+        IHqlExpression * value = &cur;
+        if (value->getOperator() == no_negate)
+            value=value->queryChild(0);
+        //It isn't possible to sensibly compare serialized dictionaries at the moment.
+        if (value->isDictionary())
+            return false;
+
+        if ((value->getOperator() == no_select) && (value->queryChild(0)->queryNormalizedSelector() == dataset.querySelector()))
+        {
+            if (value->queryType()->getTypeCode() == type_alien)
             {
-                canSerialize = false;
-                break;
+                //MORE: Really should check if a self contained alien data type.
+                return false;
             }
+
+            OwnedHqlExpr serializedField = getSerializedForm(value->queryChild(1), diskAtom); // Could be internal, but may require serialized compare
+            OwnedHqlExpr mappedSelect = dataset.mapScalar(value,queryActiveTableSelector());
+            OwnedHqlExpr keyedCompare = dataset.mapScalar(&cur,queryActiveTableSelector());
+            info.keyFields.append(*LINK(serializedField));
+            info.keySelects.append(*createSelectExpr(LINK(mappedSelect->queryChild(0)), LINK(serializedField)));
+            info.datasetSelects.append(*LINK(value));
+            info.keyCompares.append(*LINK(keyedCompare));
+            info.filteredSorts.append(OLINK(cur));
+            info.allKeyCompares.append(*LINK(keyedCompare));
         }
+        else if (value->isConstant())
+            info.allKeyCompares.append(OLINK(cur));
+        else
+            return false;
     }
+
+    bool aggressive = false;
+    // When projecting is done by the serialize() function this will be worth changing to true
+    // otherwise the extra cost of the project probably isn't likely to outweigh the extra copy
+    unsigned numToSerialize = aggressive ? info.filteredSorts.ordinality() : sorts.ordinality();
 
     //The following test will need to change if we serialize when nested fields are used (see above)
-    if (sorts.ordinality() >= getFlatFieldCount(record))
-        canSerialize = false;
+    if (numToSerialize >= getFlatFieldCount(record))
+        return false;
 
-    if (canSerialize)
+    info.keyRecord.setown(createRecord(info.keyFields));
+    info.keyDataset.setown(createDataset(no_anon, LINK(info.keyRecord)));
+    return true;
+}
+
+void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator side, SerializeKeyInfo & keyInfo, const DatasetReference & dataset, bool generateCompares)
+{
+    //check if there are any ifblocks, and if so don't allow it.  Even more accurate would be no join fields used in ifblocks
+    //IHqlExpression * record = dataset.queryDataset()->queryRecord();
+    const char * sideText = (side == no_none) ? "" : (side == no_left) ? "Left" : "Right";
+    StringBuffer s;
+
+    StringBuffer memberName;
+    memberName.append("serializer").append(sideText);
+
+    BuildCtx classctx(nestedctx);
+    beginNestedClass(classctx, memberName, "ISortKeySerializer");
+
+    DatasetReference keyActiveRef(keyInfo.keyDataset, no_activetable, NULL);
+    OwnedHqlExpr keyOrder = createValueSafe(no_sortlist, makeSortListType(NULL), keyInfo.keyCompares);
+
+    generateSerializeFunction(classctx, "recordToKey", dataset, keyActiveRef, keyInfo.datasetSelects, keyInfo.keySelects, no_serialize, diskAtom);
+    generateSerializeFunction(classctx, "keyToRecord", keyActiveRef, dataset, keyInfo.keySelects, keyInfo.datasetSelects, no_deserialize, diskAtom);
+    buildMetaMember(classctx, keyInfo.keyRecord, false, "queryRecordSize");
+
+    buildCompareMember(classctx, "CompareKey", keyOrder, keyActiveRef);
+    doCompareLeftRight(classctx, "CompareKeyRow", keyActiveRef, dataset, keyInfo.keyCompares, keyInfo.filteredSorts);
+
+    endNestedClass();
+
+    s.clear().append("virtual ISortKeySerializer * querySerialize").append(sideText).append("() { return &").append(memberName).append("; }");
+    nestedctx.addQuoted(s);
+
+    if (generateCompares)
     {
-        if (canReuseLeft)
-        {
-            assertex(!generateCompares);
-            s.clear().append("virtual ISortKeySerializer * querySerialize").append(sideText).append("() { return &serializerLeft; }");
-            nestedctx.addQuoted(s);
-        }
-        else
-        {
-            StringBuffer memberName;
-            memberName.append("serializer").append(sideText);
-
-            BuildCtx classctx(nestedctx);
-            beginNestedClass(classctx, memberName, "ISortKeySerializer");
-
-            IHqlExpression * keyRecord = createRecord(keyFields);
-            Owned<IHqlExpression> keyDataset = createDataset(no_anon, keyRecord);
-
-            DatasetReference keyActiveRef(keyDataset, no_activetable, NULL);
-
-            generateSerializeFunction(classctx, "recordToKey", dataset, keyActiveRef, datasetSelects, keySelects, no_serialize, diskAtom);
-            generateSerializeFunction(classctx, "keyToRecord", keyActiveRef, dataset, keySelects, datasetSelects, no_deserialize, diskAtom);
-            buildMetaMember(classctx, keyRecord, false, "queryRecordSize");
-
-            endNestedClass();
-
-            s.clear().append("virtual ISortKeySerializer * querySerialize").append(sideText).append("() { return &serializer").append(sideText).append("; }");
-            nestedctx.addQuoted(s);
-
-            if (generateCompares)
-            {
-                OwnedHqlExpr keyOrder = createValueSafe(no_sortlist, makeSortListType(NULL), keyCompares);
-                buildCompareMember(nestedctx, "CompareKey", keyOrder, keyActiveRef);
-
-                doCompareLeftRight(nestedctx, "CompareRowKey", dataset, keyActiveRef, sorts, keyCompares);
-            }
-        }
+        buildCompareMember(nestedctx, "CompareKey", keyOrder, keyActiveRef);
+        doCompareLeftRight(nestedctx, "CompareRowKey", dataset, keyActiveRef, keyInfo.filteredSorts, keyInfo.keyCompares);
     }
+}
+
+void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal, bool generateCompares)
+{
+    SerializeKeyInfo keyInfo;
+    if (!extractSerializeKey(keyInfo, dataset, sorts, isGlobal))
+        return;
+
+    generateSerializeKey(nestedctx, side, keyInfo, dataset, generateCompares);
 }
 
 IHqlExpression * HqlCppTranslator::createFailMessage(const char * prefix, IHqlExpression * limit, IHqlExpression * filename, unique_id_t id)
@@ -11831,9 +11858,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (expr->hasAttribute(allAtom))
         isAllJoin = true;
 
-    bool isLookupJoin = expr->hasAttribute(lookupAtom);
     bool isSmartJoin = expr->hasAttribute(smartAtom);
-    bool isHashJoin = targetThor() && expr->hasAttribute(hashAtom);
+    bool isLookupJoin = expr->hasAttribute(lookupAtom) && !isSmartJoin;
+    bool isHashJoin = targetThor() && expr->hasAttribute(hashAtom) && !isSmartJoin;
     bool isLocalJoin = !isHashJoin && expr->hasAttribute(localAtom);
     bool joinToSelf = (op == no_selfjoin);
     bool allowAllToLookupConvert = !options.noAllToLookupConversion;
@@ -12063,8 +12090,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
-    StringBuffer s,temp;
-
+    bool partitionRight = expr->hasAttribute(partitionRightAtom) && (kind != TAKselfjoin) && !joinInfo.isSlidingJoin();
     DatasetReference lhsDsRef(dataset1, no_activetable, NULL);
     DatasetReference rhsDsRef(dataset2, no_activetable, NULL);
 
@@ -12083,9 +12109,37 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             generateSortCompare(instance->nestedctx, instance->classctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), noSortAttr, false, isLightweight, isLocalSort);
         generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, joinInfo.queryRightSort(), noSortAttr, canReuseLeftCompare, isLightweight, isLocalSort);
 
-        bool isGlobal = !isLocalJoin && !instance->isChildActivity();
-        generateSerializeKey(instance->nestedctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), isGlobal, false, false);
-        generateSerializeKey(instance->nestedctx, no_right, rhsDsRef, joinInfo.queryRightSort(), isGlobal, false, canReuseLeftCompare);
+        //Only joins that partition need the serialization functions
+        if (!isHashJoin && !isLookupJoin && !joinInfo.isSlidingJoin())
+        {
+            bool isGlobal = !isLocalJoin && !instance->isChildActivity();
+            BuildCtx nestedctx(instance->nestedctx);
+            SerializeKeyInfo keyInfo;
+            if (!partitionRight)
+            {
+                if (extractSerializeKey(keyInfo, lhsDsRef, joinInfo.queryLeftSort(), isGlobal))
+                {
+                    generateSerializeKey(nestedctx, no_left, keyInfo, lhsDsRef, false);
+                    DatasetReference keyActiveRef(keyInfo.keyDataset, no_activetable, NULL);
+                    HqlExprArray keyRequired;
+                    appendArray(keyRequired, keyInfo.allKeyCompares);
+                    keyRequired.trunc(joinInfo.numRequiredEqualities());
+                    doCompareLeftRight(nestedctx, "CompareLeftKeyRightRow", keyActiveRef, rhsDsRef, keyRequired, joinInfo.queryRightReq());
+                }
+            }
+            else
+            {
+                if (extractSerializeKey(keyInfo, rhsDsRef, joinInfo.queryRightSort(), isGlobal))
+                {
+                    generateSerializeKey(nestedctx, no_right, keyInfo, rhsDsRef, false);
+                    DatasetReference keyActiveRef(keyInfo.keyDataset, no_activetable, NULL);
+                    HqlExprArray keyRequired;
+                    appendArray(keyRequired, keyInfo.allKeyCompares);
+                    keyRequired.trunc(joinInfo.numRequiredEqualities());
+                    doCompareLeftRight(nestedctx, "CompareRightKeyLeftRow", keyActiveRef, lhsDsRef, keyRequired, joinInfo.queryLeftReq());
+                }
+            }
+        }
     }
 
     StringBuffer flags;
@@ -12095,7 +12149,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (expr->hasAttribute(firstAtom)) flags.append("|JFfirst");
     if (expr->hasAttribute(firstLeftAtom)) flags.append("|JFfirstleft");
     if (expr->hasAttribute(firstRightAtom)) flags.append("|JFfirstright");
-    if (expr->hasAttribute(partitionRightAtom)) flags.append("|JFpartitionright");
+    if (partitionRight) flags.append("|JFpartitionright");
     if (expr->hasAttribute(parallelAtom)) flags.append("|JFparallel");
     if (expr->hasAttribute(sequentialAtom)) flags.append("|JFsequential");
     if (transformContainsSkip(transform))
@@ -12104,7 +12158,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         flags.append("|JFmatchAbortLimitSkips");
     if (rowlimit && rowlimit->hasAttribute(countAtom))
         flags.append("|JFcountmatchabortlimit");
-    if (joinInfo.slidingMatches.ordinality()) flags.append("|JFslidingmatch");
+    if (joinInfo.isSlidingJoin()) flags.append("|JFslidingmatch");
     if (joinInfo.extraMatch) flags.append("|JFmatchrequired");
     if (isLookupJoin && isManyLookup) flags.append("|JFmanylookup");
     if (expr->hasAttribute(onFailAtom))
@@ -12200,7 +12254,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         buildClearRecordMember(instance->createctx, "Right", dataset2);
     buildJoinMatchFunction(instance->startctx, "match", dataset1, dataset2, joinInfo.extraMatch, selSeq);
 
-    if (joinInfo.slidingMatches.ordinality())
+    if (joinInfo.isSlidingJoin())
     {
         buildSlidingMatchFunction(instance->nestedctx, joinInfo.queryLeftSort(), joinInfo.queryRightSort(), joinInfo.slidingMatches, "CompareLeftRightLower", 1, lhsDsRef, rhsDsRef);
         buildSlidingMatchFunction(instance->nestedctx, joinInfo.queryLeftSort(), joinInfo.queryRightSort(), joinInfo.slidingMatches, "CompareLeftRightUpper", 2, lhsDsRef, rhsDsRef);
@@ -12307,6 +12361,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         buildCompareMemberLR(instance->nestedctx, "PrefixCompare", compare, dataset1, dataset2, selSeq);
     }
 
+//    buildCompareMemberLR(instance->nestedctx, "CompareLeftKeyRightRow", compare, dataset1, dataset2, selSeq);
 
     buildInstanceSuffix(instance);
 
@@ -14109,7 +14164,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribute(BuildCtx & ctx, IHq
         DatasetReference dsRef(dataset);
         buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
         if (!instance->isLocal)
-            generateSerializeKey(instance->nestedctx, no_none, dsRef, sorts, true, true, false);
+            generateSerializeKey(instance->nestedctx, no_none, dsRef, sorts, true, true);
 
         buildInstanceSuffix(instance);
 
@@ -16343,7 +16398,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
     HqlExprArray sorts;
     sortlist->unwindList(sorts, no_sortlist);
     bool tryToSerializeKey = (actKind == TAKsort) && !isGroupedActivity(expr) && !isLocalActivity(expr) && !instance->isChildActivity();
-    generateSerializeKey(instance->nestedctx, no_none, DatasetReference(dataset), sorts, tryToSerializeKey, false, false);
+    generateSerializeKey(instance->nestedctx, no_none, DatasetReference(dataset), sorts, tryToSerializeKey, false);
 
     buildSkewThresholdMembers(instance->classctx, expr);
 

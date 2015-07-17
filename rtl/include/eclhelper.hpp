@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      158
-#define MIN_ACTIVITY_INTERFACE_VERSION  158             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      159
+#define MIN_ACTIVITY_INTERFACE_VERSION  159             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -1078,6 +1078,8 @@ struct ISortKeySerializer
     virtual size32_t keyToRecord(ARowBuilder & rowBuilder, const void * _key, size32_t & recordSize) = 0;       // both return size of key!
     virtual size32_t recordToKey(ARowBuilder & rowBuilder, const void * _record, size32_t & recordSize) = 0;        // record size in 3rd parameter
     virtual IOutputMetaData * queryRecordSize() = 0;
+    virtual ICompare * queryCompareKey() = 0;
+    virtual ICompare * queryCompareKeyRow() = 0;
 };
 
 
@@ -1705,6 +1707,8 @@ struct IHThorJoinBaseArg : public IHThorAnyJoinBaseArg
     virtual ICompare * queryPrefixCompare() = 0;
 
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
+    virtual ICompare * queryCompareLeftKeyRightRow()=0;                         // compare serialized left key with right row
+    virtual ICompare * queryCompareRightKeyLeftRow()=0;                         // as above if partition right selected
 };
 
 struct IHThorFetchContext : public IInterface
