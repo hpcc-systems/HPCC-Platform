@@ -981,6 +981,8 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
                 children.append(*lookupNewSelectedField(newDs, field));
             break;
         }
+    case no_attr:
+        return LINK(expr);
     }
 
     return completeTransform(expr, children);

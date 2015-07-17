@@ -460,7 +460,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
         StringBuffer plugin, version;
         globalScope->getProp(pluginAtom, plugin);
         globalScope->getProp(versionAtom, version);
-        serviceExtraAttributes.setown(createAttribute(pluginAtom, createConstant(plugin.str()), createConstant(version.str())));
+        serviceExtraAttributes.setown(createExprAttribute(pluginAtom, createConstant(plugin.str()), createConstant(version.str())));
     }
 }
 
