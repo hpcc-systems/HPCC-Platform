@@ -3168,10 +3168,7 @@ public:
             }
             unsigned waited = msTick() - start;
             if (timeout != -1 && waited > timeout)
-            {
                 return WUStateUnknown;
-                break;
-            }
             Sleep(1000); // MORE - may want to back off as waited gets longer...
         }
     }
