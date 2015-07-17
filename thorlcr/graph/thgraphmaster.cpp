@@ -1533,8 +1533,7 @@ void CJobMaster::saveSpills()
     {
         CFileUsageEntry &entry = iter->query();
         StringAttr tmpName = entry.queryName();
-        Owned<IConstWUGraphProgress> graphProgress = getGraphProgress();
-        if (WUGraphComplete == graphProgress->queryNodeState(entry.queryGraphId()))
+        if (WUGraphComplete == workunit->queryNodeState(queryGraphName(), entry.queryGraphId()))
         {
             IArrayOf<IGroup> groups;
             StringArray clusters;
@@ -1690,27 +1689,22 @@ bool CJobMaster::go()
     if (WUActionPause == workunit->getAction() || WUActionPauseNow == workunit->getAction())
         throw MakeStringException(0, "Job paused at start, exiting");
 
-    Owned<IConstWUGraphProgress> graphProgress = getGraphProgress();
     bool allDone = true;
     unsigned concurrentSubGraphs = (unsigned)getWorkUnitValueInt("concurrentSubGraphs", globals->getPropInt("@concurrentSubGraphs", 1));
     try
     {
         startJob();
-        Owned<IWUGraphProgress> progress = graphProgress->update();
-        progress->setGraphState(WUGraphRunning);
-        progress.clear();
-        
+        workunit->setGraphState(queryGraphName(), WUGraphRunning);
         Owned<IThorGraphIterator> iter = getSubGraphs();
         CICopyArrayOf<CMasterGraph> toRun;
         ForEach(*iter)
         {
             CMasterGraph &graph = (CMasterGraph &)iter->query();
-            if ((queryResumed() || queryUseCheckpoints()) && WUGraphComplete == graphProgress->queryNodeState(graph.queryGraphId()))
+            if ((queryResumed() || queryUseCheckpoints()) && WUGraphComplete == workunit->queryNodeState(queryGraphName(), graph.queryGraphId()))
                 graph.setCompleteEx();
             else
                 toRun.append(graph);
         }
-        graphProgress.clear();
         ForEachItemInRev(g, toRun)
         {
             if (aborted) break;
@@ -1733,11 +1727,7 @@ bool CJobMaster::go()
     }
     catch (IException *e) { fireException(e); e->Release(); }
     catch (CATCHALL) { Owned<IException> e = MakeThorException(0, "Unknown exception running sub graphs"); fireException(e); }
-    graphProgress.setown(getGraphProgress());
-    Owned<IWUGraphProgress> progress = graphProgress->update();
-    progress->setGraphState(aborted?WUGraphFailed:(allDone?WUGraphComplete:(pausing?WUGraphPaused:WUGraphComplete)));
-    progress.clear();
-    graphProgress.clear();
+    workunit->setGraphState(queryGraphName(), aborted?WUGraphFailed:(allDone?WUGraphComplete:(pausing?WUGraphPaused:WUGraphComplete)));
 
     if (queryPausing())
         saveSpills();
@@ -2397,8 +2387,7 @@ void CMasterGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentE
     {
         if (!queryOwner())
         {
-            Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)job).getGraphProgress();
-            if (WUGraphComplete == graphProgress->queryNodeState(graphId))
+            if (WUGraphComplete == job.queryWorkUnit().queryNodeState(job.queryGraphName(), graphId))
                 setCompleteEx();
         }
     }
@@ -2498,12 +2487,7 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
             return false;
     }
     if (!queryOwner())
-    {
-        Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)job).getGraphProgress();
-        Owned<IWUGraphProgress> progress = graphProgress->update();
-        progress->setNodeState(graphId, WUGraphRunning);
-        progress.clear();
-    }
+        job.queryWorkUnit().setNodeState(job.queryGraphName(), graphId, WUGraphRunning);
     return true;
 }
 
@@ -2664,10 +2648,7 @@ void CMasterGraph::setComplete(bool tf)
     CGraphBase::setComplete(tf);
     if (tf && !queryOwner())
     {
-        Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)job).getGraphProgress();
-        Owned<IWUGraphProgress> progress = graphProgress->update();
-        progress->setNodeState(graphId, graphDone?WUGraphComplete:WUGraphFailed);
-        progress.clear();
+        job.queryWorkUnit().setNodeState(job.queryGraphName(), graphId, graphDone?WUGraphComplete:WUGraphFailed);
     }
 }
 

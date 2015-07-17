@@ -1016,8 +1016,7 @@ public:
 class CRoxieContextBase : public CInterface, implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback
 {
 protected:
-    Owned<IConstWUGraphProgress> progress;  // These need to be destroyed very late (particularly, after the childgraphs)
-    Owned<IWUGraphStats> graphStats;
+    Owned<IWUGraphStats> graphStats;   // This needs to be destroyed very late (particularly, after the childgraphs)
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
     Owned<IRowManager> rowManager; // NOTE: the order of destruction here is significant. For leak check to work destroy this BEFORE allAllocators, but after most other things
     Owned <IDebuggableContext> debugContext;
@@ -1322,10 +1321,7 @@ public:
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
         if (workUnit)
-        {
-            progress.setown(workUnit->getGraphProgress(graph->queryName()));
-            graphStats.setown(progress->update(SCTroxie, queryStatisticsComponentName(), 0));
-        }
+            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), 0));
     }
 
     virtual void endGraph(cycle_t startCycles, bool aborting)
@@ -1356,10 +1352,7 @@ public:
             graph.clear();
             childGraphs.kill();
             if (graphStats)
-            {
                 graphStats.clear();
-                progress.clear();
-            }
         }
     }
 

@@ -172,232 +172,79 @@ void doDescheduleWorkkunit(char const * wuid)
  * Graph progress support
  */
 
-#define PROGRESS_FORMAT_V 2
+CWuGraphStats::CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
+    : progress(_progress), creatorType(_creatorType), creator(_creator), id(_id)
+{
+    StatisticScopeType scopeType = SSTgraph;
+    StatsScopeId rootScopeId;
+    verifyex(rootScopeId.setScopeText(_rootScope));
+    collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
+}
+
+void CWuGraphStats::beforeDispose()
+{
+    Owned<IStatisticCollection> stats = collector->getResult();
+
+    MemoryBuffer compressed;
+    {
+        MemoryBuffer serialized;
+        serializeStatisticCollection(serialized, stats);
+        compressToBuffer(compressed, serialized.length(), serialized.toByteArray());
+    }
+
+    unsigned minActivity = 0;
+    unsigned maxActivity = 0;
+    stats->getMinMaxActivity(minActivity, maxActivity);
+
+    StringBuffer tag;
+    tag.append("sg").append(id);
+
+    IPropertyTree * subgraph = createPTree(tag);
+    subgraph->setProp("@c", queryCreatorTypeName(creatorType));
+    subgraph->setProp("@creator", creator);
+    subgraph->setPropInt("@minActivity", minActivity);
+    subgraph->setPropInt("@maxActivity", maxActivity);
+
+    //Replace the particular subgraph statistics added by this creator
+    StringBuffer qualified(tag);
+    qualified.append("[@creator='").append(creator).append("']");
+    progress->removeProp(qualified);
+    subgraph = progress->addPropTree(tag, subgraph);
+    subgraph->setPropBin("Stats", compressed.length(), compressed.toByteArray());
+    if (!progress->getPropBool("@stats", false))
+        progress->setPropBool("@stats", true);
+}
+
+IStatisticGatherer & CWuGraphStats::queryStatsBuilder()
+{
+    return *collector;
+}
 
 class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
 {
-    class CWuGraphStats : public CInterfaceOf<IWUGraphStats>
-    {
-    public:
-        CWuGraphStats(CConstGraphProgress &_parent, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
-            : parent(_parent), creatorType(_creatorType), creator(_creator), id(_id)
-        {
-            StringBuffer subgraphScopeName;
-            subgraphScopeName.append(_rootScope);
-
-            StatisticScopeType scopeType = SSTgraph;
-            StatsScopeId rootScopeId;
-            verifyex(rootScopeId.setScopeText(_rootScope));
-            collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
-        }
-        virtual void beforeDispose()
-        {
-            Owned<IStatisticCollection> stats = collector->getResult();
-
-            MemoryBuffer compressed;
-            {
-                MemoryBuffer serialized;
-                serializeStatisticCollection(serialized, stats);
-                compressToBuffer(compressed, serialized.length(), serialized.toByteArray());
-            }
-
-            unsigned minActivity = 0;
-            unsigned maxActivity = 0;
-            stats->getMinMaxActivity(minActivity, maxActivity);
-            parent.setSubgraphStats(creatorType, creator, id, compressed, minActivity, maxActivity);
-        }
-        virtual IStatisticGatherer & queryStatsBuilder()
-        {
-            return *collector;
-        }
-
-    protected:
-        CConstGraphProgress &parent;
-        Owned<IStatisticGatherer> collector;
-        StringAttr creator;
-        StatisticCreatorType creatorType;
-        unsigned id;
-    };
-
-    class CGraphProgress : public CInterface, implements IWUGraphProgress
-    {
-        CConstGraphProgress &parent;
-    public:
-        IMPLEMENT_IINTERFACE;
-        CGraphProgress(CConstGraphProgress &_parent) : parent(_parent)
-        {
-            parent.lockWrite();
-        }
-        ~CGraphProgress()
-        {
-            parent.unlock();
-        }
-        virtual IPropertyTree * getProgressTree() { return parent.getProgressTree(); }
-        virtual WUGraphState queryGraphState() { return parent.queryGraphState(); }
-        virtual WUGraphState queryNodeState(WUGraphIDType nodeId) { return parent.queryNodeState(nodeId); }
-        virtual IWUGraphProgress * update() { throwUnexpected(); }
-        virtual IWUGraphStats * update(StatisticCreatorType creatorType, const char * creator, unsigned subgraph) { throwUnexpected(); }
-        virtual unsigned queryFormatVersion() { return parent.queryFormatVersion(); }
-        virtual void setGraphState(WUGraphState state)
-        {
-            parent.setGraphState(state);
-        }
-        virtual void setNodeState(WUGraphIDType nodeId, WUGraphState state)
-        {
-            parent.setNodeState(nodeId, state);
-        }
-    };
-    void clearConnection()
-    {
-        conn.clear();
-        progress.clear();
-    }
 public:
     IMPLEMENT_IINTERFACE;
-    static void deleteWuidProgress(const char *wuid)
-    {
-        StringBuffer path("/GraphProgress/");
-        path.append(wuid);
-        Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-        if (conn)
-            conn->close(true);
-    }
-    CConstGraphProgress(const char *_wuid, const char *_graphName) : wuid(_wuid), graphName(_graphName)
-    {
-        rootPath.append("/GraphProgress/").append(wuid).append('/').append(graphName).append('/');
-        connected = connectedWrite = false;
-        formatVersion = 0;
-    }
     CConstGraphProgress(const char *_wuid, const char *_graphName, IPropertyTree *_progress) : wuid(_wuid), graphName(_graphName), progress(_progress)
     {
-        formatVersion = progress->getPropInt("@format");
-        connectedWrite = false; // should never be
-        connected = true;
-    }
-    void connect()
-    {
-        clearConnection();
-        conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
-
-        progress.set(conn->queryRoot());
-        formatVersion = progress->getPropInt("@format");
-        connected = true;
-    }
-    void lockWrite()
-    {
-        if (connectedWrite) return;
-        if (!rootPath.length())
-            throw MakeStringException(WUERR_GraphProgressWriteUnsupported, "Writing to graph progress unsupported in this context");
-        // JCSMORE - look at using changeMode here.
-        if (conn)
-            clearConnection();
-        conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
-        progress.set(conn->queryRoot());
-        if (!progress->hasChildren()) // i.e. blank.
-        {
-            formatVersion = PROGRESS_FORMAT_V;
-            progress->setPropInt("@format", PROGRESS_FORMAT_V);
-        }
-        else
-            formatVersion = progress->getPropInt("@format");
-        connected = connectedWrite = true;
-    }
-    void unlock()
-    {
-        connected = false;
-        connectedWrite = false;
-        clearConnection();
-    }
-    static bool getRunningGraph(const char *wuid, IStringVal &graphName, WUGraphIDType &subId)
-    {
-        StringBuffer path;
-        Owned<IRemoteConnection> conn = querySDS().connect(path.append("/GraphProgress/").append(wuid).str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-        if (!conn) return false;
-
-        const char *name = conn->queryRoot()->queryProp("Running/@graph");
-        if (name)
-        {
-            graphName.set(name);
-            subId = conn->queryRoot()->getPropInt64("Running/@subId");
-            return true;
-        }
-        else
-            return false;
-    }
-    void setGraphState(WUGraphState state)
-    {
-        progress->setPropInt("@_state", (unsigned)state);
-    }
-    void setNodeState(WUGraphIDType nodeId, WUGraphState state)
-    {
-        if (!connectedWrite) lockWrite();
-        StringBuffer path;
-        path.append("node[@id=\"").append(nodeId).append("\"]");
-        IPropertyTree *node = progress->queryPropTree(path.str());
-        if (!node)
-        {
-            node = progress->addPropTree("node", createPTree());
-            node->setPropInt("@id", (int)nodeId);
-        }
-        node->setPropInt("@_state", (unsigned)state);
-        
-        switch (state)
-        {
-            case WUGraphRunning:
-            {
-                StringBuffer path;
-                Owned<IRemoteConnection> conn = querySDS().connect(path.append("/GraphProgress/").append(wuid).str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-                IPropertyTree *running = conn->queryRoot()->setPropTree("Running", createPTree());
-                running->setProp("@graph", graphName);
-                running->setPropInt64("@subId", nodeId);
-                break;
-            }
-            case WUGraphComplete:
-            {
-                StringBuffer path;
-                Owned<IRemoteConnection> conn = querySDS().connect(path.append("/GraphProgress/").append(wuid).str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-                conn->queryRoot()->removeProp("Running"); // only one thing running at any given time and one thing with lockWrite access
-                break;
-            }
-        }
+        if (!progress)
+            progress.setown(createPTree());
+        formatVersion = progress->getPropInt("@format", PROGRESS_FORMAT_V);
     }
     virtual IPropertyTree * getProgressTree()
     {
-        if (!connected) connect();
         if (progress->getPropBool("@stats"))
-            return createProcessTreeFromStats();
+            return createProcessTreeFromStats(); // Should we cache that?
         return LINK(progress);
     }
-    virtual WUGraphState queryGraphState()
-    {
-        return (WUGraphState)queryProgressStateTree()->getPropInt("@_state", (unsigned)WUGraphUnknown);
-    }
-    virtual WUGraphState queryNodeState(WUGraphIDType nodeId)
-    {
-        StringBuffer path;
-        path.append("node[@id=\"").append(nodeId).append("\"]/@_state");
-        return (WUGraphState)queryProgressStateTree()->getPropInt(path.str(), (unsigned)WUGraphUnknown);
-    }
-    virtual IWUGraphProgress * update()
-    {
-        return new CGraphProgress(*this);
-    }
-    virtual IWUGraphStats * update(StatisticCreatorType creatorType, const char * creator, unsigned subgraph)
-    {
-        return new CWuGraphStats(*this, creatorType, creator, graphName, subgraph);
-    }
-
     virtual unsigned queryFormatVersion()
     {
-        if (!connected) connect();
         return formatVersion;
     }
 
-private:
-    IPropertyTree * queryProgressStateTree()
+protected:
+    CConstGraphProgress(const char *_wuid, const char *_graphName) : wuid(_wuid), graphName(_graphName)
     {
-        if (!connected) connect();
-        return progress;
+        formatVersion = PROGRESS_FORMAT_V;
     }
     static void expandStats(IPropertyTree * target, IStatisticCollection & collection)
     {
@@ -497,36 +344,16 @@ private:
         return progressTree.getClear();
     }
 
-    void setSubgraphStats(StatisticCreatorType creatorType, const char * creator, unsigned id, const MemoryBuffer & compressed, unsigned minActivity, unsigned maxActivity)
-    {
-        StringBuffer tag;
-        tag.append("sg").append(id);
-
-        IPropertyTree * subgraph = createPTree(tag);
-        subgraph->setProp("@c", queryCreatorTypeName(creatorType));
-        subgraph->setProp("@creator", creator);
-        subgraph->setPropInt("@minActivity", minActivity);
-        subgraph->setPropInt("@maxActivity", maxActivity);
-
-        //Replace the particular subgraph statistics added by this creator
-        tag.append("[@creator='").append(creator).append("']");
-
-        lockWrite();
-        subgraph = progress->setPropTree(tag, subgraph);
-        subgraph->setPropBin("Stats", compressed.length(), compressed.toByteArray());
-        if (!progress->getPropBool("@stats", false))
-            progress->setPropBool("@stats", true);
-        unlock();
-    }
-
-private:
-    Owned<IRemoteConnection> conn;
+protected:
     Linked<IPropertyTree> progress;
     StringAttr wuid, graphName;
-    StringBuffer rootPath;
-    bool connected, connectedWrite;
     unsigned formatVersion;
 };
+
+extern WORKUNIT_API IConstWUGraphProgress *createConstGraphProgress(const char *_wuid, const char *_graphName, IPropertyTree *_progress)
+{
+    return new CConstGraphProgress(_wuid, _graphName, _progress);
+}
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -1038,6 +865,17 @@ extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
     return new CLightweightWorkunitInfo(p);
 }
 
+class CDaliWuGraphStats : public CWuGraphStats
+{
+public:
+    CDaliWuGraphStats(IRemoteConnection *_conn, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
+        : CWuGraphStats(LINK(_conn->queryRoot()), _creatorType, _creator, _rootScope, _id), conn(_conn)
+    {
+    }
+protected:
+    Owned<IRemoteConnection> conn;
+};
+
 class CDaliWorkUnit : public CPersistedWorkUnit
 {
 public:
@@ -1053,6 +891,75 @@ public:
         // We use the beforeDispose() in base class to help ensure this
         p.clear();
     }
+    IConstWUGraphProgress *getGraphProgress(const char *graphName) const
+    {
+        CriticalBlock block(crit);
+        IRemoteConnection *conn = queryProgressConnection();
+        if (conn)
+        {
+            IPTree *progress = conn->queryRoot()->queryPropTree(graphName);
+            if (progress)
+                return new CConstGraphProgress(p->queryName(), graphName, progress);
+        }
+        return NULL;
+    }
+    virtual WUGraphState queryGraphState(const char *graphName) const
+    {
+        CriticalBlock block(crit);
+        IRemoteConnection *conn = queryProgressConnection();
+        if (conn)
+        {
+            IPTree *progress = conn->queryRoot()->queryPropTree(graphName);
+            if (progress)
+                return (WUGraphState) progress->getPropInt("@_state", (unsigned) WUGraphUnknown);
+        }
+        return WUGraphUnknown;
+    }
+    virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const
+    {
+        CriticalBlock block(crit);
+        IRemoteConnection *conn = queryProgressConnection();
+        if (conn)
+        {
+            IPTree *progress = conn->queryRoot()->queryPropTree(graphName);
+            if (progress)
+            {
+                StringBuffer path;
+                path.append("node[@id=\"").append(nodeId).append("\"]/@_state");
+                return (WUGraphState) progress->getPropInt(path, (unsigned) WUGraphUnknown);
+            }
+        }
+        return WUGraphUnknown;
+    }
+
+    virtual void clearGraphProgress() const
+    {
+        CriticalBlock block(crit);
+        progressConnection.clear();  // Make sure nothing is locking for read or we won't be able to lock for write
+        StringBuffer path("/GraphProgress/");
+        path.append(p->queryName());
+        Owned<IRemoteConnection> delconn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+        if (delconn)
+            delconn->close(true);
+    }
+
+    virtual bool getRunningGraph(IStringVal &graphName, WUGraphIDType &subId) const
+    {
+        CriticalBlock block(crit);
+        IRemoteConnection *conn = queryProgressConnection();
+        if (!conn)
+            return false;
+        const char *name = conn->queryRoot()->queryProp("Running/@graph");
+        if (name)
+        {
+            graphName.set(name);
+            subId = conn->queryRoot()->getPropInt64("Running/@subId");
+            return true;
+        }
+        else
+            return false;
+    }
+
 
     virtual void forceReload()
     {
@@ -1072,6 +979,7 @@ public:
     virtual void cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteExclusions)
     {
         CPersistedWorkUnit::cleanupAndDelete(deldll, deleteOwned, deleteExclusions);
+        clearGraphProgress();
         connection->close(true);
         connection.clear();
     }
@@ -1121,8 +1029,65 @@ public:
             throw;
         }
     }
+    virtual void setGraphState(const char *graphName, WUGraphState state) const
+    {
+        Owned<IRemoteConnection> conn = getWritableProgressConnection(graphName);
+        conn->queryRoot()->setPropInt("@_state", state);
+    }
+    virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const
+    {
+        CriticalBlock block(crit);
+        progressConnection.clear();  // Make sure nothing is locking for read or we won't be able to lock for write
+        VStringBuffer path("/GraphProgress/%s", queryWuid());
+        Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+        IPTree *progress = ensurePTree(conn->queryRoot(), graphName);
+        path.clear().append("node[@id=\"").append(nodeId).append("\"]");
+        IPropertyTree *node = progress->queryPropTree(path.str());
+        if (!node)
+        {
+            node = progress->addPropTree("node", createPTree());
+            node->setPropInt64("@id", nodeId);
+        }
+        node->setPropInt("@_state", (unsigned)state);
+        switch (state)
+        {
+            case WUGraphRunning:
+            {
+                IPropertyTree *running = conn->queryRoot()->setPropTree("Running", createPTree());
+                running->setProp("@graph", graphName);
+                running->setPropInt64("@subId", nodeId);
+                break;
+            }
+            case WUGraphComplete:
+            {
+                conn->queryRoot()->removeProp("Running"); // only one thing running at any given time and one thing with lockWrite access
+                break;
+            }
+        }
+    }
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
+    {
+        return new CDaliWuGraphStats(getWritableProgressConnection(graphName), creatorType, creator, graphName, subgraph);
+    }
+
 protected:
+    IRemoteConnection *queryProgressConnection() const
+    {
+        CriticalBlock block(crit);
+        if (!progressConnection)
+        {
+            VStringBuffer path("/GraphProgress/%s", queryWuid());
+            progressConnection.setown(querySDS().connect(path, myProcessSession(), 0, SDS_LOCK_TIMEOUT)); // Note - we don't lock. The writes are atomic.
+        }
+        return progressConnection;
+    }
+    IRemoteConnection *getWritableProgressConnection(const char *graphName) const
+    {
+        VStringBuffer path("/GraphProgress/%s/%s", queryWuid(), graphName);
+        return querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    }
     Owned<IRemoteConnection> connection;
+    mutable Owned<IRemoteConnection> progressConnection;
 };
 
 class CLockedWorkUnit : public CInterface, implements ILocalWorkUnit, implements IExtendedWUInterface
@@ -1337,6 +1302,19 @@ public:
             { return c->getProcesses(type, instance); }
     virtual unsigned getTotalThorTime() const
             { return c->getTotalThorTime(); }
+    virtual WUGraphState queryGraphState(const char *graphName) const
+            { return c->queryGraphState(graphName); }
+    virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const
+            { return c->queryNodeState(graphName, nodeId); }
+    virtual void setGraphState(const char *graphName, WUGraphState state) const
+            { c->setGraphState(graphName, state); }
+    virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const
+            { c->setNodeState(graphName, nodeId, state); }
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
+            { return c->updateStats(graphName, creatorType, creator, subgraph); }
+    virtual void clearGraphProgress() const
+            { c->clearGraphProgress(); }
+
 
     virtual void clearExceptions()
             { c->clearExceptions(); }
@@ -1438,8 +1416,6 @@ public:
             { c->noteFileRead(file); }
     virtual void releaseFile(const char *fileName)
             { c->releaseFile(fileName); }
-    virtual void clearGraphProgress()
-            { c->clearGraphProgress(); }
     virtual void resetBeforeGeneration()
             { c->resetBeforeGeneration(); }
     virtual void deleteTempFiles(const char *graph, bool deleteOwned, bool deleteJobOwned)
@@ -2446,7 +2422,11 @@ public:
     virtual void deleteRepository(bool recreate)
     {
         Owned<IRemoteConnection> conn = sdsManager->connect("/WorkUnits", session, RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-        conn->close(true);
+        if (conn)
+            conn->close(true);
+        conn.setown(sdsManager->connect("/GraphProgress", session, RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
+        if (conn)
+            conn->close(true);
     }
     virtual void createRepository()
     {
@@ -3228,7 +3208,6 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const Strin
     { 
         WARNLOG("Unknown exception during cleanupAndDelete: %s", p->queryName()); 
     }
-    CConstGraphProgress::deleteWuidProgress(p->queryName());
 }
 
 void CLocalWorkUnit::setTimeScheduled(const IJlibDateTime &val)
@@ -3671,7 +3650,8 @@ void CLocalWorkUnit::setSecurityToken(const char *value)
 
 bool CLocalWorkUnit::getRunningGraph(IStringVal &graphName, WUGraphIDType &subId) const
 {
-    return CConstGraphProgress::getRunningGraph(p->queryName(), graphName, subId);
+    // Only implemented in derived classes
+    return false;
 }
 
 void CLocalWorkUnit::setJobName(const char *value)
@@ -6168,9 +6148,8 @@ void CLocalWorkUnit::releaseFile(const char *fileName)
     }
 }
 
-void CLocalWorkUnit::clearGraphProgress()
+void CLocalWorkUnit::clearGraphProgress() const
 {
-    CConstGraphProgress::deleteWuidProgress(p->queryName());
 }
 
 void CLocalWorkUnit::resetBeforeGeneration()
@@ -6353,10 +6332,7 @@ IStringVal& CLocalWUGraph::getLabel(IStringVal &str) const
 
 WUGraphState CLocalWUGraph::getState() const
 {
-    Owned<IConstWUGraphProgress> graphProgress = owner.getGraphProgress(p->queryProp("@name"));
-    if (!graphProgress)
-        return WUGraphUnknown;
-    return graphProgress->queryGraphState();
+    return owner.queryGraphState(p->queryProp("@name"));
 }
 
 
@@ -6509,117 +6485,60 @@ void CLocalWorkUnit::setHash(unsigned __int64 hash)
     p->setPropInt64("@hash", hash);
 }
 
+// getGraphs / getGraphsMeta
+// These are basically the same except for the amount of preloading they do, and the type of the iterator they return...
+// If a type other than any is requested, a postfilter is needed.
+
+template <class T, class U> class CFilteredGraphIteratorOf : public CInterfaceOf<T>
+{
+    WUGraphType type;
+    Owned<T> base;
+    bool match()
+    {
+        return  base->query().getType()==type;
+    }
+public:
+    CFilteredGraphIteratorOf<T,U>(T *_base, WUGraphType _type)
+        : base(_base), type(_type)
+    {
+    }
+    bool first()
+    {
+        if (!base->first())
+            return false;
+        if (match())
+            return true;
+        return next();
+    }
+    bool next()
+    {
+        while (base->next())
+            if (match())
+                return true;
+        return false;
+    }
+    virtual bool isValid()
+    {
+        return base->isValid();
+    }
+    U & query()
+    {
+        return base->query();
+    }
+};
+
 IConstWUGraphMetaIterator& CLocalWorkUnit::getGraphsMeta(WUGraphType type) const
 {
     /* NB: this method should be 'cheap', loadGraphs() creates IConstWUGraph interfaces to the graphs
-     * it does not actually pull the graph data. We only use IConstWUGraphMeta here, which never probes the xgmml
-     * This method also connects to the graph progress (/GraphProgress/<wuid>) using a single connection, in order
-     * to get state information, it does not pull all the progress data.
+     * it does not actually pull the graph data. We only use IConstWUGraphMeta here, which never probes the xgmml.
      */
 
     CriticalBlock block(crit);
     loadGraphs(false);
-
-    class CConstWUGraphMetaIterator: public CInterface, implements IConstWUGraphMetaIterator, implements IConstWUGraphMeta
-    {
-        StringAttr wuid;
-        WUGraphType type;
-        Owned<IConstWUGraphIterator> graphIter;
-        IConstWUGraph *curGraph;
-        Owned<IConstWUGraphProgress> curGraphProgress;
-        Owned<IRemoteConnection> progressConn;
-        bool match()
-        {
-            return (GraphTypeAny == type) || (type == graphIter->query().getType());
-        }
-
-        void setCurrent(IConstWUGraph &graph)
-        {
-            curGraph = &graph;
-            SCMStringBuffer graphName;
-            curGraph->getName(graphName);
-            if (progressConn)
-            {
-                IPropertyTree *progress = progressConn->queryRoot()->queryPropTree(graphName.str());
-                if (progress)
-                {
-                    curGraphProgress.setown(new CConstGraphProgress(wuid, graphName.str(), progress));
-                    return;
-                }
-            }
-            curGraphProgress.clear();
-        }
-    public:
-        IMPLEMENT_IINTERFACE;
-        CConstWUGraphMetaIterator(const char *_wuid, IConstWUGraphIterator *_graphIter, WUGraphType _type)
-            : wuid(_wuid), graphIter(_graphIter), type(_type)
-        {
-            curGraph = NULL;
-            StringBuffer progressPath;
-            progressPath.append("/GraphProgress/").append(wuid);
-            progressConn.setown(querySDS().connect(progressPath.str(), myProcessSession(), RTM_NONE, SDS_LOCK_TIMEOUT));
-        }
-        virtual bool first()
-        {
-            curGraph = NULL;
-            curGraphProgress.clear();
-            if (!graphIter->first())
-                return false;
-            if (match())
-            {
-                setCurrent(graphIter->query());
-                return true;
-            }
-            return next();
-        }
-        virtual bool next()
-        {
-            while (graphIter->next())
-            {
-                if (match())
-                {
-                    setCurrent(graphIter->query());
-                    return true;
-                }
-            }
-            curGraph = NULL;
-            curGraphProgress.clear();
-            return false;
-        }
-        virtual bool isValid()
-        {
-            return NULL != curGraph;
-        }
-        virtual IConstWUGraphMeta & query()
-        {
-            return *this;
-        }
-        // IConstWUGraphMeta
-        virtual IStringVal & getName(IStringVal & ret) const
-        {
-            return curGraph->getName(ret);
-        }
-        virtual IStringVal & getLabel(IStringVal & ret) const
-        {
-            return curGraph->getLabel(ret);
-        }
-        virtual IStringVal & getTypeName(IStringVal & ret) const
-        {
-            return curGraph->getTypeName(ret);
-        }
-        virtual WUGraphType getType() const
-        {
-            return curGraph->getType();
-        }
-        virtual WUGraphState getState() const
-        {
-            if (!curGraphProgress)
-                return WUGraphUnknown;
-            return curGraphProgress->queryGraphState();
-        }
-    };
-    IConstWUGraphIterator *graphIter = new CArrayIteratorOf<IConstWUGraph,IConstWUGraphIterator> (graphs, 0, (IConstWorkUnit *) this);
-    return * new CConstWUGraphMetaIterator(p->queryName(), graphIter, type);
+    IConstWUGraphMetaIterator *giter = new CArrayIteratorOf<IConstWUGraph,IConstWUGraphMetaIterator> (graphs, 0, (IConstWorkUnit *) this);
+    if (type!=GraphTypeAny)
+        giter = new CFilteredGraphIteratorOf<IConstWUGraphMetaIterator, IConstWUGraphMeta>(giter,type);
+    return *giter;
 }
 
 IConstWUGraphIterator& CLocalWorkUnit::getGraphs(WUGraphType type) const
@@ -6627,48 +6546,8 @@ IConstWUGraphIterator& CLocalWorkUnit::getGraphs(WUGraphType type) const
     CriticalBlock block(crit);
     loadGraphs(true);
     IConstWUGraphIterator *giter = new CArrayIteratorOf<IConstWUGraph,IConstWUGraphIterator> (graphs, 0, (IConstWorkUnit *) this);
-    if (type!=GraphTypeAny) {
-        class CConstWUGraphIterator: public CInterface, implements IConstWUGraphIterator
-        {
-            WUGraphType type;
-            Owned<IConstWUGraphIterator> base;
-            bool match()
-            {
-                return  base->query().getType()==type;
-            }
-        public:
-            IMPLEMENT_IINTERFACE;
-            CConstWUGraphIterator(IConstWUGraphIterator *_base,WUGraphType _type)
-                : base(_base)
-            {
-                type = _type;
-            }
-            bool first()
-            {
-                if (!base->first())
-                    return false;
-                if (match())
-                    return true;
-                return next();
-            }
-            bool next()
-            {
-                while (base->next())
-                    if (match())
-                        return true;
-                return false;
-            }
-            virtual bool isValid()
-            {
-                return base->isValid();
-            }
-            IConstWUGraph & query()
-            {
-                return base->query();
-            }
-        };
-        giter = new CConstWUGraphIterator(giter,type);
-    }
+    if (type!=GraphTypeAny)
+        giter = new CFilteredGraphIteratorOf<IConstWUGraphIterator, IConstWUGraph>(giter, type);
     return *giter;
 }
 
@@ -6700,15 +6579,32 @@ void CLocalWorkUnit::createGraph(const char * name, const char *label, WUGraphTy
 
 IConstWUGraphProgress *CLocalWorkUnit::getGraphProgress(const char *name) const
 {
-    CriticalBlock block(crit);
-    return new CConstGraphProgress(p->queryName(), name);
+    throwUnexpected();   // Should only be used for persisted workunits
+}
+WUGraphState CLocalWorkUnit::queryGraphState(const char *graphName) const
+{
+    throwUnexpected();   // Should only be used for persisted workunits
+}
+WUGraphState CLocalWorkUnit::queryNodeState(const char *graphName, WUGraphIDType nodeId) const
+{
+    throwUnexpected();   // Should only be used for persisted workunits
+}
+void CLocalWorkUnit::setGraphState(const char *graphName, WUGraphState state) const
+{
+    throwUnexpected();   // Should only be used for persisted workunits
+}
+void CLocalWorkUnit::setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const
+{
+    throwUnexpected();   // Should only be used for persisted workunits
+}
+IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
+{
+    throwUnexpected();   // Should only be used for persisted workunits
 }
 
 void CLocalWUGraph::setName(const char *str)
 {
     p->setProp("@name", str);
-    progress.clear();
-    progress.setown(new CConstGraphProgress(owner.queryWuid(), str));
 }
 
 void CLocalWUGraph::setLabel(const char *str)
@@ -6834,17 +6730,16 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
     else
     {
         Owned<IPropertyTree> copy = createPTreeFromIPT(graph);
-        Owned<IConstWUGraphProgress> _progress;
-        if (progress) _progress.set(progress);
-        else
-            _progress.setown(new CConstGraphProgress(owner.queryWuid(), p->queryProp("@name")));
-
-        //MORE: Eventually this should directly access the new stats structure
-        unsigned progressV = _progress->queryFormatVersion();
-        Owned<IPropertyTree> progressTree = _progress->getProgressTree();
-        Owned<IPropertyTreeIterator> nodeIterator = copy->getElements("node");
-        ForEach (*nodeIterator)
-            mergeProgress(nodeIterator->query(), *progressTree, progressV);
+        Owned<IConstWUGraphProgress> progress = owner.getGraphProgress(p->queryProp("@name"));
+        if (progress)
+        {
+            //MORE: Eventually this should directly access the new stats structure
+            unsigned progressV = progress->queryFormatVersion();
+            Owned<IPropertyTree> progressTree = progress->getProgressTree();
+            Owned<IPropertyTreeIterator> nodeIterator = copy->getElements("node");
+            ForEach (*nodeIterator)
+                mergeProgress(nodeIterator->query(), *progressTree, progressV);
+        }
         return copy.getClear();
     }
 }

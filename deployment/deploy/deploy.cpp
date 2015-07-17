@@ -1127,8 +1127,8 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
     IPropertyTree* pComponent = &iter->query();
     const char* type = pComponent->queryName();
     if (stricmp(type, "Topology")!=0 && stricmp(type, "Directories")!=0 && 
-        ((!compName && !compType) || (compName && !strcmp(pComponent->queryProp("@name"), compName)) ||
-        (!compName && compType && !strcmp(pComponent->queryProp("@buildSet"), compType))))
+        ((!compName && !compType) || (compName && pComponent->queryProp("@name") && !strcmp(pComponent->queryProp("@name"), compName)) ||
+        (!compName && compType && pComponent->queryProp("@buildSet") && !strcmp(pComponent->queryProp("@buildSet"), compType))))
     {
       const char* name    = pComponent->queryProp("@name");
       const char* build   = pComponent->queryProp("@build");

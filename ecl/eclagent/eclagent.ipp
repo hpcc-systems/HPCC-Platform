@@ -1063,7 +1063,8 @@ public:
     void createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, bool enableProbe);
     void execute(const byte * parentExtract);
     void executeLibrary(const byte * parentExtract, IHThorGraphResults * results);
-    IConstWUGraphProgress * getGraphProgress();
+    IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned subgraph);
+
     EclSubGraph * idToGraph(unsigned id);
     EclGraphElement * idToActivity(unsigned id);
     const char *queryGraphName() { return graphName; }

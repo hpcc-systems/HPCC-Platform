@@ -162,7 +162,6 @@ public:
         }
         return NULL;
     }
-    IConstWUGraphProgress *getGraphProgress() { return workunit->getGraphProgress(queryGraphName()); }
 
     CGraphTableCopy executed;
     CriticalSection exceptCrit;
