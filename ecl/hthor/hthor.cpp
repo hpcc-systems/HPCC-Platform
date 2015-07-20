@@ -4050,11 +4050,9 @@ void CParallelStableMergeSorter::performSort()
     size32_t numRows = rowsToSort.numCommitted();
     if (numRows)
     {
-        DBGLOG("Prepare to sort %u", numRows);
         const void * * rows = rowsToSort.getBlock(numRows);
         parmsortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
         finger = 0;
-        DBGLOG("sorted");
     }
 }
 

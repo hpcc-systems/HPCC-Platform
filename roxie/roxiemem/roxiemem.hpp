@@ -17,13 +17,21 @@
 
 #ifndef _ROXIEMEM_INCL
 #define _ROXIEMEM_INCL
+#include "platform.h"
 #include "jlib.hpp"
 #include "jlog.hpp"
 #include "jdebug.hpp"
 #include "jstats.h"
 #include "errorlist.h"
 
-#define _USE_TBBXXXX
+#if defined(_USE_TBB)
+//Release blocks of rows in parallel - always likely to improve performance
+#define PARALLEL_SYNC_RELEASE
+//The following needs more investigation for power8
+#if !defined(_ARCH_PPC64EL_)
+#define PARALLEL_ASYNC_RELEASE
+#endif
+#endif
 
 #ifdef _WIN32
  #ifdef ROXIEMEM_EXPORTS
@@ -304,16 +312,8 @@ public:
 void roxiemem_decl ReleaseRoxieRowArray(size_t count, const void * * rows);
 void roxiemem_decl ReleaseRoxieRowRange(const void * * rows, size_t from, size_t to);
 
-inline void ReleaseRoxieRows(ConstPointerArray &rows)
-{
-    ReleaseRoxieRowArray(rows.ordinality(), rows.getArray());
-    rows.kill();
-}
-inline void ReleaseRoxieRows(ConstPointerArray & rows, size_t first)
-{
-    ReleaseRoxieRowRange(rows.getArray(), first, rows.ordinality());
-    rows.kill();
-}
+void roxiemem_decl ReleaseRoxieRows(ConstPointerArray &rows);
+void roxiemem_decl ReleaseRoxieRows(ConstPointerArray & rows, size_t first);
 
 
 class OwnedRoxieRow;
@@ -429,7 +429,7 @@ interface IVariableRowHeap : extends IInterface
 interface IBlockedRowReleaser : public IInterface
 {
 public:
-    virtual void releaseRows(bool reuse) = 0;
+    virtual void releaseRows() = 0;
 };
 
 class CBlockedRowReleaser : public CInterfaceOf<IBlockedRowReleaser>
@@ -447,7 +447,7 @@ public:
     {
         return (num >= max);
     }
-    virtual void releaseRows(bool reuse)
+    virtual void releaseRows()
     {
         releaseAllRows();
     }
