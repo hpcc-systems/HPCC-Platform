@@ -33,6 +33,7 @@ set (    SRCS
          ws_machineService.cpp 
          ws_machineServiceMetrics.cpp 
          ws_machineServiceRexec.cpp 
+         componentstatus.cpp
     )
 
 include_directories ( 

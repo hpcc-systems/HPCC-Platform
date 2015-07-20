@@ -309,6 +309,64 @@ ESPresponse [encode(0), exceptions_inline] GetTargetClusterInfoResponse
     string TimeStamp;
     [min_ver("1.12")] string AcceptLanguage;
 };
+
+ESPstruct [nil_remove] StatusReport
+{
+    int StatusID;
+    string Status;
+    string StatusDetails;
+    string Reporter;
+    int64 TimeReported;
+    string TimeReportedStr;
+    string TimeCached;
+    string URL;
+};
+
+ESPstruct [nil_remove] ComponentStatus
+{
+    int ComponentTypeID;
+    string ComponentType;
+    string EndPoint;
+    int StatusID;
+    string Status;
+    int64 TimeReported;
+    string TimeReportedStr;
+    string Reporter;
+    ESParray<ESPstruct StatusReport> StatusReports;
+};
+
+ESPrequest [nil_remove] GetComponentStatusRequest
+{
+};
+
+ESPresponse [encode(0), nil_remove, exceptions_inline] GetComponentStatusResponse 
+{
+    int StatusCode;
+    string Status;
+
+    string ComponentType;
+    string EndPoint;
+    int ComponentStatusID;
+    string ComponentStatus;
+    int64 TimeReported;
+    string TimeReportedStr;
+    string Reporter;
+    ESPstruct StatusReport StatusReport;
+    ESParray<ESPstruct ComponentStatus, ComponentStatus> ComponentStatusList;
+};
+
+ESPrequest [nil_remove] UpdateComponentStatusRequest
+{
+    string Reporter;
+    ESParray<ESPstruct ComponentStatus, ComponentStatus> ComponentStatusList;
+};
+
+ESPresponse [encode(0), nil_remove, exceptions_inline] UpdateComponentStatusResponse 
+{
+    int StatusCode;
+    string Status;
+};
+
 //-------- service ---------
 ESPservice [version("1.13")] ws_machine
 {
@@ -330,6 +388,8 @@ ESPservice [version("1.13")] ws_machine
     ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/machines.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")] 
        GetMachineInfoEx(GetMachineInfoRequestEx, GetMachineInfoResponseEx);
 
+    ESPmethod GetComponentStatus(GetComponentStatusRequest, GetComponentStatusResponse);
+    ESPmethod UpdateComponentStatus(UpdateComponentStatusRequest, UpdateComponentStatusResponse);
 
     ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/metrics.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")] 
        GetMetrics(MetricsRequest, MetricsResponse);
