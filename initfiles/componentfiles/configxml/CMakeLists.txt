@@ -31,6 +31,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_BINARY_DIR}/eclagent_config.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/esp.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/espsmcservice.xsd
+    ${CMAKE_CURRENT_BINARY_DIR}/ftslave_linux.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/roxie.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/thor.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/buildset.xml
