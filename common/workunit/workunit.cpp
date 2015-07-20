@@ -1005,26 +1005,29 @@ public:
 
     virtual void _unlockRemote()
     {
-        try
+        if (connection)
         {
             try
             {
-                connection->commit();
-            }
-            catch (IException *e)
-            {
-                EXCLOG(e, "Error during workunit commit");
-                connection->rollback();
+                try
+                {
+                    connection->commit();
+                }
+                catch (IException *e)
+                {
+                    EXCLOG(e, "Error during workunit commit");
+                    connection->rollback();
+                    connection->changeMode(0, SDS_LOCK_TIMEOUT);
+                    throw;
+                }
                 connection->changeMode(0, SDS_LOCK_TIMEOUT);
+            }
+            catch (IException *E)
+            {
+                StringBuffer s;
+                PrintLog("Failed to release write lock on workunit: %s", E->errorMessage(s).str());
                 throw;
             }
-            connection->changeMode(0, SDS_LOCK_TIMEOUT);
-        }
-        catch (IException *E)
-        {
-            StringBuffer s;
-            PrintLog("Failed to release write lock on workunit: %s", E->errorMessage(s).str());
-            throw;
         }
     }
     virtual void setGraphState(const char *graphName, WUGraphState state) const
