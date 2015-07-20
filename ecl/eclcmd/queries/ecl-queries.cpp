@@ -95,10 +95,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -134,7 +131,7 @@ public:
                         flags |= QUERYLIST_SHOW_UNFLAGGED;
                         break;
                     default:
-                        fprintf(stderr, "Unrecognized --show flag = %c", *ch);
+                        fprintf(stderr, "Unrecognized --show flag = %c\n", *ch);
                         return false;
                     }
                 }
@@ -151,7 +148,7 @@ public:
         {
             if (flags)
             {
-                fputs("--show and --inactive should not be used together.\n\n", stderr);
+                fputs("--show and --inactive should not be used together.\n", stderr);
                 return false;
             }
 
@@ -309,10 +306,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -339,12 +333,12 @@ public:
     {
         if (optTarget.isEmpty())
         {
-            fputs("Target must be specified.\n\n", stderr);
+            fputs("Target must be specified.\n", stderr);
             return false;
         }
         if (optTarget.isEmpty())
         {
-            fputs("Query must be specified.\n\n", stderr);
+            fputs("Query must be specified.\n", stderr);
             return false;
         }
         if (!EclCmdCommon::finalizeOptions(globals))
@@ -413,10 +407,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -477,17 +468,17 @@ public:
             return false;
         if (optSourceQueryPath.isEmpty() && optTargetCluster.isEmpty())
         {
-            fputs("source and target must both be specified.\n\n", stderr);
+            fputs("source and target must both be specified.\n", stderr);
             return false;
         }
         if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
         {
-            fprintf(stderr, "invalid --memoryLimit value of %s.\n\n", optMemoryLimit.get());
+            fprintf(stderr, "invalid --memoryLimit value of %s.\n", optMemoryLimit.get());
             return false;
         }
         if (optPriority.length() && !isValidPriorityValue(optPriority))
         {
-            fprintf(stderr, "invalid --priority value of %s.\n\n", optPriority.get());
+            fprintf(stderr, "invalid --priority value of %s.\n", optPriority.get());
             return false;
         }
 
@@ -600,10 +591,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -646,7 +634,7 @@ public:
             return false;
         if (optSourceQuerySet.isEmpty() || optDestQuerySet.isEmpty())
         {
-            fputs("source and destination querysets must both be specified.\n\n", stderr);
+            fputs("source and destination querysets must both be specified.\n", stderr);
             return false;
         }
         return true;
@@ -742,10 +730,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -788,17 +773,17 @@ public:
             return false;
         if (optTargetCluster.isEmpty() || optQueryId.isEmpty())
         {
-            fputs("Target and QueryId must both be specified.\n\n", stderr);
+            fputs("Target and QueryId must both be specified.\n", stderr);
             return false;
         }
         if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
         {
-            fprintf(stderr, "invalid --memoryLimit value of %s.\n\n", optMemoryLimit.get());
+            fprintf(stderr, "invalid --memoryLimit value of %s.\n", optMemoryLimit.get());
             return false;
         }
         if (optPriority.length() && !isValidPriorityValue(optPriority))
         {
-            fprintf(stderr, "invalid --priority value of %s.\n\n", optPriority.get());
+            fprintf(stderr, "invalid --priority value of %s.\n", optPriority.get());
             return false;
         }
         return true;

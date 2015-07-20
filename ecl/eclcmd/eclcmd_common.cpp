@@ -743,10 +743,7 @@ bool EclCmdWithQueryTarget::finalizeOptions(IProperties *globals)
 bool EclCmdWithQueryTarget::parseCommandLineOptions(ArgvIterator &iter)
 {
     if (iter.done())
-    {
-        usage();
         return false;
-    }
 
     for (; !iter.done(); iter.next())
     {
