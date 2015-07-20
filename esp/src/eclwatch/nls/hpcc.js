@@ -206,6 +206,7 @@ define({root:
     IP: "IP",
     IPAddress: "IP Address",
     IsLibrary: "Is Library",
+    IsReplicated: "Is Replicated",
     Jobname: "Jobname",
     JobName: "Job Name",
     jsmi: "jsmi*",
