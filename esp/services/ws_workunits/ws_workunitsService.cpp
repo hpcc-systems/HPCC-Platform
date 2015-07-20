@@ -3354,11 +3354,17 @@ bool CWsWorkunitsEx::onWUProcessGraph(IEspContext &context,IEspWUProcessGraphReq
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
         ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
 
-        Owned <IConstWUGraph> graph = cw->getGraph(req.getName());
-        Owned <IPropertyTree> xgmml = graph->getXGMMLTree(true); // merge in graph progress information
+        if (isEmpty(req.getName()))
+            throw MakeStringException(ECLWATCH_GRAPH_NOT_FOUND, "Please specify a graph name.");
+
+        Owned<IConstWUGraph> graph = cw->getGraph(req.getName());
+        if (!graph)
+            throw MakeStringException(ECLWATCH_GRAPH_NOT_FOUND, "Invalid graph name: %s for %s", req.getName(), wuid.str());
 
         StringBuffer xml;
-        resp.setTheGraph(toXML(xgmml.get(), xml).str());
+        Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true); // merge in graph progress information
+        toXML(xgmml.get(), xml);
+        resp.setTheGraph(xml.str());
     }
 
     catch(IException* e)
@@ -3457,7 +3463,8 @@ bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& r
         else
         {
             Owned<IConstWUGraph> graph = cw->getGraph(req.getGraphName());
-            readGraph(context, req.getSubGraphId(), id, running, graph, graphs);
+            if (graph)
+                readGraph(context, req.getSubGraphId(), id, running, graph, graphs);
         }
         resp.setGraphs(graphs);
     }
