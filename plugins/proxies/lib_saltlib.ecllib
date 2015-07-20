@@ -16,7 +16,12 @@
 ############################################################################## */
 
 /* Proxy service header for (EE-only) saltlib plugin version SALTLIB 1.0.05 */
-
+EXPORT GeohashDecodeResultRecord := RECORD
+    REAL latitude;
+    REAL longitude;
+    REAL latitude_err;
+    REAL longitude_err;
+END;
 export SaltLib := SERVICE : plugin('saltlib')
   boolean UnicodeLocaleWithinEditN(const unicode left, const unicode right, unsigned4 distance,  const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWithinEditN', hole;
   boolean UnicodeWithinEditN(const unicode left, const unicode right, unsigned4 distance) : c, pure,entrypoint='ulUnicodeWithinEditN', hole;
@@ -27,4 +32,7 @@ export SaltLib := SERVICE : plugin('saltlib')
   integer4 UnicodeMatchBagofwords2(const unicode left, const unicode right, unsigned4 mode, unsigned4 score_mode) : c, pure,entrypoint='ulUnicodeMatchBagofwords2', hole;
   integer4 UnicodeLocaleMatchBagofwords2(const unicode left, const unicode right, const varstring localename, unsigned4 mode, unsigned4 score_mode) : c, pure,entrypoint='ulUnicodeLocaleMatchBagofwords2', hole;
   integer4 StringMatchBagofwords2(const string left, const string right, unsigned4 mode, unsigned4 score_mode) : c, pure,entrypoint='ulStringMatchBagofwords2', hole;
+  STRING GeohashLatLongEncode(REAL latitude, REAL longitude, UNSIGNED precision=12) : c, pure,entrypoint='saltGeohashLatLongEncode';
+  STRING GeohashNeighbor(const STRING geohash, INTEGER direction0, INTEGER direction1) : c, pure,entrypoint='saltGeohashNeighbor';
+  DATASET(GeohashDecodeResultRecord) GeohashDecode(const STRING geohash) : c, pure,entrypoint='saltGeohashDecode';
 END;
