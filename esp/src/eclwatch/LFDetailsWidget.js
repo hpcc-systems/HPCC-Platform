@@ -335,6 +335,9 @@ define([
                 this.refreshActionState();
                 //  Force Icon to Show (I suspect its not working due to Circular Reference Loading)
                 this.queriesWidget.set("iconClass", "dijitInline dijitIcon dijitTabButtonIcon iconFind");
+            } else if (name === "DFUFilePartsOnClusters") {
+            	// Currently only checking first cluster may add loop through clusters and add a tab at a later date
+            	this.updateInput("DFUFilePartsOnClusters", oldValue, newValue.DFUFilePartsOnCluster[0].Replicate);
             }
         },
 
