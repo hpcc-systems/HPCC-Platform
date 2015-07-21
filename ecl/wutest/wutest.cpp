@@ -1511,6 +1511,18 @@ protected:
         Owned<IWorkUnit> global = factory->getGlobalWorkUnit(NULL, NULL);
         ASSERT(global != NULL);
         ASSERT(streq(global->queryWuid(), "global"));
+
+        Owned<IWUResult> result = global->updateGlobalByName("Result 1");
+        result->setResultScalar(true);
+        result->setResultInt(53);
+        result.clear();
+        global.clear();
+
+        Owned<IConstWorkUnit> wu = factory->getGlobalWorkUnit(NULL, NULL);
+        Owned<IConstWUResult> cresult = wu->getGlobalByName("Result 1");
+        ASSERT(cresult);
+        ASSERT(cresult->isResultScalar());
+        ASSERT(cresult->getResultInt()==53);
     }
 };
 StringArray WuTest::wuids;

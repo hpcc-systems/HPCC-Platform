@@ -2101,10 +2101,14 @@ public:
         if (batch)
         {
             const char *wuid = queryWuid();
-            if (prev) // Holds the values of the "basic" info at the last commit
-                updateSecondaries(wuid);
-            simpleXMLtoCassandra(sessionCache, *batch, workunitsMappings, p);  // This just does the parent row
-            if (allDirty)
+            bool isGlobal = streq(wuid, GLOBAL_WORKUNIT);
+            if (!isGlobal) // Global workunit only has child rows, no parent
+            {
+                if (prev) // Holds the values of the "basic" info at the last commit
+                    updateSecondaries(wuid);
+                simpleXMLtoCassandra(sessionCache, *batch, workunitsMappings, p);  // This just does the parent row
+            }
+            if (allDirty && !isGlobal)
             {
                 // MORE - this delete is technically correct, but if we assert that the only place that copyWorkUnit is used is to populate an
                 // empty newly-created WU, it is unnecessary.
@@ -2837,9 +2841,11 @@ public:
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL)
     {
         // MORE - should it check security? Dali version never did...
-        Owned<CLocalWorkUnit> cw = _updateWorkUnit(GLOBAL_WORKUNIT, NULL, NULL);
-        assertex(cw);
-        return &cw->lockRemote(false);
+        Owned<IRemoteConnection> daliLock;
+        lockWuid(daliLock, GLOBAL_WORKUNIT);
+        Owned<IPTree> wuXML = createPTree(GLOBAL_WORKUNIT);
+        Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), NULL, NULL, daliLock.getClear());
+        return &wu->lockRemote(false);
     }
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser)
     {
@@ -3250,15 +3256,6 @@ public:
         ensureTable(session, wuGraphProgressMappings);
         ensureTable(session, wuGraphStateMappings);
         ensureTable(session, wuGraphRunningMappings);
-        // Create the global workunit - saves having to check if it is there every time we want it...
-        Owned<IPTree> wuXML = createPTree(GLOBAL_WORKUNIT);
-        wuXML->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
-        wuXML->setPropInt("@wuidVersion", WUID_VERSION);  // we implement the latest version.
-        Owned<IRemoteConnection> daliLock;
-        lockWuid(daliLock, GLOBAL_WORKUNIT);
-        Owned<CCassandraWorkUnit> global = new CCassandraWorkUnit(this, wuXML.getClear(), NULL, NULL, daliLock.getClear());
-        global->commit();
-        global.clear();
     }
 
     virtual const char *queryStoreType() const
@@ -3412,7 +3409,7 @@ private:
             const CassRow *row = cass_iterator_get_row(rows);
             StringBuffer wuid;
             getCassString(wuid, cass_row_get_column(row, wuidIndex));
-            if (!checkWuExists(wuid))
+            if (!streq(wuid, GLOBAL_WORKUNIT) && !checkWuExists(wuid))
             {
                 DBGLOG("Orphaned data in %s for wuid=%s", queryTableName(mappings), wuid.str());
                 if (batch)
