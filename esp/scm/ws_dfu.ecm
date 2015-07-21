@@ -444,6 +444,7 @@ ESPStruct [nil_remove] DFUDataColumn
     [min_ver("1.29")] int ColumnRawSize;
     [min_ver("1.29")] bool IsNaturalColumn;
     [min_ver("1.29")] bool IsKeyedColumn;
+    [min_ver("1.31")] ESParray<ESPstruct DFUDataColumn> DataColumns;
 };
 
 ESPrequest DFUGetDataColumnsRequest
