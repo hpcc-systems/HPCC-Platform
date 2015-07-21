@@ -47,7 +47,6 @@ add_subdirectory(common)
 add_subdirectory(BuildTools)
 add_subdirectory(resources)
 
-
 # Doc dirs to include.
 add_subdirectory(DynamicESDL)
 add_subdirectory(ECLLanguageReference)

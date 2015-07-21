@@ -17,7 +17,7 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> </para>
+      email to <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Please include <emphasis role="bold">Documentation
       Feedback</emphasis> in the subject line and reference the document name,
@@ -31,7 +31,7 @@
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. </para>
+      registered trademarks of their respective companies.</para>
 
       <para>All names and example data used in this manual are fictitious. Any
       similarity to actual persons, living or dead, is purely
@@ -113,18 +113,6 @@
 
     <para><itemizedlist>
         <listitem>
-          <para>SSH connectivity</para>
-        </listitem>
-
-        <listitem>
-          <para>Users on system</para>
-        </listitem>
-
-        <listitem>
-          <para>System Load</para>
-        </listitem>
-
-        <listitem>
           <para>Disk Usage</para>
         </listitem>
 
@@ -145,32 +133,23 @@
         </listitem>
 
         <listitem>
-          <para>Bound services on each ESP</para>
+          <para>Service Bindings on ESP Servers</para>
+        </listitem>
+
+        <listitem>
+          <para>SSH connectivity</para>
+        </listitem>
+
+        <listitem>
+          <para>Users on system</para>
+        </listitem>
+
+        <listitem>
+          <para>System Load</para>
         </listitem>
       </itemizedlist></para>
 
     <!--***NOTE: At some point this next bit will need to get moved into the next chapter/section***-->
-
-    <sect1 id="HPCC_Viewer">
-      <title>The HPCC Ganglia Viewer</title>
-
-      <para>A Ganglia viewer comes preinstalled and configured in the 4.2.x
-      (or later) HPCC Virtual Machine. The monitoring provided with the
-      Virtual Machine is set up to monitor Roxie instances on the network.
-      This document introduces the monitoring and describes how to get it
-      working on your system. <figure>
-          <title>HPCC Monitoring</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="images/GAN001.jpg" vendor="Ganglia" />
-            </imageobject>
-          </mediaobject>
-        </figure></para>
-
-      <para>The above image is an overview summary of all the monitored Roxie
-      nodes in the cluster named VM Demo.</para>
-    </sect1>
   </chapter>
 
   <chapter id="Ganglya_Overview">
@@ -209,28 +188,37 @@
       <para><ulink
       url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink></para>
 
-      <sect2 id="Ganglia_Viewer">
-        <title>The Viewer</title>
+      <sect2>
+        <title>Requirements</title>
 
-        <para>If you already have a Ganglia monitoring server running in your
-        network, the viewer component may already be in place. If you do not
-        have Ganglia then you will need to install and configure the
-        viewer.</para>
+        <para>In order to use Ganglia with Roxie you must have the following
+        packages installed on every node you wish to monitor.</para>
 
-        <para>Refer to the <ulink
-        url="https://github.com/hpcc-systems/ganglia-monitoring/tree/master/vm_precise">https://github.com/hpcc-systems/ganglia-monitoring/tree/master/vm_precise</ulink>
-        directory. There you will see the resources used to configure the
-        Ganglia for the virtual machine and can use them as the examples to
-        configure it for your enterprise.</para>
+        <itemizedlist>
+          <listitem>
+            <para>ganglia-gmond</para>
+          </listitem>
 
-        <para>The script, <emphasis>install_graphs_helper.sh</emphasis>
-        available from the github link above and also provided with the
-        virtual machine, is what is used to embed the viewer component. Using
-        this script as a basis, you can then similarly configure and deploy
-        the viewer component for your system.</para>
+          <listitem>
+            <para>ganglia-gmond-python</para>
+          </listitem>
+
+          <listitem>
+            <para>python-lxml</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>For the visualization component you must have:</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>ganglia-gmetad</para>
+            </listitem>
+          </itemizedlist>Proper installation and operations of the Ganglia
+        component depends on these components.</para>
       </sect2>
 
-      <sect2 id="Ganglia_Monitoring_Daemon">
+      <sect2 id="Ganglia_Monitoring_Daemon" role="brk">
         <title>Ganglia Monitoring Daemon</title>
 
         <para>The monitoring daemon is required on the Roxie nodes you wish to
@@ -290,6 +278,48 @@
           provided and use that as a guide to implement your own customized
           monitoring components.</para>
         </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="HPCC_Viewer">
+      <title>The HPCC Ganglia Viewer</title>
+
+      <para>A Ganglia viewer comes preinstalled and configured in the 4.2.x
+      (or later) HPCC Virtual Machine. The monitoring provided with the
+      Virtual Machine is set up to monitor Roxie instances on the network.
+      This document introduces the monitoring and describes how to get it
+      working on your system. <figure>
+          <title>HPCC Monitoring</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/GAN001.jpg" vendor="Ganglia" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>The above image is an overview summary of all the monitored Roxie
+      nodes in the cluster named VM Demo.</para>
+
+      <sect2 id="Ganglia_Viewer">
+        <title>The Viewer</title>
+
+        <para>If you already have a Ganglia monitoring server running in your
+        network, the viewer component may already be in place. If you do not
+        have Ganglia then you will need to install and configure the
+        viewer.</para>
+
+        <para>Refer to the <ulink
+        url="https://github.com/hpcc-systems/ganglia-monitoring/tree/master/vm_precise">https://github.com/hpcc-systems/ganglia-monitoring/tree/master/vm_precise</ulink>
+        directory. There you will see the resources used to configure the
+        Ganglia for the virtual machine and can use them as the examples to
+        configure it for your enterprise.</para>
+
+        <para>The script, <emphasis>install_graphs_helper.sh</emphasis>
+        available from the github link above and also provided with the
+        virtual machine, is what is used to embed the viewer component. Using
+        this script as a basis, you can then similarly configure and deploy
+        the viewer component for your system.</para>
       </sect2>
     </sect1>
 
@@ -389,6 +419,83 @@
           </varlistentry>
         </variablelist></para>
     </sect1>
+
+    <sect1>
+      <title>Ganglia in ECL Watch</title>
+
+      <para>With the Ganglia for HPCC Plug-in installed. You can view the
+      Ganglia statistics and graphs right through the ECL Watch interface. The
+      out of the box monitoring displays several key statistics by default.
+      You can customize and configure the views.</para>
+
+      <figure>
+        <title>Ganglia in ECL Watch</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/GAN051.jpg" vendor="VM_welcome" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The default Plug-ins page has a tab for Custom Monitoring where
+      you can easily add some custom monitoring components.</para>
+
+      <para>Select the Custom Monitoring tab, and press the Metrics button.
+      Use the drop menus to display the various graphing utilities.</para>
+
+      <sect2>
+        <title>Installing Ganglia in ECL Watch</title>
+
+        <para>In order to get the Ganglia in ECL Watch, You need to have
+        Ganglia on your HPCC Systems. <orderedlist>
+            <listitem>
+              <para>Install or ensure you have the HPCC Monitoring components
+              on a node where ECL Watch is installed.</para>
+            </listitem>
+
+            <listitem>
+              <para>Ensure that the Ganglia gtemad daemon is running.</para>
+            </listitem>
+
+            <listitem>
+              <para>Restart the ESP if this is the initial installation of any
+              of those components.</para>
+            </listitem>
+
+            <listitem>
+              <para>Start or connect to ECL Watch on that node.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click the plug-in icon at the top of the ECL Watch
+              page.</para>
+
+              <para>The graphs display data.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>It is also possible for EclWatch/Esp to be on a separate,
+        different node from the gmetad machine, as long as the rrd data
+        directories are exposed to the plug-in.</para>
+      </sect2>
+
+      <sect2>
+        <title>Configuring Ganglia graphs in ECL Watch</title>
+
+        <para>The configuration of Ganglia in ECL Watch is maintained in the
+        <emphasis role="bold">ganglia.json</emphasis> file. That can be found
+        in the HPCC Systems<superscript>®</superscript> system
+        directory/componentfiles. The default HPCC
+        Systems<superscript>®</superscript> system directory ganglia resources
+        is:</para>
+
+        <para>/opt/HPCCSystems/componentfiles/files/ganglia</para>
+
+        <para>The configuration can be customized and modified to suit your
+        specific needs.</para>
+      </sect2>
+    </sect1>
   </chapter>
 
   <chapter>
@@ -396,25 +503,13 @@
 
     <para>The HPCC Reporting component leverages Nagios, an open source,
     system and network infrastructure monitoring application to monitor and
-    alert HPCC administrators. Nagios leverages established and accepted open
-    source technologies to alert users to changes or potential issues. It
-    provides near real-time system monitoring and reporting.</para>
+    alert HPCC Administrators. Nagios leverages established and accepted open
+    source technologies to alert users to changes or potential issues. Nagios
+    provides regular periodic system monitoring and reporting.</para>
 
     <para>With the HPCC integration, you can generate Nagios configuration
     files to monitor HPCC server health. Once the Nagios is configured, you
     can monitor:<itemizedlist>
-        <listitem>
-          <para>SSH connectivity</para>
-        </listitem>
-
-        <listitem>
-          <para>Users on system</para>
-        </listitem>
-
-        <listitem>
-          <para>System Load</para>
-        </listitem>
-
         <listitem>
           <para>Disk Usage</para>
         </listitem>
@@ -436,18 +531,89 @@
         </listitem>
 
         <listitem>
-          <para>Bound services on each ESP</para>
+          <para>Service Bindings on ESP Servers</para>
         </listitem>
       </itemizedlist></para>
 
-    <para>Nagios is a powerful monitoring and notification system, which can
-    be used with HPCC to help identify and resolve infrastructure problems
-    before they affect critical processes. Nagios hardware notifications can
-    help keep your system highly available and alerts can assist in
-    pre-emptive maintenance for processes which are down or behaving outside
-    expected parameters to ensure system stability, reliability, and uptime.
-    Scripts and tools are provided to extract HPCC Platform system metrics and
-    easily integrate that data into Nagios.</para>
+    <para>With additional available (3rd party) plug-ins, check utilities, and
+    modification of the config file, Nagios can also monitor:</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>SSH connectivity</para>
+        </listitem>
+
+        <listitem>
+          <para>Users on system</para>
+        </listitem>
+
+        <listitem>
+          <para>System load</para>
+        </listitem>
+
+        <listitem>
+          <para>Disk / CPU / Memory usage</para>
+        </listitem>
+
+        <listitem>
+          <para>Network infrastructure</para>
+        </listitem>
+
+        <listitem>
+          <para>More...</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <sect1 id="NagiosIntro">
+      <title>Nagios Introduction</title>
+
+      <para>Nagios is a powerful monitoring and notification system, which can
+      be used with HPCC to help identify and resolve infrastructure problems
+      before they affect critical processes. Nagios hardware notifications can
+      help keep your system highly available and alerts can assist in
+      pre-emptive maintenance for processes which are down or behaving outside
+      expected parameters to ensure system stability, reliability, and uptime.
+      Scripts and tools are provided to extract HPCC Platform system metrics
+      and easily integrate that data into Nagios.</para>
+
+      <para>Administrators should note that different platforms may not
+      support all plug-ins. The <emphasis>hpcc-nagios-tools</emphasis> utility
+      can be used to simplify the addition of custom plug-ins. Many additional
+      Nagios plug-ins and utilities are available from 3rd parties.</para>
+
+      <para>The Nagios package is not simply an "install and run" utility, it
+      requires additional steps to configure and use properly. If you are not
+      already familiar with Nagios, then you should:<itemizedlist>
+          <listitem>
+            <para>Familiarize yourself with the base Nagios package from
+            https://www.nagios.org</para>
+          </listitem>
+
+          <listitem>
+            <para>Set up a base Nagios installation, such as one on a virtual
+            machine.</para>
+          </listitem>
+
+          <listitem>
+            <para>Review our HPCC Monitoring and Reporting documentation in
+            its entirety.</para>
+          </listitem>
+
+          <listitem>
+            <para>Review our VM installation and configuration.</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <para>Nagios sets thresholds to trigger alerts. A check may indicate a
+      failure or high load that caused a timeout, so some historical baseline
+      would be helpful. Ganglia maybe useful for that purpose. Nagios
+      monitoring uses a polling interval to check system health. Frequency and
+      number of checks would depend on the needs in the cluster. Alerts are
+      only useful if they are actionable. Consider who gets alerted (tiered
+      escalations), when they get alerted (thresholds, multiple), and what
+      types of alerts (none?, email, text, phone, EclWatch etc…) before
+      configuring your environment.</para>
+    </sect1>
 
     <sect1 id="NagiosVM">
       <title>Nagios in the Virtual Machine</title>
@@ -607,7 +773,7 @@
         system.</para>
       </sect2>
 
-      <sect2>
+      <sect2 role="brk">
         <title>Install Nagios</title>
 
         <para>To Install Nagios for HPCC, you must have HPCC System platform
@@ -629,34 +795,619 @@
             </listitem>
 
             <listitem>
-              <para>Generate Nagios configuration files.</para>
+              <para>Generate Nagios configuration files. There are several
+              configuration options for Nagios. Determine your needs and
+              customize accordingly.</para>
+
+              <para>The main features included are tools to generate Nagios
+              configurations. The generated configurations can be modified
+              with optional flags to fit the environment that is being
+              monitored. The default package also provides some utilities to
+              monitor HPCC processes such as Roxies, ESP Services by node and
+              port, Dali, and dafilesrv. Other processes could also be
+              monitored if a check utility is provided and the generated
+              config file is modified (find/replace all would probably
+              suffice).</para>
             </listitem>
           </orderedlist>Generate a host groups configuration for
         Nagios.</para>
 
         <programlisting> /opt/HPCCSystem/bin/hpcc-nagios-tools -env   \
- /etc/HPCCSystems/environment.xml -h -out /etc/nagios3/config.d/hpcc_hostgroups.cfg 
+ /etc/HPCCSystems/environment.xml -g -out /etc/nagios3/config.d/hpcc_hostgroups.cfg 
 </programlisting>
 
         <para>Generate a services configuration file.</para>
 
         <programlisting> /opt/HPCCSystem/bin/hpcc-nagios-tools -env   \
- /etc/HPCCSystems/environment.xml -g -out /etc/nagios3/config.d/hpcc_services.cfg
+ /etc/HPCCSystems/environment.xml -s -out /etc/nagios3/config.d/hpcc_services.cfg
 </programlisting>
 
-        <para>You can use some or all of the configurations. You can use the
-        generated configurations, or you could merge them into any existing
-        Nagios configuration as needed.</para>
+        <para>Generate an escalation notifications file.</para>
+
+        <para><programlisting>./hpcc-nagios-tools -ec -env /etc/HPCCSystems/environment.xml  \
+-enable_host_notify -enable_service_notify -set_url localhost/nagios3 \
+-disable_check_all_disks –out /etc/nagios3/conf.d/hpcc_notifications.cfg
+</programlisting>The configurations you generate can be used as is, merged
+        with existing configurations, or modified to meet your specific
+        needs.</para>
 
         <para><orderedlist continuation="continues">
             <listitem>
               <para>Integrate the host and services configuration files into
               the Nagios configuration folders.</para>
+            </listitem>
 
-              <para>You must restart Nagios for the new configuration to take
+            <listitem>
+              <para>Restart Nagios for the new configuration to take
               effect.</para>
             </listitem>
           </orderedlist></para>
+
+        <sect3>
+          <title>Nagios Options</title>
+
+          <para>You may need to override some of the default values, depending
+          on your Linux distribution. For different distributions you may need
+          to modify some of the check scripts. Use the override flags to
+          properly name all the check scripts in the configuration files as
+          appropriate for your distribution.</para>
+
+          <para>The thresholds levels are dependent on your specific needs and
+          environments. The default values are starting points. Evaluation of
+          your specific needs over time will help you determine appropriate
+          thresholds for your production environment(s).</para>
+
+          <para>To override the defaults, modify the generated configurations
+          as needed.</para>
+
+          <para>Monitoring tools like Ganglia can help to determine what the
+          thresholds should be.</para>
+        </sect3>
+
+        <sect3 id="nagios-tools_Usage" role="brk">
+          <title>hpcc-nagios-tools usage</title>
+
+          <para><emphasis role="bold">hpcc-nagios-tools -env</emphasis>
+          <emphasis>&lt;environment file&gt;</emphasis> <emphasis
+          role="bold">-out</emphasis> <emphasis>&lt;output path&gt;</emphasis>
+          <emphasis role="bold">[</emphasis>options<emphasis
+          role="bold">]</emphasis></para>
+
+          <para>Available optional parameters: <informaltable>
+              <tgroup cols="3">
+                <colspec colwidth="175pt" />
+
+                <colspec colwidth="155pt" />
+
+                <colspec />
+
+                <thead>
+                  <row>
+                    <entry>Option/Flag</entry>
+
+                    <entry>Detail</entry>
+
+                    <entry>Default Value</entry>
+                  </row>
+                </thead>
+
+                <tbody>
+                  <row>
+                    <entry>-c or -cfggen</entry>
+
+                    <entry>The path to the configgen</entry>
+
+                    <entry>/opt/HPCCSystems/sbin/configgen</entry>
+                  </row>
+
+                  <row>
+                    <entry>-g or -hostgroup</entry>
+
+                    <entry>generate host group file</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-s or -service</entry>
+
+                    <entry>generate service and host file</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-n or -nrpe</entry>
+
+                    <entry>generate client plugin cfgs for nrpe</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-e or -env</entry>
+
+                    <entry>hpcc environment configuration file</entry>
+
+                    <entry>/etc/HPCCSystems/environment.xml</entry>
+                  </row>
+
+                  <row>
+                    <entry>-ec or -escalation_cmds</entry>
+
+                    <entry>generate escalation commands</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-enable_host_notify</entry>
+
+                    <entry>enable host notifications</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-enable_service_notify</entry>
+
+                    <entry>enable service notifications</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-set_url</entry>
+
+                    <entry>set the url link for escalation
+                    notifications</entry>
+
+                    <entry>NotificationURL</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_send_serivce_status</entry>
+
+                    <entry>override send_status escalation command</entry>
+
+                    <entry>/opt/HPCCSystems/bin/send_status -o $HOSTADDRESS$
+                    -s $SERVICESTATE$ -d '$SERVICENOTES$' -t $TIMET$ -n
+                    $SERVICEDISPLAYNAME$</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_send_host_status</entry>
+
+                    <entry>override send_status escalation command</entry>
+
+                    <entry>/opt/HPCCSystems/bin/send_status -o $HOSTADDRESS$
+                    -s $HOSTSTATE$ -d '$HOSTNOTES$' -t $TIMET$ -n
+                    $HOSTDISPLAYNAME$</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_service_status</entry>
+
+                    <entry>override host_notification_commands</entry>
+
+                    <entry>send_service_status</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_host_status</entry>
+
+                    <entry>override service_notification_commands</entry>
+
+                    <entry>send_host_status</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_eclwatch_host_port</entry>
+
+                    <entry>Override eclwatch host port for escalation
+                    commands. This flag may be specified multiple
+                    times.</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-o or -output</entry>
+
+                    <entry>outpfile where the generated configuration will be
+                    written</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-r or -retry</entry>
+
+                    <entry>keep attempting to resolve IP to hostnames. Stops
+                    after 1st failure.</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-u or -user</entry>
+
+                    <entry>MACRO name to use for username for esp server
+                    login. Example: $USER1$</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-p or -pass</entry>
+
+                    <entry>MACRO to use for password for esp server login.
+                    Example: $USER2$</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-attempts</entry>
+
+                    <entry>max host retry attempts</entry>
+
+                    <entry>10</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload1warn</entry>
+
+                    <entry>load1 warning threshold</entry>
+
+                    <entry>5</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload5warn</entry>
+
+                    <entry>load5 warning threshold</entry>
+
+                    <entry>4</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload15warn</entry>
+
+                    <entry>load15 warning threshold</entry>
+
+                    <entry>3</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload1crit</entry>
+
+                    <entry>load1 critical threshold</entry>
+
+                    <entry>10</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload5crit</entry>
+
+                    <entry>load5 critical threshold</entry>
+
+                    <entry>6</entry>
+                  </row>
+
+                  <row>
+                    <entry>-sysload15crit</entry>
+
+                    <entry>load15 critical threshold</entry>
+
+                    <entry>4</entry>
+                  </row>
+
+                  <row>
+                    <entry>-diskspacewarn</entry>
+
+                    <entry>disk space % warning threshold</entry>
+
+                    <entry>15</entry>
+                  </row>
+
+                  <row>
+                    <entry>-diskspacecrit</entry>
+
+                    <entry>disk space % critical threshold</entry>
+
+                    <entry>8</entry>
+                  </row>
+
+                  <row>
+                    <entry>-usernumwarn</entry>
+
+                    <entry>users logged in warning threshold</entry>
+
+                    <entry>5</entry>
+                  </row>
+
+                  <row>
+                    <entry>-usernumcrit</entry>
+
+                    <entry>users logged in critical threshold</entry>
+
+                    <entry>10</entry>
+                  </row>
+
+                  <row>
+                    <entry>-totalprocswarn</entry>
+
+                    <entry>total process warning threshold</entry>
+
+                    <entry>350</entry>
+                  </row>
+
+                  <row>
+                    <entry>-totalprocscrit</entry>
+
+                    <entry>total process critical threshold</entry>
+
+                    <entry>500</entry>
+                  </row>
+
+                  <row>
+                    <entry>-checkperiod</entry>
+
+                    <entry>host check period</entry>
+
+                    <entry>24x7</entry>
+                  </row>
+
+                  <row>
+                    <entry>-contacts</entry>
+
+                    <entry>host contacts</entry>
+
+                    <entry>eclwatch</entry>
+                  </row>
+
+                  <row>
+                    <entry>-contactgroups</entry>
+
+                    <entry>host contact groups</entry>
+
+                    <entry>eclwatch_group</entry>
+                  </row>
+
+                  <row>
+                    <entry>-notify_interval</entry>
+
+                    <entry>host contact groups</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-notify_period</entry>
+
+                    <entry>host contact groups</entry>
+
+                    <entry>24x7</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_all_disks</entry>
+
+                    <entry>check_all_disk plugin name</entry>
+
+                    <entry>check_all_disks</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_users</entry>
+
+                    <entry>check_users plugin name</entry>
+
+                    <entry>check_users</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_procs</entry>
+
+                    <entry>check_procs plugin name</entry>
+
+                    <entry>check_procs</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_load</entry>
+
+                    <entry>check_load plugin name</entry>
+
+                    <entry>check_load</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_retry_interval</entry>
+
+                    <entry>check retry_interval</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_active_checks_enabled</entry>
+
+                    <entry>active_checks</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_passive_checks_enabled</entry>
+
+                    <entry>passive_checks</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_parallelize_check</entry>
+
+                    <entry>parallelize_check</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_obsess_over_service</entry>
+
+                    <entry>obsess_over_service</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_freshness</entry>
+
+                    <entry>check_freshness</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_event_handler_enabled</entry>
+
+                    <entry>event_handler_enabled</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_is_volatile</entry>
+
+                    <entry>is_volatile</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_normal_check_interval</entry>
+
+                    <entry>normal_check_interval</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_retry_check_interval</entry>
+
+                    <entry>retry_check_interval</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_flap_detection_enabled</entry>
+
+                    <entry>flap_detection_enabled</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_process_perf_data</entry>
+
+                    <entry>process_perf_data</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_failure_prediction_enabled</entry>
+
+                    <entry>failure_prediction_enabled</entry>
+
+                    <entry>1</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_retain_status_information</entry>
+
+                    <entry>retain_status_information</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_retain_nonstatus_information</entry>
+
+                    <entry>retain_nonstatus_information</entry>
+
+                    <entry>0</entry>
+                  </row>
+
+                  <row>
+                    <entry>-disable_check_all_disks</entry>
+
+                    <entry>disable disk space checks</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-disable_check_users</entry>
+
+                    <entry>disable user logged on checks</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-disable_check_procs</entry>
+
+                    <entry>disable process checks</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-disable_check_load</entry>
+
+                    <entry>disable load check</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-disable_use_of_note_for_host_port</entry>
+
+                    <entry>the send command will use the detail/note for
+                    host:ip insteaad of param</entry>
+
+                    <entry>true</entry>
+                  </row>
+
+                  <row>
+                    <entry>-use_https</entry>
+
+                    <entry>Use https connection for esp service calls.
+                    <emphasis role="bold">HIGHLY RECOMMENDED</emphasis> when
+                    using username/password</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-d or -debug</entry>
+
+                    <entry>verbose debug output\n</entry>
+
+                    <entry></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Use the available option flags to customize the configuration
+          of Nagios as appropriate for your environment.</para>
+        </sect3>
 
         <sect3>
           <title>Help</title>
@@ -669,6 +1420,68 @@
           specified displays all the available options.</para>
         </sect3>
       </sect2>
+    </sect1>
+
+    <sect1 id="Nagios_in_ECLWatch">
+      <title>Nagios in ECL Watch</title>
+
+      <para>ECL Watch is set up for monitoring your system with Nagios. ECL
+      Watch has an API that can interface with Nagios and provide Nagios
+      monitoring right in ECL Watch. Nagios escalations can be pointed to any
+      ECL Watch version 5.4 (and later) and are viewable directly in ECL
+      Watch.</para>
+
+      <para>By default all ECL Watch services defined in the environment.xml
+      will receive notifications generated using
+      <emphasis>hpcc-nagios-tools</emphasis>. You can override that if not
+      desired. The ECL Watch instances need not be in the cluster that is
+      being monitored. <figure>
+          <title>Nagios in ECL Watch</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/NAG010.jpg" vendor="VM_welcome" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Once you have Nagios configured for your environment, you can see
+      at a glance if there are any alerts. Along the top banner of the ECL
+      Watch window, you will see a small indicator light. The light is darkend
+      (gray) if there is no system data being reported, typically indicative
+      that your system is not yet configured for monitoring.</para>
+
+      <para>The light is green when all systems are reporting normal. The
+      light is yellow when there is warning. The light turns red when there is
+      an alert. All the alerts are configurable through the Nagios
+      configuration.</para>
+
+      <para>By default ECL Watch monitoring maintains the latest update for 30
+      minutes. This means that once Nagios stops escalations to ECL Watch any
+      status, including Normal will expire from the list. Nagios escalations
+      notification behavior and frequency is configurable, refer to the Nagios
+      documentation for more information. An empty list could indicate ‘no
+      data’ or ‘no outages’, by default no alerts generate when everything is
+      up and running.</para>
+
+      <para>To delve further into any warnings or alerts, you can press the
+      indicator light at the top. You can also access the <emphasis>Primary
+      Monitoring</emphasis> page by pressing the <emphasis
+      role="bold">Operations</emphasis> link, then press the <emphasis
+      role="bold">Monitoring</emphasis> link in the navigation sub-menu.
+      <figure>
+          <title>Nagios in ECL Watch</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/NAG011.jpg" vendor="VM_welcome" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>This displays the all the messages and alerts reported to the
+      monitoring system. For more information on a specific message, press the
+      arrow next to the message you want.</para>
     </sect1>
   </chapter>
 </book>
