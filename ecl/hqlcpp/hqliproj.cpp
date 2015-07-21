@@ -1393,7 +1393,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             Parent::analyseExpr(expr);
             break;
         case no_executewhen:
-            if (expr->isDataset())
+            if (expr->isDataset() || expr->isDatarow())
             {
                 assertex(extra->activityKind() == SimpleActivity);
                 Parent::analyseExpr(expr);

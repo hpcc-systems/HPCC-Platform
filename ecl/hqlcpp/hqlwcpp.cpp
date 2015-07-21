@@ -1741,6 +1741,26 @@ void HqlCppWriter::generateStmt(IHqlStmt * stmt)
         case switch_stmt:
             generateStmtSwitch(stmt);
             break;
+        case try_stmt:
+            indent().append("try");
+            generateChildren(stmt, true);
+            break;
+        case catch_stmt:
+            generateStmtCatch(stmt);
+            break;
+        case throw_stmt:
+            {
+                IHqlExpression * value = stmt->queryExpr(0);
+                if (value)
+                {
+                    indent().append("throw ");
+                    generateExprCpp(stmt->queryExpr(0)).append(';');
+                }
+                else
+                    indent().append("throw;");
+                newline();
+                break;
+            }
         case assigninc_stmt:
         case assigndec_stmt:
             generateStmtAssignModify(stmt);
@@ -1916,6 +1936,21 @@ void HqlCppWriter::generateStmtCase(IHqlStmt * stmt)
             newline();
         }
     }
+}
+
+void HqlCppWriter::generateStmtCatch(IHqlStmt * stmt)
+{
+    IHqlExpression * caught = stmt->queryExpr(0);
+    indent().append("catch (");
+    if (caught)
+    {
+        generateParamCpp(caught, NULL);
+    }
+    else
+        out.append("...");
+
+    out.append(")");
+    generateChildren(stmt, true);
 }
 
 void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
