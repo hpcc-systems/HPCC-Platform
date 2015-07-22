@@ -57,13 +57,16 @@
 #define MP_PROTOCOL_VERSION    0x102                   
 #define MP_PROTOCOL_VERSIONV6   0x202                   // extended for IPV6
 
-#define CANCELTIMEOUT       1000        // 1 sec
+// These should really be configurable
+#define CANCELTIMEOUT       1000             // 1 sec
+#define CONNECT_TIMEOUT          (5*60*1000) // 5 mins
+#define CONNECT_READ_TIMEOUT     (10*1000)   // 10 seconds. NB: used by connect readtms loop (see loopCnt)
+#define CONNECT_TIMEOUT_INTERVAL 1000        // 1 sec
+#define CONNECT_RETRYCOUNT       180         // Overall max connect time is = CONNECT_RETRYCOUNT * CONNECT_READ_TIMEOUT
+#define CONNECT_TIMEOUT_MINSLEEP 2000        // random range: CONNECT_TIMEOUT_MINSLEEP to CONNECT_TIMEOUT_MAXSLEEP milliseconds
+#define CONNECT_TIMEOUT_MAXSLEEP 5000
 
-#define CONNECT_TIMEOUT         (5*60*1000) // 5 mins
-
-#define CONNECT_READ_TIMEOUT    (3*60*1000) // 3 mins
-#define CONNECT_TIMEOUT_INTERVAL 1000 // 1 sec
-#define CONFIRM_TIMEOUT         (CONNECT_READ_TIMEOUT/2) // 1.5 mins
+#define CONFIRM_TIMEOUT          (90*1000) // 1.5 mins
 #define CONFIRM_TIMEOUT_INTERVAL 5000 // 5 secs
 #define TRACESLOW_THRESHOLD      1000 // 1 sec
 
@@ -697,7 +700,7 @@ protected: friend class CMPPacketReader;
         // also in sendmutex
 
         ISocket *newsock=NULL;
-        unsigned retrycount = 20;
+        unsigned retrycount = CONNECT_RETRYCOUNT;
         unsigned remaining;
 
         while (!channelsock) {
@@ -756,8 +759,7 @@ protected: friend class CMPPacketReader;
                 // loop with short wait time and release CS to allow other side to proceed
                 StringBuffer epStr;
                 unsigned startMs = msTick();
-
-                unsigned loopCnt = ((CONNECT_READ_TIMEOUT / retrycount) / CONNECT_TIMEOUT_INTERVAL) + 1;
+                unsigned loopCnt = CONNECT_READ_TIMEOUT / CONNECT_TIMEOUT_INTERVAL + 1;
 #ifdef _TRACE
                 PROGLOG("MP: loopCnt start = %u", loopCnt);
 #endif
@@ -810,8 +812,7 @@ protected: friend class CMPPacketReader;
                                 e->Release();
                                 if ((retrycount--==0)||(tm.timeout==MP_ASYNC_SEND))
                                 {   // don't bother retrying on async send
-                                    IMP_Exception *e=new CMPException(MPERR_connection_failed,remoteep);
-                                    throw e;
+                                    throw new CMPException(MPERR_connection_failed,remoteep);
                                 }
 #ifdef _TRACE
                                 LOG(MCdebugInfo(100), unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).toCharArray(),retrycount+1);
@@ -858,6 +859,7 @@ protected: friend class CMPPacketReader;
                     if (attachSocket(newsock,remoteep,hostep,true,NULL,addrval))
                     {
                         newsock->Release();
+                        newsock = NULL;
 #ifdef _TRACE
                         LOG(MCdebugInfo(100), unknownJob, "MP: connected to %s",str.str());
 #endif
@@ -902,7 +904,7 @@ protected: friend class CMPPacketReader;
 #endif
                 // check often if channelsock was created from accept thread
                 Sleep(50);
-                unsigned totalt = 2000 + getRandom() % 3000;
+                unsigned totalt = CONNECT_TIMEOUT_MINSLEEP + getRandom() % (CONNECT_TIMEOUT_MAXSLEEP-CONNECT_TIMEOUT_MINSLEEP);
                 unsigned startt = msTick();
                 unsigned deltat = 0;
                 while (deltat < totalt)
