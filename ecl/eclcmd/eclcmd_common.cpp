@@ -261,6 +261,12 @@ eclObjParameterType EclObjectParameter::set(const char *param)
         loadFile();
     else if (looksLikeOnlyAWuid(param))
         type = eclObjWuid;
+    else if (accept & eclObjQuery)
+    {
+        query.set(value.get());
+        type = eclObjQuery;
+        value.clear();
+    }
     return type;
 }
 
@@ -278,6 +284,8 @@ const char *EclObjectParameter::queryTypeName()
         return "ECL Manifest";
     case eclObjSharedObject:
         return "ECL Shared Object";
+    case eclObjQuery:
+        return "ECL Query";
     default:
         return "Unknown Type";
     }
@@ -551,29 +559,46 @@ bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNam
     addNamedValue(arg, values);
     return true;
 }
+
+bool EclCmdWithEclTarget::setTarget(const char *target)
+{
+    if (!optTargetCluster.isEmpty())
+        return streq(optTargetCluster, target);
+    optTargetCluster.set(target);
+    return true;
+ }
+
+bool EclCmdWithEclTarget::setParam(const char *in, bool final)
+{
+    bool success = true;
+    if (++paramCount>2)
+        success = false;
+    else if (!param.isEmpty())
+        success = setTarget(param);
+    if (!success)
+    {
+        fprintf(stderr, "\nunrecognized argument %s\n", in);
+        return false;
+    }
+    if (final) //a 'final' parameter is always last
+        paramCount=2;
+    param.set(in);
+    return true;
+ }
+
 eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
 {
     const char *arg = iter.query();
     if (streq(arg, "-"))
     {
-        optObj.set("stdin");
+        if (!setParam("stdin", true))
+            return EclCmdOptionCompletion;
         return EclCmdOptionMatch;
     }
     if (*arg!='-')
     {
-        if (optObj.value.length())
-        {
-            if (optObj.type==eclObjTypeUnknown && (optObj.accept & eclObjQuery) && !optObj.query.length())
-            {
-                optObj.type=eclObjQuery;
-                optObj.query.set(arg);
-                return EclCmdOptionMatch;
-            }
-
-            fprintf(stderr, "\nunrecognized argument %s\n", arg);
+        if (!setParam(arg, false))
             return EclCmdOptionCompletion;
-        }
-        optObj.set(arg);
         return EclCmdOptionMatch;
     }
     if (matchVariableOption(iter, 'f', debugValues))
@@ -600,8 +625,16 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
         return EclCmdOptionMatch;
     if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
         return EclCmdOptionMatch;
-    if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
+    StringAttr target;
+    if (iter.matchOption(target, ECLOPT_TARGET)||iter.matchOption(target, ECLOPT_TARGET_S))
+    {
+        if (!setTarget(target))
+        {
+            fprintf(stderr, "\nTarget names do not match %s != %s\n", optTargetCluster.str(), target.str());
+            return EclCmdOptionCompletion;
+        }
         return EclCmdOptionMatch;
+    }
 
     return EclCmdCommon::matchCommandLineOption(iter, finalAttempt);
 }
@@ -610,7 +643,8 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
 {
     if (!EclCmdCommon::finalizeOptions(globals))
         return false;
-
+    if (!param.isEmpty())
+        optObj.set(param);
     if (optObj.type == eclObjTypeUnknown)
     {
         if (optAttributePath.length())
@@ -634,7 +668,7 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
     if (optResultLimit == (unsigned)-1)
         extractEclCmdOption(optResultLimit, globals, ECLOPT_RESULT_LIMIT_ENV, ECLOPT_RESULT_LIMIT_INI, 0);
 
-    if (optObj.value.isEmpty() && optAttributePath.isEmpty())
+    if (optObj.value.isEmpty() && optObj.query.isEmpty() && optAttributePath.isEmpty())
     {
         fprintf(stderr, "\nMust specify a Query, WUID, ECL File, Archive, or shared object\n");
         return false;
@@ -709,10 +743,7 @@ bool EclCmdWithQueryTarget::finalizeOptions(IProperties *globals)
 bool EclCmdWithQueryTarget::parseCommandLineOptions(ArgvIterator &iter)
 {
     if (iter.done())
-    {
-        usage();
         return false;
-    }
 
     for (; !iter.done(); iter.next())
     {

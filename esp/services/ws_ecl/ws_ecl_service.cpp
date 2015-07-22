@@ -782,6 +782,25 @@ void buildSampleDataset(StringBuffer &xml, IPropertyTree *xsdtree, const char *s
 
 }
 
+void buildSampleJsonDataset(StringBuffer &json, IPropertyTree *xsdtree, const char *service, const char *method, const char *resultname)
+{
+    StringBuffer schemaXml;
+    toXML(xsdtree, schemaXml);
+
+    Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaXml);
+    if (schema.get())
+    {
+        IXmlType* type = schema->queryElementType("Dataset");
+        if (type)
+        {
+            StringArray parentTypes;
+            delimitJSON(json, true);
+            JsonHelpers::buildJsonMsg(parentTypes, type, json, resultname, NULL, REQSF_SAMPLE_DATA);
+        }
+    }
+
+}
+
 void CWsEclBinding::buildSampleResponseXml(StringBuffer& msg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo)
 {
     StringBuffer element;
@@ -1556,6 +1575,39 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
     }
 }
 
+void CWsEclBinding::buildSampleResponseJSON(StringBuffer& msg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo)
+{
+    StringBuffer element;
+    element.append(wsinfo.queryname.str()).append("Response");
+
+    StringBuffer xsds;
+    wsinfo.getSchemas(xsds);
+
+    const char *jsonp = context.queryRequestParameters()->queryProp("jsonp");
+    if (jsonp && *jsonp)
+        msg.append(jsonp).append('(');
+    msg.append('{');
+    appendJSONName(msg, element);
+    msg.append('{');
+    appendJSONName(msg, "Results");
+    msg.append('{');
+
+    Owned<IPropertyTree> xsds_tree;
+    if (xsds.length())
+        xsds_tree.setown(createPTreeFromXMLString(xsds.str()));
+
+    if (xsds_tree)
+    {
+        Owned<IPropertyTreeIterator> result_xsds =xsds_tree->getElements("Result");
+        ForEach (*result_xsds)
+            buildSampleJsonDataset(msg, result_xsds->query().queryPropTree("xs:schema"), wsinfo.qsetname.str(), wsinfo.queryname.str(), result_xsds->query().queryProp("@name"));
+    }
+
+    msg.append("}}}");
+    if (jsonp && *jsonp)
+        msg.append(");");
+}
+
 void CWsEclBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, unsigned flags, bool validate)
 {
     soapmsg.append(
@@ -2261,26 +2313,46 @@ int CWsEclBinding::getWsEclExample(CHttpRequest* request, CHttpResponse* respons
     StringBuffer qs;
     StringBuffer qid;
     splitLookupInfo(parms, thepath, wuid, qs, qid);
+
+    StringBuffer format;
+    nextPathNode(thepath, format);
+
+    ESPSerializationFormat fmt = strieq(format, "json") ? ESPSerializationJSON : ESPSerializationXML;
+
     WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
     context->setBindingValue(&wsinfo);
+
+    StringBuffer output;
+    const char *contentType = HTTP_TYPE_APPLICATION_XML;
     if (!stricmp(exampletype.str(), "request"))
-        return onGetReqSampleXml(*context, request, response, qs.str(), qid.str());
+    {
+        if (fmt==ESPSerializationXML)
+            return onGetReqSampleXml(*context, request, response, qs.str(), qid.str());
+
+        getWsEclJsonRequest(output, *context, request, wsinfo, "json", NULL, REQSF_ROOT | REQSF_SAMPLE_DATA, true);
+        contentType = HTTP_TYPE_TEXT_PLAIN;
+    }
     else if (!stricmp(exampletype.str(), "response"))
     {
-        StringBuffer output;
-        buildSampleResponseXml(output, *context, request, wsinfo);
-        if (output.length())
-            {
-                response->setStatus("200 OK");
-                response->setContent(output.str());
-                response->setContentType(HTTP_TYPE_APPLICATION_XML);
-                response->send();
-            }
+        if (fmt==ESPSerializationXML)
+            buildSampleResponseXml(output, *context, request, wsinfo);
+        else
+        {
+            buildSampleResponseJSON(output, *context, request, wsinfo);
+            contentType = HTTP_TYPE_TEXT_PLAIN;
+        }
     }
     else if (!stricmp(exampletype.str(), "url"))
         return getRestURL(context, request, response, wsinfo, parms);
 
+    if (output.length())
+    {
+        response->setStatus("200 OK");
+        response->setContent(output.str());
+        response->setContentType(contentType);
+        response->send();
+    }
     return 0;
 }
 
@@ -2460,7 +2532,13 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             response->redirect(*request, url);
             return 0;
         }
-
+        else if (strieq(methodName.str(), "json"))
+        {
+            StringBuffer url;
+            url.append("/WsEcl/forms/json/").append(thepath);
+            response->redirect(*request, url);
+            return 0;
+        }
     }
     catch (IMultiException* mex)
     {

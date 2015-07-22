@@ -76,13 +76,16 @@ ESPStruct DFUFileStat
     string MaxSkew;
 };
 
-ESPStruct DFUFilePartsOnCluster
+ESPStruct [nil_remove] DFUFilePartsOnCluster
 {
     string Cluster;
+    [min_ver("1.31")] string BaseDir;
+    [min_ver("1.31")] string ReplicateDir;
+    [min_ver("1.31")] bool Replicate;
     ESParray<ESPstruct DFUPart> DFUFileParts;
 };
 
-ESPStruct DFUFileDetail
+ESPStruct [nil_remove] DFUFileDetail
 {
     string Name;
     string Filename;
@@ -688,7 +691,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 
 //  ===========================================================================
 ESPservice [
-    version("1.30"),
+    version("1.31"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

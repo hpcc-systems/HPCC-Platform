@@ -220,6 +220,17 @@ IHqlStmt * BuildCtx::addCase(IHqlStmt * _owner, IHqlExpression * source)
 }
 
 
+IHqlStmt * BuildCtx::addCatch(IHqlExpression * caught)
+{
+    if (ignoreInput)
+        return NULL;
+    HqlCompoundStmt * next = new HqlCompoundStmt(catch_stmt, curStmts);
+    if (caught)
+        next->addExpr(LINK(caught));
+    return appendCompound(next);
+}
+
+
 IHqlStmt * BuildCtx::addConditionalGroup(IHqlStmt * stmt)
 {
     if (ignoreInput)
@@ -472,6 +483,26 @@ IHqlStmt * BuildCtx::addSwitch(IHqlExpression * source)
         return NULL;
     HqlCompoundStmt * next = new HqlCompoundStmt(switch_stmt, curStmts);
     next->addExpr(LINK(source));
+    return appendCompound(next);
+}
+
+
+IHqlStmt * BuildCtx::addThrow(IHqlExpression * thrown)
+{
+    if (ignoreInput)
+        return NULL;
+    HqlStmt * next = new HqlStmt(throw_stmt, curStmts);
+    if (thrown)
+        next->addExpr(LINK(thrown));
+    return appendSimple(next);
+}
+
+
+IHqlStmt * BuildCtx::addTry()
+{
+    if (ignoreInput)
+        return NULL;
+    HqlCompoundStmt * next = new HqlCompoundStmt(try_stmt, curStmts);
     return appendCompound(next);
 }
 
@@ -941,6 +972,8 @@ IHqlStmt * BuildCtx::recursiveGetBestContext(HqlStmts * searchStmts, HqlExprCopy
     case quote_compound_stmt:
     case quote_compoundopt_stmt:
     case indirect_stmt:
+    case catch_stmt:
+    case try_stmt:
         return NULL;
     case filter_stmt:
     case switch_stmt:

@@ -97,10 +97,15 @@ int EclCMDShell::processCMD(ArgvIterator &iter)
         return 0;
     }
     if (!c->parseCommandLineOptions(iter))
+    {
+        c->usage();
         return 0;
-
+    }
     if (!c->finalizeOptions(globals))
+    {
+        c->usage();
         return 0;
+    }
 
     return c->processCMD();
 }

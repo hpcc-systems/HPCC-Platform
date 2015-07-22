@@ -223,26 +223,34 @@ class Regression:
                     timeout = query.getTimeout()
                     oldCnt = cnt
 
+                started = False
                 for threadId in range(self.maxthreads):
-                    if not self.exitmutexes[threadId].locked():
-                        # Start a new test case with a reused thread id
-                        self.taskParam[threadId]['taskId']=cnt
-                        cnt += 1
-                        if timeout != 0:
-                            self.timeouts[threadId] = timeout
-                        else:
-                            self.timeouts[threadId] = self.timeout
 
-                        self.taskParam[threadId]['timeoutValue'] = self.timeout
-                        query = suiteItems[self.taskParam[threadId]['taskId']]
-                        query.setTimeout(self.timeout)
-                        #logging.debug("self.timeout[%d]:%d", threadId, self.timeouts[threadId])
-                        sysThreadId = thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  threadId))
-                        time.sleep(0.4)
-                        self.taskParam[threadId]['jobName'] = query.getJobname()
-                        self.taskParam[threadId]['retryCount'] = int(self.config.maxAttemptCount)
+                    for startThreadId in range(self.maxthreads):
+                        if not self.exitmutexes[startThreadId].locked():
+                            # Start a new test case with a reused thread id
+                            self.taskParam[startThreadId]['taskId']=cnt
+                            cnt += 1
+                            if timeout != 0:
+                                self.timeouts[startThreadId] = timeout
+                            else:
+                                self.timeouts[startThreadId] = self.timeout
+
+                            self.taskParam[startThreadId]['timeoutValue'] = self.timeout
+                            query = suiteItems[self.taskParam[startThreadId]['taskId']]
+                            query.setTimeout(self.timeout)
+                            #logging.debug("self.timeout[%d]:%d", startThreadId, self.timeouts[startThreadId])
+                            self.taskParam[startThreadId]['jobName'] = query.getJobname()
+                            self.taskParam[startThreadId]['retryCount'] = int(self.config.maxAttemptCount)
+                            self.exitmutexes[startThreadId].acquire()
+                            sysThreadId = thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  startThreadId))
+                            started = True
+                            break
+
+                    if started:
                         break
-                    else:
+
+                    if self.exitmutexes[threadId].locked():
                         if self.timeouts[threadId] % 10 == 0:
                             self.loggermutex.acquire()
                             logging.debug("%3d. timeout counter:%d" % (self.taskParam[threadId]['taskId']+1, self.timeouts[threadId]),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
@@ -300,7 +308,8 @@ class Regression:
                                 self.timeouts[threadId] = -1
 
                 # give some time to other threads
-                time.sleep(0.4)
+                if not started:
+                    time.sleep(0.2)
 
             # All tasks are scheduled
             #Some of them finished, others are not yet, but should check the still running tasks' timeout and retry state
@@ -402,6 +411,7 @@ class Regression:
                     self.timeouts[th] = self.timeout
                 self.retryCount = int(self.config.maxAttemptCount)
                 query.setTimeout(self.timeouts[th])
+                self.exitmutexes[th].acquire()
                 thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  th))
                 time.sleep(0.1)
                 self.CheckTimeout(cnt, th,  query)
@@ -449,6 +459,7 @@ class Regression:
             else:
                 self.timeouts[threadId] = self.timeout
             self.retryCount = int(self.config.maxAttemptCount)
+            self.exitmutexes[threadId].acquire()
             sysThreadId = thread.start_new_thread(self.runQuery, (cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
             time.sleep(0.1)
             self.CheckTimeout(cnt, threadId,  eclfile)
@@ -470,7 +481,6 @@ class Regression:
     def runQuery(self, cluster, query, report, cnt=1, publish=False,  th = 0):
         startTime = time.time()
         self.loggermutex.acquire()
-        self.exitmutexes[th].acquire()
 
         logging.debug("runQuery(cluster: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( cluster, query.ecl, cnt, publish,  th))
         logging.warn("%3d. Test: %s" % (cnt, query.getBaseEclRealName()),  extra={'taskId':cnt})

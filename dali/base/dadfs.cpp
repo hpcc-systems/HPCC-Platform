@@ -4666,7 +4666,12 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     return false;
                 }
                 if (!transaction->isSubFile(parent, subfile, true))
+                {
                     WARNLOG("removeSubFile: File %s is not a subfile of %s", subfile.get(), parent->queryLogicalName());
+                    parent.clear();
+                    sub.clear();
+                    return true; // NB: sub was not a member of super, issue warning and continue without locking
+                }
             }
             // Try to lock all files
             addFileLock(parent);

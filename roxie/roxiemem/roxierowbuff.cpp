@@ -138,7 +138,7 @@ void RoxieOutputRowArray::transferRows(rowidx_t & outNumRows, const void * * & o
 
 bool DynamicRoxieOutputRowArray::ensure(rowidx_t requiredRows)
 {
-    unsigned newSize = maxRows;
+    rowidx_t newSize = maxRows;
     //This condition must be <= at least 1/scaling factor below otherwise you'll get an infinite loop.
     if (newSize <= 4)
         newSize = requiredRows;
@@ -150,7 +150,17 @@ bool DynamicRoxieOutputRowArray::ensure(rowidx_t requiredRows)
         //   reduce fragmentation.
         //Use 25% for the moment.  It should possibly be configurable - e.g., higher for thor global sort.
         while (newSize < requiredRows)
-            newSize += newSize/4;
+        {
+            rowidx_t nextSize = newSize + newSize / 4;
+            //check to see if it has wrapped
+            if (nextSize < newSize)
+            {
+                newSize = requiredRows;
+                break;
+            }
+            else
+                newSize = nextSize;
+        }
     }
 
     const void * * newRows;
@@ -162,7 +172,7 @@ bool DynamicRoxieOutputRowArray::ensure(rowidx_t requiredRows)
     }
     catch (IException * e)
     {
-        //Pahological cases - not enough memory to reallocate the target row buffer, or no contiguous pages available.
+        //Pathological cases - not enough memory to reallocate the target row buffer, or no contiguous pages available.
         unsigned code = e->errorCode();
         if ((code == ROXIEMM_MEMORY_LIMIT_EXCEEDED) || (code == ROXIEMM_MEMORY_POOL_EXHAUSTED))
         {

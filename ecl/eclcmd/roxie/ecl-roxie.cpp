@@ -177,7 +177,7 @@ public:
             return false;
         if (optProcess.isEmpty())
         {
-            fputs("process cluster must be specified.\n\n", stderr);
+            fputs("process cluster must be specified.\n", stderr);
             return false;
         }
         return true;
@@ -283,7 +283,7 @@ public:
             return false;
         if (optProcess.isEmpty())
         {
-            fputs("process cluster must be specified.\n\n", stderr);
+            fputs("process cluster must be specified.\n", stderr);
             return false;
         }
         return true;
@@ -401,7 +401,7 @@ public:
             return false;
         if (optProcess.isEmpty())
         {
-            fputs("process cluster must be specified.\n\n", stderr);
+            fputs("process cluster must be specified.\n", stderr);
             return false;
         }
         if (optDeleteRecursive)

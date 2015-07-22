@@ -6440,11 +6440,15 @@ primexpr1
                             $$.setExpr(createCompound($3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
                         }
-    | WHEN '(' expression ',' action ')'
+    | WHEN '(' expression ',' action sideEffectOptions ')'
                         {
                             parser->normalizeExpression($3);
-                            $$.setExpr(createCompound($5.getExpr(), $3.getExpr()));
-                            $$.setPosition($1);
+                            OwnedHqlExpr options = $6.getExpr();
+                            OwnedHqlExpr expr = $3.getExpr();
+                            if (options)
+                                $$.setExpr(createValueF(no_executewhen, expr->getType(), LINK(expr), $5.getExpr(), options.getClear(), NULL), $1);
+                            else
+                                $$.setExpr(createCompound($5.getExpr(), expr), $1);
                         }
     | __COMMON__ '(' expression ')'
                         {
@@ -7335,9 +7339,13 @@ simpleDataRow
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             $$.setExpr(createRow(no_fromjson, $3.getExpr(), createComma($5.getExpr(), $6.getExpr())), $1);
                         }
-    | WHEN '(' dataRow ',' action ')'
+    | WHEN '(' dataRow ',' action sideEffectOptions ')'
                         {
-                            $$.setExpr(createCompound($5.getExpr(), $3.getExpr()), $1);
+                            OwnedHqlExpr options = $6.getExpr();
+                            if (options)
+                                $$.setExpr(createRow(no_executewhen, $3.getExpr(), createComma($5.getExpr(), options.getClear())), $1);
+                            else
+                                $$.setExpr(createCompound($5.getExpr(), $3.getExpr()), $1);
                         }
     ;
 
@@ -12037,8 +12045,12 @@ pattern0
                             parser->checkPattern($$, args);
                             $$.setExpr(parser->createPatternOr(args, $3));
                         }
-    | TOK_PATTERN '(' stringOrUnicodeConstExpr ')'
+    | TOK_PATTERN '(' expr ')'
                         {
+                            parser->normalizeExpression($3, type_stringorunicode, true);
+                            if (!$3.queryExpr()->isConstant())
+                                parser->reportError(ERR_EXPECTED_CONST, $3, "Pattern requires a constant argument");
+
                             IHqlExpression * pattern = parser->convertPatternToExpression($3);
                             $$.setExpr(createValue(no_pat_pattern, makePatternType(), $3.getExpr(), pattern));
                             parser->checkPattern($$, false);

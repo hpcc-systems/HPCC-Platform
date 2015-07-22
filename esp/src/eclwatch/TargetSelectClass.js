@@ -346,9 +346,9 @@ define([
             FileSpray.FileList({
                 request: {
                     Mask: "*.log",
-                    Netaddr: params.params.Netaddress,
-                    OS: params.params.OS,
-                    Path: params.params.getLogDirectory()
+                    Netaddr: params.treeNode.getNetaddress(),
+                    OS: params.treeNode.getOS(),
+                    Path: params.treeNode.getLogDirectory()
                 }
             }).then(function (response) {
                 if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {

@@ -55,10 +55,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -89,14 +86,12 @@ public:
             return false;
         if (optTarget.isEmpty())
         {
-            fprintf(stdout, "\n ... Missing target name\n\n");
-            usage();
+            fprintf(stdout, "\n ... Missing target name\n");
             return false;
         }
         if (optPackageMap.isEmpty())
         {
-            fprintf(stdout, "\n ... Missing package map name\n\n");
-            usage();
+            fprintf(stdout, "\n ... Missing package map name\n");
             return false;
         }
         if (optProcess.isEmpty())
@@ -151,10 +146,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -185,14 +177,12 @@ public:
             return false;
         if (optTarget.isEmpty())
         {
-            fprintf(stdout, "\n ... Missing target name\n\n");
-            usage();
+            fprintf(stdout, "\n ... Missing target name\n");
             return false;
         }
         if (optPackageMap.isEmpty())
         {
-            fprintf(stdout, "\n ... Missing package map name\n\n");
-            usage();
+            fprintf(stdout, "\n ... Missing package map name\n");
             return false;
         }
         if (optProcess.isEmpty())
@@ -332,10 +322,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -402,10 +389,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -439,14 +423,13 @@ public:
         }
         StringBuffer err;
         if (optPackageMap.isEmpty())
-            err.append("\n ... Missing package map name\n\n");
+            err.append("\n ... Missing package map name\n");
         else if (optTarget.isEmpty())
-            err.append("\n ... Specify a target cluster name\n\n");
+            err.append("\n ... Specify a target cluster name\n");
 
         if (err.length())
         {
             fprintf(stdout, "%s", err.str());
-            usage();
             return false;
         }
 
@@ -504,10 +487,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -555,14 +535,13 @@ public:
         }
         StringBuffer err;
         if (optFileName.isEmpty())
-            err.append("\n ... Missing package file name\n\n");
+            err.append("\n ... Missing package file name\n");
         else if (optTarget.isEmpty())
-            err.append("\n ... Specify a cluster name\n\n");
+            err.append("\n ... Specify a cluster name\n");
 
         if (err.length())
         {
             fprintf(stdout, "%s", err.str());
-            usage();
             return false;
         }
 
@@ -661,10 +640,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -717,16 +693,15 @@ public:
         if (optValidateActive)
             pcount++;
         if (pcount==0)
-            err.append("\n ... Package file name, --pmid, or --active required\n\n");
+            err.append("\n ... Package file name, --pmid, or --active required\n");
         else if (pcount > 1)
-            err.append("\n ... Package file name, --pmid, and --active are mutually exclusive\n\n");
+            err.append("\n ... Package file name, --pmid, and --active are mutually exclusive\n");
         if (optTarget.isEmpty())
             err.append("\n ... Specify a cluster name\n\n");
 
         if (err.length())
         {
             fprintf(stdout, "%s", err.str());
-            usage();
             return false;
         }
         return true;
@@ -854,10 +829,7 @@ public:
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-        {
-            usage();
             return false;
-        }
 
         for (; !iter.done(); iter.next())
         {
@@ -893,14 +865,13 @@ public:
         }
         StringBuffer err;
         if (optTarget.isEmpty())
-            err.append("\n ... A target cluster must be specified\n\n");
+            err.append("\n ... A target cluster must be specified\n");
         if (optQueryId.isEmpty())
-            err.append("\n ... A query must be specified\n\n");
+            err.append("\n ... A query must be specified\n");
 
         if (err.length())
         {
             fprintf(stdout, "%s", err.str());
-            usage();
             return false;
         }
         return true;

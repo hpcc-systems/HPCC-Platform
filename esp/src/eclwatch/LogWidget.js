@@ -164,7 +164,7 @@ define([
             this.logTargetSelect.init({
                 Logs: true,
                 includeBlank: false,
-                params: this.params
+                treeNode: this.params
             });
 
             this.initLogGrid();

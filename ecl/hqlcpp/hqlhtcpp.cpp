@@ -3609,8 +3609,12 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
         IHqlExpression *defaultValue = queryAttributeChild(field, defaultAtom, 0);
         if (defaultValue)
         {
+            LinkedHqlExpr targetField = field;
+            if (fieldType->getTypeCode() == type_bitfield)
+                targetField.setown(createField(field->queryId(), LINK(fieldType->queryChildType()), NULL));
+
             MemoryBuffer target;
-            if (createConstantField(target, field, defaultValue))
+            if (createConstantField(target, targetField, defaultValue))
                 appendStringAsQuotedCPP(defaultInitializer, target.length(), target.toByteArray(), false);
             else
                 throwError1(HQLERR_CouldNotGenerateDefault, str(field->queryName()));

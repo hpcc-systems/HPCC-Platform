@@ -48,8 +48,11 @@ void es_createDirectory(const char* dir)
             if (mkdir(dir,0755)!=0)
 #endif
             {
-                fprintf(stderr,"Create directory %s failed", dir);
-                exit(1);
+                if (!es_checkDirExists(dir))
+                {
+                   fprintf(stderr,"Create directory %s failed", dir);
+                   exit(1);
+                }
             }
         }
     }

@@ -249,11 +249,13 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget() : optLegacy(false), optNoArchive(false), optResultLimit((unsigned)-1), optDebug(false)
+    EclCmdWithEclTarget() : optLegacy(false), optNoArchive(false), optResultLimit((unsigned)-1), optDebug(false), paramCount(0)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
     virtual bool finalizeOptions(IProperties *globals);
+    bool setTarget(const char *target);
+    bool setParam(const char *in, bool final);
 
     virtual void usage()
     {
@@ -292,6 +294,7 @@ public:
         }
     }
 public:
+    StringAttr param;
     StringAttr optTargetCluster;
     EclObjectParameter optObj;
     StringBuffer optLibPath;
@@ -302,6 +305,7 @@ public:
     IArrayOf<IEspNamedValue> debugValues;
     IArrayOf<IEspNamedValue> definitions;
     unsigned optResultLimit;
+    unsigned paramCount;
     bool optNoArchive;
     bool optLegacy;
     bool optDebug;
