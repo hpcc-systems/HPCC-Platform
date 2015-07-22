@@ -442,11 +442,6 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     getConfigurationDirectory(directories, "query", "esp", name ? name : "esp", queryDirectory);
     recursiveCreateDirectory(queryDirectory.str());
 
-    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspBinding[@service=\"%s\"]/Authenticate", process, service);
-    Owned<IPropertyTree> authCFG = cfg->getPropTree(xpath.str());
-    if(authCFG)
-        authMethod.set(authCFG->queryProp("@method"));
-
     dataCache.setown(new DataCache(DATA_SIZE));
     archivedWuCache.setown(new ArchivedWuCache(AWUS_CACHE_SIZE));
     wuArchiveCache.setown(new WUArchiveCache(WUARCHIVE_CACHE_SIZE));
@@ -1563,7 +1558,12 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             resp.setCanCompile(notEmpty(context.queryUserId()));
             if (version > 1.24 && notEmpty(req.getThorSlaveIP()))
                 resp.setThorSlaveIP(req.getThorSlaveIP());
-            resp.setSecMethod(authMethod.get());
+
+            ISecManager* secmgr = context.querySecManager();
+            if (!secmgr)
+                resp.setSecMethod(NULL);
+            else
+                resp.setSecMethod(secmgr->querySecMgrTypeName());
         }
     }
     catch(IException* e)

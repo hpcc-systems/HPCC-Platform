@@ -83,6 +83,7 @@ public:
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes) { return 0; }
     virtual int queryDefaultPermission(ISecUser& user) { return SecAccess_Full; }
     virtual secManagerType querySecMgrType() { return SMT_Default; }
+    inline virtual const char* querySecMgrTypeName() { return "Default"; }
 };
 
 class CLocalSecurityManager : public CDefaultSecurityManager
@@ -95,6 +96,7 @@ public:
 protected:
     virtual bool IsPasswordValid(ISecUser& sec_user);
     virtual secManagerType querySecMgrType() { return SMT_Local; }
+    inline virtual const char* querySecMgrTypeName() { return "Local"; }
 };
 
 
