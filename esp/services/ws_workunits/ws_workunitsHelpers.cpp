@@ -507,10 +507,7 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
 
             if (version > 1.30)
             {
-                SCMStringBuffer qText;
-                query->getQueryText(qText);
-                if ((qText.length() > 0) && isArchiveQuery(qText.str()))
-                    info.setHasArchiveQuery(true);
+                info.setHasArchiveQuery(query->isArchive());
             }
 
             for (unsigned i = 0; i < FileTypeSize; i++)

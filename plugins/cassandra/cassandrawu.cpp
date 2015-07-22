@@ -641,6 +641,7 @@ public:
     }
 } subTreeMapColumnMapper;
 
+/*
 static class QueryTextColumnMapper : public StringColumnMapper
 {
 public:
@@ -657,6 +658,7 @@ public:
         return StringColumnMapper::toXML(query, "Text", value);
     }
 } queryTextColumnMapper;
+*/
 
 static class GraphMapColumnMapper : implements CassandraColumnMapper
 {
@@ -715,28 +717,8 @@ public:
 private:
     const char *elemName;
     const char *nameAttr;
-} graphMapColumnMapper("Graph", "@name"), workflowMapColumnMapper("Item", "@wfid");
+} graphMapColumnMapper("Graph", "@name"), workflowMapColumnMapper("Item", "@wfid"), associationsMapColumnMapper("File", "@filename");;
 
-static class AssociationsMapColumnMapper : public GraphMapColumnMapper
-{
-public:
-    AssociationsMapColumnMapper(const char *_elemName, const char *_nameAttr)
-    : GraphMapColumnMapper(_elemName, _nameAttr)
-    {
-    }
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
-    {
-        // Name is "Query/Associated ...
-        IPTree *query = row->queryPropTree("Query");
-        if (!query)
-        {
-            query = createPTree("Query");
-            row->setPropTree("Query", query);
-            row->setProp("Query/@fetchEntire", "1"); // Compatibility...
-        }
-        return GraphMapColumnMapper::toXML(query, "Associated", value);
-    }
-} associationsMapColumnMapper("File", "@filename");
 
 static class WarningsMapColumnMapper : implements CassandraColumnMapper
 {
@@ -877,8 +859,6 @@ static const CassandraXmlMapping workunitsMappings [] =
     {"debug", "map<text, text>", "Debug", simpleMapColumnMapper},
     {"attributes", "map<text, text>", "@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state@timeScheduled@totalThorTime@", attributeMapColumnMapper},  // name is the suppression list, note trailing @
     {"plugins", "list<text>", "Plugins", pluginListColumnMapper},
-    {"query", "text", "Query/Text", queryTextColumnMapper},        // MORE - make me lazy...
-    {"associations", "map<text, text>", "Query/Associated", associationsMapColumnMapper},
     {"workflow", "map<text, text>", "Workflow", workflowMapColumnMapper},
     {"onWarnings", "map<int, text>", "OnWarnings/OnWarning", warningsMapColumnMapper},
 
@@ -971,7 +951,7 @@ static const CassandraXmlMapping filesReadSearchMappings [] =
 
 // The following describe child tables - all keyed by wuid
 
-enum ChildTablesEnum { WuExceptionsChild, WuStatisticsChild, WuGraphsChild, WuResultsChild, WuVariablesChild, WuTemporariesChild, WuFilesReadChild,ChildTablesSize };
+enum ChildTablesEnum { WuQueryChild, WuExceptionsChild, WuStatisticsChild, WuGraphsChild, WuResultsChild, WuVariablesChild, WuTemporariesChild, WuFilesReadChild,ChildTablesSize };
 
 struct ChildTableInfo
 {
@@ -980,6 +960,28 @@ struct ChildTableInfo
     ChildTablesEnum index;
     const CassandraXmlMapping *mappings;
 };
+
+// wuQueries table is slightly unusual among the child tables as is is 1:1 - it is split out for lazy load purposes.
+
+static const CassandraXmlMapping wuQueryMappings [] =
+{
+    {"partition", "int", NULL, hashRootNameColumnMapper},
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"associations", "map<text, text>", "Associated", associationsMapColumnMapper},
+    {"attributes", "map<text, text>", "", attributeMapColumnMapper},
+    {"query", "text", "Text", stringColumnMapper}, // May want to make this even lazier...
+    {"shortQuery", "text", "ShortText", stringColumnMapper},
+    { NULL, "wuQueries", "((partition, wuid))", stringColumnMapper}
+};
+
+static const ChildTableInfo wuQueriesTable =
+{
+    "Query", NULL,
+    WuQueryChild,
+    wuQueryMappings
+};
+
+// wuExceptions table holds the exceptions associated with a wuid
 
 static const CassandraXmlMapping wuExceptionsMappings [] =
 {
@@ -1126,7 +1128,7 @@ static const ChildTableInfo wuFilesReadTable =
 };
 
 // Order should match the enum above
-static const ChildTableInfo * const childTables [] = { &wuExceptionsTable, &wuStatisticsTable, &wuGraphsTable, &wuResultsTable, &wuVariablesTable, &wuTemporariesTable, &wuFilesReadTable, NULL };
+static const ChildTableInfo * const childTables [] = { &wuQueriesTable, &wuExceptionsTable, &wuStatisticsTable, &wuGraphsTable, &wuResultsTable, &wuVariablesTable, &wuTemporariesTable, &wuFilesReadTable, NULL };
 
 // Graph progress tables are read directly, XML mappers not used
 
@@ -2114,7 +2116,7 @@ public:
                 // empty newly-created WU, it is unnecessary.
                 //deleteChildren(wuid);
 
-                // MORE can use the table
+                // MORE can use the table?
                 childXMLtoCassandra(sessionCache, *batch, wuGraphsMappings, p, "Graphs/Graph", 0);
                 childXMLtoCassandra(sessionCache, *batch, wuResultsMappings, p, "Results/Result", "0");
                 childXMLtoCassandra(sessionCache, *batch, wuVariablesMappings, p, "Variables/Variable", "-1"); // ResultSequenceStored
@@ -2122,6 +2124,9 @@ public:
                 childXMLtoCassandra(sessionCache, *batch, wuExceptionsMappings, p, "Exceptions/Exception", 0);
                 childXMLtoCassandra(sessionCache, *batch, wuStatisticsMappings, p, "Statistics/Statistic", 0);
                 childXMLtoCassandra(sessionCache, *batch, wuFilesReadMappings, p, "FilesRead/File", 0);
+                IPTree *query = p->queryPropTree("Query");
+                if (query)
+                    childXMLRowtoCassandra(sessionCache, *batch, wuQueryMappings, wuid, *query, 0);
             }
             else
             {
@@ -2270,6 +2275,16 @@ public:
     virtual IWUResult * updateVariableByName(const char * name)
     {
         return noteDirty(CPersistedWorkUnit::updateVariableByName(name));
+    }
+    virtual IWUQuery * updateQuery()
+    {
+        noteDirty("Query", wuQueryMappings);
+        return CPersistedWorkUnit::updateQuery();
+    }
+    virtual IConstWUQuery *getQuery() const
+    {
+        checkChildLoaded(wuQueriesTable);
+        return CPersistedWorkUnit::getQuery();
     }
     virtual IWUException *createException()
     {
@@ -2565,15 +2580,18 @@ protected:
         if (!childLoaded[childTable.index])
         {
             CassandraResult result(sessionCache->fetchDataForWuid(childTable.mappings, queryWuid(), false));
-            Owned<IPTree> results;
+            IPTree *results = p->queryPropTree(childTable.parentElement);
             CassandraIterator rows(cass_iterator_from_result(result));
             while (cass_iterator_next(rows))
             {
                 CassandraIterator cols(cass_iterator_from_row(cass_iterator_get_row(rows)));
                 Owned<IPTree> child;
                 if (!results)
-                    results.setown(createPTree(childTable.parentElement));
-                child.setown(createPTree(childTable.childElement));
+                    results = ensurePTree(p, childTable.parentElement);
+                if (childTable.childElement)
+                    child.setown(createPTree(childTable.childElement));
+                else
+                    child.set(results);
                 unsigned colidx = 2;  // We did not fetch wuid or partition
                 while (cass_iterator_next(cols))
                 {
@@ -2583,11 +2601,12 @@ protected:
                         childTable.mappings[colidx].mapper.toXML(child, childTable.mappings[colidx].xpath, value);
                     colidx++;
                 }
-                const char *childName = child->queryName();
-                results->addPropTree(childName, child.getClear());
+                if (childTable.childElement)
+                {
+                    const char *childName = child->queryName();
+                    results->addPropTree(childName, child.getClear());
+                }
             }
-            if (results)
-                p->addPropTree(childTable.parentElement, results.getClear());
             childLoaded[childTable.index] = true;
         }
     }
