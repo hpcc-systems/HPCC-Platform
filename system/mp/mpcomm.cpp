@@ -759,7 +759,7 @@ protected: friend class CMPPacketReader;
                 // loop with short wait time and release CS to allow other side to proceed
                 StringBuffer epStr;
                 unsigned startMs = msTick();
-                unsigned loopCnt = CONNECT_READ_TIMEOUT / CONNECT_TIMEOUT_INTERVAL;
+                unsigned loopCnt = CONNECT_READ_TIMEOUT / CONNECT_TIMEOUT_INTERVAL + 1;
 #ifdef _TRACE
                 PROGLOG("MP: loopCnt start = %u", loopCnt);
 #endif
