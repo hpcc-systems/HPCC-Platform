@@ -4974,9 +4974,9 @@ IHqlExpression * GlobalAttributeInfo::queryFilename(IHqlExpression * value, ICon
             if (storedName)
             {
                 if (persistOp == no_stored)
-                    prefix.append("spill::stored");
+                    prefix.append("jobtemp::stored");
                 else if (persistOp == no_checkpoint)
-                    prefix.append("spill::checkpoint");
+                    prefix.append("jobtemp::checkpoint");
             }
             if (persistOp == no_once)
                 prefix.append("once::");
@@ -5615,7 +5615,7 @@ unsigned WorkflowTransformer::ensureWorkflowAction(IHqlExpression * expr)
 
 unsigned WorkflowTransformer::splitValue(IHqlExpression * value)
 {
-    GlobalAttributeInfo info("spill::wf", "wf", value);
+    GlobalAttributeInfo info("jobtemp::wf", "wf", value);
     info.sequence.setown(getLocalSequenceNumber());
     info.setOp = no_setresult;
     info.persistOp = no_global;
@@ -5674,7 +5674,7 @@ void WorkflowTransformer::extractDependentInputs(UnsignedArray & visited, Depend
 IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransformed, IHqlExpression * expr)
 {
     IHqlExpression * value = expr->queryChild(0);
-    GlobalAttributeInfo info("spill::wf", "wf", value);
+    GlobalAttributeInfo info("jobtemp::wf", "wf", value);
     info.sequence.setown(getLocalSequenceNumber());
     OwnedHqlExpr scheduleActions;
 
@@ -6027,7 +6027,7 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     DBGLOG("%s", s.str());
     translator.addWorkunitException(SeverityInformation, 0, s.str(), location);
 
-    GlobalAttributeInfo info("spill::wfa", "wfa", transformed);
+    GlobalAttributeInfo info("jobtemp::wfa", "wfa", transformed);
     info.extractGlobal(NULL, translator.getTargetClusterType());       // should really be a slightly different function
 
     OwnedHqlExpr setValue;
@@ -7548,7 +7548,7 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                 }
                 else
                 {
-                    GlobalAttributeInfo info("spill::global","gl", transformed);
+                    GlobalAttributeInfo info("jobtemp::global","gl", transformed);
                     if (op == no_nothor)
                         info.extractGlobal(NULL, RoxieCluster);
                     else
@@ -8145,7 +8145,7 @@ IHqlExpression * AutoScopeMigrateTransformer::createTransformed(IHqlExpression *
         s.append("as an item to hoist");
         DBGLOG("%s", s.str());
 
-        GlobalAttributeInfo info("spill::auto","auto", transformed);
+        GlobalAttributeInfo info("jobtemp::auto","auto", transformed);
         info.extractGlobal(NULL, translator.getTargetClusterType());
         if (translator.targetThor() && extra->globalInsideChild)
             info.preventDiskSpill();
