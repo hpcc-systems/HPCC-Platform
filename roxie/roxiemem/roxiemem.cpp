@@ -1168,12 +1168,12 @@ void ParallelReleaseRoxieRowArray(size_t count, const void * * rows)
             size_t remain = count - i;
             size_t blockRows = (remain > parallelSyncReleaseGranularity) ? parallelSyncReleaseGranularity : remain;
             tbb::task * next = new (completed_task->allocate_child()) sync_releaser_task(blockRows, rows + i);
-            tbb::task::spawn(*next);
+            next->spawn(*next); // static member in tbb 3.0
         }
     }
 
     completed_task->wait_for_all();
-    tbb::task::destroy(*completed_task);
+    completed_task->destroy(*completed_task);       // static member in tbb 3.0
 #else
     //Arrange the blocks that are freed from the array so that if they are allocated in order adjacent blocks
     //are not released at the same time.
@@ -3559,7 +3559,7 @@ public:
         //Ensure all parallel block releases are completed before the row manager is destroyed
         //MORE: Investigate how to abort a set of tasks
         blocks_released->wait_for_all();
-        tbb::task::destroy(*blocks_released);
+        blocks_released->destroy(*blocks_released);     // static member in tbb 3.0
 #endif
 
         killRowReleasers();
@@ -4177,9 +4177,9 @@ public:
     virtual void releaseBlocked(IBlockedRowReleaser * ownedRows)
     {
 #ifdef PARALLEL_ASYNC_RELEASE
-        tbb::task * next = new (tbb::task::allocate_additional_child_of(*blocks_released)) releaser_task(ownedRows);
+        tbb::task * next = new (blocks_released->allocate_additional_child_of(*blocks_released)) releaser_task(ownedRows);  // allocate_additional_child_of is static member in tbb 3.0
         releaserSem.wait();
-        tbb::task::spawn(*next);
+        next->spawn(*next); // static member in tbb 3.0
 #else
         ownedRows->releaseRows();
         ownedRows->Release();
