@@ -2408,6 +2408,7 @@ mapEnums querySortFields[] =
    { WUQSFActivited, "@activated" },
    { WUQSFSuspendedByUser, "@suspended" },
    { WUQSFLibrary, "Library"},
+   { WUQSFPublishedBy, "@publishedBy" },
    { WUQSFterm, NULL }
 };
 
