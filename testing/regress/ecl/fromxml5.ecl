@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
     This program is free software: you can redistribute it and/or modify
     you may not use this file except in compliance with the License.
@@ -55,8 +55,17 @@ namesTable := dataset([
     u8'<Row><surname>Hälliday</surname><forename>Gavin</forename><homephone areaCode="09876" number="123987"/><hasmobile>true</hasmobile><mobilephone areaCode="07967" number="123987"/>' +
         u8'<contact hasEmail="true"><phone areaCode="n/a" number="0"/><email>gavin@edata.com</email></contact>' +
         u8'<books><Row><title>εν αρχη ην ο λογος</title><author>john</author></Row><Row><title>To kill a mocking bird</title><author>Lee</author></Row><Row><title>Zen and the art of motorcycle maintainence</title><author>Pirsig</author></Row></books><colours><All/></colours><endmarker>$$</endmarker></Row>',
-    u8'<Row><surname>Hawthorn</surname><forename>Abigäil</forename><homephone areaCode="09876" number="123987"/><hasmobile>false</hasmobile><contact hasEmail="false"><phone areaCode="" number="0"/></contact><books><Row><title>The cat in the hat</title><author>Suess</author></Row><Row><title>Wolly the sheep</title><author></author></Row></books><colours><Item>Red</Item><Item>Yellow</Item></colours><endmarker>$$</endmarker></Row>'
+    u8'<Row><unmatchedtag></Row>',
+    u8'<Row><surname>Halliday</surname><forename>Abigäil</forename><homephone areaCode="09876" number="123987"/><hasmobile>false</hasmobile><contact hasEmail="false"><phone areaCode="" number="0"/></contact><books><Row><title>The cat in the hat</title><author>Suess</author></Row><Row><title>Wolly the sheep</title><author></author></Row></books><colours><Item>Red</Item><Item>Yellow</Item></colours><endmarker>$$</endmarker></Row>'
     ], { utf8 text; });
 
-output(namesTable, { FROMXML(personRecord, text, TRIM); });
+personRecord createFailure() := TRANSFORM
+    SELF.surname := '**FAIL**';
+    SELF.forename := (UNICODE)FAILCODE;
+    SELF.contact.hasemail := TRUE;
+    SELF.contact.email := FAILMESSAGE;
+    SELF := [];
+END;
+
+output(namesTable, { FROMXML(personRecord, text, TRIM, ONFAIL(createFailure())); });
 output(1);
