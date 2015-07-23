@@ -24,7 +24,7 @@ IMPORT cassandra;
  This example illustrates various calls to embdded Cassandra CQL code
  */
 
-// This is the record structure in ECL that will correspond to the rows in the Cassabdra dataset
+// This is the record structure in ECL that will correspond to the rows in the Cassandra dataset
 // Note that the default values specified in the fields will be used when a NULL value is being
 // returned from Cassandra
 
@@ -93,16 +93,25 @@ createTables() := EMBED(cassandra : server(server),user('rchapman'),keyspace('te
 ENDEMBED;
 
 // Initialize the Cassandra table, passing in the ECL dataset to provide the rows
-// Note the batch option to control how cassandra inserts are batched
-// If not supplied, each insert is executed individually - because Cassandra
-// has restrictions about what can be done in a batch, we can't default to using batch
-// unless told to...
+// When not using batch mode, maxFutures controls how many simultaenous writes to Cassandra are allowed before
+// we start to throttle, and maxRetries controls how many times inserts that fail because Cassandra is too busy 
+// will be retried.
 
-initialize(dataset(childrec) values) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'),batch('unlogged'))
+initialize(dataset(childrec) values) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'),maxFutures(100),maxRetries(10))
   INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1) values (?,?,?,?,?,?,?,?,?,?,?,?,?);
 ENDEMBED;
 
-initialize2(row(childrec) values) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'))
+// Note the batch option to control how cassandra inserts are batched
+// If not supplied, each insert is executed individually - because Cassandra
+// has restrictions about what can be done in a batch, we can't default to using batch
+// unless told to... Also Cassandra 2.2 and later will fail if batch gets too large. In general
+// best NOT to try to use batch for performance unless you know that 
+//   (a) the resulting batch will be small (default limit is 50k bytes) and
+//   (b) all the records in the batch share the same partition key and
+//   (c) you use 'unlogged' mode
+// Use of batch to ensure all trasactions either fail together of pass together is ok, but subject to the same size restrictions
+
+initialize2(row(childrec) values) := EMBED(cassandra : server(server),user('rchapman'),keyspace('test'),batch('unlogged'))
   INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1) values (?,?,?,?,?,?,?,?,?,?,?,?,?);
 ENDEMBED;
 
