@@ -755,6 +755,7 @@ void CThorExpandingRowArray::transferFrom(CThorExpandingRowArray &donor)
 void CThorExpandingRowArray::transferFrom(CThorSpillableRowArray &donor)
 {
     transferFrom((CThorExpandingRowArray &)donor);
+    donor.kill();
 }
 
 void CThorExpandingRowArray::removeRows(rowidx_t start, rowidx_t n)

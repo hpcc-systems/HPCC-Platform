@@ -570,3 +570,4 @@ void CThorKeyArray::traceKey(const char *prefix,unsigned idx)
     IOutputRowSerializer *serializer = keyserializer?keyif->queryRowSerializer():rowif->queryRowSerializer();
     ::traceKey(serializer,s.str(),queryKey(idx));
 }
+
