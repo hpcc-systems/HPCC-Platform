@@ -6448,7 +6448,7 @@ primexpr1
                             if (options)
                                 $$.setExpr(createValueF(no_executewhen, expr->getType(), LINK(expr), $5.getExpr(), options.getClear(), NULL), $1);
                             else
-                                $$.setExpr(createCompound($5.getExpr(), expr), $1);
+                                $$.setExpr(createCompound($5.getExpr(), expr.getClear()), $1);
                         }
     | __COMMON__ '(' expression ')'
                         {
