@@ -168,6 +168,7 @@ public:
     void getTimers(IEspECLWorkunit &info, unsigned flags);
     void getHelpers(IEspECLWorkunit &info, unsigned flags);
     void getGraphInfo(IEspECLWorkunit &info, unsigned flags);
+    void getWUGraphNameAndTypes(WUGraphType graphType, IArrayOf<IEspNameAndType>& graphNameAndTypes);
     void getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags);
     bool getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize);
 

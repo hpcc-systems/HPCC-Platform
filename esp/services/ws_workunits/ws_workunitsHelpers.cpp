@@ -732,7 +732,7 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
             graph.getTypeName(type);
             WUGraphState graphState = graph.getState();
 
-            Owned<IEspECLGraph> g= createECLGraph("","");
+            Owned<IEspECLGraph> g= createECLGraph();
             g->setName(name.str());
             g->setLabel(label.str());
             g->setType(type.str());
@@ -743,7 +743,7 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
                 g->setRunning(true);
                 g->setRunningId(id);
             }
-            else if (version > 1.13 && (WUGraphFailed == graphState))
+            else if (WUGraphFailed == graphState)
                 g->setFailed(true);
 
             if (version >= 1.53)
@@ -756,14 +756,6 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
                 if (whenGraphFinished)
                     g->setWhenFinished(whenGraphFinished->getFormattedValue(s).str());
             }
-
-            WUGraphState graphstate = cw->queryGraphState(name.str());
-            if (graphstate == WUGraphComplete)
-                g->setComplete(true);
-            if (version > 1.13 && graphstate == WUGraphFailed)
-            {
-                g->setFailed(true);
-            }
             graphs.append(*g.getLink());
         }
         info.setGraphs(graphs);
@@ -774,6 +766,20 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
         ERRLOG("%s", e->errorMessage(eMsg).str());
         info.setGraphsDesc(eMsg.str());
         e->Release();
+    }
+}
+
+void WsWuInfo::getWUGraphNameAndTypes(WUGraphType graphType, IArrayOf<IEspNameAndType>& graphNameAndTypes)
+{
+    Owned<IConstWUGraphMetaIterator> it = &cw->getGraphsMeta(graphType);
+    ForEach(*it)
+    {
+        SCMStringBuffer name, type;
+        IConstWUGraphMeta &graph = it->query();
+        Owned<IEspNameAndType> nameAndType = createNameAndType();
+        nameAndType->setName(graph.getName(name).str());
+        nameAndType->setType(graph.getTypeName(type).str());
+        graphNameAndTypes.append(*nameAndType.getLink());
     }
 }
 

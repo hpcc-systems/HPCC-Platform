@@ -6307,6 +6307,11 @@ mapEnums graphTypes[] = {
    { GraphTypeSize,  NULL },
 };
 
+WUGraphType getGraphTypeFromString(const char* type)
+{
+    return (WUGraphType) getEnum(type, graphTypes);
+}
+
 CLocalWUGraph::CLocalWUGraph(const CLocalWorkUnit &_owner, IPropertyTree *props) : p(props), owner(_owner)
 {
     wuidVersion = owner.getWuidVersion();

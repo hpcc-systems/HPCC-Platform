@@ -20,3 +20,10 @@ ESPStruct [nil_remove] NamedValue
     string Name;
     string Value;
 };
+
+ESPStruct [nil_remove] NameAndType
+{
+    string Name;
+    string Type;
+};
+
