@@ -123,7 +123,7 @@ static const char * EclDefinition =
                             " string unit;"
                         " end;\n"
 "export WorkunitServices := SERVICE\n"
-"   boolean WorkunitExists(const varstring wuid, boolean online=true, boolean archived=false) : c,entrypoint='wsWorkunitExists'; \n"
+"   boolean WorkunitExists(const varstring wuid, boolean online=true, boolean archived=false) : c,context,entrypoint='wsWorkunitExists'; \n"
 "   dataset(WsWorkunitRecord) WorkunitList("
                                         " const varstring lowwuid," 
                                         " const varstring highwuid=''," 
@@ -199,7 +199,6 @@ static void getSashaNodes(SocketEndpointArray &epa)
     }
 }
 
-
 static IWorkUnitFactory * getWorkunitFactory(ICodeContext * ctx)
 {
     IEngineContext *engineCtx = ctx->queryEngineContext();
@@ -216,32 +215,23 @@ static IWorkUnitFactory * getWorkunitFactory(ICodeContext * ctx)
     return getWorkUnitFactory(secmgr, secuser);
 }
 
-static IConstWorkUnit * getWorkunit(ICodeContext * ctx, const char * wuid)
-{
-    Owned<IWorkUnitFactory> wuFactory = getWorkunitFactory(ctx);
-    return wuFactory->openWorkUnit(wuid);
-}
+static bool securityDisabled = false;
 
-static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
+static bool checkScopeAuthorized(IUserDescriptor *user, const char *scopename)
 {
-    StringAttr wuid;
-    wuid.setown(ctx->getWuid());
-    return getWorkunit(ctx, wuid);
-}
-
-static bool checkScopeAuthorized(IUserDescriptor *user,IPropertyTree &pt,bool &securitydisabled)
-{
-    if (securitydisabled)
+    if (securityDisabled)
         return true;
     unsigned auditflags = DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED;
     int perm = 255;
-    const char *scopename = pt.queryProp("@scope");
-    if (scopename&&*scopename) {
+    if (scopename && *scopename)
+    {
         perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);
-        if (perm<0) {
-            if (perm==-1) {
+        if (perm<0)
+        {
+            if (perm==-1)
+            {
                 perm = 255;
-                securitydisabled = true;
+                securityDisabled = true;
             }
             else 
                 perm = 0;
@@ -252,6 +242,31 @@ static bool checkScopeAuthorized(IUserDescriptor *user,IPropertyTree &pt,bool &s
     }
     return true;
 }
+
+static IConstWorkUnit * getWorkunit(ICodeContext * ctx, const char * wuid)
+{
+    StringBuffer _wuid(wuid);
+    if (!_wuid.length())
+        return NULL;
+    wuid = _wuid.toUpperCase().str();
+    Owned<IWorkUnitFactory> wuFactory = getWorkunitFactory(ctx);
+    Owned<IConstWorkUnit> wu = wuFactory->openWorkUnit(wuid);
+    if (wu)
+    {
+        if (!checkScopeAuthorized(ctx->queryUserDescriptor(), wu->queryWuScope()))
+            wu.clear();
+    }
+    return wu.getClear();
+}
+
+static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
+{
+    StringAttr wuid;
+    wuid.setown(ctx->getWuid());
+    // One assmues we have read access to our own wu
+    return getWorkunit(ctx, wuid);
+}
+
 static StringBuffer &getWUIDonDate(StringBuffer &wuid,unsigned year,unsigned month,unsigned day,unsigned hour,unsigned minute)
 {
     if ((year==0)||(month==0)||(day==0)) {
@@ -298,7 +313,6 @@ class COnlineWorkunitIterator: public CInterface, implements IPropertyTreeIterat
     Owned<IRemoteConnection> conn;
     Owned<IPropertyTreeIterator> iter;
     Linked<IUserDescriptor> user;
-    bool securitydisabled;
     StringAttr namehi;
     StringAttr namelo;
 
@@ -311,7 +325,7 @@ class COnlineWorkunitIterator: public CInterface, implements IPropertyTreeIterat
             return false;
         if (stricmp(name,namehi.get())>0)
             return false;
-        if (!checkScopeAuthorized(user,t,securitydisabled))
+        if (!checkScopeAuthorized(user,t.queryProp("@scope")))
             return false;
         return true;
     }
@@ -334,7 +348,6 @@ public:
 
     ) : user(_user), namelo(_namelo), namehi(_namehi)
     {
-        securitydisabled = false;
         if (namelo.isEmpty()) 
             namelo.set("W");
         if (namehi.isEmpty()) {
@@ -413,38 +426,9 @@ public:
 
 };
 
-
-
-static IPropertyTree *getWorkUnitBranch(ICodeContext *ctx,const char *wuid,const char *branch)
-{
-    if (!wuid||!*wuid)
-        return NULL;
-    StringBuffer _wuid(wuid);
-    _wuid.trimRight();
-    wuid = _wuid.toUpperCase().str();
-    StringBuffer query;
-    query.append("WorkUnits/").append(wuid);
-    Owned<IRemoteConnection> conn =  querySDS().connect(query.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-    if (conn) {
-        IPropertyTree *t = conn->queryRoot();
-        if (!t)
-            return NULL;
-        bool securitydisabled = false;
-        if (!checkScopeAuthorized(ctx->queryUserDescriptor(),*t,securitydisabled))
-            return NULL;
-        IPropertyTree *ret = t->queryBranch(branch);
-        if (!ret)
-            return NULL;
-        return createPTreeFromIPT(ret);
-    }
-    return NULL;
-}
-
 }//namespace
 
 using namespace nsWorkunitservices;
-
-
 
 WORKUNITSERVICES_API void wsWorkunitList(
     ICodeContext *ctx,
@@ -522,21 +506,20 @@ WORKUNITSERVICES_API void wsWorkunitList(
     __result = mb.detach();
 }
 
-
-WORKUNITSERVICES_API bool wsWorkunitExists(const char *wuid, bool online, bool archived)
+WORKUNITSERVICES_API bool wsWorkunitExists(ICodeContext *ctx, const char *wuid, bool online, bool archived)
 {
     if (!wuid||!*wuid)
         return false;
     StringBuffer _wuid(wuid);
     wuid = _wuid.toUpperCase().str();
-    if (online) {
-        StringBuffer s("WorkUnits/");
-        s.append(wuid);
-        Owned<IRemoteConnection> conn = querySDS().connect(s.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-            if (conn.get()) 
-                return true;
+    if (online)
+    {
+        Owned<IWorkUnitFactory> wuFactory = getWorkunitFactory(ctx);
+        Owned<IConstWorkUnit> wu = wuFactory->openWorkUnit(wuid);  // Note - we don't use getWorkUnit as we don't need read access
+        return wu != NULL;
     }
-    if (archived) {
+    if (archived)
+    {
         SocketEndpointArray sashaeps;
         getSashaNodes(sashaeps);
         ForEachItemIn(i,sashaeps) {
@@ -554,7 +537,6 @@ WORKUNITSERVICES_API bool wsWorkunitExists(const char *wuid, bool online, bool a
     return false;
 }
 
-
 WORKUNITSERVICES_API char * wsWUIDonDate(unsigned year,unsigned month,unsigned day,unsigned hour,unsigned minute)
 {
     StringBuffer ret;
@@ -567,16 +549,20 @@ WORKUNITSERVICES_API char * wsWUIDdaysAgo(unsigned daysago)
     return getWUIDdaysAgo(ret,(int)daysago).detach();
 }
 
-WORKUNITSERVICES_API void wsWorkunitTimeStamps( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid )
+WORKUNITSERVICES_API void wsWorkunitTimeStamps(ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid)
 {
+    Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
     MemoryBuffer mb;
-    Owned<IPropertyTree> pt = getWorkUnitBranch(ctx,wuid,"TimeStamps");
-    if (pt) {
+    if (wu)
+    {
+
         Owned<IPropertyTreeIterator> iter = pt->getElements("TimeStamp");
-        ForEach(*iter) {
+        ForEach(*iter)
+        {
             IPropertyTree &item = iter->query();
             Owned<IPropertyTreeIterator> iter2 = item.getElements("*");
-            ForEach(*iter2) {
+            ForEach(*iter2)
+            {
                 IPropertyTree &item2 = iter2->query();
                 fixedAppend(mb, 32, item, "@application");              // item correct here
                 fixedAppend(mb, 16, item2.queryName());                 // id

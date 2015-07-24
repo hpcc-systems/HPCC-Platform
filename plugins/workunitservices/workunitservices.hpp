@@ -39,7 +39,7 @@ WORKUNITSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
 WORKUNITSERVICES_API void setPluginContext(IPluginContext * _ctx);
 WORKUNITSERVICES_API char * WORKUNITSERVICES_CALL wsGetBuildInfo(void);
 
-WORKUNITSERVICES_API bool WORKUNITSERVICES_CALL wsWorkunitExists(const char *wuid, bool online, bool archived);
+WORKUNITSERVICES_API bool WORKUNITSERVICES_CALL wsWorkunitExists(ICodeContext *ctx, const char *wuid, bool online, bool archived);
 
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitList(
                                                                 ICodeContext *ctx,
