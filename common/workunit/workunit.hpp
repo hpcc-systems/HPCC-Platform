@@ -1226,6 +1226,7 @@ enum WUQuerySortField
     WUQSFActivited = 14,
     WUQSFSuspendedByUser = 15,
     WUQSFLibrary = 16,
+    WUQSFPublishedBy = 17,
     WUQSFterm = 0,
     WUQSFreverse = 256,
     WUQSFnocase = 512,

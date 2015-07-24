@@ -78,18 +78,34 @@ void CPartitioner::commonCalcPartitions()
     const offset_t endOffset = thisOffset + thisSize;
     unsigned firstSplit;
     unsigned lastSplit;
+    bool appendingContent=false;
     if (partSize)
     {
         firstSplit = (unsigned)((thisOffset + partSize-1)/partSize);
         lastSplit = (unsigned)((endOffset-1)/partSize);
+        appendingContent=(thisOffset % partSize)!=0;
     }
     else
     {
         firstSplit = (unsigned)((thisOffset*numParts)/totalSize);
         lastSplit = (unsigned)(((endOffset-1)*numParts)/totalSize);
+        appendingContent=((thisOffset*numParts) % totalSize)!=0;
     }
     if (endOffset == totalSize) lastSplit = numParts-1;
     if (lastSplit >= numParts) lastSplit = numParts-1;                                      // very rare with variable length records, last file is very small or copying a couple of records 50 ways.
+
+    if (!partSeparator.isEmpty() && appendingContent) //appending to existing content, add a separator if necessary
+    {
+        Owned<PartitionPoint> separator = new PartitionPoint;
+        separator->inputOffset = 0;
+        separator->inputLength = partSeparator.length();
+        separator->outputLength = partSeparator.length();
+        separator->fixedText.set(partSeparator.length(), partSeparator.get());
+        separator->whichInput = whichInput;
+        separator->whichOutput = firstSplit-1;
+        results.append(*separator.getClear());
+    }
+
     offset_t startInputOffset = thisOffset;
     offset_t startOutputOffset = 0;
 
@@ -1589,6 +1605,7 @@ CJsonInputPartitioner::CJsonInputPartitioner(const FileFormat & _format)
         openfilecache = createFileIOCache(16);
     else
         openfilecache->Link();
+    partSeparator.set(",\n");
 }
 
 IFileIOCache *CJsonInputPartitioner::openfilecache = NULL;

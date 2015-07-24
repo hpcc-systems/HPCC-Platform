@@ -1299,6 +1299,8 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
             sortOrder[0] = (WUQuerySortField) (WUQSFwarnTimeLimit | WUQSFnumeric);
         else if (strieq(sortBy, "Priority"))
             sortOrder[0] = (WUQuerySortField) (WUQSFpriority | WUQSFnumeric);
+        else if (strieq(sortBy, "PublishedBy"))
+            sortOrder[0] = WUQSFPublishedBy;
         else if (strieq(sortBy, "QuerySetId"))
             sortOrder[0] = WUQSFQuerySet;
         else
@@ -1318,6 +1320,7 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
     addWUQSQueryFilter(filters, filterCount, filterBuf, req.getQueryName(), (WUQuerySortField) (WUQSFname | WUQSFwild));
     addWUQSQueryFilter(filters, filterCount, filterBuf, req.getWUID(), WUQSFwuid);
     addWUQSQueryFilter(filters, filterCount, filterBuf, req.getLibraryName(), (WUQuerySortField) (WUQSFLibrary | WUQSFnocase));
+    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getPublishedBy(), (WUQuerySortField) (WUQSFPublishedBy | WUQSFwild));
     if (!req.getMemoryLimitLow_isNull())
         addWUQSQueryFilterInt64(filters, filterCount, filterBuf, req.getMemoryLimitLow(), (WUQuerySortField) (WUQSFmemoryLimit | WUQSFnumeric));
     if (!req.getMemoryLimitHigh_isNull())

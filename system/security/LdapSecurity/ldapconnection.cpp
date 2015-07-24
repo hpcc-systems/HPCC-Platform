@@ -1402,6 +1402,11 @@ public:
                         DBGLOG("LDAP: Password Expired(1) for user %s", username);
                         user.setAuthenticateStatus(AS_PASSWORD_VALID_BUT_EXPIRED);
                     }
+                    else if (strstr(ldap_errstring, "data 773"))//User must reset password "80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 773, v1db1'
+                    {
+                        DBGLOG("LDAP: User %s Must Reset Password", username);
+                        user.setAuthenticateStatus(AS_PASSWORD_VALID_BUT_EXPIRED);
+                    }
                     else
                     {
                         DBGLOG("LDAP: Authentication(1) for user %s failed - %s", username, ldap_err2string(rc));
@@ -2608,7 +2613,7 @@ public:
         StringBuffer filter;
         filter.append("sAMAccountName=").append(username);
 
-        char        *attrs[] = {"cn", NULL};
+        char        *attrs[] = {"distinguishedName", NULL};
         CLDAPMessage searchResult;
         int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
 
@@ -2627,11 +2632,11 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                if(0 == stricmp(attribute, "cn"))
+                if(0 == stricmp(attribute, "distinguishedName"))
                 {
                     CLDAPGetValuesWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        userdn.append("cn=").append(vals.queryValues()[0]).append(",").append(m_ldapconfig->getUserBasedn());
+                        userdn.set(vals.queryValues()[0]);
                     break;
                 }
             }
@@ -2701,7 +2706,7 @@ public:
 
         //Error string ""80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0."
         //is returned if pw valid but expired
-        if(rc == LDAP_SUCCESS || strstr(ldap_errstring, "data 532"))//
+        if(rc == LDAP_SUCCESS || strstr(ldap_errstring, "data 532") || strstr(ldap_errstring, "data 773"))//
             return true;
         else
             return false;

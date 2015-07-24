@@ -209,6 +209,12 @@ public:
             DBGLOG("Executing %s", query.str());
         return statement;
     }
+    inline CassStatement *getClear()
+    {
+        CassStatement *ret = statement;
+        statement = NULL;
+        return ret;
+    }
     void bindBool(unsigned idx, cass_bool_t value)
     {
         if (query.length())
@@ -393,6 +399,11 @@ protected:
     Owned<CassandraFutureResult> result;
     Owned<CassandraIterator> iterator;
     unsigned numBindings;
+    CIArrayOf<CassandraRetryingFuture> futures;
+    Semaphore *semaphore;
+    unsigned maxFutures;
+    unsigned maxRetries;
+    bool inBatch;
     CassBatchType batchMode;
 };
 
