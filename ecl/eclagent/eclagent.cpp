@@ -698,12 +698,6 @@ void EclAgent::abort()
         activeGraph->abort();
 }
 
-IWUResult *EclAgent::updateResult(const char *name, unsigned sequence)
-{
-    WorkunitUpdate w = updateWorkUnit();
-    return updateWorkUnitResult(w, name, sequence);
-}
-
 IConstWUResult *EclAgent::getResult(const char *name, unsigned sequence)
 {
     IConstWorkUnit *w = queryWorkUnit();
@@ -773,7 +767,8 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
 void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, unsigned size)
 {
     LOG(MCsetresult, unknownJob, "setResultInt(%s,%d,%" I64F "d)", nullText(name), sequence, val);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultInt(val);
@@ -796,7 +791,8 @@ void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, u
 void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __int64 val, unsigned size)
 {
     LOG(MCsetresult, unknownJob, "setResultUInt(%s,%d,%" I64F "u)", nullText(name), sequence, val);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultUInt(val);
@@ -820,7 +816,8 @@ void EclAgent::setResultReal(const char *name, unsigned sequence, double val)
 {
     // Still a bit of a mess - variables vs results
     LOG(MCsetresult, unknownJob, "setResultReal(%s,%d,%6f)", nullText(name), sequence, val);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultReal(val);  
@@ -1120,7 +1117,8 @@ void EclAgent::setResultData(const char * stepname, unsigned sequence, int len, 
 void EclAgent::doSetResultString(type_t type, const char *name, unsigned sequence, int len, const char *val)
 {
     LOG(MCsetresult, unknownJob, "setResultString(%s,%d,'%.*s')", nullText(name), sequence, len, val);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultString(val, len);   
@@ -1144,7 +1142,8 @@ void EclAgent::doSetResultString(type_t type, const char *name, unsigned sequenc
 void EclAgent::setResultRaw(const char * name, unsigned sequence, int len, const void *val)
 {
     LOG(MCsetresult, unknownJob, "setResultRaw(%s,%d,(%d bytes))", nullText(name), sequence, len);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultRow(len, val);
@@ -1167,7 +1166,8 @@ void EclAgent::setResultRaw(const char * name, unsigned sequence, int len, const
 void EclAgent::setResultSet(const char * name, unsigned sequence, bool isAll, size32_t len, const void *val, ISetToXmlTransformer *xform)
 {
     LOG(MCsetresult, unknownJob, "setResultSet(%s,%d)", nullText(name), sequence);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultIsAll(isAll);
@@ -1227,7 +1227,8 @@ void EclAgent::setResultUnicode(const char * name, unsigned sequence, int len, U
 {
     LOG(MCsetresult, unknownJob, "setResultUnicode(%s,%d)", nullText(name), sequence);
 
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultUnicode((char const *)val, len);
@@ -1254,7 +1255,8 @@ void EclAgent::setResultBool(const char *name, unsigned sequence, bool val)
 {
     LOG(MCsetresult, unknownJob, "setResultBool(%s,%d,%s)", nullText(name), sequence, val ? "true" : "false");
 
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultBool(val);
@@ -1277,7 +1279,8 @@ void EclAgent::setResultBool(const char *name, unsigned sequence, bool val)
 void EclAgent::setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val)
 {
     LOG(MCsetresult, unknownJob, "setResultDecimal(%s,%d)", nullText(name), sequence);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultDecimal(val, len);
@@ -1305,7 +1308,8 @@ void EclAgent::setResultDecimal(const char *name, unsigned sequence, int len, in
 void EclAgent::setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend)
 {
     LOG(MCsetresult, unknownJob, "setResultDataset(%s,%d)", nullText(name), sequence);
-    Owned<IWUResult> result = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> result = updateWorkUnitResult(w, name, sequence);
     if (!result)
         fail(0, "Unexpected parameters to setResultDataset");
 

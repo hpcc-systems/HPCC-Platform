@@ -1137,7 +1137,7 @@ static const CassandraXmlMapping wuGraphProgressMappings [] =
     {"partition", "int", NULL, hashRootNameColumnMapper},
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"graphID", "text", NULL, stringColumnMapper},
-    {"subgraphID", "text", NULL, stringColumnMapper},
+    {"subgraphID", "bigint", NULL, bigintColumnMapper},
     {"creator", "text", NULL, stringColumnMapper},
     {"progress", "blob", NULL, blobColumnMapper},
     { NULL, "wuGraphProgress", "((partition, wuid), graphID, subgraphID, creator)", stringColumnMapper}
@@ -1148,7 +1148,7 @@ static const CassandraXmlMapping wuGraphStateMappings [] =
     {"partition", "int", NULL, hashRootNameColumnMapper},
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"graphID", "text", NULL, stringColumnMapper},
-    {"subgraphID", "text", NULL, stringColumnMapper},
+    {"subgraphID", "bigint", NULL, bigintColumnMapper},
     {"state", "int", NULL, intColumnMapper},
     { NULL, "wuGraphState", "((partition, wuid), graphID, subgraphID)", stringColumnMapper}
 };
@@ -1158,7 +1158,7 @@ static const CassandraXmlMapping wuGraphRunningMappings [] =
     {"partition", "int", NULL, hashRootNameColumnMapper},
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"graphID", "text", NULL, stringColumnMapper},
-    {"subgraphID", "int", NULL, intColumnMapper},
+    {"subgraphID", "bigint", NULL, bigintColumnMapper},
     { NULL, "wuGraphRunning", "((partition, wuid))", stringColumnMapper}
 };
 
@@ -2181,6 +2181,7 @@ public:
             prev.clear();
             allDirty = false;
             dirtyPaths.kill();
+            dirtyResults.kill();
         }
         else
             DBGLOG("No batch present??");
@@ -2376,7 +2377,7 @@ public:
         while (cass_iterator_next(rows))
         {
             const CassRow *row = cass_iterator_get_row(rows);
-            unsigned subId = subId = getUnsignedResult(NULL, cass_row_get_column(row, 0));
+            WUGraphIDType subId = subId = getUnsignedResult(NULL, cass_row_get_column(row, 0));
             StringBuffer creator, xml;
             getCassString(creator, cass_row_get_column(row, 1));
             getCassString(xml, cass_row_get_column(row, 2));
@@ -2397,7 +2398,7 @@ public:
         statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         statement.bindString(1, wuid);
         statement.bindString(2, graphName);
-        statement.bindInt32(3, nodeId);
+        statement.bindInt64(3, nodeId);
         CassandraFuture future(cass_session_execute(sessionCache->querySession(), statement));
         future.wait("queryNodeState");
         CassandraResult result(cass_future_get_result(future));
@@ -2417,7 +2418,7 @@ public:
         statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         statement.bindString(1, wuid);
         statement.bindString(2, graphName);
-        statement.bindInt32(3, nodeId);
+        statement.bindInt64(3, nodeId);
         statement.bindInt32(4, (int) state);
         CassandraFuture future(cass_session_execute(sessionCache->querySession(), statement));
         future.wait("setNodeState update state");
@@ -2431,7 +2432,7 @@ public:
                     statement2.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
                     statement2.bindString(1, wuid);
                     statement2.bindString(2, graphName);
-                    statement2.bindInt32(3, nodeId);
+                    statement2.bindInt64(3, nodeId);
                     CassandraFuture future(cass_session_execute(sessionCache->querySession(), statement2));
                     future.wait("setNodeState update running");
                     break;
@@ -2463,7 +2464,7 @@ public:
             statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
             statement.bindString(1, wuid);
             statement.bindString(2, progress->queryName());
-            statement.bindInt32(3, id);
+            statement.bindInt64(3, id);
             statement.bindString(4, creator);
             StringBuffer tag;
             tag.append("sg").append(id);

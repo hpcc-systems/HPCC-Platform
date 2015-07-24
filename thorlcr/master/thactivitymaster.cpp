@@ -405,7 +405,7 @@ void updateActivityResult(IConstWorkUnit &workunit, unsigned helperFlags, unsign
 {
     Owned<IWorkUnit> wu = &workunit.lock();
     Owned<IWUResult> r;
-    r.setown(wu->updateResultBySequence(sequence));
+    r.setown(updateWorkUnitResult(wu, logicalFilename, sequence));
     r->setResultTotalRowCount(recordCount); 
     r->setResultStatus(ResultStatusCalculated);
     if (TDWresult & helperFlags)

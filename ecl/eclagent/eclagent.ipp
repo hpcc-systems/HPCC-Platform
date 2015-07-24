@@ -390,7 +390,6 @@ private:
     bool expandLogicalName(StringBuffer & fullname, const char * logicalName);
     IRemoteConnection *getPersistReadLock(const char * logicalName);
     void doSimpleResult(type_t type, int size, char * buffer, int sequence);
-    IWUResult *updateResult(const char *name, unsigned sequence);
     IConstWUResult *getResult(const char *name, unsigned sequence);
     IConstWUResult *getResultForGet(const char *name, unsigned sequence);
     IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence);
