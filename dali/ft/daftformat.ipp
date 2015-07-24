@@ -55,6 +55,7 @@ protected:
     unsigned                    whichInput;
     RemoteFilename              inputName;
     StringAttr                  fullPath;
+    StringAttr                  partSeparator;
     Linked<IOutputProcessor>    target;
 
     offset_t                    totalSize;
@@ -538,7 +539,7 @@ protected:
             return;
 
         offset_t prevRowEnd;
-        json->findRowEnd(splitOffset, prevRowEnd);
+        json->findRowEnd(splitOffset-thisOffset + thisHeaderSize, prevRowEnd);
         if (!json->rowStart)
             return;
         if (!json->newRowSet) //get rid of extra delimiter if we haven't closed and reopened in the meantime
@@ -547,9 +548,9 @@ protected:
             if (cursor.trimLength && json->isRootless()) //compensate for difference in rootless offset
                 cursor.trimLength--;
         }
-        cursor.inputOffset = json->getRowOffset();
+        cursor.inputOffset = json->getRowOffset() + thisOffset;
         if (json->findNextRow())
-            cursor.nextInputOffset = json->getRowOffset();
+            cursor.nextInputOffset = json->getRowOffset() + thisOffset;
         else
             cursor.nextInputOffset = cursor.inputOffset;  //eof
     }
