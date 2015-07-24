@@ -856,8 +856,9 @@ static const CassandraXmlMapping workunitsMappings [] =
     {"totalThorTime", "text", "@totalThorTime", stringColumnMapper},  // We store in the wu ptree as a collatable string (with leading spaces to force to one partition)
     {"appvalues", "map<text, text>", "@Application@", subTreeMapColumnMapper},
 
+    {"agentSession", "bigint", "@agentSession", bigintColumnMapper},
     {"debug", "map<text, text>", "Debug", simpleMapColumnMapper},
-    {"attributes", "map<text, text>", "@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state@timeScheduled@totalThorTime@", attributeMapColumnMapper},  // name is the suppression list, note trailing @
+    {"attributes", "map<text, text>", "@agentSession@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state@timeScheduled@totalThorTime@", attributeMapColumnMapper},  // name is the suppression list, note trailing @
     {"plugins", "list<text>", "Plugins", pluginListColumnMapper},
     {"workflow", "map<text, text>", "Workflow", workflowMapColumnMapper},
     {"onWarnings", "map<int, text>", "OnWarnings/OnWarning", warningsMapColumnMapper},
@@ -3157,7 +3158,10 @@ public:
     */
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
     {
-        CassandraStatement statement(prepareStatement("select state from workunits where partition=? and wuid = ?;"));
+        VStringBuffer wuRoot("/WorkUnitLocks/%s", wuid);
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot); // We subscribe to the dali lock branch to give us hints about when wu may have changed
+        LocalIAbortHandler abortHandler(*waiter);
+        CassandraStatement statement(prepareStatement("select state, agentSession from workunits where partition=? and wuid=?;"));
         statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         statement.bindString(1, wuid);
         unsigned start = msTick();
@@ -3166,28 +3170,42 @@ public:
             CassandraFuture future(cass_session_execute(session, statement));
             future.wait("Lookup wu state");
             CassandraResult result(cass_future_get_result(future));
-            const CassValue *value = getSingleResult(result);
-            if (value == NULL)
+            const CassRow *row = cass_result_first_row(result);
+            if (!row)
+            {
+                waiter->unsubscribe();
                 return WUStateUnknown;
-            const char *output;
-            size_t length;
-            check(cass_value_get_string(value, &output, &length));
-            StringBuffer stateStr(length, output);
+            }
+            const CassValue *stateVal = cass_row_get_column(row, 0);
+            if (!stateVal)
+            {
+                waiter->unsubscribe();
+                return WUStateUnknown;
+            }
+            StringBuffer stateStr;
+            getCassString(stateStr, stateVal);
             WUState state = getWorkUnitState(stateStr);
             switch (state)
             {
             case WUStateCompiled:
             case WUStateUploadingFiles:
                 if (compiled)
+                {
+                    waiter->unsubscribe();
                     return state;
+                }
                 break;
             case WUStateCompleted:
             case WUStateFailed:
             case WUStateAborted:
+                waiter->unsubscribe();
                 return state;
             case WUStateWait:
                 if (returnOnWaitState)
+                {
+                    waiter->unsubscribe();
                     return state;
+                }
                 break;
             case WUStateCompiling:
             case WUStateRunning:
@@ -3195,13 +3213,29 @@ public:
             case WUStateDebugRunning:
             case WUStateBlocked:
             case WUStateAborting:
-                // MORE - can see if agent still running, and set to failed if it is not
+                SessionId agent = getUnsignedResult(NULL, cass_row_get_column(row, 1));
+                if (agent && checkWorkUnitSession(wuid, state, agent))
+                {
+                    waiter->unsubscribe();
+                    return state;
+                }
                 break;
             }
             unsigned waited = msTick() - start;
-            if (timeout != -1 && waited > timeout)
-                return WUStateUnknown;
-            Sleep(1000); // MORE - may want to back off as waited gets longer...
+            if (timeout==-1)
+            {
+                waiter->wait(20000);  // recheck state every 20 seconds even if no timeout, in case eclagent has crashed.
+                if (waiter->aborted)
+                {
+                    waiter->unsubscribe();
+                    return WUStateUnknown;  // MORE - throw an exception?
+                }
+            }
+            else if (waited > timeout || !waiter->wait(timeout-waited))
+            {
+                waiter->unsubscribe();
+                return WUStateUnknown;  // MORE - throw an exception?
+            }
         }
     }
 

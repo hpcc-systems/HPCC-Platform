@@ -684,6 +684,8 @@ public:
     }
 
 protected:
+    bool checkWorkUnitSession(const char *wuid, WUState &state, SessionId agent);
+
     // These need to be implemented by the derived classes
     virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual CLocalWorkUnit* _openWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;  // for read access
@@ -732,6 +734,45 @@ protected:
     StringAttr creator;
     StatisticCreatorType creatorType;
     unsigned id;
+};
+
+class WorkUnitWaiter : public CInterface, implements ISDSSubscription, implements IAbortHandler
+{
+    Semaphore changed;
+    SubscriptionId change;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    WorkUnitWaiter(const char *xpath)
+    {
+        change = querySDS().subscribe(xpath, *this, false);
+        aborted = false;
+    }
+    ~WorkUnitWaiter()
+    {
+        assertex(change==0);
+    }
+
+    void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    {
+        changed.signal();
+    }
+    bool wait(unsigned timeout)
+    {
+        return changed.wait(timeout) && !aborted;
+    }
+    bool onAbort()
+    {
+        aborted = true;
+        changed.signal();
+        return false;
+    }
+    void unsubscribe()
+    {
+        querySDS().unsubscribe(change);
+        change = 0;
+    }
+    bool aborted;
 };
 
 #define PROGRESS_FORMAT_V 2

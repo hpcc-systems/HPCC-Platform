@@ -2383,6 +2383,40 @@ void CWorkUnitFactory::clearAborting(const char *wuid)
     }
 }
 
+bool CWorkUnitFactory::checkWorkUnitSession(const char *wuid, WUState &state, SessionId agent)
+{
+    if (queryDaliServerVersion().compare("2.1")>=0)
+    {
+        if((agent>0) && querySessionManager().sessionStopped(agent, 0))
+        {
+            bool isEcl = false;
+            switch (state)
+            {
+                case WUStateCompiling:
+                    isEcl = true;
+                    // drop into
+                case WUStateRunning:
+                case WUStateBlocked:
+                    state = WUStateFailed;
+                    break;
+                case WUStateAborting:
+                    state = WUStateAborted;
+                    break;
+                default:
+                    return false;
+            }
+            WARNLOG("checkWorkUnitSession: workunit terminated: %" I64F "d state = %d",(__int64) agent, (int) state);
+            Owned<IWorkUnit> wu = updateWorkUnit(wuid, NULL, NULL);
+            wu->setState(state);
+            Owned<IWUException> e = wu->createException();
+            e->setExceptionCode(isEcl ? 1001 : 1000);
+            e->setExceptionMessage(isEcl ? "EclServer terminated unexpectedly" : "Workunit terminated unexpectedly");
+            return true;
+        }
+    }
+    return false;
+}
+
 static CriticalSection deleteDllLock;
 static Owned<IWorkQueueThread> deleteDllWorkQ;
 
@@ -2680,39 +2714,11 @@ public:
                 case WUStateDebugRunning:
                 case WUStateBlocked:
                 case WUStateAborting:
-                    if (queryDaliServerVersion().compare("2.1")>=0)
+                    SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
+                    if (checkWorkUnitSession(wuid, ret, agent))
                     {
-                        SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
-                        if((agent>0) && querySessionManager().sessionStopped(agent, 0))
-                        {
-                            waiter->unsubscribe();
-                            conn->reload();
-                            ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
-                            bool isEcl = false;
-                            switch (ret)
-                            {
-                                case WUStateCompiling:
-                                    isEcl = true;
-                                    // drop into
-                                case WUStateRunning:
-                                case WUStateBlocked:
-                                    ret = WUStateFailed;
-                                    break;
-                                case WUStateAborting:
-                                    ret = WUStateAborted;
-                                    break;
-                                default:
-                                    return ret;
-                            }
-                            WARNLOG("_waitForWorkUnit terminated: %" I64F "d state = %d",(__int64)agent,(int)ret);
-                            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                            Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
-                            wu->setState(ret);
-                            Owned<IWUException> e = wu->createException();
-                            e->setExceptionCode(isEcl ? 1001 : 1000);
-                            e->setExceptionMessage(isEcl ? "EclServer terminated unexpectedly" : "Workunit terminated unexpectedly");
-                            return ret;
-                        }
+                        waiter->unsubscribe();
+                        return ret;
                     }
                     break;
                 }
@@ -2739,45 +2745,6 @@ public:
     }
 
 protected:
-    class WorkUnitWaiter : public CInterface, implements ISDSSubscription, implements IAbortHandler
-    {
-        Semaphore changed;
-        SubscriptionId change;
-    public:
-        IMPLEMENT_IINTERFACE;
-
-        WorkUnitWaiter(const char *xpath)
-        {
-            change = querySDS().subscribe(xpath, *this, false);
-            aborted = false;
-        }
-        ~WorkUnitWaiter()
-        {
-            assertex(change==0);
-        }
-
-        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-        {
-            changed.signal();
-        }
-        bool wait(unsigned timeout)
-        {
-            return changed.wait(timeout) && !aborted;
-        }
-        bool onAbort()
-        {
-            aborted = true;
-            changed.signal();
-            return false;
-        }
-        void unsubscribe()
-        {
-            querySDS().unsubscribe(change);
-            change = 0;
-        }
-        bool aborted;
-    };
-
     IConstWorkUnitIterator * _getWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser)
     {
         Owned<IRemoteConnection> conn = sdsManager->connect("/WorkUnits", session, 0, SDS_LOCK_TIMEOUT);
