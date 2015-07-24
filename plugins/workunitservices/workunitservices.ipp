@@ -65,6 +65,17 @@ inline void varAppend(MemoryBuffer &mb,unsigned w,IPropertyTree &pt,const char *
     mb.append(sz).append(sz,s.str());
 }
 
+inline void varAppendMax(MemoryBuffer &mb,unsigned w,const char *str, size32_t l=0)
+{
+    if (!str)
+        l = 0;
+    else if (l==0)
+        l = strlen(str);
+    if (l>w)
+        l = w;
+    mb.append(l).append(l, str);
+}
+
 inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
 {
     mb.setEndian(__LITTLE_ENDIAN);

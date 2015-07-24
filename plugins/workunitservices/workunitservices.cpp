@@ -205,7 +205,7 @@ static IWorkUnitFactory * getWorkunitFactory(ICodeContext * ctx)
     IEngineContext *engineCtx = ctx->queryEngineContext();
     if (engineCtx && !engineCtx->allowDaliAccess())
     {
-        Owned<IException> e = MakeStringException(-1, "wokunitservices cannot access Dali in this context - this normally means it is being called from a thor slave");
+        Owned<IException> e = MakeStringException(-1, "workunitservices cannot access Dali in this context - this normally means it is being called from a thor slave");
         EXCLOG(e, NULL);
         throw e.getClear();
     }
@@ -228,31 +228,6 @@ static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
     wuid.setown(ctx->getWuid());
     return getWorkunit(ctx, wuid);
 }
-
-static IWorkUnit * updateWorkunit(ICodeContext * ctx)
-{
-    // following bit of a kludge, as 
-    // 1) eclagent keeps WU locked, and 
-    // 2) rtti not available in generated .so's to convert to IAgentContext
-    IAgentContext * actx = dynamic_cast<IAgentContext *>(ctx);
-    if (actx == NULL) { // fall back to pure ICodeContext
-        // the following works for thor only 
-        char * platform = ctx->getPlatform();
-        if (strcmp(platform,"thor")==0) {  
-            CTXFREE(parentCtx, platform);
-            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            StringAttr wuid;
-            wuid.setown(ctx->getWuid());
-            return factory->updateWorkUnit(wuid);
-        }
-        CTXFREE(parentCtx, platform);
-        return NULL;
-    }
-    return actx->updateWorkUnit();
-}
-
-
-
 
 static bool checkScopeAuthorized(IUserDescriptor *user,IPropertyTree &pt,bool &securitydisabled)
 {
@@ -462,26 +437,6 @@ static IPropertyTree *getWorkUnitBranch(ICodeContext *ctx,const char *wuid,const
             return NULL;
         return createPTreeFromIPT(ret);
     }
-    // look up in sasha - this could be improved with server support
-    SocketEndpointArray sashaeps;
-    getSashaNodes(sashaeps);
-    ForEachItemIn(i,sashaeps) {
-        Owned<ISashaCommand> cmd = createSashaCommand();    
-        cmd->setAction(SCA_GET);
-        cmd->setOnline(false);                              
-        cmd->setArchived(true); 
-        cmd->addId(wuid);
-        Owned<INode> sashanode = createINode(sashaeps.item(i));
-        if (cmd->send(sashanode,SASHA_TIMEOUT)) {
-            if (cmd->numIds()) {
-                StringBuffer res;
-                if (cmd->getResult(0,res)) 
-                    return createPTreeFromXMLString(res.str());
-            }
-            if (i+1>=sashaeps.ordinality()) 
-                break;
-        }
-    }
     return NULL;
 }
 
@@ -636,27 +591,31 @@ WORKUNITSERVICES_API void wsWorkunitTimeStamps( ICodeContext *ctx, size32_t & __
 
 WORKUNITSERVICES_API void wsWorkunitMessages( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid )
 {
+    Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
     MemoryBuffer mb;
     unsigned tmpu;
     int tmpi;
-    Owned<IPropertyTree> pt = getWorkUnitBranch(ctx,wuid,"Exceptions");
-    if (pt) {
-        Owned<IPropertyTreeIterator> iter = pt->getElements("Exception");
-        ForEach(*iter) {
-            IPropertyTree &item = iter->query();
-            tmpu = (unsigned)item.getPropInt("@severity");
-            mb.append(sizeof(tmpu),&tmpu);
-            tmpi = (int)item.getPropInt("@code");
-            mb.append(sizeof(tmpi),&tmpi);
-            fixedAppend(mb, 32, item, "@filename");             
-            tmpu = (unsigned)item.getPropInt("@row");
-            mb.append(sizeof(tmpu),&tmpu);
-            tmpu = (unsigned)item.getPropInt("@col");
-            mb.append(sizeof(tmpu),&tmpu);
-            fixedAppend(mb, 16, item, "@source");               
-            fixedAppend(mb, 20, item, "@time");             
-            varAppend(mb, 1024, item, NULL);                
-        }
+    SCMStringBuffer s;
+    Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
+    ForEach(*exceptions)
+    {
+        IConstWUException &e = exceptions->query();
+        tmpu = (unsigned) e.getSeverity();
+        mb.append(sizeof(tmpu),&tmpu);
+        tmpi = (int) e.getExceptionCode();
+        mb.append(sizeof(tmpi),&tmpi);
+        e.getExceptionFileName(s);
+        fixedAppend(mb, 32, s.str(), s.length());
+        tmpu = (unsigned) e.getExceptionLineNo();
+        mb.append(sizeof(tmpu),&tmpu);
+        tmpu = (unsigned)  e.getExceptionColumn();
+        mb.append(sizeof(tmpu),&tmpu);
+        e.getExceptionSource(s);
+        fixedAppend(mb, 16, s.str(), s.length());
+        e.getTimeStamp(s);
+        fixedAppend(mb, 20, s.str(), s.length());
+        e.getExceptionMessage(s);
+        varAppendMax(mb, 1024, s.str(), s.length());
     }
     __lenResult = mb.length();
     __result = mb.detach();
