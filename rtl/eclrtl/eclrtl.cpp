@@ -307,23 +307,26 @@ private:
 };
 
 typedef MapStringTo<RTLUnicodeConverter, char const *> MapStrToUnicodeConverter;
-MapStrToUnicodeConverter *unicodeConverterMap;
+static __thread MapStrToUnicodeConverter *unicodeConverterMap = NULL;
+static __thread ThreadTermFunc prevThreadTerminator = NULL;
 CriticalSection ucmCrit;
 
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    unicodeConverterMap = new MapStrToUnicodeConverter;
-    return true;
-}
-MODULE_EXIT()
+static void clearUnicodeConverterMap()
 {
     delete unicodeConverterMap;
+    if (prevThreadTerminator)
+        (*prevThreadTerminator)();
 }
-
 
 RTLUnicodeConverter * queryRTLUnicodeConverter(char const * codepage)
 {
-    CriticalBlock b(ucmCrit);
+    if (!unicodeConverterMap) // NB: one per thread, so no contention
+    {
+        unicodeConverterMap = new MapStrToUnicodeConverter(GetCurrentThreadId());
+        // Use thread terminator hook to clear them up on thread exit.
+        // NB: May need to revisit if not on a jlib Thread.
+        prevThreadTerminator = addThreadTermFunc(clearUnicodeConverterMap);
+    }
     RTLUnicodeConverter * conv = unicodeConverterMap->getValue(codepage);
     if(!conv)
     {
