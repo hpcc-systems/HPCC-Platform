@@ -684,7 +684,7 @@ public:
     }
 
 protected:
-    bool checkWorkUnitSession(const char *wuid, WUState &state, SessionId agent);
+    bool checkAbnormalTermination(const char *wuid, WUState &state, SessionId agent);
 
     // These need to be implemented by the derived classes
     virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;
@@ -740,22 +740,20 @@ class WorkUnitWaiter : public CInterface, implements ISDSSubscription, implement
 {
     Semaphore changed;
     SubscriptionId change;
+    SDSNotifyFlags watchFor;
 public:
     IMPLEMENT_IINTERFACE;
 
-    WorkUnitWaiter(const char *xpath)
+    WorkUnitWaiter(const char *xpath, SDSNotifyFlags _watchFor)
+    : watchFor(_watchFor)
     {
         change = querySDS().subscribe(xpath, *this, false);
         aborted = false;
     }
-    ~WorkUnitWaiter()
-    {
-        assertex(change==0);
-    }
-
     void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        changed.signal();
+        if (flags & watchFor)
+            changed.signal();
     }
     bool wait(unsigned timeout)
     {

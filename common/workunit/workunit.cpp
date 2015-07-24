@@ -2383,7 +2383,7 @@ void CWorkUnitFactory::clearAborting(const char *wuid)
     }
 }
 
-bool CWorkUnitFactory::checkWorkUnitSession(const char *wuid, WUState &state, SessionId agent)
+bool CWorkUnitFactory::checkAbnormalTermination(const char *wuid, WUState &state, SessionId agent)
 {
     if (queryDaliServerVersion().compare("2.1")>=0)
     {
@@ -2405,7 +2405,7 @@ bool CWorkUnitFactory::checkWorkUnitSession(const char *wuid, WUState &state, Se
                 default:
                     return false;
             }
-            WARNLOG("checkWorkUnitSession: workunit terminated: %" I64F "d state = %d",(__int64) agent, (int) state);
+            WARNLOG("checkAbnormalTermination: workunit terminated: %" I64F "d state = %d",(__int64) agent, (int) state);
             Owned<IWorkUnit> wu = updateWorkUnit(wuid, NULL, NULL);
             wu->setState(state);
             Owned<IWUException> e = wu->createException();
@@ -2679,7 +2679,7 @@ public:
     {
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
-        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot.str());
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot.str(), SDSNotify_Data);
         LocalIAbortHandler abortHandler(*waiter);
         WUState ret = WUStateUnknown;
         Owned<IRemoteConnection> conn = sdsManager->connect(wuRoot.str(), session, 0, SDS_LOCK_TIMEOUT);
@@ -2715,7 +2715,7 @@ public:
                 case WUStateBlocked:
                 case WUStateAborting:
                     SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
-                    if (checkWorkUnitSession(wuid, ret, agent))
+                    if (checkAbnormalTermination(wuid, ret, agent))
                     {
                         waiter->unsubscribe();
                         return ret;

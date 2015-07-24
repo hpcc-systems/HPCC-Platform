@@ -3159,7 +3159,7 @@ public:
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
     {
         VStringBuffer wuRoot("/WorkUnitLocks/%s", wuid);
-        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot); // We subscribe to the dali lock branch to give us hints about when wu may have changed
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot, SDSNotify_Deleted); // We subscribe to the dali lock branch to give us hints about when wu may have changed
         LocalIAbortHandler abortHandler(*waiter);
         CassandraStatement statement(prepareStatement("select state, agentSession from workunits where partition=? and wuid=?;"));
         statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
@@ -3214,7 +3214,7 @@ public:
             case WUStateBlocked:
             case WUStateAborting:
                 SessionId agent = getUnsignedResult(NULL, cass_row_get_column(row, 1));
-                if (agent && checkWorkUnitSession(wuid, state, agent))
+                if (agent && checkAbnormalTermination(wuid, state, agent))
                 {
                     waiter->unsubscribe();
                     return state;
