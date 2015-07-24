@@ -336,83 +336,74 @@ void CassandraSession::set(CassSession *_session)
     session = _session;
 }
 
+//----------------------
 
-class CassandraRetryingFuture : public CInterface
+CassandraRetryingFuture::CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, Semaphore *_limiter, unsigned _retries)
+: session(_session), statement(_statement), retries(_retries), limiter(_limiter), future(NULL)
 {
-public:
-    CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, Semaphore *_limiter = NULL, unsigned _retries = 10)
-    : session(_session), statement(_statement), retries(_retries), limiter(_limiter), future(NULL)
+    execute();
+}
+
+CassandraRetryingFuture::~CassandraRetryingFuture()
+{
+    if (future)
+        cass_future_free(future);
+}
+
+void CassandraRetryingFuture::wait(const char *why)
+{
+    cass_future_wait(future);
+    CassError rc = cass_future_error_code(future);
+    if(rc != CASS_OK)
+    {
+        switch (rc)
+        {
+        case CASS_ERROR_LIB_NO_HOSTS_AVAILABLE: // MORE - are there others we should retry?
+            if (retry(why))
+                break;
+            // fall into
+        default:
+            const char *message;
+            size_t length;
+            cass_future_error_message(future, &message, &length);
+            VStringBuffer err("cassandra: failed to %s (%.*s)", why, (int) length, message);
+            rtlFail(0, err.str());
+        }
+    }
+}
+
+bool CassandraRetryingFuture::retry(const char *why)
+{
+    for (int i = 0; i < retries; i++)
     {
         execute();
-    }
-    ~CassandraRetryingFuture()
-    {
-        if (future)
-            cass_future_free(future);
-    }
-    inline operator CassFuture *() const
-    {
-        return future;
-    }
-    void wait(const char *why)
-    {
         cass_future_wait(future);
         CassError rc = cass_future_error_code(future);
-        if(rc != CASS_OK)
-        {
-            switch (rc)
-            {
-            case CASS_ERROR_LIB_NO_HOSTS_AVAILABLE: // MORE - are there others we should retry?
-                if (retry(why))
-                    break;
-                // fall into
-            default:
-                const char *message;
-                size_t length;
-                cass_future_error_message(future, &message, &length);
-                VStringBuffer err("cassandra: failed to %s (%.*s)", why, (int) length, message);
-                rtlFail(0, err.str());
-            }
-        }
+        if(rc == CASS_OK)
+            return true;
     }
-private:
-    bool retry(const char *why)
-    {
-        for (int i = 0; i < retries; i++)
-        {
-            execute();
-            cass_future_wait(future);
-            CassError rc = cass_future_error_code(future);
-            if(rc == CASS_OK)
-                return true;
-        }
-        return false;
-    }
-    void execute()
-    {
-        if (limiter)
-            limiter->wait();
-        future = cass_session_execute(session, statement);
-        if (limiter)
-            cass_future_set_callback(future, signaller, this); // Note - this will call the callback if the future has already completed
-    }
-    static void signaller(CassFuture *future, void *data)
-    {
-        CassandraRetryingFuture *self = (CassandraRetryingFuture *) data;
-        if (self && self->limiter)
-            self->limiter->signal();
-    }
-    CassandraRetryingFuture(const CassandraFuture &);
-    CassFuture *future;
-    CassSession *session;
-    CassandraStatement statement;
-    unsigned retries;
-    Semaphore *limiter;
-};
+    return false;
+}
+
+void CassandraRetryingFuture::execute()
+{
+    if (limiter)
+        limiter->wait();
+    future = cass_session_execute(session, statement);
+    if (limiter)
+        cass_future_set_callback(future, signaller, this); // Note - this will call the callback if the future has already completed
+}
+
+void CassandraRetryingFuture::signaller(CassFuture *future, void *data)
+{
+    CassandraRetryingFuture *self = (CassandraRetryingFuture *) data;
+    if (self && self->limiter)
+        self->limiter->signal();
+}
 
 //----------------------
 
-CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSizee, unsigned _maxFutures, unsigned _maxRetries)
+CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, unsigned _maxFutures, unsigned _maxRetries)
     : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(NULL), maxFutures(_maxFutures), maxRetries(_maxRetries)
 {
     assertex(prepared && *prepared);
@@ -1231,7 +1222,7 @@ class CassandraEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
     CassandraEmbedFunctionContext(const IContextLogger &_logctx, unsigned _flags, const char *options)
-      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0), batchMode((CassBatchType) -1), pageSize(0)
+      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0)
     {
         StringArray opts;
         opts.appendList(options, ",");

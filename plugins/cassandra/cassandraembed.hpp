@@ -58,6 +58,8 @@ public:
     // or query rather than the cluster, but we have one session per cluster so we get away with it at the moment.
     CassBatchType batchMode;
     unsigned pageSize;
+	unsigned maxFutures;
+	unsigned maxRetries;
     StringAttr keyspace;
 };
 
@@ -296,6 +298,29 @@ private:
     CassStatement *statement;
 };
 
+class CassandraRetryingFuture : public CInterface
+{
+public:
+    CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, Semaphore *_limiter = NULL, unsigned _retries = 10);
+    ~CassandraRetryingFuture();
+    inline operator CassFuture *() const
+    {
+        return future;
+    }
+    void wait(const char *why);
+private:
+    bool retry(const char *why);
+    void execute();
+    static void signaller(CassFuture *future, void *data);
+
+    CassandraRetryingFuture(const CassandraFuture &);
+    CassFuture *future;
+    CassSession *session;
+    CassandraStatement statement;
+    unsigned retries;
+    Semaphore *limiter;
+};
+
 class CassandraResult : public CInterfaceOf<IInterface>
 {
 public:
@@ -366,7 +391,7 @@ class CassandraStatementInfo : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize);
+    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, unsigned _maxFutures, unsigned _maxRetries);
     ~CassandraStatementInfo();
     void stop();
     bool next();
