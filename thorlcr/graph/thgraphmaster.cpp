@@ -800,16 +800,6 @@ class CThorCodeContextMaster : public CThorCodeContextBase
     Linked<IConstWorkUnit> workunit;
     Owned<IDistributedFileTransaction> superfiletransaction;
 
-    virtual IWorkUnit *updateWorkUnit() const
-    {
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        return factory->updateWorkUnit(workunit->queryWuid());
-    }
-    IWUResult *updateResult(const char *name, unsigned sequence)
-    {
-        Owned<IWorkUnit> w = updateWorkUnit();
-        return updateWorkUnitResult(w, name, sequence);
-    }
     IConstWUResult * getResult(const char * name, unsigned sequence)
     {
         return getWorkUnitResult(workunit, name, sequence);
@@ -835,7 +825,8 @@ public:
 // ICodeContext
     virtual void setResultBool(const char *name, unsigned sequence, bool result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultBool(result);   
@@ -846,7 +837,8 @@ public:
     }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void *result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultData(result, len);  
@@ -857,7 +849,8 @@ public:
     }
     virtual void setResultDecimal(const char * name, unsigned sequence, int len, int precision, bool isSigned, const void *val)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultDecimal(val, len);
@@ -868,7 +861,8 @@ public:
     }
     virtual void setResultInt(const char *name, unsigned sequence, __int64 result, unsigned size)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultInt(result);
@@ -879,7 +873,8 @@ public:
     }
     virtual void setResultRaw(const char *name, unsigned sequence, int len, const void *result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultRaw(len, result, ResultFormatRaw);  
@@ -890,7 +885,8 @@ public:
     }
     virtual void setResultReal(const char *name, unsigned sequence, double result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultReal(result);   
@@ -901,7 +897,8 @@ public:
     }
     virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void *result, ISetToXmlTransformer *)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultIsAll(isAll);
@@ -913,7 +910,8 @@ public:
     }
     virtual void setResultString(const char *name, unsigned sequence, int len, const char *result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultString(result, len);    
@@ -924,7 +922,8 @@ public:
     }
     virtual void setResultUnicode(const char * name, unsigned sequence, int len, UChar const * result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultUnicode(result, len);
@@ -935,7 +934,8 @@ public:
     }
     virtual void setResultVarString(const char * name, unsigned sequence, const char *result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultString(result, strlen(result)); 
@@ -946,7 +946,8 @@ public:
     }
     virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 result, unsigned size)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultUInt(result);
