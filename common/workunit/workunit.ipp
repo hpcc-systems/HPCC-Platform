@@ -262,6 +262,7 @@ public:
     virtual IConstWUPluginIterator & getPlugins() const;
     virtual IConstWULibraryIterator & getLibraries() const;
     virtual WUPriorityClass getPriority() const;
+    virtual const char *queryPriorityDesc() const;
     virtual int getPriorityLevel() const;
     virtual int getPriorityValue() const;
     virtual IConstWUQuery * getQuery() const;
@@ -552,6 +553,7 @@ protected:
     virtual void _lockRemote() {};
     virtual void _unlockRemote() {};
     virtual void _loadFilesRead() const;
+    virtual void _loadFilesWritten() const;
     virtual void _loadGraphs(bool heavy) const;
     virtual void _loadResults() const;
     virtual void _loadVariables() const;

@@ -950,6 +950,9 @@ interface IConstWorkUnitInfo : extends IInterface
     virtual const char *queryStateDesc() const = 0;
     virtual WUAction getAction() const = 0;
     virtual const char *queryActionDesc() const = 0;
+    virtual WUPriorityClass getPriority() const = 0;
+    virtual const char *queryPriorityDesc() const = 0;
+    virtual int getPriorityLevel() const = 0;
     virtual bool isProtected() const = 0;
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
 
@@ -989,8 +992,6 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IConstWUPlugin * getPluginByName(const char * name) const = 0;
     virtual IConstWUPluginIterator & getPlugins() const = 0;
     virtual IConstWULibraryIterator & getLibraries() const = 0;
-    virtual WUPriorityClass getPriority() const = 0;
-    virtual int getPriorityLevel() const = 0;
     virtual IConstWUQuery * getQuery() const = 0;
     virtual bool getRescheduleFlag() const = 0;
     virtual IConstWUResult * getResultByName(const char * name) const = 0;
@@ -1192,6 +1193,7 @@ enum WUSortField
     WUSFecl = 13,
     // WUSFcustom = 14, obsolete
     WUSFappvalue=15,
+    WUSFfilewritten = 16,
     WUSFterm = 0,
     WUSFreverse = 256,
     WUSFnocase = 512,
