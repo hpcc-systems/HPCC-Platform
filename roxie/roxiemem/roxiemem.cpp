@@ -515,16 +515,16 @@ static StringBuffer &memmap(StringBuffer &stats)
     return stats.appendf("\nHeap size %u pages, %u free, largest block %u", heapTotalPages, freePages, maxBlock);
 }
 
-static void throwHeapExhausted(unsigned pages)
+static void throwHeapExhausted(unsigned allocatorId, unsigned pages)
 {
-    VStringBuffer msg("Memory pool exhausted: pool (%u pages) exhausted, requested %u", heapTotalPages, pages);
+    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u", allocatorId, heapTotalPages, pages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
 
-static void throwHeapExhausted(unsigned newPages, unsigned oldPages)
+static void throwHeapExhausted(unsigned allocatorId, unsigned newPages, unsigned oldPages)
 {
-    VStringBuffer msg("Memory pool exhausted: pool (%u pages) exhausted, requested %u, had %u", heapTotalPages, newPages, oldPages);
+    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u, had %u", allocatorId, heapTotalPages, newPages, oldPages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
@@ -554,7 +554,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
     if (heapAllocated + pages > heapTotalPages) {
         if (returnNullWhenExhausted)
             return NULL;
-        throwHeapExhausted(pages);
+        throwHeapExhausted(0, pages);
     }
     if (heapLargeBlockGranularity)
     {
@@ -682,7 +682,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
     }
     if (returnNullWhenExhausted)
         return NULL;
-    throwHeapExhausted(pages);
+    throwHeapExhausted(0, pages);
     return NULL;
 }
 
@@ -4202,7 +4202,7 @@ HugeHeaplet * CHugeHeap::allocateHeaplet(memsize_t _size, unsigned allocatorId, 
         {
             if (maxSpillCost == SpillAllCost)
                 rowManager->reportMemoryUsage(false);
-            throwHeapExhausted(numPages);
+            throwHeapExhausted(allocatorId, numPages);
         }
     }
 }
@@ -4318,7 +4318,7 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
         {
             if (maxSpillCost == SpillAllCost)
                 rowManager->reportMemoryUsage(false);
-            throwHeapExhausted(newPages, oldPages);
+            throwHeapExhausted(activityId, newPages, oldPages);
         }
     }
 }
@@ -4393,7 +4393,7 @@ void * CChunkedHeap::inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCos
         //Could check if activeHeaplet was now set (and therefore allocated by another thread), and if so restart
         //the function, but grabbing the spin lock would be inefficient.
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
-            throwHeapExhausted(1);
+            throwHeapExhausted(allocatorId, 1);
     }
 
     if (memTraceLevel >= 5 || (memTraceLevel >= 3 && chunkSize > 32000))
