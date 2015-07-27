@@ -32,8 +32,8 @@ using namespace std;
 
 class CSectionTimer
 {
-    HiresTimer hrt[100];
-    unsigned tids[100];
+    HiresTimer hrt[1000];
+    unsigned tids[1000];
 
     const char *name;
     static CriticalSection findsect;
@@ -46,7 +46,7 @@ class CSectionTimer
         CriticalBlock block(findsect);
         unsigned tid = (unsigned)(memsize_t)GetCurrentThreadId();
         unsigned i;
-        for (i=0;i<99;i++) {
+        for (i=0;i<999;i++) {
             if (tids[i]==tid)
                 break;
             if (tids[i]==0) {
@@ -424,7 +424,7 @@ void MultiTest(ICommunicator *_comm)
             unsigned n=(comm->queryGroup().ordinality()-1)*N;
             CMessageBuffer mb;
             CRandomBuffer *buff = new CRandomBuffer();
-            PrintLog("MPTEST: started server");
+            PrintLog("MPTEST: started server, myrank = %d", comm->queryGroup().rank());
             try {
                 while(n--) {
                     mb.clear();
@@ -444,6 +444,10 @@ void MultiTest(ICommunicator *_comm)
 #endif
 
                     mb.clear().append(buff->crc);
+
+                    int delay = getRandom() % 20;
+                    Sleep(delay);
+
                     comm->reply(mb);
                 }
             }
@@ -488,7 +492,7 @@ void MultiTest(ICommunicator *_comm)
         targets[k] = t;
     }
 
-    PrintLog("MPTEST: client started");
+    PrintLog("MPTEST: client started, myrank = %d", comm->queryGroup().rank());
 
     try {
         while (n--) {
@@ -682,7 +686,7 @@ int main(int argc, char* argv[])
 
 #ifndef MYMACHINES
     if (argc<3) {
-        printf("\nMPTEST: Usage: %s <myport> <ip:port> <ip:port> ...\n\n", argv[0]);
+        printf("\nMPTEST: Usage: %s <myport> [-f <file> | <ip:port> <ip:port> ...]\n\n", argv[0]);
         return 0;
     }
 #endif
@@ -690,12 +694,14 @@ int main(int argc, char* argv[])
     try {
         EnableSEHtoExceptionMapping();
         StringBuffer lf;
-        openLogFile(lf, "mptest.log");
         // PrintLog("MPTEST Starting");
 
 #ifndef MYMACHINES
         int num_nodes = 0;
         int my_port = atoi(argv[1]);
+        char logfile[256] = { "" };
+        sprintf(logfile,"mptest-%d.log",my_port);
+        // openLogFile(lf, logfile);
 
         PrintLog("MPTEST: Starting %d", my_port);
 
@@ -703,17 +709,54 @@ int main(int argc, char* argv[])
 
         INode *nodes[1000];
 
+        bool has_argfile = false;
+        char argfile[256] = { "" };
+        if (argc > 3)
+        {
+            if (strcmp(argv[2], "-f") == 0)
+            {
+                has_argfile = true;
+                strcpy(argfile, argv[3]);
+            }
+        }
+
         int i = 1;
-        while (i+1 < argc && i-1 < 1000) {
-            PrintLog("MPTEST: adding node %d, port = <%s>", i-1, argv[i+1]);
-            nodes[i-1] = createINode(argv[i+1], my_port);
-            i++;
+        if (has_argfile)
+        {
+            char hoststr[256] = { "" };
+            FILE *fp = fopen(argfile, "r");
+            if (fp == NULL)
+            {
+                PrintLog("MPTest: Error cannot open file <%s>", argfile);
+                return 1;
+            }
+            char line[256] = { "" };
+            while(fgets(line, 255, fp) != NULL)
+            {
+                int srtn = sscanf(line,"%s",hoststr);
+                if (srtn == 1 && line[0] != '#')
+                {
+                    PrintLog("MPTEST: adding node %d, port = <%s>", i-1, hoststr);
+                    nodes[i-1] = createINode(hoststr, my_port);
+                    i++;
+                }
+            }
+            fclose(fp);
+        }
+        else
+        {
+            while (i+1 < argc && i-1 < 1000) {
+                PrintLog("MPTEST: adding node %d, port = <%s>", i-1, argv[i+1]);
+                nodes[i-1] = createINode(argv[i+1], my_port);
+                i++;
+            }
         }
 
         PrintLog("MPTEST: num_nodes = %d", i-1);
 
         IGroup *group = createIGroup(i-1,nodes);
 #else
+        openLogFile(lf, "mptest.log");
         startMPServer(MPPORT);
         IGroup *group = createIGroup(MYMACHINES,MPPORT); 
 #endif
@@ -784,5 +827,6 @@ int main(int argc, char* argv[])
         pexception("Exception",e);
     }
 
+    PrintLog("MPTEST: bye");
     return 0;
 }

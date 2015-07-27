@@ -15,10 +15,9 @@
   <runtime>${RUNTIME_PATH}</runtime>
   <sourcedir>${CONFIG_SOURCE_PATH}</sourcedir>
   <user>${RUNTIME_USER}</user>
-  <ports>
-   <mpStart>7101</mpStart>
-   <mpEnd>7500</mpEnd>
-  </ports>
+  <mpStart>7101</mpStart>
+  <mpEnd>7500</mpEnd>
+  <mpSoMaxConn>128</mpSoMaxConn>
  </EnvSettings>
  <Hardware>
   <Computer computerType="linuxmachine"
