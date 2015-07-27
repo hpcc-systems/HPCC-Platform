@@ -32,7 +32,8 @@ extern bool isString(CassValueType t);
 class CassandraCluster : public CInterface
 {
 public:
-    inline CassandraCluster(CassCluster *_cluster) : cluster(_cluster), batchMode((CassBatchType) -1), pageSize(0)
+    inline CassandraCluster(CassCluster *_cluster)
+    : cluster(_cluster), batchMode((CassBatchType) -1), pageSize(0), maxFutures(0), maxRetries(0)
     {
     }
     void setOptions(const StringArray &options);
