@@ -737,6 +737,7 @@ public:
         if (errors.ordinality()>0)
         {
             validateMessages = true;
+            fputs("   Validation Failed!\n", stderr);
             fputs("   Error(s):\n", stderr);
             ForEachItemIn(i, errors)
                 fprintf(stderr, "      %s\n", errors.item(i));
