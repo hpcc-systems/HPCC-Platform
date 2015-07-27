@@ -43,6 +43,9 @@ output(loop(namesTable2, 10, left.age <= 60, project(rows(left), transform(names
 //Case 3: global loop test
 output(loop(namesTable2, sum(rows(left), age) < 1000, project(rows(left), transform(namesRecord, self.age := left.age*two; self := left))));
 
+// Test loopFirstTime(), should not execute body of loop
+output(loop(namesTable2, sum(rows(left), age) < 1000 AND false, project(rows(left), transform(namesRecord, self.age := left.age*two; self := left))));
+
 //Case 4: global loop test with row filter
 output(loop(namesTable2, left.age < 100, exists(rows(left)) and sum(rows(left), age) < 1000, project(rows(left), transform(namesRecord, self.age := left.age*two; self := left))));
 
