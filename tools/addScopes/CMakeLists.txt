@@ -27,6 +27,7 @@ project( addScopes )
 
 set (    SRCS 
          addScopes.cpp 
+         ./../../system/security/LdapSecurity/ldaputils.cpp
     )
 
 include_directories ( 

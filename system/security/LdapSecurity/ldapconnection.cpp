@@ -36,6 +36,7 @@
 #if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
  #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
+
 #ifdef _WIN32
 #include <lm.h>
 #define LdapRename ldap_rename_ext_s
@@ -144,6 +145,7 @@ public:
         return (hostArray.item(curindex));
     }
 };
+
 
 inline bool LdapServerDown(int rc)
 {
@@ -596,7 +598,7 @@ public:
     {
         if(m_ld != NULL)
         {
-            ldap_unbind(m_ld);
+            LDAP_UNBIND(m_ld);
         }
     }
 
@@ -637,7 +639,7 @@ public:
         else
         {
             DBGLOG("LDAP: sysuser bind failed - %s", ldap_err2string(rc));
-            ldap_unbind(m_ld);
+            LDAP_UNBIND(m_ld);
             m_ld = NULL;
         }
 
@@ -718,7 +720,7 @@ public:
             {
                 if(m_ld != NULL)
                 {
-                    ldap_unbind(m_ld);
+                    LDAP_UNBIND(m_ld);
                     m_ld = NULL;
                     m_connected = false;
                 }
@@ -928,73 +930,6 @@ struct ltstr
     bool operator()(const char* s1, const char* s2) const { return strcmp(s1, s2) < 0; }
 };
 
-//--------------------------------------------
-// This helper class ensures memory allocate by
-// calls to ldap_get_values gets freed
-//--------------------------------------------
-class CLDAPGetValuesWrapper
-{
-private:
-    char **values;
-public:
-    CLDAPGetValuesWrapper(LDAP *ld, LDAPMessage *msg, const char * attr)
-    {
-#ifdef _WIN32
-        values = ldap_get_values(ld, msg, (const PCHAR)attr);
-#else
-        values = ldap_get_values(ld, msg, attr);
-#endif
-    }
-
-    ~CLDAPGetValuesWrapper()
-    {
-        if (values)
-            ldap_value_free(values);
-    }
-    inline bool hasValues()     { return values != NULL  && *values != (char)NULL; }
-    inline char **queryValues() { return values; }
-};
-
-//--------------------------------------------
-// This helper class ensures memory allocate by
-// calls to ldap_get_values_len gets freed
-//--------------------------------------------
-class CLDAPGetValuesLenWrapper
-{
-private:
-    struct berval** bvalues;
-public:
-    CLDAPGetValuesLenWrapper()
-    {
-        bvalues = NULL;
-    }
-    CLDAPGetValuesLenWrapper(LDAP *ld, LDAPMessage *msg, const char * attr)
-    {
-        bvalues = NULL;
-        getValues(ld,msg,attr);
-    }
-
-    ~CLDAPGetValuesLenWrapper()
-    {
-        if (bvalues)
-            ldap_value_free_len(bvalues);
-    }
-    inline bool hasValues()         { return bvalues != NULL  && *bvalues != NULL; }
-    inline berval **queryValues()   { return bvalues; }
-
-    //Delayed call to ldap_get_values_len
-    void getValues(LDAP *ld, LDAPMessage *msg, const char * attr)
-    {
-        if (bvalues)
-            ldap_value_free_len(bvalues);
-#ifdef _WIN32
-        bvalues = ldap_get_values_len(ld, msg, (const PCHAR)attr);
-#else
-        bvalues = ldap_get_values_len(ld, msg, attr);
-#endif
-    }
-};
-
 
 //--------------------------------------------
 // This helper class ensures memory allocate by calls
@@ -1077,14 +1012,17 @@ static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _bas
         return 0;
     }
     maxPwdAge = 0;
-    CLDAPGetValuesWrapper vals(sys_ld, searchResult.msg, "maxPwdAge");
+    CLDAPGetValuesLenWrapper vals(sys_ld, searchResult.msg, "maxPwdAge");
     if (vals.hasValues())
     {
-        char *val = vals.queryValues()[0];
-        if (*val == '-')
-            ++val;
-        for (int x=0; val[x]; x++)
-            maxPwdAge = maxPwdAge * 10 + ( (int)val[x] - '0');
+        const char *val = vals.queryCharValue(0);
+        if (val && *val)
+        {
+            if (*val == '-')
+                ++val;
+            for (int x=0; val[x]; x++)
+                maxPwdAge = maxPwdAge * 10 + ( (int)val[x] - '0');
+        }
     }
     else
         maxPwdAge = PWD_NEVER_EXPIRES;
@@ -1277,28 +1215,28 @@ public:
             {
                 if(stricmp(attribute, "cn") == 0)
                 {
-                    CLDAPGetValuesWrapper vals(sys_ld, entry, attribute);
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
-                        user.setFullName(vals.queryValues()[0]);
+                        user.setFullName(vals.queryCharValue(0));
                 }
                 else if((stricmp(attribute, "givenName") == 0))
                 {
-                    CLDAPGetValuesWrapper vals(sys_ld, entry, attribute);
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
-                        user.setFirstName(vals.queryValues()[0]);
+                        user.setFirstName(vals.queryCharValue(0));
                 }
                 else if((stricmp(attribute, "sn") == 0))
                 {
-                    CLDAPGetValuesWrapper vals(sys_ld, entry, attribute);
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
-                        user.setLastName(vals.queryValues()[0]);
+                        user.setLastName(vals.queryCharValue(0));
                 }
                 else if((stricmp(attribute, "userAccountControl") == 0))
                 {
                     //UF_DONT_EXPIRE_PASSWD 0x10000
-                    CLDAPGetValuesWrapper vals(sys_ld, entry, attribute);
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
-                        if (atoi((char*)vals.queryValues()[0]) & 0x10000)//this can be true at the account level, even if domain policy requires password
+                        if (atoi((char*)vals.queryCharValue(0)) & 0x10000)//this can be true at the account level, even if domain policy requires password
                             accountPwdNeverExpires = true;
                 }
                 else if((stricmp(attribute, "pwdLastSet") == 0))
@@ -1315,8 +1253,8 @@ public:
                         CDateTime expiry;
                         if (!m_domainPwdsNeverExpire && !accountPwdNeverExpires)
                         {
-                            struct berval* val = valsLen.queryValues()[0];
-                            calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
+                            char * val = (char*)valsLen.queryCharValue(0);
+                            calcPWExpiry(expiry, (unsigned)strlen(val), val);
                         }
                         else
                         {
@@ -1363,7 +1301,7 @@ public:
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     if(rc != LDAP_SUCCESS)
                         ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
-                    ldap_unbind(user_ld);
+                    LDAP_UNBIND(user_ld);
                 }
                 DBGLOG("finished LdapBind for user %s, rc=%d", username, rc);
                 if(!LdapServerDown(rc) || retries > LDAPSEC_MAX_RETRIES)
@@ -1387,7 +1325,7 @@ public:
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     if(rc != LDAP_SUCCESS)
                         ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
-                    ldap_unbind(user_ld);
+                    LDAP_UNBIND(user_ld);
                 }
             }
             if(rc != LDAP_SUCCESS)
@@ -1637,15 +1575,15 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
                     if(stricmp(attribute, "sudoHost") == 0)
-                        ldapuser->setSudoHost(vals.queryValues()[0]);
+                        ldapuser->setSudoHost(vals.queryCharValue(0));
                     else if(stricmp(attribute, "sudoCommand") == 0)
-                        ldapuser->setSudoCommand(vals.queryValues()[0]);
+                        ldapuser->setSudoCommand(vals.queryCharValue(0));
                     else if(stricmp(attribute, "sudoOption") == 0)
-                        ldapuser->setSudoOption(vals.queryValues()[0]);
+                        ldapuser->setSudoOption(vals.queryCharValue(0));
                 }
             }
             return true;
@@ -1691,30 +1629,29 @@ public:
                       attribute != NULL;
                       attribute = atts.getNext())
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
                     {
                         if(stricmp(attribute, "cn") == 0)
-                            user.setFullName(vals.queryValues()[0]);
+                            user.setFullName(vals.queryCharValue(0));
                         else if(stricmp(attribute, "givenName") == 0)
-                            user.setFirstName(vals.queryValues()[0]);
+                            user.setFirstName(vals.queryCharValue(0));
                         else if(stricmp(attribute, "sn") == 0)
-                            user.setLastName(vals.queryValues()[0]);
+                            user.setLastName(vals.queryCharValue(0));
                         else if(stricmp(attribute, "gidnumber") == 0)
-                            ((CLdapSecUser*)&user)->setGidnumber(vals.queryValues()[0]);
+                            ((CLdapSecUser*)&user)->setGidnumber(vals.queryCharValue(0));
                         else if(stricmp(attribute, "uidnumber") == 0)
-                            ((CLdapSecUser*)&user)->setUidnumber(vals.queryValues()[0]);
+                            ((CLdapSecUser*)&user)->setUidnumber(vals.queryCharValue(0));
                         else if(stricmp(attribute, "homedirectory") == 0)
-                            ((CLdapSecUser*)&user)->setHomedirectory(vals.queryValues()[0]);
+                            ((CLdapSecUser*)&user)->setHomedirectory(vals.queryCharValue(0));
                         else if(stricmp(attribute, "loginshell") == 0)
-                            ((CLdapSecUser*)&user)->setLoginshell(vals.queryValues()[0]);
+                            ((CLdapSecUser*)&user)->setLoginshell(vals.queryCharValue(0));
                         else if(stricmp(attribute, "objectClass") == 0)
                         {
                             int valind = 0;
-                            char ** values = vals.queryValues();
-                            while(values[valind])
+                            while(vals.queryCharValue(valind))
                             {
-                                if(values[valind] && stricmp(values[valind], "posixAccount") == 0)
+                                if(vals.queryCharValue(valind) && stricmp(vals.queryCharValue(valind), "posixAccount") == 0)
                                 {
                                     ((CLdapSecUser*)&user)->setPosixenabled(true);
                                     break;
@@ -1827,13 +1764,13 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
                     if(stricmp(attribute, "cn") == 0)
-                        ldapuser->setFullName(vals.queryValues()[0]);
+                        ldapuser->setFullName(vals.queryCharValue(0));
                     else if(stricmp(attribute, act_fieldname) == 0)
-                        ldapuser->setName(vals.queryValues()[0]);
+                        ldapuser->setName(vals.queryCharValue(0));
                 }
             }
         }
@@ -1914,21 +1851,21 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
                     if(stricmp(attribute, act_fieldname) == 0)
-                        act_name.clear().append(vals.queryValues()[0]);
+                        act_name.clear().append(vals.queryCharValue(0));
                     else if(stricmp(attribute, "cn") == 0)
-                        cnbuf.clear().append(vals.queryValues()[0]);
+                        cnbuf.clear().append(vals.queryCharValue(0));
                     else if(stricmp(attribute, "objectClass") == 0)
                     {
                         int i = 0;
-                        while(vals.queryValues()[i] != NULL)
+                        while(vals.queryCharValue(i) != NULL)
                         {
-                            if(stricmp(vals.queryValues()[i], "person") == 0)
+                            if(stricmp(vals.queryCharValue(i), "person") == 0)
                                 act_type = USER_ACT;
-                            if(stricmp(vals.queryValues()[i], "group") == 0)
+                            else if(stricmp(vals.queryCharValue(i), "group") == 0)
                                 act_type = GROUP_ACT;
                             i++;
                         }
@@ -1984,7 +1921,7 @@ public:
                     CLDAPGetValuesLenWrapper valsLen(ld, message, attribute);
                     if (valsLen.hasValues())
                     {
-                        struct berval* val = valsLen.queryValues()[0];
+                        struct berval* val = valsLen.queryBValues()[0];
                         if(val != NULL)
                         {
                             int len = val->bv_len;
@@ -2112,16 +2049,16 @@ public:
             {
                 if(stricmp(attribute, "cn") == 0)
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        user->setFullName(vals.queryValues()[0]);
+                        user->setFullName(vals.queryCharValue(0));
                 }
                 else if (stricmp(attribute, "userAccountControl") == 0)
                 {
                     //UF_DONT_EXPIRE_PASSWD 0x10000
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        if (atoi((char*)vals.queryValues()[0]) & 0x10000)//this can be true at the account level, even if domain policy requires password
+                        if (atoi((char*)vals.queryCharValue(0)) & 0x10000)//this can be true at the account level, even if domain policy requires password
                             accountPwdNeverExpires = true;
                 }
                 else if(stricmp(attribute, "pwdLastSet") == 0)
@@ -2132,7 +2069,7 @@ public:
                         CLDAPGetValuesLenWrapper valsLen(ld, message, attribute);
                         if (valsLen.hasValues())
                         {
-                            struct berval* val = valsLen.queryValues()[0];
+                            struct berval* val = valsLen.queryBValues()[0];
                             calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
                         }
                     }
@@ -2142,9 +2079,9 @@ public:
                 }
                 else if(stricmp(attribute, act_fieldname) == 0)
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        user->setName(vals.queryValues()[0]);
+                        user->setName(vals.queryCharValue(0));
                 }
                 else if(stricmp(attribute, sid_fieldname) == 0)
                 {
@@ -2153,7 +2090,7 @@ public:
                         CLDAPGetValuesLenWrapper valsLen(ld, message, attribute);
                         if (valsLen.hasValues())
                         {
-                            struct berval* val = valsLen.queryValues()[0];
+                            struct berval* val = valsLen.queryBValues()[0];
                             if(val != NULL)
                             {
                                 unsigned uid = val->bv_val[val->bv_len - 4];
@@ -2168,9 +2105,9 @@ public:
                     }
                     else
                     {
-                        CLDAPGetValuesWrapper vals(ld, message, attribute);
+                        CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                         if (vals.hasValues())
-                            ((CLdapSecUser*)user.get())->setUserID(atoi(vals.queryValues()[0]));
+                            ((CLdapSecUser*)user.get())->setUserID(atoi(vals.queryCharValue(0)));
                     }
                 }
             }
@@ -2190,7 +2127,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-        int rc = ldap_compare_s(ld, (char*)groupdn, (char*)fldname, (char*)userdn);
+        int rc = LDAP_COMPARE_EXT_S(ld, (char*)groupdn, (char*)fldname, (char*)userdn,0,0,0);
         if(rc == LDAP_COMPARE_TRUE)
             return true;
         else
@@ -2271,7 +2208,7 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-            rc = ldap_modify_s(ld, (char*)userdn.str(), attrs);
+            rc = ldap_modify_ext_s(ld, (char*)userdn.str(), attrs, NULL, NULL);
             if (rc == LDAP_SUCCESS && m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
             {
                 StringBuffer newrdn("cn=");
@@ -2339,14 +2276,14 @@ public:
             attrs[ind++] = &loginshell_attr;
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-            int compresult = ldap_compare_s(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"posixAccount");
+            int compresult = LDAP_COMPARE_EXT_S(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"posixAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
                 attrs[ind++] = &oc_attr;
-            compresult = ldap_compare_s(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"shadowAccount");
+            compresult = LDAP_COMPARE_EXT_S(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"shadowAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
                 attrs[ind++] = &oc1_attr;
             attrs[ind] = NULL;
-            rc = ldap_modify_s(ld, (char*)userdn.str(), attrs);
+            rc = ldap_modify_ext_s(ld, (char*)userdn.str(), attrs, NULL, NULL);
         }
         else if(stricmp(type, "posixdisable") == 0)
         {
@@ -2355,7 +2292,7 @@ public:
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-            int compresult = ldap_compare_s(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"posixAccount");
+            int compresult = LDAP_COMPARE_EXT_S(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"posixAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
             {
                 rc = LDAP_SUCCESS;
@@ -2420,7 +2357,7 @@ public:
                 attrs[ind++] = &oc1_attr;
                 attrs[ind] = NULL;
 
-                rc = ldap_modify_s(ld, (char*)userdn.str(), attrs);
+                rc = ldap_modify_ext_s(ld, (char*)userdn.str(), attrs, NULL, NULL);
             }
         }
         else if(stricmp(type, "sudoersadd") == 0)
@@ -2518,7 +2455,7 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
             
-            int rc = ldap_delete_s(ld, (char*)dn.str());
+            int rc = ldap_delete_ext_s(ld, (char*)dn.str(), NULL, NULL);
 
             if ( rc != LDAP_SUCCESS )
             {
@@ -2629,9 +2566,9 @@ public:
             {
                 if(0 == stricmp(attribute, "cn"))
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        userdn.append("cn=").append(vals.queryValues()[0]).append(",").append(m_ldapconfig->getUserBasedn());
+                        userdn.append("cn=").append(vals.queryCharValue(0)).append(",").append(m_ldapconfig->getUserBasedn());
                     break;
                 }
             }
@@ -2665,7 +2602,7 @@ public:
         pwdBerVal.bv_len = quotedPasswd.length() * sizeof(unsigned short);
         pwdBerVal.bv_val = (char*)pszPasswordWithQuotes;
 
-        rc = ldap_modify_s(ld, (char*)userdn.str(), modEntry);
+        rc = ldap_modify_ext_s(ld, (char*)userdn.str(), modEntry, NULL, NULL);
 
         if (rc == LDAP_SUCCESS )
             DBGLOG("User %s's password has been changed successfully", username);
@@ -2697,7 +2634,7 @@ public:
         int rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdn, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
         if(rc != LDAP_SUCCESS)
             ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
-        ldap_unbind(user_ld);
+        LDAP_UNBIND(user_ld);
 
         //Error string ""80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0."
         //is returned if pw valid but expired
@@ -2857,7 +2794,7 @@ public:
             };
 
             LDAPMod* pmods[] = {&pmod, NULL};
-            rc = ldap_modify_s(ld, (char*)userdn.str(), pmods);
+            rc = ldap_modify_ext_s(ld, (char*)userdn.str(), pmods, NULL, NULL);
 
             if (rc == LDAP_SUCCESS )
                 DBGLOG("User %s's password has been changed successfully", username);
@@ -2914,10 +2851,10 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
-                    char* val = vals.queryValues()[0];
+                    const char* val = vals.queryCharValue(0);
                     if(val != NULL)
                     {
                         if(stricmp(attribute, fldname) == 0)
@@ -2999,10 +2936,10 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
-                    char* val = vals.queryValues()[0];
+                    const char * val = vals.queryCharValue(0);
                     if(val != NULL)
                     {
                         if(stricmp(attribute, fldname) == 0)
@@ -3106,19 +3043,19 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (!vals.hasValues())
                     continue;
                 if(stricmp(attribute, "cn") == 0)
                 {
-                    groups.append(vals.queryValues()[0]);
+                    groups.append(vals.queryCharValue(0));
                     managedBy.append("");
                     descriptions.append("");
                 }
                 else if(stricmp(attribute, "managedBy") == 0)
-                    managedBy.replace(vals.queryValues()[0], groups.length() - 1);
+                    managedBy.replace(vals.queryCharValue(0), groups.length() - 1);
                 else if(stricmp(attribute, "description") == 0)
-                    descriptions.replace(vals.queryValues()[0], groups.length() - 1);
+                    descriptions.replace(vals.queryCharValue(0), groups.length() - 1);
             }
         }
     }
@@ -3222,10 +3159,10 @@ public:
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-        int rc = ldap_modify_s(ld, (char*)normdnbuf.str(), attrs);
+        int rc = ldap_modify_ext_s(ld, (char*)normdnbuf.str(), attrs, NULL, NULL);
         if ( rc != LDAP_SUCCESS )
         {
-            throw MakeStringException(-1, "ldap_modify_s error: %d %s", rc, ldap_err2string( rc ));
+            throw MakeStringException(-1, "ldap_modify_ext_s error: %d %s", rc, ldap_err2string( rc ));
         }
 
         return true;
@@ -3281,13 +3218,13 @@ public:
                 {
                     if(0 == stricmp(attribute, "memberOf"))
                     {
-                        CLDAPGetValuesWrapper vals(ld, message, attribute);
+                        CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                         if (vals.hasValues())
                         {
-                            for (int i = 0; vals.queryValues()[ i ] != NULL; i++ )
+                            for (int i = 0; vals.queryBValues()[ i ] != NULL; i++ )
                             {
-                                char* val = vals.queryValues()[i];
-                                char* comma = strchr(val, ',');
+                                const char* val = vals.queryCharValue(i);
+                                char* comma = strchr((char*)val, ',');
                                 StringBuffer groupname;
                                 groupname.append(comma - val -3, val+3);
                                 groups.append(groupname.str());
@@ -3341,7 +3278,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         
-        int rc = ldap_delete_s(ld, (char*)userdn.str());
+        int rc = ldap_delete_ext_s(ld, (char*)userdn.str(), NULL, NULL);
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -3498,7 +3435,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         
-        int rc = ldap_delete_s(ld, (char*)dn.str());
+        int rc = ldap_delete_ext_s(ld, (char*)dn.str(), NULL, NULL);
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -3572,12 +3509,12 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
-                    for (int i = 0; vals.queryValues()[ i ] != NULL; i++ )
+                    for (int i = 0; vals.queryBValues()[ i ] != NULL; i++ )
                     {
-                        char* val = vals.queryValues()[i];
+                        const char* val = vals.queryCharValue(i);
                         StringBuffer uid;
                         getUidFromDN(val, uid);
                         if(uid.length() > 0)
@@ -3599,7 +3536,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         
-        int rc = ldap_delete_s(ld, (char*)dn.str());
+        int rc = ldap_delete_ext_s(ld, (char*)dn.str(), NULL, NULL);
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -3637,7 +3574,7 @@ public:
             attrs[0] = &uncname_attr;
             attrs[1] = NULL;
 
-            int rc = ldap_modify_s(ld, (char*)olddn.str(), attrs);
+            int rc = ldap_modify_ext_s(ld, (char*)olddn.str(), attrs, NULL, NULL);
 
             if (rc != LDAP_SUCCESS )
             {
@@ -3771,18 +3708,19 @@ public:
                 
                 char* pw_attrs[] = {"nsslapd-rootpwstoragescheme", NULL};
                 CLDAPMessage msg;
-                int err = ldap_search_s(ld, "cn=config", LDAP_SCOPE_BASE, "objectClass=*", pw_attrs, false, &msg.msg);
+                TIMEVAL timeOut = {LDAPTIMEOUT,0};
+                int err = ldap_search_ext_s(ld, "cn=config", LDAP_SCOPE_BASE, "objectClass=*", pw_attrs, false, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &msg.msg);
                 if(err != LDAP_SUCCESS)
                 {
-                    DBGLOG("ldap_search_s error: %s", ldap_err2string( err ));
+                    DBGLOG("ldap_search_ext_s error: %s", ldap_err2string( err ));
                     return NULL;
                 }
                 LDAPMessage* entry = LdapFirstEntry(ld, msg);
                 if(entry != NULL)
                 {
-                    CLDAPGetValuesWrapper vals(ld, entry, "nsslapd-rootpwstoragescheme");
+                    CLDAPGetValuesLenWrapper vals(ld, entry, "nsslapd-rootpwstoragescheme");
                     if (vals.hasValues())
-                        m_pwscheme.append(vals.queryValues()[0]);
+                        m_pwscheme.append(vals.queryCharValue(0));
                 }
                 ldap_msgfree(msg);
             }
@@ -3899,9 +3837,9 @@ private:
                 attribute = atts.getFirst();
                 if(attribute != NULL)
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        userdn.append(vals.queryValues()[0]);
+                        userdn.append(vals.queryCharValue(0));
                 }
             }
             if(userdn.length() == 0)
@@ -3961,9 +3899,9 @@ private:
             attribute = atts.getFirst();
             if(attribute != NULL)
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
-                    uid.append(vals.queryValues()[0]);
+                    uid.append(vals.queryCharValue(0));
             }
         }
     }
@@ -4289,13 +4227,13 @@ private:
             {
                 if(stricmp(attribute, id_fieldname) == 0)
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        resourcename.append(vals.queryValues()[0]);
+                        resourcename.append(vals.queryCharValue(0));
                 }
                 else if(stricmp(attribute, des_fieldname) == 0) 
                 {
-                    valsLen.getValues(ld, message, attribute);
+                    valsLen.retrieveBValues(ld, message, attribute);
                 }
             }
             for(i = 0; i < len; i++)
@@ -4307,7 +4245,7 @@ private:
                     {
                         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
                         {
-                            struct berval* val = valsLen.queryValues()[0];
+                            struct berval* val = valsLen.queryBValues()[0];
                             if(val != NULL)
                             {
                                 CSecurityDescriptor& sd = sdlist.item(i);
@@ -4318,7 +4256,7 @@ private:
                         {
                             MemoryBuffer allvals;
                             int valseq = 0;
-                            struct berval* val = valsLen.queryValues()[valseq++];
+                            struct berval* val = valsLen.queryBValues()[valseq++];
                             while(val != NULL)
                             {
                                 if(val->bv_len > 0)
@@ -4326,7 +4264,7 @@ private:
                                     allvals.append(val->bv_len, val->bv_val);
                                     allvals.append('\0'); // my separator between ACIs
                                 }
-                                val = valsLen.queryValues()[valseq++];
+                                val = valsLen.queryBValues()[valseq++];
                             }
                             if(allvals.length() > 0)
                             {
@@ -4461,7 +4399,7 @@ private:
             {
                 if(stricmp(attribute, sd_fieldname) == 0) 
                 {
-                    valsLen.getValues(ld, message, attribute);
+                    valsLen.retrieveBValues(ld, message, attribute);
                 }
             }
             for(i = 0; i < len; i++)
@@ -4473,7 +4411,7 @@ private:
                     {
                         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
                         {
-                            struct berval* val = valsLen.queryValues()[0];
+                            struct berval* val = valsLen.queryBValues()[0];
                             if(val != NULL)
                             {
                                 CSecurityDescriptor& sd = sdlist.item(i);
@@ -4484,7 +4422,7 @@ private:
                         {
                             MemoryBuffer allvals;
                             int valseq = 0;
-                            struct berval* val = valsLen.queryValues()[valseq++];
+                            struct berval* val = valsLen.queryBValues()[valseq++];
                             while(val != NULL)
                             {
                                 if(val->bv_len > 0)
@@ -4492,7 +4430,7 @@ private:
                                     allvals.append(val->bv_len, val->bv_val);
                                     allvals.append('\0'); // my separator between ACIs
                                 }
-                                val = valsLen.queryValues()[valseq++];
+                                val = valsLen.queryBValues()[valseq++];
                             }
                             if(allvals.length() > 0)
                             {
@@ -4941,10 +4879,10 @@ private:
             {
                 if(0 == stricmp(attribute, "userAccountControl"))
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
                     {
-                        act_ctrl.append(vals.queryValues()[0]);
+                        act_ctrl.append(vals.queryCharValue(0));
                         break;
                     }
                 }
@@ -5225,104 +5163,6 @@ private:
             return -2;
     }
 };
-
-int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname)
-{
-    LdapServerType deducedSType = LDAPSERVER_UNKNOWN;
-    LDAP* ld = LdapInit("ldap", ldapserver, ldapport, 636); 
-    if(ld == NULL)
-    {
-        ERRLOG("ldap init error");
-        return false;
-    }
-    
-    int err = LdapSimpleBind(ld, NULL, NULL);
-    if(err != LDAP_SUCCESS)
-    {
-        DBGLOG("ldap anonymous bind error (%d) - %s", err, ldap_err2string(err));
-
-        // for new versions of openldap, version 2.2.*
-        if(err == LDAP_PROTOCOL_ERROR)
-            DBGLOG("If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
-
-        return err;
-    }
-
-    LDAPMessage* msg = NULL;
-    char* attrs[] = {"namingContexts", NULL};
-    err = ldap_search_s(ld, NULL, LDAP_SCOPE_BASE, "objectClass=*", attrs, false, &msg);
-    if(err != LDAP_SUCCESS)
-    {
-        DBGLOG("ldap_search_s error: %s", ldap_err2string( err ));
-        if (msg)
-            ldap_msgfree(msg);
-        return err;
-    }
-    LDAPMessage* entry = LdapFirstEntry(ld, msg);
-    if(entry != NULL)
-    {
-        CLDAPGetValuesWrapper vals(ld, entry, "namingContexts");
-        char** domains = vals.queryValues();
-        if(domains != NULL)
-        {
-            int i = 0;
-            char* curdn;
-            StringBuffer onedn;
-            while((curdn = domains[i]) != NULL)
-            {
-                if(*curdn != '\0' && (strncmp(curdn, "dc=", 3) == 0 || strncmp(curdn, "DC=", 3) == 0) && strstr(curdn,"DC=ForestDnsZones")==0 && strstr(curdn,"DC=DomainDnsZones")==0 )
-                {
-                    if(domainDN.length() == 0)
-                    {
-                        StringBuffer curdomain;
-                        LdapUtils::getName(curdn, curdomain);
-                        if(onedn.length() == 0)
-                        {
-                            DBGLOG("Queried '%s', selected basedn '%s'",curdn, curdomain.str());
-                            onedn.append(curdomain.str());
-                        }
-                        else
-                            DBGLOG("Ignoring %s", curdn);
-                        if(!domainname || !*domainname || stricmp(curdomain.str(), domainname) == 0)
-                            domainDN.append(curdn);
-                    }
-                }
-                else if(*curdn != '\0' && strcmp(curdn, "o=NetscapeRoot") == 0)
-                {
-                    PROGLOG("Deduced LDAP Server Type 'iPlanet'");
-                    deducedSType = IPLANET;
-                }
-                i++;
-            }
-            
-            if(domainDN.length() == 0)
-                domainDN.append(onedn.str());
-
-            if (deducedSType == LDAPSERVER_UNKNOWN)
-            {
-                if(i <= 1)
-                {
-                    PROGLOG("Deduced LDAP Server Type 'OpenLDAP'");
-                    deducedSType = OPEN_LDAP;
-                }
-                else
-                {
-                    PROGLOG("Deduced LDAP Server Type 'Active Directory'");
-                    deducedSType = ACTIVE_DIRECTORY;
-                }
-            }
-        }
-    }
-    ldap_msgfree(msg);
-    ldap_unbind(ld);
-
-    if (stype == LDAPSERVER_UNKNOWN)
-        stype = deducedSType;
-    else if (deducedSType != stype)
-        WARNLOG("Ignoring deduced LDAP Server Type, does not match config LDAPServerType");
-
-    return err;
-}
 
 #ifdef _WIN32
 bool verifyServerCert(LDAP* ld, PCCERT_CONTEXT pServerCert)
