@@ -299,10 +299,16 @@ private:
     CassStatement *statement;
 };
 
+class LinkedSemaphore : public CInterfaceOf<IInterface>, public Semaphore
+{
+public:
+    LinkedSemaphore(unsigned initialCount) : Semaphore(initialCount) {}
+};
+
 class CassandraRetryingFuture : public CInterface
 {
 public:
-    CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, Semaphore *_limiter = NULL, unsigned _retries = 10);
+    CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, LinkedSemaphore *_limiter = NULL, unsigned _retries = 10);
     ~CassandraRetryingFuture();
     inline operator CassFuture *() const
     {
@@ -319,7 +325,7 @@ private:
     CassSession *session;
     CassandraStatement statement;
     unsigned retries;
-    Semaphore *limiter;
+    LinkedSemaphore *limiter;
 };
 
 class CassandraResult : public CInterfaceOf<IInterface>
@@ -426,7 +432,7 @@ protected:
     Owned<CassandraIterator> iterator;
     unsigned numBindings;
     CIArrayOf<CassandraRetryingFuture> futures;
-    Semaphore *semaphore;
+    Owned<LinkedSemaphore> semaphore;
     unsigned maxFutures;
     unsigned maxRetries;
     bool inBatch;
