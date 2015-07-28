@@ -520,6 +520,8 @@ public:
                 }
 
                 filelist->addFilesFromQuery(cw, this, queryid);
+
+                unsigned unmatchedCount=0;
                 Owned<IReferencedFileIterator> refFiles = filelist->getFiles();
                 ForEach(*refFiles)
                 {
@@ -549,6 +551,7 @@ public:
                     }
                     VStringBuffer fullname("%s/%s", queryid, rf.getLogicalName());
                     unmatchedFiles.append(fullname);
+                    unmatchedCount++;
                 }
 
                 const IHpccPackage *matched = matchPackage(queryid);
@@ -557,6 +560,12 @@ public:
                     const char *matchId = matched->queryTree()->queryProp("@id");
                     if (!referencedPackages.getValue(matchId))
                         referencedPackages.setValue(matchId, true);
+                    if (unmatchedCount && matched->isCompulsory())
+                    {
+                        VStringBuffer msg("Compulsory query %s has query files not defined in package %s", queryid, matchId);
+                        err.append(msg.str());
+                        isValid=false;
+                    }
                 }
                 else
                     unmatchedQueries.append(queryid);

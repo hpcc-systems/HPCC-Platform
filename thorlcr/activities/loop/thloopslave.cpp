@@ -267,6 +267,8 @@ public:
         loopPending.setown(createOverflowableBuffer(*this, this, false, true));
         loopPendingCount = 0;
         finishedLooping = ((container.getKind() == TAKloopcount) && (maxIterations == 0));
+        if ((flags & IHThorLoopArg::LFnewloopagain) && !helper->loopFirstTime())
+            finishedLooping = true;
         curInput.set(input);
         lastMs = msTick();
 

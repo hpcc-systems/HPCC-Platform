@@ -1419,6 +1419,8 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
         }
         bool find(const char *subFile, bool sub)
         {
+            StringBuffer tmp;
+            subFile = normalizeLFN(subFile, tmp);
             HTMapping *match = subFilesByName.find(subFile);
             if (match)
                 return true;
