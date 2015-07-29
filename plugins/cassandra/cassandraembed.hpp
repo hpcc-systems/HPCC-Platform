@@ -29,16 +29,38 @@ extern bool isString(CassValueType t);
 
 // Wrappers to Cassandra structures that require corresponding releases
 
-class CassandraCluster : public CInterface
+class CassandraSession : public CInterface
 {
 public:
-    inline CassandraCluster(CassCluster *_cluster)
+    inline CassandraSession() : session(NULL) {}
+    inline CassandraSession(CassSession *_session) : session(_session)
+    {
+    }
+    inline ~CassandraSession()
+    {
+        set(NULL);
+    }
+    void set(CassSession *_session);
+    inline operator CassSession *() const
+    {
+        return session;
+    }
+private:
+    CassandraSession(const CassandraSession &);
+    CassSession *session;
+};
+
+class CassandraClusterSession : public CInterface
+{
+public:
+    inline CassandraClusterSession(CassCluster *_cluster)
     : cluster(_cluster), batchMode((CassBatchType) -1), pageSize(0), maxFutures(0), maxRetries(0)
     {
     }
     void setOptions(const StringArray &options);
-    inline ~CassandraCluster()
+    inline ~CassandraClusterSession()
     {
+        session.clear();  // Should do this before freeing cluster
         if (cluster)
             cass_cluster_free(cluster);
     }
@@ -46,14 +68,23 @@ public:
     {
         return cluster;
     }
+    inline operator CassSession *() const
+    {
+        return *session;
+    }
+    void connect();
+    void disconnect();
 private:
     void checkSetOption(CassError rc, const char *name);
     cass_bool_t getBoolOption(const char *val, const char *option);
     unsigned getUnsignedOption(const char *val, const char *option);
     unsigned getDoubleOption(const char *val, const char *option);
     __uint64 getUnsigned64Option(const char *val, const char *option);
-    CassandraCluster(const CassandraCluster &);
+    CassandraClusterSession(const CassandraClusterSession &);
     CassCluster *cluster;
+public:
+    Owned<CassandraSession> session;  // Make private later
+
 public:
     // These are here as convenient to set from same options string. They are really properties of the session
     // or query rather than the cluster, but we have one session per cluster so we get away with it at the moment.
@@ -116,27 +147,6 @@ private:
     CassandraFutureResult(const CassandraFutureResult &);
     mutable const CassResult *result;
 
-};
-
-class CassandraSession : public CInterface
-{
-public:
-    inline CassandraSession() : session(NULL) {}
-    inline CassandraSession(CassSession *_session) : session(_session)
-    {
-    }
-    inline ~CassandraSession()
-    {
-        set(NULL);
-    }
-    void set(CassSession *_session);
-    inline operator CassSession *() const
-    {
-        return session;
-    }
-private:
-    CassandraSession(const CassandraSession &);
-    CassSession *session;
 };
 
 class CassandraBatch : public CInterface
