@@ -321,6 +321,8 @@ void HqlCppTranslator::buildNullRow(BuildCtx & ctx, IHqlExpression * expr, CHqlB
 
 IReferenceSelector * HqlCppTranslator::doBuildRowFromXMLorJSON(BuildCtx & ctx, IHqlExpression * expr)
 {
+    IHqlExpression * onFail = expr->queryAttribute(onFailAtom);
+
 //  assertex(supportsLinkCountedRows);
     Owned<ITypeInfo> overrideType = setLinkCountedAttr(expr->queryType(), true);
     Owned<ITypeInfo> utf8Type = makeUtf8Type(UNKNOWN_LENGTH, NULL);
@@ -362,18 +364,39 @@ IReferenceSelector * HqlCppTranslator::doBuildRowFromXMLorJSON(BuildCtx & ctx, I
     else
         function.setown(bindFunctionCall(createRowFromXmlId, args, overrideType));
 
-    CHqlBoundExpr bound;
-    buildExpr(ctx, function, bound);
+    Owned<BoundRow> result;
+    if (onFail)
+    {
+        result.setown(declareTempRow(ctx, ctx, expr));
+        BuildCtx tryctx(ctx);
+        tryctx.addTry();
+        buildRowAssign(tryctx, result, function);
 
-    Owned<ITypeInfo> rowType = makeReferenceModifier(LINK(overrideType));
-    OwnedHqlExpr rowExpr = ctx.getTempDeclare(rowType, NULL);
-    Owned<BoundRow> row = createBoundRow(expr, rowExpr);
-    ctx.associate(*row);                                    // associate here because it is compared inside the loop
+        HqlExprArray dummyArgs;
+        OwnedHqlExpr exception = createParameter(createIdAtom("e"), 0, makePointerType(makeClassType("IException")), dummyArgs);
+        BuildCtx catchctx(ctx);
+        catchctx.addCatch(exception);
+        catchctx.addQuoted("Owned<IException> _e = e;");    // ensure that the exception is released
 
-    OwnedHqlExpr defaultRowPtr = getPointer(bound.expr);
-    ctx.addAssign(rowExpr, defaultRowPtr);
+        associateLocalFailure(catchctx, "e");
+        OwnedHqlExpr row = createRow(no_createrow, LINK(onFail->queryChild(0)));
+        buildRowAssign(catchctx, result, row);
+    }
+    else
+    {
+        CHqlBoundExpr bound;
+        buildExpr(ctx, function, bound);
 
-    return createReferenceSelector(row);
+        Owned<ITypeInfo> rowType = makeReferenceModifier(LINK(overrideType));
+        OwnedHqlExpr rowExpr = ctx.getTempDeclare(rowType, NULL);
+        result.setown(createBoundRow(expr, rowExpr));
+
+        OwnedHqlExpr defaultRowPtr = getPointer(bound.expr);
+        ctx.addAssign(rowExpr, defaultRowPtr);
+    }
+
+    ctx.associate(*result);
+    return createReferenceSelector(result);
 }
 
 
