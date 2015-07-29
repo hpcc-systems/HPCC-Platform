@@ -862,6 +862,17 @@ ESPresponse [exceptions_inline] WUGraphTimingResponse
     ESPstruct ECLWorkunit Workunit;
 };
 
+ESPrequest WUGetGraphNameAndTypesRequest
+{
+    string Wuid;
+    string Type;
+};
+
+ESPresponse [encode(0), exceptions_inline] WUGetGraphNameAndTypesResponse
+{
+    ESParray<ESPstruct NameAndType, GraphNameAndType> GraphNameAndTypes;
+};
+
 ESPrequest WUProcessGraphRequest
 {
     string Wuid;
@@ -1708,6 +1719,7 @@ ESPservice [
     //ESPmethod WUAction(WUActionRequest, WUActionResponse); 
     ESPmethod WUFile(WULogFileRequest, WULogFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse); 
+    ESPmethod WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
     ESPmethod WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
     ESPmethod WUQueryGetGraph(WUQueryGetGraphRequest, WUQueryGetGraphResponse);
     ESPmethod WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);

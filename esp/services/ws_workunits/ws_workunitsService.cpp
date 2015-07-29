@@ -3313,6 +3313,31 @@ void getClusterConfig(char const * clusterType, char const * clusterName, char c
     return;
 }
 
+bool CWsWorkunitsEx::onWUGetGraphNameAndTypes(IEspContext &context,IEspWUGetGraphNameAndTypesRequest &req, IEspWUGetGraphNameAndTypesResponse &resp)
+{
+    try
+    {
+        StringBuffer wuid = req.getWuid();
+        WsWuHelpers::checkAndTrimWorkunit("WUGraphQuery", wuid);
+
+        StringBuffer type = req.getType();
+        WUGraphType graphType = GraphTypeAny;
+        if (type.trim().length())
+            graphType = getGraphTypeFromString(type.str());
+
+        IArrayOf<IEspNameAndType> graphNameAndTypes;
+        WsWuInfo winfo(context, wuid.str());
+        winfo.getWUGraphNameAndTypes(graphType, graphNameAndTypes);
+        resp.setGraphNameAndTypes(graphNameAndTypes);
+    }
+
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 bool CWsWorkunitsEx::onWUProcessGraph(IEspContext &context,IEspWUProcessGraphRequest &req, IEspWUProcessGraphResponse &resp)
 {
     try
