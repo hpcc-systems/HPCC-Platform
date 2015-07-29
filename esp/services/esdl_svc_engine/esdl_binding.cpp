@@ -500,7 +500,6 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">");
 
-    StringBuffer hashedReq;
 
     if(isroxie)
     {
@@ -521,48 +520,26 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
     }
     else
     {
-        generateHashFromReq(srvdef,mthdef,req,hashedReq);
-        context.addTraceSummaryValue("hashkey",hashedReq.str());
         StringBuffer headers;
         processHeaders(context, srvdef, mthdef, ns, req,headers);
         if (headers.length() > 0 )
             soapmsg.append("<soap:Header>").append(headers).append("</soap:Header>");
 
-        processRequest(context, srvdef, mthdef, ns, req, hashedReq);
+        processRequest(context, srvdef, mthdef, ns, req);
         soapmsg.append("<soap:Body>").append(req).append("</soap:Body>");
     }
     soapmsg.append("</soap:Envelope>");
-    IProperties* pProperties = context.queryRequestParameters();
 
-    if( !pProperties )
-        throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP",
-                    "EsdlServiceImpl::handleFinalRequest() queryRequestParameters missing");
-
-    pProperties->setProp(MCACHE_OBJECT_KEY,hashedReq.str());
-
-    if( pProperties->hasProp(CACHED_RESULT_NAME) &&
-        stricmp(pProperties->queryProp(CACHED_RESULT_NAME),"yes" ) == 0)
-    {
-        // The "req" should have the response from cache.
-        out.clear().append(req);
-        context.addTraceSummaryValue("cache", "true");
-        // we got the result from cache no need to proceed further
-    }
+    const char *tgtUrl = tgtcfg->queryProp("@url");
+    if (tgtUrl && *tgtUrl)
+        sendTargetSOAP(context, tgtcfg.get(), soapmsg.str(), out, isproxy, NULL);
     else
     {
-        const char *querytype = tgtcfg->queryProp("@querytype");
-        const char *tgtUrl = tgtcfg->queryProp("@url");
-        if (tgtUrl && *tgtUrl)
-            sendTargetSOAP(context, tgtcfg.get(), soapmsg.str(), out, isproxy, NULL);
-        else
-        {
-            ESPLOG(LogMax,"No target URL configured for %s",mthdef.queryMethodName());
-            throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_CLIENT, "ESP",
-                        "No target URL configured for %s!", mthdef.queryMethodName());
-        }
-        context.addTraceSummaryValue("cache", "false");
+        ESPLOG(LogMax,"No target URL configured for %s",mthdef.queryMethodName());
+        throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_CLIENT, "ESP",
+                   "No target URL configured for %s!", mthdef.queryMethodName());
     }
-    processResponse(context,srvdef,mthdef,ns,out,hashedReq);
+    processResponse(context,srvdef,mthdef,ns,out);
 
 }
 
