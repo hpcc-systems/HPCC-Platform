@@ -2751,7 +2751,7 @@ class CCasssandraWorkUnitFactory : public CWorkUnitFactory, implements ICassandr
 {
     IMPLEMENT_IINTERFACE;
 public:
-    CCasssandraWorkUnitFactory(const IPropertyTree *props) : cluster(cass_cluster_new()), randomizeSuffix(0), randState((unsigned) get_cycles_now()), cacheRetirer(*this)
+    CCasssandraWorkUnitFactory(const IPropertyTree *props) : session(cass_cluster_new()), randomizeSuffix(0), randState((unsigned) get_cycles_now()), cacheRetirer(*this)
     {
         StringArray options;
         Owned<IPTreeIterator> it = props->getElements("Option");
@@ -2773,10 +2773,10 @@ public:
                 }
             }
         }
-        cluster.setOptions(options);
-        if (cluster.keyspace.isEmpty())
-            cluster.keyspace.set("hpcc");
-        connect();
+        session.setOptions(options);
+        if (session.keyspace.isEmpty())
+            session.keyspace.set("hpcc");
+        session.connect();
         cacheRetirer.start();
     }
 
@@ -3282,25 +3282,26 @@ public:
     virtual void deleteRepository(bool recreate)
     {
         // USE WITH CARE!
-        session.set(cass_session_new());
-        CassandraFuture future(cass_session_connect(session, cluster));
+        CassandraSession s(cass_session_new());
+        CassandraFuture future(cass_session_connect(s, session));
         future.wait("connect without keyspace to delete");
-        VStringBuffer deleteKeyspace("DROP KEYSPACE IF EXISTS %s;", cluster.keyspace.get());
-        executeSimpleCommand(session, deleteKeyspace);
+        VStringBuffer deleteKeyspace("DROP KEYSPACE IF EXISTS %s;", session.keyspace.get());
+        executeSimpleCommand(s, deleteKeyspace);
+        s.set(NULL);
+        session.disconnect();
         if (recreate)
-            connect();
-        else
-            session.set(NULL);
+            createRepository();
     }
 
     virtual void createRepository()
     {
-        session.set(cass_session_new());
-        CassandraFuture future(cass_session_connect(session, cluster));
+        CassandraSession s(cass_session_new());
+        CassandraFuture future(cass_session_connect(s, session));
         future.wait("connect without keyspace");
-        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' } ;", cluster.keyspace.get()); // MORE - options from props? Not 100% sure if they are appropriate.
-        executeSimpleCommand(session, create);
-        connect();
+        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' } ;", session.keyspace.get()); // MORE - options from props? Not 100% sure if they are appropriate.
+        executeSimpleCommand(s, create);
+        s.set(NULL);
+        session.connect();
         ensureTable(session, workunitsMappings);
         ensureTable(session, searchMappings);
         ensureTable(session, uniqueSearchMappings);
@@ -3322,7 +3323,7 @@ public:
     virtual unsigned queryTraceLevel() const { return traceLevel; };
     virtual CassandraPrepared *prepareStatement(const char *query) const
     {
-        assertex(session);
+        assertex(querySession());
         CriticalBlock b(cacheCrit);
         Linked<CassandraPrepared> cached = preparedCache.getValue(query);
         if (cached)
@@ -3345,12 +3346,6 @@ public:
         return cached.getClear();
     }
 private:
-    void connect()
-    {
-        session.set(cass_session_new());
-        CassandraFuture future(cass_session_connect_keyspace(session, cluster, cluster.keyspace));
-        future.wait("connect with keyspace");
-    }
     bool checkWuExists(const char *wuid)
     {
         CassandraStatement statement(prepareStatement("SELECT COUNT(*) FROM workunits where partition=? and wuid=?;"));
@@ -3855,8 +3850,7 @@ private:
     unsigned randomizeSuffix;
     unsigned traceLevel;
     unsigned randState;
-    CassandraCluster cluster;
-    CassandraSession session;
+    CassandraClusterSession session;
     mutable CriticalSection cacheCrit;  // protects both of the caches below... we could separate
     mutable MapStringToMyClass<CassandraPrepared> preparedCache;
     mutable MapXToMyClass<__uint64, __uint64, CCassandraWuUQueryCacheEntry> cacheIdMap;

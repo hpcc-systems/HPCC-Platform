@@ -114,7 +114,7 @@ void check(CassError rc)
 
 // Wrappers to Cassandra structures that require corresponding releases
 
-void CassandraCluster::setOptions(const StringArray &options)
+void CassandraClusterSession::setOptions(const StringArray &options)
 {
     const char *contact_points = "localhost";
     const char *user = "";
@@ -273,18 +273,18 @@ void CassandraCluster::setOptions(const StringArray &options)
         cass_cluster_set_credentials(cluster, user, password);
 }
 
-void CassandraCluster::checkSetOption(CassError rc, const char *name)
+void CassandraClusterSession::checkSetOption(CassError rc, const char *name)
 {
     if (rc != CASS_OK)
     {
         failx("While setting option %s: %s", name, cass_error_desc(rc));
     }
 }
-cass_bool_t CassandraCluster::getBoolOption(const char *val, const char *option)
+cass_bool_t CassandraClusterSession::getBoolOption(const char *val, const char *option)
 {
     return strToBool(val) ? cass_true : cass_false;
 }
-unsigned CassandraCluster::getUnsignedOption(const char *val, const char *option)
+unsigned CassandraClusterSession::getUnsignedOption(const char *val, const char *option)
 {
     char *endp;
     long value = strtoul(val, &endp, 0);
@@ -292,7 +292,7 @@ unsigned CassandraCluster::getUnsignedOption(const char *val, const char *option
         failx("Invalid value '%s' for option %s", val, option);
     return (unsigned) value;
 }
-unsigned CassandraCluster::getDoubleOption(const char *val, const char *option)
+unsigned CassandraClusterSession::getDoubleOption(const char *val, const char *option)
 {
     char *endp;
     double value = strtod(val, &endp);
@@ -300,10 +300,21 @@ unsigned CassandraCluster::getDoubleOption(const char *val, const char *option)
         failx("Invalid value '%s' for option %s", val, option);
     return value;
 }
-__uint64 CassandraCluster::getUnsigned64Option(const char *val, const char *option)
+__uint64 CassandraClusterSession::getUnsigned64Option(const char *val, const char *option)
 {
     // MORE - could check it's all digits (with optional leading spaces...), if we cared.
     return rtlVStrToUInt8(val);
+}
+void CassandraClusterSession::connect()
+{
+    assertex(cluster && !session);
+    session.setown(new CassandraSession(cass_session_new()));
+    CassandraFuture future(keyspace.isEmpty() ? cass_session_connect(*session, cluster) : cass_session_connect_keyspace(*session, cluster, keyspace));
+    future.wait("connect");
+}
+void CassandraClusterSession::disconnect()
+{
+    session.clear();
 }
 
 //------------------
@@ -1227,11 +1238,9 @@ public:
     {
         StringArray opts;
         opts.appendList(options, ",");
-        cluster.setown(new CassandraCluster(cass_cluster_new()));
+        cluster.setown(new CassandraClusterSession(cass_cluster_new()));
         cluster->setOptions(opts);
-        session.setown(new CassandraSession(cass_session_new()));
-        CassandraFuture future(cluster->keyspace.isEmpty() ? cass_session_connect(*session, *cluster) : cass_session_connect_keyspace(*session, *cluster, cluster->keyspace));
-        future.wait("connect");
+        cluster->connect();
     }
     virtual bool getBooleanResult()
     {
@@ -1657,7 +1666,7 @@ public:
                     break;
                 }
                 CassandraStatement statement(cass_statement_new_n(script, nextScript-script, 0));
-                CassandraFuture future(cass_session_execute(*session, statement));
+                CassandraFuture future(cass_session_execute(*cluster->session, statement));
                 future.wait("execute statement");
                 script = nextScript;
             }
@@ -1665,14 +1674,14 @@ public:
         else
         {
             // MORE - can cache this, perhaps, if script is same as last time?
-            CassandraFuture future(cass_session_prepare(*session, script));
+            CassandraFuture future(cass_session_prepare(*cluster->session, script));
             future.wait("prepare statement");
             Owned<CassandraPrepared> prepared = new CassandraPrepared(cass_future_get_prepared(future), NULL);
             if ((flags & EFnoparams) == 0)
                 numParams = countBindings(script);
             else
                 numParams = 0;
-            stmtInfo.setown(new CassandraStatementInfo(session, prepared, numParams, cluster->batchMode, cluster->pageSize, cluster->maxFutures, cluster->maxRetries));
+            stmtInfo.setown(new CassandraStatementInfo(cluster->session, prepared, numParams, cluster->batchMode, cluster->pageSize, cluster->maxFutures, cluster->maxRetries));
         }
     }
     virtual void callFunction()
@@ -1790,8 +1799,7 @@ protected:
             failx("While binding parameter %s: %s", name, cass_error_desc(rc));
         }
     }
-    Owned<CassandraCluster> cluster;
-    Owned<CassandraSession> session;
+    Owned<CassandraClusterSession> cluster;
     Owned<CassandraStatementInfo> stmtInfo;
     Owned<CassandraDatasetBinder> inputStream;
     const IContextLogger &logctx;
