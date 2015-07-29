@@ -314,8 +314,12 @@ CriticalSection ucmCrit;
 static void clearUnicodeConverterMap()
 {
     delete unicodeConverterMap;
+    unicodeConverterMap = NULL;  // Important to clear, as this is called when threadpool threads end...
     if (prevThreadTerminator)
+    {
         (*prevThreadTerminator)();
+        prevThreadTerminator = NULL;
+    }
 }
 
 RTLUnicodeConverter * queryRTLUnicodeConverter(char const * codepage)
