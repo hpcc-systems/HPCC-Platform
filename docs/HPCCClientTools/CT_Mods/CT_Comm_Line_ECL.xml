@@ -336,8 +336,7 @@ Richard Chapman</programlisting>
 
           <programlisting>eclplus action=graph graph=graph1 wuid=W20090226-100958-85552898</programlisting>
 
-          <para>If no graph name is supplied in the graph= parameter, then
-          data is returned for all graphs</para>
+          <para>Graph name must be supplied in the graph= parameter.</para>
         </sect3>
 
         <sect3>
