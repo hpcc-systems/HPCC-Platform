@@ -1,4 +1,4 @@
-﻿/*##############################################################################
+/*##############################################################################
 ## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
@@ -601,7 +601,8 @@ EXPORT Seconds_t SecondsFromDateTimeRec(DateTime_rec datetime, BOOLEAN is_local_
  * @param date_text     The string to be converted.
  * @param format        The format of the input string.
  *                      (See documentation for strftime)
- * @return              The date that was matched in the string.  Returns 0 if failed to match.
+ * @return              The date that was matched in the string.  Returns 0 if failed to match 
+ *                      or if the date components match but the result is an invalid date.
  *
  * Supported characters:
     %B          Full month name

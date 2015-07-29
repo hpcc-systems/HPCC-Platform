@@ -38,7 +38,8 @@
           <entry>return</entry>
 
           <entry>The date that was matched in the string. Returns 0 if failed
-          to match.</entry>
+          to match or if the date components match but the result is an
+          invalid date.</entry>
         </row>
       </tbody>
     </tgroup>
