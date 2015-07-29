@@ -19,6 +19,7 @@
 #define __ACI_IPP_
 #include "ldapconnection.hpp"
 #include "permissions.hpp"
+#include "ldaputils.hpp"
 
 class AciProcessor : public CInterface, implements IPermissionProcessor
 {
