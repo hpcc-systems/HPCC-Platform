@@ -396,6 +396,8 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/ToGregorianYMD.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/FromStringToDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />            
   </chapter>
 
   <chapter id="Cluster_Handling">
