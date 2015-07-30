@@ -912,7 +912,13 @@ public:
         expirySeconds = _expirySeconds;
         queryStatsAggregators.append(*LINK(this));
     }
-
+    ~CQueryStatsAggregator()
+    {
+        while (recent.ordinality())
+        {
+            recent.dequeue()->Release();
+        }
+    }
     static IPropertyTree *getAllQueryStats(bool includeQueries, time_t from, time_t to)
     {
         Owned<IPTree> result = createPTree("QueryStats");
