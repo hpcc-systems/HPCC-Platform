@@ -80,13 +80,6 @@ static void logCallBack(const CassLogMessage *message, void *data)
     DBGLOG("cassandra: %s - %s", cass_log_level_string(message->severity), message->message);
 }
 
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    cass_log_set_callback(logCallBack, NULL);
-    cass_log_set_level(CASS_LOG_WARN);
-    return true;
-}
-
 extern void failx(const char *message, ...)
 {
     va_list args;
@@ -135,17 +128,6 @@ void CassandraClusterSession::setOptions(const StringArray &options)
                 password = val;
             else if (stricmp(optName, "keyspace")==0)
                 keyspace.set(val);
-            else if (stricmp(optName, "batch")==0)
-            {
-                if (stricmp(val, "LOGGED")==0)
-                    batchMode = CASS_BATCH_TYPE_LOGGED;
-                else if (stricmp(val, "UNLOGGED")==0)
-                    batchMode = CASS_BATCH_TYPE_UNLOGGED;
-                else if (stricmp(val, "COUNTER")==0)
-                    batchMode = CASS_BATCH_TYPE_COUNTER;
-            }
-            else if (stricmp(optName, "pageSize")==0)
-                pageSize = getUnsignedOption(val, "pageSize");
             else if (stricmp(optName, "maxFutures")==0)
                 maxFutures=getUnsignedOption(val, "maxFutures");
             else if (stricmp(optName, "maxRetries")==0)
@@ -315,6 +297,62 @@ void CassandraClusterSession::connect()
 void CassandraClusterSession::disconnect()
 {
     session.clear();
+}
+CassandraPrepared *CassandraClusterSession::prepareStatement(const char *query, bool trace) const
+{
+    assertex(session);
+    CriticalBlock b(cacheCrit);
+    Linked<CassandraPrepared> cached = preparedCache.getValue(query);
+    if (cached)
+        return cached.getClear();
+    {
+        // We don't want to block cache lookups while we prepare a new bound statement
+        // Note - if multiple threads try to prepare the same (new) statement at the same time, it's not catastrophic
+        CriticalUnblock b(cacheCrit);
+        CassandraFuture futurePrep(cass_session_prepare(*session, query));
+        futurePrep.wait("prepare statement");
+        cached.setown(new CassandraPrepared(cass_future_get_prepared(futurePrep), trace ? query : NULL));
+    }
+    preparedCache.setValue(query, cached); // NOTE - this links parameter
+    return cached.getClear();
+}
+
+typedef CassandraClusterSession *CassandraClusterSessionPtr;
+typedef MapBetween<hash64_t, hash64_t, CassandraClusterSessionPtr, CassandraClusterSessionPtr> ClusterSessionMap;
+static CriticalSection clusterCacheCrit;
+static ClusterSessionMap cachedSessions;
+
+CassandraClusterSession *lookupCachedSession(hash64_t hash, const StringArray &opts)
+{
+    Owned<CassandraClusterSession> cluster;
+    CassandraClusterSessionPtr *found = cachedSessions.getValue(hash);
+    if (found)
+        cluster.set(*found);
+    if (!cluster)
+    {
+        cluster.setown(new CassandraClusterSession(cass_cluster_new()));
+        cluster->setOptions(opts);
+        cluster->connect();
+        cachedSessions.setValue(hash, cluster.getLink());
+    }
+    return cluster.getClear();
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    cass_log_set_callback(logCallBack, NULL);
+    cass_log_set_level(CASS_LOG_WARN);
+    return true;
+}
+
+MODULE_EXIT()
+{
+    HashIterator i(cachedSessions);
+    ForEach(i)
+    {
+        CassandraClusterSession *session = *cachedSessions.mapToValue(&i.query());
+        ::Release(session);
+    }
 }
 
 //------------------
@@ -1234,13 +1272,34 @@ class CassandraEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
     CassandraEmbedFunctionContext(const IContextLogger &_logctx, unsigned _flags, const char *options)
-      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0)
+      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0), batchMode((CassBatchType) -1), pageSize(0)
     {
         StringArray opts;
         opts.appendList(options, ",");
-        cluster.setown(new CassandraClusterSession(cass_cluster_new()));
-        cluster->setOptions(opts);
-        cluster->connect();
+        hash64_t hash = 0;
+        ForEachItemInRev(idx, opts)
+        {
+            const char *opt = opts.item(idx);
+            if (strnicmp(opt, "batch=", 6)==0)
+            {
+                const char *val=opt+6;
+                if (stricmp(val, "LOGGED")==0)
+                    batchMode = CASS_BATCH_TYPE_LOGGED;
+                else if (stricmp(val, "UNLOGGED")==0)
+                    batchMode = CASS_BATCH_TYPE_UNLOGGED;
+                else if (stricmp(val, "COUNTER")==0)
+                    batchMode = CASS_BATCH_TYPE_COUNTER;
+                opts.remove(idx);
+            }
+            else if (strnicmp(opt, "pagesize=", 9)==0)
+            {
+                pageSize = atoi(opt+9);
+                opts.remove(idx);
+            }
+            else
+                hash = rtlHash64VStr(opt, hash);
+        }
+        cluster.setown(lookupCachedSession(hash, opts));
     }
     virtual bool getBooleanResult()
     {
@@ -1666,22 +1725,19 @@ public:
                     break;
                 }
                 CassandraStatement statement(cass_statement_new_n(script, nextScript-script, 0));
-                CassandraFuture future(cass_session_execute(*cluster->session, statement));
+                CassandraFuture future(cass_session_execute(*cluster, statement));
                 future.wait("execute statement");
                 script = nextScript;
             }
         }
         else
         {
-            // MORE - can cache this, perhaps, if script is same as last time?
-            CassandraFuture future(cass_session_prepare(*cluster->session, script));
-            future.wait("prepare statement");
-            Owned<CassandraPrepared> prepared = new CassandraPrepared(cass_future_get_prepared(future), NULL);
+            Owned<CassandraPrepared> prepared = cluster->prepareStatement(script, false); // We could make tracing selectable
             if ((flags & EFnoparams) == 0)
                 numParams = countBindings(script);
             else
                 numParams = 0;
-            stmtInfo.setown(new CassandraStatementInfo(cluster->session, prepared, numParams, cluster->batchMode, cluster->pageSize, cluster->maxFutures, cluster->maxRetries));
+            stmtInfo.setown(new CassandraStatementInfo(*cluster, prepared, numParams, batchMode, pageSize, cluster->maxFutures, cluster->maxRetries));
         }
     }
     virtual void callFunction()
@@ -1807,7 +1863,8 @@ protected:
     unsigned nextParam;
     unsigned numParams;
     StringAttr queryString;
-
+    CassBatchType batchMode;
+    unsigned pageSize;
 };
 
 class CassandraEmbedContext : public CInterfaceOf<IEmbedContext>

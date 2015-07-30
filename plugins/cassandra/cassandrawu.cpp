@@ -3323,27 +3323,7 @@ public:
     virtual unsigned queryTraceLevel() const { return traceLevel; };
     virtual CassandraPrepared *prepareStatement(const char *query) const
     {
-        assertex(querySession());
-        CriticalBlock b(cacheCrit);
-        Linked<CassandraPrepared> cached = preparedCache.getValue(query);
-        if (cached)
-        {
-            if (traceLevel >= 3)
-                DBGLOG("prepareStatement: Reusing %s", query);
-            return cached.getClear();
-        }
-        {
-            if (traceLevel >= 3)
-                DBGLOG("prepareStatement: Binding %s", query);
-            // We don't want to block cache lookups while we prepare a new bound statement
-            // Note - if multiple threads try to prepare the same (new) statement at the same time, it's not catastrophic
-            CriticalUnblock b(cacheCrit);
-            CassandraFuture futurePrep(cass_session_prepare(session, query));
-            futurePrep.wait("prepare statement");
-            cached.setown(new CassandraPrepared(cass_future_get_prepared(futurePrep), traceLevel>=2?query:NULL));
-        }
-        preparedCache.setValue(query, cached); // NOTE - this links parameter
-        return cached.getClear();
+        return session.prepareStatement(query, traceLevel>=2);
     }
 private:
     bool checkWuExists(const char *wuid)
@@ -3852,7 +3832,6 @@ private:
     unsigned randState;
     CassandraClusterSession session;
     mutable CriticalSection cacheCrit;  // protects both of the caches below... we could separate
-    mutable MapStringToMyClass<CassandraPrepared> preparedCache;
     mutable MapXToMyClass<__uint64, __uint64, CCassandraWuUQueryCacheEntry> cacheIdMap;
 };
 

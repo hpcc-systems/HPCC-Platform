@@ -29,6 +29,32 @@ extern bool isString(CassValueType t);
 
 // Wrappers to Cassandra structures that require corresponding releases
 
+class CassandraPrepared : public CInterfaceOf<IInterface>
+{
+public:
+    inline CassandraPrepared(const CassPrepared *_prepared, const char *_queryString)
+    : prepared(_prepared), queryString(_queryString)
+    {
+    }
+    inline ~CassandraPrepared()
+    {
+        if (prepared)
+            cass_prepared_free(prepared);
+    }
+    inline operator const CassPrepared *() const
+    {
+        return prepared;
+    }
+    inline const char *queryQueryString() const
+    {
+        return queryString;
+    }
+private:
+    CassandraPrepared(const CassandraPrepared &);
+    StringAttr queryString;
+    const CassPrepared *prepared;
+};
+
 class CassandraSession : public CInterface
 {
 public:
@@ -54,7 +80,7 @@ class CassandraClusterSession : public CInterface
 {
 public:
     inline CassandraClusterSession(CassCluster *_cluster)
-    : cluster(_cluster), batchMode((CassBatchType) -1), pageSize(0), maxFutures(0), maxRetries(0)
+    : cluster(_cluster), maxFutures(0), maxRetries(0)
     {
     }
     void setOptions(const StringArray &options);
@@ -68,12 +94,17 @@ public:
     {
         return cluster;
     }
+    inline operator CassandraSession *() const
+    {
+        return session;
+    }
     inline operator CassSession *() const
     {
         return *session;
     }
     void connect();
     void disconnect();
+    CassandraPrepared *prepareStatement(const char *query, bool trace) const;
 private:
     void checkSetOption(CassError rc, const char *name);
     cass_bool_t getBoolOption(const char *val, const char *option);
@@ -82,14 +113,12 @@ private:
     __uint64 getUnsigned64Option(const char *val, const char *option);
     CassandraClusterSession(const CassandraClusterSession &);
     CassCluster *cluster;
-public:
-    Owned<CassandraSession> session;  // Make private later
-
+    Owned<CassandraSession> session;
+    mutable MapStringToMyClass<CassandraPrepared> preparedCache;
+    mutable CriticalSection cacheCrit;
 public:
     // These are here as convenient to set from same options string. They are really properties of the session
     // or query rather than the cluster, but we have one session per cluster so we get away with it at the moment.
-    CassBatchType batchMode;
-    unsigned pageSize;
 	unsigned maxFutures;
 	unsigned maxRetries;
     StringAttr keyspace;
@@ -167,32 +196,6 @@ public:
 private:
     CassandraBatch(const CassandraBatch &);
     CassBatch *batch;
-};
-
-class CassandraPrepared : public CInterfaceOf<IInterface>
-{
-public:
-    inline CassandraPrepared(const CassPrepared *_prepared, const char *_queryString)
-    : prepared(_prepared), queryString(_queryString)
-    {
-    }
-    inline ~CassandraPrepared()
-    {
-        if (prepared)
-            cass_prepared_free(prepared);
-    }
-    inline operator const CassPrepared *() const
-    {
-        return prepared;
-    }
-    inline const char *queryQueryString() const
-    {
-        return queryString;
-    }
-private:
-    CassandraPrepared(const CassandraPrepared &);
-    StringAttr queryString;
-    const CassPrepared *prepared;
 };
 
 class CassandraStatement : public CInterface
