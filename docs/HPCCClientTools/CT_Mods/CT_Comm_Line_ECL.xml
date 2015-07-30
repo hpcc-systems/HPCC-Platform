@@ -28,7 +28,7 @@
         <title><emphasis>eclplus.exe</emphasis></title>
 
         <para><emphasis role="bold">eclplus </emphasis><emphasis> action=
-        owner= user= password= cluster= server= queue= timeout=
+        owner= user= password= cluster= server= queue= graph= timeout=
         ecl=</emphasis><emphasis> file= format= output= jobname= -debugparam1=
         _applicationparam1=</emphasis><emphasis>
         /variablename1=</emphasis></para>
@@ -83,6 +83,12 @@
                   <entry><emphasis>queue=</emphasis></entry>
 
                   <entry>The name of the job queue.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>graph=</emphasis></entry>
+
+                  <entry>The name of graph.</entry>
                 </row>
 
                 <row>
@@ -323,11 +329,14 @@ Richard Chapman</programlisting>
         </sect3>
 
         <sect3>
-          <title>See the thor graph of a workunit:</title>
+          <title>Return graph data for a workunit:</title>
 
-          <para>The thor graph</para>
+          <para>This action returns the XML data for one or more workunit
+          graphs.</para>
 
-          <programlisting>eclplus action=graph wuid=W20090226-100958-85552898</programlisting>
+          <programlisting>eclplus action=graph graph=graph1 wuid=W20090226-100958-85552898</programlisting>
+
+          <para>Graph name must be supplied in the graph= parameter.</para>
         </sect3>
 
         <sect3>
