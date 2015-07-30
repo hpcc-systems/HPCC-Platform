@@ -1005,6 +1005,7 @@ public:
         {
             Statistic * next = Statistic::deserialize(in, version);
             stats.append(*next);
+            next->Release();
         }
 
         unsigned numChildren;
@@ -1108,7 +1109,8 @@ public:
 //other public interface functions
     void addStatistic(StatisticKind kind, unsigned __int64 value)
     {
-        stats.append(*new Statistic(kind, value));
+        Statistic s(kind, value);
+        stats.append(s);
     }
 
     void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
@@ -1125,7 +1127,8 @@ public:
                 }
             }
         }
-        stats.append(*new Statistic(kind, value));
+        Statistic s(kind, value);
+        stats.append(s);
     }
 
     CStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren)
