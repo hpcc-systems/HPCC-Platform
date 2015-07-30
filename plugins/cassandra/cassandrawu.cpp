@@ -3831,7 +3831,7 @@ private:
     unsigned traceLevel;
     unsigned randState;
     CassandraClusterSession session;
-    mutable CriticalSection cacheCrit;  // protects both of the caches below... we could separate
+    mutable CriticalSection cacheCrit;
     mutable MapXToMyClass<__uint64, __uint64, CCassandraWuUQueryCacheEntry> cacheIdMap;
 };
 
