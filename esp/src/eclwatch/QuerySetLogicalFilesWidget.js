@@ -54,8 +54,7 @@ define([
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
-                    Name: {label: this.i18n.LogicalFiles
-                    }
+                    File: {label: this.i18n.LogicalFiles}
                 }
             }, domID);
             return retVal;
@@ -64,13 +63,13 @@ define([
         createDetail: function (id, row, params) {
             return new DelayLoadWidget({
                 id: id,
-                title: row.Name,
+                title: row.File,
                 closable: true,
                 delayWidget: "LFDetailsWidget",
                 hpcc: {
                     type: "LFDetailsWidget",
                     params: {
-                        Name: row.Name
+                        Name: row.File
                     }
                 }
             });
@@ -80,12 +79,14 @@ define([
             var context = this;
             this.query.refresh().then(function (response) {
                 var logicalFiles = [];
-                if (lang.exists("LogicalFiles.Item", context.query)) {
-                    arrayUtil.forEach(context.query.LogicalFiles.Item, function (item, idx) {
-                        var file = {
-                            Name: item
-                        }
-                        logicalFiles.push(file);
+                if (lang.exists("SuperFiles.SuperFile", context.query)) {
+                    arrayUtil.forEach(context.query.SuperFiles.SuperFile, function (item, idx) {
+                        arrayUtil.forEach(item.SubFiles.File, function (item, idx) {
+                            var file = {
+                                File: item
+                            }
+                            logicalFiles.push(file);
+                        });
                     });
                 }
                 context.store.setData(logicalFiles);
