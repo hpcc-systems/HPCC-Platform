@@ -887,10 +887,10 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
     }
     
     static CQueryStatsAggregator globalStatsAggregator;
-    static CIArrayOf<CQueryStatsAggregator> queryStatsAggregators;
     static SpinLock queryStatsCrit;
 
 public:
+    static CIArrayOf<CQueryStatsAggregator> queryStatsAggregators;
     virtual void Link(void) const { CInterface::Link(); }
     virtual bool Release(void) const    
     {
@@ -1002,8 +1002,8 @@ public:
     }
 };
 
-CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
 CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::queryStatsAggregators;
+CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
 SpinLock CQueryStatsAggregator::queryStatsCrit;
 
 IQueryStatsAggregator *queryGlobalQueryStatsAggregator()
