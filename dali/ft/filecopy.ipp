@@ -262,6 +262,7 @@ protected:
     void updateSizeRead();
     void waitForTransferSem(Semaphore & sem);
     void addPrefix(size32_t len, const void * data, unsigned idx, PartitionPointArray & partitionWork);
+    bool isSameSizeHeaderFooter();
     
 private:
     bool calcUsePull();
@@ -317,6 +318,8 @@ protected:
     StringAttr              encryptKey;
     StringAttr              decryptKey;
     bool                    preserveCompression;
+    offset_t                headerSize;
+    offset_t                footerSize;
 };
 
 

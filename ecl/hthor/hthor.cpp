@@ -45,6 +45,7 @@
 #include "thorstep.hpp"
 #include "eclagent.ipp"
 #include "roxierowbuff.hpp"
+#include "ftbase.ipp"
 
 #define EMPTY_LOOP_LIMIT 1000
 
@@ -889,7 +890,7 @@ CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _
 {
     OwnedRoxieString xmlpath(helper.getXmlIteratorPath());
     if (!xmlpath)
-        rowTag.append("Row");
+        rowTag.append(DEFAULTXMLROWTAG);
     else
     {
         const char *path = xmlpath;
@@ -906,15 +907,14 @@ void CHThorXmlWriteActivity::execute()
     StringBuffer header;
     OwnedRoxieString suppliedHeader(helper.getHeader());
     if (kind==TAKjsonwrite)
-    {
         buildJsonHeader(header, suppliedHeader, rowTag);
-        headerLength = header.length();
-    }
     else if (suppliedHeader)
         header.set(suppliedHeader);
     else
-        header.set("<Dataset>\n");
-    diskout->write(header.length(), header.str());
+        header.append(DEFAULTXMLHEADER).newline();
+
+    headerLength = header.length();
+    diskout->write(headerLength, header.str());
 
     Owned<IXmlWriterExt> writer = createIXmlWriterExt(helper.getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSON : WTStandard);
     writer->outputBeginArray(rowTag); //need to set up the array
@@ -948,16 +948,14 @@ void CHThorXmlWriteActivity::execute()
     OwnedRoxieString suppliedFooter(helper.getFooter());
     StringBuffer footer;
     if (kind==TAKjsonwrite)
-    {
         buildJsonFooter(footer.newline(), suppliedFooter, rowTag);
-        footerLength=footer.length();
-    }
     else if (suppliedFooter)
         footer.append(suppliedFooter);
     else
-        footer.append("</Dataset>");
+        footer.append(DEFAULTXMLFOOTER).newline();
 
-    diskout->write(footer.length(), footer);
+    footerLength=footer.length();
+    diskout->write(footerLength, footer);
 }
 
 void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
@@ -965,10 +963,9 @@ void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
     desc->queryProperties().setProp("@format","utf8n");
     desc->queryProperties().setProp("@rowTag",rowTag.str());
     desc->queryProperties().setProp("@kind", (kind==TAKjsonwrite) ? "json" : "xml");
-    if (headerLength)
-        desc->queryProperties().setPropInt("@headerLength", headerLength);
-    if (footerLength)
-        desc->queryProperties().setPropInt("@footerLength", footerLength);
+
+    desc->queryProperties().setPropInt(FPheaderLength, headerLength);
+    desc->queryProperties().setPropInt(FPfooterLength, footerLength);
 
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
@@ -6036,9 +6033,9 @@ void CHThorWorkUnitWriteActivity::execute()
             else if (agent.queryOutputFmt() == ofXML)
             {
                 CommonXmlWriter xmlwrite(0,1);
-                xmlwrite.outputBeginNested("Row", false);
+                xmlwrite.outputBeginNested(DEFAULTXMLROWTAG, false);
                 helper.serializeXml((byte *) nextrec.get(), xmlwrite);
-                xmlwrite.outputEndNested("Row");
+                xmlwrite.outputEndNested(DEFAULTXMLROWTAG);
                 agent.queryOutputSerializer()->fwrite(seq, (const void*)xmlwrite.str(), 1, xmlwrite.length());
             }
         }
@@ -6058,7 +6055,7 @@ void CHThorWorkUnitWriteActivity::execute()
         if (agent.queryOutputFmt() == ofXML)
         {
             StringBuffer sb;
-            sb.appendf("</Dataset>\n");
+            sb.appendf(DEFAULTXMLFOOTER).newline();
             agent.queryOutputSerializer()->fwrite(seq, (const void*)sb.str(), 1, sb.length());
         }
         else if (agent.queryOutputFmt() != ofSTD)

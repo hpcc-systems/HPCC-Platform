@@ -66,6 +66,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/ecl/schedulectrl
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ${HPCC_SOURCE_DIR}/dali/ft
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DHTHOR_EXPORTS -DSTARTQUERY_EXPORTS )
