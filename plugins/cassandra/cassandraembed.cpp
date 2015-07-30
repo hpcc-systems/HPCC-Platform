@@ -316,6 +316,11 @@ CassandraPrepared *CassandraClusterSession::prepareStatement(const char *query, 
     preparedCache.setValue(query, cached); // NOTE - this links parameter
     return cached.getClear();
 }
+CassandraStatementInfo *CassandraClusterSession::createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const
+{
+    Owned<CassandraPrepared> prepared = prepareStatement(script, false); // We could make tracing selectable
+    return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, semaphore, maxFutures, maxRetries);
+}
 
 typedef CassandraClusterSession *CassandraClusterSessionPtr;
 typedef MapBetween<hash64_t, hash64_t, CassandraClusterSessionPtr, CassandraClusterSessionPtr> ClusterSessionMap;
@@ -453,8 +458,8 @@ void CassandraRetryingFuture::signaller(CassFuture *future, void *data)
 
 //----------------------
 
-CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, unsigned _maxFutures, unsigned _maxRetries)
-    : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(NULL), maxFutures(_maxFutures), maxRetries(_maxRetries)
+CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, LinkedSemaphore *_semaphore, unsigned _maxFutures, unsigned _maxRetries)
+    : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(_semaphore), maxFutures(_maxFutures), maxRetries(_maxRetries)
 {
     assertex(prepared && *prepared);
     statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
@@ -466,7 +471,6 @@ CassandraStatementInfo::~CassandraStatementInfo()
 {
     stop();
     futures.kill();
-    semaphore.clear();  // Note - may live on for a while until all futures associated with it have signalled.
 }
 void CassandraStatementInfo::stop()
 {
@@ -1732,12 +1736,11 @@ public:
         }
         else
         {
-            Owned<CassandraPrepared> prepared = cluster->prepareStatement(script, false); // We could make tracing selectable
             if ((flags & EFnoparams) == 0)
                 numParams = countBindings(script);
             else
                 numParams = 0;
-            stmtInfo.setown(new CassandraStatementInfo(*cluster, prepared, numParams, batchMode, pageSize, cluster->maxFutures, cluster->maxRetries));
+            stmtInfo.setown(cluster->createStatementInfo(script, numParams, batchMode, pageSize));
         }
     }
     virtual void callFunction()

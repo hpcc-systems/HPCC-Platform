@@ -2774,8 +2774,8 @@ public:
             }
         }
         session.setOptions(options);
-        if (session.keyspace.isEmpty())
-            session.keyspace.set("hpcc");
+        if (!session.queryKeySpace())
+            session.setKeySpace("hpcc");
         session.connect();
         cacheRetirer.start();
     }
@@ -3285,7 +3285,7 @@ public:
         CassandraSession s(cass_session_new());
         CassandraFuture future(cass_session_connect(s, session));
         future.wait("connect without keyspace to delete");
-        VStringBuffer deleteKeyspace("DROP KEYSPACE IF EXISTS %s;", session.keyspace.get());
+        VStringBuffer deleteKeyspace("DROP KEYSPACE IF EXISTS %s;", session.queryKeySpace());
         executeSimpleCommand(s, deleteKeyspace);
         s.set(NULL);
         session.disconnect();
@@ -3298,7 +3298,7 @@ public:
         CassandraSession s(cass_session_new());
         CassandraFuture future(cass_session_connect(s, session));
         future.wait("connect without keyspace");
-        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' } ;", session.keyspace.get()); // MORE - options from props? Not 100% sure if they are appropriate.
+        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' } ;", session.queryKeySpace()); // MORE - options from props? Not 100% sure if they are appropriate.
         executeSimpleCommand(s, create);
         s.set(NULL);
         session.connect();

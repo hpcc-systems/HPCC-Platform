@@ -76,6 +76,15 @@ private:
     CassSession *session;
 };
 
+class CassandraStatementInfo;
+
+class LinkedSemaphore : public CInterfaceOf<IInterface>, public Semaphore
+{
+public:
+    LinkedSemaphore(unsigned initialCount) : Semaphore(initialCount) {}
+};
+
+
 class CassandraClusterSession : public CInterface
 {
 public:
@@ -102,9 +111,18 @@ public:
     {
         return *session;
     }
+    inline const char *queryKeySpace() const
+    {
+        return keyspace;
+    }
+    inline void setKeySpace(const char *val)
+    {
+        keyspace.set(val);
+    }
     void connect();
     void disconnect();
     CassandraPrepared *prepareStatement(const char *query, bool trace) const;
+    CassandraStatementInfo *createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const;
 private:
     void checkSetOption(CassError rc, const char *name);
     cass_bool_t getBoolOption(const char *val, const char *option);
@@ -116,9 +134,7 @@ private:
     Owned<CassandraSession> session;
     mutable MapStringToMyClass<CassandraPrepared> preparedCache;
     mutable CriticalSection cacheCrit;
-public:
-    // These are here as convenient to set from same options string. They are really properties of the session
-    // or query rather than the cluster, but we have one session per cluster so we get away with it at the moment.
+    Owned<LinkedSemaphore> semaphore;
 	unsigned maxFutures;
 	unsigned maxRetries;
     StringAttr keyspace;
@@ -312,12 +328,6 @@ private:
     CassStatement *statement;
 };
 
-class LinkedSemaphore : public CInterfaceOf<IInterface>, public Semaphore
-{
-public:
-    LinkedSemaphore(unsigned initialCount) : Semaphore(initialCount) {}
-};
-
 class CassandraRetryingFuture : public CInterface
 {
 public:
@@ -411,7 +421,7 @@ class CassandraStatementInfo : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, unsigned _maxFutures, unsigned _maxRetries);
+    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, LinkedSemaphore *_semaphore, unsigned _maxFutures, unsigned _maxRetries);
     ~CassandraStatementInfo();
     void stop();
     bool next();
@@ -445,7 +455,7 @@ protected:
     Owned<CassandraIterator> iterator;
     unsigned numBindings;
     CIArrayOf<CassandraRetryingFuture> futures;
-    Owned<LinkedSemaphore> semaphore;
+    Linked<LinkedSemaphore> semaphore;
     unsigned maxFutures;
     unsigned maxRetries;
     bool inBatch;
