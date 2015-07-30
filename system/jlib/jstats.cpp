@@ -1316,6 +1316,7 @@ public:
     }
     virtual void endScope()
     {
+        scopes.tos().Release();
         scopes.pop();
     }
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value)
