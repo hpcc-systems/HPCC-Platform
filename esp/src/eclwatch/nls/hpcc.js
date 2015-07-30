@@ -482,6 +482,7 @@ define({root:
     TargetClusters: "Target Clusters",
     TargetName: "Target Name",
     TargetNamePlaceholder: "some::logical::name",
+    TargetScope: "Target Scope",
     TargetWuid: "Target/Wuid",
     Terminators: "Terminators",
     TestPages: "Test Pages",
