@@ -887,10 +887,10 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
     }
     
     static CQueryStatsAggregator globalStatsAggregator;
-    static CIArrayOf<CQueryStatsAggregator> queryStatsAggregators;
     static SpinLock queryStatsCrit;
 
 public:
+    static CIArrayOf<CQueryStatsAggregator> queryStatsAggregators;
     virtual void Link(void) const { CInterface::Link(); }
     virtual bool Release(void) const    
     {
@@ -912,7 +912,13 @@ public:
         expirySeconds = _expirySeconds;
         queryStatsAggregators.append(*LINK(this));
     }
-
+    ~CQueryStatsAggregator()
+    {
+        while (recent.ordinality())
+        {
+            recent.dequeue()->Release();
+        }
+    }
     static IPropertyTree *getAllQueryStats(bool includeQueries, time_t from, time_t to)
     {
         Owned<IPTree> result = createPTree("QueryStats");
@@ -1002,8 +1008,8 @@ public:
     }
 };
 
-CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
 CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::queryStatsAggregators;
+CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
 SpinLock CQueryStatsAggregator::queryStatsCrit;
 
 IQueryStatsAggregator *queryGlobalQueryStatsAggregator()
