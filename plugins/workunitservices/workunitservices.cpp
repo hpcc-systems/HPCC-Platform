@@ -259,11 +259,11 @@ static IConstWorkUnit * getWorkunit(ICodeContext * ctx, const char * wuid)
     return wu.getClear();
 }
 
-static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
+static IConstWorkUnit *getWorkunit(ICodeContext * ctx)
 {
     StringAttr wuid;
     wuid.setown(ctx->getWuid());
-    // One assmues we have read access to our own wu
+    // One assumes we have read access to our own wu
     return getWorkunit(ctx, wuid);
 }
 
@@ -306,125 +306,37 @@ static StringBuffer &getWUIDdaysAgo(StringBuffer &wuid,int daysago)
     return getWUIDonDate(wuid,y,m,d,h,mn);
 }
 
-
-
-class COnlineWorkunitIterator: public CInterface, implements IPropertyTreeIterator
+static bool addWUQueryFilter(WUSortField *filters, unsigned &count, MemoryBuffer &buff, const char *name, WUSortField value)
 {
-    Owned<IRemoteConnection> conn;
-    Owned<IPropertyTreeIterator> iter;
-    Linked<IUserDescriptor> user;
-    StringAttr namehi;
-    StringAttr namelo;
+    if (!name || !*name)
+        return false;
+    filters[count++] = value;
+    buff.append(name);
+    return true;
+}
 
-
-    bool postFilterOk()
-    {
-        IPropertyTree &t = query();
-        const char *name = t.queryName();
-        if (stricmp(name,namelo.get())<0)
-            return false;
-        if (stricmp(name,namehi.get())>0)
-            return false;
-        if (!checkScopeAuthorized(user,t.queryProp("@scope")))
-            return false;
-        return true;
-    }
-
-public:
-    IMPLEMENT_IINTERFACE;   
-    
-    COnlineWorkunitIterator (
-                    IUserDescriptor* _user,
-                    const char *_namelo,
-                    const char *_namehi,
-                    const char *user,
-                    const char *cluster,
-                    const char *jobname,
-                    const char *state,
-                    const char *priority,
-                    const char *fileread,
-                    const char *filewritten,
-                    const char *ecl
-
-    ) : user(_user), namelo(_namelo), namehi(_namehi)
-    {
-        if (namelo.isEmpty()) 
-            namelo.set("W");
-        if (namehi.isEmpty()) {
-            StringBuffer tmp;
-            namehi.set(getWUIDdaysAgo(tmp,-1).str());
-        }
-        const char *lo = namelo;
-        const char *hi = namehi;
-        StringBuffer query;
-        while (*lo&&(toupper(*lo)==toupper(*hi))) {
-            query.append((char)toupper(*lo));
-            lo++;
-            hi++;
-        }
-        if (*lo||*hi)
-            query.append("*");
-        if (user&&*user) 
-            query.appendf("[@submitID=~?\"%s\"]",user);
-        if (cluster&&*cluster) 
-            query.appendf("[@clusterName=~?\"%s\"]",cluster);
-        if (jobname&&*jobname) 
-            query.appendf("[@jobName=~?\"%s\"]",jobname);
-        if (state&&*state) 
-            query.appendf("[@state=?\"%s\"]",state);
-        if (priority&&*priority) 
-            query.appendf("[@priorityClass=?\"%s\"]",priority);
-        if (fileread&&*fileread) 
-            query.appendf("[FilesRead/File/@name=~?\"%s\"]",fileread);
-        if (filewritten&&*filewritten) 
-            query.appendf("[Files/File/@name=~?\"%s\"]",filewritten);
-        if (ecl&&*ecl)
-            query.appendf("[Query/Text=?~\"*%s*\"]",ecl);
-        conn.setown(querySDS().connect("WorkUnits", myProcessSession(), 0, SDS_LOCK_TIMEOUT));
-        if (conn.get()) {
-            iter.setown(conn->getElements(query.str()));
-            if (!iter.get()) 
-                conn.clear();
-        }
-    }
-
-
-    bool first()
-    {
-        if (!iter.get()||!iter->first())
-            return false;
-        if (postFilterOk())
-            return true;
-        return next();
-    }
-
-    bool next()
-    {
-        while (iter.get()&&iter->next()) 
-            if (postFilterOk())
-                return true;
+static bool serializeWUInfo(IConstWorkUnitInfo &info,MemoryBuffer &mb)
+{
+    fixedAppend(mb,24,info.queryWuid());
+    varAppend(mb,64,info.queryUser());
+    varAppend(mb,64,info.queryClusterName());
+    varAppend(mb,64,""); // roxiecluster is obsolete
+    varAppend(mb,256,info.queryJobName());
+    fixedAppend(mb,10,info.queryStateDesc());
+    fixedAppend(mb,7,info.queryPriority());
+    short int prioritylevel = calcPriorityValue(&pt);
+    mb.append(prioritylevel);
+    fixedAppend(mb,20,"");  // Created timestamp
+    fixedAppend(mb,20,"");  // Modified timestamp
+    mb.append(true);
+    mb.append(info.isProtected());
+    if (mb.length()>WORKUNIT_SERVICES_BUFFER_MAX) {
+        mb.clear().append(WUS_STATUS_OVERFLOWED);
         return false;
     }
+    return true;
+}
 
-    bool isValid() 
-    { 
-        return iter&&iter->isValid(); 
-    }
-
-    IPropertyTree & query() 
-    { 
-        assertex(iter); 
-        return iter->query(); 
-    }
-
-
-    bool serialize(MemoryBuffer &mb)
-    {
-        IPropertyTree &pt = query();
-        return serializeWUSrow(pt,mb,true);
-    }
-
-};
 
 }//namespace
 
@@ -495,10 +407,41 @@ WORKUNITSERVICES_API void wsWorkunitList(
             }
         }
     }
-    if (online) {
-        Owned<COnlineWorkunitIterator> oniter = new COnlineWorkunitIterator(ctx->queryUserDescriptor(),lowwuid,highwuid,username,cluster,jobname,state,priority,fileread,filewritten,eclcontains);
-        ForEach(*oniter) {
-            if (!oniter->serialize(mb)) 
+    if (online)
+    {
+        WUSortField filters[20];  // NOTE - increase if you add a LOT more parameters!
+        unsigned filterCount = 0;
+        MemoryBuffer filterbuf;
+
+        if (state && *state)
+        {
+            filters[filterCount++] = WUSFstate;
+            if (!strieq(state, "unknown"))
+                filterbuf.append(state);
+            else
+                filterbuf.append("");
+        }
+        if (priority && *priority)
+        {
+            filters[filterCount++] = WUSFpriority;
+            if (!strieq(state, "unknown"))
+                filterbuf.append(state);
+            else
+                filterbuf.append("");
+        }
+        addWUQueryFilter(filters, filterCount, filterbuf, cluster, WUSFcluster);
+        addWUQueryFilter(filters, filterCount, filterbuf, fileread, (WUSortField) (WUSFfileread | WUSFnocase));
+        addWUQueryFilter(filters, filterCount, filterbuf, filewritten, (WUSortField) (WUSFfilewritten | WUSFnocase));
+        addWUQueryFilter(filters, filterCount, filterbuf, username, (WUSortField) (WUSFuser | WUSFnocase));
+        addWUQueryFilter(filters, filterCount, filterbuf, jobname, (WUSortField) (WUSFjob | WUSFnocase));
+        addWUQueryFilter(filters, filterCount, filterbuf, eclcontains, (WUSortField) (WUSFecl | WUSFwild));
+        addWUQueryFilter(filters, filterCount, filterbuf, lowwuid, WUSFwuid);
+        addWUQueryFilter(filters, filterCount, filterbuf, highwuid, WUSFwuidhigh);
+        Owned<IWorkUnitFactory> wuFactory = getWorkunitFactory(ctx);
+        Owned<IConstWorkUnitIterator> it = wuFactory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), filters, filterbuf.bufferBase(), 0, (unsigned) -1, NULL, NULL); // MORE - need security flags here!
+        ForEach(*it)
+        {
+            if (!serializeWUInfo(it->query(), mb))
                 throw MakeStringException(-1,"WORKUNITSERVICES: Result buffer overflowed");
         }
     }
@@ -555,7 +498,9 @@ WORKUNITSERVICES_API void wsWorkunitTimeStamps(ICodeContext *ctx, size32_t & __l
     MemoryBuffer mb;
     if (wu)
     {
-
+/*
+        // Workunit timestamps have not been stored like this for a while - so this code has not been working
+        // Should look at fixing but perhaps as a separate Jira
         Owned<IPropertyTreeIterator> iter = pt->getElements("TimeStamp");
         ForEach(*iter)
         {
@@ -570,6 +515,7 @@ WORKUNITSERVICES_API void wsWorkunitTimeStamps(ICodeContext *ctx, size32_t & __l
                 fixedAppend(mb,16, item, "@instance");                  // item correct here
             }
         }
+  */
     }
     __lenResult = mb.length();
     __result = mb.detach();
@@ -579,29 +525,26 @@ WORKUNITSERVICES_API void wsWorkunitMessages( ICodeContext *ctx, size32_t & __le
 {
     Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
     MemoryBuffer mb;
-    unsigned tmpu;
-    int tmpi;
-    SCMStringBuffer s;
-    Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
-    ForEach(*exceptions)
+    if (wu)
     {
-        IConstWUException &e = exceptions->query();
-        tmpu = (unsigned) e.getSeverity();
-        mb.append(sizeof(tmpu),&tmpu);
-        tmpi = (int) e.getExceptionCode();
-        mb.append(sizeof(tmpi),&tmpi);
-        e.getExceptionFileName(s);
-        fixedAppend(mb, 32, s.str(), s.length());
-        tmpu = (unsigned) e.getExceptionLineNo();
-        mb.append(sizeof(tmpu),&tmpu);
-        tmpu = (unsigned)  e.getExceptionColumn();
-        mb.append(sizeof(tmpu),&tmpu);
-        e.getExceptionSource(s);
-        fixedAppend(mb, 16, s.str(), s.length());
-        e.getTimeStamp(s);
-        fixedAppend(mb, 20, s.str(), s.length());
-        e.getExceptionMessage(s);
-        varAppendMax(mb, 1024, s.str(), s.length());
+        SCMStringBuffer s;
+        Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
+        ForEach(*exceptions)
+        {
+            IConstWUException &e = exceptions->query();
+            mb.append((unsigned) e.getSeverity());
+            mb.append((int) e.getExceptionCode());
+            e.getExceptionFileName(s);
+            fixedAppend(mb, 32, s.str(), s.length());
+            mb.append((unsigned) e.getExceptionLineNo());
+            mb.append((unsigned)  e.getExceptionColumn());
+            e.getExceptionSource(s);
+            fixedAppend(mb, 16, s.str(), s.length());
+            e.getTimeStamp(s);
+            fixedAppend(mb, 20, s.str(), s.length());
+            e.getExceptionMessage(s);
+            varAppendMax(mb, 1024, s.str(), s.length());
+        }
     }
     __lenResult = mb.length();
     __result = mb.detach();
@@ -610,17 +553,17 @@ WORKUNITSERVICES_API void wsWorkunitMessages( ICodeContext *ctx, size32_t & __le
 WORKUNITSERVICES_API void wsWorkunitFilesRead( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid )
 {
     MemoryBuffer mb;
-    Owned<IPropertyTree> pt = getWorkUnitBranch(ctx,wuid,"FilesRead");
-    if (pt) {
-        Owned<IPropertyTreeIterator> iter = pt->getElements("File");
-        ForEach(*iter) {
-            IPropertyTree &item = iter->query();
+    Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
+    if (wu)
+    {
+        Owned<IPropertyTreeIterator> sourceFiles = &wu->getFilesReadIterator();
+        ForEach(*sourceFiles)
+        {
+            IPropertyTree &item = sourceFiles->query();
             varAppend(mb, 256, item, "@name");              
             varAppend(mb, 64, item, "@cluster");                
-            byte b = item.getPropBool("@super")?1:0;
-            mb.append(sizeof(b),&b);
-            unsigned uc = (unsigned)item.getPropInt("@useCount");
-            mb.append(sizeof(uc),&uc);
+            mb.append(item.getPropBool("@super"));
+            mb.append((unsigned) item.getPropInt("@useCount"));
         }
     }
     __lenResult = mb.length();
@@ -630,16 +573,17 @@ WORKUNITSERVICES_API void wsWorkunitFilesRead( ICodeContext *ctx, size32_t & __l
 WORKUNITSERVICES_API void wsWorkunitFilesWritten( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid )
 {
     MemoryBuffer mb;
-    Owned<IPropertyTree> pt = getWorkUnitBranch(ctx,wuid,"Files");
-    if (pt) {
-        Owned<IPropertyTreeIterator> iter = pt->getElements("File");
-        ForEach(*iter) {
-            IPropertyTree &item = iter->query();
+    Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
+    if (wu)
+    {
+        Owned<IPropertyTreeIterator> sourceFiles = &wu->getFileIterator();
+        ForEach(*sourceFiles)
+        {
+            IPropertyTree &item = sourceFiles->query();
             varAppend(mb, 256, item, "@name");              
             fixedAppend(mb, 10, item, "@graph");                
             varAppend(mb, 64, item, "@cluster");                
-            unsigned k = (unsigned)item.getPropInt("@kind");
-            mb.append(sizeof(k),&k);
+            mb.append( (unsigned) item.getPropInt("@kind"));
         }
     }
     __lenResult = mb.length();
@@ -668,12 +612,9 @@ WORKUNITSERVICES_API void wsWorkunitTimings( ICodeContext *ctx, size32_t & __len
             unsigned __int64 max = cur.getMax();
             cur.getDescription(desc, true);
 
-            tmp = (unsigned)count;
-            mb.append(sizeof(tmp),&tmp);
-            tmp = (unsigned)(value / 1000000);
-            mb.append(sizeof(tmp),&tmp);
-            tmp = (unsigned)max;
-            mb.append(sizeof(tmp),&tmp);
+            mb.append((unsigned) count);
+            mb.append((unsigned) (value / 1000000));
+            mb.append((unsigned) max);
             varAppend(mb, desc.str());
         }
     }

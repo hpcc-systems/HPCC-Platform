@@ -76,6 +76,8 @@ inline void varAppendMax(MemoryBuffer &mb,unsigned w,const char *str, size32_t l
     mb.append(l).append(l, str);
 }
 
+// This is use by sasha - it's a real mess
+
 inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
 {
     mb.setEndian(__LITTLE_ENDIAN);

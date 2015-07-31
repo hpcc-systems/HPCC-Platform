@@ -1192,6 +1192,7 @@ enum WUSortField
     WUSFecl = 13,
     // WUSFcustom = 14, obsolete
     WUSFappvalue=15,
+    WUSFfilewritten = 16,
     WUSFterm = 0,
     WUSFreverse = 256,
     WUSFnocase = 512,

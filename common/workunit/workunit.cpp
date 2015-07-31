@@ -1830,6 +1830,7 @@ mapEnums workunitSortFields[] =
    { WUSFwuidhigh, "@" },
    { WUSFwildwuid, "@" },
    { WUSFappvalue, "Application" },
+   { WUSFfilewritten, "Files/File/@name" },
    { WUSFterm, NULL }
 };
 

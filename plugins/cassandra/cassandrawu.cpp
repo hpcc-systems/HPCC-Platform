@@ -3011,6 +3011,7 @@ public:
                         mergeFilter(wuidFilters, field, fv);
                     break;
                 case WUSFfileread:
+                case WUSFfilewritten:
                     fileFilters.append(*new PostFilter(field, fv, true));
                     break;
                 case WUSFtotalthortime:
@@ -3048,6 +3049,7 @@ public:
             {
                 // We can't postfilter by these - we COULD in some cases do a join between these and some other filtered set
                 // but we will leave that as an exercise to the reader. So if there is a fileFilter, read it first, and turn it into a merge set of the resulting wus.
+                // MORE read and written are not the same
                 assertex(fileFilters.length()==1);  // If we supported more there would be a join phase here
                 merger->addPostFilters(goodFilters, 0);
                 merger->addPostFilters(poorFilters, 0);
