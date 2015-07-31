@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -29,12 +29,6 @@
 #include "rtlembed.hpp"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
-#include "jsort.hpp"
-#include "jptree.hpp"
-#include "jregexp.hpp"
-
-#include "workunit.hpp"
-#include "workunit.ipp"
 
 #include "cassandraembed.hpp"
 
@@ -80,13 +74,6 @@ static void logCallBack(const CassLogMessage *message, void *data)
     DBGLOG("cassandra: %s - %s", cass_log_level_string(message->severity), message->message);
 }
 
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    cass_log_set_callback(logCallBack, NULL);
-    cass_log_set_level(CASS_LOG_WARN);
-    return true;
-}
-
 extern void failx(const char *message, ...)
 {
     va_list args;
@@ -114,7 +101,7 @@ void check(CassError rc)
 
 // Wrappers to Cassandra structures that require corresponding releases
 
-void CassandraCluster::setOptions(const StringArray &options)
+void CassandraClusterSession::setOptions(const StringArray &options)
 {
     const char *contact_points = "localhost";
     const char *user = "";
@@ -135,19 +122,15 @@ void CassandraCluster::setOptions(const StringArray &options)
                 password = val;
             else if (stricmp(optName, "keyspace")==0)
                 keyspace.set(val);
-            else if (stricmp(optName, "batch")==0)
-            {
-                if (stricmp(val, "LOGGED")==0)
-                    batchMode = CASS_BATCH_TYPE_LOGGED;
-                else if (stricmp(val, "UNLOGGED")==0)
-                    batchMode = CASS_BATCH_TYPE_UNLOGGED;
-                else if (stricmp(val, "COUNTER")==0)
-                    batchMode = CASS_BATCH_TYPE_COUNTER;
-            }
-            else if (stricmp(optName, "pageSize")==0)
-                pageSize = getUnsignedOption(val, "pageSize");
             else if (stricmp(optName, "maxFutures")==0)
-                maxFutures=getUnsignedOption(val, "maxFutures");
+            {
+                if (!semaphore)
+                {
+                    maxFutures=getUnsignedOption(val, "maxFutures");
+                    if (maxFutures)
+                        semaphore = new Semaphore(maxFutures);
+                }
+            }
             else if (stricmp(optName, "maxRetries")==0)
                 maxRetries=getUnsignedOption(val, "maxRetries");
             else if (stricmp(optName, "port")==0)
@@ -273,18 +256,18 @@ void CassandraCluster::setOptions(const StringArray &options)
         cass_cluster_set_credentials(cluster, user, password);
 }
 
-void CassandraCluster::checkSetOption(CassError rc, const char *name)
+void CassandraClusterSession::checkSetOption(CassError rc, const char *name)
 {
     if (rc != CASS_OK)
     {
         failx("While setting option %s: %s", name, cass_error_desc(rc));
     }
 }
-cass_bool_t CassandraCluster::getBoolOption(const char *val, const char *option)
+cass_bool_t CassandraClusterSession::getBoolOption(const char *val, const char *option)
 {
     return strToBool(val) ? cass_true : cass_false;
 }
-unsigned CassandraCluster::getUnsignedOption(const char *val, const char *option)
+unsigned CassandraClusterSession::getUnsignedOption(const char *val, const char *option)
 {
     char *endp;
     long value = strtoul(val, &endp, 0);
@@ -292,7 +275,7 @@ unsigned CassandraCluster::getUnsignedOption(const char *val, const char *option
         failx("Invalid value '%s' for option %s", val, option);
     return (unsigned) value;
 }
-unsigned CassandraCluster::getDoubleOption(const char *val, const char *option)
+unsigned CassandraClusterSession::getDoubleOption(const char *val, const char *option)
 {
     char *endp;
     double value = strtod(val, &endp);
@@ -300,10 +283,82 @@ unsigned CassandraCluster::getDoubleOption(const char *val, const char *option)
         failx("Invalid value '%s' for option %s", val, option);
     return value;
 }
-__uint64 CassandraCluster::getUnsigned64Option(const char *val, const char *option)
+__uint64 CassandraClusterSession::getUnsigned64Option(const char *val, const char *option)
 {
     // MORE - could check it's all digits (with optional leading spaces...), if we cared.
     return rtlVStrToUInt8(val);
+}
+void CassandraClusterSession::connect()
+{
+    assertex(cluster && !session);
+    session.setown(new CassandraSession(cass_session_new()));
+    CassandraFuture future(keyspace.isEmpty() ? cass_session_connect(*session, cluster) : cass_session_connect_keyspace(*session, cluster, keyspace));
+    future.wait("connect");
+}
+void CassandraClusterSession::disconnect()
+{
+    session.clear();
+}
+CassandraPrepared *CassandraClusterSession::prepareStatement(const char *query, bool trace) const
+{
+    assertex(session);
+    CriticalBlock b(cacheCrit);
+    Linked<CassandraPrepared> cached = preparedCache.getValue(query);
+    if (cached)
+        return cached.getClear();
+    {
+        // We don't want to block cache lookups while we prepare a new bound statement
+        // Note - if multiple threads try to prepare the same (new) statement at the same time, it's not catastrophic
+        CriticalUnblock b(cacheCrit);
+        CassandraFuture futurePrep(cass_session_prepare(*session, query));
+        futurePrep.wait("prepare statement");
+        cached.setown(new CassandraPrepared(cass_future_get_prepared(futurePrep), trace ? query : NULL));
+    }
+    preparedCache.setValue(query, cached); // NOTE - this links parameter
+    return cached.getClear();
+}
+CassandraStatementInfo *CassandraClusterSession::createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const
+{
+    Owned<CassandraPrepared> prepared = prepareStatement(script, false); // We could make tracing selectable
+    return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, semaphore, maxRetries);
+}
+
+typedef CassandraClusterSession *CassandraClusterSessionPtr;
+typedef MapBetween<hash64_t, hash64_t, CassandraClusterSessionPtr, CassandraClusterSessionPtr> ClusterSessionMap;
+static CriticalSection clusterCacheCrit;
+static ClusterSessionMap cachedSessions;
+
+CassandraClusterSession *lookupCachedSession(hash64_t hash, const StringArray &opts)
+{
+    Owned<CassandraClusterSession> cluster;
+    CassandraClusterSessionPtr *found = cachedSessions.getValue(hash);
+    if (found)
+        cluster.set(*found);
+    if (!cluster)
+    {
+        cluster.setown(new CassandraClusterSession(cass_cluster_new()));
+        cluster->setOptions(opts);
+        cluster->connect();
+        cachedSessions.setValue(hash, cluster.getLink());
+    }
+    return cluster.getClear();
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    cass_log_set_callback(logCallBack, NULL);
+    cass_log_set_level(CASS_LOG_WARN);
+    return true;
+}
+
+MODULE_EXIT()
+{
+    HashIterator i(cachedSessions);
+    ForEach(i)
+    {
+        CassandraClusterSession *session = *cachedSessions.mapToValue(&i.query());
+        ::Release(session);
+    }
 }
 
 //------------------
@@ -338,7 +393,7 @@ void CassandraSession::set(CassSession *_session)
 
 //----------------------
 
-CassandraRetryingFuture::CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, LinkedSemaphore *_limiter, unsigned _retries)
+CassandraRetryingFuture::CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, Semaphore *_limiter, unsigned _retries)
 : session(_session), statement(_statement), retries(_retries), limiter(_limiter), future(NULL)
 {
     execute();
@@ -392,20 +447,19 @@ void CassandraRetryingFuture::execute()
         limiter->wait();
     future = cass_session_execute(session, statement);
     if (limiter)
-        cass_future_set_callback(future, signaller, LINK(limiter)); // Note - this will call the callback if the future has already completed
+        cass_future_set_callback(future, signaller, limiter); // Note - this will call the callback if the future has already completed
 }
 
 void CassandraRetryingFuture::signaller(CassFuture *future, void *data)
 {
-    LinkedSemaphore *sem = (LinkedSemaphore *) data;
+    Semaphore *sem = (Semaphore *) data;
     sem->signal();
-    ::Release(sem);
 }
 
 //----------------------
 
-CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, unsigned _maxFutures, unsigned _maxRetries)
-    : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(NULL), maxFutures(_maxFutures), maxRetries(_maxRetries)
+CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries)
+    : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(_semaphore), maxRetries(_maxRetries)
 {
     assertex(prepared && *prepared);
     statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
@@ -417,7 +471,6 @@ CassandraStatementInfo::~CassandraStatementInfo()
 {
     stop();
     futures.kill();
-    semaphore.clear();  // Note - may live on for a while until all futures associated with it have signalled.
 }
 void CassandraStatementInfo::stop()
 {
@@ -453,8 +506,6 @@ void CassandraStatementInfo::startStream()
 {
     if (batchMode != (CassBatchType) -1)
         batch.setown(new CassandraBatch(cass_batch_new(batchMode)));
-    else if (maxFutures)
-        semaphore.setown(new LinkedSemaphore(maxFutures));
     statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
     inBatch = true;
 }
@@ -1223,15 +1274,34 @@ class CassandraEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
     CassandraEmbedFunctionContext(const IContextLogger &_logctx, unsigned _flags, const char *options)
-      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0)
+      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0), batchMode((CassBatchType) -1), pageSize(0)
     {
         StringArray opts;
         opts.appendList(options, ",");
-        cluster.setown(new CassandraCluster(cass_cluster_new()));
-        cluster->setOptions(opts);
-        session.setown(new CassandraSession(cass_session_new()));
-        CassandraFuture future(cluster->keyspace.isEmpty() ? cass_session_connect(*session, *cluster) : cass_session_connect_keyspace(*session, *cluster, cluster->keyspace));
-        future.wait("connect");
+        hash64_t hash = 0;
+        ForEachItemInRev(idx, opts)
+        {
+            const char *opt = opts.item(idx);
+            if (strnicmp(opt, "batch=", 6)==0)
+            {
+                const char *val=opt+6;
+                if (stricmp(val, "LOGGED")==0)
+                    batchMode = CASS_BATCH_TYPE_LOGGED;
+                else if (stricmp(val, "UNLOGGED")==0)
+                    batchMode = CASS_BATCH_TYPE_UNLOGGED;
+                else if (stricmp(val, "COUNTER")==0)
+                    batchMode = CASS_BATCH_TYPE_COUNTER;
+                opts.remove(idx);
+            }
+            else if (strnicmp(opt, "pagesize=", 9)==0)
+            {
+                pageSize = atoi(opt+9);
+                opts.remove(idx);
+            }
+            else
+                hash = rtlHash64VStr(opt, hash);
+        }
+        cluster.setown(lookupCachedSession(hash, opts));
     }
     virtual bool getBooleanResult()
     {
@@ -1657,22 +1727,18 @@ public:
                     break;
                 }
                 CassandraStatement statement(cass_statement_new_n(script, nextScript-script, 0));
-                CassandraFuture future(cass_session_execute(*session, statement));
+                CassandraFuture future(cass_session_execute(cluster->querySession(), statement));
                 future.wait("execute statement");
                 script = nextScript;
             }
         }
         else
         {
-            // MORE - can cache this, perhaps, if script is same as last time?
-            CassandraFuture future(cass_session_prepare(*session, script));
-            future.wait("prepare statement");
-            Owned<CassandraPrepared> prepared = new CassandraPrepared(cass_future_get_prepared(future), NULL);
             if ((flags & EFnoparams) == 0)
                 numParams = countBindings(script);
             else
                 numParams = 0;
-            stmtInfo.setown(new CassandraStatementInfo(session, prepared, numParams, cluster->batchMode, cluster->pageSize, cluster->maxFutures, cluster->maxRetries));
+            stmtInfo.setown(cluster->createStatementInfo(script, numParams, batchMode, pageSize));
         }
     }
     virtual void callFunction()
@@ -1790,8 +1856,7 @@ protected:
             failx("While binding parameter %s: %s", name, cass_error_desc(rc));
         }
     }
-    Owned<CassandraCluster> cluster;
-    Owned<CassandraSession> session;
+    Owned<CassandraClusterSession> cluster;
     Owned<CassandraStatementInfo> stmtInfo;
     Owned<CassandraDatasetBinder> inputStream;
     const IContextLogger &logctx;
@@ -1799,7 +1864,8 @@ protected:
     unsigned nextParam;
     unsigned numParams;
     StringAttr queryString;
-
+    CassBatchType batchMode;
+    unsigned pageSize;
 };
 
 class CassandraEmbedContext : public CInterfaceOf<IEmbedContext>

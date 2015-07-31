@@ -2774,9 +2774,9 @@ public:
             }
         }
         cluster.setOptions(options);
-        if (cluster.keyspace.isEmpty())
-            cluster.keyspace.set("hpcc");
-        connect();
+        if (!cluster.queryKeySpace())
+            cluster.setKeySpace("hpcc");
+        cluster.connect();
         cacheRetirer.start();
     }
 
@@ -2821,7 +2821,7 @@ public:
             statement.bindString(1, useWuid.str());
             if (traceLevel >= 2)
                 DBGLOG("Try creating %s", useWuid.str());
-            CassandraFuture future(cass_session_execute(session, statement));
+            CassandraFuture future(cass_session_execute(querySession(), statement));
             future.wait("execute");
             CassandraResult result(cass_future_get_result(future));
             if (cass_result_column_count(result)==1)
@@ -3148,7 +3148,7 @@ public:
     virtual unsigned numWorkUnits()
     {
         CassandraStatement statement(prepareStatement("SELECT COUNT(*) FROM workunits;"));
-        CassandraFuture future(cass_session_execute(session, statement));
+        CassandraFuture future(cass_session_execute(querySession(), statement));
         future.wait("select count(*)");
         CassandraResult result(cass_future_get_result(future));
         return getUnsignedResult(NULL, getSingleResult(result));
@@ -3168,7 +3168,7 @@ public:
         unsigned start = msTick();
         loop
         {
-            CassandraFuture future(cass_session_execute(session, statement));
+            CassandraFuture future(cass_session_execute(querySession(), statement));
             future.wait("Lookup wu state");
             CassandraResult result(cass_future_get_result(future));
             const CassRow *row = cass_result_first_row(result);
@@ -3273,7 +3273,7 @@ public:
         // 3. Commit fixes
         if (batch)
         {
-            CassandraFuture futureBatch(cass_session_execute_batch(session, batch));
+            CassandraFuture futureBatch(cass_session_execute_batch(querySession(), batch));
             futureBatch.wait("Fix_repository");
         }
         return errCount;
@@ -3282,34 +3282,35 @@ public:
     virtual void deleteRepository(bool recreate)
     {
         // USE WITH CARE!
-        session.set(cass_session_new());
-        CassandraFuture future(cass_session_connect(session, cluster));
+        CassandraSession s(cass_session_new());
+        CassandraFuture future(cass_session_connect(s, cluster.queryCluster()));
         future.wait("connect without keyspace to delete");
-        VStringBuffer deleteKeyspace("DROP KEYSPACE IF EXISTS %s;", cluster.keyspace.get());
-        executeSimpleCommand(session, deleteKeyspace);
+        VStringBuffer deleteKeyspace("DROP KEYSPACE IF EXISTS %s;", cluster.queryKeySpace());
+        executeSimpleCommand(s, deleteKeyspace);
+        s.set(NULL);
+        cluster.disconnect();
         if (recreate)
-            connect();
-        else
-            session.set(NULL);
+            createRepository();
     }
 
     virtual void createRepository()
     {
-        session.set(cass_session_new());
-        CassandraFuture future(cass_session_connect(session, cluster));
+        CassandraSession s(cass_session_new());
+        CassandraFuture future(cass_session_connect(s, cluster.queryCluster()));
         future.wait("connect without keyspace");
-        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' } ;", cluster.keyspace.get()); // MORE - options from props? Not 100% sure if they are appropriate.
-        executeSimpleCommand(session, create);
-        connect();
-        ensureTable(session, workunitsMappings);
-        ensureTable(session, searchMappings);
-        ensureTable(session, uniqueSearchMappings);
-        ensureTable(session, filesReadSearchMappings);
+        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' } ;", cluster.queryKeySpace()); // MORE - options from props? Not 100% sure if they are appropriate.
+        executeSimpleCommand(s, create);
+        s.set(NULL);
+        cluster.connect();
+        ensureTable(querySession(), workunitsMappings);
+        ensureTable(querySession(), searchMappings);
+        ensureTable(querySession(), uniqueSearchMappings);
+        ensureTable(querySession(), filesReadSearchMappings);
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
-            ensureTable(session, table[0]->mappings);
-        ensureTable(session, wuGraphProgressMappings);
-        ensureTable(session, wuGraphStateMappings);
-        ensureTable(session, wuGraphRunningMappings);
+            ensureTable(querySession(), table[0]->mappings);
+        ensureTable(querySession(), wuGraphProgressMappings);
+        ensureTable(querySession(), wuGraphStateMappings);
+        ensureTable(querySession(), wuGraphRunningMappings);
     }
 
     virtual const char *queryStoreType() const
@@ -3318,45 +3319,19 @@ public:
     }
 
     // Interface ICassandraSession
-    virtual CassSession *querySession() const { return session; };
+    virtual CassSession *querySession() const { return cluster.querySession(); };
     virtual unsigned queryTraceLevel() const { return traceLevel; };
     virtual CassandraPrepared *prepareStatement(const char *query) const
     {
-        assertex(session);
-        CriticalBlock b(cacheCrit);
-        Linked<CassandraPrepared> cached = preparedCache.getValue(query);
-        if (cached)
-        {
-            if (traceLevel >= 3)
-                DBGLOG("prepareStatement: Reusing %s", query);
-            return cached.getClear();
-        }
-        {
-            if (traceLevel >= 3)
-                DBGLOG("prepareStatement: Binding %s", query);
-            // We don't want to block cache lookups while we prepare a new bound statement
-            // Note - if multiple threads try to prepare the same (new) statement at the same time, it's not catastrophic
-            CriticalUnblock b(cacheCrit);
-            CassandraFuture futurePrep(cass_session_prepare(session, query));
-            futurePrep.wait("prepare statement");
-            cached.setown(new CassandraPrepared(cass_future_get_prepared(futurePrep), traceLevel>=2?query:NULL));
-        }
-        preparedCache.setValue(query, cached); // NOTE - this links parameter
-        return cached.getClear();
+        return cluster.prepareStatement(query, traceLevel>=2);
     }
 private:
-    void connect()
-    {
-        session.set(cass_session_new());
-        CassandraFuture future(cass_session_connect_keyspace(session, cluster, cluster.keyspace));
-        future.wait("connect with keyspace");
-    }
     bool checkWuExists(const char *wuid)
     {
         CassandraStatement statement(prepareStatement("SELECT COUNT(*) FROM workunits where partition=? and wuid=?;"));
         statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         statement.bindString(1, wuid);
-        CassandraFuture future(cass_session_execute(session, statement));
+        CassandraFuture future(cass_session_execute(querySession(), statement));
         future.wait("select count(*)");
         CassandraResult result(cass_future_get_result(future));
         return getUnsignedResult(NULL, getSingleResult(result)) != 0; // Shouldn't be more than 1, either
@@ -3519,7 +3494,7 @@ private:
         if (traceLevel >= 2)
             DBGLOG("%s", selectQuery.str());
         CassandraStatement statement(cass_statement_new(selectQuery.str(), 0));
-        return executeQuery(session, statement);
+        return executeQuery(querySession(), statement);
     }
 
     // Fetch all rows from a single partition of a table
@@ -3561,7 +3536,7 @@ private:
             const IPostFilter &wuidFilter = wuidFilters.item(idx2);
             select.bindString(idx2+1, wuidFilter.queryValue());
         }
-        return executeQuery(session, select);
+        return executeQuery(querySession(), select);
     }
 
     // Fetch matching rows from a child table, or the main wu table
@@ -3576,7 +3551,7 @@ private:
         CassandraStatement select(prepareStatement(selectQuery));
         select.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         select.bindString(1, wuid);
-        return executeQuery(session, select);
+        return executeQuery(querySession(), select);
     }
 
     const CassResult *fetchDataForWuidAndKey(const CassandraXmlMapping *mappings, const char *wuid, const char *key) const
@@ -3590,7 +3565,7 @@ private:
         select.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         select.bindString(1, wuid);
         select.bindString(2, key);
-        return executeQuery(session, select);
+        return executeQuery(querySession(), select);
     }
 
     // Fetch matching rows from the search table, for all wuids, sorted by wuid
@@ -3609,7 +3584,7 @@ private:
         select.bindString(0, xpath);
         select.bindString_n(1, ucKey, CASS_SEARCH_PREFIX_SIZE);
         select.bindString(2, ucKey);
-        return executeQuery(session, select);
+        return executeQuery(querySession(), select);
     }
 
     // Fetch matching rows from the search table, for all wuids, sorted by wuid
@@ -3652,7 +3627,7 @@ private:
             const IPostFilter &wuidFilter = wuidFilters.item(idx2);
             select.bindString(3+idx2, wuidFilter.queryValue());
         }
-        return executeQuery(session, select);
+        return executeQuery(querySession(), select);
     }
 
     // Fetch matching rows from the search or uniqueSearch table, for a given prefix
@@ -3675,7 +3650,7 @@ private:
         select.bindString_n(1, ucKey, CASS_SEARCH_PREFIX_SIZE);
         select.bindString(2, ucKey);
         select.bindString(3, ucKeyEnd);
-        return executeQuery(session, select);
+        return executeQuery(querySession(), select);
     }
 
     // Fetch rows from the search table, by thorTime, above a threshold
@@ -3700,7 +3675,7 @@ private:
         select.bindString_n(1, "        ", CASS_SEARCH_PREFIX_SIZE);  // This would stop working if we ever set the search prefix to > 8 chars. So don't.
         if (threshold && *threshold)
             select.bindString(2, threshold);
-        return executeQuery(session, select);
+        return executeQuery(querySession(), select);
     }
 
     // Fetch rows from the search table, continuing a previous query that was sorted by thor time - part one
@@ -3739,7 +3714,7 @@ private:
         select.bindString(2, threshold);
         if (wuid)
             select.bindString(3, wuid);
-        return executeQuery(session, select);
+        return executeQuery(querySession(), select);
     }
 
     // Fetch rows from the file search table
@@ -3764,7 +3739,7 @@ private:
             const IPostFilter &wuidFilter = wuidFilters.item(idx2);
             select.bindString(idx2+1, wuidFilter.queryValue());
         }
-        return executeQuery(session, select);
+        return executeQuery(querySession(), select);
     }
 
     // Fetch matching rows from the search table, for a single wuid
@@ -3783,7 +3758,7 @@ private:
         select.bindString_n(1, ucKey, CASS_SEARCH_PREFIX_SIZE);
         select.bindString(2, ucKey);
         select.bindString(3, wuid);
-        return executeQuery(session, select);
+        return executeQuery(querySession(), select);
     }
 
     // Delete matching rows from a child table
@@ -3855,10 +3830,8 @@ private:
     unsigned randomizeSuffix;
     unsigned traceLevel;
     unsigned randState;
-    CassandraCluster cluster;
-    CassandraSession session;
-    mutable CriticalSection cacheCrit;  // protects both of the caches below... we could separate
-    mutable MapStringToMyClass<CassandraPrepared> preparedCache;
+    CassandraClusterSession cluster;
+    mutable CriticalSection cacheCrit;
     mutable MapXToMyClass<__uint64, __uint64, CCassandraWuUQueryCacheEntry> cacheIdMap;
 };
 

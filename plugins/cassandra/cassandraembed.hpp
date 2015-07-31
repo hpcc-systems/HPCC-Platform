@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -29,38 +29,105 @@ extern bool isString(CassValueType t);
 
 // Wrappers to Cassandra structures that require corresponding releases
 
-class CassandraCluster : public CInterface
+class CassandraPrepared : public CInterfaceOf<IInterface>
 {
 public:
-    inline CassandraCluster(CassCluster *_cluster)
-    : cluster(_cluster), batchMode((CassBatchType) -1), pageSize(0), maxFutures(0), maxRetries(0)
+    inline CassandraPrepared(const CassPrepared *_prepared, const char *_queryString)
+    : prepared(_prepared), queryString(_queryString)
+    {
+    }
+    inline ~CassandraPrepared()
+    {
+        if (prepared)
+            cass_prepared_free(prepared);
+    }
+    inline operator const CassPrepared *() const
+    {
+        return prepared;
+    }
+    inline const char *queryQueryString() const
+    {
+        return queryString;
+    }
+private:
+    CassandraPrepared(const CassandraPrepared &);
+    StringAttr queryString;
+    const CassPrepared *prepared;
+};
+
+class CassandraSession : public CInterface
+{
+public:
+    inline CassandraSession() : session(NULL) {}
+    inline CassandraSession(CassSession *_session) : session(_session)
+    {
+    }
+    inline ~CassandraSession()
+    {
+        set(NULL);
+    }
+    void set(CassSession *_session);
+    inline operator CassSession *() const
+    {
+        return session;
+    }
+private:
+    CassandraSession(const CassandraSession &);
+    CassSession *session;
+};
+
+class CassandraStatementInfo;
+
+class CassandraClusterSession : public CInterface
+{
+public:
+    inline CassandraClusterSession(CassCluster *_cluster)
+    : cluster(_cluster), semaphore(NULL), maxFutures(0), maxRetries(0)
     {
     }
     void setOptions(const StringArray &options);
-    inline ~CassandraCluster()
+    inline ~CassandraClusterSession()
     {
+        session.clear();  // Should do this before freeing cluster
         if (cluster)
             cass_cluster_free(cluster);
+        if (semaphore)
+            delete semaphore;
     }
-    inline operator CassCluster *() const
+    inline CassSession *querySession() const
+    {
+        return *session;
+    }
+    inline const CassCluster *queryCluster() const
     {
         return cluster;
     }
+    inline const char *queryKeySpace() const
+    {
+        return keyspace;
+    }
+    inline void setKeySpace(const char *val)
+    {
+        keyspace.set(val);
+    }
+    void connect();
+    void disconnect();
+    CassandraPrepared *prepareStatement(const char *query, bool trace) const;
+    CassandraStatementInfo *createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const;
 private:
     void checkSetOption(CassError rc, const char *name);
     cass_bool_t getBoolOption(const char *val, const char *option);
     unsigned getUnsignedOption(const char *val, const char *option);
     unsigned getDoubleOption(const char *val, const char *option);
     __uint64 getUnsigned64Option(const char *val, const char *option);
-    CassandraCluster(const CassandraCluster &);
+    CassandraClusterSession(const CassandraClusterSession &);
     CassCluster *cluster;
-public:
-    // These are here as convenient to set from same options string. They are really properties of the session
-    // or query rather than the cluster, but we have one session per cluster so we get away with it at the moment.
-    CassBatchType batchMode;
-    unsigned pageSize;
-	unsigned maxFutures;
-	unsigned maxRetries;
+    Owned<CassandraSession> session;
+    mutable MapStringToMyClass<CassandraPrepared> preparedCache;
+    mutable CriticalSection cacheCrit;
+    Semaphore *semaphore;
+    unsigned maxFutures;
+    unsigned maxRetries;
     StringAttr keyspace;
 };
 
@@ -118,27 +185,6 @@ private:
 
 };
 
-class CassandraSession : public CInterface
-{
-public:
-    inline CassandraSession() : session(NULL) {}
-    inline CassandraSession(CassSession *_session) : session(_session)
-    {
-    }
-    inline ~CassandraSession()
-    {
-        set(NULL);
-    }
-    void set(CassSession *_session);
-    inline operator CassSession *() const
-    {
-        return session;
-    }
-private:
-    CassandraSession(const CassandraSession &);
-    CassSession *session;
-};
-
 class CassandraBatch : public CInterface
 {
 public:
@@ -157,32 +203,6 @@ public:
 private:
     CassandraBatch(const CassandraBatch &);
     CassBatch *batch;
-};
-
-class CassandraPrepared : public CInterfaceOf<IInterface>
-{
-public:
-    inline CassandraPrepared(const CassPrepared *_prepared, const char *_queryString)
-    : prepared(_prepared), queryString(_queryString)
-    {
-    }
-    inline ~CassandraPrepared()
-    {
-        if (prepared)
-            cass_prepared_free(prepared);
-    }
-    inline operator const CassPrepared *() const
-    {
-        return prepared;
-    }
-    inline const char *queryQueryString() const
-    {
-        return queryString;
-    }
-private:
-    CassandraPrepared(const CassandraPrepared &);
-    StringAttr queryString;
-    const CassPrepared *prepared;
 };
 
 class CassandraStatement : public CInterface
@@ -299,16 +319,10 @@ private:
     CassStatement *statement;
 };
 
-class LinkedSemaphore : public CInterfaceOf<IInterface>, public Semaphore
-{
-public:
-    LinkedSemaphore(unsigned initialCount) : Semaphore(initialCount) {}
-};
-
 class CassandraRetryingFuture : public CInterface
 {
 public:
-    CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, LinkedSemaphore *_limiter = NULL, unsigned _retries = 10);
+    CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, Semaphore *_limiter, unsigned _retries);
     ~CassandraRetryingFuture();
     inline operator CassFuture *() const
     {
@@ -325,7 +339,7 @@ private:
     CassSession *session;
     CassandraStatement statement;
     unsigned retries;
-    LinkedSemaphore *limiter;
+    Semaphore *limiter;
 };
 
 class CassandraResult : public CInterfaceOf<IInterface>
@@ -398,7 +412,7 @@ class CassandraStatementInfo : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, unsigned _maxFutures, unsigned _maxRetries);
+    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries);
     ~CassandraStatementInfo();
     void stop();
     bool next();
@@ -432,8 +446,7 @@ protected:
     Owned<CassandraIterator> iterator;
     unsigned numBindings;
     CIArrayOf<CassandraRetryingFuture> futures;
-    Owned<LinkedSemaphore> semaphore;
-    unsigned maxFutures;
+    Semaphore *semaphore;
     unsigned maxRetries;
     bool inBatch;
     CassBatchType batchMode;
