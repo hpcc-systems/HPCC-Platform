@@ -1656,7 +1656,7 @@ public:
                             int valind = 0;
                             while(vals.queryCharValue(valind))
                             {
-                                if(vals.queryCharValue(valind) && stricmp(vals.queryCharValue(valind), "posixAccount") == 0)
+                                if(stricmp(vals.queryCharValue(valind), "posixAccount") == 0)
                                 {
                                     ((CLdapSecUser*)&user)->setPosixenabled(true);
                                     break;

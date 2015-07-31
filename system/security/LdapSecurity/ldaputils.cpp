@@ -153,13 +153,13 @@ int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, cons
             DBGLOG("userdn can't be NULL in order to bind to ldap server.");
             return LDAP_INVALID_CREDENTIALS;
         }
-        int rc = LdapUtils::LdapSimpleBind(ld, (char*)userdn, (char*)password);
+        int rc = LdapSimpleBind(ld, (char*)userdn, (char*)password);
         if (rc != LDAP_SUCCESS && server_type == OPEN_LDAP && strchr(userdn,','))
         {   //Fedora389 is happier without the domain component specified
             StringBuffer cn(userdn);
             cn.replace(',',(char)NULL);
             if (cn.length())//disallow call if no cn
-                rc = LdapUtils::LdapSimpleBind(ld, (char*)cn.str(), (char*)password);
+                rc = LdapSimpleBind(ld, (char*)cn.str(), (char*)password);
         }
         if (rc != LDAP_SUCCESS )
         {
@@ -168,7 +168,7 @@ int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, cons
             {
                 StringBuffer logonname;
                 logonname.append(domain).append("\\").append(username);
-                rc = LdapUtils::LdapSimpleBind(ld, (char*)logonname.str(), (char*)password);
+                rc = LdapSimpleBind(ld, (char*)logonname.str(), (char*)password);
                 if(rc != LDAP_SUCCESS)
                 {
 #ifdef LDAP_OPT_DIAGNOSTIC_MESSAGE
@@ -203,7 +203,7 @@ int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer&
         return false;
     }
 
-    int err = LdapUtils::LdapSimpleBind(ld, NULL, NULL);
+    int err = LdapSimpleBind(ld, NULL, NULL);
     if(err != LDAP_SUCCESS)
     {
         DBGLOG("ldap anonymous bind error (%d) - %s", err, ldap_err2string(err));
@@ -242,7 +242,7 @@ int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer&
                     if(domainDN.length() == 0)
                     {
                         StringBuffer curdomain;
-                        LdapUtils::getName(curdn, curdomain);
+                        getName(curdn, curdomain);
                         if(onedn.length() == 0)
                         {
                             DBGLOG("Queried '%s', selected basedn '%s'",curdn, curdomain.str());
