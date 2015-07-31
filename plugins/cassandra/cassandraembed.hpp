@@ -82,7 +82,7 @@ class CassandraClusterSession : public CInterface
 {
 public:
     inline CassandraClusterSession(CassCluster *_cluster)
-    : cluster(_cluster), maxFutures(0), maxRetries(0)
+    : cluster(_cluster), semaphore(NULL), maxFutures(0), maxRetries(0)
     {
     }
     void setOptions(const StringArray &options);
@@ -91,6 +91,8 @@ public:
         session.clear();  // Should do this before freeing cluster
         if (cluster)
             cass_cluster_free(cluster);
+        if (semaphore)
+            delete semaphore;
     }
     inline CassSession *querySession() const
     {
@@ -123,9 +125,9 @@ private:
     Owned<CassandraSession> session;
     mutable MapStringToMyClass<CassandraPrepared> preparedCache;
     mutable CriticalSection cacheCrit;
-    mutable Semaphore semaphore;
-	unsigned maxFutures;
-	unsigned maxRetries;
+    Semaphore *semaphore;
+    unsigned maxFutures;
+    unsigned maxRetries;
     StringAttr keyspace;
 };
 

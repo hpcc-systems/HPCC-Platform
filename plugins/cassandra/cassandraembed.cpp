@@ -123,7 +123,14 @@ void CassandraClusterSession::setOptions(const StringArray &options)
             else if (stricmp(optName, "keyspace")==0)
                 keyspace.set(val);
             else if (stricmp(optName, "maxFutures")==0)
-                maxFutures=getUnsignedOption(val, "maxFutures");
+            {
+                if (!semaphore)
+                {
+                    maxFutures=getUnsignedOption(val, "maxFutures");
+                    if (maxFutures)
+                        semaphore = new Semaphore(maxFutures);
+                }
+            }
             else if (stricmp(optName, "maxRetries")==0)
                 maxRetries=getUnsignedOption(val, "maxRetries");
             else if (stricmp(optName, "port")==0)
@@ -313,7 +320,7 @@ CassandraPrepared *CassandraClusterSession::prepareStatement(const char *query, 
 CassandraStatementInfo *CassandraClusterSession::createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const
 {
     Owned<CassandraPrepared> prepared = prepareStatement(script, false); // We could make tracing selectable
-    return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, maxFutures ? &semaphore : NULL, maxRetries);
+    return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, semaphore, maxRetries);
 }
 
 typedef CassandraClusterSession *CassandraClusterSessionPtr;
