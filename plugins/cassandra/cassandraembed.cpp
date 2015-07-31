@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -30,19 +30,13 @@
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
 
+#include "cassandraembed.hpp"
+
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
 #else
 #define EXPORT
 #endif
-
-
-static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
-
-static void UNSUPPORTED(const char *feature)
-{
-    throw MakeStringException(-1, "UNSUPPORTED feature: %s not supported in Cassandra plugin", feature);
-}
 
 static const char * compatibleVersions[] = {
     "Cassandra Embed Helper 1.0.0",
@@ -70,22 +64,17 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
 namespace cassandraembed {
 
+extern void UNSUPPORTED(const char *feature)
+{
+    throw MakeStringException(-1, "UNSUPPORTED feature: %s not supported in Cassandra plugin", feature);
+}
+
 static void logCallBack(const CassLogMessage *message, void *data)
 {
     DBGLOG("cassandra: %s - %s", cass_log_level_string(message->severity), message->message);
 }
 
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    cass_log_set_callback(logCallBack, NULL);
-    cass_log_set_level(CASS_LOG_WARN);
-    return true;
-}
-
-static void failx(const char *msg, ...) __attribute__((noreturn))  __attribute__((format(printf, 1, 2)));
-static void fail(const char *msg) __attribute__((noreturn));
-
-static void failx(const char *message, ...)
+extern void failx(const char *message, ...)
 {
     va_list args;
     va_start(args,message);
@@ -95,324 +84,12 @@ static void failx(const char *message, ...)
     rtlFail(0, msg.str());
 }
 
-static void fail(const char *message)
+extern void fail(const char *message)
 {
     StringBuffer msg;
     msg.append("cassandra: ").append(message);
     rtlFail(0, msg.str());
 }
-
-// Wrappers to Cassandra structures that require corresponding releases
-
-class CassandraCluster : public CInterface
-{
-public:
-    CassandraCluster(CassCluster *_cluster) : cluster(_cluster)
-    {
-    }
-    ~CassandraCluster()
-    {
-        if (cluster)
-            cass_cluster_free(cluster);
-    }
-    inline operator CassCluster *() const
-    {
-        return cluster;
-    }
-private:
-    CassandraCluster(const CassandraCluster &);
-    CassCluster *cluster;
-};
-
-class CassandraFuture : public CInterface
-{
-public:
-    CassandraFuture(CassFuture *_future) : future(_future)
-    {
-    }
-    ~CassandraFuture()
-    {
-        if (future)
-            cass_future_free(future);
-    }
-    inline operator CassFuture *() const
-    {
-        return future;
-    }
-    void wait(const char *why) const
-    {
-        cass_future_wait(future);
-        CassError rc = cass_future_error_code(future);
-        if(rc != CASS_OK)
-        {
-            const char *message;
-            size_t length;
-            cass_future_error_message(future, &message, &length);
-            VStringBuffer err("cassandra: failed to %s (%.*s)", why, (int) length, message);
-            rtlFail(0, err.str());
-        }
-    }
-protected:
-    CassandraFuture(const CassandraFuture &);
-    CassFuture *future;
-};
-
-class CassandraFutureResult : public CassandraFuture
-{
-public:
-    CassandraFutureResult(CassFuture *_future) : CassandraFuture(_future)
-    {
-        result = NULL;
-    }
-    ~CassandraFutureResult()
-    {
-        if (result)
-            cass_result_free(result);
-    }
-    inline operator const CassResult *() const
-    {
-        if (!result)
-        {
-            wait("FutureResult");
-            result = cass_future_get_result(future);
-        }
-        return result;
-    }
-private:
-    CassandraFutureResult(const CassandraFutureResult &);
-    mutable const CassResult *result;
-
-};
-
-class CassandraSession : public CInterface
-{
-public:
-    CassandraSession(CassSession *_session) : session(_session)
-    {
-    }
-    ~CassandraSession()
-    {
-        if (session)
-        {
-            CassandraFuture close_future(cass_session_close(session));
-            cass_future_wait(close_future);
-            cass_session_free(session);
-        }
-    }
-    inline operator CassSession *() const
-    {
-        return session;
-    }
-private:
-    CassandraSession(const CassandraSession &);
-    CassSession *session;
-};
-
-class CassandraBatch : public CInterface
-{
-public:
-    CassandraBatch(CassBatch *_batch) : batch(_batch)
-    {
-    }
-    ~CassandraBatch()
-    {
-        if (batch)
-            cass_batch_free(batch);
-    }
-    inline operator CassBatch *() const
-    {
-        return batch;
-    }
-private:
-    CassandraBatch(const CassandraBatch &);
-    CassBatch *batch;
-};
-
-class CassandraStatement : public CInterface
-{
-public:
-    CassandraStatement(CassStatement *_statement) : statement(_statement)
-    {
-    }
-    ~CassandraStatement()
-    {
-        if (statement)
-            cass_statement_free(statement);
-    }
-    inline operator CassStatement *() const
-    {
-        return statement;
-    }
-    inline CassStatement *getClear()
-    {
-        CassStatement *ret = statement;
-        statement = NULL;
-        return ret;
-    }
-private:
-    CassandraStatement(const CassandraStatement &);
-    CassStatement *statement;
-};
-
-class LinkedSemaphore : public CInterfaceOf<IInterface>, public Semaphore
-{
-public:
-    LinkedSemaphore(unsigned initialCount) : Semaphore(initialCount) {}
-};
-
-class CassandraRetryingFuture : public CInterface
-{
-public:
-    CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, LinkedSemaphore *_limiter = NULL, unsigned _retries = 10)
-    : session(_session), statement(_statement), retries(_retries), limiter(_limiter), future(NULL)
-    {
-        execute();
-    }
-    ~CassandraRetryingFuture()
-    {
-        if (future)
-            cass_future_free(future);
-    }
-    inline operator CassFuture *() const
-    {
-        return future;
-    }
-    void wait(const char *why)
-    {
-        cass_future_wait(future);
-        CassError rc = cass_future_error_code(future);
-        if(rc != CASS_OK)
-        {
-            switch (rc)
-            {
-            case CASS_ERROR_LIB_NO_HOSTS_AVAILABLE: // MORE - are there others we should retry?
-                if (retry(why))
-                    break;
-                // fall into
-            default:
-                const char *message;
-                size_t length;
-                cass_future_error_message(future, &message, &length);
-                VStringBuffer err("cassandra: failed to %s (%.*s)", why, (int) length, message);
-                rtlFail(0, err.str());
-            }
-        }
-    }
-private:
-    bool retry(const char *why)
-    {
-        for (int i = 0; i < retries; i++)
-        {
-            execute();
-            cass_future_wait(future);
-            CassError rc = cass_future_error_code(future);
-            if (rc == CASS_OK)
-                return true;
-            Sleep(10);
-        }
-        return false;
-    }
-    void execute()
-    {
-        if (limiter)
-            limiter->wait();
-        future = cass_session_execute(session, statement);
-        if (limiter)
-            cass_future_set_callback(future, signaller, LINK(limiter)); // Note - this will call the callback if the future has already completed
-    }
-    static void signaller(CassFuture *future, void *data)
-    {
-        LinkedSemaphore *sem = (LinkedSemaphore *) data;
-        sem->signal();
-        ::Release(sem);
-    }
-    CassandraRetryingFuture(const CassandraFuture &);
-    CassFuture *future;
-    CassSession *session;
-    CassandraStatement statement;
-    unsigned retries;
-    LinkedSemaphore *limiter;
-};
-
-class CassandraPrepared : public CInterface
-{
-public:
-    CassandraPrepared(const CassPrepared *_prepared) : prepared(_prepared)
-    {
-    }
-    ~CassandraPrepared()
-    {
-        if (prepared)
-            cass_prepared_free(prepared);
-    }
-    inline operator const CassPrepared *() const
-    {
-        return prepared;
-    }
-private:
-    CassandraPrepared(const CassandraPrepared &);
-    const CassPrepared *prepared;
-};
-
-class CassandraResult : public CInterface
-{
-public:
-    CassandraResult(const CassResult *_result) : result(_result)
-    {
-    }
-    ~CassandraResult()
-    {
-        if (result)
-            cass_result_free(result);
-    }
-    inline operator const CassResult *() const
-    {
-        return result;
-    }
-private:
-    CassandraResult(const CassandraResult &);
-    const CassResult *result;
-};
-
-class CassandraIterator : public CInterface
-{
-public:
-    CassandraIterator(CassIterator *_iterator) : iterator(_iterator)
-    {
-    }
-    ~CassandraIterator()
-    {
-        if (iterator)
-            cass_iterator_free(iterator);
-    }
-    inline operator CassIterator *() const
-    {
-        return iterator;
-    }
-private:
-    CassandraIterator(const CassandraIterator &);
-    CassIterator *iterator;
-};
-
-class CassandraCollection : public CInterface
-{
-public:
-    CassandraCollection(CassCollection *_collection) : collection(_collection)
-    {
-    }
-    ~CassandraCollection()
-    {
-        if (collection)
-            cass_collection_free(collection);
-    }
-    inline operator CassCollection *() const
-    {
-        return collection;
-    }
-private:
-    CassandraCollection(const CassandraCollection &);
-    CassCollection *collection;
-};
 
 void check(CassError rc)
 {
@@ -422,130 +99,449 @@ void check(CassError rc)
     }
 }
 
-class CassandraStatementInfo : public CInterface
+// Wrappers to Cassandra structures that require corresponding releases
+
+void CassandraClusterSession::setOptions(const StringArray &options)
 {
-public:
-    IMPLEMENT_IINTERFACE;
-    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, unsigned _maxFutures, unsigned _maxRetries)
-    : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(NULL), maxFutures(_maxFutures), maxRetries(_maxRetries)
+    const char *contact_points = "localhost";
+    const char *user = "";
+    const char *password = "";
+    ForEachItemIn(idx, options)
     {
-        assertex(prepared && *prepared);
-        statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
-        if (pageSize)
-            cass_statement_set_paging_size(*statement, pageSize);
-        inBatch = false;
-    }
-    ~CassandraStatementInfo()
-    {
-        stop();
-        futures.kill();
-        semaphore.clear();  // Note - may live on for a while until all futures associated with it have signalled.
-    }
-    inline void stop()
-    {
-        iterator.clear();
-        result.clear();
-        prepared.clear();
-    }
-    bool next()
-    {
-        loop
+        const char *opt = options.item(idx);
+        const char *val = strchr(opt, '=');
+        if (val)
         {
-            if (!iterator)
+            StringBuffer optName(val-opt, opt);
+            val++;
+            if (stricmp(optName, "contact_points")==0 || stricmp(optName, "server")==0)
+                contact_points = val;   // Note that lifetime of val is adequate for this to be safe
+            else if (stricmp(optName, "user")==0)
+                user = val;
+            else if (stricmp(optName, "password")==0)
+                password = val;
+            else if (stricmp(optName, "keyspace")==0)
+                keyspace.set(val);
+            else if (stricmp(optName, "maxFutures")==0)
             {
-                if (result)
-                    iterator.setown(new CassandraIterator(cass_iterator_from_result(*result)));
-                else
-                    return false;
+                if (!semaphore)
+                {
+                    maxFutures=getUnsignedOption(val, "maxFutures");
+                    if (maxFutures)
+                        semaphore = new Semaphore(maxFutures);
+                }
             }
-            if (cass_iterator_next(*iterator))
-                return true;
-            iterator.clear();
-            if (!cass_result_has_more_pages(*result))
+            else if (stricmp(optName, "maxRetries")==0)
+                maxRetries=getUnsignedOption(val, "maxRetries");
+            else if (stricmp(optName, "port")==0)
             {
-                result.clear();
+                unsigned port = getUnsignedOption(val, "port");
+                checkSetOption(cass_cluster_set_port(cluster, port), "port");
+            }
+            else if (stricmp(optName, "protocol_version")==0)
+            {
+                unsigned protocol_version = getUnsignedOption(val, "protocol_version");
+                checkSetOption(cass_cluster_set_protocol_version(cluster, protocol_version), "protocol_version");
+            }
+            else if (stricmp(optName, "num_threads_io")==0)
+            {
+                unsigned num_threads_io = getUnsignedOption(val, "num_threads_io");
+                cass_cluster_set_num_threads_io(cluster, num_threads_io);  // No status return
+            }
+            else if (stricmp(optName, "queue_size_io")==0)
+            {
+                unsigned queue_size_io = getUnsignedOption(val, "queue_size_io");
+                checkSetOption(cass_cluster_set_queue_size_io(cluster, queue_size_io), "queue_size_io");
+            }
+            else if (stricmp(optName, "core_connections_per_host")==0)
+            {
+                unsigned core_connections_per_host = getUnsignedOption(val, "core_connections_per_host");
+                checkSetOption(cass_cluster_set_core_connections_per_host(cluster, core_connections_per_host), "core_connections_per_host");
+            }
+            else if (stricmp(optName, "max_connections_per_host")==0)
+            {
+                unsigned max_connections_per_host = getUnsignedOption(val, "max_connections_per_host");
+                checkSetOption(cass_cluster_set_max_connections_per_host(cluster, max_connections_per_host), "max_connections_per_host");
+            }
+            else if (stricmp(optName, "max_concurrent_creation")==0)
+            {
+                unsigned max_concurrent_creation = getUnsignedOption(val, "max_concurrent_creation");
+                checkSetOption(cass_cluster_set_max_concurrent_creation(cluster, max_concurrent_creation), "max_concurrent_creation");
+            }
+            else if (stricmp(optName, "pending_requests_high_water_mark")==0)
+            {
+                unsigned pending_requests_high_water_mark = getUnsignedOption(val, "pending_requests_high_water_mark");
+                checkSetOption(cass_cluster_set_pending_requests_high_water_mark(cluster, pending_requests_high_water_mark), "pending_requests_high_water_mark");
+            }
+            else if (stricmp(optName, "pending_requests_low_water_mark")==0)
+            {
+                unsigned pending_requests_low_water_mark = getUnsignedOption(val, "pending_requests_low_water_mark");
+                checkSetOption(cass_cluster_set_pending_requests_low_water_mark(cluster, pending_requests_low_water_mark), "pending_requests_low_water_mark");
+            }
+            else if (stricmp(optName, "max_concurrent_requests_threshold")==0)
+            {
+                unsigned max_concurrent_requests_threshold = getUnsignedOption(val, "max_concurrent_requests_threshold");
+                checkSetOption(cass_cluster_set_max_concurrent_requests_threshold(cluster, max_concurrent_requests_threshold), "max_concurrent_requests_threshold");
+            }
+            else if (stricmp(optName, "connect_timeout")==0)
+            {
+                unsigned connect_timeout = getUnsignedOption(val, "connect_timeout");
+                cass_cluster_set_connect_timeout(cluster, connect_timeout);
+            }
+            else if (stricmp(optName, "request_timeout")==0)
+            {
+                unsigned request_timeout = getUnsignedOption(val, "request_timeout");
+                cass_cluster_set_request_timeout(cluster, request_timeout);
+            }
+            else if (stricmp(optName, "load_balance_round_robin")==0)
+            {
+                cass_bool_t enable = getBoolOption(val, "load_balance_round_robin");
+                if (enable==cass_true)
+                    cass_cluster_set_load_balance_round_robin(cluster);
+            }
+            else if (stricmp(optName, "load_balance_dc_aware")==0)
+            {
+                StringArray lbargs;
+                lbargs.appendList(val, "|");
+                if (lbargs.length() != 3)
+                    failx("Invalid value '%s' for option %s - expected 3 subvalues (separate with |)", val, optName.str());
+                unsigned usedPerRemote = getUnsignedOption(lbargs.item(2), "load_balance_dc_aware");
+                cass_bool_t allowRemote = getBoolOption(lbargs.item(2), "load_balance_dc_aware");
+                checkSetOption(cass_cluster_set_load_balance_dc_aware(cluster, lbargs.item(0), usedPerRemote, allowRemote), "load_balance_dc_aware");
+            }
+            else if (stricmp(optName, "token_aware_routing")==0)
+            {
+                cass_bool_t enable = getBoolOption(val, "token_aware_routing");
+                cass_cluster_set_token_aware_routing(cluster, enable);
+            }
+            else if (stricmp(optName, "latency_aware_routing")==0)
+            {
+                cass_bool_t enable = getBoolOption(val, "latency_aware_routing");
+                cass_cluster_set_latency_aware_routing(cluster, enable);
+            }
+            else if (stricmp(optName, "latency_aware_routing_settings")==0)
+            {
+                StringArray subargs;
+                subargs.appendList(val, "|");
+                if (subargs.length() != 5)
+                    failx("Invalid value '%s' for option %s - expected 5 subvalues (separate with |)", val, optName.str());
+                cass_double_t exclusion_threshold = getDoubleOption(subargs.item(0), "exclusion_threshold");
+                cass_uint64_t scale_ms = getUnsigned64Option(subargs.item(1), "scale_ms");
+                cass_uint64_t retry_period_ms = getUnsigned64Option(subargs.item(2), "retry_period_ms");
+                cass_uint64_t update_rate_ms = getUnsigned64Option(subargs.item(3), "update_rate_ms");
+                cass_uint64_t min_measured = getUnsigned64Option(subargs.item(4), "min_measured");
+                cass_cluster_set_latency_aware_routing_settings(cluster, exclusion_threshold, scale_ms, retry_period_ms, update_rate_ms, min_measured);
+            }
+            else if (stricmp(optName, "tcp_nodelay")==0)
+            {
+                cass_bool_t enable = getBoolOption(val, "tcp_nodelay");
+                cass_cluster_set_tcp_nodelay(cluster, enable);
+            }
+            else if (stricmp(optName, "tcp_keepalive")==0)
+            {
+                StringArray subargs;
+                subargs.appendList(val, "|");
+                if (subargs.length() != 2)
+                    failx("Invalid value '%s' for option %s - expected 2 subvalues (separate with |)", val, optName.str());
+                cass_bool_t enabled = getBoolOption(subargs.item(0), "enabled");
+                unsigned delay_secs = getUnsignedOption(subargs.item(0), "delay_secs");
+                cass_cluster_set_tcp_keepalive(cluster, enabled, delay_secs);
+            }
+            else
+                failx("Unrecognized option %s", optName.str());
+        }
+    }
+    cass_cluster_set_contact_points(cluster, contact_points);
+    if (*user || *password)
+        cass_cluster_set_credentials(cluster, user, password);
+}
+
+void CassandraClusterSession::checkSetOption(CassError rc, const char *name)
+{
+    if (rc != CASS_OK)
+    {
+        failx("While setting option %s: %s", name, cass_error_desc(rc));
+    }
+}
+cass_bool_t CassandraClusterSession::getBoolOption(const char *val, const char *option)
+{
+    return strToBool(val) ? cass_true : cass_false;
+}
+unsigned CassandraClusterSession::getUnsignedOption(const char *val, const char *option)
+{
+    char *endp;
+    long value = strtoul(val, &endp, 0);
+    if (endp==val || *endp != '\0' || value > UINT_MAX || value < 0)
+        failx("Invalid value '%s' for option %s", val, option);
+    return (unsigned) value;
+}
+unsigned CassandraClusterSession::getDoubleOption(const char *val, const char *option)
+{
+    char *endp;
+    double value = strtod(val, &endp);
+    if (endp==val || *endp != '\0')
+        failx("Invalid value '%s' for option %s", val, option);
+    return value;
+}
+__uint64 CassandraClusterSession::getUnsigned64Option(const char *val, const char *option)
+{
+    // MORE - could check it's all digits (with optional leading spaces...), if we cared.
+    return rtlVStrToUInt8(val);
+}
+void CassandraClusterSession::connect()
+{
+    assertex(cluster && !session);
+    session.setown(new CassandraSession(cass_session_new()));
+    CassandraFuture future(keyspace.isEmpty() ? cass_session_connect(*session, cluster) : cass_session_connect_keyspace(*session, cluster, keyspace));
+    future.wait("connect");
+}
+void CassandraClusterSession::disconnect()
+{
+    session.clear();
+}
+CassandraPrepared *CassandraClusterSession::prepareStatement(const char *query, bool trace) const
+{
+    assertex(session);
+    CriticalBlock b(cacheCrit);
+    Linked<CassandraPrepared> cached = preparedCache.getValue(query);
+    if (cached)
+        return cached.getClear();
+    {
+        // We don't want to block cache lookups while we prepare a new bound statement
+        // Note - if multiple threads try to prepare the same (new) statement at the same time, it's not catastrophic
+        CriticalUnblock b(cacheCrit);
+        CassandraFuture futurePrep(cass_session_prepare(*session, query));
+        futurePrep.wait("prepare statement");
+        cached.setown(new CassandraPrepared(cass_future_get_prepared(futurePrep), trace ? query : NULL));
+    }
+    preparedCache.setValue(query, cached); // NOTE - this links parameter
+    return cached.getClear();
+}
+CassandraStatementInfo *CassandraClusterSession::createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const
+{
+    Owned<CassandraPrepared> prepared = prepareStatement(script, false); // We could make tracing selectable
+    return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, semaphore, maxRetries);
+}
+
+typedef CassandraClusterSession *CassandraClusterSessionPtr;
+typedef MapBetween<hash64_t, hash64_t, CassandraClusterSessionPtr, CassandraClusterSessionPtr> ClusterSessionMap;
+static CriticalSection clusterCacheCrit;
+static ClusterSessionMap cachedSessions;
+
+CassandraClusterSession *lookupCachedSession(hash64_t hash, const StringArray &opts)
+{
+    Owned<CassandraClusterSession> cluster;
+    CassandraClusterSessionPtr *found = cachedSessions.getValue(hash);
+    if (found)
+        cluster.set(*found);
+    if (!cluster)
+    {
+        cluster.setown(new CassandraClusterSession(cass_cluster_new()));
+        cluster->setOptions(opts);
+        cluster->connect();
+        cachedSessions.setValue(hash, cluster.getLink());
+    }
+    return cluster.getClear();
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    cass_log_set_callback(logCallBack, NULL);
+    cass_log_set_level(CASS_LOG_WARN);
+    return true;
+}
+
+MODULE_EXIT()
+{
+    HashIterator i(cachedSessions);
+    ForEach(i)
+    {
+        CassandraClusterSession *session = *cachedSessions.mapToValue(&i.query());
+        ::Release(session);
+    }
+}
+
+//------------------
+
+void CassandraFuture::wait(const char *why) const
+{
+    cass_future_wait(future);
+    CassError rc = cass_future_error_code(future);
+    if(rc != CASS_OK)
+    {
+        const char *message;
+        size_t length;
+        cass_future_error_message(future, &message, &length);
+        VStringBuffer err("cassandra: failed to %s (%.*s)", why, (int) length, message);
+#ifdef _DEBUG
+        DBGLOG("%s", err.str());
+#endif
+        rtlFail(0, err.str());
+    }
+}
+
+void CassandraSession::set(CassSession *_session)
+{
+    if (session)
+    {
+        CassandraFuture close_future(cass_session_close(session));
+        cass_future_wait(close_future);
+        cass_session_free(session);
+    }
+    session = _session;
+}
+
+//----------------------
+
+CassandraRetryingFuture::CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, Semaphore *_limiter, unsigned _retries)
+: session(_session), statement(_statement), retries(_retries), limiter(_limiter), future(NULL)
+{
+    execute();
+}
+
+CassandraRetryingFuture::~CassandraRetryingFuture()
+{
+    if (future)
+        cass_future_free(future);
+}
+
+void CassandraRetryingFuture::wait(const char *why)
+{
+    cass_future_wait(future);
+    CassError rc = cass_future_error_code(future);
+    if(rc != CASS_OK)
+    {
+        switch (rc)
+        {
+        case CASS_ERROR_LIB_NO_HOSTS_AVAILABLE: // MORE - are there others we should retry?
+            if (retry(why))
                 break;
-            }
-            cass_statement_set_paging_state(*statement, *result);
-            result.setown(new CassandraFutureResult(cass_session_execute(*session, *statement)));
+            // fall into
+        default:
+            const char *message;
+            size_t length;
+            cass_future_error_message(future, &message, &length);
+            VStringBuffer err("cassandra: failed to %s (%.*s)", why, (int) length, message);
+            rtlFail(0, err.str());
         }
-        return false;
     }
-    void startStream()
+}
+
+bool CassandraRetryingFuture::retry(const char *why)
+{
+    for (int i = 0; i < retries; i++)
     {
-        if (batchMode != (CassBatchType) -1)
-            batch.setown(new CassandraBatch(cass_batch_new(batchMode)));
-        else if (maxFutures)
-            semaphore.setown(new LinkedSemaphore(maxFutures));
+        execute();
+        cass_future_wait(future);
+        CassError rc = cass_future_error_code(future);
+        if (rc == CASS_OK)
+            return true;
+        Sleep(10);
+    }
+    return false;
+}
+
+void CassandraRetryingFuture::execute()
+{
+    if (limiter)
+        limiter->wait();
+    future = cass_session_execute(session, statement);
+    if (limiter)
+        cass_future_set_callback(future, signaller, limiter); // Note - this will call the callback if the future has already completed
+}
+
+void CassandraRetryingFuture::signaller(CassFuture *future, void *data)
+{
+    Semaphore *sem = (Semaphore *) data;
+    sem->signal();
+}
+
+//----------------------
+
+CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries)
+    : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(_semaphore), maxRetries(_maxRetries)
+{
+    assertex(prepared && *prepared);
+    statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
+    if (pageSize)
+        cass_statement_set_paging_size(*statement, pageSize);
+    inBatch = false;
+}
+CassandraStatementInfo::~CassandraStatementInfo()
+{
+    stop();
+    futures.kill();
+}
+void CassandraStatementInfo::stop()
+{
+    iterator.clear();
+    result.clear();
+    prepared.clear();
+}
+bool CassandraStatementInfo::next()
+{
+    loop
+    {
+        if (!iterator)
+        {
+            if (result)
+                iterator.setown(new CassandraIterator(cass_iterator_from_result(*result)));
+            else
+                return false;
+        }
+        if (cass_iterator_next(*iterator))
+            return true;
+        iterator.clear();
+        if (!cass_result_has_more_pages(*result))
+        {
+            result.clear();
+            break;
+        }
+        cass_statement_set_paging_state(*statement, *result);
+        result.setown(new CassandraFutureResult(cass_session_execute(*session, *statement)));
+    }
+    return false;
+}
+void CassandraStatementInfo::startStream()
+{
+    if (batchMode != (CassBatchType) -1)
+        batch.setown(new CassandraBatch(cass_batch_new(batchMode)));
+    statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
+    inBatch = true;
+}
+void CassandraStatementInfo::endStream()
+{
+    if (batch)
+    {
+        result.setown(new CassandraFutureResult (cass_session_execute_batch(*session, *batch)));
+        assertex (rowCount() == 0);
+    }
+    else
+    {
+        ForEachItemIn(idx, futures)
+        {
+            futures.item(idx).wait("endStream");
+        }
+    }
+}
+void CassandraStatementInfo::execute()
+{
+    assertex(statement && *statement);
+    if (batch)
+    {
+        check(cass_batch_add_statement(*batch, *statement));
         statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
-        inBatch = true;
     }
-    void endStream()
+    else if (inBatch)
     {
-        if (batch)
-        {
-            result.setown(new CassandraFutureResult (cass_session_execute_batch(*session, *batch)));
-            assertex (rowCount() == 0);
-        }
-        else
-        {
-            ForEachItemIn(idx, futures)
-            {
-                futures.item(idx).wait("endStream");
-            }
-        }
+        futures.append(*new CassandraRetryingFuture(*session, statement->getClear(), semaphore, maxRetries));
+        statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
     }
-    void execute()
+    else
     {
-        assertex(statement && *statement);
-        if (batch)
-        {
-            check(cass_batch_add_statement(*batch, *statement));
-            statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
-        }
-        else if (inBatch)
-        {
-            futures.append(*new CassandraRetryingFuture(*session, statement->getClear(), semaphore, maxRetries));
-            statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
-        }
-        else
-        {
-            result.setown(new CassandraFutureResult(cass_session_execute(*session, *statement)));
-        }
+        result.setown(new CassandraFutureResult(cass_session_execute(*session, *statement)));
     }
-    inline size_t rowCount() const
-    {
-        return cass_result_row_count(*result);
-    }
-    inline bool hasResult() const
-    {
-        return result != NULL;
-    }
-    inline const CassRow *queryRow() const
-    {
-        assertex(iterator && *iterator);
-        return cass_iterator_get_row(*iterator);
-    }
-    inline CassStatement *queryStatement() const
-    {
-        assertex(statement && *statement);
-        return *statement;
-    }
-protected:
-    Linked<CassandraSession> session;
-    Linked<CassandraPrepared> prepared;
-    Owned<CassandraBatch> batch;
-    Owned<CassandraStatement> statement;
-    Owned<CassandraFutureResult> result;
-    Owned<CassandraIterator> iterator;
-    CIArrayOf<CassandraRetryingFuture> futures;
-    Owned<LinkedSemaphore> semaphore;
-    unsigned numBindings;
-    unsigned maxFutures;
-    unsigned maxRetries;
-    bool inBatch;
-    CassBatchType batchMode;
-};
+}
 
 // Conversions from Cassandra values to ECL data
 
@@ -582,21 +578,34 @@ static void typeError(const char *expected, const CassValue *value, const RtlFie
 {
     VStringBuffer msg("cassandra: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", field->name->str());
+        msg.appendf(" for field %s", str(field->name));
     if (value)
         msg.appendf(", received %s", getTypeName(cass_value_type(value)));
     rtlFail(0, msg.str());
 }
 
-static bool isInteger(const CassValue *value)
+extern bool isInteger(const CassValueType t)
 {
-    switch (cass_value_type(value))
+    switch (t)
     {
     case CASS_VALUE_TYPE_TIMESTAMP:
     case CASS_VALUE_TYPE_INT:
     case CASS_VALUE_TYPE_BIGINT:
     case CASS_VALUE_TYPE_COUNTER:
     case CASS_VALUE_TYPE_VARINT:
+        return true;
+    default:
+        return false;
+    }
+}
+
+extern bool isString(CassValueType t)
+{
+    switch (t)
+    {
+    case CASS_VALUE_TYPE_VARCHAR:
+    case CASS_VALUE_TYPE_TEXT:
+    case CASS_VALUE_TYPE_ASCII:
         return true;
     default:
         return false;
@@ -623,7 +632,7 @@ static int getNumFields(const RtlTypeInfo *record)
     return count;
 }
 
-static bool getBooleanResult(const RtlFieldInfo *field, const CassValue *value)
+extern bool getBooleanResult(const RtlFieldInfo *field, const CassValue *value)
 {
     if (cass_value_is_null(value))
     {
@@ -637,7 +646,7 @@ static bool getBooleanResult(const RtlFieldInfo *field, const CassValue *value)
     return output != cass_false;
 }
 
-static void getDataResult(const RtlFieldInfo *field, const CassValue *value, size32_t &chars, void * &result)
+extern void getDataResult(const RtlFieldInfo *field, const CassValue *value, size32_t &chars, void * &result)
 {
     if (cass_value_is_null(value))
     {
@@ -655,17 +664,14 @@ static void getDataResult(const RtlFieldInfo *field, const CassValue *value, siz
     rtlStrToDataX(chars, result, size, bytes);
 }
 
-static __int64 getSignedResult(const RtlFieldInfo *field, const CassValue *value);
-static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const CassValue *value);
-
-static double getRealResult(const RtlFieldInfo *field, const CassValue *value)
+extern double getRealResult(const RtlFieldInfo *field, const CassValue *value)
 {
     if (cass_value_is_null(value))
     {
         NullFieldProcessor p(field);
         return p.doubleResult;
     }
-    else if (isInteger(value))
+    else if (isInteger(cass_value_type(value)))
         return (double) getSignedResult(field, value);
     else switch (cass_value_type(value))
     {
@@ -686,7 +692,7 @@ static double getRealResult(const RtlFieldInfo *field, const CassValue *value)
     }
 }
 
-static __int64 getSignedResult(const RtlFieldInfo *field, const CassValue *value)
+extern __int64 getSignedResult(const RtlFieldInfo *field, const CassValue *value)
 {
     if (cass_value_is_null(value))
     {
@@ -715,7 +721,7 @@ static __int64 getSignedResult(const RtlFieldInfo *field, const CassValue *value
     }
 }
 
-static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const CassValue *value)
+extern  unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const CassValue *value)
 {
     if (cass_value_is_null(value))
     {
@@ -725,7 +731,7 @@ static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const CassV
     return (__uint64) getSignedResult(field, value);
 }
 
-static void getStringResult(const RtlFieldInfo *field, const CassValue *value, size32_t &chars, char * &result)
+extern void getStringResult(const RtlFieldInfo *field, const CassValue *value, size32_t &chars, char * &result)
 {
     if (cass_value_is_null(value))
     {
@@ -758,7 +764,7 @@ static void getStringResult(const RtlFieldInfo *field, const CassValue *value, s
     }
 }
 
-static void getUTF8Result(const RtlFieldInfo *field, const CassValue *value, size32_t &chars, char * &result)
+extern void getUTF8Result(const RtlFieldInfo *field, const CassValue *value, size32_t &chars, char * &result)
 {
     if (cass_value_is_null(value))
     {
@@ -791,7 +797,7 @@ static void getUTF8Result(const RtlFieldInfo *field, const CassValue *value, siz
     }
 }
 
-static void getUnicodeResult(const RtlFieldInfo *field, const CassValue *value, size32_t &chars, UChar * &result)
+extern void getUnicodeResult(const RtlFieldInfo *field, const CassValue *value, size32_t &chars, UChar * &result)
 {
     if (cass_value_is_null(value))
     {
@@ -824,7 +830,7 @@ static void getUnicodeResult(const RtlFieldInfo *field, const CassValue *value, 
     }
 }
 
-static void getDecimalResult(const RtlFieldInfo *field, const CassValue *value, Decimal &result)
+extern void getDecimalResult(const RtlFieldInfo *field, const CassValue *value, Decimal &result)
 {
     // Note - Cassandra has a decimal type, but it's not particularly similar to the ecl one. Map to string for now, as we do in MySQL
     if (cass_value_is_null(value))
@@ -963,7 +969,7 @@ protected:
         else
             ret = cass_row_get_column(stmtInfo->queryRow(), colIdx++);
         if (!ret)
-            failx("Too many fields in ECL output row, reading field %s", field->name->getAtomNamePtr());
+            failx("Too many fields in ECL output row, reading field %s", str(field->name));
         return ret;
     }
     const CassandraStatementInfo *stmtInfo;
@@ -1145,14 +1151,14 @@ protected:
     inline unsigned checkNextParam(const RtlFieldInfo * field)
     {
         if (logctx.queryTraceLevel() > 4)
-            logctx.CTXLOG("Binding %s to %d", field->name->str(), thisParam);
+            logctx.CTXLOG("Binding %s to %d", str(field->name), thisParam);
         return thisParam++;
     }
     inline void checkBind(CassError rc, const RtlFieldInfo * field)
     {
         if (rc != CASS_OK)
         {
-            failx("While binding parameter %s: %s", field->name->getAtomNamePtr(), cass_error_desc(rc));
+            failx("While binding parameter %s: %s", str(field->name), cass_error_desc(rc));
         }
     }
     const RtlTypeInfo *typeInfo;
@@ -1268,177 +1274,34 @@ class CassandraEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
     CassandraEmbedFunctionContext(const IContextLogger &_logctx, unsigned _flags, const char *options)
-      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0), batchMode((CassBatchType) -1), pageSize(0), maxFutures(0), maxRetries(10)
+      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0), batchMode((CassBatchType) -1), pageSize(0)
     {
-        cluster.setown(new CassandraCluster(cass_cluster_new()));
-        const char *contact_points = "localhost";
-        const char *user = "";
-        const char *password = "";
-        const char *keyspace = "";
         StringArray opts;
         opts.appendList(options, ",");
-        ForEachItemIn(idx, opts)
+        hash64_t hash = 0;
+        ForEachItemInRev(idx, opts)
         {
             const char *opt = opts.item(idx);
-            const char *val = strchr(opt, '=');
-            if (val)
+            if (strnicmp(opt, "batch=", 6)==0)
             {
-                StringBuffer optName(val-opt, opt);
-                val++;
-                if (stricmp(optName, "contact_points")==0 || stricmp(optName, "server")==0)
-                    contact_points = val;   // Note that lifetime of val is adequate for this to be safe
-                else if (stricmp(optName, "user")==0)
-                    user = val;
-                else if (stricmp(optName, "password")==0)
-                    password = val;
-                else if (stricmp(optName, "keyspace")==0)
-                    keyspace = val;
-                else if (stricmp(optName, "batch")==0)
-                {
-                    if (stricmp(val, "LOGGED")==0)
-                        batchMode = CASS_BATCH_TYPE_LOGGED;
-                    else if (stricmp(val, "UNLOGGED")==0)
-                        batchMode = CASS_BATCH_TYPE_UNLOGGED;
-                    else if (stricmp(val, "COUNTER")==0)
-                        batchMode = CASS_BATCH_TYPE_COUNTER;
-                }
-                else if (stricmp(optName, "pageSize")==0)
-                {
-                    pageSize=getUnsignedOption(val, "pageSize");
-                }
-                else if (stricmp(optName, "maxFutures")==0)
-                {
-                    maxFutures=getUnsignedOption(val, "maxFutures");
-                }
-                else if (stricmp(optName, "maxRetries")==0)
-                {
-                    maxRetries=getUnsignedOption(val, "maxRetries");
-                }
-                else if (stricmp(optName, "port")==0)
-                {
-                    unsigned port = getUnsignedOption(val, "port");
-                    checkSetOption(cass_cluster_set_port(*cluster, port), "port");
-                }
-                else if (stricmp(optName, "protocol_version")==0)
-                {
-                    unsigned protocol_version = getUnsignedOption(val, "protocol_version");
-                    checkSetOption(cass_cluster_set_protocol_version(*cluster, protocol_version), "protocol_version");
-                }
-                else if (stricmp(optName, "num_threads_io")==0)
-                {
-                    unsigned num_threads_io = getUnsignedOption(val, "num_threads_io");
-                    cass_cluster_set_num_threads_io(*cluster, num_threads_io);  // No status return
-                }
-                else if (stricmp(optName, "queue_size_io")==0)
-                {
-                    unsigned queue_size_io = getUnsignedOption(val, "queue_size_io");
-                    checkSetOption(cass_cluster_set_queue_size_io(*cluster, queue_size_io), "queue_size_io");
-                }
-                else if (stricmp(optName, "core_connections_per_host")==0)
-                {
-                    unsigned core_connections_per_host = getUnsignedOption(val, "core_connections_per_host");
-                    checkSetOption(cass_cluster_set_core_connections_per_host(*cluster, core_connections_per_host), "core_connections_per_host");
-                }
-                else if (stricmp(optName, "max_connections_per_host")==0)
-                {
-                    unsigned max_connections_per_host = getUnsignedOption(val, "max_connections_per_host");
-                    checkSetOption(cass_cluster_set_max_connections_per_host(*cluster, max_connections_per_host), "max_connections_per_host");
-                }
-                else if (stricmp(optName, "max_concurrent_creation")==0)
-                {
-                    unsigned max_concurrent_creation = getUnsignedOption(val, "max_concurrent_creation");
-                    checkSetOption(cass_cluster_set_max_concurrent_creation(*cluster, max_concurrent_creation), "max_concurrent_creation");
-                }
-                else if (stricmp(optName, "pending_requests_high_water_mark")==0)
-                {
-                    unsigned pending_requests_high_water_mark = getUnsignedOption(val, "pending_requests_high_water_mark");
-                    checkSetOption(cass_cluster_set_pending_requests_high_water_mark(*cluster, pending_requests_high_water_mark), "pending_requests_high_water_mark");
-                }
-                else if (stricmp(optName, "pending_requests_low_water_mark")==0)
-                {
-                    unsigned pending_requests_low_water_mark = getUnsignedOption(val, "pending_requests_low_water_mark");
-                    checkSetOption(cass_cluster_set_pending_requests_low_water_mark(*cluster, pending_requests_low_water_mark), "pending_requests_low_water_mark");
-                }
-                else if (stricmp(optName, "max_concurrent_requests_threshold")==0)
-                {
-                    unsigned max_concurrent_requests_threshold = getUnsignedOption(val, "max_concurrent_requests_threshold");
-                    checkSetOption(cass_cluster_set_max_concurrent_requests_threshold(*cluster, max_concurrent_requests_threshold), "max_concurrent_requests_threshold");
-                }
-                else if (stricmp(optName, "connect_timeout")==0)
-                {
-                    unsigned connect_timeout = getUnsignedOption(val, "connect_timeout");
-                    cass_cluster_set_connect_timeout(*cluster, connect_timeout);
-                }
-                else if (stricmp(optName, "request_timeout")==0)
-                {
-                    unsigned request_timeout = getUnsignedOption(val, "request_timeout");
-                    cass_cluster_set_request_timeout(*cluster, request_timeout);
-                }
-                else if (stricmp(optName, "load_balance_round_robin")==0)
-                {
-                    cass_bool_t enable = getBoolOption(val, "load_balance_round_robin");
-                    if (enable==cass_true)
-                        cass_cluster_set_load_balance_round_robin(*cluster);
-                }
-                else if (stricmp(optName, "load_balance_dc_aware")==0)
-                {
-                    StringArray lbargs;
-                    lbargs.appendList(val, "|");
-                    if (lbargs.length() != 3)
-                        failx("Invalid value '%s' for option %s - expected 3 subvalues (separate with |)", val, optName.str());
-                    unsigned usedPerRemote = getUnsignedOption(lbargs.item(2), "load_balance_dc_aware");
-                    cass_bool_t allowRemote = getBoolOption(lbargs.item(2), "load_balance_dc_aware");
-                    checkSetOption(cass_cluster_set_load_balance_dc_aware(*cluster, lbargs.item(0), usedPerRemote, allowRemote), "load_balance_dc_aware");
-                }
-                else if (stricmp(optName, "token_aware_routing")==0)
-                {
-                    cass_bool_t enable = getBoolOption(val, "token_aware_routing");
-                    cass_cluster_set_token_aware_routing(*cluster, enable);
-                }
-                else if (stricmp(optName, "latency_aware_routing")==0)
-                {
-                    cass_bool_t enable = getBoolOption(val, "latency_aware_routing");
-                    cass_cluster_set_latency_aware_routing(*cluster, enable);
-                }
-                else if (stricmp(optName, "latency_aware_routing_settings")==0)
-                {
-                    StringArray subargs;
-                    subargs.appendList(val, "|");
-                    if (subargs.length() != 5)
-                        failx("Invalid value '%s' for option %s - expected 5 subvalues (separate with |)", val, optName.str());
-                    cass_double_t exclusion_threshold = getDoubleOption(subargs.item(0), "exclusion_threshold");
-                    cass_uint64_t scale_ms = getUnsigned64Option(subargs.item(1), "scale_ms");
-                    cass_uint64_t retry_period_ms = getUnsigned64Option(subargs.item(2), "retry_period_ms");
-                    cass_uint64_t update_rate_ms = getUnsigned64Option(subargs.item(3), "update_rate_ms");
-                    cass_uint64_t min_measured = getUnsigned64Option(subargs.item(4), "min_measured");
-                    cass_cluster_set_latency_aware_routing_settings(*cluster, exclusion_threshold, scale_ms, retry_period_ms, update_rate_ms, min_measured);
-                }
-                else if (stricmp(optName, "tcp_nodelay")==0)
-                {
-                    cass_bool_t enable = getBoolOption(val, "tcp_nodelay");
-                    cass_cluster_set_tcp_nodelay(*cluster, enable);
-                }
-                else if (stricmp(optName, "tcp_keepalive")==0)
-                {
-                    StringArray subargs;
-                    subargs.appendList(val, "|");
-                    if (subargs.length() != 2)
-                        failx("Invalid value '%s' for option %s - expected 2 subvalues (separate with |)", val, optName.str());
-                    cass_bool_t enabled = getBoolOption(subargs.item(0), "enabled");
-                    unsigned delay_secs = getUnsignedOption(subargs.item(0), "delay_secs");
-                    cass_cluster_set_tcp_keepalive(*cluster, enabled, delay_secs);
-                }
-                else
-                    failx("Unrecognized option %s", optName.str());
+                const char *val=opt+6;
+                if (stricmp(val, "LOGGED")==0)
+                    batchMode = CASS_BATCH_TYPE_LOGGED;
+                else if (stricmp(val, "UNLOGGED")==0)
+                    batchMode = CASS_BATCH_TYPE_UNLOGGED;
+                else if (stricmp(val, "COUNTER")==0)
+                    batchMode = CASS_BATCH_TYPE_COUNTER;
+                opts.remove(idx);
             }
+            else if (strnicmp(opt, "pagesize=", 9)==0)
+            {
+                pageSize = atoi(opt+9);
+                opts.remove(idx);
+            }
+            else
+                hash = rtlHash64VStr(opt, hash);
         }
-        cass_cluster_set_contact_points(*cluster, contact_points);
-        if (*user || *password)
-            cass_cluster_set_credentials(*cluster, user, password);
-
-        session.setown(new CassandraSession(cass_session_new()));
-        CassandraFuture future(keyspace ? cass_session_connect_keyspace(*session, *cluster, keyspace) : cass_session_connect(*session, *cluster));
-        future.wait("connect");
+        cluster.setown(lookupCachedSession(hash, opts));
     }
     virtual bool getBooleanResult()
     {
@@ -1864,22 +1727,18 @@ public:
                     break;
                 }
                 CassandraStatement statement(cass_statement_new_n(script, nextScript-script, 0));
-                CassandraFuture future(cass_session_execute(*session, statement));
+                CassandraFuture future(cass_session_execute(cluster->querySession(), statement));
                 future.wait("execute statement");
                 script = nextScript;
             }
         }
         else
         {
-            // MORE - can cache this, perhaps, if script is same as last time?
-            CassandraFuture future(cass_session_prepare(*session, script));
-            future.wait("prepare statement");
-            Owned<CassandraPrepared> prepared = new CassandraPrepared(cass_future_get_prepared(future));
             if ((flags & EFnoparams) == 0)
                 numParams = countBindings(script);
             else
                 numParams = 0;
-            stmtInfo.setown(new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, maxFutures, maxRetries));
+            stmtInfo.setown(cluster->createStatementInfo(script, numParams, batchMode, pageSize));
         }
     }
     virtual void callFunction()
@@ -1997,52 +1856,16 @@ protected:
             failx("While binding parameter %s: %s", name, cass_error_desc(rc));
         }
     }
-    inline void checkSetOption(CassError rc, const char *name)
-    {
-        if (rc != CASS_OK)
-        {
-            failx("While setting option %s: %s", name, cass_error_desc(rc));
-        }
-    }
-    cass_bool_t getBoolOption(const char *val, const char *option)
-    {
-        return strToBool(val) ? cass_true : cass_false;
-    }
-    unsigned getUnsignedOption(const char *val, const char *option)
-    {
-        char *endp;
-        long value = strtoul(val, &endp, 0);
-        if (endp==val || *endp != '\0' || value > UINT_MAX || value < 0)
-            failx("Invalid value '%s' for option %s", val, option);
-        return (unsigned) value;
-    }
-    unsigned getDoubleOption(const char *val, const char *option)
-    {
-        char *endp;
-        double value = strtod(val, &endp);
-        if (endp==val || *endp != '\0')
-            failx("Invalid value '%s' for option %s", val, option);
-        return value;
-    }
-    __uint64 getUnsigned64Option(const char *val, const char *option)
-    {
-        // MORE - could check it's all digits (with optional leading spaces...), if we cared.
-        return rtlVStrToUInt8(val);
-    }
-    Owned<CassandraCluster> cluster;
-    Owned<CassandraSession> session;
+    Owned<CassandraClusterSession> cluster;
     Owned<CassandraStatementInfo> stmtInfo;
     Owned<CassandraDatasetBinder> inputStream;
     const IContextLogger &logctx;
     unsigned flags;
     unsigned nextParam;
     unsigned numParams;
-    unsigned pageSize;
-    unsigned maxFutures;
-    unsigned maxRetries;
-    CassBatchType batchMode;
     StringAttr queryString;
-
+    CassBatchType batchMode;
+    unsigned pageSize;
 };
 
 class CassandraEmbedContext : public CInterfaceOf<IEmbedContext>
