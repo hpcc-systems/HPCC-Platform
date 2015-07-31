@@ -1331,17 +1331,18 @@ extern void childXMLRowtoCassandra(const ICassandraSession *session, CassBatch *
     StringBuffer bindings;
     StringBuffer names;
     StringBuffer tableName;
-    getBoundFieldNames(mappings, names, bindings, &row, userVal, tableName);
+    // Note that we bind all fields, even where there is no value in the XML
+    // This ensures that values are correctly deleted where necessary - it also has
+    // the fortuitous benefit of reducing the number of variants of the query that we need to prepare and cache.
+    getBoundFieldNames(mappings, names, bindings, NULL, userVal, tableName);
     VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
     CassandraStatement update(session->prepareStatement(insertQuery));
     update.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
     update.bindString(1, wuid);
-    unsigned bindidx = 2; // We already bound wuid and partition
     unsigned colidx = 2; // We already bound wuid and partition
     while (mappings[colidx].columnName)
     {
-        if (mappings[colidx].mapper.fromXML(&update, bindidx, &row, mappings[colidx].xpath, userVal))
-            bindidx++;
+        mappings[colidx].mapper.fromXML(&update, colidx, &row, mappings[colidx].xpath, userVal);
         colidx++;
     }
     check(cass_batch_add_statement(batch, update));

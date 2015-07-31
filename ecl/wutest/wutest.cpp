@@ -766,6 +766,7 @@ protected:
             query->setQueryMainDefinition("fred");
             query->setQueryType(QueryTypeEcl);
             query->addAssociatedFile(FileTypeCpp, "myfile", "1.2.3.4", "Description", 53);
+            createWu->setState(WUStateCompleted);
             createWu.clear();
         }
 
@@ -785,7 +786,16 @@ protected:
         ASSERT(file->getCrc()==53);
         ASSERT(file->getType()==FileTypeCpp);
         ASSERT(streq(file->getIp(s).str(), "1.2.3.4"));
+        query.clear();
         wu.clear();
+
+        Owned<IWorkUnit> lockedWu = factory->updateWorkUnit(wuid);
+        Owned<IWUQuery> uQuery = lockedWu->updateQuery();
+        ASSERT(uQuery);
+        uQuery->removeAssociatedFiles();
+        uQuery.clear();
+        lockedWu.clear();
+
         factory->deleteWorkUnit(wuid);
     }
 
