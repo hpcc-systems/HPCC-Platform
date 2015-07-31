@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -29,12 +29,6 @@
 #include "rtlembed.hpp"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
-#include "jsort.hpp"
-#include "jptree.hpp"
-#include "jregexp.hpp"
-
-#include "workunit.hpp"
-#include "workunit.ipp"
 
 #include "cassandraembed.hpp"
 
@@ -319,7 +313,7 @@ CassandraPrepared *CassandraClusterSession::prepareStatement(const char *query, 
 CassandraStatementInfo *CassandraClusterSession::createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const
 {
     Owned<CassandraPrepared> prepared = prepareStatement(script, false); // We could make tracing selectable
-    return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, semaphore, maxFutures, maxRetries);
+    return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, maxFutures ? &semaphore : NULL, maxRetries);
 }
 
 typedef CassandraClusterSession *CassandraClusterSessionPtr;
@@ -392,7 +386,7 @@ void CassandraSession::set(CassSession *_session)
 
 //----------------------
 
-CassandraRetryingFuture::CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, LinkedSemaphore *_limiter, unsigned _retries)
+CassandraRetryingFuture::CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, Semaphore *_limiter, unsigned _retries)
 : session(_session), statement(_statement), retries(_retries), limiter(_limiter), future(NULL)
 {
     execute();
@@ -446,20 +440,19 @@ void CassandraRetryingFuture::execute()
         limiter->wait();
     future = cass_session_execute(session, statement);
     if (limiter)
-        cass_future_set_callback(future, signaller, LINK(limiter)); // Note - this will call the callback if the future has already completed
+        cass_future_set_callback(future, signaller, limiter); // Note - this will call the callback if the future has already completed
 }
 
 void CassandraRetryingFuture::signaller(CassFuture *future, void *data)
 {
-    LinkedSemaphore *sem = (LinkedSemaphore *) data;
+    Semaphore *sem = (Semaphore *) data;
     sem->signal();
-    ::Release(sem);
 }
 
 //----------------------
 
-CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, LinkedSemaphore *_semaphore, unsigned _maxFutures, unsigned _maxRetries)
-    : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(_semaphore), maxFutures(_maxFutures), maxRetries(_maxRetries)
+CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries)
+    : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(_semaphore), maxRetries(_maxRetries)
 {
     assertex(prepared && *prepared);
     statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
@@ -506,8 +499,6 @@ void CassandraStatementInfo::startStream()
 {
     if (batchMode != (CassBatchType) -1)
         batch.setown(new CassandraBatch(cass_batch_new(batchMode)));
-    else if (maxFutures)
-        semaphore.setown(new LinkedSemaphore(maxFutures));
     statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
     inBatch = true;
 }
@@ -1729,7 +1720,7 @@ public:
                     break;
                 }
                 CassandraStatement statement(cass_statement_new_n(script, nextScript-script, 0));
-                CassandraFuture future(cass_session_execute(*cluster, statement));
+                CassandraFuture future(cass_session_execute(cluster->querySession(), statement));
                 future.wait("execute statement");
                 script = nextScript;
             }

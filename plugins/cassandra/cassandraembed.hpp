@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -78,13 +78,6 @@ private:
 
 class CassandraStatementInfo;
 
-class LinkedSemaphore : public CInterfaceOf<IInterface>, public Semaphore
-{
-public:
-    LinkedSemaphore(unsigned initialCount) : Semaphore(initialCount) {}
-};
-
-
 class CassandraClusterSession : public CInterface
 {
 public:
@@ -99,17 +92,13 @@ public:
         if (cluster)
             cass_cluster_free(cluster);
     }
-    inline operator CassCluster *() const
-    {
-        return cluster;
-    }
-    inline operator CassandraSession *() const
-    {
-        return session;
-    }
-    inline operator CassSession *() const
+    inline CassSession *querySession() const
     {
         return *session;
+    }
+    inline const CassCluster *queryCluster() const
+    {
+        return cluster;
     }
     inline const char *queryKeySpace() const
     {
@@ -134,7 +123,7 @@ private:
     Owned<CassandraSession> session;
     mutable MapStringToMyClass<CassandraPrepared> preparedCache;
     mutable CriticalSection cacheCrit;
-    Owned<LinkedSemaphore> semaphore;
+    mutable Semaphore semaphore;
 	unsigned maxFutures;
 	unsigned maxRetries;
     StringAttr keyspace;
@@ -331,7 +320,7 @@ private:
 class CassandraRetryingFuture : public CInterface
 {
 public:
-    CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, LinkedSemaphore *_limiter = NULL, unsigned _retries = 10);
+    CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, Semaphore *_limiter, unsigned _retries);
     ~CassandraRetryingFuture();
     inline operator CassFuture *() const
     {
@@ -348,7 +337,7 @@ private:
     CassSession *session;
     CassandraStatement statement;
     unsigned retries;
-    LinkedSemaphore *limiter;
+    Semaphore *limiter;
 };
 
 class CassandraResult : public CInterfaceOf<IInterface>
@@ -421,7 +410,7 @@ class CassandraStatementInfo : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, LinkedSemaphore *_semaphore, unsigned _maxFutures, unsigned _maxRetries);
+    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries);
     ~CassandraStatementInfo();
     void stop();
     bool next();
@@ -455,8 +444,7 @@ protected:
     Owned<CassandraIterator> iterator;
     unsigned numBindings;
     CIArrayOf<CassandraRetryingFuture> futures;
-    Linked<LinkedSemaphore> semaphore;
-    unsigned maxFutures;
+    Semaphore *semaphore;
     unsigned maxRetries;
     bool inBatch;
     CassBatchType batchMode;
