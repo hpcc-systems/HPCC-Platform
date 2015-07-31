@@ -393,7 +393,28 @@ void releaseDynamicTag(unsigned short tag)
     freetags.append(tag);
 }
 
+bool check_kernparam(const char *path, int *value)
+{
+#ifdef __linux__
+    FILE *f = fopen(path,"r");
+    char res[32];
+    char *r = 0;
+    if (f) {
+        r = fgets(res, sizeof(res), f);
+        fclose(f);
+        if (r) {
+            *value = atoi(r);
+            return true;
+        }
+    }
+#endif
+    return false;
+}
 
+bool check_somaxconn(int *val)
+{
+    return check_kernparam("/proc/sys/net/core/somaxconn", val);
+}
 
 class CMPServer;
 class CMPChannel;
@@ -404,6 +425,7 @@ class CMPConnectThread: public Thread
     bool running;
     ISocket *listensock;
     CMPServer *parent;
+    int mpSoMaxConn;
     void checkSelfDestruct(void *p,size32_t sz);
 public:
     CMPConnectThread(CMPServer *_parent, unsigned port);
@@ -1778,15 +1800,35 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
     : Thread("MP Connection Thread")
 {
     parent = _parent;
+    mpSoMaxConn = 0;
+    Owned<IPropertyTree> env = getHPCCEnvironment();
+    if (env)
+    {
+        mpSoMaxConn = env->getPropInt("EnvSettings/mpSoMaxConn", 0);
+        if (!mpSoMaxConn)
+            mpSoMaxConn = env->getPropInt("EnvSettings/ports/mpSoMaxConn", 0);
+    }
+    if (mpSoMaxConn)
+    {
+        int kernSoMaxConn = 0;
+        bool soMaxCheck = check_somaxconn(&kernSoMaxConn);
+        if (soMaxCheck && (mpSoMaxConn > kernSoMaxConn))
+            WARNLOG("MP: kernel listen queue backlog setting (somaxconn=%d) is lower than environment mpSoMaxConn (%d) setting and should be increased", kernSoMaxConn, mpSoMaxConn);
+    }
+    if (!mpSoMaxConn)
+        mpSoMaxConn = SOMAXCONN;
     if (!port)
     {
         // need to connect early to resolve clash
-        Owned<IPropertyTree> env = getHPCCEnvironment();
         unsigned minPort, maxPort;
         if (env)
         {
-            minPort = env->getPropInt("EnvSettings/ports/mpStart", MP_START_PORT);
-            maxPort = env->getPropInt("EnvSettings/ports/mpEnd", MP_END_PORT);
+            minPort = env->getPropInt("EnvSettings/mpStart", 0);
+            if (!minPort)
+                minPort = env->getPropInt("EnvSettings/ports/mpStart", MP_START_PORT);
+            maxPort = env->getPropInt("EnvSettings/mpEnd", 0);
+            if (!maxPort)
+                maxPort = env->getPropInt("EnvSettings/ports/mpEnd", MP_END_PORT);
         }
         else
         {
@@ -1801,7 +1843,7 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
             port = minPort + getRandom() % numPorts;
             try
             {
-                listensock = ISocket::create(port, 16);  // better not to have *too* many waiting
+                listensock = ISocket::create(port, mpSoMaxConn);
                 break;
             }
             catch (IJSOCK_Exception *e)
@@ -1861,7 +1903,7 @@ void CMPConnectThread::checkSelfDestruct(void *p,size32_t sz)
 void CMPConnectThread::start(unsigned short port)
 {
     if (!listensock)
-        listensock = ISocket::create(port,16);  
+        listensock = ISocket::create(port, mpSoMaxConn);
     running = true;
     Thread::start();
 }
