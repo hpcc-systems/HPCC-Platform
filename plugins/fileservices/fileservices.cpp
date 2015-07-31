@@ -521,7 +521,6 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
     while(true)
     {
-        Owned<IWorkUnit> wu = ctx->updateWorkUnit(); // may return NULL
 
         Owned<IClientGetDFUWorkunit> req = server.createGetDFUWorkunitRequest();
         req->setWuid(wuid);
@@ -536,8 +535,10 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
         }
 
         IConstDFUWorkunit & dfuwu = result->getResult();
-
+        bool aborting = false;
+        Owned<IWorkUnit> wu = ctx->updateWorkUnit(); // may return NULL
         if (wu.get()) { // if updatable (e.g. not hthor with no agent context)
+            aborting = wu->aborting();
             StringBuffer wuScope, ElapsedLabel, RemainingLabel;
             wuScope.appendf("%s-%s", label, dfuwu.getID());
             ElapsedLabel.append(wuScope).append(" (Elapsed) ");
@@ -548,6 +549,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
             updateWorkunitTimeStat(wu, SSTdfuworkunit, wuScope, StTimeRemaining, RemainingLabel, milliToNano(dfuwu.getSecsLeft()*1000));
             wu->setApplicationValue(label, dfuwu.getID(), dfuwu.getSummaryMessage(), true);
             wu->commit();
+            wu.clear();
         }
 
         DFUstate state = (DFUstate)dfuwu.getState();
@@ -570,29 +572,23 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
         case DFUstate_aborted:
         case DFUstate_failed:
             throw MakeStringException(0, "DFUServer Error %s", dfuwu.getSummaryMessage());
-            return;
 
         case DFUstate_finished:
             return;
         }
 
-        if (wu.get()&&wu->aborting())
+        if (aborting)
         {
             Owned<IClientAbortDFUWorkunit> abortReq = server.createAbortDFUWorkunitRequest();
             abortReq->setWuid(wuid);
             Linked<IClientAbortDFUWorkunitResponse> abortResp = server.AbortDFUWorkunit(abortReq);
 
-            {   //  Add warning of DFU Abort Request - should this be information  ---
-                StringBuffer s("DFU Workunit Abort Requested for ");
-                s.append(wuid);
-                WUmessage(ctx,SeverityWarning,"blockUntilComplete",s.str());
-            }
-
-            wu->setState(WUStateAborting);
+            //  Add warning of DFU Abort Request - should this be information  ---
+            StringBuffer s("DFU Workunit Abort Requested for ");
+            s.append(wuid);
+            WUmessage(ctx,SeverityWarning,"blockUntilComplete",s.str());
             throw MakeStringException(0, "Workunit abort request received");
-
         }
-        wu.clear();
 
         if (time.timedout()) {
             unsigned left = dfuwu.getSecsLeft();

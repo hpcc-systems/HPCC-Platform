@@ -106,6 +106,7 @@ include_directories (
          ./../activities 
          ./../../rtl/eclrtl 
          ./../../roxie/roxiemem
+         ${HPCC_SOURCE_DIR}/dali/ft
     )
 
 HPCC_ADD_LIBRARY( activityslaves_lcr SHARED ${SRCS} )

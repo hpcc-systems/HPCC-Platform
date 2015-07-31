@@ -3586,10 +3586,21 @@ outputWuFlag
                         }
     ;
 
-optCommaTrim
+fromXmlOptions
     :                   {   $$.setExpr(NULL); }
-    | ',' TRIM          {
+    | fromXmlOptions ',' fromXmlOption
+                        {
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()));
+                        }
+    ;
+
+fromXmlOption
+    : TRIM              {
                             $$.setExpr(createAttribute(trimAtom), $1);
+                        }
+    | ONFAIL '(' transform ')'
+                        {
+                            $$.setExpr(createExprAttribute(onFailAtom, $3.getExpr()), $1);
                         }
     ;
     
@@ -7329,14 +7340,20 @@ simpleDataRow
 
                             $$.setExpr(createRow(no_matchrow, LINK(record), $3.getExpr())); //, parser->createUniqueId())));
                         }
-    | FROMXML '(' recordDef ',' expression optCommaTrim ')'
+    | FROMXML '(' recordDef ',' expression fromXmlOptions ')'
                         {
                             parser->normalizeExpression($5, type_stringorunicode, false);
+                            IHqlExpression * onFail = queryAttributeInList(onFailAtom, $6.queryExpr());
+                            if (onFail)
+                                parser->checkRecordTypesMatch($3.queryExpr(), onFail->queryChild(0), $6);
                             $$.setExpr(createRow(no_fromxml, $3.getExpr(), createComma($5.getExpr(), $6.getExpr())), $1);
                         }
-    | FROMJSON '(' recordDef ',' expression optCommaTrim ')'
+    | FROMJSON '(' recordDef ',' expression fromXmlOptions ')'
                         {
                             parser->normalizeExpression($5, type_stringorunicode, false);
+                            IHqlExpression * onFail = queryAttributeInList(onFailAtom, $6.queryExpr());
+                            if (onFail)
+                                parser->checkRecordTypesMatch($3.queryExpr(), onFail->queryChild(0), $6);
                             $$.setExpr(createRow(no_fromjson, $3.getExpr(), createComma($5.getExpr(), $6.getExpr())), $1);
                         }
     | WHEN '(' dataRow ',' action sideEffectOptions ')'

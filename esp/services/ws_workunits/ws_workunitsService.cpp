@@ -1973,6 +1973,7 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
 
         void setFilterString()
         {
+            addToFilterString("wuid", req.getWuid());
             addToFilterString("cluster", req.getCluster());
             addToFilterString("owner", req.getOwner());
             addToFilterString("jobName", req.getJobname());
@@ -1996,6 +1997,8 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
             cmd->setArchived(true);
             cmd->setStart(pageFrom);
             cmd->setLimit(pageSize+1); //read an extra WU to check hasMoreWU
+            if (notEmpty(req.getWuid()))
+                cmd->addId(req.getWuid());
             if (notEmpty(req.getCluster()))
                 cmd->setCluster(req.getCluster());
             if (notEmpty(req.getOwner()))

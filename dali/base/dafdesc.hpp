@@ -37,6 +37,10 @@ interface INamedGroupStore;
 
 #define MAX_REPLICATION_LEVELS 4
 
+#define DEFAULTXMLROWTAG "Row"
+#define DEFAULTXMLHEADER "<Dataset>"
+#define DEFAULTXMLFOOTER "</Dataset>"
+
 enum DFD_OS
 {
     DFD_OSdefault,

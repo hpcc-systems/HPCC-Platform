@@ -1796,6 +1796,7 @@ void HqlCppWriter::generateStmtAssign(IHqlStmt * assign, bool link)
         case type_pointer:
         case type_enumerated:
         case type_record:
+        case type_class:
             generateSimpleAssign(target, source);
             break;
         case type_varstring:

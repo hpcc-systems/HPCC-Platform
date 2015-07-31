@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FromStringToDate">
+  <title>FromStringToDate</title>
+
+  <para><emphasis role="bold">STD.Date.FromStringToDate<indexterm>
+      <primary>STD.Date.FromStringToDate</primary>
+    </indexterm><indexterm>
+      <primary>Date.FromStringToDate</primary>
+    </indexterm><indexterm>
+      <primary>FromStringToDate</primary>
+    </indexterm>(</emphasis> <emphasis>date_text, format</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>date_text</emphasis></entry>
+
+          <entry>The string to be converted</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>format</emphasis></entry>
+
+          <entry>The format of the input string. See strftime documentation
+          for details (<ulink
+          url="http://strftime.org/">http://strftime.org/</ulink>)</entry>
+        </row>
+
+        <row>
+          <entry>return</entry>
+
+          <entry>The date that was matched in the string. Returns 0 if failed
+          to match or if the date components match but the result is an
+          invalid date.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">FromStringToDate</emphasis> function
+  converts a string to a Date_t using the relevant string format. The
+  resulting date must be representable within the Gregorian calendar after the
+  year 1600.</para>
+
+  <para><programlisting>Supported characters:
+
+    %B          Full month name
+    %b or %h    Abbreviated month name
+    %d          Day of month (two digits)
+    %e          Day of month (two digits, or a space followed by a single digit)
+    %m          Month (two digits)
+    %t          Whitespace
+    %y          year within century (00-99)
+    %Y          Full year (yyyy)
+    %j          Julian day (1-366)
+
+Common date formats
+
+    American    '%m/%d/%Y'  mm/dd/yyyy
+    Euro        '%d/%m/%Y'  dd/mm/yyyy
+    Iso format  '%Y-%m-%d'  yyyy-mm-dd
+    Iso basic   'Y%m%d'     yyyymmdd
+                '%d-%b-%Y'  dd-mon-yyyy    e.g., '21-Mar-1954'
+</programlisting></para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+ 
+D1 := STD.Date.FromStringToDate('19720607', '%Y%m%d');
+    //D1 contains 19720607
+D2 := STD.Date.FromStringToDate('19720007', '%Y%m%d');
+    //D2 contains 0
+ </programlisting>
+
+  <para></para>
+</sect1>

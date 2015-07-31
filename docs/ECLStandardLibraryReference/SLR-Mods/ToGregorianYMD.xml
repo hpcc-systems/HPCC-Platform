@@ -27,7 +27,8 @@
         <row>
           <entry>Return:</entry>
 
-          <entry>ToGregorianYMD returns a Date_t value.</entry>
+          <entry>ToGregorianYMD returns separate values for Year, Month, and
+          Day.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -35,7 +36,8 @@
 
   <para>The <emphasis role="bold">ToGregorianYMD</emphasis> function converts
   the number days since 31st December 1BC to a date in the Gregorian calendar.
-  It returns three separate values: Year, or Month, or Day.</para>
+  It returns It returns a module with three exported values: Year, Month, and
+  Day.</para>
 
   <para>Example:</para>
 
@@ -46,10 +48,13 @@ UNSIGNED1 MyDay   := 1;
   
 J := STD.Date.FromGregorianYMD(MyYear,MyMonth,MyDay);
     //J contains 734503
-    
-Y := STD.Date.ToGregorianYMD(J).Year;   //Y contains 2012
-M := STD.Date.ToGregorianYMD(J).Month;  //M contains 1
-D := STD.Date.ToGregorianYMD(J).Day;    //D contains 1
+
+X := STD.Date.ToGregorianYMD(J);
+    // X is a module with exported values
+
+Y := X.Year;   //Y contains 2012
+M := X.Month;  //M contains 1
+D := X.Day;    //D contains 1
 </programlisting>
 
   <para></para>

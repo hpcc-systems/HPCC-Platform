@@ -396,6 +396,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="fileCacheLimit" type="xs:nonNegativeInteger" default="1800">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>File Cache limit (in MB). It will default to 1800 if unset</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="globalMemorySize" type="xs:nonNegativeInteger" use="optional">
         <xs:annotation>
           <xs:appinfo>

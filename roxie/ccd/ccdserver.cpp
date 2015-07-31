@@ -42,6 +42,7 @@
 
 #include "dafdesc.hpp"
 #include "dautils.hpp"
+#include "ftbase.ipp"
 
 namespace ccdserver_hqlhelper
 {
@@ -10404,7 +10405,7 @@ public:
         CRoxieServerDiskWriteActivity::start(parentExtractSize, parentExtract, paused);
         OwnedRoxieString xmlpath(xmlHelper.getXmlIteratorPath());
         if (!xmlpath)
-            rowTag.set("Row");
+            rowTag.set(DEFAULTXMLROWTAG);
         else
         {
             const char *path = xmlpath;
@@ -10419,14 +10420,13 @@ public:
         StringBuffer header;
         OwnedRoxieString suppliedHeader(xmlHelper.getHeader());
         if (kind==TAKjsonwrite)
-        {
             buildJsonHeader(header, suppliedHeader, rowTag);
-            headerLength = header.length();
-        }
         else if (suppliedHeader)
             header.set(suppliedHeader);
         else
-            header.set("<Dataset>\n");
+            header.append(DEFAULTXMLHEADER).newline();
+
+        headerLength = header.length();
         diskout->write(header.length(), header.str());
 
         Owned<IXmlWriterExt> writer = createIXmlWriterExt(xmlHelper.getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSON : WTStandard);
@@ -10447,15 +10447,13 @@ public:
         OwnedRoxieString suppliedFooter(xmlHelper.getFooter());
         StringBuffer footer;
         if (kind==TAKjsonwrite)
-        {
             buildJsonFooter(footer.newline(), suppliedFooter, rowTag);
-            footerLength=footer.length();
-        }
         else if (suppliedFooter)
             footer.append(suppliedFooter);
         else
-            footer.append("</Dataset>");
+            footer.append(DEFAULTXMLFOOTER);
 
+        footerLength=footer.length();
         diskout->write(footer.length(), footer);
     }
 
@@ -10471,10 +10469,9 @@ public:
         desc->queryProperties().setProp("@format","utf8n");
         desc->queryProperties().setProp("@rowTag",rowTag.get());
         desc->queryProperties().setProp("@kind", (kind==TAKjsonwrite) ? "json" : "xml");
-        if (headerLength)
-            desc->queryProperties().setPropInt("@headerLength", headerLength);
-        if (footerLength)
-            desc->queryProperties().setPropInt("@footerLength", footerLength);
+
+        desc->queryProperties().setPropInt(FPheaderLength, headerLength);
+        desc->queryProperties().setPropInt(FPfooterLength, footerLength);
     }
 
     virtual bool isOutputTransformed() const { return true; }
@@ -19177,7 +19174,7 @@ public:
                     if (response->mlFmt==MarkupFmt_JSON)
                         writeFlags |= XWFnoindent;
                     writer.setown(createIXmlWriterExt(writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
-                    writer->outputBeginArray("Row");
+                    writer->outputBeginArray(DEFAULTXMLROWTAG);
                 }
             }
 
@@ -19254,9 +19251,9 @@ public:
                 }
                 else if (writer)
                 {
-                    writer->outputBeginNested("Row", false);
+                    writer->outputBeginNested(DEFAULTXMLROWTAG, false);
                     helper.serializeXml((byte *) row, *writer);
-                    writer->outputEndNested("Row");
+                    writer->outputEndNested(DEFAULTXMLROWTAG);
                 }
                 else
                 {
@@ -19283,7 +19280,7 @@ public:
             }
         }
         if (writer)
-            writer->outputEndArray("Row");
+            writer->outputEndArray(DEFAULTXMLROWTAG);
         if (saveInContext)
             serverContext->appendResultDeserialized(storedName, sequence, builder.getcount(), builder.linkrows(), (helper.getFlags() & POFextend) != 0, LINK(meta.queryOriginal()));
         if (workunit)
