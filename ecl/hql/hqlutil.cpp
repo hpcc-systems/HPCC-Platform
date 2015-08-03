@@ -5522,30 +5522,89 @@ static unsigned trimSpace(unsigned len, const char * buffer)
     return len;
 }
 
-static void stripQuotes(unsigned & start, unsigned & end, const char * buffer)
+// Supported syntax:
+//      #option pure
+//      #option library 'value'
+//      #option ('pure', true)
+//      #option ('library', 'value')
+//
+// - cur must point to the first non-space character of '#option'
+static bool matchOption(unsigned cur, unsigned max, const char * buffer, unsigned lenMatch, const char * match, bool requireValue, unsigned & valueStart, unsigned & valueEnd)
 {
-    if (end - start >= 2)
-    {
-        if (buffer[start] == '\'' && buffer[end-1] == '\'')
-        {
-            start++;
-            end--;
-        }
-    }
-}
+    bool openBracket = false;
+    bool commaBetweenPair = false;
 
-static bool matchOption(unsigned & cur, unsigned max, const char * buffer, unsigned lenMatch, const char * match)
-{
+    valueStart = 0;
+    valueEnd = 0;
+
     if (cur + lenMatch > max)
         return false;
-    if (memicmp(buffer+cur, match, lenMatch) != 0)
-        return false;
-    if (cur + lenMatch < max)
+    if ('(' == buffer[cur])
     {
-        if (isalnum(buffer[cur+lenMatch]))
+        openBracket = true;
+        cur = skipSpace(cur+1, max, buffer);
+        // Option inside brackets must have the option name wrapped in single quotes
+        if ((cur+lenMatch+3 < max) && ('\'' == buffer[cur]) )
+        {
+            ++cur;
+            if (memicmp(buffer+cur, match, lenMatch) != 0)
+                return false;
+            cur += lenMatch;
+            if ('\'' != buffer[cur])
+                return false;
+            cur = skipSpace(cur+1, max, buffer);
+            if ((cur < max) && (',' == buffer[cur]))
+            {
+                ++cur;
+                commaBetweenPair = true;
+            } 
+            else if (requireValue)
+                return false;
+        }
+        else  // Not possible to match option name in quotes
+            return false;
+    } 
+    else 
+    {
+        if (memicmp(buffer+cur, match, lenMatch) != 0)
+            return false;
+        cur += lenMatch;
+        if ((cur < max) && isalnum(buffer[cur]))
             return false;
     }
-    cur = skipSpace(cur+lenMatch, max, buffer);
+    cur = skipSpace(cur, max, buffer);
+    if (cur < max) 
+    {
+        if ('\'' == buffer[cur])
+        {
+            ++cur;
+            valueStart = cur;
+            while ((cur < max) && ('\'' != buffer[cur]))
+                ++cur;
+            if (cur >= max) return false;
+            valueEnd = cur;
+            cur = skipSpace(cur+1, max, buffer);
+            if (openBracket && (')' != buffer[cur]))
+                return false;
+        }
+        else
+        {
+            valueStart = cur;
+            if (openBracket)
+            {
+                while ((cur < max) && (')' != buffer[cur]))
+                    ++cur;
+                if (cur >= max) return false;
+                valueEnd = trimSpace(cur,buffer);
+            }
+            else
+                valueEnd = trimSpace(max, buffer);
+        }
+    }
+    // Note: empty quoted strings rejected here too
+    if ((requireValue || commaBetweenPair) && (valueEnd==valueStart))
+        return false;
+
     return true;
 }
 
@@ -5556,8 +5615,7 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
     unsigned prev = '\n';
     for (unsigned i=0; i < lenBuffer; i++)
     {
-        char next = buffer[i];
-        switch (next)
+        switch (buffer[i])
         {
         case '*':
             if ('/' == prev) // Ignore directives in multi-line comments
@@ -5565,7 +5623,6 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                 i+=2;
                 while (i < lenBuffer && ('*' != buffer[i-1] || '/' != buffer[i])) 
                     ++i;
-                next = 0;    // subsequent processing ignore the current '/' character
             }
             break;
         case '/':
@@ -5574,7 +5631,6 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                 ++i;
                 while (i < lenBuffer && !iseol(buffer[i]))
                     ++i;
-                next = 0;    // subsequent processing ignore the current '/' character
             }
             break;
         case ' ': case '\t':
@@ -5585,41 +5641,40 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
             {
                 if ((i + 1 + 6 < lenBuffer) && memicmp(buffer+i+1, "option", 6) == 0)
                 {
+                    unsigned valueStart, valueEnd;
                     unsigned start = skipSpace(i+1+6, lenBuffer, buffer);
                     unsigned end = start;
                     while (end < lenBuffer && !iseol((byte)buffer[end]))
                         end++;
-                    end = trimSpace(end, buffer);
-                    if (matchOption(start, lenBuffer, buffer, 4, "pure"))
+                    i = end;
+                    if(matchOption(start, end, buffer, 4, "pure", false, valueStart, valueEnd))
                         attrs.setown(createComma(attrs.getClear(), createAttribute(pureAtom)));
-                    else if (matchOption(start, lenBuffer, buffer, 4, "once"))
+                    else if (matchOption(start, end, buffer, 4, "once", false, valueStart, valueEnd))
                         attrs.setown(createComma(attrs.getClear(), createAttribute(onceAtom)));
-                    else if (matchOption(start, lenBuffer, buffer, 6, "action"))
+                    else if (matchOption(start, end, buffer, 6, "action", false, valueStart, valueEnd))
                         attrs.setown(createComma(attrs.getClear(), createAttribute(actionAtom)));
-                    else if (matchOption(start, lenBuffer, buffer, 6, "source"))
+                    else if (matchOption(start, end, buffer, 6, "source", true, valueStart, valueEnd))
                     {
-                        stripQuotes(start, end, buffer);
-                        Owned<IValue> restOfLine = createUtf8Value(end-start, buffer+start, makeUtf8Type(UNKNOWN_LENGTH, NULL));
+                        Owned<IValue> restOfLine = createUtf8Value(valueEnd-valueStart, buffer+valueStart, makeUtf8Type(UNKNOWN_LENGTH, NULL));
                         OwnedHqlExpr arg = createConstant(restOfLine.getClear());
                         attrs.setown(createComma(attrs.getClear(), createAttribute(sourceAtom, arg.getClear())));
                     }
-                    else if (matchOption(start, lenBuffer, buffer, 7, "library"))
+                    else if (matchOption(start, end, buffer, 7, "library", true, valueStart, valueEnd))
                     {
-                        stripQuotes(start, end, buffer);
-                        Owned<IValue> restOfLine = createUtf8Value(end-start, buffer+start, makeUtf8Type(UNKNOWN_LENGTH, NULL));
+                        Owned<IValue> restOfLine = createUtf8Value(valueEnd-valueStart, buffer+valueStart, makeUtf8Type(UNKNOWN_LENGTH, NULL));
                         OwnedHqlExpr arg = createConstant(restOfLine.getClear());
                         attrs.setown(createComma(attrs.getClear(), createAttribute(libraryAtom, arg.getClear())));
                     }
-                    else if (matchOption(start, lenBuffer, buffer, 4, "link"))
+                    else if (matchOption(start, end, buffer, 4, "link", true, valueStart, valueEnd))
                     {
-                        Owned<IValue> restOfLine = createUtf8Value(end-start, buffer+start, makeUtf8Type(UNKNOWN_LENGTH, NULL));
+                        Owned<IValue> restOfLine = createUtf8Value(valueEnd-valueStart, buffer+valueStart, makeUtf8Type(UNKNOWN_LENGTH, NULL));
                         OwnedHqlExpr arg = createConstant(restOfLine.getClear());
                         attrs.setown(createComma(attrs.getClear(), createAttribute(linkAtom, arg.getClear())));
                     }
                 }
             }
         }
-        prev = next;
+        prev = buffer[i];
     }
     return attrs.getClear();
 }
