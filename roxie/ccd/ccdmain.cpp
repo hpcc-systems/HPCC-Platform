@@ -717,6 +717,20 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (udpSnifferEnabled && !roxieMulticastEnabled)
             DBGLOG("WARNING: ignoring udpSnifferEnabled setting as multicast not enabled");
 
+        int ttlTmp = topology->getPropInt("@multicastTTL", 1);
+        if (ttlTmp < 0)
+        {
+            multicastTTL = 1;
+            WARNLOG("multicastTTL value (%d) invalid, must be >=0, resetting to %u", ttlTmp, multicastTTL);
+        }
+        else if (ttlTmp > 255)
+        {
+            multicastTTL = 255;
+            WARNLOG("multicastTTL value (%d) invalid, must be <=%u, resetting to maximum", ttlTmp, multicastTTL);
+        }
+        else
+            multicastTTL = ttlTmp;
+
         indexReadChunkSize = topology->getPropInt("@indexReadChunkSize", 60000);
         numSlaveThreads = topology->getPropInt("@slaveThreads", 30);
         numServerThreads = topology->getPropInt("@serverThreads", 30);

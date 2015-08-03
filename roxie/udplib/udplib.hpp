@@ -123,6 +123,8 @@ extern UDPLIB_API unsigned udpTraceCategories;
 extern UDPLIB_API unsigned udpOutQsPriority;
 extern UDPLIB_API void queryMemoryPoolStats(StringBuffer &memStats);
 
+extern UDPLIB_API unsigned multicastTTL;
+
 #ifdef __linux__
 extern UDPLIB_API void setLinuxThreadPriority(int level);
 #endif

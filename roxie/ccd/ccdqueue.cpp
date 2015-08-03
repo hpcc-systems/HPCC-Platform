@@ -103,6 +103,13 @@ void openMulticastSocket()
     if (!multicastSocket)
     {
         multicastSocket.setown(ISocket::udp_create(ccdMulticastPort));
+        if (multicastTTL)
+        {
+            multicastSocket->set_ttl(multicastTTL);
+            DBGLOG("Roxie: multicastTTL: %u", multicastTTL);
+        }
+        else
+            DBGLOG("Roxie: multicastTTL not set");
         multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
         size32_t actualSize = multicastSocket->get_receive_buffer_size();
         if (actualSize < udpMulticastBufferSize)

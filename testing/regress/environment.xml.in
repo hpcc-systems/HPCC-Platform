@@ -865,6 +865,7 @@
                 monitorDaliFileServer="false"
                 multicastBase="239.1.1.1"
                 multicastLast="239.1.254.254"
+                multicastTTL="1"
                 name="myroxie"
                 nodeCacheMem="100"
                 nodeCachePreload="false"

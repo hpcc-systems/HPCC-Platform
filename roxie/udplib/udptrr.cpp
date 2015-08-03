@@ -493,7 +493,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
           : Thread("udplib::receive_sniffer"), parent(_parent), snifferPort(_snifferPort), snifferIP(_snifferIP), running(false)
         {
             snifferTable = new SnifferEntry[numNodes];
-            sniffer_socket = ISocket::multicast_create(snifferPort, snifferIP);
+            sniffer_socket = ISocket::multicast_create(snifferPort, snifferIP, multicastTTL);
             if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0) {
                 if (!enableSocketMaxSetting)
                     throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
@@ -556,7 +556,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                     DBGLOG("UdpReceiver: receive_sniffer::run unknown exception port %u", parent.data_port);
                     if (sniffer_socket) {
                         sniffer_socket->Release();
-                        sniffer_socket = ISocket::multicast_create(snifferPort, snifferIP);
+                        sniffer_socket = ISocket::multicast_create(snifferPort, snifferIP, multicastTTL);
                     }
                     MilliSleep(1000);
                 }
