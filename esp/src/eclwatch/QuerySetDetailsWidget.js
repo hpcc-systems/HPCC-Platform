@@ -88,6 +88,7 @@ define([
             this.librariesUsedTab = registry.byId(this.id + "_LibrariesUsed");
             this.workunitsTab = registry.byId(this.id + "_Workunit");
             this.testPagesTab = registry.byId(this.id + "_TestPages");
+            this.suspended = registry.byId(this.id + "Suspended");
         },
 
         //  Hitched actions  ---
@@ -262,6 +263,9 @@ define([
                 this.librariesUsedTab.set("tooltip", tooltip);
             } else if (name === "Clusters") {
                 if (lang.exists("ClusterQueryState.length", newValue)) {
+                    newValue.ClusterQueryState[0].MixedNodeStates ? dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("mixwarn.png") : dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("errwarn.png");
+                    this.suspended.set("checked", true);
+                    this.suspended.set("readOnly", true);
                     this.errorsTab.set("title", this.i18n.ErrorsStatus + " (" + newValue.ClusterQueryState.length + ")");
                     var tooltip = "";
                     for (var i = 0; i < newValue.ClusterQueryState.length; ++i) {
