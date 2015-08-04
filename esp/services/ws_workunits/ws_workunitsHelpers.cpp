@@ -829,6 +829,7 @@ void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, uns
             g->setName(name.str());
             g->setGraphNum(graphNum);
             g->setSubGraphNum(subGraphId); // Use the Id - the number is not known
+            g->setGID(subGraphId);
             g->setMS(time);
             g->setMin(time/60000);
             timingData.append(*g.getClear());
