@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ bool validateInteger(const char *str,int &out)
 void usage()
 {
   const char* version = "1.1";
-  printf("HPCC Systems environment generator. version %s. Usage:\n", version);
+  printf("HPCC Systems® environment generator. version %s. Usage:\n", version);
   puts("   envgen -env <environment file> -ip <ip addr> [options]");
   puts("");
   puts("options: ");

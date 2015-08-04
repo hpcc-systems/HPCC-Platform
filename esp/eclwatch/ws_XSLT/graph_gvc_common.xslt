@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
     <table width="100%" cellSpacing="5" style="border-collapse:separate;border-spacing:5;">
       <tr>
         <td width="80%" valign="top">
-          <object id="pluginLHS" type="application/x-hpccsystemsgraphviewcontrol" standby="Loading HPCC Systems GraphView Control..."
+          <object id="pluginLHS" type="application/x-hpccsystemsgraphviewcontrol" standby="Loading HPCC Systems® GraphView Control..."
               width="100%">
           </object>
                 <div id="zoom-slider-bg" class="yui-h-slider" tabindex="-1" title="Zoom Graph" style="text-align:left;">
@@ -89,7 +89,7 @@
           
         </td>
         <td width="20%" valign="top">
-          <object id="pluginRHS" type="application/x-hpccsystemsgraphviewcontrol" standby="Loading HPCC Systems GraphView Control..." style="width:100%; height:500px;">
+          <object id="pluginRHS" type="application/x-hpccsystemsgraphviewcontrol" standby="Loading HPCC Systems® GraphView Control..." style="width:100%; height:500px;">
           </object>
           <div id="zoom2-slider-bg" class="yui-h-slider" tabindex="-1" title="Zoom Mini Graph" style="text-align:left;">
             <div id="zoom2-slider-thumb" class="yui-slider-thumb">

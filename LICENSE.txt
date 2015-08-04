@@ -1,7 +1,7 @@
-[ Please note: HPCC SYSTEMS now licenses the HPCC Systems Community Edition, starting with v3.8, under the Apache v2 license agreement.  Appropriate files are being updated. ]
+[ Please note: HPCC SYSTEMS now licenses the HPCC Systems® Community Edition, starting with v3.8, under the Apache v2 license agreement.  Appropriate files are being updated. ]
 
 
-HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

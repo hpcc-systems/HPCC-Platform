@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-## Copyright (c) 2012 HPCC Systems.  All rights reserved.
+## Copyright (c) 2012 HPCC Systems®.  All rights reserved.
 -->
 <!DOCTYPE xsl:stylesheet [
 <!ENTITY nbsp "&#160;">
