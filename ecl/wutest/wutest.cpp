@@ -1191,6 +1191,7 @@ protected:
         for (i = 0; i < testSize; i++)
         {
             Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuids.item(i));
+            ASSERT(wu->getResultCount()==1);
             Owned<IConstWUResult> result = wu->getResultByName("Result 1");
             ASSERT(result);
             ASSERT(result->isResultScalar());

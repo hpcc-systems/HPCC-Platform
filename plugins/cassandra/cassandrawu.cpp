@@ -1348,6 +1348,18 @@ extern void childXMLRowtoCassandra(const ICassandraSession *session, CassBatch *
     check(cass_batch_add_statement(batch, update));
 }
 
+extern unsigned childCount(const ICassandraSession *session, const CassandraXmlMapping *mappings, const char *wuid)
+{
+    VStringBuffer countQuery("SELECT count(*) FROM %s WHERE partition=? AND wuid=?;", queryTableName(mappings));
+    CassandraStatement count(session->prepareStatement(countQuery));
+    count.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+    count.bindString(1, wuid);
+    CassandraFuture future(cass_session_execute(session->querySession(), count));
+    future.wait("select count(*)");
+    CassandraResult result(cass_future_get_result(future));
+    return getUnsignedResult(NULL, getSingleResult(result));
+}
+
 extern void childXMLtoCassandra(const ICassandraSession *session, CassBatch *batch, const CassandraXmlMapping *mappings, const char *wuid, IPTreeIterator *elements, const char *userVal)
 {
     if (elements->first())
@@ -2212,7 +2224,22 @@ public:
         else
             return NULL;
     }
-
+    virtual unsigned getResultCount() const
+    {
+        return childCount(sessionCache, wuResultsMappings, queryWuid());
+    }
+    virtual unsigned getGraphCount() const
+    {
+        return childCount(sessionCache, wuGraphsMappings, queryWuid());
+    }
+    virtual unsigned getSourceFileCount() const
+    {
+        return childCount(sessionCache, wuFilesReadMappings, queryWuid());
+    }
+    virtual unsigned getVariableCount() const
+    {
+        return childCount(sessionCache, wuVariablesMappings, queryWuid());
+    }
     virtual void setUser(const char *user)
     {
         if (trackSecondaryChange(user, "@submitID"))
