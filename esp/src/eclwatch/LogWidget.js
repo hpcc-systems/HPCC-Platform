@@ -231,10 +231,11 @@ define([
         refreshGrid: function (clearSelection) {
             this.rawText.setText(this.i18n.loadingMessage);
             var filter = lang.mixin(this.getFilter(), {
-                Name: this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value"),
+                Name: "//" + this.params.getNetaddress() + this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value"),
                 Type: "tpcomp_log",
                 LoadData: 1
             });
+            console.log(this.params.getNetaddress()+this.params.getLogDirectory());
             this.logGrid.set("query", filter);
             if (clearSelection) {
                 this.logGrid.clearSelection();
