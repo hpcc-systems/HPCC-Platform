@@ -21,7 +21,6 @@ define([
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/promise/all",
-    "dojo/_base/array",
 
     "dijit/registry",
 
@@ -49,7 +48,7 @@ define([
     "dijit/TooltipDialog",
     "dijit/TitlePane"
 
-], function (declare, lang, i18n, nlsHPCC, dom, domAttr, all, arrayUtil,
+], function (declare, lang, i18n, nlsHPCC, dom, domAttr, all,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 ESPQuery, _TabContainerWidget, DelayLoadWidget,
@@ -88,6 +87,8 @@ define([
             this.librariesUsedTab = registry.byId(this.id + "_LibrariesUsed");
             this.workunitsTab = registry.byId(this.id + "_Workunit");
             this.testPagesTab = registry.byId(this.id + "_TestPages");
+            this.suspended = registry.byId(this.id + "Suspended");
+            this.suspendedBy = registry.byId(this.id + "SuspendedBy");
         },
 
         //  Hitched actions  ---
@@ -188,7 +189,6 @@ define([
         },
 
         updateInput: function (name, oldValue, newValue) {
-           var context = this;
            var registryNode = registry.byId(this.id + name);
             if (registryNode) {
                 registryNode.set("value", newValue);
@@ -214,10 +214,10 @@ define([
                 this.workunitsTab.set("title", newValue);
             } else if (name === "Suspended") {
                 dom.byId(this.id + "SuspendImg").src = newValue ? dojoConfig.getImageURL("suspended.png") : "";
+            } else if (name === "Suspended") {
+                dom.byId(this.id + "SuspendBy").innerHTML = newValue ? dojoConfig.getImageURL("suspended.png") : "";
             } else if (name === "Activated") {
                 dom.byId(this.id + "ActiveImg").src = newValue ? dojoConfig.getImageURL("active.png") : "";
-            } else if (name === "SuspendedReason" && newValue === "cluster"){
-                dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("error-icon.png");
             } else if (name === "CountGraphs" && newValue) {
                 this.graphsTab.set("title", this.i18n.Graphs + " (" + newValue + ")");
             } else if (name === "graphs") {
@@ -233,6 +233,17 @@ define([
                 this.graphsTab.set("tooltip", tooltip);
             } else if (name === "ResourceURLCount" && newValue) {
                 this.widget._Resources.set("title", this.i18n.Resources + " (" + newValue + ")");
+            } else if (name === "LogicalFiles") {
+                if (lang.exists("Item.length", newValue)) {
+                    this.logicalFilesTab.set("title", this.i18n.LogicalFiles + " (" + newValue.Item.length + ")");
+                    var tooltip = "";
+                    for (var i = 0; i < newValue.Item.length; ++i) {
+                        if (tooltip != "")
+                            tooltip += "\n";
+                        tooltip += newValue.Item[i];
+                    }
+                    this.logicalFilesTab.set("tooltip", tooltip);
+                }
             } else if (name === "SuperFiles") {
                 if (lang.exists("SuperFile.length", newValue)) {
                     this.superFilesTab.set("title", this.i18n.SuperFiles + " (" + newValue.SuperFile.length + ")");
@@ -244,13 +255,6 @@ define([
                     }
                     this.superFilesTab.set("tooltip", tooltip);
                 }
-                var count = 0;
-                arrayUtil.forEach(context.query.SuperFiles.SuperFile, function (item, idx) {
-                    arrayUtil.forEach(item.SubFiles.File, function (item, idx) {
-                        count++
-                    });
-                });
-                this.logicalFilesTab.set("title", this.i18n.LogicalFiles + " (" + count + ")");
             } else if (name === "LibrariesUsed") {
                 this.librariesUsedTab.set("title", this.i18n.LibrariesUsed + " (" + newValue.Item.length + ")");
                 var tooltip = "";
@@ -262,6 +266,13 @@ define([
                 this.librariesUsedTab.set("tooltip", tooltip);
             } else if (name === "Clusters") {
                 if (lang.exists("ClusterQueryState.length", newValue)) {
+                    if (newValue.ClusterQueryState[0].MixedNodeStates === true) {
+                        dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("mixwarn.png");
+                    } else if (newValue.ClusterQueryState[0].State === "Suspended") {
+                        dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("errwarn.png");
+                    }
+                    this.suspended.set("checked", true);
+                    this.suspended.set("readOnly", true);
                     this.errorsTab.set("title", this.i18n.ErrorsStatus + " (" + newValue.ClusterQueryState.length + ")");
                     var tooltip = "";
                     for (var i = 0; i < newValue.ClusterQueryState.length; ++i) {
