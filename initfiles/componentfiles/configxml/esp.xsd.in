@@ -265,11 +265,9 @@
                             <xs:simpleType>
                                 <xs:restriction base="xs:string">
                                     <xs:enumeration value="none"/>
-                                    <xs:enumeration value="basic"/>
                                     <xs:enumeration value="local"/>
                                     <xs:enumeration value="ldap"/>
                                     <xs:enumeration value="ldaps"/>
-                                    <xs:enumeration value="remotens"/>
                                     <xs:enumeration value="htpasswd"/>
                                 </xs:restriction>
                             </xs:simpleType>
