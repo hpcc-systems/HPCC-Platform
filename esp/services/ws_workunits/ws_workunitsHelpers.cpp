@@ -994,6 +994,8 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
     info.setArchived(false);
     info.setGraphCount(cw->getGraphCount());
     info.setSourceFileCount(cw->getSourceFileCount());
+    info.setResultCount(cw->getResultCount());
+    info.setWorkflowCount(cw->queryEventScheduledCount());
     info.setVariableCount(cw->getVariableCount());
     info.setTimerCount(getTimerCount());
     info.setSourceFileCount(cw->getSourceFileCount());
@@ -1250,50 +1252,36 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned flags)
 
 void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
 {
+    if (!(flags & WUINFO_IncludeWorkflows))
+        return;
     try
     {
-        unsigned workflowsCount = 0;
         IArrayOf<IConstECLWorkflow> workflows;
         Owned<IConstWorkflowItemIterator> it = cw->getWorkflowItems();
-        if (it)
+        ForEach(*it)
         {
-            ForEach(*it)
+            IConstWorkflowItem* r = it->query();
+            if (!r)
+                continue;
+
+            IWorkflowEvent* wfevent = r->getScheduleEvent();
+            if (!wfevent)
+                continue;
+
+            StringBuffer id;
+            Owned<IEspECLWorkflow> g = createECLWorkflow();
+            g->setWFID(id.appendf("%d", r->queryWfid()).str());
+            g->setEventName(wfevent->queryName());
+            g->setEventText(wfevent->queryText());
+            if (r->hasScheduleCount())
             {
-                IConstWorkflowItem *r = it->query();
-                if (r)
-                {
-                    IWorkflowEvent *wfevent = r->getScheduleEvent();
-                    if (wfevent)
-                    {
-                        Owned<IEspECLWorkflow> g;
-                        if (flags & WUINFO_IncludeWorkflows)
-                        {
-                            StringBuffer id;
-                            g.setown(createECLWorkflow("",""));
-                            g->setWFID(id.appendf("%d", r->queryWfid()).str());
-                            g->setEventName(wfevent->queryName());
-                            g->setEventText(wfevent->queryText());
-                        }
-                        if (r->hasScheduleCount())
-                        {
-                            if (flags & WUINFO_IncludeWorkflows)
-                            {
-                                g->setCount(r->queryScheduleCount());
-                                g->setCountRemaining(r->queryScheduleCountRemaining());
-                            }
-                        }
-                        workflowsCount++;
-                        if (flags & WUINFO_IncludeWorkflows)
-                            workflows.append(*g.getLink());
-                    }
-                }
+                g->setCount(r->queryScheduleCount());
+                g->setCountRemaining(r->queryScheduleCountRemaining());
             }
-            if (workflows.length() > 0)
-                info.setWorkflows(workflows);
-            workflows.kill();
+            workflows.append(*g.getLink());
         }
-        if (version >= 1.50)
-            info.setWorkflowCount(workflowsCount);
+        if (workflows.length() > 0)
+            info.setWorkflows(workflows);
     }
     catch(IException* e)
     {
@@ -1531,26 +1519,20 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
 
 void WsWuInfo::getResults(IEspECLWorkunit &info, unsigned flags)
 {
+    if (!(flags & WUINFO_IncludeResults))
+        return;
     try
     {
-        unsigned count = 0;
         IArrayOf<IEspECLResult> results;
         Owned<IConstWUResultIterator> it = &(cw->getResults());
         ForEach(*it)
         {
             IConstWUResult &r = it->query();
             if(r.getResultSequence()>=0)
-            {
-                if (flags & WUINFO_IncludeResults)
-                    getResult(r, results, flags);
-                count++;
-            }
+                getResult(r, results, flags);
         }
 
-        if (version >= 1.17)
-            info.setResultCount(count);
-
-        if ((flags & WUINFO_IncludeResults) && results.length() > 0)
+        if (results.length())
             info.setResults(results);
 
         results.kill();

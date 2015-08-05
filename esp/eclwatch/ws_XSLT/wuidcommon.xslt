@@ -658,14 +658,13 @@
           </td>
         </tr>
       </xsl:if>
-      <xsl:if test="Workflows/ECLWorkflow[1] or WorkflowsDesc != ''">
-        <xsl:variable name="WorkFlowCount" select="count(Workflows/ECLWorkflow)"/>
+      <xsl:if test="WorkflowCount &gt; 0  or WorkflowsDesc != ''">
         <p>
           <div>
             <div class="wugroup">
               <div class="WuGroupHdrLeft">
                 <A href="javascript:void(0)" onclick="toggleElement('Workflows');" id="explinkWorkflows" class="wusectionexpand">
-                  Workflows:&nbsp;(<xsl:value-of select="$WorkFlowCount"/>)
+                  Workflows:&nbsp;(<xsl:value-of select="WorkflowCount"/>)
                 </A>
               </div>
             </div>
