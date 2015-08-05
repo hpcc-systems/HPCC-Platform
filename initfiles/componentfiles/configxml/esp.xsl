@@ -45,10 +45,16 @@
         <xsl:otherwise>\:</xsl:otherwise>
     </xsl:choose>   
    </xsl:variable>
-   
+
     <xsl:variable name="espProcess" select="/Environment/Software/EspProcess[@name=$process]"/>
-    
-    
+    <xsl:variable name="controlPortSetting" select="/Environment/Software/EspProcess[@name=$process]/@controlPort"/>
+    <xsl:variable name="controlPort">
+        <xsl:choose>
+            <xsl:when test="string($controlPortSetting) = ''">8010</xsl:when>
+            <xsl:otherwise><xsl:value-of select="$controlPortSetting"/></xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+
     <xsl:template match="/Environment">
         <xsl:copy>
             <Software>
@@ -130,11 +136,7 @@
                 <EspProtocol>
                     <xsl:attribute name="name">http</xsl:attribute>
                     <xsl:attribute name="type">http_protocol</xsl:attribute>
-                    <xsl:attribute name="plugin">
-                       <xsl:call-template name="makeServicePluginName">
-                          <xsl:with-param name="plugin" select="'esphttp'"/>
-                       </xsl:call-template>
-                    </xsl:attribute>
+                    <xsl:attribute name="plugin">esphttp</xsl:attribute>
                     <xsl:attribute name="maxRequestEntityLength">
                         <xsl:value-of select="$maxRequestEntityLength"/>
                     </xsl:attribute>
@@ -143,11 +145,7 @@
             <!-- insert https protocol, if a certificate has been specified for it-->
             <xsl:if test="EspBinding[@protocol='https']">
                 <EspProtocol name="https" type="secure_http_protocol">
-                    <xsl:attribute name="plugin">
-                       <xsl:call-template name="makeServicePluginName">
-                          <xsl:with-param name="plugin" select="'esphttp'"/>
-                       </xsl:call-template>
-                    </xsl:attribute>
+                    <xsl:attribute name="plugin">esphttp</xsl:attribute>
                     <xsl:attribute name="maxRequestEntityLength">
                         <xsl:value-of select="$maxRequestEntityLength"/>
                     </xsl:attribute>
@@ -165,6 +163,17 @@
                         <trusted_peers><xsl:value-of select="HTTPS/@trustedPeers"/></trusted_peers>
                     </verify>
                 </EspProtocol>
+            </xsl:if>
+            <xsl:if test="string($controlPort) != '0'">
+                <xsl:variable name="serviceName" select="concat('WSESPControl_', $process)"/>
+                <xsl:variable name="servicePlugin">
+                    <xsl:call-template name="makeServicePluginName">
+                        <xsl:with-param name="plugin" select="'ws_espcontrol'"/>
+                    </xsl:call-template>
+                </xsl:variable>
+                <xsl:variable name="bindName" select="concat('WSESPControl_Binding_', $process)"/>
+                <EspService name="{$serviceName}" type="WSESPControl" plugin="{$servicePlugin}"/>
+                <EspBinding name="{$bindName}" service="{$serviceName}" protocol="http" type="ws_espcontrolSoapBinding" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$controlPort}"/>
             </xsl:if>
             <xsl:variable name="importedServiceDefinitionFiles">
                 <xsl:call-template name="importServiceDefinitionFiles">
@@ -443,14 +452,11 @@
     
     <xsl:template name="makeServicePluginName">
         <xsl:param name="plugin"/>
-        <xsl:value-of select="$plugin"/>
-        <!--
         <xsl:choose>
             <xsl:when test="$isLinuxInstance">lib<xsl:value-of select="$plugin"/>.so</xsl:when>
             <xsl:otherwise>
                 <xsl:value-of select="$plugin"/>.dll</xsl:otherwise>
         </xsl:choose>
-        -->
     </xsl:template>
     
     
