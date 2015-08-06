@@ -923,6 +923,7 @@ public:
             if (progress)
             {
                 StringBuffer path;
+                // MORE I don't think this works! Gavin changed the format... Jake?
                 path.append("node[@id=\"").append(nodeId).append("\"]/@_state");
                 return (WUGraphState) progress->getPropInt(path, (unsigned) WUGraphUnknown);
             }
@@ -1042,6 +1043,7 @@ public:
         VStringBuffer path("/GraphProgress/%s", queryWuid());
         Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
         IPTree *progress = ensurePTree(conn->queryRoot(), graphName);
+        // Actually, maybe it does work, but by luck?
         path.clear().append("node[@id=\"").append(nodeId).append("\"]");
         IPropertyTree *node = progress->queryPropTree(path.str());
         if (!node)
@@ -1086,6 +1088,17 @@ protected:
     {
         VStringBuffer path("/GraphProgress/%s/%s", queryWuid(), graphName);
         return querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    }
+    IPropertyTree *getGraphProgressTree() const
+    {
+        IRemoteConnection *conn = queryProgressConnection();
+        if (conn)
+        {
+            Owned<IPropertyTree> tmp = createPTree("GraphProgress");
+            mergePTree(tmp,conn->queryRoot());
+            return tmp.getClear();
+        }
+        return NULL;
     }
     Owned<IRemoteConnection> connection;
     mutable Owned<IRemoteConnection> progressConnection;
@@ -2152,6 +2165,104 @@ IWorkUnit* CWorkUnitFactory::updateWorkUnit(const char *wuid, ISecManager *secmg
     }
 }
 
+IPropertyTree * pruneBranch(IPropertyTree * from, char const * xpath)
+{
+    Owned<IPropertyTree> ret;
+    IPropertyTree * branch = from->queryPropTree(xpath);
+    if(branch) {
+        ret.setown(createPTreeFromIPT(branch));
+        from->removeTree(branch);
+    }
+    return ret.getClear();
+}
+
+bool CWorkUnitFactory::restoreWorkUnit(const char *base, const char *wuid)
+{
+    StringBuffer path(base);
+    addPathSepChar(path).append(wuid).append(".xml");
+    Owned<IPTree> pt = createPTreeFromXMLFile(path);
+    if (!pt)
+        return false;
+    CDateTime dt;
+    dt.setNow();
+    StringBuffer dts;
+    dt.getString(dts);
+    pt->setProp("@restoredDate", dts.str());
+    Owned<IPropertyTree> generatedDlls = pruneBranch(pt, "GeneratedDlls[1]");
+    Owned<IPropertyTree> associatedFiles;
+    IPropertyTree *srcAssociated = pt->queryPropTree("Query/Associated");
+    if (srcAssociated)
+        associatedFiles.setown(createPTreeFromIPT(srcAssociated));
+    // The updating of the repo is implementation specific...
+    if (!_restoreWorkUnit(pt.getClear(), wuid))
+        return false;
+    // now kludge back GeneratedDlls
+    if (generatedDlls)
+    {
+        Owned<IPropertyTreeIterator> dlls = generatedDlls->getElements("GeneratedDll");
+        for(dlls->first(); dlls->isValid(); dlls->next())
+        {
+            IPropertyTree & dll = dlls->query();
+            char const * name = dll.queryProp("@name");
+            char const * kind = dll.queryProp("@kind");
+            char const * location = dll.queryProp("@location");
+            Owned<IDllEntry> got = queryDllServer().getEntry(name);
+            if (!got)
+            {
+                RemoteFilename dstRfn;
+                dstRfn.setRemotePath(location);
+                StringBuffer srcPath(base);
+                addPathSepChar(srcPath);
+                dstRfn.getTail(srcPath);
+                OwnedIFile srcFile = createIFile(srcPath);
+                OwnedIFile dstFile = createIFile(dstRfn);
+                copyFile(dstFile, srcFile);
+                queryDllServer().registerDll(name, kind, location);
+            }
+        }
+    }
+    if (associatedFiles)
+    {
+        Owned<IPropertyTreeIterator> associated = associatedFiles->getElements("*");
+        ForEach(*associated)
+        {
+            IPropertyTree &file = associated->query();
+            const char *filename = file.queryProp("@filename");
+            SocketEndpoint ep(file.queryProp("@ip"));
+            RemoteFilename rfn;
+            rfn.setPath(ep, filename);
+            OwnedIFile dstFile = createIFile(rfn);
+            StringBuffer srcPath(base), name;
+            addPathSepChar(srcPath);
+            rfn.getTail(name);
+            srcPath.append(name);
+            if (generatedDlls)
+            {
+                VStringBuffer gDllPath("GeneratedDll[@name=\"%s\"]", name.str());
+                if (generatedDlls->hasProp(gDllPath))
+                    continue; // generated dlls handled separately - see above
+            }
+
+            OwnedIFile srcFile = createIFile(srcPath);
+            if (srcFile->exists())
+            {
+                try
+                {
+                    copyFile(dstFile, srcFile);
+                }
+                catch (IException *e)
+                {
+                    VStringBuffer msg("Failed to restore associated file '%s' to destination '%s'", srcFile->queryFilename(), dstFile->queryFilename());
+                    EXCLOG(e, msg.str());
+                    e->Release();
+                }
+            }
+        }
+    }
+    return true;
+}
+
+
 int CWorkUnitFactory::setTracingLevel(int newLevel)
 {
     if (newLevel)
@@ -2495,7 +2606,42 @@ public:
         else
             return NULL;
     }
+    virtual bool _restoreWorkUnit(IPTree *_pt, const char *wuid)
+    {
+        Owned<IPTree> pt(_pt);
+        Owned<IPropertyTree> gprogress = pruneBranch(pt, "GraphProgress[1]");
+        StringBuffer wuRoot;
+        getXPath(wuRoot, wuid);
+        Owned<IRemoteConnection> conn = sdsManager->connect(wuRoot.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+        if (!conn)
+        {
+            ERRLOG("restoreWorkUnit could not create to %s", wuRoot.str());
+            return false;
+        }
+        IPropertyTree *root = conn->queryRoot();
+        if (root->hasChildren())
+        {
+            ERRLOG("restoreWorkUnit WUID %s already exists", wuid);
+            return false;
+        }
+        root->setPropTree(NULL, pt.getClear());
+        conn.clear();
 
+        // now kludge back GraphProgress
+        if (gprogress)
+        {
+            VStringBuffer xpath("/GraphProgress/%s", wuid);
+            conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
+            if (conn)
+            {
+                IPropertyTree *groot = conn->queryRoot();
+                if (groot->hasChildren())
+                    WARNLOG("restoreWorkUnit WUID %s graphprogress already exists, replacing",wuid);
+                groot->setPropTree(NULL, gprogress.getClear());
+            }
+        }
+        return true;
+    }
     virtual CLocalWorkUnit* _updateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer wuRoot;
@@ -2902,6 +3048,10 @@ public:
         if (!secUser) secUser = defaultSecUser.get();
         return baseFactory->updateWorkUnit(wuid, secMgr, secUser);
     }
+    virtual bool restoreWorkUnit(const char *base, const char *wuid)
+    {
+        return baseFactory->restoreWorkUnit(base, wuid);
+    }
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
@@ -3233,15 +3383,11 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
     exportWorkUnitToXML(this, buf, false, false, true);
 
     StringBuffer extraWorkUnitXML;
-    StringBuffer xpath("/GraphProgress/");
-    xpath.append(wuid);
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-    if (conn)
+    Owned<IPTree> graphProgress = getGraphProgressTree();
+    if (graphProgress)
     {
-        Owned<IPropertyTree> tmp = createPTree("GraphProgress");
-        mergePTree(tmp,conn->queryRoot());
-        toXML(tmp,extraWorkUnitXML,1,XML_Format);
-        conn->close();
+        toXML(graphProgress,extraWorkUnitXML,1,XML_Format);
+        graphProgress.clear();
     }
 
     Owned<IConstWUQuery> q = getQuery();
@@ -3364,138 +3510,6 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
         cleanupAndDelete(true, deleteOwned, &deleteExclusions);
     }
 
-    return true;
-}
-
-IPropertyTree * pruneBranch(IPropertyTree * from, char const * xpath)
-{
-    Owned<IPropertyTree> ret;
-    IPropertyTree * branch = from->queryPropTree(xpath);
-    if(branch) {
-        ret.setown(createPTreeFromIPT(branch));
-        from->removeTree(branch);
-    }
-    return ret.getClear();
-}
-
-bool restoreWorkUnit(const char *base,const char *wuid)
-{
-    StringBuffer path(base);
-    if (!wuid||!*wuid)
-        return false;
-    addPathSepChar(path).append(wuid).append(".xml");
-    Owned<IFile> file = createIFile(path.str());
-    if (!file)
-        return false;
-    Owned<IFileIO> fileio = file->open(IFOread);
-    if (!fileio)
-        return false;
-    Owned<IPropertyTree> pt = createPTree(*fileio);
-    if (!pt)
-        return false;
-    CDateTime dt;
-    dt.setNow();
-    StringBuffer dts;
-    dt.getString(dts);
-    pt->setProp("@restoredDate", dts.str());
-    VStringBuffer xpath("/WorkUnits/%s", wuid);
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-    if (!conn)
-    {
-        ERRLOG("restoreWorkUnit could not create to %s", xpath.str());
-        return false;
-    }
-    IPropertyTree *root = conn->queryRoot();
-    if (root->hasChildren())
-    {
-        ERRLOG("restoreWorkUnit WUID %s already exists", wuid);
-        return false;
-    }
-    Owned<IPropertyTree> gprogress = pruneBranch(pt, "GraphProgress[1]");
-    Owned<IPropertyTree> generatedDlls = pruneBranch(pt, "GeneratedDlls[1]");
-    Owned<IPropertyTree> associatedFiles;
-    IPropertyTree *srcAssociated = pt->queryPropTree("Query/Associated");
-    if (srcAssociated)
-        associatedFiles.setown(createPTreeFromIPT(srcAssociated));
-    root->setPropTree(NULL, pt.getClear());
-    conn.clear();
-
-    // now kludge back GraphProgress and GeneratedDlls
-    if (gprogress)
-    {
-        VStringBuffer xpath("/GraphProgress/%s", wuid);
-        conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
-        if (conn)
-        {
-            IPropertyTree *groot = conn->queryRoot();
-            if (groot->hasChildren())
-                WARNLOG("restoreWorkUnit WUID %s graphprogress already exists, replacing",wuid);
-            groot->setPropTree(NULL, gprogress.getClear());
-        }
-    }
-
-    if (generatedDlls)
-    {
-        Owned<IPropertyTreeIterator> dlls = generatedDlls->getElements("GeneratedDll");
-        for(dlls->first(); dlls->isValid(); dlls->next())
-        {
-            IPropertyTree & dll = dlls->query();
-            char const * name = dll.queryProp("@name");
-            char const * kind = dll.queryProp("@kind");
-            char const * location = dll.queryProp("@location");
-            Owned<IDllEntry> got = queryDllServer().getEntry(name);
-            if (!got)
-            {
-                RemoteFilename dstRfn;
-                dstRfn.setRemotePath(location);
-                StringBuffer srcPath(base);
-                addPathSepChar(srcPath);
-                dstRfn.getTail(srcPath);
-                OwnedIFile srcFile = createIFile(srcPath);
-                OwnedIFile dstFile = createIFile(dstRfn);
-                copyFile(dstFile, srcFile);
-                queryDllServer().registerDll(name, kind, location);
-            }
-        }
-    }
-    if (associatedFiles)
-    {
-        Owned<IPropertyTreeIterator> associated = associatedFiles->getElements("*");
-        ForEach(*associated)
-        {
-            IPropertyTree &file = associated->query();
-            const char *filename = file.queryProp("@filename");
-            SocketEndpoint ep(file.queryProp("@ip"));
-            RemoteFilename rfn;
-            rfn.setPath(ep, filename);
-            OwnedIFile dstFile = createIFile(rfn);
-            StringBuffer srcPath(base), name;
-            addPathSepChar(srcPath);
-            rfn.getTail(name);
-            srcPath.append(name);
-            if (generatedDlls)
-            {
-                VStringBuffer gDllPath("GeneratedDll[@name=\"%s\"]", name.str());
-                if (generatedDlls->hasProp(gDllPath))
-                    continue; // generated dlls handled separately - see above
-            }
-
-            OwnedIFile srcFile = createIFile(srcPath);
-            if (srcFile->exists())
-            {
-                try
-                {
-                    copyFile(dstFile, srcFile);
-                }
-                catch (IException *e)
-                {
-                    VStringBuffer msg("Failed to restore associated file '%s' to destination '%s'", srcFile->queryFilename(), dstFile->queryFilename());
-                    EXCLOG(e, msg.str());
-                    e->Release();
-                }
-            }
-        }
-    }
     return true;
 }
 

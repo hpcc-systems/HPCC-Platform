@@ -170,7 +170,7 @@ public:
             return false;
 
         // see if can find candidate on another queue
-
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         ForEachItemIn(i1,queues) {
             if (i1!=qi) {
                 IJobQueue &srcq = queues.item(i1);
@@ -180,15 +180,12 @@ public:
                 ForEach(*iter) {
                     const char *wuid = iter->query().queryWUID();
                     if (wuid&&*wuid) {
-                        StringBuffer xpath("/WorkUnits/");
-                        xpath.append(wuid);
-                        Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-                        if (conn) {
-                            Owned<IPropertyTree> ptree=conn->getRoot();
-                            const char *allowedclusters = ptree->queryProp("Debug/allowedclusters");
-                            if (allowedclusters&&*allowedclusters) {
+                        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
+                        if (wu) {
+                            SCMStringBuffer allowedClusters;
+                            if (wu->getAllowedClusters(allowedClusters).length()) {
                                 StringArray acs;
-                                acs.appendListUniq(allowedclusters, ",");
+                                acs.appendListUniq(allowedClusters.str(), ",");
                                 bool found = true;
                                 ForEachItemIn(i,acs) {
                                     if (strcmp(cnames.item(qi),acs.item(i))==0) 

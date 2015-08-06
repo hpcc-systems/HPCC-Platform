@@ -548,6 +548,7 @@ protected:
     void checkAgentRunning(WUState & state);
 
     // Implemented by derived classes
+    virtual IPropertyTree *getGraphProgressTree() const { return NULL; };
     virtual void unsubscribe() {};
     virtual void _lockRemote() {};
     virtual void _unlockRemote() {};
@@ -657,6 +658,7 @@ public:
     virtual bool deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual IConstWorkUnit * openWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
+    virtual bool restoreWorkUnit(const char *base, const char *wuid);
     virtual int setTracingLevel(int newlevel);
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *scope, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr, ISecUser *secuser) = 0;
@@ -690,7 +692,7 @@ protected:
     virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual CLocalWorkUnit* _openWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;  // for read access
     virtual CLocalWorkUnit* _updateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;  // for write access
-
+    virtual bool _restoreWorkUnit(IPTree *pt, const char *wuid) = 0;
 };
 
 class CLocalWUGraph : public CInterface, implements IConstWUGraph
@@ -776,5 +778,6 @@ public:
 #define PROGRESS_FORMAT_V 2
 
 extern WORKUNIT_API IConstWUGraphProgress *createConstGraphProgress(const char *_wuid, const char *_graphName, IPropertyTree *_progress);
+extern WORKUNIT_API  IPropertyTree * pruneBranch(IPropertyTree * from, char const * xpath);
 
 #endif
