@@ -90,6 +90,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="NodeGroupCacheMinutes" type="xs:nonNegativeInteger" use="optional" default="30">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>timeout for node group cache (in minutes).</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="ActivityInfoCacheSeconds" type="xs:nonNegativeInteger" use="optional" default="10">
                 <xs:annotation>
                     <xs:appinfo>

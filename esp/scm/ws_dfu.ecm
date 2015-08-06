@@ -82,6 +82,7 @@ ESPStruct [nil_remove] DFUFilePartsOnCluster
     [min_ver("1.31")] string BaseDir;
     [min_ver("1.31")] string ReplicateDir;
     [min_ver("1.31")] bool Replicate;
+    [min_ver("1.32")] bool CanReplicate;
     ESParray<ESPstruct DFUPart> DFUFileParts;
 };
 
@@ -691,7 +692,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 
 //  ===========================================================================
 ESPservice [
-    version("1.31"),
+    version("1.32"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

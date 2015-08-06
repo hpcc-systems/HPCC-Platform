@@ -278,6 +278,9 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         </xsl:variable>
 
         <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
+            <xsl:if test="string(@NodeGroupCacheMinutes) != ''">
+                <NodeGroupCacheMinutes><xsl:value-of select="@NodeGroupCacheMinutes"/></NodeGroupCacheMinutes>
+            </xsl:if>
             <xsl:if test="string(@disableUppercaseTranslation) != ''">
                 <DisableUppercaseTranslation><xsl:value-of select="@disableUppercaseTranslation"/></DisableUppercaseTranslation>
             </xsl:if>
