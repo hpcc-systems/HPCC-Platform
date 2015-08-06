@@ -197,47 +197,6 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                     </xsl:for-each>
                 </Authenticate>
             </xsl:when>
-            <xsl:when test="$authMethod='accurint'">
-                <Authenticate method="AccurintSecurity" config="accurintserver">
-                    <xsl:for-each select="$bindingNode/Authenticate[@path='/']">
-                        <Location path="/" objectclass="{@objectclass}" resource="{@resource}" required="{@access}" description="{@description}"/>
-                    </xsl:for-each>
-                    <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
-                        <xsl:if test="$service='ws_adl' or @service=$service">
-                            <Feature name="{@name}" path="{@path}" objectclass="{@objectclass}" resource="{@resource}" required="{@access}" description="{@description}"/>
-                        </xsl:if>
-                    </xsl:for-each>
-                    <xsl:for-each select="$bindingNode/AuthenticateSetting">
-                        <xsl:if test="$service='ws_adl' or @service=$service">
-                            <Setting path="{@path}" service="{@service}" objectclass="{@objectclass}" resource="{@resource}" mapping="{@mapping}" userprop="{@userprop}" description="{@description}"/>
-                        </xsl:if>
-                    </xsl:for-each>
-                </Authenticate>
-            </xsl:when>
-            <xsl:when test="$authMethod='accurintaccess'">
-                <Authenticate method="AccurintAccess" config="accurintserver">
-                <xsl:for-each select="$bindingNode/Authenticate[@path='/']">
-                    <Location path="/" objectclass="{@objectclass}"  resource="{@resource}" required="{@access}" description="{@description}"/>
-                </xsl:for-each>
-                <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
-                    <xsl:if test="$service='ws_adl' or @service=$service">
-                        <Feature name="{@name}" path="{@path}" objectclass="{@objectclass}" resource="{@resource}" required="{@access}" description="{@description}"/>
-                    </xsl:if>
-                </xsl:for-each>
-                </Authenticate>
-            </xsl:when>
-            <xsl:when test="$authMethod='remotens'">
-                <Authenticate method="RemoteNSSecurity" config="accurintserver">
-                    <xsl:for-each select="$bindingNode/Authenticate[@path='/']">
-                        <Location path="/" objectclass="{@objectclass}" resource="{@resource}" required="{@access}" description="{@description}"/>
-                    </xsl:for-each>
-                    <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
-                        <xsl:if test="$service='ws_adl' or @service=$service">
-                            <Feature name="{@name}" path="{@path}" objectclass="{@objectclass}" resource="{@resource}" required="{@access}" description="{@description}"/>
-                        </xsl:if>
-                    </xsl:for-each>
-                </Authenticate>
-            </xsl:when>
             <xsl:when test="$authMethod='htpasswd'">
               <Authenticate method="htpasswd">
                 <xsl:attribute name="htpasswdFile"> <xsl:value-of select="$bindingNode/../Authentication/@htpasswdFile"/> </xsl:attribute>
