@@ -182,12 +182,12 @@
 
                                 if (first)
                                 {
-                                    url += "?ClusterName=" + cluster;
+                                    url += "?NodeGroup=" + cluster;
                                     first = false;
                                 }
                                 else
                                 {
-                                    url += "&ClusterName=" + cluster;
+                                    url += "&NodeGroup=" + cluster;
                                 }
                             }
 
