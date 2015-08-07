@@ -819,6 +819,16 @@ static int getEnum(const IPropertyTree *p, const char *propname, const mapEnums 
     return getEnum(p->queryProp(propname),map);
 }
 
+const char * getWorkunitActionStr(WUAction action)
+{
+    return getEnumText(action, actions);
+}
+
+WUAction getWorkunitAction(const char *actionStr)
+{
+    return (WUAction) getEnum(actionStr, actions);
+}
+
 //==========================================================================================
 
 class CLightweightWorkunitInfo : public CInterfaceOf<IConstWorkUnitInfo>
@@ -888,6 +898,106 @@ public:
 protected:
     Owned<IRemoteConnection> conn;
 };
+
+CWorkUnitWatcher::CWorkUnitWatcher(IWorkUnitSubscriber *_subscriber, WUSubscribeOptions flags, const char *wuid) : subscriber(_subscriber)
+{
+    abortId = 0;
+    stateId = 0;
+    actionId = 0;
+    assertex((flags & ~SubscribeOptionAbort) == 0);
+    if (flags & SubscribeOptionAbort)
+    {
+        VStringBuffer xpath("/WorkUnitAborts/%s", wuid);
+        abortId = querySDS().subscribe(xpath.str(), *this);
+    }
+}
+CWorkUnitWatcher::~CWorkUnitWatcher()
+{
+    assertex(abortId==0 && stateId==0 && actionId==0);
+}
+
+void CWorkUnitWatcher::unsubscribe()
+{
+    CriticalBlock b(crit);
+    if (abortId)
+        querySDS().unsubscribe(abortId);
+    if (stateId)
+        querySDS().unsubscribe(stateId);
+    if (actionId)
+        querySDS().unsubscribe(actionId);
+    abortId = 0;
+    stateId = 0;
+    actionId = 0;
+}
+
+void CWorkUnitWatcher::notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+{
+    CriticalBlock b(crit);
+    if (id==stateId)
+        subscriber->notify(SubscribeOptionState);
+    else if (id==actionId)
+        subscriber->notify(SubscribeOptionAction);
+    else if (id==abortId)
+        subscriber->notify(SubscribeOptionAbort);
+}
+
+
+class CDaliWorkUnitWatcher : public CWorkUnitWatcher
+{
+public:
+    CDaliWorkUnitWatcher(IWorkUnitSubscriber *_subscriber, WUSubscribeOptions flags, const char *wuid)
+    : CWorkUnitWatcher(_subscriber, (WUSubscribeOptions) (flags & SubscribeOptionAbort), wuid)
+    {
+        if (flags & SubscribeOptionState)
+        {
+            VStringBuffer xpath("/WorkUnits/%s/State", wuid);
+            stateId = querySDS().subscribe(xpath.str(), *this);
+        }
+        if (flags & SubscribeOptionAction)
+        {
+            VStringBuffer xpath("/WorkUnits/%s/Action", wuid);
+            actionId = querySDS().subscribe(xpath.str(), *this);
+        }
+    }
+};
+
+void CPersistedWorkUnit::subscribe(WUSubscribeOptions options)
+{
+    CriticalBlock block(crit);
+    assertex(options==SubscribeOptionAbort);
+    if (!abortWatcher)
+    {
+        abortWatcher.setown(new CWorkUnitWatcher(this, SubscribeOptionAbort, p->queryName()));
+        abortDirty = true;
+    }
+}
+
+void CPersistedWorkUnit::unsubscribe()
+{
+    CriticalBlock block(crit);
+    if (abortWatcher)
+    {
+        abortWatcher->unsubscribe();
+        abortWatcher.clear();
+    }
+}
+
+bool CPersistedWorkUnit::aborting() const
+{
+    CriticalBlock block(crit);
+    if (abortDirty)
+    {
+        StringBuffer apath;
+        apath.append("/WorkUnitAborts/").append(p->queryName());
+        Owned<IRemoteConnection> acon = querySDS().connect(apath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+        if (acon)
+            abortState = acon->queryRoot()->getPropInt(NULL) != 0;
+        else
+            abortState = false;
+        abortDirty = false;
+    }
+    return abortState;
+}
 
 class CDaliWorkUnit : public CPersistedWorkUnit
 {
@@ -2470,6 +2580,10 @@ public:
     {
         removeShutdownHook(*this);
     }
+    virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const
+    {
+        return new CDaliWorkUnitWatcher(subscriber, options, wuid);
+    }
     virtual unsigned validateRepository(bool fixErrors)
     {
         return 0;
@@ -2696,11 +2810,11 @@ public:
 
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
     {
-        StringBuffer wuRoot;
-        getXPath(wuRoot, wuid);
-        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot.str(), SDSNotify_Data);
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, SubscribeOptionState);
         LocalIAbortHandler abortHandler(*waiter);
         WUState ret = WUStateUnknown;
+        StringBuffer wuRoot;
+        getXPath(wuRoot, wuid);
         Owned<IRemoteConnection> conn = sdsManager->connect(wuRoot.str(), session, 0, SDS_LOCK_TIMEOUT);
         if (conn)
         {
@@ -2718,12 +2832,10 @@ public:
                 case WUStateCompleted:
                 case WUStateFailed:
                 case WUStateAborted:
-                    waiter->unsubscribe();
                     return ret;
                 case WUStateWait:
                     if(returnOnWaitState)
                     {
-                        waiter->unsubscribe();
                         return ret;
                     }
                     break;
@@ -2736,7 +2848,6 @@ public:
                     SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
                     if (checkAbnormalTermination(wuid, ret, agent))
                     {
-                        waiter->unsubscribe();
                         return ret;
                     }
                     break;
@@ -2754,6 +2865,35 @@ public:
                 else if (waited > timeout || !waiter->wait(timeout-waited))
                 {
                     ret = WUStateUnknown;  // MORE - throw an exception?
+                    break;
+                }
+                conn->reload();
+            }
+        }
+        return ret;
+    }
+
+    virtual WUAction waitForWorkUnitAction(const char * wuid, WUAction original)
+    {
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, SubscribeOptionAction);
+        LocalIAbortHandler abortHandler(*waiter);
+        WUAction ret = WUActionUnknown;
+        StringBuffer wuRoot;
+        getXPath(wuRoot, wuid);
+        Owned<IRemoteConnection> conn = sdsManager->connect(wuRoot.str(), session, 0, SDS_LOCK_TIMEOUT);
+        if (conn)
+        {
+            unsigned start = msTick();
+            loop
+            {
+                ret = (WUAction) getEnum(conn->queryRoot(), "Action", actions);
+                if (ret != original)
+                    break;
+                unsigned waited = msTick() - start;
+                waiter->wait(20000);  // recheck state every 20 seconds even if no timeout, in case eclagent has crashed.
+                if (waiter->aborted)
+                {
+                    ret = WUActionUnknown;  // MORE - throw an exception?
                     break;
                 }
                 conn->reload();
@@ -2868,6 +3008,10 @@ public:
     CSecureWorkUnitFactory(IWorkUnitFactory *_baseFactory, ISecManager *_secMgr, ISecUser *_secUser)
         : baseFactory(_baseFactory), defaultSecMgr(_secMgr), defaultSecUser(_secUser)
     {
+    }
+    virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const
+    {
+        return baseFactory->getWatcher(subscriber, options, wuid);
     }
     virtual unsigned validateRepository(bool fix)
     {
@@ -2995,6 +3139,10 @@ public:
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
     {
         return baseFactory->waitForWorkUnit(wuid, timeout, compiled, returnOnWaitState);
+    }
+    virtual WUAction waitForWorkUnitAction(const char * wuid, WUAction original)
+    {
+        return baseFactory->waitForWorkUnitAction(wuid, original);
     }
 private:
     Owned<IWorkUnitFactory> baseFactory;
@@ -3796,7 +3944,8 @@ void CLocalWorkUnit::setState(WUState value)
             factory->clearAborting(queryWuid());
     }
     CriticalBlock block(crit);
-    setEnum(p, "@state", value, states);
+    setEnum(p, "@state", value, states);  // For historical reasons, we use state to store the state
+    setEnum(p, "State", value, states);   // But we can only subscribe to elements, not attributes
     if (getDebugValueBool("monitorWorkunit", false))
     {
         switch(value)

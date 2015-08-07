@@ -696,10 +696,20 @@ interface IConstLocalFileUploadIterator : extends IScmIterator
 
 enum WUSubscribeOptions
 {
+    SubscribeOptionState = 1,
     SubscribeOptionAbort = 2,
+    SubscribeOptionAction = 4
 };
 
+interface IWorkUnitSubscriber
+{
+    virtual void notify(WUSubscribeOptions flags) = 0;
+};
 
+interface IWorkUnitWatcher : extends IInterface
+{
+    virtual void unsubscribe() = 0;
+};
 
 interface IWUGraphProgress;
 interface IPropertyTree;
@@ -1259,6 +1269,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual bool isAborting(const char *wuid) const = 0;
     virtual void clearAborting(const char *wuid) = 0;
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState) = 0;
+    virtual WUAction waitForWorkUnitAction(const char * wuid, WUAction original) = 0;
 
     virtual unsigned validateRepository(bool fixErrors) = 0;
     virtual void deleteRepository(bool recreate) = 0;
@@ -1266,6 +1277,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual const char *queryStoreType() const = 0; // Returns "Dali" or "Cassandra"
 
     virtual StringArray &getUniqueValues(WUSortField field, const char *prefix, StringArray &result) const = 0;
+    virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const = 0;
 };
 
 interface IWorkflowScheduleConnection : extends IInterface
@@ -1455,6 +1467,8 @@ void WORKUNIT_API testWorkflow();
 #endif
 
 extern WORKUNIT_API const char * getWorkunitStateStr(WUState state);
+extern WORKUNIT_API const char * getWorkunitActionStr(WUAction action);
+extern WORKUNIT_API WUAction getWorkunitAction(const char * actionStr);
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind);
 

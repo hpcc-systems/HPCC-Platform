@@ -865,7 +865,7 @@ static const CassandraXmlMapping workunitsMappings [] =
 
     // These are catchalls for anything not processed above or in a child table
 
-    {"elements", "map<text, text>", "@Action@Application@Debug@Exceptions@Files@FilesRead@Graphs@Results@Statistics@Plugins@Query@Variables@Temporaries@Workflow@", elementMapColumnMapper},  // name is the suppression list, note trailing @
+    {"elements", "map<text, text>", "@Action@Application@Debug@Exceptions@Files@FilesRead@Graphs@Results@Statistics@Plugins@Query@State@Variables@Temporaries@Workflow@", elementMapColumnMapper},  // name is the suppression list, note trailing @
     {"subtrees", "map<text, text>", "@DiskUsageStats@Parameters@Process@Tracing@", subTreeMapColumnMapper},  // name is the INCLUSION list, note trailing @
 
     { NULL, "workunits", "((partition), wuid)|CLUSTERING ORDER BY (wuid DESC)", stringColumnMapper}
@@ -2126,6 +2126,8 @@ public:
         loadPTree(sessionCache->cassandraToWorkunitXML(queryWuid()));
         memset(childLoaded, 0, sizeof(childLoaded));
         allDirty = false;
+        actionChanged = false;
+        stateChanged = false;
         abortDirty = true;
     }
 
@@ -2234,9 +2236,25 @@ public:
                 DBGLOG("Executing batch");
             CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), *batch));
             futureBatch.wait("execute");
+            if (stateChanged)
+            {
+                // Signal changes to state to anyone that might be watching via Dali
+                VStringBuffer xpath("/WorkUnitStates/%s/State", wuid);
+                Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
+                conn->queryRoot()->setProp(NULL, p->queryProp("@state"));
+            }
+            if (actionChanged)
+            {
+                // Signal changes to action to anyone that might be watching via Dali
+                VStringBuffer xpath("/WorkUnitStates/%s/Action", wuid);
+                Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
+                conn->queryRoot()->setProp(NULL, p->queryProp("Action"));
+            }
             batch.setown(new CassandraBatch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED))); // Commit leaves it locked...
             prev.clear();
             allDirty = false;
+            stateChanged = false;
+            actionChanged = false;
             dirtyPaths.kill();
             dirtyResults.kill();
         }
@@ -2301,8 +2319,17 @@ public:
     virtual void setState(WUState state)
     {
         if (trackSecondaryChange(getWorkunitStateStr(state), "@state"))
+        {
+            stateChanged = true;
             CPersistedWorkUnit::setState(state);
+        }
     }
+    virtual void setAction(WUAction action)
+    {
+        actionChanged = true;
+        CPersistedWorkUnit::setAction(action);
+    }
+
     virtual void setApplicationValue(const char *app, const char *propname, const char *value, bool overwrite)
     {
         VStringBuffer xpath("Application/%s/%s", app, propname);
@@ -2377,6 +2404,8 @@ public:
         CPersistedWorkUnit::copyWorkUnit(cached, all);
         memset(childLoaded, 1, sizeof(childLoaded));
         allDirty = true;
+        actionChanged = true;
+        stateChanged = true;
     }
     virtual void noteFileRead(IDistributedFile *file)
     {
@@ -2834,12 +2863,33 @@ protected:
     Linked<const ICassandraSession> sessionCache;
     mutable bool childLoaded[ChildTablesSize];
     bool allDirty;
+    bool stateChanged;
+    bool actionChanged;
     Owned<IPTree> prev;
 
     Owned<CassandraBatch> batch;
     MapStringTo<const CassandraXmlMapping *> dirtyPaths;
     IArrayOf<IWUResult> dirtyResults;
     Owned<IRemoteConnection> daliLock;  // We still use dali for locking
+};
+
+class CCassandraWorkUnitWatcher : public CWorkUnitWatcher
+{
+public:
+    CCassandraWorkUnitWatcher(IWorkUnitSubscriber *_subscriber, WUSubscribeOptions flags, const char *wuid)
+    : CWorkUnitWatcher(_subscriber, (WUSubscribeOptions) (flags & SubscribeOptionAbort), wuid)
+    {
+        if (flags & SubscribeOptionState)
+        {
+            VStringBuffer xpath("/WorkUnitStates/%s/State", wuid);
+            stateId = querySDS().subscribe(xpath.str(), *this);
+        }
+        if (flags & SubscribeOptionAction)
+        {
+            VStringBuffer xpath("/WorkUnitStates/%s/Action", wuid);
+            actionId = querySDS().subscribe(xpath.str(), *this);
+        }
+    }
 };
 
 class CCasssandraWorkUnitFactory : public CWorkUnitFactory, implements ICassandraSession
@@ -2873,29 +2923,35 @@ public:
             cluster.setKeySpace("hpcc");
         cluster.connect();
         Owned<IPTree> versionInfo = getVersionInfo();
-        int major = versionInfo->getPropInt("@major", 0);
-        int minor = versionInfo->getPropInt("@minor", 0);
-        if (major && minor)
+        if (versionInfo)
         {
-            // Note that if there is no version info at all, we have to assume that the repository is not yet created. We don't fail, otherwise no-one can call createRepository the first time...
-            if (major != majorVersion)
-                throw makeStringExceptionV(WUERR_WorkunitVersionMismatch, "Incompatible workunit repository version (wanted %d.%d, found %d.%d)", majorVersion, minorVersion, major, minor);
-            if (minor != minorVersion)
+            int major = versionInfo->getPropInt("@major", 0);
+            int minor = versionInfo->getPropInt("@minor", 0);
+            if (major && minor)
             {
-                if (minor < minorVersion)
+                // Note that if there is no version info at all, we have to assume that the repository is not yet created. We don't fail, otherwise no-one can call createRepository the first time...
+                if (major != majorVersion)
+                    throw makeStringExceptionV(WUERR_WorkunitVersionMismatch, "Incompatible workunit repository version (wanted %d.%d, found %d.%d)", majorVersion, minorVersion, major, minor);
+                if (minor != minorVersion)
                 {
-                    DBGLOG("WARNING: repository version %d.%d is older than current version %d.%d - adding required columns", major, minor, majorVersion, minorVersion);
-                    switch (minor)
+                    if (minor < minorVersion)
                     {
-                    // Add code here to create any columns that we need to to get from version "minor" to expected layout
+                        DBGLOG("WARNING: repository version %d.%d is older than current version %d.%d - adding required columns", major, minor, majorVersion, minorVersion);
+                        switch (minor)
+                        {
+                        // Add code here to create any columns that we need to to get from version "minor" to expected layout
+                        }
                     }
+                    else
+                        DBGLOG("WARNING: repository version %d.%d is newer than current version %d.%d - some columns will not be updated", major, minor, majorVersion, minorVersion);
                 }
-                else
-                    DBGLOG("WARNING: repository version %d.%d is newer than current version %d.%d - some columns will not be updated", major, minor, majorVersion, minorVersion);
             }
         }
         else
+        {
             DBGLOG("WARNING: repository version could not be retrieved (repository not yet created?)");
+            cluster.disconnect();
+        }
         cacheRetirer.start();
     }
 
@@ -2905,6 +2961,10 @@ public:
         cacheRetirer.join();
         if (traceLevel)
             DBGLOG("CCasssandraWorkUnitFactory destroyed");
+    }
+    virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const
+    {
+        return new CCassandraWorkUnitWatcher(subscriber, options, wuid);
     }
 
     virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
@@ -3283,8 +3343,7 @@ public:
     */
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
     {
-        VStringBuffer wuRoot("/WorkUnitLocks/%s", wuid);
-        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot, SDSNotify_Deleted); // We subscribe to the dali lock branch to give us hints about when wu may have changed
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, SubscribeOptionState);
         LocalIAbortHandler abortHandler(*waiter);
         CassandraStatement statement(prepareStatement("select state, agentSession from workunits where partition=? and wuid=?;"));
         statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
@@ -3297,16 +3356,10 @@ public:
             CassandraResult result(cass_future_get_result(future));
             const CassRow *row = cass_result_first_row(result);
             if (!row)
-            {
-                waiter->unsubscribe();
                 return WUStateUnknown;
-            }
             const CassValue *stateVal = cass_row_get_column(row, 0);
             if (!stateVal)
-            {
-                waiter->unsubscribe();
                 return WUStateUnknown;
-            }
             StringBuffer stateStr;
             getCassString(stateStr, stateVal);
             WUState state = getWorkUnitState(stateStr);
@@ -3315,22 +3368,15 @@ public:
             case WUStateCompiled:
             case WUStateUploadingFiles:
                 if (compiled)
-                {
-                    waiter->unsubscribe();
                     return state;
-                }
                 break;
             case WUStateCompleted:
             case WUStateFailed:
             case WUStateAborted:
-                waiter->unsubscribe();
                 return state;
             case WUStateWait:
                 if (returnOnWaitState)
-                {
-                    waiter->unsubscribe();
                     return state;
-                }
                 break;
             case WUStateCompiling:
             case WUStateRunning:
@@ -3340,10 +3386,7 @@ public:
             case WUStateAborting:
                 SessionId agent = getUnsignedResult(NULL, cass_row_get_column(row, 1));
                 if (agent && checkAbnormalTermination(wuid, state, agent))
-                {
-                    waiter->unsubscribe();
                     return state;
-                }
                 break;
             }
             unsigned waited = msTick() - start;
@@ -3351,17 +3394,51 @@ public:
             {
                 waiter->wait(20000);  // recheck state every 20 seconds even if no timeout, in case eclagent has crashed.
                 if (waiter->aborted)
-                {
-                    waiter->unsubscribe();
                     return WUStateUnknown;  // MORE - throw an exception?
-                }
             }
             else if (waited > timeout || !waiter->wait(timeout-waited))
-            {
-                waiter->unsubscribe();
                 return WUStateUnknown;  // MORE - throw an exception?
-            }
         }
+    }
+
+    virtual WUAction waitForWorkUnitAction(const char * wuid, WUAction original)
+    {
+        StringAttr origStr(getWorkunitActionStr(original));
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, SubscribeOptionAction);
+        LocalIAbortHandler abortHandler(*waiter);
+        CassandraStatement statement(prepareStatement("select action from workunits where partition=? and wuid=?;"));
+        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        statement.bindString(1, wuid);
+        WUAction ret = WUActionUnknown;
+        loop
+        {
+            CassandraFuture future(cass_session_execute(querySession(), statement));
+            future.wait("Lookup wu action");
+            CassandraResult result(cass_future_get_result(future));
+            const CassRow *row = cass_result_first_row(result);
+            if (!row)
+            {
+                PROGLOG("While waiting for job %s, WU no longer exists", wuid);
+                break;
+            }
+            const CassValue *actionVal = cass_row_get_column(row, 0);
+            if (!actionVal)
+            {
+                PROGLOG("While waiting for job %s, WU action cannot be read", wuid);
+                break;
+            }
+            StringBuffer actionStr;
+            getCassString(actionStr, actionVal);
+            if (!streq(actionStr, origStr))
+            {
+                ret = getWorkunitAction(actionStr);
+                break;
+            }
+            waiter->wait(10000);  // recheck state every 20 seconds even if no notifications... just because we used to before
+            if (waiter->aborted)
+                break;
+        }
+        return ret;
     }
 
     unsigned validateRepository(bool fix)
@@ -3492,7 +3569,7 @@ private:
         {
             DBGLOG("WARNING: Unknown exception caught while trying to retrieve Cassandra repository version information");
         }
-        return createPTreeFromXMLString("<Version/>");
+        return NULL;
     }
 
     bool checkWuExists(const char *wuid)
