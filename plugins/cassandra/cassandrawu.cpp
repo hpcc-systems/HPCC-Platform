@@ -605,10 +605,7 @@ public:
             key.append(item.queryName());
             key.append('@');
             if (strstr(name, key) != NULL)
-            {
-                if (item.numChildren())
-                    numItems++;
-            }
+                numItems++;
         }
         if (numItems)
         {
@@ -623,13 +620,10 @@ public:
                     key.append('@');
                     if (strstr(name, key) != NULL)
                     {
-                        if (item.numChildren())
-                        {
-                            StringBuffer x;
-                            ::toXML(&item, x);
-                            check(cass_collection_append_string(collection, item.queryName()));
-                            check(cass_collection_append_string(collection, x));
-                        }
+                        StringBuffer x;
+                        ::toXML(&item, x);
+                        check(cass_collection_append_string(collection, item.queryName()));
+                        check(cass_collection_append_string(collection, x));
                     }
                 }
                 statement->bindCollection(idx, collection);
@@ -866,7 +860,7 @@ static const CassandraXmlMapping workunitsMappings [] =
     // These are catchalls for anything not processed above or in a child table
 
     {"elements", "map<text, text>", "@Action@Application@Debug@Exceptions@FilesRead@Graphs@Results@Statistics@Plugins@Query@Variables@Temporaries@Workflow@", elementMapColumnMapper},  // name is the suppression list, note trailing @
-    {"subtrees", "map<text, text>", "@Parameters@Process@Tracing@", subTreeMapColumnMapper},  // name is the INCLUSION list, note trailing @
+    {"subtrees", "map<text, text>", "@DiskUsageStats@Parameters@Process@Tracing@", subTreeMapColumnMapper},  // name is the INCLUSION list, note trailing @
 
     { NULL, "workunits", "((partition), wuid)|CLUSTERING ORDER BY (wuid DESC)", stringColumnMapper}
 };
