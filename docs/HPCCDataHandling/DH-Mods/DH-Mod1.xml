@@ -357,8 +357,8 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Name
-                    Prefix</emphasis></entry>
+                    <entry><emphasis role="bold">Target
+                    Scope</emphasis></entry>
 
                     <entry>The prefix for the logical file</entry>
                   </row>
@@ -488,8 +488,8 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Name
-                    Prefix</emphasis></entry>
+                    <entry><emphasis role="bold">Target
+                    Scope</emphasis></entry>
 
                     <entry>The prefix for the logical file</entry>
                   </row>
@@ -664,8 +664,8 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Name
-                    Prefix</emphasis></entry>
+                    <entry><emphasis role="bold">Target
+                    Scope</emphasis></entry>
 
                     <entry>The prefix for the logical file</entry>
                   </row>
@@ -806,8 +806,8 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Name
-                    Prefix</emphasis></entry>
+                    <entry><emphasis role="bold">Target
+                    Scope</emphasis></entry>
 
                     <entry>The prefix for the logical file</entry>
                   </row>
@@ -951,8 +951,8 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Name
-                    Prefix</emphasis></entry>
+                    <entry><emphasis role="bold">Target
+                    Scope</emphasis></entry>
 
                     <entry>The prefix for the logical file</entry>
                   </row>
