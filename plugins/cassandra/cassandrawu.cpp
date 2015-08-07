@@ -1097,6 +1097,7 @@ static const ChildTableInfo wuResultsTable =
 static const CassandraXmlMapping wuVariablesMappings [] =
 {
     resultTableFields,
+    {"xmlValue", "text", "xmlValue", stringColumnMapper},
     { NULL, "wuVariables", "((partition, wuid), sequence, name)", stringColumnMapper}
 };
 
