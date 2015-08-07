@@ -64,7 +64,6 @@ define([
                     case "res":
                         params = "/WUFile/res.txt?Wuid=" + this.wu.Wuid + "&Type=" + item.Orig.Type;
                         break;
-                    case "ThorLog":
                     case "EclAgentLog":
                         params = "/WUFile/" + item.Type + "?Wuid=" + this.wu.Wuid + "&Process=" + item.Orig.PID + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
                         break;
@@ -87,6 +86,10 @@ define([
                     case "xml":
                         if (option !== undefined)
                             params = "/WUFile?Wuid=" + this.wu.Wuid + "&Name=" + item.Orig.Name + "&IPAddress=" + item.Orig.IPAddress + "&Description=" + item.Orig.Description + "&Type=" + item.Orig.Type;
+                        break;
+                    default:
+                        if (item.Type.indexOf("ThorLog") === 0)
+                            params = "/WUFile/" + item.Type + "?Wuid=" + this.wu.Wuid + "&Process=" + item.Orig.PID + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
                         break;
                 }
 
