@@ -72,6 +72,11 @@ target_link_libraries ( esdl_svc_engine
          hql
          remote
          dalibase
-         securesocket
          esdllib
     )
+
+IF (USE_OPENSSL)
+    target_link_libraries ( esdl_svc_engine
+    	securesocket
+    )
+ENDIF()

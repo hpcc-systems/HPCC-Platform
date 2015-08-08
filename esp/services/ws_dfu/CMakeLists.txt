@@ -96,8 +96,11 @@ target_link_libraries ( ws_dfu
          SMCLib 
          dfuXRefLib 
          dfuwu 
-         securesocket 
          roxiecommlib 
     )
 
-
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_dfu
+    	securesocket
+    )
+ENDIF()

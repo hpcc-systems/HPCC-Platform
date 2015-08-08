@@ -75,8 +75,13 @@ target_link_libraries ( EclDirect
          jhtree 
          hql 
          fileview2 
-         securesocket 
     )
+
+IF (USE_OPENSSL)
+    target_link_libraries ( EclDirect
+    	securesocket
+    )
+ENDIF()
 IF (USE_OPENLDAP)
   target_link_libraries ( EclDirect LdapSecurity )
 ENDIF(USE_OPENLDAP)

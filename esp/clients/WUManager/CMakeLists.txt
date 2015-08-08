@@ -54,7 +54,11 @@ target_link_libraries ( wumanager
          jlib
          xmllib 
          esphttp
-         securesocket
     )
 
+IF (USE_OPENSSL)
+    target_link_libraries ( wumanager
+    	securesocket
+    )
+ENDIF()
 

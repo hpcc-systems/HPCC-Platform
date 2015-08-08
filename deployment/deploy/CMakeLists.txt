@@ -62,9 +62,14 @@ target_link_libraries ( deploy
          jlib 
          environment 
          xmllib 
-         securesocket
          configutils
     )
+
+IF (USE_OPENSSL)
+    target_link_libraries ( deploy 
+    	securesocket
+    )
+ENDIF()
 
 if ( PLATFORM )
     install ( PROGRAMS configesp.install DESTINATION etc/init.d/install COMPONENT Runtime )

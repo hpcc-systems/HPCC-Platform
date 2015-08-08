@@ -63,6 +63,10 @@ target_link_libraries ( ws_access
          xmllib 
          esphttp 
          LdapSecurity 
-         securesocket 
     )
 
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_access
+    	securesocket
+    )
+ENDIF()

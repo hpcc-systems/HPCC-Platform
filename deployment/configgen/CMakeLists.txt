@@ -45,7 +45,10 @@ target_link_libraries ( configgen
         deploy 
         jlib 
         environment 
-        securesocket      
         )
 
-
+IF (USE_OPENSSL)
+    target_link_libraries ( configgen
+    	securesocket
+    )
+ENDIF()

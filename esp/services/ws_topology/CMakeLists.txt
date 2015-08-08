@@ -76,9 +76,14 @@ target_link_libraries ( ws_topology
          deftype 
          workunit 
          SMCLib 
-         securesocket 
          swapnodelib
          )
+
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_topology
+    	securesocket
+    )
+ENDIF()
          
 IF (USE_ZLIB)
   target_link_libraries ( ws_topology
