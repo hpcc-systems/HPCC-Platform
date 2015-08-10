@@ -29,8 +29,8 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark of LexisNexis Risk Data
-      Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products and services may be trademarks or registered
       trademarks of their respective companies.</para>
@@ -272,8 +272,8 @@
 
         <orderedlist>
           <listitem>
-            <para>Download the sample data file from the HPCC Systems<superscript>®</superscript>
-            portal.</para>
+            <para>Download the sample data file from the HPCC
+            Systems<superscript>®</superscript> portal.</para>
 
             <para>The data file is available from links found on <ulink
             url="http://hpccsystems.com/community/docs/data-tutorial-guide">http://hpccsystems.com/community/docs/data-tutorial-guide</ulink>.
@@ -483,7 +483,7 @@
           </listitem>
 
           <listitem>
-            <para>Fill in the <emphasis role="bold">Name Prefix</emphasis>
+            <para>Fill in the <emphasis role="bold">Target Scope</emphasis>
             using the naming convention described earlier: <emphasis
             role="bold">tutorial::</emphasis><emphasis
             role="bold">YN</emphasis> (remember, <emphasis
@@ -801,7 +801,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
             <para><emphasis role="bold">Note: </emphasis>The modified portion
             is shown in <emphasis role="bold">bold</emphasis>.</para>
 
-            <para> </para>
+            <para></para>
           </listitem>
 
           <listitem>
