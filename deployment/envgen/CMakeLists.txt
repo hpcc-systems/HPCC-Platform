@@ -48,7 +48,11 @@ target_link_libraries ( envgen
         deployutils 
         jlib 
         environment 
-        securesocket      
         )
 
+IF (USE_OPENSSL)
+    target_link_libraries ( envgen 
+    	securesocket
+    )
+ENDIF()
 

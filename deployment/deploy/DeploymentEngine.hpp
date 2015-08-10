@@ -244,7 +244,9 @@ protected:
         EnvMachineOS os=MachineOsUnknown, const char* processName=NULL,bool isEspModuleOrPlugin=false);
    virtual void processCustomMethod(const char *method, const char *source, const char *outputFile, 
                                     const char *instanceName, EnvMachineOS os);
+#ifdef USE_OPENSSL
    virtual void siteCertificate(IPropertyTree& process, const char *instanceName, const char *outputFile);
+#endif
 
    StringBuffer getHostRoot(const char* computer, const char* dir, bool bIgnoreDepToFolder=false) const;
    StringBuffer getHostDir(IPropertyTree& node, bool bIgnoreDepToFolder=false);
@@ -287,7 +289,9 @@ protected:
                                    EnvMachineOS os, bool bCacheable, 
                                    const char* params=NULL);
    static void addDeploymentFile(StringBuffer &ret, const char *in, IXslTransform*);
+#ifdef USE_OPENSSL
    static void siteCertificateFunction(StringBuffer &ret, const char *in, IXslTransform*);
+#endif
    virtual IEnvDeploymentEngine& getEnvDepEngine() const { return m_envDepEngine; }
    virtual IDeploymentCallback& getCallback() const { return *m_pCallback; }
      void copyInstallFiles(const char* instanceName, int instanceIndex, const char* destPath, EnvMachineOS os);

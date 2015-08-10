@@ -77,7 +77,6 @@ target_link_libraries ( ws_smc
          remote 
          dalibase 
          environment 
-         securesocket 
          ws_machine 
          dalift 
          dllserver 
@@ -98,6 +97,11 @@ target_link_libraries ( ws_smc
          schedulectrl 
          ws_workunits 
     )
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_smc
+    	securesocket
+    )
+ENDIF()
 IF (USE_OPENLDAP)
 target_link_libraries ( ws_smc LdapSecurity )
 ENDIF(USE_OPENLDAP)

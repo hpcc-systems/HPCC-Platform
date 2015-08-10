@@ -98,8 +98,12 @@ target_link_libraries ( thorhelper
          eclrtl 
          roxiemem
          deftype 
-         securesocket 
          dalibase 
     )
 
 
+IF (USE_OPENSSL)
+    target_link_libraries ( thorhelper 
+    	securesocket
+    )
+ENDIF()

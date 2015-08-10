@@ -190,6 +190,7 @@ public:
 static CriticalSection              secureContextCrit;
 static Owned<ISecureSocketContext>  secureContext;
 
+#ifdef USE_OPENSSL
 static ISecureSocket *createSecureSocket(ISocket *sock,SecureSocketType type)
 {
     {
@@ -208,6 +209,7 @@ static ISecureSocket *createSecureSocket(ISocket *sock,SecureSocketType type)
     return secureContext->createSecureSocket(sock);
 #endif
 }
+#endif
 
 void clientSetRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime)
 {
@@ -889,11 +891,15 @@ class CRemoteBase: public CInterface
                     socket.setown(ISocket::connect(ep));
                 if (useSSL)
                 {
+#ifdef USE_OPENSSL
                     Owned<ISecureSocket> ssock = createSecureSocket(socket.getClear(), ClientSocket);
                     int status = ssock->secure_connect();
                     if (status < 0)
                         throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
                     socket.setown(ssock.getLink());
+#else
+                    throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
+#endif
                 }
             }
             catch (IJSOCK_Exception *e) {
@@ -5013,11 +5019,15 @@ public:
                     sock.setown(acceptsock->accept(true));
                     if (useSSL)
                     {
+#ifdef USE_OPENSSL
                         Owned<ISecureSocket> ssock = createSecureSocket(sock.getClear(), ServerSocket);
                         int status = ssock->secure_accept();
                         if (status < 0)
                             throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
                         sock.setown(ssock.getLink());
+#else
+                        throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
+#endif
                     }
                     if (!sock||stopping)
                         break;

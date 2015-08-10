@@ -53,8 +53,12 @@ target_link_libraries ( ws_packageprocess
          jlib
          xmllib
          esphttp
-         securesocket
          dalibase
          ws_fs
     )
 
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_packageprocess
+    	securesocket
+    )
+ENDIF()

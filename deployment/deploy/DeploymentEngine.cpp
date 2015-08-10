@@ -1813,8 +1813,10 @@ void CDeploymentEngine::setXsl(IXslProcessor* processor, IXslTransform* transfor
    m_externalFunction.setown(m_transform->createExternalFunction("addDeploymentFile", addDeploymentFile));
    m_transform->setExternalFunction(SEISINT_NAMESPACE, m_externalFunction.get(), true);
 
+#ifdef USE_OPENSSL
    m_externalFunction2.setown(m_transform->createExternalFunction("siteCertificate", siteCertificateFunction));
    m_transform->setExternalFunction(SEISINT_NAMESPACE, m_externalFunction2.get(), true);
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -2355,6 +2357,7 @@ void CDeploymentEngine::addDeploymentFile(StringBuffer &ret, const char *in, IXs
 //  siteCertificate
 //---------------------------------------------------------------------------
 /*static*/
+#ifdef USE_OPENSSL
 void CDeploymentEngine::siteCertificateFunction(StringBuffer &ret, const char *in, IXslTransform*)
 {
     //input is of the format <processType>+<process name>+<instance name>+<output path>
@@ -2382,7 +2385,7 @@ void CDeploymentEngine::siteCertificateFunction(StringBuffer &ret, const char *i
 
     s_xsltDepEngine->siteCertificate( *pProcess, instanceName, outputFile );
 }
-
+#endif
 
 //---------------------------------------------------------------------------
 //  processCustomMethod
@@ -2399,9 +2402,15 @@ void CDeploymentEngine::processCustomMethod(const char* method, const char *sour
         throw MakeStringException(0, "Process '%s': invalid method '%s' specified for file '%s'",
         m_name.get(), method, fileName);
 
+#ifdef USE_OPENSSL
     siteCertificate(m_process, instanceName, outputFile);
+#else
+    throw MakeStringException(0, "Process '%s' file '%s' method '%s': requires OpenSSL (disabled in build)",
+        m_name.get(), fileName, method);
+#endif
 }
 
+#ifdef USE_OPENSSL
 //---------------------------------------------------------------------------
 //  processCustomMethod
 //---------------------------------------------------------------------------
@@ -2616,7 +2625,7 @@ void CDeploymentEngine::siteCertificate(IPropertyTree& process, const char *inst
         s_dynamicFileList.push_back(LinkedFilePtr(pInstallFile2.get()));
     }
 }
-
+#endif
 
 bool CDeploymentEngine::fireException(IException *e)
 {

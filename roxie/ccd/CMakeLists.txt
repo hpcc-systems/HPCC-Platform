@@ -104,7 +104,6 @@ target_link_libraries ( ccd
          eclrtl 
          dalibase 
          deftype 
-         securesocket 
          thorhelper 
          jhtree 
          environment 
@@ -113,5 +112,10 @@ target_link_libraries ( ccd
          workunit 
     )
 
+IF (USE_OPENSSL)
+    target_link_libraries ( ccd
+    	securesocket
+    )
+ENDIF()
 
 
