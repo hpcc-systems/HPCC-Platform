@@ -237,13 +237,20 @@ define([
             } else if (name === "SuperFiles") {
                 if (lang.exists("SuperFile.length", newValue)) {
                     this.superFilesTab.set("title", this.i18n.SuperFiles + " (" + newValue.SuperFile.length + ")");
-                    var tooltip = "";
+                    var superFileToolTip = "";
+                    var logicalFileToolTip = "";
                     for (var i = 0; i < newValue.SuperFile.length; ++i) {
-                        if (tooltip != "")
-                            tooltip += "\n";
-                        tooltip += newValue.SuperFile[i];
+                        if (superFileToolTip != "")
+                            superFileToolTip += "\n";
+                        superFileToolTip += newValue.SuperFile[i].Name;
                     }
-                    this.superFilesTab.set("tooltip", tooltip);
+                    this.superFilesTab.set("tooltip", superFileToolTip);
+                    for (var i = 0; i < newValue.SuperFile.length; ++i) {
+                        if (logicalFileToolTip != "")
+                            logicalFileToolTip += "\n";
+                        logicalFileToolTip += newValue.SuperFile[i].SubFiles.File;
+                    }
+                    this.logicalFilesTab.set("tooltip", logicalFileToolTip);
                 }
                 var count = 0;
                 arrayUtil.forEach(context.query.SuperFiles.SuperFile, function (item, idx) {
