@@ -170,6 +170,30 @@ static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
     return factory->openWorkUnit(wuid);
 }
 
+static WUState queryWorkunitState(ICodeContext * ctx, SCMStringBuffer &stateEx)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> wu(factory->openWorkUnit(ctx->getWuid()));
+    WUState state = WUStateRunning;
+    if (wu)
+    {
+        state = wu->getState();
+        wu->getStateEx(stateEx);
+    }
+    return state;
+}
+
+static void setWorkunitState(ICodeContext * ctx, WUState state, const char * msg)
+{
+    Owned<IWorkUnit> wu = ctx->updateWorkUnit();
+    if (wu)
+    {
+        wu->setState(state);
+        wu->setStateEx(msg);
+        wu->commit();
+    }
+}
+
 static IConstEnvironment * openDaliEnvironment()
 {
     if (daliClientActive())
@@ -519,6 +543,13 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
     unsigned polltime = 1;
 
+    SCMStringBuffer prevStateEx;
+    WUState prevState = queryWorkunitState(ctx, prevStateEx);
+
+    StringBuffer reason;
+    reason.appendf("Blocked by fileservice activity: %s",label);
+    setWorkunitState(ctx, WUStateBlocked, reason.str());
+
     while(true)
     {
 
@@ -529,6 +560,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
         const IMultiException* excep = &result->getExceptions();
         if ((excep != NULL) && (excep->ordinality() > 0))
         {
+            setWorkunitState(ctx, prevState, prevStateEx.str());
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
             throw MakeStringExceptionDirect(0, errmsg.str());
@@ -566,14 +598,19 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
         case DFUstate_monitoring:
             if (monitoringok)
+            {
+                setWorkunitState(ctx, prevState, prevStateEx.str());
                 return;
+            }
             break;
 
         case DFUstate_aborted:
         case DFUstate_failed:
+            setWorkunitState(ctx, prevState, prevStateEx.str());
             throw MakeStringException(0, "DFUServer Error %s", dfuwu.getSummaryMessage());
 
         case DFUstate_finished:
+            setWorkunitState(ctx, prevState, prevStateEx.str());
             return;
         }
 
@@ -582,6 +619,8 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
             Owned<IClientAbortDFUWorkunit> abortReq = server.createAbortDFUWorkunitRequest();
             abortReq->setWuid(wuid);
             Linked<IClientAbortDFUWorkunitResponse> abortResp = server.AbortDFUWorkunit(abortReq);
+
+            setWorkunitState(ctx, prevState, prevStateEx.str());
 
             //  Add warning of DFU Abort Request - should this be information  ---
             StringBuffer s("DFU Workunit Abort Requested for ");
@@ -592,6 +631,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
         if (time.timedout()) {
             unsigned left = dfuwu.getSecsLeft();
+            setWorkunitState(ctx, prevState, prevStateEx.str());
             if (left)
                 throw MakeStringException(0, "%s timed out, DFU Secs left:  %d)", label, left);
             throw MakeStringException(0, "%s timed out)", label);
@@ -605,6 +645,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
             polltime = WAIT_SECONDS;
 
     }
+    setWorkunitState(ctx, prevState, prevStateEx.str());
 }
 
 
