@@ -665,22 +665,25 @@ static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, Stri
 
 static bool doRestoreWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, StringBuffer &res)
 {
-    CriticalBlock block(archivingSect);
-    res.append("RESTORE: ").append(wuid).append(" ");
-    StringBuffer ldspath("Archive/WorkUnits");
-    splitWUIDpath(wuid,ldspath);
-    StringBuffer path;
-    getLdsPath(ldspath.str(),path);
-    try {
-        if (restoreWorkUnit(path.str(),wuid)) {
-            res.append("OK");
-            return true;
+    if (wuid && *wuid)
+    {
+        CriticalBlock block(archivingSect);
+        res.append("RESTORE: ").append(wuid).append(" ");
+        StringBuffer ldspath("Archive/WorkUnits");
+        splitWUIDpath(wuid,ldspath);
+        StringBuffer base;
+        getLdsPath(ldspath.str(), base);
+        try {
+            if (wufactory->restoreWorkUnit(base, wuid)) {
+                res.append("OK");
+                return true;
+            }
         }
-    }
-    catch (IException *e) {
-        e->errorMessage(res);
-        res.append(' ');
-        e->Release();
+        catch (IException *e) {
+            e->errorMessage(res);
+            res.append(' ');
+            e->Release();
+        }
     }
     res.append("FAILED");
     return false;

@@ -2107,11 +2107,10 @@ class CCassandraWorkUnit : public CPersistedWorkUnit
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CCassandraWorkUnit(ICassandraSession *_sessionCache, IPTree *wuXML, ISecManager *secmgr, ISecUser *secuser,  IRemoteConnection *_daliLock)
-        : sessionCache(_sessionCache), CPersistedWorkUnit(secmgr, secuser), daliLock(_daliLock)
+    CCassandraWorkUnit(ICassandraSession *_sessionCache, IPTree *wuXML, ISecManager *secmgr, ISecUser *secuser, IRemoteConnection *_daliLock, bool _allDirty)
+        : sessionCache(_sessionCache), CPersistedWorkUnit(secmgr, secuser), daliLock(_daliLock), allDirty(_allDirty)
     {
         CPersistedWorkUnit::loadPTree(wuXML);
-        allDirty = false;   // Debatable... depends where the XML came from! If we read it from Cassandra. it's not. Otherwise, it is...
         memset(childLoaded, 0, sizeof(childLoaded));
         if (daliLock)
             createBatch();
@@ -2535,40 +2534,26 @@ public:
     class CCassandraWuGraphStats : public CWuGraphStats
     {
     public:
-        CCassandraWuGraphStats(const char *_wuid, const ICassandraSession *_sessionCache, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
+        CCassandraWuGraphStats(const CCassandraWorkUnit *_parent, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
         : CWuGraphStats(createPTree(_rootScope), _creatorType, _creator, _rootScope, _id),
-          wuid(_wuid), sessionCache(_sessionCache)
+          parent(_parent)
         {
         }
         virtual void beforeDispose()
         {
             CWuGraphStats::beforeDispose(); // Sets up progress - should contain a single child tree sqNN where nn==id
-            CassandraStatement statement(sessionCache->prepareStatement("INSERT INTO wuGraphProgress (partition, wuid, graphID, subgraphID, creator, progress) values (?,?,?,?,?,?);"));
-            statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
-            statement.bindString(1, wuid);
-            statement.bindString(2, progress->queryName());
-            statement.bindInt64(3, id);
-            statement.bindString(4, creator);
-            StringBuffer tag;
-            tag.append("sg").append(id);
-            IPTree *sq = progress->queryPropTree(tag);
-            assertex(sq);
-            StringBuffer xml;
-            toXML(sq, xml);
-            statement.bindString(5, xml);
-            CassandraFuture future(cass_session_execute(sessionCache->querySession(), statement));
-            future.wait("update stats");
+            parent->setGraphProgress(progress, progress->queryName(), id, creator);
         }
 
     protected:
-        Linked<const ICassandraSession> sessionCache;
+        Linked<const CCassandraWorkUnit> parent;
         StringAttr wuid;
     };
 
 
     IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
     {
-        return new CCassandraWuGraphStats(queryWuid(), sessionCache, creatorType, creator, graphName, subgraph);
+        return new CCassandraWuGraphStats(this, creatorType, creator, graphName, subgraph);
     }
 
 
@@ -2648,6 +2633,98 @@ public:
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             checkChildLoaded(**table);
         return p;
+    }
+
+    void setGraphProgress(IPropertyTree *progress, const char *gid, unsigned subid, const char *creator) const
+    {
+        const char *wuid=queryWuid();
+        CassandraStatement statement(sessionCache->prepareStatement("INSERT INTO wuGraphProgress (partition, wuid, graphID, subgraphID, creator, progress) values (?,?,?,?,?,?);"));
+        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        statement.bindString(1, wuid);
+        statement.bindString(2, gid);
+        statement.bindInt64(3, subid);
+        statement.bindString(4, creator);
+        StringBuffer tag;
+        tag.append("sg").append(subid);
+        IPTree *sq = progress->queryPropTree(tag);
+        assertex(sq);
+        StringBuffer xml;
+        toXML(sq, xml);
+        statement.bindString(5, xml);
+        CassandraFuture future(cass_session_execute(sessionCache->querySession(), statement));
+        future.wait("update stats");
+    }
+    virtual IPropertyTree *getGraphProgressTree() const
+    {
+        CassandraStatement graphQuery(sessionCache->prepareStatement("SELECT graphId, subgraphID, creator, progress FROM wuGraphProgress where partition=? and wuid=?;"));
+        const char *wuid = queryWuid();
+        graphQuery.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        graphQuery.bindString(1, wuid);
+        CassandraFuture future(cass_session_execute(sessionCache->querySession(), graphQuery));
+        future.wait("getGraphProgress");
+        CassandraResult result(cass_future_get_result(future));
+        if (!cass_result_row_count(result))
+            return NULL;
+        Owned<IPTree> progress = createPTree("GraphProgress");
+        CassandraIterator rows(cass_iterator_from_result(result));
+        while (cass_iterator_next(rows))
+        {
+            const CassRow *row = cass_iterator_get_row(rows);
+            StringBuffer graphName, creator, xml;
+            getCassString(graphName, cass_row_get_column(row, 0));
+            WUGraphIDType subId = getUnsignedResult(NULL, cass_row_get_column(row, 1));
+            getCassString(creator, cass_row_get_column(row, 2));
+            getCassString(xml, cass_row_get_column(row, 3));
+            if (!progress->hasProp(graphName))
+                progress->setPropTree(graphName, createPTree(graphName));
+            IPTree *graph = progress->queryPropTree(graphName);
+            graph->setPropBool("@stats", true);
+            graph->setPropInt("@format", PROGRESS_FORMAT_V);
+            IPTree *stats = createPTreeFromXMLString(xml);
+            // We could check that atoi(stats->queryName()+2)==subgraphID, and that stats->queryProp(@creator)==creator)....
+            graph->addPropTree(stats->queryName(), stats);
+        }
+        // Now fill in the graph/node states
+        CassandraStatement stateQuery(sessionCache->prepareStatement("SELECT graphId, subgraphId, state FROM wuGraphState where partition=? and wuid=?;"));
+        stateQuery.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        stateQuery.bindString(1, wuid);
+        CassandraFuture stateFuture(cass_session_execute(sessionCache->querySession(), stateQuery));
+        stateFuture.wait("getGraphStateProgress");
+        CassandraResult stateResult(cass_future_get_result(stateFuture));
+        CassandraIterator stateRows(cass_iterator_from_result(stateResult));
+        if (cass_result_row_count(stateResult))
+        {
+            CassandraIterator stateRows(cass_iterator_from_result(stateResult));
+            while (cass_iterator_next(stateRows))
+            {
+                const CassRow *row = cass_iterator_get_row(stateRows);
+                StringBuffer graphName;
+                getCassString(graphName, cass_row_get_column(row, 0));
+                WUGraphIDType subId = getUnsignedResult(NULL, cass_row_get_column(row, 1));
+                unsigned state = getUnsignedResult(NULL, cass_row_get_column(row, 2));
+                IPTree *node = progress->queryPropTree(graphName);
+                if (node)
+                {
+                    if (subId)
+                    {
+                        // This is what you might expect it to say...
+                        //StringBuffer sg("sg");
+                        //sg.append(subId);
+                        //node = node->queryPropTree(sg);
+                        // but in fact the node states are stored in separate elements. I need to see if that is something I broke.
+                        StringBuffer xpath("node[@id='");
+                        xpath.append(subId).append("'])");
+                        node->removeProp(xpath);  // Shouldn't be one, just playing safe
+                        node = node->addPropTree("node", createPTree("node"));
+                        node->setPropInt("@id", subId);
+                        node->setPropInt("@_state", state);
+                    }
+                    else
+                        node->setPropInt("@_state", state);
+                }
+            }
+        }
+        return progress.getClear();
     }
 protected:
     void createBatch()
@@ -2952,7 +3029,7 @@ public:
                 wuXML->setPropInt("@wuidVersion", WUID_VERSION);  // we implement the latest version.
                 Owned<IRemoteConnection> daliLock;
                 lockWuid(daliLock, useWuid);
-                Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), secmgr, secuser, daliLock.getClear());
+                Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), secmgr, secuser, daliLock.getClear(), false);
                 return wu.getClear();
             }
             suffix = rand_r(&randState);
@@ -2964,7 +3041,7 @@ public:
     {
         Owned<IPTree> wuXML = cassandraToWorkunitXML(wuid);
         if (wuXML)
-            return new CCassandraWorkUnit(this, wuXML.getClear(), secmgr, secuser, NULL);
+            return new CCassandraWorkUnit(this, wuXML.getClear(), secmgr, secuser, NULL, false);
         else
             return NULL;
     }
@@ -2974,8 +3051,59 @@ public:
         Owned<IRemoteConnection> daliLock;
         lockWuid(daliLock, wuid);
         Owned<IPTree> wuXML = cassandraToWorkunitXML(wuid);
-        Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), secmgr, secuser, daliLock.getClear());
+        Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), secmgr, secuser, daliLock.getClear(), false);
         return wu.getClear();
+    }
+    virtual bool _restoreWorkUnit(IPTree *_pt, const char *wuid)
+    {
+        Owned<IPTree> pt(_pt);
+        try
+        {
+            Owned<IRemoteConnection> daliLock;
+            lockWuid(daliLock, wuid);
+            Owned<IPropertyTree> gProgress = pruneBranch(pt, "GraphProgress[1]");
+            Owned<CCassandraWorkUnit> wu = new CCassandraWorkUnit(this, pt.getClear(), NULL, NULL, daliLock.getClear(), true);
+            if (gProgress)
+            {
+                Owned<IPTreeIterator> graphs = gProgress->getElements("*");
+                ForEach(*graphs)
+                {
+                    IPTree &graph = graphs->query();
+                    const char *graphName = graph.queryName();
+                    Owned<IPTreeIterator> subs = graph.getElements("*");
+                    ForEach(*subs)
+                    {
+                        IPTree &sub = subs->query();
+                        const char *name=sub.queryName();
+                        if (name[0]=='s' && name[1]=='g')
+                        {
+                            wu->setGraphProgress(&graph, graphName, atoi(name+2), sub.queryProp("@creator"));
+                        }
+                        else if (streq(name, "node"))
+                        {
+                            unsigned subid = sub.getPropInt("@id");
+                            if (subid)
+                            {
+                                if (sub.hasChildren()) // Old format
+                                    wu->setGraphProgress(&sub, graphName, subid, sub.queryProp("@creator"));
+                                if (sub.hasProp("@_state"))
+                                    wu->setNodeState(graphName, subid, (WUGraphState) sub.getPropInt("@_state"));
+                            }
+                        }
+                    }
+                    if (graph.hasProp("@_state"))
+                        wu->setGraphState(graphName, (WUGraphState) graph.getPropInt("@_state"));
+                }
+            }
+            wu->commit();
+            return true;
+        }
+        catch (IException *E)
+        {
+            EXCLOG(E);
+            ::Release(E);
+            return false;
+        }
     }
 
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL)
@@ -2984,7 +3112,7 @@ public:
         Owned<IRemoteConnection> daliLock;
         lockWuid(daliLock, GLOBAL_WORKUNIT);
         Owned<IPTree> wuXML = createPTree(GLOBAL_WORKUNIT);
-        Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), NULL, NULL, daliLock.getClear());
+        Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), NULL, NULL, daliLock.getClear(), false);
         return &wu->lockRemote(false);
     }
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser)
@@ -3419,6 +3547,7 @@ public:
 
     virtual void createRepository()
     {
+        cluster.disconnect();
         CassandraSession s(cass_session_new());
         CassandraFuture future(cass_session_connect(s, cluster.queryCluster()));
         future.wait("connect without keyspace");

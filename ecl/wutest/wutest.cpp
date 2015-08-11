@@ -353,7 +353,7 @@ int main(int argc, const char *argv[])
                 if (from.length()==0)
                     from.append('.');
                 const char *wuid = globals->queryProp("WUID");
-                if (restoreWorkUnit(from.str(),wuid))
+                if (factory->restoreWorkUnit(from.str(),wuid))
                     printf("restored %s\n", wuid);
                 else
                     printf("failed to restore %s\n", wuid);
