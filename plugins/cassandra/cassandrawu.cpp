@@ -845,6 +845,7 @@ static const CassandraXmlMapping workunitsMappings [] =
     {"clustername", "text", "@clusterName", stringColumnMapper},
     {"jobname", "text", "@jobName", stringColumnMapper},
     {"priorityclass", "text", "@priorityClass", stringColumnMapper},
+    {"prioritylevel", "int", "@priorityLevel", intColumnMapper},
     {"wuScope", "text", "@scope", stringColumnMapper},
     {"submitID", "text", "@submitID", stringColumnMapper},
     {"state", "text", "@state", stringColumnMapper},
@@ -857,14 +858,14 @@ static const CassandraXmlMapping workunitsMappings [] =
 
     {"agentSession", "bigint", "@agentSession", bigintColumnMapper},
     {"debug", "map<text, text>", "Debug", simpleMapColumnMapper},
-    {"attributes", "map<text, text>", "@agentSession@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state@timeScheduled@totalThorTime@", attributeMapColumnMapper},  // name is the suppression list, note trailing @
+    {"attributes", "map<text, text>", "@agentSession@wuid@clusterName@jobName@priorityClass@priorityLevel@protected@scope@submitID@state@timeScheduled@totalThorTime@", attributeMapColumnMapper},  // name is the suppression list, note trailing @
     {"plugins", "list<text>", "Plugins", pluginListColumnMapper},
     {"workflow", "map<text, text>", "Workflow", workflowMapColumnMapper},
     {"onWarnings", "map<int, text>", "OnWarnings/OnWarning", warningsMapColumnMapper},
 
     // These are catchalls for anything not processed above or in a child table
 
-    {"elements", "map<text, text>", "@Action@Application@Debug@Exceptions@FilesRead@Graphs@Results@Statistics@Plugins@Query@Variables@Temporaries@Workflow@", elementMapColumnMapper},  // name is the suppression list, note trailing @
+    {"elements", "map<text, text>", "@Action@Application@Debug@Exceptions@Files@FilesRead@Graphs@Results@Statistics@Plugins@Query@Variables@Temporaries@Workflow@", elementMapColumnMapper},  // name is the suppression list, note trailing @
     {"subtrees", "map<text, text>", "@DiskUsageStats@Parameters@Process@Tracing@", subTreeMapColumnMapper},  // name is the INCLUSION list, note trailing @
 
     { NULL, "workunits", "((partition), wuid)|CLUSTERING ORDER BY (wuid DESC)", stringColumnMapper}
@@ -877,6 +878,7 @@ static const CassandraXmlMapping workunitInfoMappings [] =  // A cut down versio
     {"clustername", "text", "@clusterName", stringColumnMapper},
     {"jobname", "text", "@jobName", stringColumnMapper},
     {"priorityclass", "text", "@priorityClass", stringColumnMapper},
+    {"prioritylevel", "int", "@priorityLevel", intColumnMapper},
     {"wuScope", "text", "@scope", stringColumnMapper},
     {"submitID", "text", "@submitID", stringColumnMapper},
     {"state", "text", "@state", stringColumnMapper},
@@ -900,6 +902,7 @@ static const CassandraXmlMapping searchMappings [] =
     {"clustername", "text", "@clusterName", stringColumnMapper},
     {"jobname", "text", "@jobName", stringColumnMapper},
     {"priorityclass", "text", "@priorityClass", stringColumnMapper},
+    {"prioritylevel", "int", "@priorityLevel", intColumnMapper},
     {"scope", "text", "@scope", stringColumnMapper},
     {"submitID", "text", "@submitID", stringColumnMapper},
     {"state", "text", "@state", stringColumnMapper},
@@ -930,11 +933,12 @@ static const CassandraXmlMapping uniqueSearchMappings [] =
 
 const char * wildSearchPaths[] = { "@submitID", "@clusterName", "@jobName", NULL};
 
-static const CassandraXmlMapping filesReadSearchMappings [] =
+static const CassandraXmlMapping filesSearchMappings [] =
 {
     {"name", "text", "@name", stringColumnMapper},
+    {"read", "boolean", "@read", boolColumnMapper},
     {"wuid", "text", NULL, suppliedStringColumnMapper},
-    { NULL, "filesReadSearchValues", "((name), wuid)|CLUSTERING ORDER BY (wuid DESC)", stringColumnMapper}
+    { NULL, "filesSearchValues", "((name, read), wuid)|CLUSTERING ORDER BY (wuid DESC)", stringColumnMapper}
 };
 
 // The version table is keyed by a partition value because (a) you need to key by something and (b) we can use it to spread the load of
@@ -964,7 +968,7 @@ static const CassandraXmlMapping versionMappings [] =
 
 // The following describe child tables - all keyed by wuid
 
-enum ChildTablesEnum { WuQueryChild, WuExceptionsChild, WuStatisticsChild, WuGraphsChild, WuResultsChild, WuVariablesChild, WuTemporariesChild, WuFilesReadChild, ChildTablesSize };
+enum ChildTablesEnum { WuQueryChild, WuExceptionsChild, WuStatisticsChild, WuGraphsChild, WuResultsChild, WuVariablesChild, WuTemporariesChild, WuFilesReadChild, WuFilesWrittenChild, ChildTablesSize };
 
 struct ChildTableInfo
 {
@@ -1128,8 +1132,7 @@ static const CassandraXmlMapping wuFilesReadMappings [] =
     {"partition", "int", NULL, hashRootNameColumnMapper},
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"name", "text", "@name", stringColumnMapper},
-    {"cluster", "text", "@cluster", stringColumnMapper},
-    {"useCount", "int", "@useCount", intColumnMapper}, // NOTE - could think about using a counter column, but would mess up the commit paradigm
+    {"attributes", "map<text, text>", "@name@", attributeMapColumnMapper},  /* name is the suppression list */
     {"subfiles", "list<text>", NULL, subfileListColumnMapper},
     { NULL, "wuFilesRead", "((partition, wuid), name)", stringColumnMapper}
 };
@@ -1141,8 +1144,24 @@ static const ChildTableInfo wuFilesReadTable =
     wuFilesReadMappings
 };
 
+static const CassandraXmlMapping wuFilesWrittenMappings [] =
+{
+    {"partition", "int", NULL, hashRootNameColumnMapper},
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"name", "text", "@name", stringColumnMapper},
+    {"attributes", "map<text, text>", "@name@", attributeMapColumnMapper},  /* name is the suppression list */
+    { NULL, "wuFilesWritten", "((partition, wuid), name)", stringColumnMapper}
+};
+
+static const ChildTableInfo wuFilesWrittenTable =
+{
+    "Files", "File",
+    WuFilesWrittenChild,
+    wuFilesWrittenMappings
+};
+
 // Order should match the enum above
-static const ChildTableInfo * const childTables [] = { &wuQueriesTable, &wuExceptionsTable, &wuStatisticsTable, &wuGraphsTable, &wuResultsTable, &wuVariablesTable, &wuTemporariesTable, &wuFilesReadTable, NULL };
+static const ChildTableInfo * const childTables [] = { &wuQueriesTable, &wuExceptionsTable, &wuStatisticsTable, &wuGraphsTable, &wuResultsTable, &wuVariablesTable, &wuTemporariesTable, &wuFilesReadTable, &wuFilesWrittenTable, NULL };
 
 // Graph progress tables are read directly, XML mappers not used
 
@@ -1305,20 +1324,30 @@ extern void simpleXMLtoCassandra(const ICassandraSession *session, CassBatch *ba
     check(cass_batch_add_statement(batch, update));
 }
 
-extern void deleteSimpleXML(const ICassandraSession *session, CassBatch *batch, const CassandraXmlMapping *mappings, IPTree *inXML, const char *userVal = NULL)
+extern void deleteFileSearch(const ICassandraSession *session, CassBatch *batch, const char *name, bool read, const char *wuid)
 {
     StringBuffer names;
     StringBuffer tableName;
-    getFieldNames(mappings, names, tableName);
-    VStringBuffer deleteQuery("DELETE from %s where name=? and wuid=?", tableName.str());
+    getFieldNames(filesSearchMappings, names, tableName);
+    VStringBuffer deleteQuery("DELETE from %s where name=? and read=? and wuid=?", tableName.str());
     CassandraStatement update(session->prepareStatement(deleteQuery));
-    unsigned bindidx = 0;
-    while (mappings->columnName)
-    {
-        if (mappings->mapper.fromXML(&update, bindidx, inXML, mappings->xpath, userVal))
-            bindidx++;
-        mappings++;
-    }
+    update.bindString(0, name);
+    update.bindBool(1, read ? cass_true : cass_false);
+    update.bindString(2, wuid);
+    check(cass_batch_add_statement(batch, update));
+}
+
+extern void addFileSearch(const ICassandraSession *session, CassBatch *batch, const char *name, bool read, const char *wuid)
+{
+    StringBuffer bindings;
+    StringBuffer names;
+    StringBuffer tableName;
+    getBoundFieldNames(filesSearchMappings, names, bindings, NULL, NULL, tableName);
+    VStringBuffer insertQuery("INSERT INTO %s (%s) values (%s)", tableName.str(), names.str()+1, bindings.str()+1);
+    CassandraStatement update(session->prepareStatement(insertQuery));
+    update.bindString(0, name);
+    update.bindBool(1, read ? cass_true : cass_false);
+    update.bindString(2, wuid);
     check(cass_batch_add_statement(batch, update));
 }
 
@@ -2151,6 +2180,7 @@ public:
                 childXMLtoCassandra(sessionCache, *batch, wuExceptionsMappings, p, "Exceptions/Exception", 0);
                 childXMLtoCassandra(sessionCache, *batch, wuStatisticsMappings, p, "Statistics/Statistic", 0);
                 childXMLtoCassandra(sessionCache, *batch, wuFilesReadMappings, p, "FilesRead/File", 0);
+                childXMLtoCassandra(sessionCache, *batch, wuFilesWrittenMappings, p, "Files/File", 0);
                 IPTree *query = p->queryPropTree("Query");
                 if (query)
                     childXMLRowtoCassandra(sessionCache, *batch, wuQueryMappings, wuid, *query, 0);
@@ -2352,6 +2382,7 @@ public:
     {
         if (file)
         {
+            childLoaded[WuFilesReadChild] = true;  // Prevent duplicates if someone tries to read back files read (unlikely)
             CPersistedWorkUnit::noteFileRead(file);
             VStringBuffer xpath("FilesRead/File[@name='%s']", file->queryLogicalName());
             noteDirty(xpath, wuFilesReadMappings);
@@ -2365,6 +2396,16 @@ public:
                 VStringBuffer xpath("FilesRead/File[@name='%s']", files->query().queryProp("@name"));
                 noteDirty(xpath, wuFilesReadMappings);
             }
+        }
+    }
+    virtual void addFile(const char *fileName, StringArray *clusters, unsigned usageCount, WUFileKind fileKind, const char *graphOwner)
+    {
+        if (fileName)
+        {
+            childLoaded[WuFilesWrittenChild] = true;  // Prevent duplicates if someone tries to read back files written from same object (unlikely)
+            CPersistedWorkUnit::addFile(fileName, clusters, usageCount, fileKind, graphOwner);
+            VStringBuffer xpath("Files/File[@name='%s']", fileName);
+            noteDirty(xpath, wuFilesWrittenMappings);
         }
     }
 
@@ -2537,6 +2578,12 @@ public:
         CPersistedWorkUnit::_loadFilesRead();
     }
 
+    virtual void _loadFilesWritten() const
+    {
+        checkChildLoaded(wuFilesWrittenTable);    // Lazy populate the Files branch of p from Cassandra
+        CPersistedWorkUnit::_loadFilesWritten();
+    }
+
     virtual void _loadResults() const
     {
         checkChildLoaded(wuResultsTable);        // Lazy populate the Results branch of p from Cassandra
@@ -2698,10 +2745,13 @@ protected:
         Owned<IPropertyTreeIterator> filesRead = &getFilesReadIterator();
         ForEach(*filesRead)
         {
-            IPTree &file = filesRead->query();
-            deleteSimpleXML(sessionCache, *batch, filesReadSearchMappings, &file, wuid);
+            deleteFileSearch(sessionCache, *batch, filesRead->query().queryProp("@name"), true, wuid);
         }
-        // MORE deleteFilesReadSecondaries(*p, wuid);
+        Owned<IPropertyTreeIterator> filesWritten = &getFileIterator();
+        ForEach(*filesWritten)
+        {
+            deleteFileSearch(sessionCache, *batch, filesWritten->query().queryProp("@name"), false, wuid);
+        }
     }
 
     void updateSecondaries(const char *wuid)
@@ -2730,8 +2780,12 @@ protected:
         Owned<IPropertyTreeIterator> filesRead = &getFilesReadIterator();
         ForEach(*filesRead)
         {
-            IPTree &file = filesRead->query();
-            simpleXMLtoCassandra(sessionCache, *batch, filesReadSearchMappings, &file, wuid);
+            addFileSearch(sessionCache, *batch, filesRead->query().queryProp("@name"), true, wuid);
+        }
+        Owned<IPropertyTreeIterator> filesWritten = &getFileIterator();
+        ForEach(*filesWritten)
+        {
+            addFileSearch(sessionCache, *batch, filesWritten->query().queryProp("@name"), false, wuid);
         }
     }
 
@@ -2989,6 +3043,8 @@ public:
             cached->touch();
         else
             cached.setown(new CCassandraWuUQueryCacheEntry());
+        if (pageSize > INT_MAX)
+            pageSize = INT_MAX;
         const WUSortField *thisFilter = filters;
         IArrayOf<IPostFilter> goodFilters;
         IArrayOf<IPostFilter> wuidFilters;
@@ -3076,6 +3132,7 @@ public:
                         mergeFilter(wuidFilters, field, fv);
                     break;
                 case WUSFfileread:
+                case WUSFfilewritten:
                     fileFilters.append(*new PostFilter(field, fv, true));
                     break;
                 case WUSFtotalthortime:
@@ -3113,11 +3170,13 @@ public:
             {
                 // We can't postfilter by these - we COULD in some cases do a join between these and some other filtered set
                 // but we will leave that as an exercise to the reader. So if there is a fileFilter, read it first, and turn it into a merge set of the resulting wus.
+                // MORE read and written are not the same
                 assertex(fileFilters.length()==1);  // If we supported more there would be a join phase here
                 merger->addPostFilters(goodFilters, 0);
                 merger->addPostFilters(poorFilters, 0);
                 merger->addPostFilters(remoteWildFilters, 0);
-                CassandraResult wuids(fetchDataForFileRead(fileFilters.item(0).queryValue(), wuidFilters, 0));
+                const IPostFilter &fileFilter = fileFilters.item(0);
+                CassandraResult wuids(fetchDataForFiles(fileFilter.queryValue(), wuidFilters, fileFilter.queryField()==WUSFfileread));
                 CassandraIterator rows(cass_iterator_from_result(wuids));
                 StringBuffer value;
                 while (cass_iterator_next(rows))
@@ -3371,7 +3430,7 @@ public:
         ensureTable(querySession(), workunitsMappings);
         ensureTable(querySession(), searchMappings);
         ensureTable(querySession(), uniqueSearchMappings);
-        ensureTable(querySession(), filesReadSearchMappings);
+        ensureTable(querySession(), filesSearchMappings);
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             ensureTable(querySession(), table[0]->mappings);
         ensureTable(querySession(), wuGraphProgressMappings);
@@ -3827,27 +3886,26 @@ private:
         return executeQuery(querySession(), select);
     }
 
-    // Fetch rows from the file search table
+    // Fetch rows from the file search table (covers files read and files written)
 
-    const CassResult *fetchDataForFileRead(const char *name, const IArrayOf<IPostFilter> &wuidFilters, unsigned limit) const
+    const CassResult *fetchDataForFiles(const char *name, const IArrayOf<IPostFilter> &wuidFilters, bool read) const
     {
         StringBuffer names;
         StringBuffer tableName;
-        getFieldNames(filesReadSearchMappings+1, names, tableName);  // mappings+3 means we don't return the key column (name)
-        VStringBuffer selectQuery("select %s from %s where name=?", names.str()+1, tableName.str());
+        getFieldNames(filesSearchMappings+2, names, tableName);  // mappings+2 means we don't return the key columns (name and readmode)
+        VStringBuffer selectQuery("select %s from %s where name=? and read=?", names.str()+1, tableName.str());
         ForEachItemIn(idx, wuidFilters)
         {
             const IPostFilter &wuidFilter = wuidFilters.item(idx);
             selectQuery.appendf(" and wuid %s ?", wuidFilter.queryField()==WUSFwuidhigh ? "<=" : ">=");
         }
-        if (limit)
-            selectQuery.appendf(" LIMIT %u", limit);
         CassandraStatement select(prepareStatement(selectQuery));
         select.bindString(0, name);
+        select.bindBool(1, read ? cass_true : cass_false);
         ForEachItemIn(idx2, wuidFilters)
         {
             const IPostFilter &wuidFilter = wuidFilters.item(idx2);
-            select.bindString(idx2+1, wuidFilter.queryValue());
+            select.bindString(idx2+2, wuidFilter.queryValue());
         }
         return executeQuery(querySession(), select);
     }

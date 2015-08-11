@@ -769,6 +769,14 @@ mapEnums actions[] = {
    { WUActionSize, NULL },
 };
 
+mapEnums priorityClasses[] = {
+   { PriorityClassUnknown, "unknown" },
+   { PriorityClassLow, "low" },
+   { PriorityClassNormal, "normal" },
+   { PriorityClassHigh, "high" },
+   { PriorityClassSize, NULL },
+};
+
 const char * getWorkunitStateStr(WUState state)
 {
     dbgassertex(state < WUStateSize);
@@ -825,6 +833,8 @@ public:
         timeScheduled.set(p.queryProp("@timeScheduled"));
         state = (WUState) getEnum(&p, "@state", states);
         action = (WUAction) getEnum(&p, "Action", actions);
+        priority = (WUPriorityClass) getEnum(&p, "@priorityClass", priorityClasses);
+        priorityLevel = calcPriorityValue(&p);
         wuscope.set(p.queryProp("@scope"));
         appvalues.load(&p,"Application/*");
         totalThorTime = nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), false));
@@ -839,6 +849,9 @@ public:
     virtual const char *queryStateDesc() const { return getEnumText(state, states); }
     virtual WUAction getAction() const { return action; }
     virtual const char *queryActionDesc() const { return getEnumText(action, actions); }
+    virtual WUPriorityClass getPriority() const { return priority; }
+    virtual const char *queryPriorityDesc() const { return getEnumText(priority, priorityClasses); }
+    virtual int getPriorityLevel() const { return priorityLevel; }
     virtual bool isProtected() const { return _isProtected; }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const
     {
@@ -855,6 +868,8 @@ protected:
     unsigned totalThorTime;
     WUState state;
     WUAction action;
+    WUPriorityClass priority;
+    int priorityLevel;
     bool _isProtected;
 };
 
@@ -1201,6 +1216,8 @@ public:
             { return c->getLibraries(); }
     virtual WUPriorityClass getPriority() const
             { return c->getPriority(); }
+    virtual const char *queryPriorityDesc() const
+            { return c->queryPriorityDesc(); }
     virtual int getPriorityLevel() const
             { return c->getPriorityLevel(); }
     virtual int getPriorityValue() const
@@ -1830,6 +1847,7 @@ mapEnums workunitSortFields[] =
    { WUSFwuidhigh, "@" },
    { WUSFwildwuid, "@" },
    { WUSFappvalue, "Application" },
+   { WUSFfilewritten, "Files/File/@name" },
    { WUSFterm, NULL }
 };
 
@@ -3753,14 +3771,6 @@ const char *CLocalWorkUnit::queryWuScope() const
     return ret;
 }
 
-mapEnums priorityClasses[] = {
-   { PriorityClassUnknown, "unknown" },
-   { PriorityClassLow, "low" },
-   { PriorityClassNormal, "normal" },
-   { PriorityClassHigh, "high" },
-   { PriorityClassSize, NULL },
-};
-
 void CLocalWorkUnit::setPriority(WUPriorityClass cls) 
 {
     CriticalBlock block(crit);
@@ -3771,6 +3781,11 @@ WUPriorityClass CLocalWorkUnit::getPriority() const
 {
     CriticalBlock block(crit);
     return (WUPriorityClass) getEnum(p, "@priorityClass", priorityClasses);
+}
+
+const char *CLocalWorkUnit::queryPriorityDesc() const
+{
+    return getEnumText(getPriority(), priorityClasses);
 }
 
 void CLocalWorkUnit::setState(WUState value) 
@@ -6048,12 +6063,16 @@ void CLocalWorkUnit::noteFileRead(IDistributedFile *file)
     if (file)
     {
         CriticalBlock block(crit);
-        _loadFilesRead();
         IPropertyTree *files = p->queryPropTree("FilesRead");
         if (!files)
             files = p->addPropTree("FilesRead", createPTree());
         _noteFileRead(file, files);
     }
+}
+
+void CLocalWorkUnit::_loadFilesWritten() const
+{
+    // Nothing to do
 }
 
 static void addFile(IPropertyTree *files, const char *fileName, const char *cluster, unsigned usageCount, WUFileKind fileKind, const char *graphOwner)
@@ -6083,7 +6102,7 @@ void CLocalWorkUnit::addFile(const char *fileName, StringArray *clusters, unsign
     if (!files)
         files = p->addPropTree("Files", createPTree());
     if (!clusters)
-        addFile(fileName, NULL, usageCount, fileKind, graphOwner);
+        ::addFile(files, fileName, NULL, usageCount, fileKind, graphOwner);
     else
     {
         ForEachItemIn(c, *clusters)
@@ -6180,6 +6199,7 @@ void CLocalWorkUnit::addDiskUsageStats(__int64 _avgNodeUsage, unsigned _minNode,
 IPropertyTreeIterator & CLocalWorkUnit::getFileIterator() const
 {
     CriticalBlock block(crit);
+    _loadFilesWritten();
     return * p->getElements("Files/File");
 }
 

@@ -39,6 +39,14 @@ include_directories (
          ./../../testing/unittests 
     )
 
+if ( USE_CPPUNIT )
+  include_directories(
+         ./../../plugins/workunitservices
+         ./../../rtl/include
+         ./../../rtl/eclrtl
+    )
+endif()
+
 ADD_DEFINITIONS( -D_CONSOLE )
 if ( FORCE_WORKUNITS_TO_CASSANDRA )
   ADD_DEFINITIONS( -DFORCE_WORKUNITS_TO_CASSANDRA )
@@ -63,3 +71,6 @@ if ( FORCE_WORKUNITS_TO_CASSANDRA )
   target_link_libraries ( wutest cassandraembed )
 endif ()
 
+if ( USE_CPPUNIT )
+  target_link_libraries ( wutest workunitservices )
+endif()

@@ -31,6 +31,8 @@
 #include "dalienv.hpp"
 
 #ifdef _USE_CPPUNIT
+#include "workunitservices.hpp"
+#include "eclrtl.hpp"
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
 #endif
@@ -415,8 +417,10 @@ class WuTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testListByAppValue);
         CPPUNIT_TEST(testListByAppValueWild);
         CPPUNIT_TEST(testListByFilesRead);
+        CPPUNIT_TEST(testListByFilesWritten);
         CPPUNIT_TEST(testSet);
         CPPUNIT_TEST(testResults);
+        CPPUNIT_TEST(testWorkUnitServices);
         CPPUNIT_TEST(testDelete);
         CPPUNIT_TEST(testCopy);
         CPPUNIT_TEST(testQuery);
@@ -470,6 +474,9 @@ protected:
                 " </FilesRead>", i % 10, i % 10);
             p->setPropTree("FilesRead", createPTreeFromXMLString(fileinfo));
             wu->noteFileRead(NULL); // Make sure we notice that it was modified
+
+            VStringBuffer myFileW("myfilewritten%02d", i % 10);
+            wu->addFile(myFileW, NULL, i % 3, WUFileStandard, NULL);
         }
         unsigned after = factory->numWorkUnits();
         DBGLOG("%u workunits created in %d ms (%d total)", testSize, msTick()-start, after);
@@ -1556,6 +1563,27 @@ protected:
         ASSERT(numIterated == (testSize+9)/10);
         numIterated++;
     }
+    void testListByFilesWritten()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned start = msTick();
+        unsigned numIterated = 0;
+        // Test filter by filesRead
+        WUSortField filterByFilesRead[] = { WUSFfilewritten, WUSFterm };
+        StringAttr prevValue;
+        Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFreverse), filterByFilesRead, "myfilewritten00", 0, 10000, NULL, NULL);
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            if (numIterated)
+                ASSERT(strcmp(wu.queryWuid(), prevValue)<0);
+            prevValue.set(wu.queryWuid());
+            numIterated++;
+        }
+        DBGLOG("%d workunits by filewritten wild in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+9)/10);
+        numIterated++;
+    }
     void testGlobal()
     {
         // Is global workunit ever actually used any more? For scalar persists, perhaps
@@ -1576,6 +1604,174 @@ protected:
         ASSERT(cresult);
         ASSERT(cresult->isResultScalar());
         ASSERT(cresult->getResultInt()==53);
+    }
+    void testWorkUnitServices()
+    {
+        class DummyContext: implements ICodeContext
+        {
+            virtual const char *loadResource(unsigned id) { throwUnexpected(); }
+
+            // Fetching interim results from workunit/query context
+
+            virtual bool getResultBool(const char * name, unsigned sequence) { throwUnexpected(); }
+            virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
+            virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) { throwUnexpected(); }
+            virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { throwUnexpected(); }
+            virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
+            virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
+            virtual __int64 getResultInt(const char * name, unsigned sequence) { throwUnexpected(); }
+            virtual double getResultReal(const char * name, unsigned sequence) { throwUnexpected(); }
+            virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
+            virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
+            virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) { throwUnexpected(); }
+            virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
+            virtual char *getResultVarString(const char * name, unsigned sequence) { throwUnexpected(); }
+            virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) { throwUnexpected(); }
+
+            // Writing results to workunit/query context/output
+
+            virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
+            virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
+            virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { throwUnexpected(); }
+            virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { throwUnexpected(); }
+            virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
+            virtual void setResultReal(const char * stepname, unsigned sequence, double value) { throwUnexpected(); }
+            virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) { throwUnexpected(); }
+            virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) { throwUnexpected(); }
+            virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) { throwUnexpected(); }
+            virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) { throwUnexpected(); }
+            virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { throwUnexpected(); }
+            virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { throwUnexpected(); }
+
+            // Checking persists etc are up to date
+
+            virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
+            virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { throwUnexpected(); }
+            virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 crc) { throwUnexpected(); }
+
+            // Fetching various environment information, typically accessed via std.system
+
+            virtual char *getClusterName() { throwUnexpected(); } // caller frees return string.
+            virtual char *getEnv(const char *name, const char *defaultValue) const { throwUnexpected(); }
+            virtual char *getGroupName() { throwUnexpected(); } // caller frees return string.
+            virtual char *getJobName() { throwUnexpected(); } // caller frees return string.
+            virtual char *getJobOwner() { throwUnexpected(); } // caller frees return string.
+            virtual unsigned getNodeNum() { throwUnexpected(); }
+            virtual unsigned getNodes() { throwUnexpected(); }
+            virtual char *getOS() { throwUnexpected(); } // caller frees return string
+            virtual char *getPlatform() { throwUnexpected(); } // caller frees return string.
+            virtual unsigned getPriority() const { throwUnexpected(); }
+            virtual char *getWuid() { throwUnexpected(); } // caller frees return string.
+
+            // Exception handling
+
+            virtual void addWuException(const char*, unsigned int, unsigned int, const char*) { throwUnexpected(); } //n.b. this might be better named: it should only be used for adding user-generated exceptions (via the logging plug-in) --- there's a call in IAgentContext which takes a source argument too
+            virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { throwUnexpected(); }
+
+            // File resolution etc
+
+            virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
+            virtual unsigned __int64 getFileOffset(const char *logicalPart) { throwUnexpected(); }
+            virtual char *getFilePart(const char *logicalPart, bool create=false) { throwUnexpected(); } // caller frees return string.
+            virtual IDistributedFileTransaction *querySuperFileTransaction() { throwUnexpected(); }
+            virtual IUserDescriptor *queryUserDescriptor() { throwUnexpected(); }
+
+            // Graphs, child queries etc
+
+            virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { throwUnexpected(); }
+            virtual unsigned getGraphLoopCounter() const { return 0; }
+            virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal) { throwUnexpected(); }
+            virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) { return NULL; }
+
+            // Logging etc
+
+            virtual unsigned logString(const char *text) const { throwUnexpected(); }
+            virtual IDebuggableContext *queryDebugContext() const { return NULL; }
+
+            // Memory management
+
+            virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const { throwUnexpected(); }
+            virtual const char * cloneVString(const char *str) const { throwUnexpected(); }
+            virtual const char * cloneVString(size32_t len, const char *str) const { throwUnexpected(); }
+
+            // Called from generated code for FROMXML/TOXML
+
+            virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) { throwUnexpected(); }
+            virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { throwUnexpected(); }
+
+            // Miscellaneous
+
+            virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }    // shouldn't really be here, but it broke thor.
+            virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { throwUnexpected(); }
+
+            // Called from generated code for FROMJSON
+
+            virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) { throwUnexpected(); }
+            virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { throwUnexpected(); }
+
+            virtual const IContextLogger &queryContextLogger() const
+            {
+                return queryDummyContextLogger();
+            }
+            virtual IEngineContext *queryEngineContext() { return NULL; }
+            virtual char *getDaliServers() { throwUnexpected(); }
+            virtual IWorkUnit* updateWorkUnit() const { throwUnexpected(); }
+
+        } ctx;
+
+        size32_t lenResult;
+        void * result;
+        wsWorkunitList(&ctx, lenResult, result, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false);
+        /* export WsWorkunitRecord := record "
+                                    " string24 wuid;"                         0
+                                    " string owner{maxlength(64)};"           24
+                                    " string cluster{maxlength(64)};"         92
+                                    " string roxiecluster{maxlength(64)};"    160
+                                    " string job{maxlength(256)};"            228
+                                    " string10 state;"                        488
+                                    " string7 priority;"                      498
+                                    " integer2 priorityvalue;"                505
+                                    " string20 created;"                      507
+                                    " string20 modified;"                     527
+                                    " boolean online;"                        547
+                                    " boolean protected;"                     548
+                                  " end;\n"  Total size 549
+                                  */
+        #pragma pack(push, 1)
+        struct resultStruct
+        {
+            char wuid[24];   // space filled
+            unsigned _len_owner; char owner[64];
+            unsigned _len_cluster; char cluster[64];
+            unsigned _len_roxiecluster; char roxiecluster[64];
+            unsigned _len_job; char job[256];
+            char state[10];
+            char priority[7];
+            unsigned short priorityValue;
+            char created[20];
+            char modified[20];
+            bool online;
+            bool isProtected;
+        };
+        #pragma pack(pop)
+        ASSERT(lenResult == testSize * sizeof(resultStruct));
+        rtlFree(result);
+
+        // Now filter owner via generic mechanism
+        unsigned start = msTick();
+        wsWorkunitList(&ctx, lenResult, result, NULL, NULL, "WuTestUser00", NULL, NULL, "completed", NULL, NULL, NULL, NULL, NULL, true, false);
+        ASSERT(lenResult % sizeof(resultStruct) == 0);
+        unsigned numResults = lenResult/sizeof(resultStruct);
+        resultStruct *it = (resultStruct *) result;
+        for (unsigned i = 0; i < numResults; i++)
+        {
+            ASSERT(memicmp(it[i].state, "completed ", 10)==0);
+            ASSERT(memicmp(it[i].owner, "WuTestUser00       ", 20)==0);
+        }
+        DBGLOG("%d owned workunits listed the hard way in %d ms", numResults, msTick()-start);
+        ASSERT(numResults <= (testSize+49)/50);  // Not sure what the exact answer should be!
+
+        rtlFree(result);
     }
 };
 StringArray WuTest::wuids;
