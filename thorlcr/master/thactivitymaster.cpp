@@ -372,10 +372,10 @@ public:
                 break;
             case TAKlocalresultspill:
             case TAKlocalresultwrite:
-                if (!queryOwner().queryOwner() || queryOwner().isGlobal()) // don't need result in master if in local child query
-                    ret = createLocalResultActivityMaster(this);
-                else
-                    ret = new CMasterActivity(this);
+                /* NB: create even if non-global child graph, because although the result itself
+                 * won't be used, codegen. graph initialization code, may reference the result on the master
+                 */
+                ret = createLocalResultActivityMaster(this);
                 break;
             case TAKgraphloopresultwrite:
                 ret = createGraphLoopResultActivityMaster(this);
