@@ -170,26 +170,14 @@ static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
     return factory->openWorkUnit(wuid);
 }
 
-static WUState queryWorkunitState(ICodeContext * ctx, SCMStringBuffer &stateEx)
-{
-    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> wu(factory->openWorkUnit(ctx->getWuid()));
-    WUState state = WUStateRunning;
-    if (wu)
-    {
-        state = wu->getState();
-        wu->getStateEx(stateEx);
-    }
-    return state;
-}
-
 static void setWorkunitState(ICodeContext * ctx, WUState state, const char * msg)
 {
     Owned<IWorkUnit> wu = ctx->updateWorkUnit();
     if (wu)
     {
-        wu->setState(state);
-        wu->setStateEx(msg);
+        wu->setState(state);//resets stateEx
+        if (msg)
+            wu->setStateEx(msg);
         wu->commit();
     }
 }
@@ -543,8 +531,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
     unsigned polltime = 1;
 
-    StringBuffer reason;
-    reason.appendf("Blocked by fileservice activity: %s",label);
+    VStringBuffer reason("Blocked by fileservice activity: %s",label);
     setWorkunitState(ctx, WUStateBlocked, reason.str());
 
     while(true)
