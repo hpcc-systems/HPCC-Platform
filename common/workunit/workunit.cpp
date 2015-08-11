@@ -923,7 +923,7 @@ public:
             if (progress)
             {
                 StringBuffer path;
-                // MORE I don't think this works! Gavin changed the format... Jake?
+                // NOTE - the node state info still uses the old graph layout, even when the stats are using the new...
                 path.append("node[@id=\"").append(nodeId).append("\"]/@_state");
                 return (WUGraphState) progress->getPropInt(path, (unsigned) WUGraphUnknown);
             }
@@ -1043,7 +1043,7 @@ public:
         VStringBuffer path("/GraphProgress/%s", queryWuid());
         Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
         IPTree *progress = ensurePTree(conn->queryRoot(), graphName);
-        // Actually, maybe it does work, but by luck?
+        // NOTE - the node state info still uses the old graph layout, even when the stats are using the new...
         path.clear().append("node[@id=\"").append(nodeId).append("\"]");
         IPropertyTree *node = progress->queryPropTree(path.str());
         if (!node)
@@ -2169,7 +2169,8 @@ IPropertyTree * pruneBranch(IPropertyTree * from, char const * xpath)
 {
     Owned<IPropertyTree> ret;
     IPropertyTree * branch = from->queryPropTree(xpath);
-    if(branch) {
+    if(branch)
+    {
         ret.setown(createPTreeFromIPT(branch));
         from->removeTree(branch);
     }
