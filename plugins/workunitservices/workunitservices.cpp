@@ -318,10 +318,10 @@ static bool addWUQueryFilter(WUSortField *filters, unsigned &count, MemoryBuffer
 static bool serializeWUInfo(IConstWorkUnitInfo &info,MemoryBuffer &mb)
 {
     fixedAppend(mb,24,info.queryWuid());
-    varAppend(mb,64,info.queryUser());
-    varAppend(mb,64,info.queryClusterName());
-    varAppend(mb,64,""); // roxiecluster is obsolete
-    varAppend(mb,256,info.queryJobName());
+    varAppendMax(mb,64,info.queryUser());
+    varAppendMax(mb,64,info.queryClusterName());
+    varAppendMax(mb,64,""); // roxiecluster is obsolete
+    varAppendMax(mb,256,info.queryJobName());
     fixedAppend(mb,10,info.queryStateDesc());
     fixedAppend(mb,7,info.queryPriorityDesc());
     short int prioritylevel = info.getPriorityLevel();
@@ -433,7 +433,7 @@ WORKUNITSERVICES_API void wsWorkunitList(
         addWUQueryFilter(filters, filterCount, filterbuf, fileread, (WUSortField) (WUSFfileread | WUSFnocase));
         addWUQueryFilter(filters, filterCount, filterbuf, filewritten, (WUSortField) (WUSFfilewritten | WUSFnocase));
         addWUQueryFilter(filters, filterCount, filterbuf, username, (WUSortField) (WUSFuser | WUSFnocase));
-        addWUQueryFilter(filters, filterCount, filterbuf, jobname, (WUSortField) (WUSFjob | WUSFnocase));
+        addWUQueryFilter(filters, filterCount, filterbuf, jobname, (WUSortField) (WUSFjob | WUSFwild | WUSFnocase));
         addWUQueryFilter(filters, filterCount, filterbuf, eclcontains, (WUSortField) (WUSFecl | WUSFwild));
         addWUQueryFilter(filters, filterCount, filterbuf, lowwuid, WUSFwuid);
         addWUQueryFilter(filters, filterCount, filterbuf, highwuid, WUSFwuidhigh);
@@ -561,8 +561,8 @@ WORKUNITSERVICES_API void wsWorkunitFilesRead( ICodeContext *ctx, size32_t & __l
         ForEach(*sourceFiles)
         {
             IPropertyTree &item = sourceFiles->query();
-            varAppend(mb, 256, item, "@name");              
-            varAppend(mb, 64, item, "@cluster");                
+            varAppendMax(mb, 256, item, "@name");
+            varAppendMax(mb, 64, item, "@cluster");
             mb.append(item.getPropBool("@super"));
             mb.append((unsigned) item.getPropInt("@useCount"));
         }
@@ -581,9 +581,9 @@ WORKUNITSERVICES_API void wsWorkunitFilesWritten( ICodeContext *ctx, size32_t & 
         ForEach(*sourceFiles)
         {
             IPropertyTree &item = sourceFiles->query();
-            varAppend(mb, 256, item, "@name");              
+            varAppendMax(mb, 256, item, "@name");
             fixedAppend(mb, 10, item, "@graph");                
-            varAppend(mb, 64, item, "@cluster");                
+            varAppendMax(mb, 64, item, "@cluster");
             mb.append( (unsigned) item.getPropInt("@kind"));
         }
     }

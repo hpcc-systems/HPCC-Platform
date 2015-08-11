@@ -55,7 +55,7 @@ inline void varAppend(MemoryBuffer &mb,const char * s)
     varAppend(mb, strlen(s), s);
 }
 
-inline void varAppend(MemoryBuffer &mb,unsigned w,IPropertyTree &pt,const char *prop)
+inline void varAppendMax(MemoryBuffer &mb,unsigned w,IPropertyTree &pt,const char *prop)
 {
     StringBuffer s;
     pt.getProp(prop,s);
@@ -82,10 +82,10 @@ inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
 {
     mb.setEndian(__LITTLE_ENDIAN);
     fixedAppend(mb,24,pt.queryName());
-    varAppend(mb,64,pt,"@submitID");
-    varAppend(mb,64,pt,"@clusterName");
-    varAppend(mb,64,pt,"RoxieQueryInfo/@roxieClusterName"); // No longer likely to be present but retain for compatibility (for now - this needs rewriting to not hit dali directly anyway!)
-    varAppend(mb,256,pt,"@jobName");
+    varAppendMax(mb,64,pt,"@submitID");
+    varAppendMax(mb,64,pt,"@clusterName");
+    varAppendMax(mb,64,pt,"RoxieQueryInfo/@roxieClusterName"); // No longer likely to be present but retain for compatibility (for now - this needs rewriting to not hit dali directly anyway!)
+    varAppendMax(mb,256,pt,"@jobName");
     fixedAppend(mb,10,pt,"@state");
     fixedAppend(mb,7,pt,"@priorityClass");
     short int prioritylevel = calcPriorityValue(&pt);
