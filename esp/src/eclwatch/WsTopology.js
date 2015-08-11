@@ -214,9 +214,6 @@ define([
         },
         TpGetComponentFile: function (params) {
             params.handleAs = "text";
-            if (params.request.CompType === "EclAgentProcess") {
-                params.request.CompType = "AgentExecProcess";
-            }
             return ESPRequest.send("WsTopology", "TpGetComponentFile", params);
         },
         TpLogFile: function (params) {

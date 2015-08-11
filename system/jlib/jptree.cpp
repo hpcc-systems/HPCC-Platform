@@ -7226,9 +7226,13 @@ IPropertyTree *createPTreeFromHttpParameters(const char *name, IProperties *para
     Owned<IPropertyIterator> props = parameters->getIterator();
     ForEach(*props)
     {
-        const char *key = props->getPropKey();
+        StringBuffer key = props->getPropKey();
+        if (!key.length() || key.charAt(key.length()-1)=='!')
+            continue;
+        if (skipLeadingDotParameters && key.charAt(0)=='.')
+            continue;
         const char *value = parameters->queryProp(key);
-        if (skipLeadingDotParameters && key && *key=='.')
+        if (!value || !*value)
             continue;
         ensureHttpParameter(pt, key, value);
     }

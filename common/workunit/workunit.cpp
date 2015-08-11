@@ -5533,12 +5533,12 @@ bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphN
         return false;
 
     graphNum = atoi(scope + CONST_STRLEN(GraphScopePrefix));
+    subGraphId = 0;
 
     const char * colon = strchr(scope, ':');
     if (!colon)
     {
         graphName.set(scope);
-        subGraphId = 0;
         return true;
     }
 
@@ -5546,7 +5546,6 @@ bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphN
     graphName.set(scope, (size32_t)(colon - scope));
     if (MATCHES_CONST_PREFIX(subgraph, SubGraphScopePrefix))
         subGraphId = atoi(subgraph+CONST_STRLEN(SubGraphScopePrefix));
-
     return true;
 }
 

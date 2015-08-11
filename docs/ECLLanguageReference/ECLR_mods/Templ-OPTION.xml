@@ -391,7 +391,7 @@
             </row>
 
             <row>
-              <entry><emphasis>AllowAutoSwitchQueue</emphasis></entry>
+              <entry><emphasis>AllowAutoQueueSwitch</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -1224,7 +1224,7 @@
             <row>
               <entry><emphasis>maxCompileThreads</emphasis></entry>
 
-              <entry>Default 4 for eclccserver and 1 for eclcc </entry>
+              <entry>Default 4 for eclccserver and 1 for eclcc</entry>
 
               <entry>Number of compiler instances to compile the c++</entry>
             </row>

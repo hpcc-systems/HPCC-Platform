@@ -78,6 +78,7 @@ define([
         templateString: template,
         baseClass: "LZBrowseWidget",
         i18n: nlsHPCC,
+        firstLoad: true,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -555,8 +556,13 @@ define([
                     }),
                     displayName: tree({
                         label: this.i18n.Name,
-                        collapseOnRefresh: true,
                         sortable: false,
+                        shouldExpand: function (row, level, previouslyExpanded) {
+                            if (context.firstLoad === true) {
+                                return true;
+                            }
+                            return previouslyExpanded;
+                        },
                         formatter: function (_name, row) {
                             var img = "";
                             var name = _name;
@@ -688,6 +694,7 @@ define([
         },
 
         refreshGrid: function (clearSelection) {
+            this.firstLoad = false;
             this.landingZonesGrid.set("query", {
                 id: "*"
             });

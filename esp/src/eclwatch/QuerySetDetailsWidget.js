@@ -88,6 +88,7 @@ define([
             this.librariesUsedTab = registry.byId(this.id + "_LibrariesUsed");
             this.workunitsTab = registry.byId(this.id + "_Workunit");
             this.testPagesTab = registry.byId(this.id + "_TestPages");
+            this.suspended = registry.byId(this.id + "Suspended");
         },
 
         //  Hitched actions  ---
@@ -236,13 +237,20 @@ define([
             } else if (name === "SuperFiles") {
                 if (lang.exists("SuperFile.length", newValue)) {
                     this.superFilesTab.set("title", this.i18n.SuperFiles + " (" + newValue.SuperFile.length + ")");
-                    var tooltip = "";
+                    var superFileToolTip = "";
+                    var logicalFileToolTip = "";
                     for (var i = 0; i < newValue.SuperFile.length; ++i) {
-                        if (tooltip != "")
-                            tooltip += "\n";
-                        tooltip += newValue.SuperFile[i];
+                        if (superFileToolTip != "")
+                            superFileToolTip += "\n";
+                        superFileToolTip += newValue.SuperFile[i].Name;
                     }
-                    this.superFilesTab.set("tooltip", tooltip);
+                    this.superFilesTab.set("tooltip", superFileToolTip);
+                    for (var i = 0; i < newValue.SuperFile.length; ++i) {
+                        if (logicalFileToolTip != "")
+                            logicalFileToolTip += "\n";
+                        logicalFileToolTip += newValue.SuperFile[i].SubFiles.File;
+                    }
+                    this.logicalFilesTab.set("tooltip", logicalFileToolTip);
                 }
                 var count = 0;
                 arrayUtil.forEach(context.query.SuperFiles.SuperFile, function (item, idx) {
@@ -262,6 +270,16 @@ define([
                 this.librariesUsedTab.set("tooltip", tooltip);
             } else if (name === "Clusters") {
                 if (lang.exists("ClusterQueryState.length", newValue)) {
+                    var checkIfSuspended = false;
+                    if (newValue.ClusterQueryState[0].MixedNodeStates === true) {
+                        dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("mixwarn.png");
+                        checkIfSuspended = true;
+                    } else if (newValue.ClusterQueryState[0].State === "Suspended") {
+                        dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("errwarn.png");
+                        checkIfSuspended = true;
+                    }
+                    this.suspended.set("checked", checkIfSuspended);
+                    this.suspended.set("readOnly", checkIfSuspended);
                     this.errorsTab.set("title", this.i18n.ErrorsStatus + " (" + newValue.ClusterQueryState.length + ")");
                     var tooltip = "";
                     for (var i = 0; i < newValue.ClusterQueryState.length; ++i) {
