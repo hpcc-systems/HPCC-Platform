@@ -1569,96 +1569,67 @@ void CJobMaster::saveSpills()
 
 bool CJobMaster::go()
 {
-    class CWorkunitAbortHandler : public CInterface, implements IThreaded
+    class CWorkunitPauseHandler : public CInterface, implements IWorkUnitSubscriber
     {
         CJobMaster &job;
         IConstWorkUnit &wu;
-        CThreaded threaded;
-        bool running;
-        Semaphore sem;
-    public:
-        CWorkunitAbortHandler(CJobMaster &_job, IConstWorkUnit &_wu)
-            : job(_job), wu(_wu), threaded("WorkunitAbortHandler")
-        {
-            running = true;
-            wu.subscribe(SubscribeOptionAbort);
-            threaded.init(this);
-        }
-        ~CWorkunitAbortHandler()
-        {
-            stop();
-            threaded.join();
-        }
-        virtual void main()
-        {
-            while (running)
-            {
-                if (sem.wait(5000))
-                    break; // signalled aborted
-                if (wu.aborting())
-                {
-                    LOG(MCwarning, thorJob, "ABORT detected from user");
-                    Owned <IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort");
-                    job.fireException(e);
-                    break;
-                }
-            }
-        }
-        void stop() { running = false; sem.signal(); }
-    } wuAbortHandler(*this, *workunit);
-    class CWorkunitPauseHandler : public CInterface, implements ISDSSubscription
-    {
-        CJobMaster &job;
-        IConstWorkUnit &wu;
-        SubscriptionId subId;
-        bool subscribed;
+        Owned<IWorkUnitWatcher> watcher;
         CriticalSection crit;
     public:
         IMPLEMENT_IINTERFACE;
 
         CWorkunitPauseHandler(CJobMaster &_job, IConstWorkUnit &_wu) : job(_job), wu(_wu)
         {
-            StringBuffer xpath("/WorkUnits/");
-            xpath.append(wu.queryWuid()).append("/Action");  // MORE - this should not be done here!
-            subId = querySDS().subscribe(xpath.str(), *this, false, true);
-            subscribed = true;
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+            watcher.setown(factory->getWatcher(this, (WUSubscribeOptions) (SubscribeOptionAction | SubscribeOptionAbort), wu.queryWuid()));
         }
         ~CWorkunitPauseHandler() { stop(); }
         void stop()
         {
             CriticalBlock b(crit);
-            if (subscribed)
+            if (watcher)
             {
-                subscribed = false;
-                querySDS().unsubscribe(subId);
+                watcher->unsubscribe();
+                watcher.clear();
             }
         }
-        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+        void notify(WUSubscribeOptions flags)
         {
             CriticalBlock b(crit);
-            if (!subscribed) return;
-            job.markWuDirty();
-            bool abort = false;
-            bool pause = false;
-            if (valueLen && valueLen==strlen("pause") && (0 == strncmp("pause", (const char *)valueData, valueLen)))
+            if (!watcher)
+                return;
+            if (flags & SubscribeOptionAbort)
             {
-                // pause after current subgraph
-                pause = true;
+                if (wu.aborting())
+                {
+                    LOG(MCwarning, thorJob, "ABORT detected from user");
+                    Owned <IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort");
+                    job.fireException(e);
+                }
             }
-            else if (valueLen && valueLen==strlen("pausenow") && (0 == strncmp("pausenow", (const char *)valueData, valueLen)))
+            if (flags & SubscribeOptionAction)
             {
-                // abort current subgraph
-                abort = true;
-                pause = true;
-            }
-            else
-            {
-                abort = pause = false;
-            }
-            if (pause)
-            {
-                PROGLOG("Pausing job%s", abort?" [now]":"");
-                job.pause(abort);
+                job.markWuDirty();
+                bool abort = false;
+                bool pause = false;
+                wu.forceReload();
+                WUAction action = wu.getAction();
+                if (action==WUActionPause)
+                {
+                    // pause after current subgraph
+                    pause = true;
+                }
+                else if (action==WUActionPauseNow)
+                {
+                    // abort current subgraph
+                    abort = true;
+                    pause = true;
+                }
+                if (pause)
+                {
+                    PROGLOG("Pausing job%s", abort?" [now]":"");
+                    job.pause(abort);
+                }
             }
         }
     } workunitPauseHandler(*this, *workunit);

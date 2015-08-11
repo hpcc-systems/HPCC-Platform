@@ -1473,74 +1473,21 @@ void EclAgent::executeThorGraph(const char * graphName)
     Owned<IJobQueue> jq = createJobQueue(queueName.str());
 
     bool resubmit;
+    Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
     do // loop if pause interrupted graph and needs resubmitting on resume
     {
         resubmit = false; // set if job interrupted in thor
-        class CWorkunitResumeHandler : public CInterface, implements ISDSSubscription
-        {
-            IConstWorkUnit &wu;
-            StringBuffer xpath;
-            StringAttr wuid;
-            SubscriptionId subId;
-            CriticalSection crit;
-            Semaphore sem;
-            
-            void unsubscribe()
-            {
-                CriticalBlock b(crit);
-                if (subId)
-                {
-                    SubscriptionId _subId = subId;
-                    subId = 0;
-                    querySDS().unsubscribe(_subId);
-                }
-            }
-        public:
-            IMPLEMENT_IINTERFACE;
-            CWorkunitResumeHandler(IConstWorkUnit &_wu) : wu(_wu)
-            {
-                xpath.append("/WorkUnits/");
-                wuid.set(wu.queryWuid());
-                xpath.append(wuid.get()).append("/Action");
-                subId = 0;
-            }
-            ~CWorkunitResumeHandler()
-            {
-                unsubscribe();
-            }
-            void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-            {
-                CriticalBlock b(crit);
-                if (0 == subId) return;
-                if (valueLen==strlen("resume") && (0 == strncmp("resume", (const char *)valueData, valueLen)))
-                    sem.signal();
-            }
-            bool wait()
-            {
-                subId = querySDS().subscribe(xpath.str(), *this, false, true);
-                assertex(subId);
-                PROGLOG("Job %s paused, waiting for resume/abort", wuid.get());
-                bool ret = true;
-                while (!sem.wait(10000))
-                {
-                    wu.forceReload();
-                    if (WUStatePaused != wu.getState() || wu.aborting())
-                    {
-                        PROGLOG("Aborting pause job %s, state : %s", wuid.get(), wu.queryStateDesc());
-                        ret = false;
-                        break;
-                    }
-                }
-                unsubscribe();
-                return ret;
-            }
-        } workunitResumeHandler(*queryWorkUnit());
-
         unlockWorkUnit();
         if (WUStatePaused == queryWorkUnit()->getState()) // check initial state - and wait if paused
         {
-            if (!workunitResumeHandler.wait())
-                throw new WorkflowException(0,"User abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
+            loop
+            {
+                WUAction action = wuFactory->waitForWorkUnitAction(wuid, queryWorkUnit()->getAction());
+                if (action == WUActionUnknown)
+                    throw new WorkflowException(0, "Workunit aborting", 0, WorkflowException::ABORT, MSGAUD_user);
+                if (action != WUActionPause && action != WUActionPauseNow)
+                    break;
+            }
         }
         {
             Owned <IWorkUnit> w = updateWorkUnit();
@@ -1691,8 +1638,8 @@ void EclAgent::executeThorGraph(const char * graphName)
     while (resubmit); // if pause interrupted job (i.e. with pausenow action), resubmit graph
 }
 
-//In case of logfile rollover, update workunit logfile name(s) stored
-//in SDS/WorkUnits/{WUID}/Process/EclAgent/myeclagent<log>
+//In case of logfile rollover, update logfile name(s) stored in workunit
+
 void EclAgent::updateWULogfile()
 {
     if (logMsgHandler && config->hasProp("@name"))

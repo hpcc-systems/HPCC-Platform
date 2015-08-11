@@ -563,88 +563,23 @@ protected:
     virtual void _loadExceptions() const;
 };
 
-class CPersistedWorkUnit : public CLocalWorkUnit
+class CPersistedWorkUnit : public CLocalWorkUnit, implements IWorkUnitSubscriber
 {
 public:
     CPersistedWorkUnit(ISecManager *secmgr, ISecUser *secuser) : CLocalWorkUnit(secmgr, secuser)
-{
+    {
         abortDirty = true;
         abortState = false;
     }
-
-    virtual void subscribe(WUSubscribeOptions options)
-    {
-        CriticalBlock block(crit);
-        assertex(options==SubscribeOptionAbort);
-        if (!abortWatcher)
-        {
-            abortWatcher.setown(new CWorkUnitAbortWatcher(this, p->queryName()));
-            abortDirty = true;
-        }
-    }
-    virtual void unsubscribe()
-    {
-        CriticalBlock block(crit);
-        if (abortWatcher)
-        {
-            abortWatcher->unsubscribe();
-            abortWatcher.clear();
-        }
-    }
-
-    virtual bool aborting() const
-    {
-        CriticalBlock block(crit);
-        if (abortDirty)
-        {
-            StringBuffer apath;
-            apath.append("/WorkUnitAborts/").append(p->queryName());
-            Owned<IRemoteConnection> acon = querySDS().connect(apath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-            if (acon)
-                abortState = acon->queryRoot()->getPropInt(NULL) != 0;
-            else
-                abortState = false;
-            abortDirty = false;
-        }
-        return abortState;
-    }
-
+    virtual void subscribe(WUSubscribeOptions options);
+    virtual void unsubscribe();
+    virtual bool aborting() const;
 protected:
-    class CWorkUnitAbortWatcher : public CInterface, implements ISDSSubscription
-    {
-        CPersistedWorkUnit *parent; // not linked - it links me
-        SubscriptionId abort;
-    public:
-        IMPLEMENT_IINTERFACE;
-        CWorkUnitAbortWatcher(CPersistedWorkUnit *_parent, const char *wuid) : parent(_parent)
-        {
-            StringBuffer wuRoot;
-            wuRoot.append("/WorkUnitAborts/").append(wuid);
-            abort = querySDS().subscribe(wuRoot.str(), *this);
-        }
-        ~CWorkUnitAbortWatcher()
-        {
-            assertex(abort==0);
-        }
-
-        void unsubscribe()
-        {
-            querySDS().unsubscribe(abort);
-            abort = 0;
-        }
-
-        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-        {
-            parent->abortDirty = true;
-        }
-    };
-
-    Owned<CWorkUnitAbortWatcher> abortWatcher;
+    virtual void notify(WUSubscribeOptions) { abortDirty = true; }
+    Owned<IWorkUnitWatcher> abortWatcher;
     mutable bool abortDirty;
     mutable bool abortState;
 };
-
-interface ISDSManager; // MORE - can remove once dali split out
 
 class CWorkUnitFactory : public CInterface, implements IWorkUnitFactory
 {
@@ -740,24 +675,39 @@ protected:
     unsigned id;
 };
 
-class WorkUnitWaiter : public CInterface, implements ISDSSubscription, implements IAbortHandler
+class CWorkUnitWatcher : public CInterface, implements IWorkUnitWatcher, implements ISDSSubscription
 {
-    Semaphore changed;
-    SubscriptionId change;
-    SDSNotifyFlags watchFor;
+protected:
+    CriticalSection crit;
+    IWorkUnitSubscriber *subscriber; // not linked - it will generally link me
+    SubscriptionId abortId, stateId, actionId;
 public:
     IMPLEMENT_IINTERFACE;
+    CWorkUnitWatcher(IWorkUnitSubscriber *_subscriber, WUSubscribeOptions flags, const char *wuid);
+    ~CWorkUnitWatcher();
+    void unsubscribe();
+    void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData);
+};
 
-    WorkUnitWaiter(const char *xpath, SDSNotifyFlags _watchFor)
-    : watchFor(_watchFor)
+class WorkUnitWaiter : public CInterface, implements IAbortHandler, implements IWorkUnitSubscriber
+{
+    Semaphore changed;
+    Owned<IWorkUnitWatcher> watcher;
+public:
+    IMPLEMENT_IINTERFACE;
+    WorkUnitWaiter(const char *wuid, WUSubscribeOptions watchFor)
     {
-        change = querySDS().subscribe(xpath, *this, false);
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        watcher.setown(factory->getWatcher(this, watchFor, wuid));
         aborted = false;
     }
-    void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    ~WorkUnitWaiter()
     {
-        if (flags & watchFor)
-            changed.signal();
+        unsubscribe();
+    }
+    void notify(WUSubscribeOptions flags)
+    {
+        changed.signal();
     }
     bool wait(unsigned timeout)
     {
@@ -771,8 +721,11 @@ public:
     }
     void unsubscribe()
     {
-        querySDS().unsubscribe(change);
-        change = 0;
+        if (watcher)
+        {
+            watcher->unsubscribe();
+            watcher.clear();
+        }
     }
     bool aborted;
 };
