@@ -249,4 +249,17 @@ typedef IPropertyTree IPTree;
 typedef IPropertyTreeIterator IPTreeIterator;
 typedef Owned<IPTree> OwnedPTree;
 
+// http://www.w3.org/TR/REC-xml#xml-names
+static const char *validStartChrs = ":_";
+inline static bool isValidXPathStartChr(char c)
+{
+    return ('\0' != c && (isalpha(c) || strchr(validStartChrs, c)));
+}
+
+static const char *validChrs = ":_.-";
+inline static bool isValidXPathChr(char c)
+{
+    return ('\0' != c && (isalnum(c) || strchr(validChrs, c)));
+}
+
 #endif

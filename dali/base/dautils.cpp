@@ -884,16 +884,12 @@ StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) con
 {
     const char *s=get(true);    // skip foreign
     // Ensure only chars that are accepted by jptree in an xpath element are used
-    bool first=true;
     loop
     {
         const char *e=strstr(s,"::");
         if ((e && 0 != strncmp(".", s, e-s)) || (!e && !streq(".", s))) // skip '.' scopes
         {
-            if (first)
-                first = false;
-            else
-                lfnNodeName.append('_');
+            lfnNodeName.append('_');
             while (s != e)
             {
                 char c = *s;
@@ -908,7 +904,9 @@ StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) con
                     c = toupper(*s);
                     // fall through
                 default:
-                    if (isalnum(c))
+                    if ('_' == c)
+                        lfnNodeName.append("__"); // to avoid clash with use of '_' here was escape char.
+                    else if (isValidXPathChr(c))
                         lfnNodeName.append(c);
                     else
                         lfnNodeName.append('_').append((unsigned) (unsigned char) c);
