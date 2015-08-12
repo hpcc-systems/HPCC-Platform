@@ -424,7 +424,6 @@ enum SlaveMsgTypes { smt_errorMsg=1, smt_initGraphReq, smt_initActDataReq, smt_d
 // Logging
 extern graph_decl const LogMsgJobInfo thorJob;
 
-extern graph_decl memsize_t queryLargeMemSize();
 extern graph_decl StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *queryName, unsigned version);
 
 extern graph_decl void setClusterGroup(IGroup *group);
