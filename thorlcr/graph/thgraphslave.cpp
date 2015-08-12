@@ -1028,7 +1028,7 @@ public:
     virtual bool allowDaliAccess() const
     {
         // NB. includes access to foreign Dalis.
-        return globals->getPropBool("Debug/@slaveDaliClient");
+        return globals->getPropBool("Debug/@slaveDaliClient") || job.getWorkUnitValueBool("slaveDaliClient", false);
     }
 };
 
