@@ -1,5 +1,5 @@
 /*##############################################################################
-## HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.  All rights reserved.
+## HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.  All rights reserved.
 ############################################################################## */
 
 

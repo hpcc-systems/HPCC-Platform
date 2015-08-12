@@ -1,6 +1,6 @@
 <!--
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -703,7 +703,7 @@
               <xs:annotation>
                 <xs:appinfo>
                   <viewType>hidden</viewType>
-                  <tooltip>portal to HPCC Systems web site.</tooltip>
+                  <tooltip>portal to HPCC Systems® web site.</tooltip>
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>

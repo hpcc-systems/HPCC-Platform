@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    All rights reserved. This program is free software: you can redistribute it
 #    and/or modify

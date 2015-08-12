@@ -1,5 +1,5 @@
 /*##############################################################################
-## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
+## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.  All rights reserved.
 ############################################################################## */
 
 IMPORT Std.Uni;

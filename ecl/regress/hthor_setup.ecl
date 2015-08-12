@@ -13,7 +13,7 @@ setupTextFileLocation := '.::c$::edata::testing::ecl::files';
 #line(0)
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -551,7 +551,7 @@ DG_IntegerIndex := INDEX(DG_IntegerDataset, { i6, nested }, { DG_IntegerDataset 
 #line(0)
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

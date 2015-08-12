@@ -2,7 +2,7 @@
 Guide for Contributors
 ======================
 
-Upon contributing code, you agree to the HPCC Systems Contribution Agreement at
+Upon contributing code, you agree to the HPCC Systems® Contribution Agreement at
 http://hpccsystems.com/sites/default/files/pdf/hpcc_contributor_agreement.pdf
 
 Our preferred method for accepting contributions is via GitHub pull requests. We
@@ -119,7 +119,7 @@ to fulfill the following requirements:
 
 1.  All commits must be signed. By signing the commits you are signaling that you have
     the appropriate rights to the change you are submitting, and the right to assign
-    those rights to HPCC Systems under the terms of the contributory agreement. We have
+    those rights to HPCC Systems® under the terms of the contributory agreement. We have
     to be strict about this requirement to keep the lawyers happy.
 2.  All new code in the commit should follow the coding standards used by our project,
     for layout conventions, variable naming conventions, programming paradigms etc.

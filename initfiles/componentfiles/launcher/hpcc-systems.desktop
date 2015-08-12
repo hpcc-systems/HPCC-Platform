@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=5.x
-Name=HPCC Systems
-GenericName=HPCC Systems
+Name=HPCC Systems®
+GenericName=HPCC Systems®
 Comment=HPCC Cluster Administration
 Exec=x-www-browser "http://localhost:8010"
 Terminal=false

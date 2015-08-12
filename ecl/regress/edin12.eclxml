@@ -507,7 +507,7 @@ EXPORT Trans(DATASET(Types.Element) d) := PROJECT(d,TRANSFORM(Types.Element, SEL
  <Module key="std.system" name="std.system">
   <Attribute key="thorlib" name="thorlib" sourcePath="C:\Program Files (x86)\HPCCSystems\4.0.0\clienttools\share\ecllibrary\std\system\Thorlib.ecl">
    /*##############################################################################
-## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
+## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.  All rights reserved.
 ############################################################################## */
 
 /*

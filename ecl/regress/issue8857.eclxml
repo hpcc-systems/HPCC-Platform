@@ -53,7 +53,7 @@ End;
  <Module key="std" name="std">
   <Attribute key="str" name="str" sourcePath="C:\Program Files (x86)\HPCC Systems\HPCC\bin\ver_3_6\ecllibrary\std\Str.ecl">
    /*##############################################################################
-## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+## Copyright (c) 2011 HPCC Systems®.  All rights reserved.
 ############################################################################## */
 
 EXPORT Str := MODULE
