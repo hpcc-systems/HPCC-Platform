@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -225,7 +225,7 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
 
 static void usage()
 {
-    puts("ESP - Enterprise Service Platform server. (C) 2001-2011, HPCC Systems.");
+    puts("ESP - Enterprise Service Platform server. (C) 2001-2011, HPCC Systems®.");
     puts("Usage:");
     puts("  esp [options]");
     puts("Options:");

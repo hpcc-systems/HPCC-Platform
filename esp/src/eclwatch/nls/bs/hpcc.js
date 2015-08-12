@@ -196,7 +196,7 @@
     Hex: "Baza16",
     High: "Visok",
     History: "Istorija",
-    HPCCSystems: "HPCC Systems",
+    HPCCSystems: "HPCC Systems®",
     ID: "Identifikator",
     Inactive: "Neaktivan",
     Index: "Indeks",

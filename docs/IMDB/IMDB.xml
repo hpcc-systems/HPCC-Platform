@@ -757,7 +757,7 @@ OUTPUT(IMDB.FileActors);
           </itemizedlist></para>
 
         <para><programlisting>/* ******************************************************************************
-## Copyright 2011 HPCC Systems.  All rights reserved.
+## Copyright 2011 HPCC Systems®.  All rights reserved.
 ******************************************************************************* */
 
 /**

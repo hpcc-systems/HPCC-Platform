@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -98,22 +98,6 @@ extern graph_decl void setMultiThorMemoryNotify(size32_t size,ILargeMemLimitNoti
     MTthresholdnotify.set(notify);
     if (notify)
         checkMultiThorMemoryThreshold(true);
-}
-
-
-static memsize_t largeMemSize = 0;
-memsize_t setLargeMemSize(unsigned limitMB)
-{
-    memsize_t prevLargeMemSize = largeMemSize;
-    largeMemSize = 1024*1024*(memsize_t)limitMB;
-    return prevLargeMemSize;
-}
-
-memsize_t queryLargeMemSize()
-{
-    if (0 == largeMemSize)
-        throwUnexpected();
-    return largeMemSize;
 }
 
 

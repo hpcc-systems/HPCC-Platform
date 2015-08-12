@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -120,19 +120,6 @@ public:
     }
 };
 
-
-// http://www.w3.org/TR/REC-xml#xml-names
-static const char *validStartChrs = ":_";
-inline static bool isValidXPathStartChr(char c)
-{
-    return ('\0' != c && (isalpha(c) || strchr(validStartChrs, c)));
-}
-
-static const char *validChrs = ":_.-";
-inline static bool isValidXPathChr(char c)
-{
-    return ('\0' != c && (isalnum(c) || strchr(validChrs, c)));
-}
 
 inline static int validJSONUtf8ChrLen(unsigned char c)
 {

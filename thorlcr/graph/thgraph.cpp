@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -2516,17 +2516,13 @@ void CJobBase::init()
     thorAllocator.setown(createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, *logctx, crcChecking, usePackedAllocator));
 
     unsigned defaultMemMB = globalMemorySize*3/4;
-    unsigned largeMemSize = getOptUInt("@largeMemSize", defaultMemMB);
-    if (globalMemorySize && largeMemSize >= globalMemorySize)
-        throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, globalMemorySize);
-    PROGLOG("Global memory size = %d MB, memory spill at = %d%%, large mem size = %d MB", globalMemorySize, memorySpillAt, largeMemSize);
+    PROGLOG("Global memory size = %d MB, memory spill at = %d%%", globalMemorySize, memorySpillAt);
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
         tracing.append(maxActivityCores);
     else
         tracing.append("[unbound]");
     PROGLOG("%s", tracing.str());
-    setLargeMemSize(largeMemSize);
     graphExecutor.setown(new CGraphExecutor(*this));
 }
 
@@ -2813,7 +2809,7 @@ StringBuffer &CJobBase::getOpt(const char *opt, StringBuffer &out)
 {
     if (!opt || !*opt)
         return out; // probably error
-    VStringBuffer gOpt("@%s", opt);
+    VStringBuffer gOpt("Debug/@%s", opt);
     getWorkUnitValue(opt, out);
     if (0 == out.length())
         globals->getProp(gOpt, out);
@@ -2824,7 +2820,7 @@ bool CJobBase::getOptBool(const char *opt, bool dft)
 {
     if (!opt || !*opt)
         return dft; // probably error
-    VStringBuffer gOpt("@%s", opt);
+    VStringBuffer gOpt("Debug/@%s", opt);
     return getWorkUnitValueBool(opt, globals->getPropBool(gOpt, dft));
 }
 
@@ -2832,7 +2828,7 @@ int CJobBase::getOptInt(const char *opt, int dft)
 {
     if (!opt || !*opt)
         return dft; // probably error
-    VStringBuffer gOpt("@%s", opt);
+    VStringBuffer gOpt("Debug/@%s", opt);
     return (int)getWorkUnitValueInt(opt, globals->getPropInt(gOpt, dft));
 }
 
@@ -2840,7 +2836,7 @@ __int64 CJobBase::getOptInt64(const char *opt, __int64 dft)
 {
     if (!opt || !*opt)
         return dft; // probably error
-    VStringBuffer gOpt("@%s", opt);
+    VStringBuffer gOpt("Debug/@%s", opt);
     return getWorkUnitValueInt(opt, globals->getPropInt64(gOpt, dft));
 }
 

@@ -2,7 +2,7 @@
  <Module key="imdb" name="IMDB">
   <Attribute key="kevinbaconnumbersets" name="kevinbaconnumbersets" sourcePath="IMDB\KevinBaconNumberSets.ecl">
    /* ******************************************************************************
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -207,7 +207,7 @@ END;&#13;&#10;&#13;&#10;
   </Attribute>
   <Attribute key="actorsinmovies" name="actorsinmovies" sourcePath="IMDB\ActorsInMovies.ecl">
    /* ******************************************************************************
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -255,7 +255,7 @@ export ActorsInMovies := IMDB_Names;&#13;&#10;
   </Attribute>
   <Attribute key="fileactors" name="fileactors" sourcePath="IMDB\FileActors.ecl">
    /* ******************************************************************************
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -389,7 +389,7 @@ EXPORT FileActors := PROJECT(ThreeColumns,tActors(LEFT))(year&lt;&gt;&apos;&apos
   </Attribute>
   <Attribute key="cleanactor" name="cleanactor" sourcePath="IMDB\CleanActor.ecl">
    /* ******************************************************************************
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
     
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -416,7 +416,7 @@ END;&#13;&#10;
   </Attribute>
   <Attribute key="layoutactors" name="layoutactors" sourcePath="IMDB\LayoutActors.ecl">
    /* ******************************************************************************
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -457,7 +457,7 @@ END;
   <Attribute key="str" name="str" sourcePath="std\Str.ecl">
    /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -896,7 +896,7 @@ END;</Text>
   <Attribute key="job" name="job" sourcePath="std\system\Job.ecl">
    /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

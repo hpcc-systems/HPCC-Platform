@@ -3,7 +3,7 @@
     Abort: "Abortar",
     About: "Sobre Plataforma HPCC",
     AboutGraphControl: "Sobre Controle de Gráphico",
-    AboutHPCCSystemsGraphControl: "Sobre Controle de Gráphico do HPCC Systems",
+    AboutHPCCSystemsGraphControl: "Sobre Controle de Gráphico do HPCC Systems®",
     Action: "Ação",
     Activate: "Ativar",
     Activated: "Ativa",

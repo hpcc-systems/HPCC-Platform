@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -372,10 +372,10 @@ public:
                 break;
             case TAKlocalresultspill:
             case TAKlocalresultwrite:
-                if (!queryOwner().queryOwner() || queryOwner().isGlobal()) // don't need result in master if in local child query
-                    ret = createLocalResultActivityMaster(this);
-                else
-                    ret = new CMasterActivity(this);
+                /* NB: create even if non-global child graph, because although the result itself
+                 * won't be used, codegen. graph initialization code, may reference the result on the master
+                 */
+                ret = createLocalResultActivityMaster(this);
                 break;
             case TAKgraphloopresultwrite:
                 ret = createGraphLoopResultActivityMaster(this);

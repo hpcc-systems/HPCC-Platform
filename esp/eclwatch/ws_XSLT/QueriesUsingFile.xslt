@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems®.
 
     This program is free software: you can redistribute it and/or modify
     you may not use this file except in compliance with the License.

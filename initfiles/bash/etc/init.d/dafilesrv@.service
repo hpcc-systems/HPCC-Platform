@@ -1,4 +1,4 @@
-# HPCC Systems Systemd Script
+# HPCC Systems® Systemd Script
 # Load to systemd:  sudo systemctl daemon-reload
 # Start/stop HPCC: run tty to get terminal file name, for example /dev/pts/1
 #           sudo service dafilesrv@<terminal file name without /dev> <start|stop|restart> or
@@ -8,7 +8,7 @@
 # Alternatively user can directly invoke /etc/init.d/dafilesrv <start|stop|status>
 
 [Unit]
-Description=HPCC Systems dafilesrv service
+Description=HPCC Systems® dafilesrv service
 
 [Service]
 Type=oneshot

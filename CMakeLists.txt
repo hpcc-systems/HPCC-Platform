@@ -1,5 +1,5 @@
 ###############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -152,8 +152,8 @@ set( CPACK_SOURCE_GENERATOR TGZ )
 
 set ( CPACK_RPM_PACKAGE_VERSION "${version}" )
 SET(CPACK_RPM_PACKAGE_RELEASE "${stagever}")
-SET(CPACK_RPM_PACKAGE_VENDOR "HPCC Systems")
-SET(CPACK_PACKAGE_VENDOR "HPCC Systems")
+SET(CPACK_RPM_PACKAGE_VENDOR "HPCC Systems®")
+SET(CPACK_PACKAGE_VENDOR "HPCC Systems®")
 
 if ( ${ARCH64BIT} EQUAL 1 )
     set ( CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
@@ -289,7 +289,7 @@ if ( UNIX )
             set ( CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/clienttools/install/prerm" )
             set ( CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/clienttools/install/postrm" )
             set ( CPACK_RPM_PACKAGE_GROUP "development/libraries")
-            set ( CPACK_RPM_PACKAGE_SUMMARY "HPCC Systems Client Tools." )
+            set ( CPACK_RPM_PACKAGE_SUMMARY "HPCC Systems® Client Tools." )
         else ( CLIENTTOOLS_ONLY )
             set ( CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst" )
             set ( CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm" )
@@ -321,12 +321,12 @@ else ( PLATFORM )
     endif()
     set ( CPACK_MONOLITHIC_INSTALL TRUE )
     file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt"
-        "HPCC Systems - Client Tools\r"
+        "HPCC Systems® - Client Tools\r"
         "===========================\r\r"
-        "This installer will install the HPCC Systems Client Tools.")
+        "This installer will install the HPCC Systems® Client Tools.")
     set ( CPACK_RESOURCE_FILE_README "${PROJECT_BINARY_DIR}/welcome.txt" )
     set ( CPACK_RESOURCE_FILE_LICENSE "${HPCC_SOURCE_DIR}/${LICENSE_FILE}" )
-    set ( CPACK_PACKAGE_DESCRIPTION_SUMMARY "HPCC Systems Client Tools." )
+    set ( CPACK_PACKAGE_DESCRIPTION_SUMMARY "HPCC Systems® Client Tools." )
     if (WIN32)
       if ( "${SIGN_DIRECTORY}" STREQUAL "" )
         set ( SIGN_DIRECTORY "${HPCC_SOURCE_DIR}/../sign" )
