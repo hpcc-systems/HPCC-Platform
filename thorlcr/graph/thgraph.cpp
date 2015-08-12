@@ -2516,17 +2516,13 @@ void CJobBase::init()
     thorAllocator.setown(createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, *logctx, crcChecking, usePackedAllocator));
 
     unsigned defaultMemMB = globalMemorySize*3/4;
-    unsigned largeMemSize = getOptUInt("largeMemSize", defaultMemMB);
-    if (globalMemorySize && largeMemSize >= globalMemorySize)
-        throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, globalMemorySize);
-    PROGLOG("Global memory size = %d MB, memory spill at = %d%%, large mem size = %d MB", globalMemorySize, memorySpillAt, largeMemSize);
+    PROGLOG("Global memory size = %d MB, memory spill at = %d%%", globalMemorySize, memorySpillAt);
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
         tracing.append(maxActivityCores);
     else
         tracing.append("[unbound]");
     PROGLOG("%s", tracing.str());
-    setLargeMemSize(largeMemSize);
     graphExecutor.setown(new CGraphExecutor(*this));
 }
 

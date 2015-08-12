@@ -186,8 +186,6 @@ public:
 extern graph_decl void checkMultiThorMemoryThreshold(bool inc);
 extern graph_decl void setMultiThorMemoryNotify(size32_t size,ILargeMemLimitNotify *notify);
 
-extern graph_decl memsize_t setLargeMemSize(unsigned limit);
-
 /////////////
 
 // JCSMORE

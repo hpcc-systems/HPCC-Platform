@@ -101,22 +101,6 @@ extern graph_decl void setMultiThorMemoryNotify(size32_t size,ILargeMemLimitNoti
 }
 
 
-static memsize_t largeMemSize = 0;
-memsize_t setLargeMemSize(unsigned limitMB)
-{
-    memsize_t prevLargeMemSize = largeMemSize;
-    largeMemSize = 1024*1024*(memsize_t)limitMB;
-    return prevLargeMemSize;
-}
-
-memsize_t queryLargeMemSize()
-{
-    if (0 == largeMemSize)
-        throwUnexpected();
-    return largeMemSize;
-}
-
-
 // =================================
 
 StringBuffer &getRecordString(const void *key, IOutputRowSerializer *serializer, const char *prefix, StringBuffer &out)
