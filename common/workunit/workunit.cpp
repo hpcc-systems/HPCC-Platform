@@ -5148,6 +5148,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     updateProp(p, fromP, "allowedclusters");
     updateProp(p, fromP, "@submitID");
     updateProp(p, fromP, "SNAPSHOT");
+    setProp(p, fromP, "@eventScheduledCount");
 
     //MORE: This is very adhoc.  All options that should be cloned should really be in a common branch
     if (all)
@@ -8793,13 +8794,16 @@ bool CLocalWorkUnit::hasWorkflow() const
 unsigned CLocalWorkUnit::queryEventScheduledCount() const
 {
     CriticalBlock block(crit);
-    return p->getPropInt("Workflow/@eventScheduledCount", 0);
+    if (p->hasProp("@eventScheduledCount"))
+        return p->getPropInt("@eventScheduledCount", 0);
+    else
+        return p->getPropInt("Workflow/@eventScheduledCount", 0);  // Legacy location for this setting
 }
 
 void CLocalWorkUnit::incEventScheduledCount()
 {
     CriticalBlock block(crit);
-    p->setPropInt("Workflow/@eventScheduledCount", p->getPropInt("Workflow/@eventScheduledCount", 0)+1);
+    p->setPropInt("@eventScheduledCount", queryEventScheduledCount()+1);
 }
 
 IPropertyTree * CLocalWorkUnit::queryWorkflowTree() const
