@@ -183,6 +183,7 @@ protected:
     unsigned spillPriority;
     CThorSpillableRowArray rows;
     OwnedIFile spillFile;
+    bool mmRegistered;
 
     bool spillRows()
     {
@@ -201,9 +202,21 @@ protected:
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
         return true;
     }
+    void addSpillingCallback()
+    {
+        if (!mmRegistered)
+        {
+            mmRegistered = true;
+            activity.queryJob().queryRowManager()->addRowBuffer(this);
+        }
+    }
     void clearSpillingCallback()
     {
-        activity.queryJob().queryRowManager()->removeRowBuffer(this);
+        if (mmRegistered)
+        {
+            mmRegistered = false;
+            activity.queryJob().queryRowManager()->removeRowBuffer(this);
+        }
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -214,6 +227,7 @@ public:
     	assertex(inRows.isFlushed());
         rows.swap(inRows);
         useCompression = false;
+        mmRegistered = false;
     }
     ~CSpillableStreamBase()
     {
@@ -229,6 +243,8 @@ public:
     }
     virtual bool freeBufferedRows(bool critical)
     {
+        if (spillFile) // i.e. if spilt already. NB: this is thread-safe, as 'spillFile' only set by spillRows() call below and can't be called on multiple threads concurrently.
+            return false;
         CThorArrayLockBlock block(rows);
         return spillRows();
     }
@@ -283,7 +299,10 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
             }
             return owner->rows.get(pos++);
         }
-        virtual void stop() { }
+        virtual void stop()
+        {
+            owner->clearSpillingCallback();
+        }
     // IWritePosCallback
         virtual rowidx_t queryRecordNumber()
         {
@@ -302,7 +321,7 @@ public:
     CSharedSpillableRowSet(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority)
         : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls, _spillPriority)
     {
-        activity.queryJob().queryRowManager()->addRowBuffer(this);
+        addSpillingCallback();
     }
     IRowStream *createRowStream()
     {
@@ -342,7 +361,7 @@ public:
         // a small amount of rows to read from swappable rows
         roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
         readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId(), inRows.queryDefaultMaxSpillCost()));
-        activity.queryJob().queryRowManager()->addRowBuffer(this);
+        addSpillingCallback();
     }
     ~CSpillableStream()
     {
@@ -375,7 +394,10 @@ public:
             }
             rowidx_t available = rows.numCommitted();
             if (0 == available)
+            {
+                clearSpillingCallback();
                 return NULL;
+            }
             rowidx_t fetch = (available >= granularity) ? granularity : available;
             // consume 'fetch' rows
             rows.readBlock(readRows, fetch);
@@ -392,7 +414,10 @@ public:
         ++pos;
         return row;
     }
-    virtual void stop() { }
+    virtual void stop()
+    {
+        clearSpillingCallback();
+    }
 };
 
 //====
