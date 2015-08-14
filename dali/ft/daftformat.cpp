@@ -667,12 +667,19 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
     maxElementLength = 1;
     format.set(_format);
     addActionList(matcher, format.separate.get() ? format.separate.get() : "\\,", SEPARATOR, &maxElementLength);
-    addActionList(matcher, format.quote.get() ? format.quote.get() : "\"", QUOTE, &maxElementLength);
+
+    const char * quote = format.quote.get();
+    addActionList(matcher, quote ? quote : "\"", QUOTE, &maxElementLength);
     addActionList(matcher, format.terminate.get() ? format.terminate.get() : "\\n,\\r\\n", TERMINATOR, &maxElementLength);
+
     const char * escape = format.escape.get();
     if (escape && *escape)
-        addActionList(matcher,  escape, ESCAPE, &maxElementLength);
-
+    {
+        if (quote && (*escape == *quote))
+            LOG(MCdebugProgressDetail, unknownJob, "The quote ('%s') and the escape ('%s') are same, ignore escape.", quote, escape);
+        else
+            addActionList(matcher,  escape, ESCAPE, &maxElementLength);
+    }
     matcher.queryAddEntry(1, " ", WHITESPACE);
     matcher.queryAddEntry(1, "\t", WHITESPACE);
     recordStructure.append("RECORD\n");
