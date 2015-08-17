@@ -785,7 +785,7 @@ class CSendManager : public CInterface, implements ISendManager
             {
                 if (!sniffer_socket) 
                 {
-                    sniffer_socket = ISocket::multicast_connect(ep, 3);
+                    sniffer_socket = ISocket::multicast_connect(ep, multicastTTL);
                     if (udpTraceLevel > 1)
                     {
                         StringBuffer url;

@@ -43,6 +43,7 @@ bool     enableSocketMaxSetting = false;
 unsigned udpFlowSocketsSize = 131072;
 unsigned udpLocalWriteSocketSize = 1024000;
 
+unsigned multicastTTL = 1;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

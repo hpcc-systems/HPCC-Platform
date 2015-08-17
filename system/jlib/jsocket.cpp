@@ -430,19 +430,21 @@ public:
     // Block functions
     void        set_block_mode(unsigned flags,size32_t recsize=0,unsigned timeoutms=0);
     bool        send_block(const void *blk,size32_t sz);
-    size32_t        receive_block_size();
-    size32_t        receive_block(void *blk,size32_t sz);
+    size32_t    receive_block_size();
+    size32_t    receive_block(void *blk,size32_t sz);
 
-    size32_t        get_send_buffer_size();
+    size32_t    get_send_buffer_size();
     void        set_send_buffer_size(size32_t sz);
 
     bool        join_multicast_group(SocketEndpoint &ep);   // for udp multicast
     bool        leave_multicast_group(SocketEndpoint &ep);  // for udp multicast
 
-    size32_t        get_receive_buffer_size();
+    void        set_ttl(unsigned _ttl);
+
+    size32_t    get_receive_buffer_size();
     void        set_receive_buffer_size(size32_t sz);
 
-    size32_t        avail_read();
+    size32_t    avail_read();
 
     int         pre_connect(bool block);
     int         post_connect();
@@ -1579,7 +1581,7 @@ void CSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &si
 {
     unsigned startt=usTick();
     size_read = 0;
-    unsigned start;
+    unsigned start = 0;
     unsigned timeleft = 0;
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
@@ -2391,6 +2393,21 @@ bool CSocket::leave_multicast_group(SocketEndpoint &ep)
 }
 
 
+void CSocket::set_ttl(unsigned _ttl)
+{
+    if (_ttl)
+    {
+        u_char ttl = _ttl;
+        setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&ttl, sizeof(ttl));
+    }
+#ifdef SOCKTRACE
+    int ttl0 = 0;
+    socklen_t ttl1 = sizeof(ttl0);
+    getsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl0, &ttl1);
+    DBGLOG("set_ttl: socket fd: %d requested ttl: %d actual ttl: %d", sock, _ttl, ttl0);
+#endif
+    return;
+}
 
 CSocket::~CSocket()
 {
@@ -2510,17 +2527,19 @@ ISocket* ISocket::udp_create(unsigned short p)
     return sock.getClear();
 }
 
-ISocket* ISocket::multicast_create(unsigned short p, const char *mcip)
+ISocket* ISocket::multicast_create(unsigned short p, const char *mcip, unsigned _ttl)
 {
     if (p==0)
         THROWJSOCKEXCEPTION2(JSOCKERR_bad_address);
     SocketEndpoint ep(mcip,p);
     Owned<CSocket> sock = new CSocket(ep,sm_multicast_server,mcip);
     sock->open(0,true);
+    if (_ttl)
+        sock->set_ttl(_ttl);
     return sock.getClear();
 }
 
-ISocket* ISocket::multicast_create(unsigned short p, const IpAddress &ip)
+ISocket* ISocket::multicast_create(unsigned short p, const IpAddress &ip, unsigned _ttl)
 {
     if (p==0)
         THROWJSOCKEXCEPTION2(JSOCKERR_bad_address);
@@ -2528,6 +2547,8 @@ ISocket* ISocket::multicast_create(unsigned short p, const IpAddress &ip)
     StringBuffer tmp;
     Owned<CSocket> sock = new CSocket(ep,sm_multicast_server,ip.getIpText(tmp).str());
     sock->open(0,true);
+    if (_ttl)
+        sock->set_ttl(_ttl);
     return sock.getClear();
 }
 
@@ -2560,8 +2581,8 @@ ISocket* ISocket::multicast_connect(const SocketEndpoint &ep, unsigned _ttl)
 {
     Owned<CSocket> sock = new CSocket(ep,sm_multicast,NULL);
     sock->udpconnect();
-    u_char ttl = _ttl;
-    setsockopt(sock->OShandle(), IPPROTO_IP, IP_MULTICAST_TTL, (char *) &ttl, sizeof(ttl));
+    if (_ttl)
+        sock->set_ttl(_ttl);
     return sock.getClear();
 }
 

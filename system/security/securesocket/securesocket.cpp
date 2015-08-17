@@ -346,6 +346,11 @@ public:
         return false;
     }
 
+    void set_ttl(unsigned _ttl)   // set ttl
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
     size32_t get_receive_buffer_size()  // get OS send buffer
     {
         throw MakeStringException(-1, "not implemented");

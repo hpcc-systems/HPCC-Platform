@@ -386,6 +386,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="multicastTTL" type="xs:nonNegativeInteger" use="optional" default="1">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>The multicast TTL (Time To Live) setting for this roxie cluster.  Zero means do not explicitly set TTL, and use the default OS setting.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="directory" type="absolutePath" use="optional" default="${EXEC_PREFIX}/lib/${DIR_NAME}/roxie/">
         <xs:annotation>
           <xs:appinfo>
