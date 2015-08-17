@@ -246,14 +246,14 @@ public:
 
     // Create client socket connected to a multicast server socket
     //
-    static ISocket*  multicast_connect( unsigned short port, const char *mcgroupip, unsigned _ttl=0);
-    static ISocket*  multicast_connect( const SocketEndpoint &ep, unsigned _ttl=0);
+    static ISocket*  multicast_connect( unsigned short port, const char *mcgroupip, unsigned _ttl);
+    static ISocket*  multicast_connect( const SocketEndpoint &ep, unsigned _ttl);
 
     //
     // Create server multicast socket
     //
-    static ISocket*  multicast_create( unsigned short port, const char *mcgroupip, unsigned _ttl=0);
-    static ISocket*  multicast_create( unsigned short port, const IpAddress &mcgroupip, unsigned _ttl=0);
+    static ISocket*  multicast_create( unsigned short port, const char *mcgroupip, unsigned _ttl);
+    static ISocket*  multicast_create( unsigned short port, const IpAddress &mcgroupip, unsigned _ttl);
 
     //
     // Creates an ISocket for an already created socket

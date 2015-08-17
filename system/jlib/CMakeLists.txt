@@ -35,7 +35,6 @@ set (    SRCS
          jargv.cpp 
          jarray.cpp 
          javahash.cpp 
-         jbroadcast.cpp 
          jbsocket.cpp 
          jbuff.cpp 
          jcomp.cpp 
@@ -86,8 +85,6 @@ set (    INCLUDES
         jatomic.hpp
         javahash.hpp
         javahash.tpp
-        jbroadcast.hpp
-        jbroadcast.ipp
         jbuff.hpp
         jcomp.hpp
         jcomp.ipp
