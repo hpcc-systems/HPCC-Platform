@@ -1057,7 +1057,7 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
     }
     else
     {
-        fieldName.append("field").append(fieldCount);
+        fieldName.set("field").append(fieldCount);
     }
 
     // Check discovered field name uniqueness
