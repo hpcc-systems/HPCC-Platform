@@ -4373,59 +4373,97 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
         unsigned keyedColumnCount;
         StringBuffer XmlSchema, XmlXPathSchema;
         IArrayOf<IEspDFUDataColumn> dataColumns;
-        const IResultSetMetaData& meta;
+        const IResultSetMetaData& metaRoot;
+        bool readRootLevelColumns;
+        IEspContext &context;
 
-        bool readColumnLabel(const int columnID, IEspDFUDataColumn* out)
+        bool readColumnLabel(const IResultSetMetaData* meta, unsigned columnID, IEspDFUDataColumn* out)
         {
             SCMStringBuffer columnLabel;
             bool isNaturalColumn = true;
-            if (meta.hasSetTranslation(columnID))
-                meta.getNaturalColumnLabel(columnLabel, columnID);
+            if (meta->hasSetTranslation(columnID))
+                meta->getNaturalColumnLabel(columnLabel, columnID);
             if (columnLabel.length() < 1)
             {
-                meta.getColumnLabel(columnLabel, columnID);
+                meta->getColumnLabel(columnLabel, columnID);
                 isNaturalColumn = false;
             }
             out->setColumnLabel(columnLabel.str());
             out->setIsNaturalColumn(isNaturalColumn);
             return isNaturalColumn;
         }
-        void readColumnEclType(const int columnID, IEspDFUDataColumn* out)
+        void readColumn(const IResultSetMetaData* meta, unsigned& columnID, const bool isKeyed,
+            IArrayOf<IEspDFUDataColumn>& dataColumns)
         {
-            SCMStringBuffer s;
-            out->setColumnEclType(meta.getColumnEclType(s, columnID).str());
-        }
-        void readColumnRawSize(const int columnID, IEspDFUDataColumn* out)
-        {
-            DisplayType columnType = meta.getColumnDisplayType(columnID);
-            if ((columnType == TypeUnicode) || columnType == TypeString)
-                out->setColumnRawSize(meta.getColumnRawSize(columnID));
-        }
-        void readColumn(const int columnID, const bool isKeyed, IArrayOf<IEspDFUDataColumn>& dataColumns)
-        {
+            double version = context.getClientVersion();
             Owned<IEspDFUDataColumn> dataItem = createDFUDataColumn();
             dataItem->setColumnID(columnID+1);
             dataItem->setIsKeyedColumn(isKeyed);
 
-            if (readColumnLabel(columnID, dataItem))
+            SCMStringBuffer s;
+            dataItem->setColumnEclType(meta->getColumnEclType(s, columnID).str());
+
+            DisplayType columnType = meta->getColumnDisplayType(columnID);
+            if ((columnType == TypeUnicode) || columnType == TypeString)
+                dataItem->setColumnRawSize(meta->getColumnRawSize(columnID));
+
+            if (readColumnLabel(meta, columnID, dataItem))
                 dataItem->setColumnType("Others");
+            else if (columnType == TypeBeginRecord)
+                dataItem->setColumnType("Record");
             else
-                dataItem->setColumnType(columnTypes[meta.getColumnDisplayType(columnID)]);
-            readColumnRawSize(columnID, dataItem);
-            readColumnEclType(columnID, dataItem);
+                dataItem->setColumnType(columnTypes[columnType]);
+
+            if ((version >= 1.31) && ((columnType == TypeSet) || (columnType == TypeDataset) || (columnType == TypeBeginRecord)))
+                checkAndReadNestedColumn(meta, columnID, columnType, dataItem);
+
             dataColumns.append(*dataItem.getClear());
+        }
+        void readColumns(const IResultSetMetaData* meta, IArrayOf<IEspDFUDataColumn>& dataColumnArray)
+        {
+            if (!meta)
+                return;
+
+            if (readRootLevelColumns)
+            {
+                readRootLevelColumns = false;
+                totalColumnCount = (unsigned)meta->getColumnCount();
+                keyedColumnCount = meta->getNumKeyedColumns();
+                unsigned i = 0;
+                for (; i < keyedColumnCount; i++)
+                    readColumn(meta, i, true, dataColumnArray);
+                for (i = keyedColumnCount; i < totalColumnCount; i++)
+                    readColumn(meta, i, false, dataColumnArray);
+            }
+            else
+            {
+                unsigned columnCount = (unsigned)meta->getColumnCount();
+                for (unsigned i = 0; i < columnCount; i++)
+                    readColumn(meta, i, false, dataColumnArray);
+            }
+        }
+        void checkAndReadNestedColumn(const IResultSetMetaData* meta, unsigned& columnID,
+            DisplayType columnType, IEspDFUDataColumn* dataItem)
+        {
+            IArrayOf<IEspDFUDataColumn> curDataColumnArray;
+            if (columnType == TypeBeginRecord)
+            {
+                columnID++;
+                do
+                {
+                    readColumn(meta, columnID, false, curDataColumnArray);
+                } while (meta->getColumnDisplayType(++columnID) != TypeEndRecord);
+            }
+            else
+                readColumns(meta->getChildMeta(columnID), curDataColumnArray);
+            dataItem->setDataColumns(curDataColumnArray);
         }
 
     public:
-        CDFUFileMetaDataReader(const IResultSetMetaData& _meta) : meta(_meta)
+        CDFUFileMetaDataReader(IEspContext& _context, const IResultSetMetaData& _meta)
+            : context(_context), metaRoot(_meta), readRootLevelColumns(true)
         {
-            totalColumnCount = (unsigned)meta.getColumnCount();
-            keyedColumnCount = meta.getNumKeyedColumns();
-            unsigned i = 0;
-            for (; i < keyedColumnCount; i++)
-                readColumn(i, true, dataColumns);
-            for (i = keyedColumnCount; i < totalColumnCount; i++)
-                readColumn(i, false, dataColumns);
+            readColumns(&metaRoot, dataColumns);
         };
         inline unsigned getTotalColumnCount() { return totalColumnCount; }
         inline unsigned getKeyedColumnCount() { return keyedColumnCount; }
@@ -4433,13 +4471,13 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
         inline StringBuffer& getXmlSchema(StringBuffer& s, const bool addHeader)
         {
             StringBufferAdaptor schema(s);
-            meta.getXmlSchema(schema, addHeader);
+            metaRoot.getXmlSchema(schema, addHeader);
             return s;
         }
         inline StringBuffer& getXmlXPathSchema(StringBuffer& s, const bool addHeader)
         {
             StringBufferAdaptor XPathSchema(s);
-            meta.getXmlXPathSchema(XPathSchema, addHeader);
+            metaRoot.getXmlXPathSchema(XPathSchema, addHeader);
             return s;
         }
     };
@@ -4475,7 +4513,7 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "CWsDfuEx::onDFUGetFileMetaData: Failed to access FileResultSet for %s.", fileName);
 
         Owned<IResultSetCursor> cursor = result->createCursor();
-        CDFUFileMetaDataReader dataReader(cursor->queryResultSet()->getMetaData());
+        CDFUFileMetaDataReader dataReader(context, cursor->queryResultSet()->getMetaData());
         resp.setTotalColumnCount(dataReader.getTotalColumnCount());
         resp.setKeyedColumnCount(dataReader.getKeyedColumnCount());
         resp.setDataColumns(dataReader.getDataColumns());
