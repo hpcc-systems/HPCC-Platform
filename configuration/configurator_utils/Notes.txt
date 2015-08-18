@@ -1,0 +1,21 @@
+To build makefile for dynamic linking of QT to HPCC Platform:
+
+qmake -o makeFileDynamic ConfiguratorUIDynamic.pro
+make -f makeFileDynamic
+
+To create a QT UI using QML and xsd file and an environment.xml file:
+
+./configurator -use esp.xsd -b /opt/HPCCSystems/componentfiles/configxml/  -qml -t ./ -e qml -s ./esp.xsd.qml -env /etc/HPCCSystems/source/environment.xml
+
+On VM (Virtual Box) define this environment variable:
+export LIBGL_ALWAYS_SOFTWARE=1
+
+For dojo:
+
+sudo apt-get mesa-common-dev may be needed.  It is 1 package that provides gl.h headers...
+sudo cp ./Configurator.html /opt/HPCCSystems/componentfiles/files/templates/
+
+sudo ./configurator -use esp.xsd -b /opt/HPCCSystems/componentfiles/configxml/  -dojo -t  /opt/HPCCSystems/componentfiles/files/scripts -e js
+The generated javascript file will look for it.
+Place the generated javascript file in:  /opt/HPCCSystems/componentfiles/files/scripts
+To view the webpage: http://localhost:8010/esp/files/stub.htm?Widget=roxie.xsd

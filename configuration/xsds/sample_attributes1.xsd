@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:element name="Sample_Attributes1">
+
+        <xs:annotation>
+            <xs:documentation>Demonstrates simples variants of attributes</xs:documentation>
+        </xs:annotation>
+
+        <xs:complexType>
+            <xs:sequence>
+            <xs:element name="Level1-Item1">
+              <xs:complexType>
+              <xs:attribute name="aa1name2" use="optional"/>
+              <xs:attribute name="ab2name2" use="optional"/>
+              <xs:attribute name="ac3name2" use="optional"/>
+              <xs:attribute name="ad4name2" use="optional"/>
+              <xs:attribute name="ae5name2" use="optional"/>
+              <xs:attribute name="af6name2" use="optional"/>
+              <xs:attribute name="agn7ame2" use="optional"/>
+              <xs:attribute name="ah8name2" use="optional"/>
+              <xs:attribute name="aj9name2" use="optional"/>
+              <xs:attribute name="akn00ame2" use="optional"/>
+              <xs:attribute name="alna01me2" use="optional"/>
+              <xs:attribute name="amnam12e2" use="optional"/>
+              <xs:attribute name="annam44e2" use="optional"/>
+                <xs:attribute name="aname2" use="optional"/>
+                <xs:attribute name="bname2" use="optional"/>
+                <xs:attribute name="cname2" use="optional"/>
+                <xs:attribute name="dname2" use="optional"/>
+                <xs:attribute name="ename2" use="optional"/>
+                <xs:attribute name="fname2" use="optional"/>
+                <xs:attribute name="gname2" use="optional"/>
+                <xs:attribute name="hname2" use="optional"/>
+                <xs:attribute name="jname2" use="optional"/>
+                <xs:attribute name="kname2" use="optional"/>
+                <xs:attribute name="lname2" use="optional"/>
+                <xs:attribute name="mname2" use="optional"/>
+                <xs:attribute name="nname2" use="optional"/>
+                <xs:attribute name="oname2" use="optional"/>
+                <xs:attribute name="abname2" use="optional"/>
+                <xs:attribute name="acname2" use="optional"/>
+                <xs:attribute name="adname2" use="optional"/>
+                <xs:attribute name="aename2" use="optional"/>
+                <xs:attribute name="afname2" use="optional"/>
+                <xs:attribute name="agnam20e2" use="optional"/>
+                <xs:attribute name="ahname192" use="optional"/>
+                <xs:attribute name="ajname182" use="optional"/>
+                <xs:attribute name="akna17me2" use="optional"/>
+                <xs:attribute name="aln16ame2" use="optional"/>
+                <xs:attribute name="a15nname2" use="optional"/>
+  <xs:attribute name="a1na2me2x" use="optional"/>
+  <xs:attribute name="b2na2m4e2x" use="optional"/>
+  <xs:attribute name="c3na2me12x" use="optional"/>
+  <xs:attribute name="d4na2m3e2x" use="optional"/>
+  <xs:attribute name="e5na24me2x" use="optional"/>
+  <xs:attribute name="f6nam5ex2x" use="optional"/>
+  <xs:attribute name="g7name2x" use="optional"/>
+  <xs:attribute name="h8nam45e2x" use="optional"/>
+  <xs:attribute name="j9nam23e2x" use="optional"/>
+  <xs:attribute name="k0nam235e2x" use="optional"/>
+  <xs:attribute name="l11navmfe2x" use="optional"/>
+  <xs:attribute name="mn12amce2x" use="optional"/>
+  <xs:attribute name="nnam13e2x" use="optional"/>
+  <xs:attribute name="onamed14e2x" use="optional"/>
+              <xs:attribute name="name2" use="optional">
+                  <xs:annotation>
+                    <xs:appinfo>
+                      <tooltip>NAME 2 tip</tooltip>
+                    </xs:appinfo>
+                  </xs:annotation>
+                  </xs:attribute>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="Attributes" maxOccurs="unbounded">
+                          <xs:complexType>
+            <xs:attribute name="1"/>
+            <xs:attribute name="a11"/>
+            <xs:attribute name="2"/>
+            <xs:attribute name="3"/>
+            <xs:attribute name="4"/>
+            <xs:attribute name="5"/>
+            <xs:attribute name="6"/>
+            <xs:attribute name="7"/>
+            <xs:attribute name="8"/>
+            <xs:attribute name="9"/>
+            <xs:attribute name="01"/>
+            <xs:attribute name="11"/>
+            <xs:attribute name="12"/>
+            <xs:attribute name="13"/>
+            <xs:attribute name="14"/>
+            <xs:attribute name="15"/>
+            <xs:attribute name="16"/>
+            <xs:attribute name="17"/>
+            <xs:attribute name="18"/>
+            <xs:attribute name="20"/>
+            <xs:attribute name="19"/>
+            <xs:attribute name="21"/>
+            <xs:attribute name="22"/>
+            <xs:attribute name="23"/>
+            <xs:attribute name="43"/>
+            <xs:attribute name="244"/>
+            <xs:attribute name="attriebute3"/>
+            <xs:attribute name="attribeute4"/>
+            <xs:attribute name="attribetute123"/>
+            <xs:attribute name="attributxe2"/>
+            <xs:attribute name="attribut22e3"/>
+            <xs:attribute name="attribute34"/>
+            <xs:attribute name="attributfdsfe5"/>
+            <xs:attribute name="attribeut34e6"/>
+            <xs:attribute name="attrietebuteas3"/>
+            <xs:attribute name="attrifbutedf4"/>
+            <xs:attribute name="attribuewtesdg1"/>
+            <xs:attribute name="attribffutefdg2"/>
+            <xs:attribute name="attributfdhe3"/>
+            <xs:attribute name="attrittbutdfhge4"/>
+            <xs:attribute name="attributewdfhge1"/>
+            <xs:attribute name="attribute2"/>
+            <xs:attribute name="attriberrtyhrtute3"/>
+            <xs:attribute name="attributasdfsaryte4"/>
+            <xs:attribute name="attridsbtrtute1"/>
+            <xs:attribute name="attrdfdsfibtryute2"/>
+            <xs:attribute name="attrisddsr32432bute3"/>
+            <xs:attribute name="attrdsfdittbute4"/>
+            </xs:complexType>
+            </xs:element>
+
+            <xs:element name="Level2-Item1">
+                <xs:complexType>
+                    <xs:sequence>
+                    <xs:element name="Level3-item5" maxOccurs="unbounded">
+                                        <xs:complexType>
+                        <xs:attribute name="attrds5fdittbu11te41"/>
+                        <xs:attribute name="attrdsf5dittbut23e42"/>
+                                            </xs:complexType>
+                    </xs:element>
+                        <xs:element name="Level3-Item1">
+
+                            <xs:complexType>
+                                <xs:sequence>
+
+                                    <xs:element name="Level3-item2" >
+                                        <xs:complexType>
+                                            <xs:attribute name="attrdsfdittbute41"/>
+                                            <xs:attribute name="attrdsfdittbute42"/>
+                                        </xs:complexType>
+                                    </xs:element>
+
+                                    <xs:element name="Level3-item3" maxOccurs="unbounded">
+                                                        <xs:complexType>
+                                        <xs:attribute name="attrdsfdittbu11te41"/>
+                                        <xs:attribute name="attrdsfdittbut23e42"/>
+                                                            </xs:complexType>
+                                    </xs:element>
+                                    <xs:element name="Level3-item3x" maxOccurs="unbounded">
+                                                        <xs:complexType>
+                                        <xs:attribute name="attrdsfdittbu11te411"/>
+                                        <xs:attribute name="attrdsfdittbut23e412"/>
+                                                            </xs:complexType>
+                                    </xs:element>
+                         <xs:element name="Level3-Item4"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+                </xs:element>
+                  <!--xs:element>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Level4-Item1">
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:sequence>
+              </xs:complexType-->
+        </xs:sequence>
+    </xs:complexType>
+    </xs:element>
+</xs:schema>

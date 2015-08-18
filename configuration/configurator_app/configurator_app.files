@@ -1,0 +1,14 @@
+Main.cpp
+MainWindow.cpp
+MainWindow.hpp
+MainWindowInterface.cpp
+MainWindowInterface.h
+MainWindowThread.cpp
+MainWindowThread.hpp
+Worker.cpp
+Worker.hpp
+CMakeLists.txt
+../cmake_modules/dependencies/trusty.cmake.in
+../CMakeLists.txt
+../cmake_modules/configuratorCommonSetup.cmake
+../cmake_modules/configuratorCommonSetup.cmake
