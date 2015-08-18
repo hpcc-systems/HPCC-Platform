@@ -98,6 +98,7 @@ interface IRemoteConnections : extends IInterface
     virtual unsigned queryConnections() = 0;
 };
 
+interface ILockInfoCollection;
 interface ISDSManager
 {
     virtual ~ISDSManager() { }
@@ -107,7 +108,7 @@ interface ISDSManager
     virtual SubscriptionId subscribeExact(const char *xpath, ISDSNodeSubscription &notify, bool sendValue=false) = 0;
     virtual void unsubscribe(SubscriptionId id) = 0;
     virtual void unsubscribeExact(SubscriptionId id) = 0;
-    virtual StringBuffer &getLocks(StringBuffer &out) = 0;
+    virtual ILockInfoCollection *getLocks(const char *ipPattern=NULL, const char *xpathPattern=NULL) = 0;
     virtual StringBuffer &getUsageStats(StringBuffer &out) = 0;
     virtual StringBuffer &getConnections(StringBuffer &out) = 0;
     virtual StringBuffer &getSubscribers(StringBuffer &out) = 0;

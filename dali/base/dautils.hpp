@@ -71,6 +71,7 @@ public:
     void set(const CDfsLogicalFileName &lfn);
     void set(const char *scopes,const char *tail);
     bool setFromMask(const char *partmask,const char *rootdir=NULL);
+    bool setFromXPath(const char *xpath);
     void clear();
     bool isSet() const;
     /*
@@ -419,5 +420,95 @@ interface ILocalOrDistributedFile: extends IInterface
 };
 
 extern da_decl ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,bool iswrite=false);
+
+typedef __int64 ConnectionId;
+
+struct LockData
+{
+    unsigned mode;
+    SessionId sessId;
+    unsigned timeLockObtained;
+
+    LockData(unsigned _mode, SessionId _sessId, unsigned _timeLockObtained) : mode(_mode), sessId(_sessId), timeLockObtained(_timeLockObtained)
+    {
+    }
+    LockData(const LockData &other)
+    {
+        mode = other.mode;
+        sessId = other.sessId;
+        timeLockObtained = other.timeLockObtained;
+    }
+    LockData(MemoryBuffer &mb)
+    {
+        mb.read(mode).read(sessId).read(timeLockObtained);
+    }
+    void serialize(MemoryBuffer &mb) const
+    {
+        mb.append(mode).append(sessId).append(timeLockObtained);
+    }
+};
+
+typedef MapBetween<ConnectionId, ConnectionId, LockData, LockData> ConnectionInfoMap;
+
+class CLockMetaData : public LockData
+{
+    mutable StringAttr ep;
+    mutable bool epResolved;
+public:
+    ConnectionId connectionId;
+
+    CLockMetaData(LockData &lD, ConnectionId _connectionId) : LockData(lD), connectionId(_connectionId)
+    {
+        epResolved = false;
+    }
+    CLockMetaData(MemoryBuffer &mb) : LockData(mb)
+    {
+        mb.read(connectionId).read(ep);
+        epResolved = true;
+    }
+    void serialize(MemoryBuffer &mb) const
+    {
+        LockData::serialize(mb);
+        mb.append(connectionId).append(queryEp());
+    }
+    const char *queryEp() const
+    {
+        if (!epResolved)
+        {
+            epResolved = true;
+            StringBuffer sessionEpStr;
+            querySessionManager().getClientProcessEndpoint(sessId, sessionEpStr);
+            ep.set(sessionEpStr);
+        }
+        return ep;
+    }
+};
+
+interface ILockInfo : extends IInterface
+{
+    virtual const char *queryXPath() const = 0;
+    virtual unsigned queryConnections() const = 0;
+    virtual CLockMetaData &queryLockData(unsigned lock) const = 0;
+    virtual void prune(const char *ipPattern) = 0;
+    virtual void serialize(MemoryBuffer &mb) const = 0;
+    virtual StringBuffer &toString(StringBuffer &out, unsigned format, bool header, const char *altText=NULL) const = 0;
+};
+
+extern da_decl ILockInfo *createLockInfo(const char *xpath, const ConnectionInfoMap &map);
+extern da_decl ILockInfo *deserializeLockInfo(MemoryBuffer &mb);
+
+typedef IArrayOf<ILockInfo> CLockInfoArray;
+typedef IIteratorOf<ILockInfo> ILockInfoIterator;
+
+interface ILockInfoCollection : extends IInterface
+{
+    virtual unsigned queryLocks() const = 0;
+    virtual ILockInfo &queryLock(unsigned lock) const = 0;
+    virtual void serialize(MemoryBuffer &mb) const = 0;
+    virtual StringBuffer &toString(StringBuffer &out) const = 0;
+    virtual void add(ILockInfo &lock) = 0;
+};
+extern da_decl ILockInfoCollection *createLockInfoCollection();
+extern da_decl ILockInfoCollection *deserializeLockInfoCollection(MemoryBuffer &mb);
 
 #endif

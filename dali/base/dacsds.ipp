@@ -405,7 +405,7 @@ public:
     virtual SubscriptionId subscribeExact(const char *xpath, ISDSNodeSubscription &notify, bool sendValue=false);
     virtual void unsubscribe(SubscriptionId id);
     virtual void unsubscribeExact(SubscriptionId id);
-    virtual StringBuffer &getLocks(StringBuffer &out);
+    virtual ILockInfoCollection *getLocks(const char *ipPattern, const char *xpathPattern);
     virtual StringBuffer &getUsageStats(StringBuffer &out);
     virtual StringBuffer &getConnections(StringBuffer &out);
     virtual StringBuffer &getSubscribers(StringBuffer &out);
