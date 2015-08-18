@@ -17,7 +17,7 @@ The redis server and client software can be obtained via either - [binaries](htt
 sudo apt-get install redis-server
 ```
 
-*Note:* redis-server 2.6.12 or greater is required to use this plugin as intended. For efficiency, such version requirments are not checked as this is a runtime check only. The use of a
+*Note:* redis-server 2.6.12 or greater is required to use this plugin as intended. For efficiency, such version requirements are not checked as this is a runtime check only. The use of a
 lesser version will result in an exception, normally indicating that either a given command does not exist or that the wrong number of arguments was passed to it. The Set<type>
 plugin functions will not work when setting with an expiration for a version less than 2.6.12. In addition, whilst it is possible to use `Expire` with a version less than
 2.1.3 it is not advised due to [the change in its semantics](http://redis.io/commands/expire).

@@ -47,9 +47,9 @@ EXPORT redis := SERVICE : plugin('redis'), namespace('RedisPlugin')
   UNICODE  SetAndPublishUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,once,context,entrypoint='SyncLockRSetUChar';
   UTF8     SetAndPublishUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,once,context,entrypoint='SyncLockRSetUtf8';
 
-  STRING      GetOrLockString(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,once,context,entrypoint='SyncLockRGetStr';
-  UNICODE    GetOrLockUnicode(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,once,context,entrypoint='SyncLockRGetUChar';
-  UTF8          GetOrLockUtf8(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,once,context,entrypoint='SyncLockRGetUtf8';
+  STRING      GetOrLockString(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000, UNSIGNED4 expire = 1000) : cpp,once,context,entrypoint='SyncLockRGetStr';
+  UNICODE    GetOrLockUnicode(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000, UNSIGNED4 expire = 1000) : cpp,once,context,entrypoint='SyncLockRGetUChar';
+  UTF8          GetOrLockUtf8(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000, UNSIGNED4 expire = 1000) : cpp,once,context,entrypoint='SyncLockRGetUtf8';
 
   Unlock(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,action,context,entrypoint='SyncLockRUnlock';
 END;
@@ -85,9 +85,9 @@ EXPORT RedisServer(VARSTRING options, VARSTRING password = '', UNSIGNED timeout 
   EXPORT   SetAndPublishString(VARSTRING key, STRING value,   UNSIGNED database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishString  (key, value, options, database, expire, password, timeout);
   EXPORT     SetAndPublishUtf8(VARSTRING key, UTF8 value,     UNSIGNED database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishUtf8    (key, value, options, database, expire, password, timeout);
 
-  EXPORT  GetOrLockUnicode(VARSTRING key, UNSIGNED database = 0) :=  redis.GetOrLockUnicode(key, options, database, password, timeout);
-  EXPORT   GetOrLockString(VARSTRING key, UNSIGNED database = 0) :=   redis.GetOrLockString(key, options, database, password, timeout);
-  EXPORT     GetOrLockUtf8(VARSTRING key, UNSIGNED database = 0) :=     redis.GetOrLockUtf8(key, options, database, password, timeout);
+  EXPORT  GetOrLockUnicode(VARSTRING key, UNSIGNED database = 0, UNSIGNED4 expire = 1000) :=  redis.GetOrLockUnicode(key, options, database, password, timeout, expire);
+  EXPORT   GetOrLockString(VARSTRING key, UNSIGNED database = 0, UNSIGNED4 expire = 1000) :=   redis.GetOrLockString(key, options, database, password, timeout, expire);
+  EXPORT     GetOrLockUtf8(VARSTRING key, UNSIGNED database = 0, UNSIGNED4 expire = 1000) :=     redis.GetOrLockUtf8(key, options, database, password, timeout, expire);
 
   EXPORT Unlock(VARSTRING key, UNSIGNED database = 0) := redis.Unlock(key, options, database, password, timeout);
 END;
