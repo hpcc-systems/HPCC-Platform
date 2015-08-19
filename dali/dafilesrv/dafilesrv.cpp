@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "portlist.h"
 
+#include "build-config.h"
 #include "jlib.hpp"
 #include "jiface.hpp"
 #include "jutil.hpp"
@@ -657,6 +658,7 @@ int main(int argc,char **argv)
         lf->beginLogging();
     }
 
+    PROGLOG("Dafilesrv starting - Build %s", BUILD_TAG);
     PROGLOG("Parallel request limit = %d, throttleDelayMs = %d, throttleCPULimit = %d", parallelRequestLimit, throttleDelayMs, throttleCPULimit);
 
     const char * verstring = remoteServerVersionString();
