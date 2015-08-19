@@ -21466,7 +21466,7 @@ public:
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             bool isSimple = (datafile && datafile->getNumParts()==1 && !_queryFactory.queryOptions().disableLocalOptimizations);
             if (isLocal || isSimple)
             {
@@ -21544,7 +21544,7 @@ public:
             if ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) == 0)
             {
                 OwnedRoxieString fileName(helper->getFileName());
-                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true);
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -22623,7 +22623,7 @@ public:
         {
             bool isOpt = (flags & TIRoptional) != 0;
             OwnedRoxieString indexName(indexHelper->getFileName());
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -22656,7 +22656,7 @@ public:
             if ((indexHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) == 0)
             {
                 OwnedRoxieString indexName(indexHelper->getFileName());
-                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit(), true);
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -23632,7 +23632,7 @@ public:
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fname,
                                                                         (fetchContext->getFetchFlags() & FFdatafileoptional) != 0,
                                                                         true, true,
-                                                                        _queryFactory.queryWorkUnit()));
+                                                                        _queryFactory.queryWorkUnit(), true));
             if (datafile)
                 map.setown(datafile->getFileMap());
         }
@@ -23655,7 +23655,7 @@ public:
             if ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) == 0)
             {
                 OwnedRoxieString fileName(fetchContext->getFileName());
-                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true);
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -23698,17 +23698,17 @@ public:
             {
                 fileName.set(queryNodeFileName(_graphNode, kind));
                 indexName.set(queryNodeIndexName(_graphNode, kind));
-                if (indexName && !allFilesDynamic)
+                if (indexName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
-                    indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
+                    indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
                     if (indexfile)
                         keySet.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, isLocal ? queryFactory.queryChannel() : 0, false));
                 }
-                if (fileName && !allFilesDynamic)
+                if (fileName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isOpt']/@value");
-                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, queryFactory.queryWorkUnit()));
+                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
                     if (datafile)
                     {
                         if (isLocal)
@@ -23742,13 +23742,13 @@ public:
             Owned<const IResolvedFile> temp;
             if (fileName.length())
             {
-                temp.setown(queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit()));
+                temp.setown(queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true));
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
             if (indexName.length())
             {
-                temp.setown(queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit()));
+                temp.setown(queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit(), true));
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -25260,7 +25260,7 @@ public:
         {
             bool isOpt = (joinFlags & JFindexoptional) != 0;
             OwnedRoxieString indexFileName(helper->getIndexFileName());
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, queryFactory.queryWorkUnit()));
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -25279,7 +25279,7 @@ public:
         if (!isHalfKeyed && !variableFetchFileName)
         {
             bool isFetchOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode, _kind), isFetchOpt, true, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode, _kind), isFetchOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
             {
                 if (isLocal)

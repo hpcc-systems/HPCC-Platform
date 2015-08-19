@@ -112,13 +112,13 @@ sleep(INTEGER duration) := Std.System.Debug.Sleep(duration * 1000);
 
 SEQUENTIAL(
     myRedis.Exists('str2'),
-    myRedis.Expire('str2', , 1000),/*\ms*/
+    myRedis.Expire('str2', , 900),/*\ms*/
     sleep(2),
     myRedis.Exists('str2'),
 
     myRedis.SetString('str3', str),
     myRedis.Exists('str3'),
-    myRedis.Expire('str3', , 1000),/*\ms*/
+    myRedis.Expire('str3', , 900),/*\ms*/
     myRedis.Persist('str3'),
     sleep(2),
     myRedis.Exists('str3')

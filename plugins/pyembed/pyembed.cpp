@@ -454,6 +454,17 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     return true;
 }
 
+static void checkThreadContext()
+{
+    if (!threadContext)
+    {
+        if (!globalState.isInitialized())
+            rtlFail(0, "Python not initialized");
+        threadContext = new PythonThreadContext;
+        threadHookChain = addThreadTermFunc(releaseContext);
+    }
+}
+
 PyObject *PythonThreadContext::getNamedTupleType(const RtlTypeInfo *type)
 {
     if (!lru || (type!=lrutype))
@@ -1178,8 +1189,8 @@ private:
 class PythonRowStream : public CInterfaceOf<IRowStream>
 {
 public:
-    PythonRowStream(PythonThreadContext *_sharedCtx, PyObject *result, IEngineRowAllocator *_resultAllocator)
-    : sharedCtx(_sharedCtx), resultIterator(NULL)
+    PythonRowStream(PyObject *result, IEngineRowAllocator *_resultAllocator)
+    : resultIterator(NULL)
     {
         // NOTE - the caller should already have the GIL lock before creating me
         if (!result || result == Py_None)
@@ -1188,9 +1199,19 @@ public:
         checkPythonError();
         resultAllocator.set(_resultAllocator);
     }
+    ~PythonRowStream()
+    {
+        if (resultIterator)
+        {
+            checkThreadContext();
+            GILBlock b(threadContext->threadState);
+            resultIterator.clear();
+        }
+    }
     virtual const void *nextRow()
     {
-        GILBlock b(sharedCtx->threadState);
+        checkThreadContext();
+        GILBlock b(threadContext->threadState);
         if (!resultIterator)
             return NULL;
         OwnedPyObject row = PyIter_Next(resultIterator);
@@ -1202,12 +1223,13 @@ public:
     }
     virtual void stop()
     {
+        checkThreadContext();
+        GILBlock b(threadContext->threadState);
         resultAllocator.clear();
         resultIterator.clear();
     }
 
 protected:
-    PythonThreadContext *sharedCtx;
     Linked<IEngineRowAllocator> resultAllocator;
     OwnedPyObject resultIterator;
 };
@@ -1275,7 +1297,7 @@ public:
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
-        return new PythonRowStream(sharedCtx, result, _resultAllocator);
+        return new PythonRowStream(result, _resultAllocator);
     }
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
     {
@@ -1544,13 +1566,7 @@ public:
     }
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
     {
-        if (!threadContext)
-        {
-            if (!globalState.isInitialized())
-                rtlFail(0, "Python not initialized");
-            threadContext = new PythonThreadContext;
-            threadHookChain = addThreadTermFunc(releaseContext);
-        }
+        checkThreadContext();
         if (flags & EFimport)
             return new Python27EmbedImportContext(threadContext, options);
         else
