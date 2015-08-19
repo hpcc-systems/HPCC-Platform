@@ -26,7 +26,7 @@ plugin functions will not work when setting with an expiration for a version les
 Getting started
 ---------------
 
-The server can be started by typing `redis-server` within a terminal. To run with with a non-default configuration run as `redis-server redis.conf`, where
+The server can be started by typing `redis-server` within a terminal. To run with a non-default configuration run as `redis-server redis.conf`, where
 redis.conf is the configuration file supplied with the redis-server package.
 
 For example, to require the server to **password authenticate**, locate and copy redis.conf to a desired dir. Then locate and alter the 'requirepass' variable within the file.
@@ -93,7 +93,7 @@ The core points to note here are:
    127.0.0.1:6379 is used. *Note:* 6379 is the default port for **redis-server**.
    * `UNSIGNED timeout` has units *ms* and has a default value of 1 second. This is not a timeout duration for an entire plugin call but rather that set for each
    communication transaction with the redis server. *c.f.* 'Behaviour and Implementation Details' below.
-   * `UNSIGNED expire` has units seconds and a default of **0**, i.e. *forever*.
+   * `UNSIGNED expire` has units *ms* and a default of **0**, i.e. *forever*.
 
 ###The redisServer MODULE
 To avoid the cumbersome and unnecessary need to constantly pass `options` and `password` with each function call, the module `redisServer` can be imported to effectively 
@@ -111,8 +111,8 @@ The notion of a *database* within a redis cache is a that of an UNSIGNED INTEGER
 myRedis.SetString('myKey', 'foo', 0);
 myRedis.SetString('myKey', 'bar', 1);
 
-myRedis.GetString('myKey', 'foo', 0);//returns 'foo'
-myRedis.GetString('myKey', 'bar', 1);//returns 'bar'
+myRedis.GetString('myKey', 0);//returns 'foo'
+myRedis.GetString('myKey', 1);//returns 'bar'
 ```
 *Note:* that the default database is 0.
 
@@ -147,7 +147,7 @@ SEQUENTIAL(
 
     //If the key does not exist it will 'lock' the key and retrun an empty STRING.
     STRING value := myRedis.GetOrLockString('supercali- what?');
-    //All locking.Set<type>() return the value passed in as the 2nd parameter.
+    //All SetAndPublish<type>() return the value passed in as the 2nd parameter.
     IF (LENGTH(value) == 0, myRedis.SetAndPublishString('supercali- what?', myFunc('poppins', 3)), value);
     );
 ```
@@ -157,16 +157,16 @@ Behaviour and Implementation Details
 A few notes to point out here:
    * PUB-SUB channels are not disconnected from the keyspace as they are in their native redis usage. The key itself is used as the lock with its value being set as the channel to later
    PUBLISH on or SUBSCRIBE to. This channel is a string, unique by only the *key* and *database*, prefixed with **'redis_ecl_lock'**.
-   * The lock itself is set to expire with a duration equal to the `timeout` value passed to the `locking.Exists(<key>` function (default 1s).
-   * It is possible to manually 'unlock' this lock (`DELETE` the key) via the `locking.Unlock(<key>)` function. *Note:* this function will fail on any communication or reply error however,
+   * The lock itself is set to expire with a duration equal to the `timeout` value passed to the `GetOrLock<type>` function (default 1s).
+   * It is possible to manually 'unlock' this lock (`DELETE` the key) via the `Unlock(<key>)` function. *Note:* this function will fail on any communication or reply error however,
    it will **silently fail**, leaving the lock to expire, if the server observes any change to the key during the function call duration.
    * When the *race-winner* publishes, it actually publishes the value itself and that any subscriber will then obtain the key-value in this fashion. Therefore, not requiring an
     additional `GET` and possible further race conditions in doing so. *Note:* This does however, mean that it is possible for the actual redis `SET` to fail on one client/process,
     have the key-value received on another, and yet, the key-value still does not exist on the cache.
-   * At present the 'lock' is not as such an actual lock, as only the `locking.Get<type>` functions acknowledge it. By current implementation it is better thought as a flag for
+   * At present the 'lock' is not as such an actual lock, as only the locking functions acknowledge it. By current implementation it is better thought as a flag for
    `GET` to wait and subscribe. I.e. the locked key can be deleted and re-set just as any other key can be.
    * Since the timeout duration is not for an individual plugin call but instead that waiting for each reply from the server, the actual possible maximum timeout duration differs from
-     various functions within this plugin, i.e. some functions do more than others. Below is a table for each of the plugin functions (or catagories of) including the maximum possible and
+     various functions within this plugin, i.e. some functions do more than others. Below is a table for each of the plugin functions (or categories of) including the maximum possible and
      nominal expected, where the latter is due to using a cached connection, i.e. neither the server IP, port, nor password have changed from the function called prior to the one in
      question. The values given are multiples of the given timeout.
 
