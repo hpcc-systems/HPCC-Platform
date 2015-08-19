@@ -111,7 +111,7 @@ SEQUENTIAL(
 //Test unlock
 SEQUENTIAL(
     myRedis.FlushDB(),
-    myRedis.GetOrLockString('testlock'),/*by default lock expires after 1s*/
+    myRedis.GetOrLockString('testlock',, 1000),
     myRedis.Exists('testlock'),
     Std.System.Debug.Sleep(2000),
     myRedis.Exists('testlock'),
