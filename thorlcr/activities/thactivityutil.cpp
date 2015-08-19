@@ -783,9 +783,42 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
     Owned<IFileIO> fileio;
     if (compress)
     {
+        // rowdif used if recordSize > 0, fallback set to LZ4
+        unsigned __int64 compMethod = COMPRESS_METHOD_LZ4;
+        // fallback override
+        StringBuffer compType;
+        activity->getOpt(THOROPT_FBACK_COMPRESS_TYPE, compType);
+        if (compType.length())
+        {
+            if (0 == stricmp("FLZ", compType))
+                compMethod = COMPRESS_METHOD_FASTLZ;
+            else if (0 == stricmp("LZW", compType))
+                compMethod = COMPRESS_METHOD_LZW;
+            else if (0 == stricmp("DEN", compType))
+                compMethod = COMPRESS_METHOD_DEN;
+        }
+        // force
         if (activity->getOptBool(THOROPT_COMP_FORCELZW, false))
+        {
             recordSize = 0; // by default if fixed length (recordSize set), row diff compression is used. This forces LZW
-        fileio.setown(createCompressedFileWriter(file, recordSize, 0 != (twFlags & TW_Extend), true, ecomp));
+            compMethod = COMPRESS_METHOD_LZW;
+        }
+        else if (activity->getOptBool(THOROPT_COMP_FORCEFLZ, false))
+        {
+            recordSize = 0;
+            compMethod = COMPRESS_METHOD_FASTLZ;
+        }
+        else if (activity->getOptBool(THOROPT_COMP_FORCELZ4, false))
+        {
+            recordSize = 0;
+            compMethod = COMPRESS_METHOD_LZ4;
+        }
+        else if (activity->getOptBool(THOROPT_COMP_FORCEDEN, false))
+        {
+            recordSize = 0;
+            compMethod = COMPRESS_METHOD_DEN;
+        }
+        fileio.setown(createCompressedFileWriter(file, recordSize, 0 != (twFlags & TW_Extend), true, ecomp, compMethod));
         if (!fileio)
         {
             compress = false;

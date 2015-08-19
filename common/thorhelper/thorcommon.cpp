@@ -1539,13 +1539,20 @@ IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned fla
         size32_t fixedSize = rowIf->queryRowMetaData()->querySerializedDiskMeta()->getFixedSize();
         if (fixedSize && TestRwFlag(flags, rw_grouped))
             ++fixedSize; // row writer will include a grouping byte
-        iFileIO.setown(createCompressedFileWriter(iFile, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, TestRwFlag(flags, rw_fastlz)));
+        unsigned __int64 compMethod = COMPRESS_METHOD_LZW;
+        if (TestRwFlag(flags, rw_fastlz))
+            compMethod = COMPRESS_METHOD_FASTLZ;
+        else if (TestRwFlag(flags, rw_lz4))
+            compMethod = COMPRESS_METHOD_LZ4;
+        else if (TestRwFlag(flags, rw_den))
+            compMethod = COMPRESS_METHOD_DEN;
+        iFileIO.setown(createCompressedFileWriter(iFile, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, compMethod));
     }
     else
         iFileIO.setown(iFile->open((flags & rw_extend)?IFOwrite:IFOcreate));
     if (!iFileIO)
         return NULL;
-    flags &= ~((unsigned)(rw_compress|rw_fastlz|rw_compressblkcrc));
+    flags &= ~((unsigned)(rw_compress|rw_fastlz|rw_compressblkcrc|rw_lz4|rw_den));
     return createRowWriter(iFileIO, rowIf, flags);
 }
 
@@ -1566,7 +1573,7 @@ IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned
 
 IExtRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, unsigned flags)
 {
-    if (0 != (flags & (rw_compress|rw_fastlz|rw_extend|rw_buffered|rw_compressblkcrc)))
+    if (0 != (flags & (rw_compress|rw_fastlz|rw_extend|rw_buffered|rw_compressblkcrc|rw_lz4|rw_den)))
         throw MakeStringException(0, "Unsupported createRowWriter flags");
     Owned<CRowStreamWriter> writer = new CRowStreamWriter(strm, rowIf->queryRowSerializer(), rowIf->queryRowAllocator(), TestRwFlag(flags, rw_grouped), TestRwFlag(flags, rw_crc), TestRwFlag(flags, rw_autoflush));
     return writer.getClear();

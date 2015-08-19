@@ -2198,7 +2198,22 @@ public:
                 MemoryAttr ma;
                 activity->startInput(in);
                 if (activity->getOptBool(THOROPT_COMPRESS_SPILLS, true))
+                {
                     rwFlags |= rw_compress;
+                    StringBuffer compType;
+                    activity->getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+                    if (compType.length())
+                    {
+                        if (0 == stricmp("FLZ", compType))
+                            rwFlags |= rw_fastlz;
+                        else if (0 == stricmp("LZ4", compType))
+                            rwFlags |= rw_lz4;
+                        else if (0 == stricmp("DEN", compType))
+                            rwFlags |= rw_den;
+                    }
+                    else
+                        rwFlags |= rw_lz4;
+                }
                 Owned<IExtRowWriter> out = createRowWriter(tempfile, activity, rwFlags);
                 if (!out)
                     throw MakeStringException(-1,"Could not created file %s",tempname.str());
@@ -2565,7 +2580,22 @@ public:
         OwnedIFile iFile = createIFile(tempname.str());
         spillFile.setown(new CFileOwner(iFile.getLink()));
         if (owner.getOptBool(THOROPT_COMPRESS_SPILLS, true))
+        {
             rwFlags |= rw_compress;
+            StringBuffer compType;
+            owner.getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+            if (compType.length())
+            {
+                if (0 == stricmp("FLZ", compType))
+                    rwFlags |= rw_fastlz;
+                else if (0 == stricmp("LZ4", compType))
+                    rwFlags |= rw_lz4;
+                else if (0 == stricmp("DEN", compType))
+                    rwFlags |= rw_den;
+            }
+            else
+                rwFlags |= rw_lz4;
+        }
         writer = createRowWriter(iFile, rowIf, rwFlags);
     }
     IRowStream *getReader(rowcount_t *_count=NULL) // NB: also detatches ownership of 'fileOwner'

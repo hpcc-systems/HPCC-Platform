@@ -28,6 +28,8 @@ void usage(bool isHelp)
            "   -n --nooverwrite            abort if patch file exists (default)\n"
            "   -c --compress               use LZMA block compression\n"
            "   -z                          use LZW block compression (faster/larger)\n"
+           "   -l                          use LZ4 block compression (faster/larger)\n"
+           "   -w                          use Density block compression (faster/larger)\n"
            "   -s --stats                  log statistics on diff\n"
            "   -t --tlk newtlk             include data on newtlk in header\n"
            "   -p --progress freq          log progress reading old index at intervals of freq bytes\n"
@@ -86,6 +88,10 @@ void getParams(unsigned argc, char * const * argv, KeyDiffParams & params)
             params.overwrite = false;
         else if(strcmp(argv[arg], "-z") == 0)
             params.compress = COMPRESS_METHOD_LZW;
+        else if(strcmp(argv[arg], "-l") == 0)
+            params.compress = COMPRESS_METHOD_LZ4;
+        else if(strcmp(argv[arg], "-w") == 0)
+            params.compress = COMPRESS_METHOD_DEN;
         else if((strcmp(argv[arg], "-c") == 0) || (strcmp(argv[arg], "--compress") == 0))
             params.compress = COMPRESS_METHOD_LZMA;
         else if((strcmp(argv[arg], "-s") == 0) || (strcmp(argv[arg], "--stats") == 0))

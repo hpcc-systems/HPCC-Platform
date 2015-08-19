@@ -98,6 +98,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       option(USE_TBB "Enable Threading Building Block support" ON)
   endif()
 
+  if( (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64") AND (CMAKE_SYSTEM_NAME MATCHES "Linux") )
+    option(USE_DENSITY "Enable Density Compressor support" ON)
+  else()
+    option(USE_DENSITY "Enable Density Compressor support" OFF)
+  endif()
+
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
   if ( USE_PYTHON OR USE_V8 OR USE_JNI OR USE_RINSIDE OR USE_SQLITE3 OR USE_MYSQL OR USE_CASSANDRA OR USE_MEMCACHED OR USE_REDIS)
@@ -705,6 +711,14 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       else()
         set(TBB_INCLUDE_DIR "")
       endif(USE_TBB)
+
+      if(USE_DENSITY)
+        if( (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64") AND (CMAKE_SYSTEM_NAME MATCHES "Linux") )
+          add_definitions (-D_USE_DENSITY)
+        else()
+          message(FATAL_ERROR "Density Compressor requested but not supported on this platform")
+        endif()
+      endif(USE_DENSITY)
 
   ENDIF()
   ###########################################################################

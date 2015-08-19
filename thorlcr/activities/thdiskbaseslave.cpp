@@ -346,7 +346,7 @@ void CDiskWriteSlaveActivityBase::open()
 
     if (compress)
     {
-        ActPrintLog("Performing row compression on output file: %s", fName.get());
+        ActPrintLog("Performing compression on output file: %s", fName.get());
         // NB: block compressed output has implicit crc of 0, no need to calculate in row  writer.
         calcFileCrc = false;
     }

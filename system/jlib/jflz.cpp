@@ -628,10 +628,7 @@ class jlib_decl CFastLZCompressor : public CInterface, public ICompressor
             trailing = true;    // too small to bother compressing
         else {
             trailing = false;
-            size32_t slack = inmax/17;
-            if (slack<66)
-                slack = 66;
-            inmax -= slack+sizeof(size32_t);
+            inmax -= (fastlzSlack(inmax) + sizeof(size32_t));
         }
     }
 
@@ -1001,7 +998,7 @@ IExpander *createFastLZExpander()
 
 #define FLZ_BUFFER_SIZE (0x100000)
 
-#define FLZCOMPRESSEDFILEFLAG (I64C(0xc3518de42f15da57))
+#define FLZSTRMCOMPRESSEDFILEFLAG (I64C(0xc3518de42f15da57))
 
 
 struct FlzCompressedFileTrailer
@@ -1096,7 +1093,7 @@ public:
             return false;
         baseio->read(filesize-sizeof(trailer),sizeof(trailer),&trailer);
         expSize = trailer.expandedSize;
-        return trailer.compressedType==FLZCOMPRESSEDFILEFLAG;
+        return trailer.compressedType==FLZSTRMCOMPRESSEDFILEFLAG;
     }
 
     void create(IFileIO *_baseio)
@@ -1181,7 +1178,7 @@ public:
             save();
             FlzCompressedFileTrailer trailer;
             memset(&trailer,0,sizeof(trailer));
-            trailer.compressedType = FLZCOMPRESSEDFILEFLAG;
+            trailer.compressedType = FLZSTRMCOMPRESSEDFILEFLAG;
             trailer.expandedSize = expOffset;
             baseio->write(cmpOffset,sizeof(trailer),&trailer);
             expSize = expOffset;

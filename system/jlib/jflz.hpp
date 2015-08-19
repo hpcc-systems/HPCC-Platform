@@ -22,6 +22,7 @@
 
 #include "jlzw.hpp"
 
+#define FASTCOMPRESSEDFILEBLOCKSIZE (0x10000)
 
 extern jlib_decl ICompressor *createFastLZCompressor();
 extern jlib_decl IExpander *createFastLZExpander();
