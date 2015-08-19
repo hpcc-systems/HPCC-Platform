@@ -70,84 +70,16 @@ public:
     StringAttr query;
 };
 
-typedef enum _WuActionType
-{
-    ActionDelete=0,
-    ActionProtect,
-    ActionAbort,
-    ActionRestore,
-    ActionEventSchedule,
-    ActionEventDeschedule,
-    ActionChangeState,
-    ActionPause,
-    ActionPauseNow,
-    ActionResume,
-    ActionUnknown
-} WsWuActionType;
+static unsigned NumOfECLWUActionNames = 11;
+static const char *ECLWUActionNames[] = { "Abort", "Delete", "EventDeschedule", "Pause", "PauseNow" ,
+        "Protect" , "Unprotect" , "EventReschedule" , "Restore" , "Resume" , "SetToFailed" };
 
-void setActionResult(const char* wuid, int action, const char* result, StringBuffer& strAction, IArrayOf<IConstWUActionResult>* results)
+void setActionResult(const char* wuid, CECLWUActions action, const char* result, StringBuffer& strAction, IArrayOf<IConstWUActionResult>* results)
 {
     if (!results || !wuid || !*wuid || !result || !*result)
         return;
 
-    switch(action)
-    {
-    case ActionDelete:
-    {
-        strAction = "Delete";
-        break;
-    }
-    case ActionProtect:
-    {
-        strAction = "Protect";
-        break;
-    }
-    case ActionAbort:
-    {
-        strAction = "Abort";
-        break;
-    }
-    case ActionRestore:
-    {
-        strAction = "Restore";
-        break;
-    }
-    case ActionEventSchedule:
-    {
-        strAction = "EventSchedule";
-        break;
-    }
-    case ActionEventDeschedule:
-    {
-        strAction = "EventDeschedule";
-        break;
-    }
-    case ActionChangeState:
-    {
-        strAction = "ChangeState";
-        break;
-    }
-    case ActionPause:
-    {
-        strAction = "Pause";
-        break;
-    }
-    case ActionPauseNow:
-    {
-        strAction = "PauseNow";
-        break;
-    }
-    case ActionResume:
-    {
-        strAction = "Resume";
-        break;
-    }
-    default:
-    {
-        strAction = "Unknown";
-        break;
-    }
-    }
+    strAction = (action < NumOfECLWUActionNames) ? ECLWUActionNames[action] : "Unknown";
 
     Owned<IEspWUActionResult> res = createWUActionResult("", "");
     res->setWuid(wuid);
@@ -156,7 +88,7 @@ void setActionResult(const char* wuid, int action, const char* result, StringBuf
     results->append(*res.getClear());
 }
 
-bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties* params, IArrayOf<IConstWUActionResult>* results)
+bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IProperties* params, IArrayOf<IConstWUActionResult>* results)
 {
     if (!wuids.length())
         return true;
@@ -180,11 +112,11 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
             if (!looksLikeAWuid(wuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
 
-            if ((action == ActionRestore) || (action == ActionEventDeschedule))
+            if ((action == CECLWUActions_Restore) || (action == CECLWUActions_EventDeschedule))
             {
                 switch(action)
                 {
-                case ActionRestore:
+                case CECLWUActions_Restore:
                 {
                     SocketEndpoint ep;
                     if (params->hasProp("sashaServerIP"))
@@ -214,7 +146,7 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                     ensureWsWorkunitAccess(context, wuid, SecAccess_Write);
                     break;
                 }
-                case ActionEventDeschedule:
+                case CECLWUActions_EventDeschedule:
                     if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Full, false)
                         || !context.validateFeatureAccess(OTHERS_WU_ACCESS, SecAccess_Full, false))
                         ensureWsWorkunitAccess(context, wuid, SecAccess_Full);
@@ -230,33 +162,33 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                 if(!cw)
                     throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
 
-                if ((action == ActionDelete) && (cw->getState() == WUStateWait))
+                if ((action == CECLWUActions_Delete) && (cw->getState() == WUStateWait))
                     throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT,"Cannot delete a workunit which is in a 'Wait' status.");
 
                 switch(action)
                 {
-                case ActionPause:
+                case CECLWUActions_Pause:
                 {
                     ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     WorkunitUpdate wu(&cw->lock());
                     wu->setAction(WUActionPause);
                     break;
                 }
-                case ActionPauseNow:
+                case CECLWUActions_PauseNow:
                 {
                     ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     WorkunitUpdate wu(&cw->lock());
                     wu->setAction(WUActionPauseNow);
-                   break;
+                    break;
                 }
-                case ActionResume:
+                case CECLWUActions_Resume:
                 {
                     ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     WorkunitUpdate wu(&cw->lock());
                     wu->setAction(WUActionResume);
-                   break;
+                    break;
                 }
-                case ActionDelete:
+                case CECLWUActions_Delete:
                     ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     {
                         cw.clear();
@@ -264,7 +196,7 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                         AuditSystemAccess(context.queryUserId(), true, "Deleted %s", wuid);
                     }
                     break;
-                case ActionAbort:
+                case CECLWUActions_Abort:
                     ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     {
                         if (cw->getState() == WUStateWait)
@@ -278,25 +210,19 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                         AuditSystemAccess(context.queryUserId(), true, "Aborted %s", wuid);
                     }
                     break;
-                case ActionProtect:
-                    cw->protect(!params || params->getPropBool("Protect",true));
+                case CECLWUActions_Protect:
+                case CECLWUActions_Unprotect:
+                    cw->protect((action == CECLWUActions_Protect) ? true:false);
                     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
                     break;
-                case ActionChangeState:
+                case CECLWUActions_SetToFailed:
                     {
-                        if (params)
-                        {
-                            WUState state = (WUState) params->getPropInt("State");
-                            if (state > WUStateUnknown && state < WUStateSize)
-                            {
-                                WorkunitUpdate wu(&cw->lock());
-                                wu->setState(state);
-                                AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
-                            }
-                        }
+                        WorkunitUpdate wu(&cw->lock());
+                        wu->setState(WUStateFailed);
+                        AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
                     }
                     break;
-                case ActionEventSchedule:
+                case CECLWUActions_EventReschedule:
                     {
                         WorkunitUpdate wu(&cw->lock());
                         wu->schedule();
@@ -382,8 +308,6 @@ static void checkUpdateQuerysetLibraries()
     }
 }
 
-MapStringTo<int> wuActionTable;
-
 void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
     if (!daliClientActive())
@@ -410,18 +334,6 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
         while (*finger && !strchr(":;,", *finger))
             envLocalAddress.append(*finger++);
     }
-
-    wuActionTable.setValue("delete", ActionDelete);
-    wuActionTable.setValue("abort", ActionAbort);
-    wuActionTable.setValue("pausenow", ActionPauseNow);
-    wuActionTable.setValue("pause", ActionPause);
-    wuActionTable.setValue("resume", ActionResume);
-    wuActionTable.setValue("protect", ActionProtect);
-    wuActionTable.setValue("unprotect", ActionProtect);
-    wuActionTable.setValue("restore", ActionRestore);
-    wuActionTable.setValue("reschedule", ActionEventSchedule);
-    wuActionTable.setValue("deschedule", ActionEventDeschedule);
-    wuActionTable.setValue("settofailed", ActionChangeState);
 
     awusCacheMinutes = AWUS_CACHE_MIN_DEFAULT;
     VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/AWUsCacheMinutes", process, service);
@@ -704,28 +616,20 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
 {
     try
     {
-        StringBuffer sAction(req.getActionType());
-        if (!sAction.length())
+        CECLWUActions action = req.getActionType();
+        if (action == ECLWUActions_Undefined)
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"Action not defined.");
-
-        int *action=wuActionTable.getValue(sAction.toLowerCase().str());
-        if (!action)
-            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Invalid Action '%s'.", sAction.str());
 
         Owned<IProperties> params = createProperties(true);
         params->setProp("BlockTillFinishTimer", req.getBlockTillFinishTimer());
-        if (*action==ActionProtect)
-            params->setProp("Protect", streq(sAction.str(), "protect"));
-        if (*action==ActionChangeState && streq(sAction.str(), "settofailed"))
-            params->setProp("State",4);
-        if ((*action==ActionRestore) && !sashaServerIp.isEmpty())
+        if ((action == CECLWUActions_Restore) && !sashaServerIp.isEmpty())
         {
             params->setProp("sashaServerIP", sashaServerIp.get());
             params->setProp("sashaServerPort", sashaServerPort);
         }
 
         IArrayOf<IConstWUActionResult> results;
-        if (doAction(context, req.getWuids(), *action, params, &results) && *action!=ActionDelete && checkRedirect(context))
+        if (doAction(context, req.getWuids(), action, params, &results) && (action != CECLWUActions_Delete) && checkRedirect(context))
         {
             StringBuffer redirect;
             if(req.getPageFrom() && strieq(req.getPageFrom(), "wuid"))
@@ -773,7 +677,7 @@ bool CWsWorkunitsEx::onWUDelete(IEspContext &context, IEspWUDeleteRequest &req, 
         Owned<IProperties> params = createProperties(true);
         params->setProp("BlockTillFinishTimer", req.getBlockTillFinishTimer());
 
-        if (!doAction(context,req.getWuids(), ActionDelete, params, &results))
+        if (!doAction(context,req.getWuids(), CECLWUActions_Delete, params, &results))
             resp.setActionResults(results);
     }
     catch(IException* e)
@@ -790,7 +694,7 @@ bool CWsWorkunitsEx::onWUAbort(IEspContext &context, IEspWUAbortRequest &req, IE
         IArrayOf<IConstWUActionResult> results;
         Owned<IProperties> params = createProperties(true);
         params->setProp("BlockTillFinishTimer", req.getBlockTillFinishTimer());
-        if (!doAction(context,req.getWuids(), ActionAbort, params, &results))
+        if (!doAction(context,req.getWuids(), CECLWUActions_Abort, params, &results))
             resp.setActionResults(results);
     }
     catch(IException* e)
@@ -806,10 +710,10 @@ bool CWsWorkunitsEx::onWUProtect(IEspContext &context, IEspWUProtectRequest &req
     {
         IArrayOf<IConstWUActionResult> results;
         Owned<IProperties> params(createProperties(true));
-        params->setProp("Protect", req.getProtect());
         params->setProp("BlockTillFinishTimer", 0);
 
-        if (!doAction(context,req.getWuids(), ActionProtect, params, &results))
+        CECLWUActions action = req.getProtect() ? CECLWUActions_Protect : CECLWUActions_Unprotect;
+        if (!doAction(context,req.getWuids(), action, params, &results))
             resp.setActionResults(results);
     }
     catch(IException* e)
