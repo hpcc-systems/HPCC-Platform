@@ -15,5 +15,11 @@
  <Row><name>Generate:</name><value>9</value></Row>
 </Dataset>
 <Dataset name='Result 3'>
- <Row><Result_3>Yo</Result_3></Row>
+ <Row><Result_3>500</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>499</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>Yo</Result_5></Row>
 </Dataset>
