@@ -1816,7 +1816,7 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
             WARNLOG("MP: kernel listen queue backlog setting (somaxconn=%d) is lower than environment mpSoMaxConn (%d) setting and should be increased", kernSoMaxConn, mpSoMaxConn);
     }
     if (!mpSoMaxConn)
-        mpSoMaxConn = SOMAXCONN;
+        mpSoMaxConn = DEFAULT_LISTEN_QUEUE_SIZE;
     if (!port)
     {
         // need to connect early to resolve clash
