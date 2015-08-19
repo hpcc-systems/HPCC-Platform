@@ -232,7 +232,7 @@ define([
 
         checkMonitoring: function (status) {
             if (status) {
-                domClass.remove("MonitorStatus", status);
+                domClass.remove("MonitorStatus");
                 domClass.add("MonitorStatus", status);
             }
         },
