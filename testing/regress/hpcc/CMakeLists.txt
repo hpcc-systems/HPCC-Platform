@@ -14,18 +14,24 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-HPCC_ADD_SUBDIRECTORY (hpcc)
-
-configure_file("environment.xml.in" "environment.xml")
-
-Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.xml DESTINATION "./testing/regress" COMPONENT Runtime )
-
-Install ( DIRECTORY download hpcc DESTINATION "./testing/regress" COMPONENT Runtime
+HPCC_ADD_SUBDIRECTORY (util)
+Install ( DIRECTORY common regression util DESTINATION "./testing/regress/hpcc" COMPONENT Runtime
           USE_SOURCE_PERMISSIONS
           FILES_MATCHING
-          PATTERN "hpcc/__init__.py"
-          PATTERN "download/0drvb10.txt"
-          PATTERN "download/donQuixote.txt"
-          PATTERN "download/pge0112.txt"
-          PATTERN "download/spray_test.txt"
- )
+          PATTERN "common/config.py"
+          PATTERN "common/dict.py"
+          PATTERN "common/error.py"
+          PATTERN "common/__init__.py"
+          PATTERN "common/logger.py"
+          PATTERN "common/report.py"
+          PATTERN "common/shell.py"
+          PATTERN "regression/__init__.py"
+          PATTERN "regression/regress.py"
+          PATTERN "regression/suite.py"
+          PATTERN "util/argparse.py"
+          PATTERN "util/collections.py"
+          PATTERN "util/configgen.py"
+          PATTERN "util/expandcheck.py"
+          PATTERN "util/__init__.py"
+          PATTERN "util/util.py"
+)
