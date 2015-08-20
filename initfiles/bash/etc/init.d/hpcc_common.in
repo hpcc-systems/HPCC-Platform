@@ -649,9 +649,19 @@ status_component() {
   check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
   RCSTATUS=$?
   getPid ${COMPPIDPATH}
-  if [ ${RCSTATUS} -ne 0 ];then
+  if [[ ${RCSTATUS} -ne 0 ]]; then
     log "${compName} ---> Stopped"
     printf "%-15s is stopped" "$compName"
+  elif [[ ${compType} == "thor" ]]; then
+    if [[ -e ${runtime}/${compName}/thorgroup && -e ${runtime}/${compName}/slaves ]]; then
+      __slavenum=$(cat ${runtime}/${compName}/thorgroup | wc -l)
+      __hostnum=$(cat ${runtime}/${compName}/slaves | sort | uniq | wc -l)
+      log "${compName} ---> Running ( pid ${__pidValue} ) with {__slavenum} slaves across {__hostnum} hosts"
+      printf "%-15s ( pid %8s ) is running with %s slaves across %s hosts ..." "${compName}" "${__pidValue}" "${__slavenum}" "${__hostnum}"
+    else
+      log "${compName} missing file in ${runtime}/${compName} necessary for status_component"
+      printf "${compName} missing file in ${runtime}/${compName} necessary for status_component"
+    fi
   else
     log "${compName} ---> Running ( pid ${__pidValue} )"
     printf "%-15s ( pid %8s ) is running ..." "${compName}" "${__pidValue}"
