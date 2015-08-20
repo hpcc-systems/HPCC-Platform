@@ -99,7 +99,7 @@ class CFRunSSH: public CInterface, implements IFRunSSH
                     break;
                 case 's': { // ssh params
                         bool usepssh = !password.isEmpty();
-                        cmdbuf.appendf("%s -o LogLevel=ERROR -o StrictHostKeyChecking=%s -o BatchMode=yes ",usepssh?"pssh":"ssh",strict?"yes":"no");
+                        cmdbuf.appendf("%s -o LogLevel=QUIET -o StrictHostKeyChecking=%s -o BatchMode=yes ",usepssh?"pssh":"ssh",strict?"yes":"no");
                         if (!identityfile.isEmpty())
                             cmdbuf.appendf("-i %s ",identityfile.get());
                         if (background)
@@ -400,7 +400,7 @@ public:
             }
             if (cmdline.length()==0) {
                 // ssh
-                cmdline.appendf("%s -n -o LogLevel=ERROR -o StrictHostKeyChecking=%s ",usepssh?"pssh":"ssh",strict?"yes":"no");
+                cmdline.appendf("%s -n -o LogLevel=QUIET -o StrictHostKeyChecking=%s ",usepssh?"pssh":"ssh",strict?"yes":"no");
                 if (!usepssh)
                     cmdline.append("-o BatchMode=yes ");
                 if (!identityfile.isEmpty())
