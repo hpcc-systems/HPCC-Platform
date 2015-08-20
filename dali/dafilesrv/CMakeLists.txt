@@ -20,7 +20,3 @@ include (dafilesrv.cmake)
 if ( PLATFORM )
     include (dafscontrol.cmake)
 endif()
-
-include_directories ( 
-         ${CMAKE_BINARY_DIR}
-    )
