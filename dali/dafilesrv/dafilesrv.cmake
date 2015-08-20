@@ -32,6 +32,7 @@ include_directories (
          ./../../common/remote 
          ./../../system/include 
          ./../../system/jlib 
+         ${CMAKE_BINARY_DIR}
     )
 
 if (WIN32)
