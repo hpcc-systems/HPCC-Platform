@@ -3098,6 +3098,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
         Owned<ISocket> socket;
         StringAttr peerName;
         Owned<IAuthenticatedUser> user;
+        MemoryBuffer msg;
         bool selecthandled;
         size32_t left;
         IArrayOf<IFileIO>   openfiles;      // kept in sync with handles
@@ -3142,6 +3143,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
             }
             parent = _parent;
             left = 0;
+            msg.setEndian(__BIG_ENDIAN);
             selecthandled = false;
             touch();
         }
@@ -3172,8 +3174,6 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
             size32_t avail = (size32_t)socket->avail_read();
             if (avail)
                 touch();
-            MemoryBuffer msg;
-            msg.setEndian(__BIG_ENDIAN);
             if (left==0)
             {
                 try
@@ -3232,19 +3232,22 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
                     EXCLOG(e,"notifySelected(3)");
                     e->Release();
                     toread = left;
+                    msg.clear();
                 }
             }
             if (TF_TRACE_FULL)
                 PROGLOG("notifySelected %d,%d",toread,left);
-            if ((left!=0)&&(avail==0)) {
+            if ((left!=0)&&(avail==0))
+            {
                 WARNLOG("notifySelected: Closing mid packet, %d remaining", left);
                 toread = left;
+                msg.clear();
             }
             left -= toread;
             if (left==0)
             {
                 // DEBUG
-                parent->notify(this, msg);
+                parent->notify(this, msg); // consumes msg
             }
             return false;
         }
@@ -3761,6 +3764,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
 
         struct cCommandProcessorParams
         {
+            cCommandProcessorParams() { msg.setEndian(__BIG_ENDIAN); }
             CRemoteClientHandler *client;
             MemoryBuffer msg;
         };
@@ -5177,7 +5181,8 @@ public:
             PROGLOG("notify %d", msg.length());
         if (msg.length())
         {
-            PROGLOG("notify CRemoteClientHandler(%p), msg length=%u", _client, msg.length());
+            if (TF_TRACE_FULL)
+                PROGLOG("notify CRemoteClientHandler(%p), msg length=%u", _client, msg.length());
             cCommandProcessor::cCommandProcessorParams params;
             params.client = client.getClear();
             params.msg.swapWith(msg);

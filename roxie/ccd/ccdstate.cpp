@@ -614,7 +614,7 @@ protected:
                 const char *name = super.queryProp("@id");
                 if (name)
                 {
-                    const IResolvedFile *resolved = lookupFileName(name, false, true, true, NULL);
+                    const IResolvedFile *resolved = lookupFileName(name, false, true, true, NULL, true);
                     if (resolved)
                     {
                         files.append(*const_cast<IResolvedFile *>(resolved));
@@ -666,10 +666,10 @@ public:
         return lookupElements(xpath.str(), "MemIndex");
     }
 
-    virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool useCache, bool cacheResult, IConstWorkUnit *wu) const
+    virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool useCache, bool cacheResult, IConstWorkUnit *wu, bool ignoreForeignPrefix) const
     {
         StringBuffer fileName;
-        expandLogicalFilename(fileName, _fileName, wu, false, !wu);
+        expandLogicalFilename(fileName, _fileName, wu, false, ignoreForeignPrefix);
         if (traceLevel > 5)
             DBGLOG("lookupFileName %s", fileName.str());
 

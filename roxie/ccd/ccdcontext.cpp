@@ -3428,11 +3428,11 @@ public:
     {
         CriticalBlock b(contextCrit);
         StringBuffer expandedName;
-        expandLogicalFilename(expandedName, fileName, workUnit, false, !workUnit);
+        expandLogicalFilename(expandedName, fileName, workUnit, false, false);
         Linked<const IResolvedFile> ret = fileCache.getValue(expandedName);
         if (!ret)
         {
-            ret.setown(factory->queryPackage().lookupFileName(fileName, isOpt, false, false, workUnit));
+            ret.setown(factory->queryPackage().lookupFileName(fileName, isOpt, false, false, workUnit, false));
             if (ret)
             {
                 IResolvedFile *add = const_cast<IResolvedFile *>(ret.get());

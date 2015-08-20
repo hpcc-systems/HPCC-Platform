@@ -989,7 +989,7 @@ public:
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
             {
                 unsigned channel = queryFactory.queryChannel();
@@ -3075,7 +3075,7 @@ public:
         {
             bool isOpt = (helper->getFlags() & TIRoptional) != 0;
             OwnedRoxieString indexName(helper->getFileName());
-            datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
+            datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
             if (datafile)
                 keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
         }
@@ -4276,7 +4276,7 @@ public:
         {
             bool isOpt = (fetchContext->getFetchFlags() & FFdatafileoptional) != 0;
             OwnedRoxieString fname(fetchContext->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fname, isOpt, true, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fname, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
                 fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
         }
@@ -4626,7 +4626,7 @@ public:
         {
             bool isOpt = (helper->getJoinFlags() & JFindexoptional) != 0;
             OwnedRoxieString indexFileName(helper->getIndexFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
                 keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
         }
@@ -4967,7 +4967,7 @@ public:
         {
             bool isOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
                 fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
         }
@@ -5298,17 +5298,17 @@ public:
             {
                 const char *fileName = queryNodeFileName(_graphNode, kind);
                 const char *indexName = queryNodeIndexName(_graphNode, kind);
-                if (indexName && !allFilesDynamic)
+                if (indexName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
-                    indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit()));
+                    indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
                     if (indexfile)
                         keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
                 }
-                if (fileName && !allFilesDynamic)
+                if (fileName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isOpt']/@value");
-                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
+                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
                     if (datafile)
                         fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
                 }

@@ -67,6 +67,11 @@ ENDEMBED;
 output(streamedNames(d'AA', u'là'));
 output (testGenerator(10));
 
+// Test what happens when two threads pull from a generator
+c := testGenerator(1000);
+count(c(value < 500));
+count(c(value > 500));
+
 // Test Python code returning named tuples
 childrec tnamed(string s) := EMBED(Python)
   import collections;
