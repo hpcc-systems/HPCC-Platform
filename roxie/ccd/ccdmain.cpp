@@ -49,7 +49,7 @@
 bool shuttingDown = false;
 unsigned numChannels;
 unsigned callbackRetries = 3;
-unsigned callbackTimeout = 500;
+unsigned callbackTimeout = 5000;
 unsigned lowTimeout = 10000;
 unsigned highTimeout = 2000;
 unsigned slaTimeout = 2000;
