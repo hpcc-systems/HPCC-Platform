@@ -24656,7 +24656,7 @@ public:
 
     void processCompletedGroups()
     {
-        loop
+        while (groups.ordinality())
         {
             CriticalBlock c(groupsCrit); 
             if (!groups.head()->complete())
@@ -24677,8 +24677,6 @@ public:
             }
             else
                 doJoinGroup(head);
-            if (!groups.ordinality())
-                break;
         }
     }
 
