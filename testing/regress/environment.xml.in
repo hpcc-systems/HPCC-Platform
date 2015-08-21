@@ -799,7 +799,7 @@
                 build="_"
                 buildSet="roxie"
                 callbackRetries="3"
-                callbackTimeout="500"
+                callbackTimeout="5000"
                 channelsPerNode="1"
                 checkCompleted="true"
                 checkFileDate="true"

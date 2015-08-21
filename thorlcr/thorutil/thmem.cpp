@@ -270,7 +270,7 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
         {
             pos = 0;
             outputOffset = (offset_t)-1;
-            owner->rows.safeRegisterWriteCallback(*this);
+            owner->rows.registerWriteCallback(*this); // NB: CStream constructor called within rows lock
         }
         ~CStream()
         {
@@ -328,17 +328,14 @@ public:
     }
     IRowStream *createRowStream()
     {
+        CRowsLockBlock block(*this);
+        if (spillFile) // already spilled?
         {
-            // already spilled?
-            CRowsLockBlock block(*this);
-            if (spillFile)
-            {
-                block.clearCB = true;
-                unsigned rwFlags = DEFAULT_RWFLAGS;
-                if (preserveNulls)
-                    rwFlags |= rw_grouped;
-                return ::createRowStream(spillFile, rowIf, rwFlags);
-            }
+            block.clearCB = true;
+            unsigned rwFlags = DEFAULT_RWFLAGS;
+            if (preserveNulls)
+                rwFlags |= rw_grouped;
+            return ::createRowStream(spillFile, rowIf, rwFlags);
         }
         return new CStream(*this);
     }

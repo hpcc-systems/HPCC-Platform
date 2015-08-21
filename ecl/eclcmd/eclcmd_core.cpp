@@ -620,11 +620,11 @@ public:
     {
         fputs("\nUsage:\n"
             "\n"
-            "The 'run' command exectues an ECL workunit, text, file, archive, query,\n"
+            "The 'run' command executes an ECL workunit, text, file, archive, query,\n"
             "shared object, or dll on the specified HPCC target cluster.\n"
             "\n"
             "Query input can be provided in xml form via the --input parameter.  Input\n"
-            "xml can be provided directly or by refrencing a file\n"
+            "xml can be provided directly or by referencing a file\n"
             "\n"
             "ecl run <target> <wuid> [--input=<file|xml>][--wait=<ms>]\n"
             "ecl run <target> <query> [--input=<file|xml>][--wait=<ms>]\n"

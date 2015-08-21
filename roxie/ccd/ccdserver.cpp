@@ -23818,9 +23818,9 @@ public:
 
     void processCompletedGroups()
     {
-        loop
+        CriticalBlock c(groupsCrit);
+        while (groups.ordinality())
         {
-            CriticalBlock c(groupsCrit); 
             if (!groups.head()->complete())
                 break;
             Owned<CJoinGroup> head = groups.dequeue();
@@ -23839,8 +23839,6 @@ public:
             }
             else
                 doJoinGroup(head);
-            if (!groups.ordinality())
-                break;
         }
     }
 

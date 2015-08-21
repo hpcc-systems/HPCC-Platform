@@ -663,7 +663,7 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
     {
         ConvertEclParameterToArchive conversion(*this);
         if (!conversion.process())
-            return false;
+            exit(1); //rare case, not a usage error
     }
     if (optResultLimit == (unsigned)-1)
         extractEclCmdOption(optResultLimit, globals, ECLOPT_RESULT_LIMIT_ENV, ECLOPT_RESULT_LIMIT_INI, 0);
