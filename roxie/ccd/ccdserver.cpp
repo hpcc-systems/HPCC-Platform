@@ -24656,9 +24656,9 @@ public:
 
     void processCompletedGroups()
     {
+        CriticalBlock c(groupsCrit);
         while (groups.ordinality())
         {
-            CriticalBlock c(groupsCrit); 
             if (!groups.head()->complete())
                 break;
             Owned<CJoinGroup> head = groups.dequeue();
