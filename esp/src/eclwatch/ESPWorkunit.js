@@ -263,6 +263,9 @@ define([
         isComplete: function () {
             return this.hasCompleted;
         },
+        isFailed: function () {
+            return this.StateID === 4;
+        },
         isDeleted: function () {
             return this.StateID === 999;
         },
@@ -280,6 +283,14 @@ define([
                     }
                 });
             }
+        },
+        doDeschedule: function () {
+            return this._action("Deschedule").then(function(response) {
+            });
+        },
+        doReschedule: function () {
+            return this._action("Reschedule").then(function(response) {
+            });
         },
         create: function (ecl) {
             var context = this;

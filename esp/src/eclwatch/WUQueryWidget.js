@@ -155,9 +155,11 @@ define([
         },
 
         _onReschedule: function (event) {
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Reschedule");
         },
 
         _onDeschedule: function (event) {
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Deschedule");
         },
 
         _onRowDblClick: function (wuid) {
@@ -473,6 +475,8 @@ define([
             var hasNotFailed = false;
             var hasCompleted = false;
             var hasNotCompleted = false;
+            var isScheduled = false;
+            var isNotScheduled = false;
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
                 if (selection[i] && selection[i].Protected !== null) {
@@ -494,6 +498,11 @@ define([
                         hasNotCompleted = true;
                     }
                 }
+                if (selection[i].EventSchedule === 2) {
+                    isScheduled = true;
+                } else if (selection[i].EventSchedule === 1) {
+                    isNotScheduled = true;
+                }
             }
 
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
@@ -502,8 +511,8 @@ define([
             registry.byId(this.id + "SetToFailed").set("disabled", !hasNotProtected);
             registry.byId(this.id + "Protect").set("disabled", !hasNotProtected);
             registry.byId(this.id + "Unprotect").set("disabled", !hasProtected);
-            registry.byId(this.id + "Reschedule").set("disabled", true);    //TODO
-            registry.byId(this.id + "Deschedule").set("disabled", true);    //TODO
+            registry.byId(this.id + "Reschedule").set("disabled", !isNotScheduled);
+            registry.byId(this.id + "Deschedule").set("disabled", !isScheduled);
 
             this.menuProtect.set("disabled", !hasNotProtected);
             this.menuUnprotect.set("disabled", !hasProtected);
