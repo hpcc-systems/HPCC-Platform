@@ -442,7 +442,7 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="callbackTimeout" type="xs:nonNegativeInteger" use="optional" default="500">
+    <xs:attribute name="callbackTimeout" type="xs:nonNegativeInteger" use="optional" default="5000">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Timeout (in ms) before callbacks from agents to server are resent</tooltip>
