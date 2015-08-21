@@ -1,4 +1,4 @@
 <Dataset name='Result 1'>
- <Row><surname>Gavin               </surname><children><Row><name>Smith</name><dups>2</dups></Row><Row><name>Jones</name><dups>3</dups></Row><Row><name>Doe</name><dups>3</dups></Row><Row><name>Smith</name><dups>2</dups></Row></children></Row>
+ <Row><surname>Gavin               </surname><children><Row><name>Jones</name><dups>2</dups></Row><Row><name>Smith</name><dups>2</dups></Row></children></Row>
  <Row><surname>John                </surname><children><Row><name>Bib</name><dups>1</dups></Row><Row><name>Bob</name><dups>1</dups></Row></children></Row>
 </Dataset>

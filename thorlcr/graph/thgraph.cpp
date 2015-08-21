@@ -985,6 +985,7 @@ bool isGlobalActivity(CGraphElementBase &container)
 // always local
         case TAKfilter:
         case TAKfilterproject:
+        case TAKfiltergroup:
         case TAKsplit:
         case TAKpipewrite:
         case TAKdegroup:
