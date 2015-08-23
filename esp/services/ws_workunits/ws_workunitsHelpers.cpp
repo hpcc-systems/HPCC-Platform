@@ -1257,8 +1257,11 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
         return;
     try
     {
-        IArrayOf<IConstECLWorkflow> workflows;
         Owned<IConstWorkflowItemIterator> it = cw->getWorkflowItems();
+        if (!it)
+            return;
+
+        IArrayOf<IConstECLWorkflow> workflows;
         ForEach(*it)
         {
             IConstWorkflowItem* r = it->query();
