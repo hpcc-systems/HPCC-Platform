@@ -26,6 +26,7 @@
 #include "wshelpers.hpp"
 
 #include "dalienv.hpp"
+#include "dasds.hpp"
 #include "WUWrapper.hpp"
 #include "dfuwu.hpp"
 #include "exception_util.hpp"
@@ -2342,5 +2343,177 @@ void CWsSMCEx::setActiveWUs(IEspContext &context, IEspActiveWorkunit& wu, IEspAc
 
         e->Release();
     }
+}
+
+static const char *LockModeNames[] = { "READ", "WRITE", "HOLD", "SUB" };
+
+void CWsSMCEx::addLockInfo(CLockMetaData& lD, const char* xPath, unsigned msNow, time_t ttNow, IArrayOf<IEspLock>& locks)
+{
+    Owned<IEspLock> lock = createLock();
+    lock->setXPath(xPath);
+    lock->setEPIP(lD.queryEp());
+    lock->setSessionID(lD.sessId);
+
+    unsigned duration = msNow-lD.timeLockObtained;
+    lock->setDurationMS(duration);
+
+    CDateTime timeLocked;
+    StringBuffer timeStr;
+    time_t ttLocked = ttNow - duration/1000;
+    timeLocked.set(ttLocked);
+    timeLocked.getString(timeStr.clear());
+    lock->setTimeLocked(timeStr.str());
+
+    unsigned mode = lD.mode;
+    VStringBuffer modeStr("%x", mode);
+    lock->setModes(modeStr.str());
+
+    StringArray modes;
+    if (RTM_MODE(mode, RTM_LOCK_READ))
+        modes.append(LockModeNames[CLockModes_READ]);
+    if (RTM_MODE(mode, RTM_LOCK_WRITE))
+        modes.append(LockModeNames[CLockModes_WRITE]);
+    if (RTM_MODE(mode, RTM_LOCK_HOLD)) // long-term lock
+        modes.append(LockModeNames[CLockModes_HOLD]);
+    if (RTM_MODE(mode, RTM_LOCK_SUB)) // locks all descendants as well as self
+        modes.append(LockModeNames[CLockModes_SUB]);
+    lock->setModeNames(modes);
+    locks.append(*lock.getClear());
+}
+
+bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEspLockQueryResponse &resp)
+{
+    class CLockPostFilter : public CSimpleInterface
+    {
+        CLockModes mode;
+        time_t ttLTLow, ttLTHigh;
+        bool checkLTLow, checkLTHigh;
+        int durationLow, durationHigh;
+
+        bool checkMode(unsigned lockMode)
+        {
+            if (mode == LockModes_Undefined)
+                return true;
+
+            unsigned modeReq;
+            switch (mode)
+            {
+            case CLockModes_READ:
+                modeReq = RTM_LOCK_READ;
+                break;
+            case CLockModes_WRITE:
+                modeReq = RTM_LOCK_WRITE;
+                break;
+            case CLockModes_HOLD:
+                modeReq = RTM_LOCK_HOLD;
+                break;
+            case CLockModes_SUB:
+                modeReq = RTM_LOCK_SUB;
+                break;
+            }
+            if (lockMode & modeReq)
+                return true;
+
+            return false;
+        }
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CLockPostFilter(IEspLockQueryRequest& req)
+        {
+            mode = req.getMode();
+            if (req.getDurationMSLow_isNull())
+                durationLow = -1;
+            else
+                durationLow = req.getDurationMSLow();
+            if (req.getDurationMSHigh_isNull())
+                durationHigh = -1;
+            else
+                durationHigh = req.getDurationMSHigh();
+            const char* timeLow = req.getTimeLockedLow();
+            if (!timeLow || !*timeLow)
+                checkLTLow = false;
+            else
+            {
+                CDateTime dtLow;
+                dtLow.setString(timeLow, NULL, false);
+                ttLTLow = dtLow.getSimple();
+                checkLTLow = true;
+            }
+            const char* timeHigh = req.getTimeLockedHigh();
+            if (!timeHigh || !*timeHigh)
+                checkLTHigh = false;
+            else
+            {
+                CDateTime dtHigh;
+                dtHigh.setString(timeHigh, NULL, false);
+                ttLTHigh = dtHigh.getSimple();
+                checkLTHigh = true;
+            }
+        }
+        bool check(CLockMetaData& lD, unsigned msNow, time_t ttNow)
+        {
+            if (!checkMode(lD.mode))
+                return false;
+
+            int duration = msNow-lD.timeLockObtained;
+            if (durationLow > duration)
+                return false;
+            if ((durationHigh >= 0) && (durationHigh < duration))
+                return false;
+
+            if (checkLTLow && (ttNow - duration/1000 < ttLTLow))
+                return false;
+            if (checkLTHigh && (ttNow - duration/1000 > ttLTHigh))
+                return false;
+
+            return true;
+        }
+    };
+
+    try
+    {
+        CLockPostFilter postFilter(req);
+        const char* xPath = NULL;
+        if (req.getAllFileLocks())
+            xPath = "/Files/*";
+        else
+            xPath = req.getXPath();
+
+        Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks(req.getEPIP(), xPath);
+
+        IArrayOf<IEspLock> locks;
+        CDateTime time;
+        time.setNow();
+        time_t ttNow = time.getSimple();
+        unsigned msNow = msTick();
+        for (unsigned l=0; l<lockInfoCollection->queryLocks(); l++)
+        {
+            ILockInfo& lockInfo = lockInfoCollection->queryLock(l);
+
+            CDfsLogicalFileName dlfn;
+            const char* xPath = NULL;
+            if (dlfn.setFromXPath(lockInfo.queryXPath()))
+                xPath = dlfn.get();
+            else
+                xPath = lockInfo.queryXPath();
+            for (unsigned i=0; i<lockInfo.queryConnections(); i++)
+            {
+                CLockMetaData& lMD = lockInfo.queryLockData(i);
+                if (postFilter.check(lMD, msNow, ttNow))
+                    addLockInfo(lMD, xPath, msNow, ttNow, locks);
+            }
+        }
+        unsigned numLocks = locks.length();
+        if (numLocks)
+            resp.setLocks(locks);
+        resp.setNumLocks(numLocks);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
 }
 
