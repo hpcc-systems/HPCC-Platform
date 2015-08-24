@@ -177,8 +177,8 @@ doStop() {
     echo "$action stop in the cluster ..."
     init stop
     scriptFile=/tmp/${action}_stop_$$
-    createScript $scriptFile $action $args stop
     if [[ -n "${comp}" ]]; then
+        createScript $scriptFile $action $args stop
         OPTIONS="${DEFAULT_OPTIONS} -h $IPsFile"
         runScript $IPsFile
         report "${action} stop"
@@ -186,6 +186,7 @@ doStop() {
         if [[ -e $IPsExcludeDIP ]]; then
             local numIPs=$(wc -l $IPsExcludeDIP | awk '{ print $1 }')
             if [[ $numIPs -gt 0 ]]; then
+                createScript $scriptFile $action $args stop
                 OPTIONS="${DEFAULT_OPTIONS} -h $IPsExcludeDIP"
                 runScript $IPsExcludeDIP
                 report "${action} stop" $DIP
