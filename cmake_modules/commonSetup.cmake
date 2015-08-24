@@ -82,6 +82,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_SIGNED_CHAR "Build system with default char type is signed" OFF)
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
 
+  option(WITH_PLUGINS "Enable the building of plugins" ON)
+  # WITH_PLUGINS = OFF will disable all of the following, else they can be set off on a case by case basis
   option(USE_MYSQL "Enable MySQL support" ON)
   option(USE_CASSANDRA "Enable Cassandra support" ON)
   option(USE_SQLITE3 "Enable SqLite3 support" ON)
@@ -100,8 +102,16 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
-  if ( USE_PYTHON OR USE_V8 OR USE_JNI OR USE_RINSIDE OR USE_SQLITE3 OR USE_MYSQL OR USE_CASSANDRA OR USE_MEMCACHED OR USE_REDIS)
-      set( WITH_PLUGINS ON )
+  if ( NOT WITH_PLUGINS )
+      set( USE_PYTHON OFF )
+      set( USE_V8 OFF )
+      set( USE_JNI OFF )
+      set( USE_RINSIDE OFF )
+      set( USE_SQLITE3 OFF )
+      set( USE_MYSQL OFF )
+      set( USE_CASSANDRA OFF )
+      set( USE_MEMCACHED OFF )
+      set( USE_REDIS OFF )
   endif()
 
   if ( USE_XALAN AND USE_LIBXSLT )
