@@ -215,7 +215,7 @@ class ScriptExecution(object):
                 no_error_found = False
         script_name = os.path.basename(self.script_file)
         if not no_error_found:
-            print("\n\nError found during " + script_name + " execution. ")
+            print("\n\n\033[91mError found during " + script_name + " execution.\033[0m")
             print("Reference following log for more information: ")
             print(self.log_file)
         else:
