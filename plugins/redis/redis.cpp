@@ -251,7 +251,7 @@ void Connection::parseOptions(ICodeContext * ctx, const char * _options)
         }
         else
         {
-            VStringBuffer err("RedisPlugin: unsupported option string %s", opt);
+            VStringBuffer err("Redis Plugin: unsupported option string %s", opt);
             rtlFail(0, err.str());
         }
     }
@@ -339,11 +339,11 @@ void Connection::updateTimeout(unsigned __int64 _timeout)
     {
         if (context->err)
         {
-            VStringBuffer msg("RedisPlugin: failed to set timeout - %s", context->errstr);
+            VStringBuffer msg("Redis Plugin: failed to set timeout - %s", context->errstr);
             rtlFail(0, msg.str());
         }
         else
-            rtlFail(0, "RedisPlugin: failed to set timeout - no message available");
+            rtlFail(0, "Redis Plugin: failed to set timeout - no message available");
     }
 }
 void Connection::assertOnError(const redisReply * reply, const char * _msg)
@@ -526,7 +526,7 @@ template<class type> void Connection::get(ICodeContext * ctx, const char * key, 
     size_t returnSize = reply->query()->len;
     if (sizeof(type)!=returnSize)
     {
-        VStringBuffer msg("RedisPlugin: ERROR - Requested type of different size (%uB) from that stored (%uB).", (unsigned)sizeof(type), (unsigned)returnSize);
+        VStringBuffer msg("Redis Plugin: ERROR - Requested type of different size (%uB) from that stored (%uB).", (unsigned)sizeof(type), (unsigned)returnSize);
         rtlFail(0, msg.str());
     }
     memcpy(&returnValue, reply->query()->str, returnSize);
@@ -692,6 +692,8 @@ void Connection::encodeChannel(StringBuffer & channel, const char * key) const
 }
 bool Connection::lock(ICodeContext * ctx, const char * key, const char * channel, unsigned expire)
 {
+    if (expire == 0)
+        rtlFail(0, "Redis Plugin: ERROR - invalid value for 'expire', persistent locks not allowed.");
     StringBuffer cmd("SET %b %b NX PX ");
     cmd.append(expire);
 
@@ -802,7 +804,7 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
         bool err = redisGetReply(subConnection->context, (void**)&nakedReply);
         reply->setClear(nakedReply);
         if (err != REDIS_OK)
-            rtlFail(0, "RedisPlugin: ERROR - GET timed out.");
+            rtlFail(0, "Redis Plugin: ERROR - GET timed out.");
         assertOnCommandErrorWithKey(nakedReply, "GET", key);
         if (nakedReply->type == REDIS_REPLY_ARRAY && strcmp("message", nakedReply->element[0]->str) == 0)
         {
