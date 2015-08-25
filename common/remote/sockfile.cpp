@@ -855,11 +855,6 @@ class CRemoteBase: public CInterface
     bool                    useSSL;
     void connectSocket(SocketEndpoint &ep)
     {
-#ifdef _DEBUG
-        StringBuffer sb;
-        ep.getUrlStr(sb);
-        DBGLOG("Client connecting %sto dafilesrv %s", useSSL?"SECURE ":"", sb.str());
-#endif
         sRFTM tm;
         // called in CConnectionTable::crit
         unsigned retries = 3;
