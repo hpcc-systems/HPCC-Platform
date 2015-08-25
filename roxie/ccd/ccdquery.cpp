@@ -695,7 +695,7 @@ protected:
         case TAKpipewrite:
             return createRoxieServerPipeWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKpull:
-            throwUnexpected(); //code generator strips for non-thor
+            return createRoxieServerPullActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKlinkedrawiterator:
             return createRoxieServerLinkedRawIteratorActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKremoteresult:

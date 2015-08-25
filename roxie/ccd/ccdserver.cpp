@@ -19164,6 +19164,94 @@ IRoxieServerActivityFactory *createRoxieServerCatchActivityFactory(unsigned _id,
 
 //=================================================================================
 
+class CRoxieServerPullActivity : public CRoxieServerActivity
+{
+    ConstPointerArray buff;
+    bool started;
+    unsigned index;
+
+public:
+    CRoxieServerPullActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_factory, _probeManager)
+    {
+        started = false;
+        index = 0;
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        started = false;
+        index = 0;
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+    }
+
+    virtual void reset()
+    {
+        while (buff.isItem(index))
+            ReleaseRoxieRow(buff.item(index++));
+        buff.kill();
+        started = false;
+        index = 0;
+        CRoxieServerActivity::reset();
+    }
+
+    virtual const void *nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities);
+        if (!started)
+            pullInput();
+        if (buff.isItem(index))
+        {
+            const void * next = buff.item(index++);
+            if (next)
+                processed++;
+            return next;
+        }
+        return NULL;
+    }
+
+protected:
+    void pullInput()
+    {
+        bool EOGseen = false;
+        loop
+        {
+            const void * next = input->nextInGroup();
+            buff.append(next);
+            if (next == NULL)
+            {
+                if (EOGseen)
+                    break;
+                EOGseen = true;
+            }
+            else
+                EOGseen = false;
+        }
+        started = true;
+    }
+};
+
+class CRoxieServerPullActivityFactory : public CRoxieServerActivityFactory
+{
+public:
+    CRoxieServerPullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    {
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerPullActivity(this, _probeManager);
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerPullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+{
+    return new CRoxieServerPullActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+}
+
+//=================================================================================
+
 class CRoxieServerCaseActivity : public CRoxieServerActivity
 {
     IHThorCaseArg &helper;
