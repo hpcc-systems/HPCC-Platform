@@ -556,7 +556,8 @@ public:
     static IGroup *fromText(const char *s,unsigned defport) 
     {
         SocketEndpointArray epa;
-        epa.fromText(s,defport);
+        if ( s )
+            epa.fromText(s,defport);
         return createIGroup(epa);
     }
 
