@@ -251,7 +251,7 @@ private:
 class EclCmdRoxieCheckOrReload : public EclCmdCommon
 {
 public:
-    EclCmdRoxieCheckOrReload(bool _reload) : optMsToWait(10000), reload(_reload)
+    EclCmdRoxieCheckOrReload(bool _reload) : optMsToWait(10000), reload(_reload), optRetry(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -271,6 +271,8 @@ public:
                 continue;
             }
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
+                continue;
+            if (reload && iter.matchFlag(optRetry, ECLOPT_RETRY))
                 continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -295,7 +297,12 @@ public:
         Owned<IClientRoxieControlCmdRequest> req = client->createRoxieControlCmdRequest();
         req->setWait(optMsToWait);
         req->setProcessCluster(optProcess);
-        req->setCommand((reload) ? CRoxieControlCmd_RELOAD : CRoxieControlCmd_STATE);
+        if (!reload)
+            req->setCommand(CRoxieControlCmd_STATE);
+        else if (optRetry)
+            req->setCommand(CRoxieControlCmd_RELOAD_RETRY);
+        else
+            req->setCommand(CRoxieControlCmd_RELOAD);
 
         Owned<IClientRoxieControlCmdResponse> resp = client->RoxieControlCmd(req);
         if (resp->getExceptions().ordinality())
@@ -358,6 +365,7 @@ private:
     StringAttr optProcess;
     unsigned optMsToWait;
     bool reload;
+    bool optRetry;
 };
 
 class EclCmdRoxieUnusedFiles : public EclCmdCommon
