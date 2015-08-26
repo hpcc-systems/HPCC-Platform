@@ -424,7 +424,7 @@ define(
     SampleRequest: "Ejemplo del requerimiento",
     SampleResponse: "Ejemplo de la respuesta",
     Save: "Guardar",
-    Scope: "Alcance",
+    Scope: "Ámbito",
     SearchResults: "Resultados de búsqueda",
     SecondsRemaining: "Segundos que faltan",
     Security: "Seguridad",
