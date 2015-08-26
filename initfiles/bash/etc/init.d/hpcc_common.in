@@ -271,9 +271,25 @@ set_componentvars() {
     COMPPIDPATH=${pid}/${compName}.pid
 }
 
+validate_configuration() {
+    if ! validation_error=$(${configgen_path}/configgen -env ${envfile} -validateonly 2>&1); then
+        log  "get_commondirs(): validation failure ${envfile}"
+        log  "${validation_error}"
+        echo -e "\033[31merror\033[0m: configgen xml validation failure"
+        exit 1
+    fi
+}
+
 get_commondirs() {
     componentFile="${path}/componentfiles/configxml"
-    DIRS=`${configgen_path}/configgen -env ${envfile} -id ${componentFile} -listcommondirs`
+    validate_configuration
+    DIRS=$(${configgen_path}/configgen -env ${envfile} -id ${componentFile} -listcommondirs)
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        log  "get_commondirs(): failure in configgen call"
+        echo -e "\033[31merror\033[0m: get_commondirs() -> failure in configgen call"
+        exit 1
+    fi
     dir.parser ${DIRS}
 }
 
@@ -283,9 +299,16 @@ configGenCmd() {
     # Creating logfiles for component
     logDir=$log/${compName}
 
+    validate_configuration
     configcmd="${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
     log "$configcmd"
     su ${user} -c "$configcmd" 2>/dev/null
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        log  "configGenCmd(): failure in configgen call"
+        echo -e "\033[31merror\033[0m: configGenCmd() -> failure in configgen call"
+        exit 1
+    fi
 }
 
 createRuntime() {
@@ -677,14 +700,21 @@ setup_component() {
 }
 
 create_dropzone() {
-    dropzones=`${configgen_path}/configgen -env ${envfile} -listdirs`
-    for D in ${dropzones} ; do
-    # Creating DropZone directory
-    if [ ! -d ${D} ]; then
-         mkdir -p $D > /dev/null 2>&1
-         chown -c $user:$group $D > /dev/null 2>&1
-         chmod 777 $D > /dev/null 2>&1
+    validate_configuration
+    dropzones=$(${configgen_path}/configgen -env ${envfile} -listdirs)
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        log  "create_dropzone(): failure in configgen call"
+        echo -e "\033[31merror\033[0m: create_dropzone() -> failure in configgen call"
+        exit 1
     fi
+    for D in ${dropzones} ; do
+        # Creating DropZone directory
+        if [ ! -d ${D} ]; then
+            mkdir -p $D > /dev/null 2>&1
+            chown -c $user:$group $D > /dev/null 2>&1
+            chmod 777 $D > /dev/null 2>&1
+        fi
     done
 }
 
@@ -837,17 +867,23 @@ is_python_installed () {
 ##      environment.xml
 ##
 run_cluster() {
-   _cmd=$1
-   _exclude_local=0
-   [ -n "$2" ] && _exclude_local=$2
+    _cmd=$1
+    _exclude_local=0
+    [[ -n "$2" ]] && _exclude_local=$2
 
-   if [ -z "$3" ]
-   then
-      IPS0=$(${INSTALL_DIR}/sbin/configgen -env ${CONFIG_DIR}/${ENV_XML_FILE} -machines | \
-         awk -F, '{print $1}'  | sort | uniq)
-   else
-      IPS0=$(cat $3)
-   fi
+    if [[ -z "$3" ]]; then
+        validate_configuration
+        t_IP=$(${INSTALL_DIR}/sbin/configgen -env ${CONFIG_DIR}/${ENV_XML_FILE} -machines)
+        rc=$?
+        if [[ $rc -ne 0 ]]; then
+            log  "run_cluster(): failure in configgen call"
+            echo -e "\033[31merror\033[0m: run_cluster() -> failure in configgen call"
+            exit 1
+        fi
+        IPS0=$(echo $t_IP | awk 'BEGIN {FS=",";RS=" ";} {print $1;}' | sort | uniq)
+    else
+        IPS0=$(cat $3)
+    fi
 
    # Exclude local ip if requested
    if [ $_exclude_local -eq 1 ]

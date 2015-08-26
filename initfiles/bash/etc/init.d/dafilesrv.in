@@ -93,7 +93,13 @@ if [ $? -ne 1 ];then
 fi
 
 
-COMPS=`${configgen_path}/configgen -env ${envfile} -ip "127.0.0.1" -list`
+validate_configuration
+COMPS=$(${configgen_path}/configgen -env ${envfile} -ip "127.0.0.1" -list)
+if [[ $rc -ne 0 ]]; then
+    log "hpcc-init: failure to build COMPS from configgen call"
+    echo -e "\033[31merror\033[0m: hpcc-init -> failure to build COMPS from configgen call"
+    exit 1
+fi
 
 comp.parser ${COMPS}
 for i in ${compArray[@]}; do
