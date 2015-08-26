@@ -313,7 +313,8 @@ ESPenum RoxieControlCmd : string
     ATTACH("Attach"),
     DETACH("Detach"),
     STATE("State"),
-    RELOAD("Reload")
+    RELOAD("Reload"),
+    RELOAD_RETRY("ReloadRetry")
 };
 
 ESPrequest RoxieControlCmdRequest

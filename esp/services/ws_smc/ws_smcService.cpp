@@ -2036,6 +2036,8 @@ inline const char *controlCmdMessage(int cmd)
     case CRoxieControlCmd_DETACH:
         return "<control:lockDali/>";
     case CRoxieControlCmd_RELOAD:
+        return "<control:reload/>";
+    case CRoxieControlCmd_RELOAD_RETRY:
         return "<control:reload forceRetry='1' />";
     case CRoxieControlCmd_STATE:
         return "<control:state/>";
