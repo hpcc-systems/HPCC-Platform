@@ -179,6 +179,12 @@ define([
         _onRecover: function (event) {
             this.wu.recover();
         },
+        _onDeschedule: function (event) {
+            this.wu.doDeschedule();
+        },
+        _onReschedule: function (event) {
+            this.wu.doReschedule();
+        },
         _onPublish: function (event) {
             var allowForeign = registry.byId(this.id + "AllowForeignFiles");
             if (allowForeign.checked == true) {
@@ -496,6 +502,8 @@ define([
             registry.byId(this.id + "Recover").set("disabled", isArchived || !this.wu.isComplete() || this.wu.isDeleted());
             registry.byId(this.id + "Publish").set("disabled", isArchived || !this.wu.isComplete() || this.wu.isDeleted());
             registry.byId(this.id + "ZapReport").set("disabled", this.wu.isDeleted());
+            registry.byId(this.id + "Reschedule").set("disabled", !this.wu.isComplete() || this.wu.isFailed());
+            registry.byId(this.id + "Deschedule").set("disabled", this.wu.isComplete() || this.wu.isFailed());
 
             registry.byId(this.id + "Jobname").set("readOnly", !this.wu.isComplete() || this.wu.isDeleted());
             registry.byId(this.id + "Description").set("readOnly", !this.wu.isComplete() || this.wu.isDeleted());
