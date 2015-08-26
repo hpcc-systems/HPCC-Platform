@@ -694,8 +694,8 @@
             <title>Stats</title>
 
             <para>On the workunit Timers tab is another tab for Stats. The
-            Stats tab is a visual representation of all the workunit timings.
-            </para>
+            Stats tab is a visual representation of all the workunit
+            timings.</para>
 
             <figure>
               <title>Stats</title>
@@ -708,7 +708,7 @@
             </figure>
 
             <para>Select the timer values from the drop list on the Stats tab
-            to view the various charts and graphs. </para>
+            to view the various charts and graphs.</para>
           </sect4>
         </sect3>
 
@@ -1295,6 +1295,11 @@
             <listitem>
               <para><emphasis role="bold">Owner</emphasis> - filter files by
               owners. Supports wildcards.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Index</emphasis> - include only
+              Index files if checked.</para>
             </listitem>
 
             <listitem>
