@@ -156,6 +156,8 @@ public:
     {
         PyEval_RestoreThread(threadState);
         script.clear();
+        module.clear();
+        lru.clear();
     }
 
     inline PyObject * importFunction(size32_t lenChars, const char *utf)
@@ -328,7 +330,9 @@ public:
     PyObject *getNamedTupleType(const RtlTypeInfo *type)
     {
         // It seems the customized namedtuple types leak, and they are slow to create, so take care to reuse
-        CriticalBlock b(lock);  // Not sure if this is really needed, as we have effectively locked out other threads using the GIL
+        // Note - we do not need (and must not have) a lock protecting this. It is protected by the Python GIL,
+        // and if we add our own lock we are liable to deadlock as the code within Py_CompileStringFlags may
+        // temporarily release then re-acquire the GIL.
         if (!namedtuple)
         {
             namedtupleTypes.setown(PyDict_New());
@@ -369,7 +373,9 @@ public:
     }
     PyObject *compileScript(const char *text)
     {
-        CriticalBlock b(lock);  // Not sure if this is really needed, as we have effectively locked out other threads using the GIL
+        // Note - we do not need (and must not have) a lock protecting this. It is protected by the Python GIL,
+        // and if we add our own lock we are liable to deadlock as the code within Py_CompileStringFlags may
+        // temporarily release then re-acquire the GIL.
         if (!compiledScripts)
             compiledScripts.setown(PyDict_New());
         OwnedPyObject code;
@@ -377,7 +383,6 @@ public:
         if (!code)
         {
             code.setown(Py_CompileString(text, "", Py_eval_input));
-
             if (!code)
             {
                 PyErr_Clear();
@@ -412,7 +417,6 @@ protected:
     OwnedPyObject namedtuple;      // collections.namedtuple
     OwnedPyObject namedtupleTypes; // dictionary of return values from namedtuple()
     OwnedPyObject compiledScripts; // dictionary of previously compiled scripts
-    CriticalSection lock;
 } globalState;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
