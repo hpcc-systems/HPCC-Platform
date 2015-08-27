@@ -129,7 +129,7 @@ void CSlaveActivity::setInput(unsigned index, CActivityBase *inputActivity, unsi
 {
     CActivityBase::setInput(index, inputActivity, inputOutIdx);
     Linked<IThorDataLink> outLink;
-    if (!inputActivity || container.isEof)
+    if (!inputActivity)
     {
         Owned<CActivityBase> nullAct = container.factory(TAKnull);
 
