@@ -3850,6 +3850,9 @@ void CWsWorkunitsEx::addProcessLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& win
         proc.getProp("@log",logSpec);
         if (!logSpec.length())
             continue;
+        const char* processName = proc.queryName();
+        if (isEmpty(processName))
+            continue;
         StringBuffer pid;
         pid.appendf("%d",proc.getPropInt("@pid"));
         MemoryBuffer mb;
@@ -3878,7 +3881,7 @@ void CWsWorkunitsEx::addProcessLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& win
             if (*p == '\\' || *p == '/')
                 logName = p+1;
         }
-        VStringBuffer fileName("%s%c%s", path, PATHSEPCHAR, logName);
+        VStringBuffer fileName("%s%c%s_%s", path, PATHSEPCHAR, processName, logName);
         createZAPFile(fileName.str(), mb.length(), mb.bufferBase());
     }
 }
