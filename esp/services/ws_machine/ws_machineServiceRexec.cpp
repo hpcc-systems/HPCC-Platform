@@ -21,6 +21,7 @@
 #include "jarray.hpp"
 #include "jmisc.hpp"
 #include "exception_util.hpp"
+#include "rmtssh.hpp"
 
 //---------------------------------------------------------------------------------------------
 //NOTE: PART III of implementation for Cws_machineEx
@@ -83,15 +84,13 @@ public:
         m_password.clear().append( password );
     }
 
-   virtual void doWork()
-   {
-      try
-      {
-         StringBuffer cmdLine;
-         StringBuffer userId;
-         StringBuffer password;
-         bool bLinux;
-         int exitCode = -1;
+    virtual void doWork()
+    {
+        try
+        {
+            StringBuffer userId;
+            StringBuffer password;
+            bool bLinux;
 
             if (m_sConfigAddress.length() < 1)
             {
@@ -102,7 +101,7 @@ public:
                 m_pService->getAccountAndPlatformInfo(m_sConfigAddress.str(), userId, password, bLinux);
             }
 
-            if (m_userId.length() < 1 || m_userId.length() < 1)
+            if (!m_userId.length() || !m_password.length())
             {
                 //BUG: 9825 - remote execution on linux needs to use individual accounts
                 //use userid/password in ESP context for remote execution...
@@ -120,151 +119,39 @@ public:
                 password.clear().append(m_password);
             }
 
-#ifdef _WIN32
-///#define CHECK_LINUX_COMMAND
-#ifndef CHECK_LINUX_COMMAND
-#define popen  _popen
-#define pclose _pclose
-
-         // Use psexec as default remote control program
-         if (bLinux)
-         {         
-            if (!checkFileExists(".\\plink.exe"))
-               throw MakeStringException(ECLWATCH_PLINK_NOT_INSTALLED, "Invalid ESP installation: missing plink.exe to execute the remote program!");
-
-            m_sCommand.replace('\\', '/');//replace all '\\' by '/'
-
-            /* 
-            note that if we use plink (cmd line ssh client) for the first time with a computer,
-            it generates the following message:
-
-            The server's host key is not cached in the registry. You have no guarantee that the 
-            server is the computer you think it is.  The server's key fingerprint is:
-            1024 aa:bb:cc:dd:ee:ff:gg:hh:ii:jj:kk:ll:mm:nn:oo:pp
-            If you trust this host, enter "y" to add the key to
-            PuTTY's cache and carry on connecting.  If you want to carry on connecting just once, 
-            without adding the key to the cache, enter "n".If you do not trust this host, press 
-            Return to abandon the connection.
-
-            To get around this, we pipe "n" to plink without using its -batch parameter.  We need
-            help from cmd.exe to do this though...
-            */
-            cmdLine.appendf("cmd /c \"echo y | .\\plink.exe -ssh -l %s -pw %s %s sudo bash -c '%s' 2>&1\"",
-                environmentConfData.m_user.str(), password.str(), m_sAddress.str(), m_sCommand.str());
-         }
-         else
-         {
-            if (!checkFileExists(".\\psexec.exe"))
-               throw MakeStringException(ECLWATCH_PSEXEC_NOT_INSTALLED, "Invalid ESP installation: missing psexec.exe to execute the remote program!");
-
-            cmdLine.appendf(".\\psexec \\\\%s -u %s -p %s %s cmd /c %s 2>&1", 
-               m_sAddress.str(), userId.str(), password.str(), 
-               m_bWait ? "" : "-d", m_sCommand.str());
-         }
-#else
-         if (bLinux)
-         {
-            m_sCommand.replace('\\', '/');//replace all '\\' by '/'
-            cmdLine.appendf("ssh -o StrictHostKeyChecking=no %s '%s'", m_sAddress.str(), m_sCommand.str());
-         }
-         else
-         {
-            setResponse("Remote execution from Linux to Windows is not supported!");
-            exitCode = 1;
-         }
-#endif
-#else
-         if (bLinux)
-         {
-            m_sCommand.replace('\\', '/');//replace all '\\' by '/'
-            cmdLine.appendf("ssh -o StrictHostKeyChecking=no %s '%s'", m_sAddress.str(), m_sCommand.str());
-         }
-         else
-         {
-            setResponse("Remote execution from Linux to Windows is not supported!");
-            exitCode = 1;
-         }
-#endif
-
-         if (*cmdLine.str())
-         {
-            if (m_bWait)
-            {
-               StringBuffer response, response1;
-               exitCode = invoke_program(cmdLine, response);
-                    if (exitCode < 0)
-                        response1.append("Failed in executing a system command.\n");
-                    else
-                        response1.append("System command(s) has been executed.\n");
-
-               //remove \n at the end
-               int len = response.length();
-               if (len > 0 && response.charAt(--len) == '\n')
-                  response.setLength(len);
-
-               setResponse(response1.str());
-            }
+            if (!m_sCommand.length())
+                setResultCode(-1);
             else
             {
-               DWORD runCode;
-               ::invoke_program(cmdLine, runCode, false);
-               exitCode = (int) runCode;
+                IFRunSSH * connection = createFRunSSH();
+                connection->init(m_sCommand.str(),NULL,userId.str(),password.str(),5,0);
+                connection->exec(m_sAddress.str(),NULL,true);
             }
-         }
-
-         setResultCode(exitCode);
-      }
-      catch(IException* e)
-      {
-         StringBuffer buf;
-         e->errorMessage(buf);
-         setResponse(buf.str());
-         setResultCode(e->errorCode());
-         e->Release();
-      }
-#ifndef NO_CATCHALL
-      catch(...)
-      {
-         setResponse("An unknown exception occurred!");
-         setResultCode(-1);
-      }
-#endif
-   }//doWork()
-
-   //---------------------------------------------------------------------------
-   //  createProcess
-   //---------------------------------------------------------------------------
-   int invoke_program(const char *command_line, StringBuffer& response)
-   {
-      char   buffer[128];
-      FILE   *fp;
-
-      /* Run the command so that it writes its output to a pipe. Open this
-       * pipe with read text attribute so that we can read it 
-       * like a text file. 
-       */
-        if (getEspLogLevel()>8)
-        {
-            DBGLOG("command_line=<%s>", command_line);
         }
-#ifdef CHECK_LINUX_COMMAND
-        return -1;
-#else
-      if( (fp = popen( command_line, "r" )) == NULL )
-         return -1;
-
-        /* Read pipe until end of file. End of file indicates that 
-       * the stream closed its standard out (probably meaning it 
-       * terminated).
-       */
-      while ( !feof(fp) )
-         if ( fgets( buffer, 128, fp) )
-            response.append( buffer );
-
-      /* Close pipe and print return value of CHKDSK. */
-      return pclose( fp );
+        // CFRunSSH uses a MakeStringExceptionDirect throw to pass code and result string to caller
+        catch(IException* e)
+        {
+            // errorCode == -1 on successful CFRunSSH execution
+            if(e->errorCode() == -1)
+                setResultCode(0);
+            else
+                setResultCode(e->errorCode());
+            StringBuffer buf;
+            e->errorMessage(buf);
+            if (buf.length() && buf.charAt(buf.length() - 1) == '\n') // strip newline
+                buf.setLength(buf.length() - 1);
+            // set regardless of return
+            setResponse(buf.str());
+            e->Release();
+        }
+#ifndef NO_CATCHALL
+        catch(...)
+        {
+            setResponse("An unknown exception occurred!");
+            setResultCode(-1);
+        }
 #endif
-   }
+    }//doWork()
 };
 
 //-------------------------------------------------StartStop--------------------------------------------------
