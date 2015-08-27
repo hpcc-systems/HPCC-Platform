@@ -476,7 +476,7 @@ void CGraphElementBase::doconnect()
     {
         CIOConnection *io = connectedInputs.item(i);
         if (io)
-            io->connect(i, activity);
+            io->connect(i, queryActivity());
     }
 }
 
@@ -838,38 +838,38 @@ void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *par
                         CGraphElementBase *input = inputs.item(i)->activity;
                         input->createActivity(parentExtractSz, parentExtract);
                     }
-                }
-                onCreate();
-                if (isDiskInput(getKind()))
-                    onStart(parentExtractSz, parentExtract);
-                ForEachItemIn(i2, inputs)
-                {
-                    CIOConnection *inputIO = inputs.item(i2);
-                    loop
+                    onCreate();
+                    if (isDiskInput(getKind()))
+                        onStart(parentExtractSz, parentExtract);
+                    ForEachItemIn(i2, inputs)
                     {
-                        CGraphElementBase *input = inputIO->activity;
-                        switch (input->getKind())
+                        CIOConnection *inputIO = inputs.item(i2);
+                        loop
                         {
-                            case TAKif:
-                            case TAKcase:
+                            CGraphElementBase *input = inputIO->activity;
+                            switch (input->getKind())
                             {
-                                if (input->whichBranch >= input->getInputs()) // if, will have TAKnull activity, made at create time.
+                                case TAKif:
+                                case TAKcase:
                                 {
-                                    input = NULL;
+                                    if (input->whichBranch >= input->getInputs()) // if, will have TAKnull activity, made at create time.
+                                    {
+                                        input = NULL;
+                                        break;
+                                    }
+                                    inputIO = input->inputs.item(input->whichBranch);
+                                    assertex(inputIO);
                                     break;
                                 }
-                                inputIO = input->inputs.item(input->whichBranch);
-                                assertex(inputIO);
-                                break;
+                                default:
+                                    input = NULL;
+                                    break;
                             }
-                            default:
-                                input = NULL;
+                            if (!input)
                                 break;
                         }
-                        if (!input)
-                            break;
+                        connectInput(i2, inputIO->activity, inputIO->index);
                     }
-                    connectInput(i2, inputIO->activity, inputIO->index);
                 }
                 initActivity();
                 break;
