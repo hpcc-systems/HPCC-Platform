@@ -25,6 +25,7 @@
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
 #endif
+#include "referencedfilelist.hpp"
 
 #define UFO_DIRTY                                0x01
 #define UFO_RELOAD_TARGETS_CHANGED_PMID          0x02
@@ -176,7 +177,7 @@ public:
     bool isValidCluster(const char *cluster);
     void deploySharedObjectReq(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml=NULL);
     unsigned getGraphIdsByQueryId(const char *target, const char *queryId, StringArray& graphIds);
-    bool getQueryFiles(const char* query, const char* target, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *superFiles);
+    bool getQueryFiles(IEspContext &context, const char* query, const char* target, const char* wuid, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *superFiles);
     void getGraphsByQueryId(const char *target, const char *queryId, const char *graphName, const char *subGraphId, IArrayOf<IEspECLGraphEx>& ECLGraphs);
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries);
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries);
@@ -271,6 +272,8 @@ private:
     void readGraph(IEspContext& context, const char* subGraphId, WUGraphIDType& id, bool running,
         IConstWUGraph* graph, IArrayOf<IEspECLGraphEx>& graphs);
     IPropertyTree* getWorkunitArchive(IEspContext &context, WsWuInfo& winfo, const char* wuid, unsigned cacheMinutes);
+    void readSuperFiles(IEspContext &context, IReferencedFile* rf, const char* fileName, IReferencedFileList* wufiles, IArrayOf<IEspQuerySuperFile>* files);
+    IReferencedFile* getReferencedFileByName(const char* name, IReferencedFileList* wufiles);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;

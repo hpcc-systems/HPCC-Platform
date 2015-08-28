@@ -26,7 +26,6 @@
 #include "roxiecontrol.hpp"
 #include "dfuutil.hpp"
 #include "dautils.hpp"
-#include "referencedfilelist.hpp"
 #include "httpclient.hpp"
 
 #define DALI_FILE_LOOKUP_TIMEOUT (1000*15*1)  // 15 seconds
@@ -1585,7 +1584,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
 
     StringArray logicalFiles;
     IArrayOf<IEspQuerySuperFile> superFiles;
-    getQueryFiles(queryId, querySet, logicalFiles, req.getIncludeSuperFiles() ? &superFiles : NULL);
+    getQueryFiles(context, queryId, querySet, wuid, logicalFiles, req.getIncludeSuperFiles() ? &superFiles : NULL);
     if (logicalFiles.length())
         resp.setLogicalFiles(logicalFiles);
     if (superFiles.length())
@@ -1689,7 +1688,55 @@ int EspQuerySuperFileCompareFunc(IInterface * const *i1, IInterface * const *i2)
     return strcmp(name1, name2);
 }
 
-bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *respSuperFiles)
+IReferencedFile* CWsWorkunitsEx::getReferencedFileByName(const char* name, IReferencedFileList* wufiles)
+{
+    Owned<IReferencedFileIterator> refFileItr = wufiles->getFiles();
+    ForEach(*refFileItr)
+    {
+        IReferencedFile& rf = refFileItr->query();
+        const char* lfn = rf.getLogicalName();
+        if (lfn && strieq(lfn, name))
+            return &rf;
+    }
+    return NULL;
+}
+
+void CWsWorkunitsEx::readSuperFiles(IEspContext &context, IReferencedFile* rf, const char* fileName, IReferencedFileList* wufiles, IArrayOf<IEspQuerySuperFile>* files)
+{
+    double version = context.getClientVersion();
+    StringArray subFiles;
+    IArrayOf<IEspQuerySuperFile> superFiles;
+    const StringArray& subFileNames = rf->getSubFileNames();
+    ForEachItemIn(i, subFileNames)
+    {
+        const char* name = subFileNames.item(i);
+        if (!name || !*name)
+            continue;
+        IReferencedFile* pRF = getReferencedFileByName(name, wufiles);
+        if (!pRF)
+            continue;
+        if (!(pRF->getFlags() & RefFileSuper))
+            subFiles.append(name);
+        else if (version >= 1.57)
+            readSuperFiles(context, pRF, name, wufiles, &superFiles);
+    }
+
+    Owned<IEspQuerySuperFile> newSuperFile = createQuerySuperFile();
+    newSuperFile->setName(fileName);
+    if (subFiles.length())
+    {
+        subFiles.sortAscii();
+        newSuperFile->setSubFiles(subFiles);
+    }
+    if ((version >= 1.57) && superFiles.length())
+    {
+        superFiles.sort(EspQuerySuperFileCompareFunc);
+        newSuperFile->setSuperFiles(superFiles);
+    }
+    files->append(*newSuperFile.getClear());
+}
+
+bool CWsWorkunitsEx::getQueryFiles(IEspContext &context, const char* query, const char* target, const char* wuid, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *respSuperFiles)
 {
     try
     {
@@ -1697,55 +1744,38 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
         if (!info || (info->getPlatform()!=RoxieCluster))
             return false;
 
-        const SocketEndpointArray &eps = info->getRoxieServers();
-        if (eps.empty())
+        SCMStringBuffer process;
+        info->getRoxieProcess(process);
+        if (!process.length())
             return false;
 
-        StringBuffer control;
-        control.appendf("<control:getQueryXrefInfo full='1'><Query id='%s'/></control:getQueryXrefInfo>",  query);
-        Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIECONNECTIONTIMEOUT);
-        Owned<IPropertyTree> result = sendRoxieControlQuery(sock, control.str(), ROXIECONTROLQUERYTIMEOUT);
-        if (!result)
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+        if (!cw)
             return false;
 
-        StringBuffer xpath("Endpoint/Queries/Query/");
-        if (!respSuperFiles)
-            xpath.append('/');
-        xpath.append("File");
-        Owned<IPropertyTreeIterator> files = result->getElements(xpath);
-        ForEach (*files)
+        StringArray superFileNames;
+        Owned<IHpccPackageSet> ps = createPackageSet(process.str());
+        Owned<IReferencedFileList> wufiles = createReferencedFileList(context.queryUserId(),
+            context.queryPassword(), true, true);
+        wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, query);
+        wufiles->resolveFiles(process.str(), NULL, NULL, NULL, true, true, false);
+        Owned<IReferencedFileIterator> refFileItr = wufiles->getFiles();
+        ForEach(*refFileItr)
         {
-            IPropertyTree &file = files->query();
-            const char* fileName = file.queryProp("@name");
-            if (fileName && *fileName)
-                logicalFiles.append(fileName);
-        }
-        logicalFiles.sortAscii();
-
-        if (respSuperFiles)
-        {
-            Owned<IPropertyTreeIterator> superFiles = result->getElements("Endpoint/Queries/Query/SuperFile");
-            ForEach (*superFiles)
+            IReferencedFile &rf = refFileItr->query();
+            const char *lfn = rf.getLogicalName();
+            if (lfn && *lfn)
             {
-                IPropertyTree &super = superFiles->query();
-                Owned<IEspQuerySuperFile> respSuperFile = createQuerySuperFile();
-                respSuperFile->setName(super.queryProp("@name"));
-                Owned<IPropertyTreeIterator> fileIter = super.getElements("File");
-                StringArray respSubFiles;
-                ForEach (*fileIter)
-                {
-                    IPropertyTree &fileItem = fileIter->query();
-                    const char* fileName = fileItem.queryProp("@name");
-                    if (fileName && *fileName)
-                        respSubFiles.append(fileName);
-                }
-                respSubFiles.sortAscii();
-
-                respSuperFile->setSubFiles(respSubFiles);
-                respSuperFiles->append(*respSuperFile.getClear());
+                logicalFiles.append(lfn);
+                if (respSuperFiles && (rf.getFlags() & RefFileInGraph))
+                    readSuperFiles(context, &rf, lfn, wufiles, respSuperFiles);
             }
-            respSuperFiles->sort(EspQuerySuperFileCompareFunc);
         }
+
+        logicalFiles.sortAscii();
+        if (respSuperFiles)
+            respSuperFiles->sort(EspQuerySuperFileCompareFunc);
         return true;
     }
     catch(IMultiException *me)
