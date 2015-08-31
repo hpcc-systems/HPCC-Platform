@@ -225,13 +225,13 @@ createScriptFileUpdateClasspath() {
    composeClasspath
    cat >> $SCRIPT_FILE <<SCRIPTPATH
 
-CAN_SSH="\$(ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?)"
+CAN_SSH="\$(ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?)"
 if [ "\$CAN_SSH" -eq 255 ]; then
    echo "\$IP: Cannot SSH to host as user $user.";
    exit 1
 fi
 
-ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP  << 'SSHCMD'
+ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $user@\$IP  << 'SSHCMD'
 
 NEW_JAVA_CLASSPATH=
 SCRIPTPATH
