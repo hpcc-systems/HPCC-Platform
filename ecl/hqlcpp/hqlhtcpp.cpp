@@ -16973,6 +16973,26 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
         return doBuildActivityCreateRow(ctx, row, true);
     }
 
+    if (values->isConstant())
+    {
+        CHqlBoundExpr bound;
+        if (doBuildConstantDatasetInlineTable(expr, bound, FormatNatural))
+        {
+            OwnedHqlExpr constDataset = bound.getTranslatedExpr();
+
+            Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKlinkedrawiterator, expr, "LinkedRawIterator");
+            instance->graphLabel.set("Inline Dataset");
+            instance->setImplementationClass(newLibraryConstantRawIteratorArgId);
+            buildActivityFramework(instance);
+
+            buildInstancePrefix(instance);
+            instance->addConstructorParameter(constDataset);
+            buildInstanceSuffix(instance);
+
+            return instance->getBoundActivity();
+        }
+    }
+
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
 
     //-----------------
@@ -16989,47 +17009,25 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     IHqlExpression * self = selfCursor->querySelector();
 
     unsigned maxRows = values->numChildren();
-    bool done = false;
-    if (values->isConstant())
+    if (maxRows)
     {
-        CHqlBoundExpr bound;
-        if (doBuildDatasetInlineTable(funcctx, expr, bound, FormatNatural))
+        StringBuffer s;
+        BuildCtx switchctx(funcctx);
+        switchctx.addQuotedCompound("switch (row)");
+
+        unsigned row;
+        for (row = 0; row < maxRows; row++)
         {
-            OwnedHqlExpr whichRow = createVariable("row", LINK(unsignedType));
-            BuildCtx subctx(funcctx);
-            OwnedHqlExpr test = createValue(no_ge, makeBoolType(), LINK(whichRow), getSizetConstant(maxRows));
-            subctx.addFilter(test);
-            buildReturn(subctx, queryZero());
-            OwnedHqlExpr ds = bound.getTranslatedExpr();
-            OwnedHqlExpr thisRow = createRowF(no_selectnth, LINK(ds), adjustValue(whichRow, 1), createAttribute(noBoundCheckAtom), NULL);
-            buildAssign(funcctx, self, thisRow);
-            buildReturnRecordSize(funcctx, selfCursor);
-            done = true;
+            BuildCtx casectx(switchctx);
+            casectx.addQuotedCompound(s.clear().append("case ").append(row).append(":"));
+
+            IHqlExpression * cur = values->queryChild(row);
+            OwnedHqlExpr rowValue = createRow(no_createrow, LINK(cur));
+            buildAssign(casectx, self, rowValue);
+            buildReturnRecordSize(casectx, selfCursor);
         }
     }
-
-    if (!done)
-    {
-        if (maxRows)
-        {
-            StringBuffer s;
-            BuildCtx switchctx(funcctx);
-            switchctx.addQuotedCompound("switch (row)");
-
-            unsigned row;
-            for (row = 0; row < maxRows; row++)
-            {
-                BuildCtx casectx(switchctx);
-                casectx.addQuotedCompound(s.clear().append("case ").append(row).append(":"));
-
-                IHqlExpression * cur = values->queryChild(row);
-                OwnedHqlExpr rowValue = createRow(no_createrow, LINK(cur));
-                buildAssign(casectx, self, rowValue);
-                buildReturnRecordSize(casectx, selfCursor);
-            }
-        }
-        funcctx.addReturn(queryZero());
-    }
+    funcctx.addReturn(queryZero());
 
     OwnedHqlExpr rowsExpr = getSizetConstant(maxRows);
     doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);

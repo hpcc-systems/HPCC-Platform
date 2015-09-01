@@ -3725,6 +3725,33 @@ protected:
     IOutputMetaData * meta;
 };
 
+class CLibraryConstantRawIteratorArg : public CThorLinkedRawIteratorArg
+{
+public:
+    inline CLibraryConstantRawIteratorArg(unsigned _numRows, byte * * _rows, IOutputMetaData * _meta)
+        : meta(_meta), numRows(_numRows), rows(_rows)
+    {
+        cur = 0;
+    }
+
+    virtual void onStart(const byte *, MemoryBuffer * ) { cur = 0U; }
+
+    virtual byte * next()
+    {
+        if (cur < numRows)
+            return rows[cur++];
+        return NULL;
+    }
+
+    virtual IOutputMetaData * queryOutputMeta() { return meta; }
+
+protected:
+    unsigned numRows;
+    IOutputMetaData * meta;
+    byte * * rows;
+    unsigned cur;
+};
+
 class EclProcess : public RtlCInterface, implements IEclProcess
 {
 public:

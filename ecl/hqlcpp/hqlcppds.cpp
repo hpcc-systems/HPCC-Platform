@@ -2230,7 +2230,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             break;
         }
     case no_inlinetable:
-        if (doBuildDatasetInlineTable(ctx, expr, tgt, format))
+        if (doBuildConstantDatasetInlineTable(expr, tgt, format))
             return;
         break;
     case no_compound:
@@ -2423,7 +2423,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
             if (options.canLinkConstantRows || (expr->queryChild(0)->numChildren() > INLINE_TABLE_EXPAND_LIMIT))
             {
                 CHqlBoundExpr bound;
-                if (doBuildDatasetInlineTable(ctx, expr, bound, FormatNatural))
+                if (doBuildConstantDatasetInlineTable(expr, bound, FormatNatural))
                 {
                     OwnedHqlExpr translated = bound.getTranslatedExpr();
                     buildDatasetAssign(ctx, target, translated);
@@ -2831,21 +2831,21 @@ bool HqlCppTranslator::buildConstantRows(ConstantRowArray & boundRows, IHqlExpre
     return true;
 }
 
-bool HqlCppTranslator::doBuildDatasetInlineTable(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format)
+bool HqlCppTranslator::doBuildConstantDatasetInlineTable(IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format)
 {
     if (!options.generateStaticInlineTables)
         return false;
 
+    BuildCtx declareCtx(*code, literalAtom);
     IHqlExpression * transforms = expr->queryChild(0);
     IHqlExpression * record = expr->queryRecord();
     if (transforms->numChildren() == 0)
     {
         OwnedHqlExpr null = createDataset(no_null, LINK(record));
-        buildDataset(ctx, null, tgt, format);
+        buildDataset(declareCtx, null, tgt, format);
         return true;
     }
 
-    BuildCtx declareCtx(*code, literalAtom);
     //Remove unique id when checking for constant datasets already generated
     OwnedHqlExpr exprKey = removeAttribute(expr, _uid_Atom);
     if (declareCtx.getMatchExpr(exprKey, tgt))
