@@ -783,6 +783,7 @@ private:
     void parseAddresses(const char *address, StringBuffer& address1, StringBuffer& address2);
     void readPreflightResponse(IEspContext& context, CMachineInfoThreadParam* pParam, const char *response,int error);
     void readStorageData(const char* response, CMachineInfoThreadParam* pParam);
+    void buildProcessPath(StringBuffer &buf, const char * procName,CMachineInfoThreadParam * pParam);
     void readProcessData(const char* response, CMachineInfoThreadParam* pParam);
     void readRunningProcesses(const char* response, CMachineInfoThreadParam* pParam);
     bool readStorageSpace(const char *line, StringBuffer& title, __int64& free, __int64& total, int& percentAvail);
