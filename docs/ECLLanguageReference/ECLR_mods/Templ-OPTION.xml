@@ -1268,7 +1268,7 @@
               <entry>Default false</entry>
 
               <entry>If true, details are removed from the generated workunit,
-              including ECL code and estimates of record size, and number of
+              including ECL code, estimates of record size, and number of
               records.</entry>
             </row>
           </tbody>
