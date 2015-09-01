@@ -1236,13 +1236,13 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Make sure the <emphasis role="bold">Overwrite</emphasis> and
-            <emphasis role="bold">Replicate</emphasis><emphasis role="bold">
-            </emphasis>boxes are checked.</para>
+            <para>Make sure the <emphasis role="bold">Overwrite</emphasis> box
+            is checked.</para>
 
-            <para><emphasis role="bold">Note:</emphasis> The <emphasis
-            role="bold">Replicate</emphasis> option is only available on
-            systems where replication has been enabled.</para>
+            <para>If available, make sure the <emphasis
+            role="bold">Replicate</emphasis> box is checked. (The Replicate
+            option is only available on systems where replication has been
+            enabled.)</para>
           </listitem>
 
           <listitem>

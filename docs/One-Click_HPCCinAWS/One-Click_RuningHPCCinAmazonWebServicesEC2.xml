@@ -29,7 +29,7 @@
       message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. </para>
+      of Reed Elsevier Properties Inc., used under license.</para>
 
       <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
@@ -40,7 +40,7 @@
       countries.</para>
 
       <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. </para>
+      registered trademarks of their respective companies.</para>
 
       <para>All names and example data used in this manual are fictitious. Any
       similarity to actual persons, living or dead, is purely
@@ -1236,9 +1236,11 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Make sure the <emphasis role="bold">Overwrite</emphasis> and
-            <emphasis role="bold">Replicate</emphasis><emphasis role="bold">
-            </emphasis>boxes are checked.</para>
+            <para>Make sure the <emphasis role="bold">Overwrite</emphasis> box
+            is checked. If available, make sure the <emphasis
+            role="bold">Replicate</emphasis> box is checked. (The Replicate
+            option is only available on systems where replication has been
+            enabled.)</para>
 
             <para><figure>
                 <title>Spray the File</title>
