@@ -1951,6 +1951,7 @@ int CMPConnectThread::run()
                         PROGLOG("%s", errMsg.str());
                     }
                     sock->close();
+                    sock->Release();
                     continue;
                 }
                 else if (rd != sizeof(id))
@@ -1962,6 +1963,7 @@ int CMPConnectThread::run()
                     ep.getUrlStr(errMsg);
                     FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                     sock->close();
+                    sock->Release();
                     continue;
                 }
                 id[0].get(_remoteep);
@@ -1994,6 +1996,7 @@ int CMPConnectThread::run()
                         PROGLOG("%s", errMsg.str());
                     }
                     sock->close();
+                    sock->Release();
                     continue;
                 }
 #ifdef _FULLTRACE       
