@@ -426,6 +426,7 @@ class CMPConnectThread: public Thread
     ISocket *listensock;
     CMPServer *parent;
     int mpSoMaxConn;
+    unsigned mpTraceLevel;
     void checkSelfDestruct(void *p,size32_t sz);
 public:
     CMPConnectThread(CMPServer *_parent, unsigned port);
@@ -656,7 +657,9 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
         }
         catch (IJSOCK_Exception *e)
         {
-            if (JSOCKERR_timeout_expired != e->errorCode())
+            if (JSOCKERR_graceful_close == e->errorCode())
+                return;
+            else if (JSOCKERR_timeout_expired != e->errorCode())
                 throw;
             unsigned elapsedMs = readTmsTimer.elapsedMs();
             if (elapsedMs >= timeoutMs)
@@ -1801,12 +1804,14 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
 {
     parent = _parent;
     mpSoMaxConn = 0;
+    mpTraceLevel = 0;
     Owned<IPropertyTree> env = getHPCCEnvironment();
     if (env)
     {
         mpSoMaxConn = env->getPropInt("EnvSettings/mpSoMaxConn", 0);
         if (!mpSoMaxConn)
             mpSoMaxConn = env->getPropInt("EnvSettings/ports/mpSoMaxConn", 0);
+        mpTraceLevel = env->getPropInt("EnvSettings/mpTraceLevel", 0);
     }
     if (mpSoMaxConn)
     {
@@ -1937,11 +1942,23 @@ int CMPConnectThread::run()
                 SocketEndpoint hostep;
                 SocketEndpointV4 id[2];
                 traceSlowReadTms("MP: initial accept packet from", sock, &id[0], sizeof(id), sizeof(id), rd, CONFIRM_TIMEOUT, CONFIRM_TIMEOUT_INTERVAL);
-                if (rd != sizeof(id))
+                if (0 == rd)
                 {
-                    StringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from ");
+                    if (mpTraceLevel > 1)
+                    {
+                        // cannot get peer addresss as socket state is now ss_shutdown (unless we want to allow this in getPeerEndpoint())
+                        StringBuffer errMsg("MP Connect Thread: connect with no msg received, assumed port monitor check");
+                        PROGLOG("%s", errMsg.str());
+                    }
+                    sock->close();
+                    continue;
+                }
+                else if (rd != sizeof(id))
+                {
+                    // not sure how to get here as this is not one of the possible outcomes of above: rd == 0 or rd == sizeof(id) or an exception
                     SocketEndpoint ep;
                     sock->getPeerEndpoint(ep);
+                    StringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from ");
                     ep.getUrlStr(errMsg);
                     FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                     sock->close();
@@ -1957,12 +1974,25 @@ int CMPConnectThread::run()
 
                 if (_remoteep.isNull() || hostep.isNull())
                 {
-                    // JCSMORE, I think _remoteep really must/should match a IP of this local host
-                    StringBuffer errMsg("MP Connect Thread: invalid remote and/or host ep serialized from ");
                     SocketEndpoint ep;
                     sock->getPeerEndpoint(ep);
-                    ep.getUrlStr(errMsg);
-                    FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
+                    StringBuffer errMsg;
+                    SocketEndpointV4 zeroTest[2];
+                    memset(zeroTest, 0x0, sizeof(zeroTest));
+                    if (memcmp(id, zeroTest, sizeof(id)))
+                    {
+                        // JCSMORE, I think _remoteep really must/should match a IP of this local host
+                        errMsg.append("MP Connect Thread: invalid remote and/or host ep serialized from ");
+                        ep.getUrlStr(errMsg);
+                        FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
+                    }
+                    else if (mpTraceLevel > 1)
+                    {
+                        // all zeros msg received
+                        errMsg.append("MP Connect Thread: connect with empty msg received, assumed port monitor check from ");
+                        ep.getUrlStr(errMsg);
+                        PROGLOG("%s", errMsg.str());
+                    }
                     sock->close();
                     continue;
                 }

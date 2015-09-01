@@ -18,6 +18,7 @@
   <mpStart>7101</mpStart>
   <mpEnd>7500</mpEnd>
   <mpSoMaxConn>128</mpSoMaxConn>
+  <mpTraceLevel>0</mpTraceLevel>
  </EnvSettings>
  <Hardware>
   <Computer computerType="linuxmachine"
