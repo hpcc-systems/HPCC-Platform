@@ -221,7 +221,7 @@ void clientSetRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime)
 struct sRFTM        
 {
     CTimeMon *timemon;
-    sRFTM() {  timemon = maxReceiveTime?new CTimeMon(maxReceiveTime):NULL; }
+    sRFTM(unsigned limit) {  timemon = limit ? new CTimeMon(limit) : NULL; }
     ~sRFTM() { delete timemon; }
 };
 
@@ -536,7 +536,7 @@ static void flush(ISocket *socket)
 inline void receiveBuffer(ISocket * socket, MemoryBuffer & tgt, unsigned numtries=1, size32_t maxsz=0x7fffffff)
     // maxsz is a guess at a resonable upper max to catch where protocol error
 {
-    sRFTM tm;
+    sRFTM tm(maxReceiveTime);
     size32_t gotLength = receiveBufferSize(socket, numtries,tm.timemon);
     if (gotLength) {
         size32_t origlen = tgt.length();
@@ -855,7 +855,7 @@ class CRemoteBase: public CInterface
     bool                    useSSL;
     void connectSocket(SocketEndpoint &ep)
     {
-        sRFTM tm;
+        sRFTM tm(maxConnectTime);
         // called in CConnectionTable::crit
         unsigned retries = 3;
         if (ep.equals(lastfailep)) {
