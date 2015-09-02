@@ -246,7 +246,7 @@ public:
         else if(blobHead != 0)
             throw MakeStringException(0, "Index contains BLOBs, which are currently not supported by keydiff/patch");
         if(keyIndex->queryMetadataHead())
-            throw MakeStringException(0, "Index contains metadata, which is not currently supported by keydiff/patch");
+            WARNLOG("Index contains metadata, which will be ignored by keydiff/patch");
         keyCursor.setown(keyIndex->getCursor(NULL));
         if(keyIndex->hasPayload())
             keyedsize = keyIndex->keyedSize();
