@@ -36,9 +36,8 @@
   role="bold">)</emphasis><emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">LOOP(</emphasis><emphasis>
-  dataset,</emphasis><emphasis role="bold">
-  </emphasis><emphasis>loopcondition, rowfilter, loopbody </emphasis><emphasis
-  role="bold">)</emphasis></para>
+  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>rowfilter,
+  loopcondition, loopbody </emphasis><emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
