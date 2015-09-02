@@ -1054,7 +1054,7 @@ bool HqlCppCaseInfo::canBuildArrayLookup(const CHqlBoundExpr & test)
 
 bool HqlCppCaseInfo::queryBuildArrayLookup(BuildCtx & ctx, const CHqlBoundTarget & target, const CHqlBoundExpr & test)
 {
-    if (canBuildArrayLookup(test) && canBuildStaticList(resultType))
+    if (canBuildArrayLookup(test) && canBuildStaticList(resultType) && defaultValue->isConstant())
     {
         //MORE: Also support this for high density tables that don't start at 0... - checking upper and lower bounds
         ITypeInfo * condType = test.queryType()->queryPromotedType();
