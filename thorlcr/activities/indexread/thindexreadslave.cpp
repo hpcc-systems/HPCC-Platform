@@ -952,12 +952,10 @@ public:
                     }
                 }
                 else
-                {
                     totalCount += (rowcount_t)klManager->getCount();
-                    if ((totalCount > choosenLimit))
-                        break;
-                }
                 callback.clearManager();
+                if ((totalCount > choosenLimit))
+                    break;
             }
             if (!container.queryLocalOrGrouped())
             {
