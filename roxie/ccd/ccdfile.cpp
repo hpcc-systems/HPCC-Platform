@@ -794,6 +794,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             IException *E = MakeStringException(ROXIE_DISKSPACE_ERROR, "%s", err.str());
             EXCLOG(MCoperatorError, E);
             E->Release();
+            f->setCopying(false);
         }
         else
         {

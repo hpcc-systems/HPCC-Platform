@@ -75,7 +75,7 @@ public:
 
     virtual bool isGrouped()
     {
-        return queryHelper()->queryOutputMeta()->isGrouped();
+        return false;
     }
 
     void getMetaInfo(ThorDataLinkMetaInfo &info)
