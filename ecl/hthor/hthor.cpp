@@ -4239,6 +4239,83 @@ const void * CHThorSortedActivity::nextGE(const void * seek, unsigned numFields)
 
 //=====================================================================================================
 
+CHThorTraceActivity::CHThorTraceActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorTraceArg &_arg, ThorActivityKind _kind)
+: CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind),
+  helper(_arg),  keepLimit(0), skip(0), sample(0), traceEnabled(false)
+{
+}
+
+void CHThorTraceActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    traceEnabled = agent.queryWorkUnit()->getDebugValueBool("traceEnabled", false);
+    if (traceEnabled && helper.canMatchAny())
+    {
+        keepLimit = helper.getKeepLimit();
+        if (keepLimit==(unsigned) -1)
+            keepLimit = agent.queryWorkUnit()->getDebugValueInt("traceLimit", 10);
+        skip = helper.getSkip();
+        sample = helper.getSample();
+        if (sample)
+            sample--;
+        name.setown(helper.getName());
+        if (!name)
+            name.set("Row");
+    }
+    else
+        keepLimit = 0;
+}
+
+void CHThorTraceActivity::done()
+{
+    CHThorSimpleActivityBase::done();
+    name.clear();
+}
+
+const void *CHThorTraceActivity::nextInGroup()
+{
+    OwnedConstRoxieRow ret(input->nextInGroup());
+    if (!ret)
+        return NULL;
+    onTrace(ret);
+    processed++;
+    return ret.getClear();
+}
+
+const void * CHThorTraceActivity::nextGE(const void * seek, unsigned numFields)
+{
+    OwnedConstRoxieRow ret(input->nextGE(seek, numFields));
+    if (ret)
+    {
+        onTrace(ret);
+        processed++;
+    }
+    return ret.getClear();
+}
+
+void CHThorTraceActivity::onTrace(const void *row)
+{
+    if (keepLimit && helper.isValid(row))
+    {
+        if (skip)
+            skip--;
+        else if (sample)
+            sample--;
+        else
+        {
+            CommonXmlWriter xmlwrite(XWFnoindent);
+            outputMeta.toXML((const byte *) row, xmlwrite);
+            DBGLOG("TRACE: <%s>%s<%s>", name.get(), xmlwrite.str(), name.get());
+            keepLimit--;
+            sample = helper.getSample();
+            if (sample)
+                sample--;
+        }
+    }
+}
+
+//=====================================================================================================
+
 void getLimitType(unsigned flags, bool & limitFail, bool & limitOnFail)
 {
     if((flags & JFmatchAbortLimitSkips) != 0)
@@ -10113,6 +10190,7 @@ MAKEFACTORY(Loop)
 MAKEFACTORY(Process)
 MAKEFACTORY(Grouped)
 MAKEFACTORY(Sorted)
+MAKEFACTORY(Trace)
 MAKEFACTORY(NWayInput)
 MAKEFACTORY(NWaySelect)
 MAKEFACTORY(NonEmpty)

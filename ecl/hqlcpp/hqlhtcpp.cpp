@@ -6706,7 +6706,12 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityAggregate(ctx, expr);
                 break;
             case no_metaactivity:
-                result = doBuildActivityMetaActivity(ctx, expr);
+                if (expr->hasAttribute(pullAtom))
+                    result = doBuildActivityPullActivity(ctx, expr);
+                else if (expr->hasAttribute(traceAtom))
+                    result = doBuildActivityTraceActivity(ctx, expr);
+                else
+                    throwUnexpected();
                 break;
             case no_choosen:
                 result = doBuildActivityFirstN(ctx, expr);
@@ -15729,7 +15734,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySectionInput(BuildCtx & ctx, I
 
 //---------------------------------------------------------------------------
 
-ABoundActivity * HqlCppTranslator::doBuildActivityMetaActivity(BuildCtx & ctx, IHqlExpression * expr)
+ABoundActivity * HqlCppTranslator::doBuildActivityPullActivity(BuildCtx & ctx, IHqlExpression * expr)
 {
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, expr->queryChild(0));
     if (targetHThor())
@@ -15744,6 +15749,53 @@ ABoundActivity * HqlCppTranslator::doBuildActivityMetaActivity(BuildCtx & ctx, I
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
 
+    return instance->getBoundActivity();
+}
+
+ABoundActivity * HqlCppTranslator::doBuildActivityTraceActivity(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
+    assertex(expr->hasAttribute(traceAtom));
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtrace, expr, "Trace");
+
+    buildActivityFramework(instance);
+    buildInstancePrefix(instance);
+
+    IHqlExpression *keepLimit = queryAttributeChild(expr, keepAtom, 0);
+    if (keepLimit)
+        doBuildUnsignedFunction(instance->startctx, "getKeepLimit", keepLimit);
+
+    IHqlExpression *skip = queryAttributeChild(expr, skipAtom, 0);
+    if (skip)
+        doBuildUnsignedFunction(instance->startctx, "getSkip", skip);
+
+    IHqlExpression *sample = queryAttributeChild(expr, sampleAtom, 0);
+    if (sample)
+        doBuildUnsignedFunction(instance->startctx, "getSample", sample);
+
+    IHqlExpression *named = queryAttributeChild(expr, namedAtom, 0);
+    if (named)
+        doBuildVarStringFunction(instance->startctx, "getName", named);
+
+    HqlExprAttr invariant;
+    OwnedHqlExpr cond = extractFilterConditions(invariant, expr, dataset, options.spotCSE, queryOptions().spotCseInIfDatasetConditions);
+
+    //Base class returns true, so only generate if no non-invariant conditions
+    if (cond)
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual bool isValid(const void * _self)");
+        funcctx.addQuotedLiteral("unsigned char * self = (unsigned char *) _self;");
+
+        bindTableCursor(funcctx, dataset, "self");
+        buildReturn(funcctx, cond);
+    }
+    if (invariant)
+        doBuildBoolFunction(instance->startctx, "canMatchAny", invariant);
+
+    buildInstanceSuffix(instance);
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
     return instance->getBoundActivity();
 }
 

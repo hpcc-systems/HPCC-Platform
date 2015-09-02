@@ -72,6 +72,8 @@ bool pretendAllOpt = false;
 bool traceStartStop = false;
 bool traceServerSideCache = false;
 bool defaultTimeActivities = true;
+bool defaultTraceEnabled = false;
+unsigned defaultTraceLimit = 10;
 unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
 unsigned restarts = 0;
@@ -781,6 +783,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
         defaultTimeActivities = topology->getPropBool("@timeActivities", true);
+        defaultTraceEnabled = topology->getPropBool("@traceEnabled", false);
+        defaultTraceLimit = topology->getPropInt("@traceLimit", 10);
         clientCert.certificate.set(topology->queryProp("@certificateFileName"));
         clientCert.privateKey.set(topology->queryProp("@privateKeyFileName"));
         clientCert.passphrase.set(topology->queryProp("@passphrase"));

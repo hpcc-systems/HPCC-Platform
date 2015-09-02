@@ -922,6 +922,7 @@ enum ThorActivityKind
     TAKlastdenormalizegroup,
     TAKjsonwrite,
     TAKjsonread,
+    TAKtrace,
 
     TAKlast
 };
@@ -1060,7 +1061,7 @@ enum ActivityInterfaceEnum
     TAIsubsortextra_1,
     TAIdictionaryworkunitwritearg_1,
     TAIdictionaryresultwritearg_1,
-
+    TAItracearg_1,
 //Should remain as last of all meaningful tags, but before aliases
     TAImax,
 
@@ -2778,6 +2779,17 @@ struct IHThorDictionaryResultWriteArg : public IHThorArg
     virtual bool usedOutsideGraph() = 0;
     virtual IHThorHashLookupInfo * queryHashLookupInfo() = 0;
 };
+
+struct IHThorTraceArg : public IHThorArg
+{
+    virtual bool isValid(const void * _left) = 0;
+    virtual bool canMatchAny() = 0;
+    virtual unsigned getKeepLimit() = 0;
+    virtual unsigned getSample() = 0;
+    virtual unsigned getSkip() = 0;
+    virtual const char *getName() = 0;
+};
+
 
 //------------------------- Other stuff -------------------------
 

@@ -2511,6 +2511,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         case no_metaactivity:
             if (expr->hasAttribute(pullAtom))
                 s.append("PULL");
+            else if (expr->hasAttribute(traceAtom))
+                s.append("TRACE");
             else
                 s.append("no_metaactivity:unknown");
             defaultChildrenToECL(expr, s, inType);

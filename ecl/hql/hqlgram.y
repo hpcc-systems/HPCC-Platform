@@ -439,6 +439,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TOPN
   TOUNICODE
   TOXML
+  TRACE
   TRANSFER
   TRANSFORM
   TRIM
@@ -8322,6 +8323,11 @@ simpleDataSet
                             $$.setExpr(createDataset(no_metaactivity, $3.getExpr(), createAttribute(pullAtom)));
                             $$.setPosition($1);
                         }
+    | TRACE '(' startTopLeftRightSeqFilter optTraceFlags ')' endTopLeftRightFilter endSelectorSequence
+                        {
+                            $$.setExpr(createDataset(no_metaactivity, $3.getExpr(), createComma(createAttribute(traceAtom), $4.getExpr())));
+                            $$.setPosition($1);
+                        }
     | DENORMALIZE '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression ',' beginCounterScope transform endCounterScope optJoinFlags ')' endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_boolean, false);
@@ -10560,6 +10566,44 @@ optSortList
     | ',' sortList
     ;
 
+optTraceFlags
+    : traceFlags
+    |                   {   $$.setNullExpr(); }
+    ;
+
+traceFlags
+    : ',' traceFlag     {   $$.setExpr($2.getExpr()); }
+    | traceFlags ',' traceFlag
+                        {   $$.setExpr(createComma($1.getExpr(), $3.getExpr())); }
+    ;
+
+traceFlag
+    : KEEP '(' expression ')'  {
+                            parser->normalizeExpression($3, type_int, false);
+                            $$.setExpr(createExprAttribute(keepAtom, $3.getExpr()), $1);
+                        }
+    | SKIP '(' expression ')'  {
+                            parser->normalizeExpression($3, type_int, false);
+                            $$.setExpr(createExprAttribute(skipAtom, $3.getExpr()), $1);
+                        }
+    | SAMPLE '(' expression  ')' {
+                            parser->normalizeExpression($3, type_int, false);
+                            $$.setExpr(createExprAttribute(sampleAtom, $3.getExpr()), $1);
+                        }
+    | NAMED '(' constExpression ')'
+                        {
+                            parser->normalizeStoredNameExpression($3);
+                            $$.setExpr(createExprAttribute(namedAtom, $3.getExpr()), $1);
+                        }
+    | expression
+                        {
+                            //MORE:SORTLIST  Allow a sortlist to be expanded!
+                            parser->normalizeExpression($1, type_boolean, false);
+                            $$.inherit($1);
+                        }
+    ;
+
+    
 doParseFlags
     : parseFlags
     ;

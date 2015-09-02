@@ -393,7 +393,7 @@ public:
     inline const char * getLink() const { LinkRoxieRow(ptr); return ptr; }
     inline const char * set(const char * _ptr) { const char * temp = ptr; if (_ptr) LinkRoxieRow(_ptr); ptr = _ptr; ReleaseRoxieRow(temp); return ptr; }
     inline const char * setown(const char * _ptr) { const char * temp = ptr; ptr = _ptr; ReleaseRoxieRow(temp); return ptr; }
-
+    inline void clear() { const char * temp = ptr; ptr = NULL; ReleaseRoxieRow(temp);  }
 private:
     /* Disable use of some constructs that often cause memory leaks by creating private members */
     void operator = (const void * _ptr)              {  }

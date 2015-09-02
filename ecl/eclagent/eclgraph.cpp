@@ -293,6 +293,8 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createLibraryCallActivity(agent, activityId, subgraphId, (IHThorLibraryCallArg &)arg, kind, node);
     case TAKsorted:
         return createSortedActivity(agent, activityId, subgraphId, (IHThorSortedArg &)arg, kind);
+    case TAKtrace:
+        return createTraceActivity(agent, activityId, subgraphId, (IHThorTraceArg &)arg, kind);
     case TAKgrouped:
         return createGroupedActivity(agent, activityId, subgraphId, (IHThorGroupedArg &)arg, kind);
     case TAKnwayjoin:

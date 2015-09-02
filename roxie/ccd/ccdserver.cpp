@@ -18435,6 +18435,139 @@ IRoxieServerActivityFactory *createRoxieServerPullActivityFactory(unsigned _id, 
 {
     return new CRoxieServerPullActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
 }
+//=================================================================================
+
+class CRoxieServerTraceActivity : public CRoxieServerActivity
+{
+public:
+    CRoxieServerTraceActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorTraceArg &) basehelper),
+          keepLimit(0), skip(0), sample(0)
+    {
+        assertex(meta.hasXML());
+        traceEnabled = defaultTraceEnabled && !isBlind();
+    }
+
+    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    {
+        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        if (ctx)
+            traceEnabled = ctx->queryOptions().traceEnabled && !isBlind();
+    }
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        if (traceEnabled && helper.canMatchAny())
+        {
+            keepLimit = helper.getKeepLimit();
+            if (keepLimit==(unsigned) -1)
+                keepLimit = ctx->queryOptions().traceLimit;
+            skip = helper.getSkip();
+            sample = helper.getSample();
+            if (sample)
+                sample--;
+            name.setown(helper.getName());
+            if (!name)
+                name.set("Row");
+        }
+        else
+            keepLimit = 0;
+    }
+    virtual void stop(bool aborting)
+    {
+        name.clear();
+        CRoxieServerActivity::stop(aborting);
+    }
+
+    virtual bool isPassThrough()
+    {
+        return true;
+    }
+
+    virtual const void *nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities);
+        const void *row = input->nextInGroup();
+        if (row)
+        {
+            onTrace(row);
+            processed++;
+        }
+        return row;
+    }
+    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    {
+        // MORE - will need rethinking once we rethink the nextSteppedGE interface for global smart-stepping.
+        ActivityTimer t(totalCycles, timeActivities);
+        const void * row = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        if (row)
+        {
+            onTrace(row);
+            processed++;
+        }
+        return row;
+    }
+
+    virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector)
+    {
+        return input->gatherConjunctions(collector);
+    }
+    virtual void resetEOF()
+    {
+        input->resetEOF();
+    }
+    IInputSteppingMeta * querySteppingMeta()
+    {
+        return input->querySteppingMeta();
+    }
+
+protected:
+    void onTrace(const void *row)
+    {
+        if (keepLimit && helper.isValid(row))
+        {
+            if (skip)
+                skip--;
+            else if (sample)
+                sample--;
+            else
+            {
+                CommonXmlWriter xmlwrite(XWFnoindent);
+                meta.toXML((const byte *) row, xmlwrite);
+                CTXLOG("TRACE: <%s>%s<%s>", name.get(), xmlwrite.str(), name.get());
+                keepLimit--;
+                sample = helper.getSample();
+                if (sample)
+                    sample--;
+            }
+        }
+    }
+    OwnedRoxieString name;
+    IHThorTraceArg &helper;
+    unsigned keepLimit;
+    unsigned skip;
+    unsigned sample;
+    bool traceEnabled;
+};
+
+class CRoxieServerTraceActivityFactory : public CRoxieServerActivityFactory
+{
+public:
+    CRoxieServerTraceActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    {
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerTraceActivity(this, _probeManager);
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerTraceActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+{
+    return new CRoxieServerTraceActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+}
 
 //=================================================================================
 

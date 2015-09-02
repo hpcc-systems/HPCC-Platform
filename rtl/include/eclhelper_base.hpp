@@ -2601,7 +2601,6 @@ typedef CThorNullArg CThorDatasetResultArg;
 typedef CThorNullArg CThorRowResultArg;
 typedef CThorNullArg CThorPullArg;
 
-
 class CThorParseArg : public CThorArg, implements IHThorParseArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
@@ -3458,6 +3457,32 @@ class CThorSectionInputArg : public CThorArg, implements IHThorSectionInputArg
     
     virtual unsigned getFlags() { return 0; }
 };
+
+class CThorTraceArg : public CThorArg, implements IHThorTraceArg
+{
+    virtual void Link() const { RtlCInterface::Link(); }
+    virtual bool Release() const { return RtlCInterface::Release(); }
+    virtual bool isValid(const void * _left) { return true; }
+    virtual bool canMatchAny() { return true; }
+    virtual unsigned getKeepLimit() { return (unsigned) -1; }
+    virtual unsigned getSample() { return 0; }
+    virtual unsigned getSkip() { return 0; }
+    virtual const char *getName() { return NULL; }
+
+    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
+    {
+        switch (which)
+        {
+        case TAIarg:
+        case TAItracearg_1:
+            return static_cast<IHThorTraceArg *>(this);
+        default:
+            break;
+        }
+        return NULL;
+    }
+};
+
 
 class CThorWhenActionArg : public CThorArg, implements IHThorWhenActionArg
 {

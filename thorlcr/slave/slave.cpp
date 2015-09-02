@@ -257,6 +257,7 @@ CActivityBase *createChildThroughNormalizeSlave(CGraphElementBase *container);
 CActivityBase *createWhenSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryWorkunitWriteSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryResultWriteSlave(CGraphElementBase *container);
+CActivityBase *createTraceSlave(CGraphElementBase *container);
 
 
 class CGenericSlaveGraphElement : public CSlaveGraphElement
@@ -350,6 +351,9 @@ public:
                 break;
             case TAKsorted:
                 ret = createSortedSlave(this);
+                break;
+            case TAKtrace:
+                ret = createTraceSlave(this);
                 break;
             case TAKdedup:
                 if (queryGrouped())

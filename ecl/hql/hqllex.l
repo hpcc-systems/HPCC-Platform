@@ -926,6 +926,7 @@ TOJSON              { RETURNSYM(TOJSON); }
 TOPN                { RETURNSYM(TOPN); }
 TOUNICODE           { RETURNSYM(TOUNICODE); }
 TOXML               { RETURNSYM(TOXML); }
+TRACE               { RETURNSYM(TRACE); }
 TRANSFER            { RETURNSYM(TRANSFER); }
 TRANSFORM           { RETURNHARD(TRANSFORM); }
 TRIM                { RETURNSYM(TRIM); }

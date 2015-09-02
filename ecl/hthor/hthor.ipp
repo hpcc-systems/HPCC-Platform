@@ -1235,6 +1235,27 @@ public:
     virtual const void *nextGE(const void * seek, unsigned numFields);
 };
 
+class CHThorTraceActivity : public CHThorSteppableActivityBase
+{
+    IHThorTraceArg &helper;
+    roxiemem::OwnedRoxieString name;
+    unsigned keepLimit;
+    unsigned skip;
+    unsigned sample;
+    bool traceEnabled;
+public:
+    CHThorTraceActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorTraceArg &_arg, ThorActivityKind _kind);
+
+    virtual void ready();
+    virtual void done();
+
+    //interface IHThorInput
+    virtual const void *nextInGroup();
+    virtual const void *nextGE(const void * seek, unsigned numFields);
+protected:
+    void onTrace(const void *row);
+};
+
 class CHThorJoinActivity : public CHThorActivityBase
 {
     enum { JSfill, JSfillleft, JSfillright, JScollate, JScompare, JSleftonly, JSrightonly } state;
