@@ -71,7 +71,7 @@ static const char* FEATURE_URL="DfuAccess";
 
 #define REMOVE_FILE_SDS_CONNECT_TIMEOUT (1000*15)  // 15 seconds
 
-const unsigned NODE_GROUP_CACHE_MIN_DEFAULT = 30;
+const unsigned NODE_GROUP_CACHE_DEFAULT_TIMEOUT = 30*60*1000; //30 minutes
 
 const int DESCRIPTION_DISPLAY_LENGTH = 12;
 const unsigned MAX_VIEWKEYFILE_ROWS = 1000;
@@ -100,11 +100,11 @@ CThorNodeGroup* CThorNodeGroupCache::readNodeGroup(const char* _groupName)
     return NULL;
 }
 
-CThorNodeGroup* CThorNodeGroupCache::lookup(const char* groupName, unsigned timeOutMinutes)
+CThorNodeGroup* CThorNodeGroupCache::lookup(const char* groupName, unsigned timeout)
 {
     CriticalBlock block(sect);
     CThorNodeGroup* item=SuperHashTableOf<CThorNodeGroup, const char>::find(groupName);
-    if (item && !item->checkTimeOut(timeOutMinutes))
+    if (item && !item->checkTimeout(timeout))
         return LINK(item);
 
     Owned<CThorNodeGroup> e = readNodeGroup(groupName);
@@ -148,7 +148,11 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
         m_disableUppercaseTranslation = true;
 
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/NodeGroupCacheMinutes", process, service);
-    nodeGroupCacheMinutes = cfg->getPropInt(xpath.str(), NODE_GROUP_CACHE_MIN_DEFAULT);
+    int timeout = cfg->getPropInt(xpath.str(), -1);
+    if (timeout > -1)
+        nodeGroupCacheTimeout = (unsigned) timeout*60*1000;
+    else
+        nodeGroupCacheTimeout = NODE_GROUP_CACHE_DEFAULT_TIMEOUT;
     thorNodeGroupCache.setown(new CThorNodeGroupCache());
 
     if (!daliClientActive())
@@ -1835,7 +1839,7 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
             if (clusterInfo) //Should be valid. But, check it just in case.
             {
                 partsOnCluster->setReplicate(clusterInfo->queryPartDiskMapping().isReplicated());
-                Owned<CThorNodeGroup> nodeGroup = thorNodeGroupCache->lookup(clusterName, nodeGroupCacheMinutes);
+                Owned<CThorNodeGroup> nodeGroup = thorNodeGroupCache->lookup(clusterName, nodeGroupCacheTimeout);
                 if (nodeGroup)
                     partsOnCluster->setCanReplicate(nodeGroup->queryCanReplicate());
                 const char* defaultDir = fdesc->queryDefaultDir();

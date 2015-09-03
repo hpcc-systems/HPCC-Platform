@@ -32,7 +32,7 @@
 
 class CThorNodeGroup: public CInterface
 {
-    CDateTime timeCached;
+    unsigned timeCached;
     StringAttr groupName;
     unsigned keyhash;
     unsigned nodeCount;
@@ -43,23 +43,17 @@ public:
     CThorNodeGroup(const char* _groupName, unsigned _nodeCount, bool _replicateOutputs)
         : groupName(_groupName), nodeCount(_nodeCount), replicateOutputs(_replicateOutputs)
     {
-        keyhash = hashc((const byte *)groupName.get(),groupName.length(),0);
-        timeCached.setNow();
+        keyhash = hashnc((const byte *)groupName.get(),groupName.length(),0);
+        timeCached = msTick();
     }
 
-    inline unsigned queryHash() { return keyhash; }
-    inline const char *queryGroupName() { return groupName.get(); }
+    inline unsigned queryHash() const { return keyhash; }
+    inline const char *queryGroupName() const { return groupName.get(); }
 
-    inline bool queryNodeCount() { return nodeCount; };
-    inline bool queryReplicateOutputs() { return replicateOutputs; };
-    inline bool queryCanReplicate() { return replicateOutputs && (nodeCount > 1); };
-    inline bool checkTimeOut(unsigned timeOutMinutes)
-    {
-        CDateTime timeLine;
-        timeLine.setNow();
-        timeLine.adjustTime(-timeOutMinutes);
-        return timeCached <= timeLine;
-    }
+    inline unsigned queryNodeCount() const { return nodeCount; };
+    inline bool queryReplicateOutputs() const { return replicateOutputs; };
+    inline bool queryCanReplicate() const { return replicateOutputs && (nodeCount > 1); };
+    inline bool checkTimeout(unsigned timeout) const { return msTick()-timeCached >= timeout; }
 };
 
 class CThorNodeGroupCache: public SuperHashTableOf<CThorNodeGroup, const char>
@@ -79,7 +73,8 @@ public:
 
     inline void onRemove(void *e)
     {
-        // not used
+        CThorNodeGroup *g = (CThorNodeGroup *)e;
+        g->Release();
     }
 
     inline unsigned getHashFromElement(const void *e) const
@@ -89,7 +84,7 @@ public:
 
     inline unsigned getHashFromFindParam(const void *fp) const
     {
-        return hashc((const unsigned char *)fp, strlen((const char *)fp), 0);
+        return hashnc((const unsigned char *)fp, strlen((const char *)fp), 0);
     }
 
     inline const void * getFindParam(const void *e) const
@@ -121,7 +116,7 @@ class CWsDfuEx : public CWsDfu
 private:
     Owned<IXslProcessor> m_xsl;
     Mutex m_superfilemutex;
-    unsigned nodeGroupCacheMinutes;
+    unsigned nodeGroupCacheTimeout;
     Owned<CThorNodeGroupCache> thorNodeGroupCache;
 
 public:
