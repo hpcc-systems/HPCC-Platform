@@ -482,7 +482,8 @@ void HqlLex::pushMacro(IHqlExpression *expr)
             return;
         case UNKNOWN_ID:
             possibleName = nextToken.getId();
-            //fall through
+            curParam.append(' ').append(str(possibleName));
+            break;
         default:
             curParam.append(' ');
             getTokenText(curParam);
