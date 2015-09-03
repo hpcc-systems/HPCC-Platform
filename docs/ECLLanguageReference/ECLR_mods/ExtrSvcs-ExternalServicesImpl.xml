@@ -14,7 +14,8 @@
     </indexterm><indexterm>
       <primary>Shared Object</primary>
     </indexterm>. An ECL system service .SO can contain one or more services
-  and (possibly) a single .SO initialization routine.</para>
+  and (possibly) a single .SO initialization routine. All system service
+  libraries must be thread safe.</para>
 
   <para>All exported functions in the .SO (hereafter referred to as "entry
   points") must adhere to certain calling and naming conventions. First, entry
@@ -171,7 +172,8 @@
               <entry><emphasis>CONTEXT</emphasis></entry>
 
               <entry>Internal use, only. Indicates an extra internal context
-              parameter (ICodeContext *) is passed to the function. This must be the first function parameter.</entry>
+              parameter (ICodeContext *) is passed to the function. This must
+              be the first function parameter.</entry>
             </row>
 
             <row>
@@ -358,13 +360,14 @@
     <para>The function must fill the passed structure with correct information
     for the features of the plug-in. The structure is defined as
     follows:</para>
-    
-    <para><emphasis role="bold">Warning:</emphasis> This function may be called 
-    without the plugin being loaded fully.  It should not make any library 
-    calls or assume that dependent modules have been loaded or that it has been 
-    initialised.  Specifically:  "The system does not call DllMain for process 
-    and thread initialization and termination.  Also, the system does not load 
-    additional executable modules that are referenced by the specified module."</para>
+
+    <para><emphasis role="bold">Warning:</emphasis> This function may be
+    called without the plugin being loaded fully. It should not make any
+    library calls or assume that dependent modules have been loaded or that it
+    has been initialised. Specifically: "The system does not call DllMain for
+    process and thread initialization and termination. Also, the system does
+    not load additional executable modules that are referenced by the
+    specified module."</para>
 
     <programlisting>Struct ECLPluginDefinitionBlock
   {

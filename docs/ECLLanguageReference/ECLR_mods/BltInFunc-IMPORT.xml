@@ -64,7 +64,7 @@
   This may be used to call Java or Python code, but is not usable with
   Javascript or R code (use the EMBED structure instead). Java code must be
   placed in a .java file and compiled using the javac compiler in the usual
-  way.</para>
+  way. All Java classes used must be thread safe.</para>
 
   <para><emphasis role="bold">WARNING: This feature could create memory
   corruption and/or security issues, so great care and forethought are
