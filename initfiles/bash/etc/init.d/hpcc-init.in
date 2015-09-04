@@ -146,7 +146,13 @@ chown -cR $user:$group ${home}/${user} 1>/dev/null 2>/dev/null
 
 basepath=`pwd`
 
-COMPS=`${configgen_path}/configgen -env ${envfile} -list`
+validate_configuration
+COMPS=$(${configgen_path}/configgen -env ${envfile} -list)
+if [[ $rc -ne 0 ]]; then
+    log "hpcc-init: failure to build COMPS from configgen call"
+    echo -e "\033[31merror\033[0m: hpcc-init -> failure to build COMPS from configgen call"
+    exit 1
+fi
 
 comp.parser ${COMPS}
 
