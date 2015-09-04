@@ -563,8 +563,7 @@
               <para>A Workunit is a record of a task submitted to an HPCC. It
               contains an identifier--workunit ID, the ECL code, results, and
               other information about the job.</para>
-            </footnote> ID, status, and result are returned to the command
-          line.</para>
+            </footnote> result is returned to the command line.</para>
 
           <para>View the full details of the workunit using the ECL Watch
           interface for your HPCC at this location
