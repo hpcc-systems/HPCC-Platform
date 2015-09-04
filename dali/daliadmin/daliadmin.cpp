@@ -2488,6 +2488,11 @@ static void validateStore(bool fix, bool deleteFiles, bool verbose)
 
     PROGLOG("Gathering associated files");
     conn.setown(querySDS().connect("/GeneratedDlls", myProcessSession(), fix?RTM_LOCK_WRITE:RTM_LOCK_READ, 10000));
+    if (!conn)
+    {
+        PROGLOG("No generated DLLs associated with any workunit.\nExit. Took %d ms", ts.elapsed());
+        return;
+    }
     IPropertyTree *root = conn->queryRoot()->queryBranch(NULL); // force all to download
 
     Owned<IPropertyTreeIterator> gdIter = root->getElements("*");
