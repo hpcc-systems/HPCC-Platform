@@ -114,8 +114,6 @@ class CSortedSlaveActivity : public CSlaveActivity, public CThorDataLink, public
     IThorDataLink *input;
     IHThorSortedArg *helper;
     ICompare *icompare;
-
-    IRangeCompare *stepCompare;
     OwnedConstThorRow prev; 
 
 public:
@@ -126,7 +124,6 @@ public:
     {
         helper = (IHThorSortedArg *)queryHelper();
         icompare = helper->queryCompare();
-        stepCompare = NULL;
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -140,9 +137,6 @@ public:
         dataLinkStart();
         input = inputs.item(0);
         startInput(input);
-        IInputSteppingMeta *stepMeta = input->querySteppingMeta();
-        if (stepMeta)
-            stepCompare = stepMeta->queryCompare();
     }
     void stop()
     {
