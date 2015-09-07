@@ -65,9 +65,9 @@ proc checkConnectionAndTarget {} {
    puts "Test connection and make sure target directory exists."
    if { [ string length $::env(password)] == 0 } {
       spawn ssh -i ${user_home}/.ssh/id_rsa -o BatchMode=yes \
-          -o StrictHostKeyChecking=no ${user}@${ip}
+          -o LogLevel=QUIET -o StrictHostKeyChecking=no ${user}@${ip}
    } else {
-      spawn ssh ${user}@${ip}
+      spawn ssh -o LogLevel=QUIET ${user}@${ip}
    }
 
    expect {
@@ -173,9 +173,9 @@ proc moveFiles {} {
    puts "Move files from temporay directory to target through sudo"
    if { [string length ${password}] == 0 } {
       spawn ssh -i ${user_home}/.ssh/id_rsa -o BatchMode=yes \
-         -o StrictHostKeyChecking=no ${user}@${ip}
+         -o LogLevel=QUIET -o StrictHostKeyChecking=no ${user}@${ip}
    } else {
-      spawn ssh ${user}@${ip}
+      spawn ssh -o LogLevel=QUIET ${user}@${ip}
    }
 
    expect {
