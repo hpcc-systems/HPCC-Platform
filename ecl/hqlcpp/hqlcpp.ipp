@@ -1463,7 +1463,6 @@ public:
     ABoundActivity * doBuildActivityLinkedRawChildDataset(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityLoop(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityMerge(BuildCtx & ctx, IHqlExpression * expr);
-    ABoundActivity * doBuildActivityMetaActivity(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityNonEmpty(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityNWayMerge(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityNWayMergeJoin(BuildCtx & ctx, IHqlExpression * expr);
@@ -1480,6 +1479,7 @@ public:
     ABoundActivity * doBuildActivityPrefetchProject(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityProject(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityProcess(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityPullActivity(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityRegroup(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityRemote(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityReturnResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
@@ -1509,6 +1509,7 @@ public:
     ABoundActivity * doBuildActivityTable(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityFirstN(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityTempTable(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityTraceActivity(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityUngroup(BuildCtx & ctx, IHqlExpression * expr, ABoundActivity * boundDataset);
     ABoundActivity * doBuildActivityWorkunitRead(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityXmlParse(BuildCtx & ctx, IHqlExpression * expr);

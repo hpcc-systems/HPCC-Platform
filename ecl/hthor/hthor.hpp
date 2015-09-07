@@ -194,6 +194,7 @@ extern HTHOR_API IHThorActivity *createLibraryCallActivity(IAgentContext &_agent
 extern HTHOR_API IHThorActivity *createGraphLoopResultReadActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultReadArg &arg, ThorActivityKind kind, __int64 graphId);
 extern HTHOR_API IHThorActivity *createGraphLoopResultWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultWriteArg &arg, ThorActivityKind kind, __int64 graphId);
 extern HTHOR_API IHThorActivity *createSortedActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorSortedArg &arg, ThorActivityKind kind);
+extern HTHOR_API IHThorActivity *createTraceActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorTraceArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createGroupedActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorGroupedArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createNWayInputActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorNWayInputArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createNWayGraphLoopResultReadActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorNWayGraphLoopResultReadArg &arg, ThorActivityKind kind, __int64 graphId);

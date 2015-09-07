@@ -373,6 +373,8 @@ extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
 extern bool traceServerSideCache;
 extern bool defaultTimeActivities;
+extern bool defaultTraceEnabled;
+extern unsigned defaultTraceLimit;
 extern unsigned watchActivityId;
 extern unsigned testSlaveFailure;
 extern unsigned dafilesrvLookupTimeout;
