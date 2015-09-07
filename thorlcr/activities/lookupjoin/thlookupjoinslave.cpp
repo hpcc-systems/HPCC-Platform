@@ -264,7 +264,7 @@ class CBroadcaster : public CSimpleInterface
     }
     void broadcastToOthers(CSendItem *sendItem)
     {
-        mptag_t rt = createReplyTag();
+        mptag_t rt = activity.queryMPServer().createReplyTag();
         unsigned origin = sendItem->queryOrigin();
         unsigned psuedoNode = (myNode<origin) ? slaves-origin+myNode : myNode-origin;
         CMessageBuffer replyMsg;
@@ -359,10 +359,10 @@ class CBroadcaster : public CSimpleInterface
         }
     }
 public:
-    CBroadcaster(CActivityBase &_activity) : activity(_activity), receiver(*this), sender(*this), comm(_activity.queryJob().queryJobComm())
+    CBroadcaster(CActivityBase &_activity) : activity(_activity), receiver(*this), sender(*this), comm(_activity.queryJobChannel().queryJobComm())
     {
         allDone = allDoneWaiting = allRequestStop = stopping = stopRecv = false;
-        myNode = activity.queryJob().queryMyRank();
+        myNode = activity.queryJobChannel().queryMyRank();
         slaves = activity.queryJob().querySlaves();
         slavesDone.setown(createThreadSafeBitSet());
         slavesStopping.setown(createThreadSafeBitSet());
@@ -924,7 +924,7 @@ protected:
         MemoryBuffer mb;
         try
         {
-            CThorSpillableRowArray &localRhsRows = *rhsNodeRows.item(queryJob().queryMyRank()-1);
+            CThorSpillableRowArray &localRhsRows = *rhsNodeRows.item(queryJobChannel().queryMyRank()-1);
             CMemoryRowSerializer mbser(mb);
             while (!abortSoon)
             {
@@ -1129,7 +1129,7 @@ public:
         gotRHS = false;
         nextRhsRow = 0;
         rhsNext = NULL;
-        myNode = queryJob().queryMyRank();
+        myNode = queryJobChannel().queryMyRank();
         numNodes = queryJob().querySlaves();
         needGlobal = !container.queryLocal() && (container.queryJob().querySlaves() > 1);
 
@@ -1173,7 +1173,7 @@ public:
         ActPrintLog("Join type is %s", getJoinTypeStr(str).str());
 
         if (!container.queryLocal())
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
 
         unsigned slaves = container.queryJob().querySlaves();
         rhsNodeRows.ensure(slaves);
@@ -1349,6 +1349,7 @@ class CLookupJoinActivityBase : public CInMemJoinBase<HTHELPER, IHThorHashJoinAr
     typedef CInMemJoinBase<HTHELPER, IHThorHashJoinArg> PARENT;
 protected:
     using PARENT::container;
+    using PARENT::queryJobChannel;
     using PARENT::myNode;
     using PARENT::numNodes;
     using PARENT::ActPrintLog;
@@ -2028,12 +2029,12 @@ public:
 
         if (!container.queryLocal())
         {
-            broadcast2MpTag = container.queryJob().deserializeMPTag(data);
-            broadcast3MpTag = container.queryJob().deserializeMPTag(data);
-            lhsDistributeTag = container.queryJob().deserializeMPTag(data);
-            rhsDistributeTag = container.queryJob().deserializeMPTag(data);
-            rhsDistributor.setown(createHashDistributor(this, queryJob().queryJobComm(), rhsDistributeTag, false, NULL, "RHS"));
-            lhsDistributor.setown(createHashDistributor(this, queryJob().queryJobComm(), lhsDistributeTag, false, NULL, "LHS"));
+            broadcast2MpTag = container.queryJobChannel().deserializeMPTag(data);
+            broadcast3MpTag = container.queryJobChannel().deserializeMPTag(data);
+            lhsDistributeTag = container.queryJobChannel().deserializeMPTag(data);
+            rhsDistributeTag = container.queryJobChannel().deserializeMPTag(data);
+            rhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), rhsDistributeTag, false, NULL, "RHS"));
+            lhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), lhsDistributeTag, false, NULL, "LHS"));
         }
     }
     virtual void start()

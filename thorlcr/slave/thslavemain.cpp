@@ -85,7 +85,7 @@ static void replyError(unsigned errorCode, const char *errorMsg)
     Owned<IException> e = MakeStringException(errorCode, "%s", str.str());
     CMessageBuffer msg;
     serializeException(e, msg);
-    queryClusterComm().send(msg, 0, MPTAG_THORREGISTRATION);
+    queryWorldCommunicator().send(msg, 0, MPTAG_THORREGISTRATION);
 }
 
 static bool RegisterSelf(SocketEndpoint &masterEp)
@@ -111,25 +111,27 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             return false;
         }
         Owned<IGroup> group = deserializeIGroup(msg);
-        setClusterGroup(group);
+        globals->Release();
+        globals = createPTree(msg);
+        mergeCmdParams(globals); // cmd line
+
+        bool processPerSlave = globals->getPropBool("@processPerSlave");
+        unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
+        unsigned basePort = getMachinePortBase();
+        if (processPerSlave)
+            setClusterGroup(masterNode, group);
+        else
+            setClusterGroup(masterNode, group, slavesPerNode, basePort, localThorPortInc);
 
         SocketEndpoint myEp = queryMyNode()->endpoint();
-        rank_t groupPos = group->rank(queryMyNode());
-        if (RANK_NULL == groupPos)
+        unsigned _mySlaveNum = group->rank(queryMyNode())+1;
+        assertex(_mySlaveNum == mySlaveNum);
+        if (RANK_NULL == mySlaveNum)
         {
             replyError(TE_FailedToRegisterSlave, "Node not part of thorgroup");
             return false;
         }
-        if (globals->hasProp("@SLAVENUM") && (mySlaveNum != (unsigned)groupPos))
-        {
-            VStringBuffer errStr("Slave group rank[%d] does not match provided cmd line slaveNum[%d]", mySlaveNum, (unsigned)groupPos);
-            replyError(TE_FailedToRegisterSlave, errStr.str());
-            return false;
-        }
-        globals->Release();
-        globals = createPTree(msg);
-        mergeCmdParams(globals); // cmd line 
-
         const char *_masterBuildTag = globals->queryProp("@masterBuildTag");
         const char *masterBuildTag = _masterBuildTag?_masterBuildTag:"no build tag";
         PROGLOG("Master build: %s", masterBuildTag);
@@ -146,18 +148,20 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         msg.read((unsigned &)masterSlaveMpTag);
         msg.clear();
         msg.setReplyTag(MPTAG_THORREGISTRATION);
-        if (!queryClusterComm().reply(msg))
+        if (!queryNodeComm().reply(msg))
             return false;
 
         PROGLOG("Registration confirmation sent");
-        if (!queryClusterComm().recv(msg, 0, MPTAG_THORREGISTRATION)) // when all registered
+        if (!queryNodeComm().recv(msg, 0, MPTAG_THORREGISTRATION)) // when all registered
             return false;
+
+        ::masterNode = LINK(masterNode);
+
         PROGLOG("verifying mp connection to rest of cluster");
-        if (!queryClusterComm().verifyAll())
+        if (!queryNodeComm().verifyAll())
             ERRLOG("Failed to connect to all nodes");
         else
             PROGLOG("verified mp connection to rest of cluster");
-        ::masterNode = LINK(masterNode);
         LOG(MCdebugProgress, thorJob, "registered %s",slfStr.str());
     }
     catch (IException *e)
@@ -293,11 +297,7 @@ int main( int argc, char *argv[]  )
         }
         else 
             slfEp.setLocalHost(0);
-
-        if (globals->hasProp("@SLAVENUM"))
-            mySlaveNum = atoi(globals->queryProp("@SLAVENUM"));
-        else
-            mySlaveNum = slfEp.port; // shouldn't happen, provided by script
+        mySlaveNum = globals->getPropInt("@SLAVENUM");
 
         setMachinePortBase(slfEp.port);
         slfEp.port = getMachinePortBase();

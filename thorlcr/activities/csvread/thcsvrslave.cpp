@@ -175,7 +175,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 CMessageBuffer msgMb;
                 loop
                 {
-                    if (!receiveMsg(msgMb, container.queryJob().queryMyRank()-1, mpTag) || 0 == msgMb.length())
+                    if (!receiveMsg(msgMb, queryJobChannel().queryMyRank()-1, mpTag) || 0 == msgMb.length())
                     {
                         // all [remaining] headers read, or abort
                         // may potentially zero out previously received headers, but ok
@@ -214,11 +214,11 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
     void sendAllDone()
     {
         CMessageBuffer msgMb;
-        unsigned s=container.queryJob().queryMyRank();
+        unsigned s=queryJobChannel().queryMyRank();
         while (s<container.queryJob().querySlaves())
         {
             ++s;
-            container.queryJob().queryJobComm().send(msgMb, s, mpTag);
+            queryJobChannel().queryJobComm().send(msgMb, s, mpTag);
         }
         // mark any unmarked as sent
         unsigned which = sentHeaderLines->scanInvert(0, false);
@@ -261,7 +261,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
         CMessageBuffer msgMb;
         msgMb.append(subFile);
         msgMb.append(headerLinesRemaining[subFile]);
-        container.queryJob().queryJobComm().send(msgMb, container.queryJob().queryMyRank()+1, mpTag);
+        queryJobChannel().queryJobComm().send(msgMb, queryJobChannel().queryMyRank()+1, mpTag);
     }
     void sendRemainingHeaderLines()
     {
@@ -283,7 +283,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             }
             while (which < subFiles);
             if (someLeft)
-                container.queryJob().queryJobComm().send(msgMb, container.queryJob().queryMyRank()+1, mpTag);
+                queryJobChannel().queryJobComm().send(msgMb, queryJobChannel().queryMyRank()+1, mpTag);
             else
                 sendAllDone();
         }
@@ -322,7 +322,7 @@ public:
         }
         if (headerLines)
         {
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
             data.read(subFiles);
             superFDesc = partDescs.ordinality() ? partDescs.item(0).queryOwner().querySuperFileDescriptor() : NULL;
             localLastPart.allocateN(subFiles, true);
@@ -419,7 +419,7 @@ public:
     void abort()
     {
         CDiskReadSlaveActivityBase::abort();
-        cancelReceiveMsg(container.queryJob().queryMyRank()-1, mpTag);
+        cancelReceiveMsg(queryJobChannel().queryMyRank()-1, mpTag);
     }
     virtual bool isGrouped() { return false; }
 

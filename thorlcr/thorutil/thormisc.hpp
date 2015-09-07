@@ -428,14 +428,17 @@ extern graph_decl const LogMsgJobInfo thorJob;
 
 extern graph_decl StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *queryName, unsigned version);
 
-extern graph_decl void setClusterGroup(IGroup *group);
+extern graph_decl void setClusterGroup(INode *masterNode, IGroup *group, unsigned slavesPerProcess=0, unsigned portBase=0, unsigned portInc=0);
 extern graph_decl bool clusterInitialized();
-extern graph_decl ICommunicator &queryClusterComm();
+extern graph_decl INode &queryMasterNode();
+extern graph_decl IGroup &queryRawGroup();
+extern graph_decl IGroup &queryNodeGroup();
+extern graph_decl ICommunicator &queryNodeComm();
 extern graph_decl IGroup &queryClusterGroup();
 extern graph_decl IGroup &querySlaveGroup();
 extern graph_decl IGroup &queryDfsGroup();
 extern graph_decl unsigned queryClusterWidth();
-extern graph_decl unsigned queryClusterNode();
+extern graph_decl unsigned queryNodeClusterWidth();
 
 extern graph_decl mptag_t allocateClusterMPTag();     // should probably move into so used by master only
 extern graph_decl void freeClusterMPTag(mptag_t tag); // ""

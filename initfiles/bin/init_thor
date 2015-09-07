@@ -133,7 +133,11 @@ thorpid=0
 
 while [[ 1 ]]; do
     # update slaves file in case state of environment has been altered since last run
-    daliadmin server=$DALISERVER dfsgroup ${groupName} slaves
+    if [[ "$processperslave" = "true" ]]; then
+        daliadmin server=$DALISERVER dfsgroup ${groupName} slaves
+    else
+        daliadmin server=$DALISERVER clusternodes ${groupName} slaves
+    fi
     errcode=$?
     if [[ 0 != ${errcode} ]]; then
     log "failed to lookup dali group for $groupName"

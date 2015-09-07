@@ -211,7 +211,7 @@ public:
 #ifdef _TRACE
                 ActPrintLog("ReDistribute process, Replying to node %d tag %d",i+1,statstag);
 #endif
-                if (!container.queryJob().queryJobComm().send(mb, (rank_t)i+1, statstag))
+                if (!queryJobChannel().queryJobComm().send(mb, (rank_t)i+1, statstag))
                     return;
             }
             // check if any max skew broken

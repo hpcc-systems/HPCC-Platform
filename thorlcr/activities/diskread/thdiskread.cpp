@@ -38,7 +38,7 @@ public:
         if (isGrouped != codeGenGrouped)
         {
             Owned<IException> e = MakeActivityWarning(&container, TE_GroupMismatch, "DFS and code generated group info. differs: DFS(%s), CodeGen(%s), using DFS info", isGrouped?"grouped":"ungrouped", codeGenGrouped?"grouped":"ungrouped");
-            container.queryJob().fireException(e);
+            queryJobChannel().fireException(e);
         }
         IOutputMetaData *recordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta();
         if (recordSize->isFixedSize()) // fixed size
@@ -58,7 +58,7 @@ public:
                 if (rSz >= MIN_ROWCOMPRESS_RECSIZE)
                 {
                     Owned<IException> e = MakeActivityWarning(&container, TE_CompressionMismatch, "Ignoring compression attribute on file '%s', which is not published as compressed in DFS", fileName.get());
-                    container.queryJob().fireException(e);
+                    queryJobChannel().fireException(e);
                 }
             }
         }
@@ -124,7 +124,7 @@ public:
         CMessageBuffer msg;
         CMemoryRowSerializer mbs(msg);
         rowIf->queryRowSerializer()->serialize(mbs, (const byte *)result.get());
-        if (!container.queryJob().queryJobComm().send(msg, 1, mpTag, 5000))
+        if (!queryJobChannel().queryJobComm().send(msg, 1, mpTag, 5000))
             throw MakeThorException(0, "Failed to give result to slave");
     }
     virtual void abort()
@@ -198,7 +198,7 @@ public:
             totalCount = stopAfter;
         CMessageBuffer msg;
         msg.append(totalCount);
-        if (!container.queryJob().queryJobComm().send(msg, 1, mpTag, 5000))
+        if (!queryJobChannel().queryJobComm().send(msg, 1, mpTag, 5000))
             throw MakeThorException(0, "Failed to give result to slave");
     }
     virtual void abort()

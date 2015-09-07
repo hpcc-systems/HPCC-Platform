@@ -82,6 +82,7 @@ void usage(const char *exe)
   printf("  dfspart <logicalname> <part>   -- get meta information for part num\n");
   printf("  dfscsv <logicalnamemask>       -- get csv info. for files matching mask\n");
   printf("  dfsgroup <logicalgroupname> [filename] -- get IPs for logical group (aka cluster). Written to optional filename if provided\n");
+  printf("  clusternodes <clustername> [filename] -- get IPs for cluster group. Written to optional filename if provided\n");
   printf("  dfsmap <logicalname>           -- get part files (primary and replicates)\n");
   printf("  dfsexists <logicalname>        -- sets return value to 0 if file exists\n");
   printf("  dfsparents <logicalname>       -- list superfiles containing file\n");
@@ -634,7 +635,7 @@ void dfscsv(const char *dali,IUserDescriptor *udesc)
 
 //=============================================================================
 
-static void dfsgroup(const char *name, const char *outputFilename)
+static void dfsgroup(const char *name, const char *outputFilename, bool cluster)
 {
     Owned<IFileIOStream> io;
     if (outputFilename)
@@ -643,7 +644,22 @@ static void dfsgroup(const char *name, const char *outputFilename)
         OwnedIFileIO iFileIO = iFile->open(IFOcreate);
         io.setown(createIOStream(iFileIO));
     }
-    Owned<IGroup> group = queryNamedGroupStore().lookup(name);
+    Owned<IGroup> group;
+    if (cluster)
+    {
+        group.setown(getClusterGroup(name, "ThorCluster", false));
+        Owned<INodeIterator> iter = group->getIterator();
+        IArrayOf<INode> nodes;
+        ForEach(*iter)
+        {
+            SocketEndpoint ep = iter->query().endpoint();
+            ep.port = 0;
+            nodes.append(*createINode(ep));
+        }
+        group.setown(createIGroup(nodes.ordinality(), nodes.getArray()));
+    }
+    else
+        group.setown(queryNamedGroupStore().lookup(name));
     if (!group)
     {
         ERRLOG("cannot find group %s",name);
@@ -2790,7 +2806,11 @@ int main(int argc, char* argv[])
                     }
                     else if (stricmp(cmd,"dfsgroup")==0) {
                         CHECKPARAMS(1,2);
-                        dfsgroup(params.item(1),(np>1)?params.item(2):NULL);
+                        dfsgroup(params.item(1),(np>1)?params.item(2):NULL, false);
+                    }
+                    else if (stricmp(cmd,"clusternodes")==0) {
+                        CHECKPARAMS(1,2);
+                        dfsgroup(params.item(1),(np>1)?params.item(2):NULL, true);
                     }
                     else if (stricmp(cmd,"dfsmap")==0) {
                         CHECKPARAMS(1,1);

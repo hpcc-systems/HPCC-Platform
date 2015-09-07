@@ -103,7 +103,7 @@ public:
 
         if (!container.queryLocalOrGrouped())
         {
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
             unsigned tSz;
             data.read(tSz);
             topology.append(tSz, data.readDirect(tSz));
@@ -159,7 +159,7 @@ public:
                         StringBuffer s;
                         s.appendN(indent, ' ').append("Merging from node: ").append(node);
                         ActPrintLog("%s", s.str());
-                        streams.append(*createRowStreamFromNode(*this, node+1, container.queryJob().queryJobComm(), mpTag, abortSoon));
+                        streams.append(*createRowStreamFromNode(*this, node+1, queryJobChannel().queryJobComm(), mpTag, abortSoon));
                     }
                     Owned<IRowLinkCounter> linkcounter = new CThorRowLinkCounter;
                     retStream.setown(createRowStreamMerger(streams.ordinality(), streams.getArray(), compare, false, linkcounter));
@@ -168,7 +168,7 @@ public:
                 }
                 if (!firstNode())
                 {
-                    rowServer.setown(createRowServer(this, retStream, container.queryJob().queryJobComm(), mpTag));
+                    rowServer.setown(createRowServer(this, retStream, queryJobChannel().queryJobComm(), mpTag));
                     eos = true;
                     retStream.clear();
                 }

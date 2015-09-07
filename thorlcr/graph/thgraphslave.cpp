@@ -36,11 +36,12 @@ class CBarrierSlave : public CInterface, implements IBarrier
     mptag_t tag;
     Linked<ICommunicator> comm;
     bool receiving;
+    CJobChannel &jobChannel;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CBarrierSlave(ICommunicator &_comm, mptag_t _tag) : comm(&_comm), tag(_tag)
+    CBarrierSlave(CJobChannel &_jobChannel, ICommunicator &_comm, mptag_t _tag) : jobChannel(_jobChannel), comm(&_comm), tag(_tag)
     {
         receiving = false;
     }
@@ -94,7 +95,7 @@ public:
     virtual void cancel(IException *e)
     {
         if (receiving)
-            comm->cancel(comm->queryGroup().rank(), tag);
+            comm->cancel(jobChannel.queryMyRank(), tag);
         CMessageBuffer msg;
         msg.append(true);
         if (e)
@@ -239,7 +240,7 @@ MemoryBuffer &CSlaveActivity::queryInitializationData(unsigned slave) const
     msg.append(slave);
     msg.append(gid);
     msg.append(container.queryId());
-    if (!container.queryJob().queryJobComm().sendRecv(msg, 0, queryContainer().queryJob().querySlaveMpTag(), LONGTIMEOUT))
+    if (!queryJobChannel().queryJobComm().sendRecv(msg, 0, queryContainer().queryJob().querySlaveMpTag(), LONGTIMEOUT))
         throwUnexpected();
     data[slave].swapWith(msg);
     return data[slave];
@@ -303,21 +304,22 @@ void CSlaveActivity::serializeStats(MemoryBuffer &mb)
 
 // CSlaveGraph
 
-CSlaveGraph::CSlaveGraph(CJobSlave &job) : CGraphBase(job), jobS(job)
+CSlaveGraph::CSlaveGraph(CJobChannel &jobChannel) : CGraphBase(jobChannel)
 {
+    jobS = (CJobSlave *)&jobChannel.queryJob();
 }
 
 void CSlaveGraph::init(MemoryBuffer &mb)
 {
     mb.read(reinit);
-    mpTag = job.deserializeMPTag(mb);
-    startBarrierTag = job.deserializeMPTag(mb);
-    waitBarrierTag = job.deserializeMPTag(mb);
-    doneBarrierTag = job.deserializeMPTag(mb);
-    startBarrier = job.createBarrier(startBarrierTag);
-    waitBarrier = job.createBarrier(waitBarrierTag);
+    mpTag = queryJobChannel().deserializeMPTag(mb);
+    startBarrierTag = queryJobChannel().deserializeMPTag(mb);
+    waitBarrierTag = queryJobChannel().deserializeMPTag(mb);
+    doneBarrierTag = queryJobChannel().deserializeMPTag(mb);
+    startBarrier = queryJobChannel().createBarrier(startBarrierTag);
+    waitBarrier = queryJobChannel().createBarrier(waitBarrierTag);
     if (doneBarrierTag != TAG_NULL)
-        doneBarrier = job.createBarrier(doneBarrierTag);
+        doneBarrier = queryJobChannel().createBarrier(doneBarrierTag);
     initialized = false;
     progressActive = progressToCollect = false;
     unsigned subCount;
@@ -326,7 +328,7 @@ void CSlaveGraph::init(MemoryBuffer &mb)
     {
         graph_id gid;
         mb.read(gid);
-        Owned<CSlaveGraph> subGraph = (CSlaveGraph *)job.getGraph(gid);
+        Owned<CSlaveGraph> subGraph = (CSlaveGraph *)queryJobChannel().getGraph(gid);
         subGraph->init(mb);
     }
 }
@@ -381,7 +383,7 @@ void CSlaveGraph::recvStartCtx()
         sentStartCtx = true;
         CMessageBuffer msg;
 
-        if (!graphCancelHandler.recv(queryJob().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
+        if (!graphCancelHandler.recv(queryJobChannel().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
             throw MakeStringException(0, "Error receiving startCtx data for graph: %" GIDPF "d", graphId);
         deserializeStartContexts(msg);
     }
@@ -411,8 +413,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
 
         if (syncInitData())
         {
-
-            if (!graphCancelHandler.recv(queryJob().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
+            if (!graphCancelHandler.recv(queryJobChannel().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
                 throw MakeStringException(0, "Error receiving actinit data for graph: %" GIDPF "d", graphId);
             replyTag = msg.getReplyTag();
             msg.read(len);
@@ -422,6 +423,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             // initialize any for which no data was sent
             msg.append(smt_initActDataReq); // may cause graph to be created at master
             msg.append(queryGraphId());
+            msg.append(queryJobChannel().queryMyRank()-1);
             assertex(!parentExtractSz || NULL!=parentExtract);
             msg.append(parentExtractSz);
             msg.append(parentExtractSz, parentExtract);
@@ -436,9 +438,9 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
                 }
             }
             msg.append((activity_id)0);
-            if (!queryJob().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
+            if (!queryJobChannel().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
                 throwUnexpected();
-            replyTag = job.deserializeMPTag(msg);
+            replyTag = queryJobChannel().deserializeMPTag(msg);
             msg.read(len);
         }
         try
@@ -477,7 +479,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             e->Release();
             ret = false;
         }
-        if (!job.queryJobComm().send(actInitRtnData, 0, replyTag, LONGTIMEOUT))
+        if (!queryJobChannel().queryJobComm().send(actInitRtnData, 0, replyTag, LONGTIMEOUT))
             throw MakeStringException(0, "Timeout sending init data back to master");
     }
     return ret;
@@ -522,7 +524,7 @@ void CSlaveGraph::start()
     if (!queryOwner())
     {
         if (globals->getPropBool("@watchdogProgressEnabled"))
-            jobS.queryProgressHandler()->startGraph(*this);
+            jobS->queryProgressHandler()->startGraph(*this);
     }
 }
 
@@ -558,7 +560,7 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
         }
         else
             msg.append(false);
-        queryJob().queryJobComm().send(msg, 0, executeReplyTag, LONGTIMEOUT);
+        queryJobChannel().queryJobComm().send(msg, 0, executeReplyTag, LONGTIMEOUT);
     }
     else if (exception)
         throw exception.getClear();
@@ -573,7 +575,7 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
         {
             CMessageBuffer msg;
             // nothing changed if rerunning, unless conditional branches different
-            if (!graphCancelHandler.recv(queryJob().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
+            if (!graphCancelHandler.recv(queryJobChannel().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
                 throw MakeStringException(0, "Error receiving createctx data for graph: %" GIDPF "d", graphId);
             try
             {
@@ -594,7 +596,7 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                 msg.append(true);
                 serializeThorException(e, msg);
             }
-            if (!job.queryJobComm().send(msg, 0, msg.getReplyTag(), LONGTIMEOUT))
+            if (!queryJobChannel().queryJobComm().send(msg, 0, msg.getReplyTag(), LONGTIMEOUT))
                 throw MakeStringException(0, "Timeout sending init data back to master");
         }
         else
@@ -615,7 +617,7 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                 CMessageBuffer msg;
                 msg.append(smt_initGraphReq);
                 msg.append(graphId);
-                if (!queryJob().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
+                if (!queryJobChannel().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
                     throwUnexpected();
                 size32_t len;
                 msg.read(len);
@@ -651,7 +653,7 @@ void CSlaveGraph::done()
     if (!queryOwner())
     {
         if (globals->getPropBool("@watchdogProgressEnabled"))
-            jobS.queryProgressHandler()->stopGraph(*this, NULL);
+            jobS->queryProgressHandler()->stopGraph(*this, NULL);
     }
 
     Owned<IException> exception;
@@ -687,6 +689,7 @@ void CSlaveGraph::end()
 bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
 {
     unsigned beginPos = mb.length();
+    mb.append((unsigned)queryJobChannel().queryMyRank()-1);
     mb.append(queryGraphId());
     unsigned cPos = mb.length();
     unsigned count = 0;
@@ -786,10 +789,10 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
             if (!queryOwner())
             {
                 if (globals->getPropBool("@watchdogProgressEnabled"))
-                    jobS.queryProgressHandler()->stopGraph(*this, &doneInfoMb);
+                    jobS->queryProgressHandler()->stopGraph(*this, &doneInfoMb);
             }
             doneInfoMb.append(job.queryMaxDiskUsage());
-            queryJob().queryTimeReporter().serialize(doneInfoMb);
+            queryJobChannel().queryTimeReporter().serialize(doneInfoMb);
         }
         catch (IException *)
         {
@@ -862,16 +865,17 @@ IThorGraphResults *CSlaveGraph::createThorGraphResults(unsigned num)
 
 IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, activity_id ownerId, unsigned id)
 {
-    mptag_t replyTag = createReplyTag();
+    mptag_t replyTag = queryMPServer().createReplyTag();
     CMessageBuffer msg;
     msg.setReplyTag(replyTag);
     msg.append(smt_getresult);
+    msg.append(queryJobChannel().queryMyRank()-1);
     msg.append(graphId);
     msg.append(ownerId);
     msg.append(id);
     msg.append(replyTag);
 
-    if (!queryJob().queryJobComm().send(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
+    if (!queryJobChannel().queryJobComm().send(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
         throwUnexpected();
 
     Owned<IThorResult> result = ::createResult(activity, rowIf, false);
@@ -926,7 +930,7 @@ class CThorCodeContextSlave : public CThorCodeContextBase, implements IEngineCon
     }
 
 public:
-    CThorCodeContextSlave(CJobBase &job, ILoadedDllEntry &querySo, IUserDescriptor &userDesc, mptag_t _mptag) : CThorCodeContextBase(job, querySo, userDesc), mptag(_mptag)
+    CThorCodeContextSlave(CJobChannel &jobChannel, ILoadedDllEntry &querySo, IUserDescriptor &userDesc, mptag_t _mptag) : CThorCodeContextBase(jobChannel, querySo, userDesc), mptag(_mptag)
     {
     }
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { invalidSetResult(name, sequence); }
@@ -965,10 +969,10 @@ public:
         e->setOrigin(source);
         e->setAction(tea_warning);
         e->setSeverity((ErrorSeverity)severity);
-        job.fireException(e);
+        jobChannel.fireException(e);
     }
-    virtual unsigned getNodes() { return job.queryJobGroup().ordinality()-1; }
-    virtual unsigned getNodeNum() { return job.queryMyRank()-1; }
+    virtual unsigned getNodes() { return jobChannel.queryJob().querySlaves(); }
+    virtual unsigned getNodeNum() { return jobChannel.queryMyRank()-1; }
     virtual char *getFilePart(const char *logicalName, bool create=false)
     {
         CMessageBuffer msg;
@@ -976,7 +980,7 @@ public:
         msg.append(logicalName);
         msg.append(getNodeNum());
         msg.append(create);
-        if (!job.queryJobComm().sendRecv(msg, 0, mptag, LONGTIMEOUT))
+        if (!jobChannel.queryJobComm().sendRecv(msg, 0, mptag, LONGTIMEOUT))
             throwUnexpected();
         return (char *)msg.detach();
     }
@@ -984,7 +988,7 @@ public:
     {
         CMessageBuffer msg;
         msg.append(smt_getFileOffset);
-        if (!job.queryJobComm().sendRecv(msg, 0, mptag, LONGTIMEOUT))
+        if (!jobChannel.queryJobComm().sendRecv(msg, 0, mptag, LONGTIMEOUT))
             throwUnexpected();
         unsigned __int64 offset;
         msg.read(offset);
@@ -1009,7 +1013,7 @@ public:
         e->setSeverity(SeverityError);
         if (!isAbort)
             e->setAction(tea_warning);
-        job.fireException(e);
+        jobChannel.fireException(e);
     }
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash)   { throwUnexpected(); }      // Should only call from master
     virtual IEngineContext *queryEngineContext() { return this; }
@@ -1028,7 +1032,7 @@ public:
     virtual bool allowDaliAccess() const
     {
         // NB. includes access to foreign Dalis.
-        return job.getOptBool("slaveDaliClient");
+        return jobChannel.queryJob().getOptBool("slaveDaliClient");
     }
 };
 
@@ -1103,13 +1107,12 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     }
 #endif
     querySo.setown(createDllEntry(_querySo, false, NULL));
-    codeCtx = new CThorCodeContextSlave(*this, *querySo, *userDesc, slavemptag);
     tmpHandler.setown(createTempHandler(true));
 }
 
-CJobSlave::~CJobSlave()
+void CJobSlave::addChannel(IMPServer *mpServer)
 {
-    graphExecutor->wait();
+    jobChannels.append(*new CJobSlaveChannel(*this, mpServer, jobChannels.ordinality()));
 }
 
 void CJobSlave::startJob()
@@ -1148,21 +1151,40 @@ bool CJobSlave::getWorkUnitValueBool(const char *prop, bool defVal) const
     return workUnitInfo->queryPropTree("Debug")->getPropBool(propName.toLowerCase().str(), defVal);
 }
 
-IBarrier *CJobSlave::createBarrier(mptag_t tag)
-{
-    return new CBarrierSlave(*jobComm, tag);
-}
-
 IGraphTempHandler *CJobSlave::createTempHandler(bool errorOnMissing)
 {
     return new CSlaveGraphTempHandler(*this, errorOnMissing);
 }
 
+mptag_t CJobSlave::deserializeMPTag(MemoryBuffer &mb)
+{
+    mptag_t tag;
+    deserializeMPtag(mb, tag);
+    if (TAG_NULL != tag)
+    {
+        PROGLOG("CJobSlave::deserializeMPTag: tag = %d", (int)tag);
+        for (unsigned c=0; c<queryJobChannels(); c++)
+            queryJobChannel(c).queryJobComm().flush(tag);
+    }
+    return tag;
+}
+
+
 // IGraphCallback
-void CJobSlave::runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const byte *parentExtract)
+CJobSlaveChannel::CJobSlaveChannel(CJobBase &_job, IMPServer *mpServer, unsigned channel) : CJobChannel(_job, mpServer, channel)
+{
+    codeCtx = new CThorCodeContextSlave(*this, job.queryDllEntry(), *job.queryUserDescriptor(), job.querySlaveMpTag());
+}
+
+IBarrier *CJobSlaveChannel::createBarrier(mptag_t tag)
+{
+    return new CBarrierSlave(*this, *jobComm, tag);
+}
+
+void CJobSlaveChannel::runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const byte *parentExtract)
 {
     if (!graph.queryOwner())
-        CJobBase::runSubgraph(graph, parentExtractSz, parentExtract);
+        CJobChannel::runSubgraph(graph, parentExtractSz, parentExtract);
     else
         graph.doExecuteChild(parentExtractSz, parentExtract);
     CriticalBlock b(graphRunCrit);

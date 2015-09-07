@@ -130,7 +130,7 @@ private:
             return;
         CMessageBuffer msg;
         msg.append(_count);
-        container.queryJob().queryJobComm().send(msg, container.queryJob().queryMyRank()+1, mpTag);
+        queryJobChannel().queryJobComm().send(msg, queryJobChannel().queryMyRank()+1, mpTag);
     }
     rowcount_t getPrevCount()
     {
@@ -138,7 +138,7 @@ private:
         {
             CMessageBuffer msg;
             rowcount_t _count;
-            if (!receiveMsg(msg, container.queryJob().queryMyRank()-1, mpTag))
+            if (!receiveMsg(msg, queryJobChannel().queryMyRank()-1, mpTag))
                 return 0;
             msg.read(_count);
             return _count;
@@ -163,7 +163,7 @@ public:
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {
         BaseCountProjectActivity::init(data, slaveData);
-        mpTag = container.queryJob().deserializeMPTag(data);
+        mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
     virtual void start()
     {
@@ -193,7 +193,7 @@ public:
         CSlaveActivity::abort();
         prevRecCountSem.signal();
         if (!firstNode())
-            cancelReceiveMsg(container.queryJob().queryMyRank()-1, mpTag);
+            cancelReceiveMsg(queryJobChannel().queryMyRank()-1, mpTag);
     }
     CATCH_NEXTROW()
     {

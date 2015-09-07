@@ -79,7 +79,7 @@ protected:
         msg.append(ok && !final); // This is to tell slave whether it should continue or not
         n = nodes;
         while (n--) // a barrier really
-            container.queryJob().queryJobComm().send(msg, n+1, mpTag, LONGTIMEOUT);
+            queryJobChannel().queryJobComm().send(msg, n+1, mpTag, LONGTIMEOUT);
 
         if (!ok)
             throw MakeActivityException(this, 0, "Executed LOOP with empty input and output %u times", emptyIterations);
@@ -194,7 +194,7 @@ public:
     CLoopActivityMaster(CMasterGraphElement *info) : CLoopActivityMasterBase(info)
     {
         if (!container.queryLocalOrGrouped())
-            barrier.setown(container.queryJob().createBarrier(mpTag));
+            barrier.setown(container.queryJobChannel().createBarrier(mpTag));
     }
     virtual void init()
     {
@@ -336,7 +336,7 @@ public:
     virtual void process()
     {
         assertex(container.queryResultsGraph());
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
         inputRowIf.setown(createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryActivityId(),queryCodeContext()));
         createResult();
@@ -352,7 +352,7 @@ public:
     virtual void createResult()
     {
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         graph->createResult(*this, helper->querySequence(), this, true); // NB graph owns result
     }
 };
@@ -371,7 +371,7 @@ public:
     virtual void createResult()
     {
         IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         graph->createGraphLoopResult(*this, inputRowIf, true); // NB graph owns result
     }
 };
@@ -391,7 +391,7 @@ public:
     virtual void createResult()
     {
         IHThorDictionaryResultWriteArg *helper = (IHThorDictionaryResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         graph->createResult(*this, helper->querySequence(), this, true); // NB graph owns result
     }
 };

@@ -42,12 +42,12 @@ public:
     {
         appendOutputLinked(this);   // adding 'me' to outputs array
         if (global)
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
     const void *getFirst() // for global, not called on 1st slave
     {
         CMessageBuffer msg;
-        if (!container.queryJob().queryJobComm().recv(msg, container.queryJob().queryMyRank()-1, mpTag)) // previous node
+        if (!queryJobChannel().queryJobComm().recv(msg, queryJobChannel().queryMyRank()-1, mpTag)) // previous node
             return NULL;
         msg.read(count);
         size32_t r = msg.remaining();
@@ -69,7 +69,7 @@ public:
                 CMemoryRowSerializer msz(msg);
                 ::queryRowSerializer(input)->serialize(msz, (const byte *)prev);
             }
-            if (!container.queryJob().queryJobComm().send(msg, container.queryJob().queryMyRank()+1, mpTag)) // to next
+            if (!queryJobChannel().queryJobComm().send(msg, queryJobChannel().queryMyRank()+1, mpTag)) // to next
                 return;
         }
     }

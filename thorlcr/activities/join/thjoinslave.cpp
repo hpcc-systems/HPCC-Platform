@@ -161,13 +161,13 @@ public:
     {
         if (!islocal)
         {
-            mpTagRPC = container.queryJob().deserializeMPTag(data);
-            mptag_t barrierTag = container.queryJob().deserializeMPTag(data);
-            barrier.setown(container.queryJob().createBarrier(barrierTag));
+            mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
+            mptag_t barrierTag = container.queryJobChannel().deserializeMPTag(data);
+            barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
             portbase = allocPort(NUMSLAVEPORTS);
             ActPrintLog("SortJoinSlaveActivity::init portbase = %d, mpTagRPC=%d",portbase,(int)mpTagRPC);
             server.setLocalHost(portbase); 
-            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&container.queryJob().queryJobComm(),mpTagRPC));
+            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
             server.serialize(slaveData);
         }
         appendOutputLinked(this);
@@ -373,7 +373,7 @@ public:
     {
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
         if (!islocal && TAG_NULL != mpTagRPC)
-            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&container.queryJob().queryJobComm(),mpTagRPC));
+            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
     }
     void kill()
     {

@@ -296,7 +296,7 @@ void CDiskWriteSlaveActivityBase::open()
         {
             ActPrintLog("Blocked, waiting for previous part to complete write");
             CMessageBuffer msg;
-            if (!receiveMsg(msg, container.queryJob().queryMyRank()-1, mpTag))
+            if (!receiveMsg(msg, queryJobChannel().queryMyRank()-1, mpTag))
                 return;
             rowcount_t prevRows;
             msg.read(prevRows);
@@ -410,7 +410,7 @@ void CDiskWriteSlaveActivityBase::close()
             CMessageBuffer msg;
             msg.append(rows);
             msg.append(tempExternalName);
-            container.queryJob().queryJobComm().send(msg, container.queryJob().queryMyRank()+1, mpTag);
+            queryJobChannel().queryJobComm().send(msg, queryJobChannel().queryMyRank()+1, mpTag);
         }
     }
     catch (IException *e)
@@ -453,7 +453,7 @@ void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDa
     partDesc.setown(deserializePartFileDescriptor(data));
     if (dlfn.isExternal())
     {
-        mpTag = container.queryJob().deserializeMPTag(data);
+        mpTag = container.queryJobChannel().deserializeMPTag(data);
         if (dlfn.isQuery() && (0 != container.queryJob().getWorkUnitValueInt("rfsqueryparallel", 0)))
             rfsQueryParallel = true;
     }
@@ -475,7 +475,7 @@ void CDiskWriteSlaveActivityBase::abort()
 {
     ProcessSlaveActivity::abort();
     if (!rfsQueryParallel && dlfn.isExternal() && !firstNode())
-        cancelReceiveMsg(container.queryJob().queryMyRank()-1, mpTag);
+        cancelReceiveMsg(queryJobChannel().queryMyRank()-1, mpTag);
 }
 
 void CDiskWriteSlaveActivityBase::serializeStats(MemoryBuffer &mb)
@@ -603,7 +603,7 @@ void sendPartialCount(CSlaveActivity &activity, rowcount_t partialCount)
 {
     CMessageBuffer msg;
     msg.append(partialCount);
-    if (!activity.queryContainer().queryJob().queryJobComm().send(msg, 0, activity.queryMpTag(), 5000))
+    if (!activity.queryJobChannel().queryJobComm().send(msg, 0, activity.queryMpTag(), 5000))
         throw MakeThorException(0, "Failed to give partial result to master");
 }
 
@@ -632,7 +632,7 @@ void CPartialResultAggregator::sendResult(const void *row)
         CMemoryRowSerializer mbs(mb);
         activity.queryRowSerializer()->serialize(mbs,(const byte *)row);
     }
-    if (!activity.queryContainer().queryJob().queryJobComm().send(mb, 0, activity.queryMpTag(), 5000))
+    if (!activity.queryJobChannel().queryJobComm().send(mb, 0, activity.queryMpTag(), 5000))
         throw MakeThorException(0, "Failed to give partial result to master");
 }
 

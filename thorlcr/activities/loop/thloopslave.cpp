@@ -133,7 +133,7 @@ protected:
                 CMessageBuffer msg; // inform master starting
                 msg.append(n);
                 msg.append(emptyIterations);
-                container.queryJob().queryJobComm().send(msg, 0, mpTag);
+                queryJobChannel().queryJobComm().send(msg, 0, mpTag);
                 if (!global)
                 {
                     lastMaxEmpty = emptyIterations>maxEmptyLoopIterations;
@@ -171,7 +171,7 @@ public:
     {
         appendOutputLinked(this);
         if (!container.queryLocalOrGrouped())
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
         global = !queryContainer().queryLoopGraph()->queryGraph()->isLocalOnly();
     }
     void abort()
@@ -241,7 +241,7 @@ public:
                 global = true;
         }
         if (!container.queryLocalOrGrouped())
-            barrier.setown(container.queryJob().createBarrier(mpTag));
+            barrier.setown(container.queryJobChannel().createBarrier(mpTag));
     }
     virtual void kill()
     {
@@ -531,7 +531,7 @@ public:
         helper = (IHThorLocalResultReadArg *)queryHelper();
         input = NULL;
         curRow = 0;
-        replyTag = createReplyTag();
+        replyTag = queryMPServer().createReplyTag();
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -547,7 +547,7 @@ public:
         graph_id resultGraphId = container.queryXGMML().getPropInt("att[@name=\"_graphId\"]/@value");
         if (!resultGraphId)
             resultGraphId = container.queryResultsGraph()->queryGraphId();
-        Owned<CGraphBase> graph = queryJob().getGraph(resultGraphId);
+        Owned<CGraphBase> graph = queryJobChannel().getGraph(resultGraphId);
         Owned<IThorResult> result = graph->getResult(helper->querySequence(), queryGraph().isLocalChild());
         resultStream.setown(result->getRowStream());
         dataLinkStart();
@@ -603,7 +603,7 @@ class CLocalResultSpillActivity : public CSlaveActivity, public CThorDataLink
     {
         CMessageBuffer msg;
         ThorCompress(mb.toByteArray(), mb.length(), msg);
-        container.queryJob().queryJobComm().send(msg, 0, mpTag, LONGTIMEOUT);
+        queryJobChannel().queryJobComm().send(msg, 0, mpTag, LONGTIMEOUT);
         mb.clear();
     }
 
@@ -617,7 +617,7 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
-        mpTag = container.queryJob().deserializeMPTag(data);
+        mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
     virtual void start()
     {
@@ -625,7 +625,7 @@ public:
         lastNull = eoi = false;
         abortSoon = false;
         assertex(container.queryResultsGraph());
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         IThorResult *result = graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());  // NB graph owns result
         resultWriter.setown(result->getWriter());
         startInput(inputs.item(0));
@@ -724,7 +724,7 @@ public:
     virtual IThorResult *createResult()
     {
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         return graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());
     }
 };
@@ -771,7 +771,7 @@ public:
             }
             builder.appendOwn(row);
         }
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         IThorResult *result = graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());
         Owned<IRowWriter> resultWriter = result->getWriter();
         size32_t dictSize = builder.getcount();
@@ -1190,7 +1190,7 @@ public:
             graph_id resultGraphId = container.queryXGMML().getPropInt("att[@name=\"_graphId\"]/@value");
             if (!resultGraphId)
                 resultGraphId = container.queryResultsGraph()->queryGraphId();
-            Owned<CGraphBase> graph = queryJob().getGraph(resultGraphId);
+            Owned<CGraphBase> graph = queryJobChannel().getGraph(resultGraphId);
             Owned<IThorResult> result = graph->getGraphLoopResult(sequence, queryGraph().isLocalChild());
             resultStream.setown(result->getRowStream());
         }
@@ -1314,7 +1314,7 @@ public:
     virtual IThorResult *createResult()
     {
         IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         return graph->createGraphLoopResult(*this, input->queryFromActivity(), !queryGraph().isLocalChild());
     }
 };

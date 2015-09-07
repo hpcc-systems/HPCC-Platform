@@ -34,7 +34,7 @@ public:
 
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        masterMpTag = container.queryJob().deserializeMPTag(data);
+        masterMpTag = container.queryJobChannel().deserializeMPTag(data);
     }
     void process()
     {
@@ -55,7 +55,7 @@ public:
             sizeMark.write();
             processed++;
         }
-        container.queryJob().queryJobComm().send(mb, 0, masterMpTag);
+        queryJobChannel().queryJobComm().send(mb, 0, masterMpTag);
     }
 
     void endProcess()

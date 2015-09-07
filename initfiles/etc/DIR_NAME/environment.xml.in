@@ -1007,6 +1007,7 @@
                replicateAsync="false"
                replicateOutputs="false"
                slavesPerNode="1"
+               processPerSlave="true"
                watchdogEnabled="true"
                watchdogProgressEnabled="true">
    <Debug/>

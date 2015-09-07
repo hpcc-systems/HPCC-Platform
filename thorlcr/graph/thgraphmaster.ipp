@@ -39,7 +39,7 @@ class CJobMaster;
 class CMasterGraphElement;
 class graphmaster_decl CMasterGraph : public CGraphBase
 {
-    CJobMaster &jobM;
+    CJobMaster *jobM;
     CriticalSection createdCrit;
     Owned<IFatalHandler> fatalHandler;
     CriticalSection exceptCrit;
@@ -58,7 +58,7 @@ class graphmaster_decl CMasterGraph : public CGraphBase
 public:
     IMPLEMENT_IINTERFACE;
 
-    CMasterGraph(CJobMaster &job);
+    CMasterGraph(CJobChannel &jobChannel);
     ~CMasterGraph();
 
     virtual void init();
@@ -121,10 +121,12 @@ public:
     CJobMaster(IConstWorkUnit &workunit, const char *_graphName, const char *querySo, bool _sendSo, const SocketEndpoint &_agentEp);
     ~CJobMaster();
 
+    virtual void addChannel(IMPServer *mpServer);
+
     void registerFile(const char *logicalName, StringArray &clusters, unsigned usageCount=0, WUFileKind fileKind=WUFileStandard, bool temp=false);
     void deregisterFile(const char *logicalName, bool kept=false);
     const SocketEndpoint &queryAgentEp() const { return agentEp; }
-    void broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, CReplyCancelHandler *msgHandler=NULL, bool sendOnly=false);
+    void broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, CReplyCancelHandler *msgHandler=NULL, bool sendOnly=false);
     IPropertyTree *prepareWorkUnitInfo();
     void sendQuery();
     void jobDone();
@@ -149,19 +151,9 @@ public:
     }
     
 // CJobBase impls.
+    virtual mptag_t allocateMPTag();
+    virtual void freeMPTag(mptag_t tag);
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing);
-    virtual CGraphBase *createGraph();
-
-    CMasterGraphElement *locateActivity(activity_id id)
-    {
-        Owned<IThorGraphIterator> iter = getSubGraphs();
-        ForEach (*iter)
-        {
-            CMasterGraphElement *activity = (CMasterGraphElement *)iter->query().queryElement(id);
-            if (activity) return activity;
-        }
-        return NULL;
-    }
 
     CGraphTableCopy executed;
     CriticalSection exceptCrit;
@@ -169,7 +161,6 @@ public:
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const;
-    virtual IBarrier *createBarrier(mptag_t tag);
 
 // IExceptionHandler
     virtual bool fireException(IException *e);
@@ -181,6 +172,18 @@ public:
     void setNodeDiskUsage(unsigned node, __int64 sz);
     bool queryCreatedFile(const char *file);
 };
+
+class graphmaster_decl CJobMasterChannel : public CJobChannel
+{
+public:
+    CJobMasterChannel(CJobBase &job, IMPServer *mpServer, unsigned channel);
+
+    virtual CGraphBase *createGraph();
+    virtual IBarrier *createBarrier(mptag_t tag);
+// IExceptionHandler
+    virtual bool fireException(IException *e) { return job.fireException(e); }
+};
+
 
 
 class graphmaster_decl CThorStats : public CInterface, implements IInterface

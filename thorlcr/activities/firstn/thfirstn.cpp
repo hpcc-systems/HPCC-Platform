@@ -48,7 +48,7 @@ public:
             CMessageBuffer msgMb;
             msgMb.append(limit);
             msgMb.append(skip);
-            container.queryJob().queryJobComm().send(msgMb, s, mpTag);
+            queryJobChannel().queryJobComm().send(msgMb, s, mpTag);
             msgMb.clear();
             if (!receiveMsg(msgMb, s, mpTag))
                 return;
@@ -69,7 +69,7 @@ public:
                     CMessageBuffer msgMb;
                     msgMb.append((rowcount_t)0);
                     msgMb.append((rowcount_t)0);
-                    container.queryJob().queryJobComm().send(msgMb, s, mpTag);
+                    queryJobChannel().queryJobComm().send(msgMb, s, mpTag);
                     msgMb.clear();
                     receiveMsg(msgMb, s, mpTag);
                 }

@@ -84,7 +84,7 @@ public:
         {
             msg.rewrite(endTotalsPos);
             msg.append(numSets*sizeof(rowcount_t), tallies);
-            container.queryJob().queryJobComm().send(msg, s+1, mpTag);
+            queryJobChannel().queryJobComm().send(msg, s+1, mpTag);
             unsigned i=0;
             for (; i<numSets; i++)
                 tallies[i] += counts[s * numSets + i];

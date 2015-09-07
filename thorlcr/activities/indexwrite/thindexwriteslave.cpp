@@ -125,8 +125,8 @@ public:
     {
         isLocal = 0 != (TIWlocal & helper->getFlags());
 
-        mpTag = container.queryJob().deserializeMPTag(data);
-        mpTag2 = container.queryJob().deserializeMPTag(data);
+        mpTag = container.queryJobChannel().deserializeMPTag(data);
+        mpTag2 = container.queryJobChannel().deserializeMPTag(data);
         data.read(active);
         if (active)
         {
@@ -318,7 +318,7 @@ public:
                 unsigned targetWidth = partDesc->queryOwner().numParts()-(buildTlk?1:0);
                 assertex(0 == container.queryJob().querySlaves() % targetWidth);
                 unsigned partsPerNode = container.queryJob().querySlaves() / targetWidth;
-                unsigned myPart = container.queryJob().queryMyRank();
+                unsigned myPart = queryJobChannel().queryMyRank();
 
                 IArrayOf<IRowStream> streams;
                 streams.append(*LINK(input));
@@ -329,7 +329,7 @@ public:
                 unsigned fromPart = targetWidth+1 + (partsPerNode * (myPart-1));
                 for (; p<partsPerNode; p++)
                 {
-                    streams.append(*createRowStreamFromNode(*this, fromPart++, container.queryJob().queryJobComm(), mpTag, abortSoon));
+                    streams.append(*createRowStreamFromNode(*this, fromPart++, queryJobChannel().queryJobComm(), mpTag, abortSoon));
                 }
                 ICompare *icompare = helper->queryCompare();
                 assertex(icompare);
@@ -337,7 +337,7 @@ public:
                 input.setown(createRowStreamToDataLinkAdapter(inputs.item(0), createRowStreamMerger(streams.ordinality(), streams.getArray(), icompare, false, linkCounter)));
             }
             else // serve nodes, creating merged parts
-                rowServer.setown(createRowServer(this, input, container.queryJob().queryJobComm(), mpTag));
+                rowServer.setown(createRowServer(this, input, queryJobChannel().queryJobComm(), mpTag));
         }
         else if (singlePartKey)
         {
@@ -353,7 +353,7 @@ public:
         // single part key support
         // has to serially pull all data fron nodes 2-N
         // nodes 2-N, could/should start pushing some data (as it's supposed to be small) to cut down on serial nature.
-        unsigned node = container.queryJob().queryMyRank();
+        unsigned node = queryJobChannel().queryMyRank();
         if (singlePartKey)
         {
             if (1 == node)
@@ -383,7 +383,7 @@ public:
                         {
                             {
                                 BooleanOnOff tf(receivingTag2);
-                                successSR = container.queryJob().queryJobComm().sendRecv(mb, node, mpTag2);
+                                successSR = queryJobChannel().queryJobComm().sendRecv(mb, node, mpTag2);
                             }
                             if (successSR)
                             {
@@ -419,7 +419,7 @@ public:
                 loop
                 {
                     BooleanOnOff tf(receivingTag2);
-                    if (container.queryJob().queryJobComm().recv(mb, 1, mpTag2)) // node 1 asking for more..
+                    if (queryJobChannel().queryJobComm().recv(mb, 1, mpTag2)) // node 1 asking for more..
                     {
                         if (abortSoon) break;
                         mb.clear();
@@ -429,7 +429,7 @@ public:
                             if (!row) break;
                             serializer->serialize(mbs, (const byte *)row.get());
                         } while (mb.length() < SINGLEPART_KEY_TRANSFER_SIZE); // NB: at least one row
-                        if (!container.queryJob().queryJobComm().reply(mb))
+                        if (!queryJobChannel().queryJobComm().reply(mb))
                             throw MakeThorException(0, "Failed to send index data to node 1, from node %d", node);
                         if (0 == mb.length())
                             break;
@@ -490,10 +490,10 @@ public:
                     {
                         if (processed & THORDATALINK_COUNT_MASK)
                         {
-                            CNodeInfo row(container.queryJob().queryMyRank(), lastRow.get(), lastRowSize, totalCount);
+                            CNodeInfo row(queryJobChannel().queryMyRank(), lastRow.get(), lastRowSize, totalCount);
                             row.serialize(msg);
                         }
-                        container.queryJob().queryJobComm().send(msg, 1, mpTag);
+                        queryJobChannel().queryJobComm().send(msg, 1, mpTag);
                     }
 
                     if (firstNode())
@@ -582,7 +582,7 @@ public:
         ProcessSlaveActivity::abort();
         cancelReceiveMsg(RANK_ALL, mpTag);
         if (receivingTag2)
-            container.queryJob().queryJobComm().cancel(RANK_ALL, mpTag2);
+            queryJobChannel().queryJobComm().cancel(RANK_ALL, mpTag2);
         if (rowServer)
             rowServer->stop();
     }

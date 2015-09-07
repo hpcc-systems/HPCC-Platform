@@ -182,18 +182,15 @@ public:
         reportRate = globals->getPropInt("@watchdogProgressInterval", 30);
     }
 
-    virtual void takeHeartBeat(const SocketEndpoint &sender, MemoryBuffer &progressMb)
+    virtual void takeHeartBeat(MemoryBuffer &progressMb)
     {
         synchronized block(mutex);
         if (0 == activeGraphs.ordinality())
         {
             StringBuffer urlStr;
-            LOG(MCdebugProgress, unknownJob, "heartbeat packet received with no active graphs, from=%s", sender.getUrlStr(urlStr).str());
+            LOG(MCdebugProgress, unknownJob, "heartbeat packet received with no active graphs");
             return;
         }
-        rank_t node = querySlaveGroup().rank(sender);
-        assertex(node != RANK_NULL);
-
         size32_t compressedProgressSz = progressMb.remaining();
         if (compressedProgressSz)
         {
@@ -202,6 +199,8 @@ public:
             do
             {
                 graph_id graphId;
+                unsigned slave;
+                uncompressedMb.read(slave);
                 uncompressedMb.read(graphId);
                 CMasterGraph *graph = NULL;
                 ForEachItemIn(g, activeGraphs) if (activeGraphs.item(g).queryGraphId() == graphId) graph = (CMasterGraph *)&activeGraphs.item(g);
@@ -210,7 +209,7 @@ public:
                     LOG(MCdebugProgress, unknownJob, "heartbeat received from unknown graph %" GIDPF "d", graphId);
                     break;
                 }
-                if (!graph->deserializeStats(node, uncompressedMb))
+                if (!graph->deserializeStats(slave, uncompressedMb))
                 {
                     LOG(MCdebugProgress, unknownJob, "heartbeat error in graph %" GIDPF "d", graphId);
                     break;
