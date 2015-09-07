@@ -169,6 +169,8 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
     return true;
 }
 
+static bool jobListenerStopped = true;
+
 void UnregisterSelf(IException *e)
 {
     StringBuffer slfStr;
@@ -196,9 +198,12 @@ bool ControlHandler(ahType type)
 {
     if (ahInterrupt == type)
         LOG(MCdebugProgress, thorJob, "CTRL-C pressed");
-    if (masterNode)
-        UnregisterSelf(NULL);
-    abortSlave();
+    if (!jobListenerStopped)
+    {
+        if (masterNode)
+            UnregisterSelf(NULL);
+        abortSlave();
+    }
     return false;
 }
 
@@ -414,7 +419,7 @@ int main( int argc, char *argv[]  )
                 else
                     multiThorMemoryThreshold = 0;
             }
-            slaveMain();
+            slaveMain(jobListenerStopped);
         }
 
         LOG(MCdebugProgress, thorJob, "ThorSlave terminated OK");

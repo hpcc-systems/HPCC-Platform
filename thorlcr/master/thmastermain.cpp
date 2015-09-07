@@ -351,7 +351,7 @@ public:
                 msg.append((unsigned)Shutdown);
                 try
                 {
-                    queryClusterComm().send(msg, i+1, masterSlaveMpTag, MP_ASYNC_SEND);
+                    queryClusterComm().sendRecv(msg, i+1, masterSlaveMpTag, 5000);
                 }
                 catch (IMP_Exception *e) { e->Release(); }
                 catch (IException *e)

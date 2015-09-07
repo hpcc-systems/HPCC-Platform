@@ -95,7 +95,7 @@ void disableThorSlaveAsDaliClient()
 
 class CJobListener : public CSimpleInterface
 {
-    bool stopped;
+    bool &stopped;
     CriticalSection crit;
     OwningStringSuperHashTableOf<CJobSlave> jobs;
     CFifoFileCache querySoCache; // used to mirror master cache
@@ -154,7 +154,7 @@ class CJobListener : public CSimpleInterface
         }
     } excptHandler;
 public:
-    CJobListener() : excptHandler(*this)
+    CJobListener(bool &_stopped) : stopped(_stopped), excptHandler(*this)
     {
         stopped = true;
     }
@@ -407,7 +407,6 @@ public:
                     }
                     case Shutdown:
                     {
-                        doReply = false;
                         stopped = true;
                         break;
                     }
@@ -654,7 +653,7 @@ public:
     virtual IFileInProgressHandler &queryFileInProgressHandler() { return *fipHandler.get(); }
 };
 
-void slaveMain()
+void slaveMain(bool &jobListenerStopped)
 {
     unsigned masterMemMB = globals->getPropInt("@masterTotalMem");
     HardwareInfo hdwInfo;
@@ -672,7 +671,7 @@ void slaveMain()
     }
     roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)gmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
-    CJobListener jobListener;
+    CJobListener jobListener(jobListenerStopped);
     CThorResourceSlave slaveResource;
     setIThorResource(slaveResource);
 
