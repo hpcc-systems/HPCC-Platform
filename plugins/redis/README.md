@@ -45,7 +45,7 @@ The Actual Plugin
 -----------------
 
 The bulk of this redis plugin for **ECL** is made up of the various `SET` and `GET` commands e.g. `GetString` or `SetReal`. They are accessible via the module `redis`
-from the redis plugin **ECL** library `lib-redis`. i.e.
+from the redis plugin **ECL** [library](https://github.com/hpcc-systems/HPCC-Platform/blob/master/plugins/redis/lib_redis.ecllib) `lib-redis`. i.e.
 ```
 IMPORT redis FROM lib_redis;
 ```
@@ -113,6 +113,7 @@ myRedis.SetString('myKey', 'bar', 1);
 myRedis.GetString('myKey', 0);//returns 'foo'
 myRedis.GetString('myKey', 1);//returns 'bar'
 ```
+
 *Note:* that the default database is 0. The maximum number of databases allowed by **Redis** is 32768 (+ve range of int32).
 
 
@@ -170,7 +171,7 @@ Behaviour and Implementation Details
 ------------------------------------
 A few notes to point out here:
    * PUB-SUB channels are not disconnected from the keyspace as they are in their native redis usage. The key itself is used as the lock with its value being set as the channel to later
-    PUBLISH on or SUBSCRIBE to. This channel is a string, unique by only the *key* and *database*, prefixed with **'redis_ecl_lock'**. E.g. the *key* 'myKey' designated for *database* 1,
+   PUBLISH on or SUBSCRIBE to. This channel is a string, unique by only the *key* and *database*, prefixed with **'redis_ecl_lock'**. E.g. the *key* 'myKey' designated for *database* 1,
    will have the following lock id - 'redis_ecl_lock_myKey_1'.
    * It is possible to manually 'unlock' this lock (`DELETE` the key) via the `Unlock(<key>)` function. *Note:* this function will fail on any communication or reply error however,
    it will **silently fail**, leaving the lock to expire, if the server observes any change to the key during the function call duration.

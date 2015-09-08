@@ -354,7 +354,6 @@ Connection * Connection::createConnection(ICodeContext * ctx, const char * optio
     if (cachedConnection->isSameConnection(ctx, options, password))
     {
         //MORE: should perhaps check that the connection has not expired (think hiredis REDIS_KEEPALIVE_INTERVAL is defaulted to 15s).
-        //At present updateTimeout calls assertConnection.
         cachedConnection->resetContextErr();//reset the context err to allow reuse when an error previously occurred.
         cachedConnection->timeout.reset(_timeout);
         cachedConnection->selectDB(ctx, _database);
