@@ -120,14 +120,15 @@ protected :
     void resetContextErr();
     void readReply(Reply * reply);
     void readReplyAndAssert(Reply * reply, const char * msg);
-    void readReplyAndAssertWithKey(Reply * reply, const char * msg, const char * key);
+    void readReplyAndAssertWithCmdMsg(Reply * reply, const char * msg, const char * key = NULL);
     void assertKey(const redisReply * reply, const char * key);
     void assertAuthorization(const redisReply * reply);
     void assertOnError(const redisReply * reply, const char * _msg);
-    void assertOnCommandError(const redisReply * reply, const char * cmd);
-    void assertOnCommandErrorWithDatabase(const redisReply * reply, const char * cmd);
-    void assertOnCommandErrorWithKey(const redisReply * reply, const char * cmd, const char * key);
-    void assertConnection();
+    void assertOnErrorWithCmdMsg(const redisReply * reply, const char * cmd, const char * key = NULL);
+    void assertConnection(const char * _msg);
+    void assertConnectionWithCmdMsg(const char * cmd, const char * key = NULL);
+    void rtlFail(const char * cmd, const char * errmsg, const char * key = NULL);
+    void * redisCommand(redisContext * context, const char * format, ...);
     void updateTimeout(unsigned __int64 _timeout);
     static unsigned hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password);
     bool isSameConnection(ICodeContext * ctx, const char * _options, const char * password) const;
@@ -198,7 +199,7 @@ void Connection::connect(ICodeContext * ctx, unsigned __int64 _database, const c
 {
     struct timeval to = { timeout/1000, (timeout%1000)*1000 };
     context = redisConnectWithTimeout(ip.str(), port, to);
-    assertConnection();
+    assertConnection("connection");
     redisSetTimeout(context, to);
 
     //The following is the dissemination of the two methods authenticate(ctx, password) & selectDB(ctx, _database)
@@ -215,11 +216,12 @@ void Connection::connect(ICodeContext * ctx, unsigned __int64 _database, const c
     //Now read replies.
     OwnedReply reply = new Reply();
     if (password && *password)
-        readReplyAndAssert(reply, "server authentication failed");
+        readReplyAndAssert(reply, "server authentication");
 
     if (database != _database)
     {
-        readReplyAndAssert(reply, "request to SELECT database failed");
+        VStringBuffer cmd("SELECT %" I64F "u", _database);
+        readReplyAndAssertWithCmdMsg(reply, cmd.str());
         database = _database;
     }
 }
@@ -251,8 +253,8 @@ void Connection::parseOptions(ICodeContext * ctx, const char * _options)
         }
         else
         {
-            VStringBuffer err("Redis Plugin: unsupported option string %s", opt);
-            rtlFail(0, err.str());
+            VStringBuffer err("Redis Plugin: ERROR - unsupported option string '%s'", opt);
+            ::rtlFail(0, err.str());
         }
     }
     if (ip.isEmpty())
@@ -261,7 +263,7 @@ void Connection::parseOptions(ICodeContext * ctx, const char * _options)
         port = 6379;
         if (ctx)
         {
-            VStringBuffer msg("Redis Plugin: WARNING - using default server (%s:%d)", ip.str(), port);
+            VStringBuffer msg("Redis Plugin: WARNING - using default cache (%s:%d)", ip.str(), port);
             ctx->logString(msg.str());
         }
     }
@@ -275,20 +277,17 @@ void Connection::readReply(Reply * reply)
 {
     redisReply * nakedReply = NULL;
     redisGetReply(context, (void**)&nakedReply);
-    assertex(reply);
     reply->setClear(nakedReply);
 }
 void Connection::readReplyAndAssert(Reply * reply, const char * msg)
 {
     readReply(reply);
-    assertex(reply);
     assertOnError(reply->query(), msg);
 }
-void Connection::readReplyAndAssertWithKey(Reply * reply, const char * msg, const char * key)
+void Connection::readReplyAndAssertWithCmdMsg(Reply * reply, const char * msg, const char * key)
 {
     readReply(reply);
-    assertex(reply);
-    assertOnCommandErrorWithKey(reply->query(), msg, key);
+    assertOnErrorWithCmdMsg(reply->query(), msg, key);
 }
 Connection * Connection::createConnection(ICodeContext * ctx, const char * options, unsigned __int64 _database, const char * password, unsigned __int64 _timeout)
 {
@@ -325,13 +324,23 @@ void Connection::selectDB(ICodeContext * ctx, unsigned __int64 _database)
     database = _database;
     VStringBuffer cmd("SELECT %" I64F "u", database);
     OwnedReply reply = Reply::createReply(redisCommand(context, cmd.str()));
-    assertOnCommandError(reply->query(), "SELECT");
+    assertOnErrorWithCmdMsg(reply->query(), cmd.str());
+}
+void Connection::rtlFail(const char * cmd, const char * errmsg, const char * key)
+{
+    if (key)
+    {
+        VStringBuffer msg("Redis Plugin: ERROR - %s '%s' on database %" I64F "u for %s:%d failed : %s", cmd, key, database, ip.str(), port, errmsg);
+        ::rtlFail(0, msg.str());
+    }
+    VStringBuffer msg("Redis Plugin: ERROR - %s on database %" I64F "u for %s:%d failed : %s", cmd, database, ip.str(), port, errmsg);
+    ::rtlFail(0, msg.str());
 }
 void Connection::updateTimeout(unsigned __int64 _timeout)
 {
     if (timeout == _timeout)
         return;
-    assertConnection();
+    assertConnection("updateTimeout");
     timeout = _timeout;
     struct timeval to = { timeout/1000, (timeout%1000)*1000 };
     assertex(context);
@@ -348,92 +357,59 @@ void Connection::updateTimeout(unsigned __int64 _timeout)
 }
 void Connection::assertOnError(const redisReply * reply, const char * _msg)
 {
-    if (!reply)//MORE: should this be assertex(reply) instead?
-    {
-        //There should always be a context error if no reply error
-        assertConnection();
-        VStringBuffer msg("Redis Plugin: %s - %s", _msg, "neither 'reply' nor connection error available");
-        rtlFail(0, msg.str());
-    }
+    if (!reply)
+        assertConnection(_msg);
     else if (reply->type == REDIS_REPLY_ERROR)
     {
         assertAuthorization(reply);
         VStringBuffer msg("Redis Plugin: %s - %s", _msg, reply->str);
-        rtlFail(0, msg.str());
+        ::rtlFail(0, msg.str());
     }
 }
-void Connection::assertOnCommandErrorWithKey(const redisReply * reply, const char * cmd, const char * key)
+void Connection::assertOnErrorWithCmdMsg(const redisReply * reply, const char * cmd, const char * key)
 {
-    if (!reply)//MORE: should this be assertex(reply) instead?
-    {
-        //There should always be a context error if no reply error
-        assertConnection();
-        VStringBuffer msg("Redis Plugin: ERROR - %s '%s' on database %" I64F "u failed with neither 'reply' nor connection error available", cmd, key, database);
-        rtlFail(0, msg.str());
-    }
+    if (!reply)
+        assertConnectionWithCmdMsg(cmd, key);
     else if (reply->type == REDIS_REPLY_ERROR)
     {
         assertAuthorization(reply);
-        VStringBuffer msg("Redis Plugin: ERROR - %s '%s' on database %" I64F "u failed : %s", cmd, key, database, reply->str);
-        rtlFail(0, msg.str());
-    }
-}
-void Connection::assertOnCommandErrorWithDatabase(const redisReply * reply, const char * cmd)
-{
-    if (!reply)//assertex(reply)?
-    {
-        //There should always be a context error if no reply error
-        assertConnection();
-        VStringBuffer msg("Redis Plugin: ERROR - %s on database %" I64F "u failed with neither 'reply' nor connection error available", cmd, database);
-        rtlFail(0, msg.str());
-    }
-    else if (reply->type == REDIS_REPLY_ERROR)
-    {
-        assertAuthorization(reply);
-        VStringBuffer msg("Redis Plugin: ERROR - %s on database %" I64F "u failed : %s", cmd, database, reply->str);
-        rtlFail(0, msg.str());
-    }
-}
-void Connection::assertOnCommandError(const redisReply * reply, const char * cmd)
-{
-    if (!reply)//assertex(reply)?
-    {
-        //There should always be a context error if no reply error
-        assertConnection();
-        VStringBuffer msg("Redis Plugin: ERROR - %s failed with neither 'reply' nor connection error available", cmd);
-        rtlFail(0, msg.str());
-    }
-    else if (reply->type == REDIS_REPLY_ERROR)
-    {
-        assertAuthorization(reply);
-        VStringBuffer msg("Redis Plugin: ERROR - %s failed : %s", cmd, reply->str);
-        rtlFail(0, msg.str());
+        rtlFail(cmd, reply->str, key);
     }
 }
 void Connection::assertAuthorization(const redisReply * reply)
 {
     if (reply && reply->str && ( strncmp(reply->str, "NOAUTH", 6) == 0 || strncmp(reply->str, "ERR operation not permitted", 27) == 0 ))
     {
-        VStringBuffer msg("Redis Plugin: server authentication failed - %s", reply->str);
-        rtlFail(0, msg.str());
+        VStringBuffer msg("Redis Plugin: ERROR - authentication for %s:%d failed : %s", ip.str(), port, reply->str);
+        ::rtlFail(0, msg.str());
     }
 }
 void Connection::assertKey(const redisReply * reply, const char * key)
 {
     if (reply && reply->type == REDIS_REPLY_NIL)
     {
-        VStringBuffer msg("Redis Plugin: ERROR - the requested key '%s' does not exist on database %" I64F "u", key, database);
-        rtlFail(0, msg.str());
+        VStringBuffer msg("Redis Plugin: ERROR - the requested key '%s' does not exist on database %" I64F "u on %s:%d", key, database, ip.str(), port);
+        ::rtlFail(0, msg.str());
     }
 }
-void Connection::assertConnection()
+void Connection::assertConnectionWithCmdMsg(const char * cmd, const char * key)
 {
     if (!context)
-        rtlFail(0, "Redis Plugin: 'redisConnect' failed - no error available.");
+        rtlFail(cmd, "neither 'reply' nor connection error available", key);
+    else if (context->err)
+        rtlFail(cmd, context->errstr, key);
+}
+void Connection::assertConnection(const char * _msg)
+{
+    if (!context)
+    {
+        VStringBuffer msg("Redis Plugin: ERROR - %s for %s:%d failed : neither 'reply' nor connection error available", _msg, ip.str(), port);
+        ::rtlFail(0, msg.str());
+    }
     else if (context->err)
     {
-        VStringBuffer msg("Redis Plugin: Connection failed - %s for %s:%u", context->errstr, ip.str(),  port);
-        rtlFail(0, msg.str());
+        VStringBuffer msg("Redis Plugin: ERROR - %s for %s:%d failed : %s", _msg, ip.str(), port, context->errstr);
+        ::rtlFail(0, msg.str());
     }
 }
 void Connection::clear(ICodeContext * ctx)
@@ -441,33 +417,33 @@ void Connection::clear(ICodeContext * ctx)
     //NOTE: flush is the actual cache flush/clear/delete and not an io buffer flush.
     OwnedReply reply = Reply::createReply(redisCommand(context, "FLUSHDB"));//NOTE: FLUSHDB deletes current database where as FLUSHALL deletes all dbs.
     //NOTE: documented as never failing, but in case
-    assertOnCommandErrorWithDatabase(reply->query(), "FlushDB");
+    assertOnErrorWithCmdMsg(reply->query(), "FlushDB");
 }
 void Connection::del(ICodeContext * ctx, const char * key)
 {
     OwnedReply reply = Reply::createReply(redisCommand(context, "DEL %b", key, strlen(key)));
-    assertOnCommandErrorWithKey(reply->query(), "Del", key);
+    assertOnErrorWithCmdMsg(reply->query(), "Del", key);
 }
 void Connection::persist(ICodeContext * ctx, const char * key)
 {
     OwnedReply reply = Reply::createReply(redisCommand(context, "PERSIST %b", key, strlen(key)));
-    assertOnCommandErrorWithKey(reply->query(), "Persist", key);
+    assertOnErrorWithCmdMsg(reply->query(), "Persist", key);
 }
 void Connection::expire(ICodeContext * ctx, const char * key, unsigned _expire)
 {
     OwnedReply reply = Reply::createReply(redisCommand(context, "PEXPIRE %b %u", key, strlen(key), _expire));
-    assertOnCommandErrorWithKey(reply->query(), "Expire", key);
+    assertOnErrorWithCmdMsg(reply->query(), "Expire", key);
 }
 bool Connection::exists(ICodeContext * ctx, const char * key)
 {
     OwnedReply reply = Reply::createReply(redisCommand(context, "EXISTS %b", key, strlen(key)));
-    assertOnCommandErrorWithKey(reply->query(), "Exists", key);
+    assertOnErrorWithCmdMsg(reply->query(), "Exists", key);
     return (reply->query()->integer != 0);
 }
 unsigned __int64 Connection::dbSize(ICodeContext * ctx)
 {
     OwnedReply reply = Reply::createReply(redisCommand(context, "DBSIZE"));
-    assertOnCommandErrorWithDatabase(reply->query(), "DBSIZE");
+    assertOnErrorWithCmdMsg(reply->query(), "DBSIZE");
     return reply->query()->integer;
 }
 //-------------------------------------------SET-----------------------------------------
@@ -492,7 +468,7 @@ template<class type> void Connection::set(ICodeContext * ctx, const char * key, 
     appendExpire(cmd, expire);
 
     OwnedReply reply = Reply::createReply(redisCommand(context, cmd.str(), key, strlen(key), _value, sizeof(type)));
-    assertOnCommandErrorWithKey(reply->query(), "SET", key);
+    assertOnErrorWithCmdMsg(reply->query(), "SET", key);
 }
 template<class type> void Connection::set(ICodeContext * ctx, const char * key, size32_t valueSize, const type * value, unsigned expire)
 {
@@ -501,7 +477,7 @@ template<class type> void Connection::set(ICodeContext * ctx, const char * key, 
     StringBuffer cmd("SET %b %b");
     appendExpire(cmd, expire);
     OwnedReply reply = Reply::createReply(redisCommand(context, cmd.str(), key, strlen(key), _value, (size_t)valueSize));
-    assertOnCommandErrorWithKey(reply->query(), "SET", key);
+    assertOnErrorWithCmdMsg(reply->query(), "SET", key);
 }
 //-------------------------------------------GET-----------------------------------------
 //--OUTER--
@@ -520,14 +496,14 @@ template<class type> void Connection::get(ICodeContext * ctx, const char * key, 
 {
     OwnedReply reply = Reply::createReply(redisCommand(context, "GET %b", key, strlen(key)));
 
-    assertOnError(reply->query(), "GET");
+    assertOnErrorWithCmdMsg(reply->query(), "GET", key);
     assertKey(reply->query(), key);
 
     size_t returnSize = reply->query()->len;
     if (sizeof(type)!=returnSize)
     {
-        VStringBuffer msg("Redis Plugin: ERROR - Requested type of different size (%uB) from that stored (%uB).", (unsigned)sizeof(type), (unsigned)returnSize);
-        rtlFail(0, msg.str());
+        VStringBuffer msg("requested type of different size (%uB) from that stored (%uB)", (unsigned)sizeof(type), (unsigned)returnSize);
+        rtlFail("GET", msg.str(), key);
     }
     memcpy(&returnValue, reply->query()->str, returnSize);
 }
@@ -535,7 +511,7 @@ template<class type> void Connection::get(ICodeContext * ctx, const char * key, 
 {
     OwnedReply reply = Reply::createReply(redisCommand(context, "GET %b", key, strlen(key)));
 
-    assertOnError(reply->query(), "GET");
+    assertOnErrorWithCmdMsg(reply->query(), "GET", key);
     assertKey(reply->query(), key);
 
     returnSize = reply->query()->len;
@@ -693,12 +669,12 @@ void Connection::encodeChannel(StringBuffer & channel, const char * key) const
 bool Connection::lock(ICodeContext * ctx, const char * key, const char * channel, unsigned expire)
 {
     if (expire == 0)
-        rtlFail(0, "Redis Plugin: ERROR - invalid value for 'expire', persistent locks not allowed.");
+        rtlFail("GetOrLock<type>", "invalid value for 'expire', persistent locks not allowed.", key);
     StringBuffer cmd("SET %b %b NX PX ");
     cmd.append(expire);
 
     OwnedReply reply = Reply::createReply(redisCommand(context, cmd.str(), key, strlen(key), channel, strlen(channel)));
-    assertOnError(reply->query(), cmd.append(" of the key '").append(key).append("' failed"));
+    assertOnErrorWithCmdMsg(reply->query(), cmd.str(), key);
 
     return (reply->query()->type == REDIS_REPLY_STATUS && strcmp(reply->query()->str, "OK") == 0);
 }
@@ -710,8 +686,8 @@ void Connection::unlock(ICodeContext * ctx, const char * key)
 
     //Read replies
     OwnedReply reply = new Reply();
-    readReplyAndAssertWithKey(reply.get(), "manual unlock", key);//WATCH reply
-    readReplyAndAssertWithKey(reply.get(), "manual unlock", key);//GET reply
+    readReplyAndAssertWithCmdMsg(reply.get(), "manual unlock", key);//WATCH reply
+    readReplyAndAssertWithCmdMsg(reply.get(), "manual unlock", key);//GET reply
 
     //check if locked
     if (strncmp(reply->query()->str, REDIS_LOCK_PREFIX, strlen(REDIS_LOCK_PREFIX)) == 0)
@@ -723,9 +699,9 @@ void Connection::unlock(ICodeContext * ctx, const char * key)
 #if(0)//Quick draw! You have 10s to manually send (via redis-cli) "set testlock foobar". The second myRedis.Exists('testlock') in redislockingtest.ecl should now return TRUE.
         sleep(10);
 #endif
-        readReplyAndAssertWithKey(reply.get(), "manual unlock", key);//MULTI reply
-        readReplyAndAssertWithKey(reply.get(), "manual unlock", key);//DEL reply
-        readReplyAndAssertWithKey(reply.get(), "manual unlock", key);//EXEC reply
+        readReplyAndAssertWithCmdMsg(reply.get(), "manual unlock", key);//MULTI reply
+        readReplyAndAssertWithCmdMsg(reply.get(), "manual unlock", key);//DEL reply
+        readReplyAndAssertWithCmdMsg(reply.get(), "manual unlock", key);//EXEC reply
     }
     //If the above is aborted, let the lock expire.
 }
@@ -751,12 +727,9 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
     //Requires separate connection from GET so that the replies are not mangled. This could be averted
     Owned<Connection> subConnection = new Connection(ctx, options.str(), ip.str(), port, serverIpPortPasswordHash, database, password, timeout);
     OwnedReply reply = Reply::createReply(redisCommand(subConnection->context, "SUBSCRIBE %b", channel.str(), (size_t)channel.length()));
-    assertOnCommandErrorWithKey(reply->query(), "GET", key);
+    assertOnErrorWithCmdMsg(reply->query(), "GetOrLock<type>", key);
     if (reply->query()->type == REDIS_REPLY_ARRAY && strcmp("subscribe", reply->query()->element[0]->str) != 0 )
-    {
-        VStringBuffer msg("Redis Plugin: ERROR - GET '%s' on database %" I64F "u failed : failed to register SUB", key, database);
-        rtlFail(0, msg.str());
-    }
+        rtlFail("GetOrLock<type>", "failed to register SUB", key);
 
 #if(0)//Test publish before GET.
     {
@@ -767,7 +740,7 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
 
     //Now GET
     reply->setClear((redisReply*)redisCommand(context, "GET %b", key, strlen(key)));
-    assertOnCommandErrorWithKey(reply->query(), "GET", key);
+    assertOnErrorWithCmdMsg(reply->query(), "GetOrLock<type>", key);
 
 #if(0)//Test publish after GET.
     {
@@ -788,8 +761,8 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
         //Check that the lock was set by this plugin and thus that we subscribed to the expected channel.
         if (reply->query()->str && strcmp(reply->query()->str, channel.str()) !=0 )
         {
-            VStringBuffer msg("Redis Plugin: ERROR - the key '%s', on database %" I64F "u, is locked with a channel ('%s') different to that subscribed to (%s).", key, database, reply->query()->str, channel.str());
-            rtlFail(0, msg.str());
+            VStringBuffer msg("key locked with a channel ('%s') different to that subscribed to (%s).", reply->query()->str, channel.str());
+            rtlFail("GetOrLock<type>", msg.str(), key);
             //MORE: In theory, it is possible to recover at this stage by subscribing to the channel that the key was actually locked with.
             //However, we may have missed the massage publication already or by then, but could SUB again in case we haven't.
             //More importantly and furthermore, the publication (in SetAndPublish<type>) will only publish to the channel encoded by
@@ -800,13 +773,10 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
         redisSetTimeout(subConnection->context, to);
 #endif
         //Locked so SUBSCRIBE
-        redisReply * nakedReply = NULL;
-        bool err = redisGetReply(subConnection->context, (void**)&nakedReply);
-        reply->setClear(nakedReply);
-        if (err != REDIS_OK)
-            rtlFail(0, "Redis Plugin: ERROR - GET timed out.");
-        assertOnCommandErrorWithKey(nakedReply, "GET", key);
-        if (nakedReply->type == REDIS_REPLY_ARRAY && strcmp("message", nakedReply->element[0]->str) == 0)
+        subConnection->readReply(reply);
+        subConnection->assertOnErrorWithCmdMsg(reply->query(), "GetOrLock<type>", key);
+
+        if (reply->query()->type == REDIS_REPLY_ARRAY && strcmp("message", reply->query()->element[0]->str) == 0)
         {
             //We are about to return a value, to conform with other Get<type> functions, fail if the key did not exist.
             //Since the value is sent via a published message, there is no direct reply struct so assume that an empty
@@ -814,13 +784,15 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
             //More importantly, it is paramount that this routine only return an empty string under one condition, that
             //which indicates to the caller that the key was successfully locked.
             //NOTE: it is possible for an empty message to have been PUBLISHed.
-            if (nakedReply->element[2]->len > 0)
+            if (reply->query()->element[2]->len > 0)
             {
-                retVal->set(nakedReply->element[2]->len, nakedReply->element[2]->str);//return the published value rather than another (WATCHed) GET.
+                retVal->set(reply->query()->element[2]->len, reply->query()->element[2]->str);//return the published value rather than another (WATCHed) GET.
                 return;
             }
-            VStringBuffer msg("Redis Plugin: ERROR - the requested key '%s' does not exist on database %" I64F "u", key, database);
-            rtlFail(0, msg.str());
+            //rtlFail that key does not exist
+            redisReply fakeReply;
+            fakeReply.type = REDIS_REPLY_NIL;
+            assertKey(&fakeReply, key);
         }
     }
     throwUnexpected();
@@ -854,7 +826,7 @@ void Connection::handleLockOnSet(ICodeContext * ctx, const char * key, const cha
                 replyContainer->setClear((redisReply*)redisCommand(context, "EVAL %b %d %b %b %b %d", luaScriptWithExpire, strlen(luaScriptWithExpire), 1, key, strlen(key), channel.str(), (size_t)channel.length(), value, size, expire));
             }
         }
-        assertOnCommandErrorWithKey(replyContainer->query(), "SET", key);
+        assertOnErrorWithCmdMsg(replyContainer->query(), "SET", key);
     }
     else
     {
@@ -867,10 +839,10 @@ void Connection::handleLockOnSet(ICodeContext * ctx, const char * key, const cha
 
         //Now read and assert replies
         OwnedReply reply = new Reply();
-        readReplyAndAssertWithKey(reply, "SET", key);//MULTI reply
-        readReplyAndAssertWithKey(reply, "SET", key);//SET reply
-        readReplyAndAssertWithKey(reply, "PUB for the key", key);//PUB reply
-        readReplyAndAssertWithKey(reply, "SET", key);//EXEC reply
+        readReplyAndAssertWithCmdMsg(reply, "SET", key);//MULTI reply
+        readReplyAndAssertWithCmdMsg(reply, "SET", key);//SET reply
+        readReplyAndAssertWithCmdMsg(reply, "PUB for the key", key);//PUB reply
+        readReplyAndAssertWithCmdMsg(reply, "SET", key);//EXEC reply
     }
 
     //NOTE: When setting and publishing the data with a pipelined MULTI-SET-PUB-EXEC, the data is sent twice, once with the SET and again with the PUBLISH.

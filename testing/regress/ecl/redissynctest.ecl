@@ -160,20 +160,23 @@ SEQUENTIAL(
     OUTPUT(SUM(NOFOLD(s1 + s2), a))//answer = (x+x/2)*N, in this case 300.
     );
 
-//Test some authentication exceptions
+//Test some exceptions
 myRedis4 := RedisServer(server);
-STRING noauth := 'Redis Plugin: server authentication failed - NOAUTH Authentication required.';
-STRING opNotPerm :=  'Redis Plugin: server authentication failed - ERR operation not permitted';
 ds1 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis4.GetString('authTest' + (string)COUNTER)));
 SEQUENTIAL(
     myRedis.FlushDB();
-    OUTPUT(CATCH(ds1, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = noauth OR FAILMESSAGE = opNotPerm, 'Auth Failed', 'Unexpected Error')))));
+    OUTPUT(CATCH(ds1, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
     );
 
 ds2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetString('authTest' + (string)COUNTER)));
 SEQUENTIAL(
     myRedis.FlushDB();
     OUTPUT(CATCH(ds2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
+    );
+
+ds4 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := redis.GetString('option' + (string)COUNTER, 'blahblahblah')));
+SEQUENTIAL(
+    OUTPUT(CATCH(ds4, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
     );
 
 myRedis5 := RedisServer('--SERVER=127.0.0.1:9999');

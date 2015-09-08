@@ -71,10 +71,10 @@
  <Row><Result_24>false</Result_24></Row>
 </Dataset>
 <Dataset name='Result 25'>
- <Row><value>Redis Plugin: ERROR - the key &apos;channelTest1&apos;, on database 0, is locked with a channel (&apos;redis_ecl_lock_blah_blah_blah&apos;) different to that subscribed to (redis_ecl_lock_channelTest1_0).</value></Row>
+ <Row><value>Redis Plugin: ERROR - GetOrLock&lt;type&gt; &apos;channelTest1&apos; on database 0 for 127.0.0.1:6379 failed : key locked with a channel (&apos;redis_ecl_lock_blah_blah_blah&apos;) different to that subscribed to (redis_ecl_lock_channelTest1_0).</value></Row>
 </Dataset>
 <Dataset name='Result 26'>
- <Row><value>Redis Plugin: ERROR - GET timed out.</value></Row>
+  <Row><value>Redis Plugin: ERROR - GetOrLock&lt;type&gt; &apos;channelTest2&apos; on database 0 for 127.0.0.1:6379 failed : Resource temporarily unavailable</value></Row>
 </Dataset>
 <Dataset name='Result 27'>
  <Row><Result_27>databaseThenExpire</Result_27></Row>
