@@ -127,3 +127,15 @@
 <Dataset name='Result 43'>
  <Row><Result_43>supercalifragilisticexpialidocious</Result_43></Row>
 </Dataset>
+<Dataset name='Result 44'>
+ <Row><Result_44></Result_44></Row>
+</Dataset>
+<Dataset name='Result 45'>
+ <Row><value>Redis Plugin: ERROR - GetOrLock&lt;type&gt; &apos;timeoutTest1&apos; on database 0 for 127.0.0.1:6379 failed : Resource temporarily unavailable</value></Row>
+</Dataset>
+<Dataset name='Result 46'>
+ <Row><Result_46></Result_46></Row>
+</Dataset>
+<Dataset name='Result 47'>
+ <Row><value>RedisPlugin: ERROR - function timed out internally.</value></Row>
+</Dataset>

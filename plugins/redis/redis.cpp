@@ -81,6 +81,18 @@ private :
 };
 typedef Owned<RedisPlugin::Reply> OwnedReply;
 
+class TimeoutHandler
+{
+public :
+    TimeoutHandler(unsigned _timeout) : timeout(_timeout), t0(msTick()) { }
+    inline void reset(unsigned _timeout) { timeout = _timeout; t0 = msTick(); }
+    unsigned timeLeft() const { unsigned timeLeft = timeout - (msTick() - t0); return timeLeft > 0 ? timeLeft : 0; }
+
+private :
+    unsigned timeout;
+    unsigned t0;
+};
+
 class Connection : public CInterface
 {
 public :
@@ -114,6 +126,9 @@ public :
     bool exists(ICodeContext * ctx, const char * key);
 
 protected :
+    void redisSetTimeout();
+    void redisConnectWithTimeout();
+    unsigned timeLeft();
     void parseOptions(ICodeContext * ctx, const char * _options);
     void connect(ICodeContext * ctx, int _database, const char * password);
     void selectDB(ICodeContext * ctx, int _database);
@@ -128,7 +143,7 @@ protected :
     void assertConnection(const char * _msg);
     void assertConnectionWithCmdMsg(const char * cmd, const char * key = NULL);
     void rtlFail(const char * cmd, const char * errmsg, const char * key = NULL);
-    void updateTimeout(unsigned _timeout);
+    void * redisCommand(redisContext * context, const char * format, ...);
     static unsigned hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password);
     bool isSameConnection(ICodeContext * ctx, const char * _options, const char * password) const;
 
@@ -146,7 +161,7 @@ protected :
     StringAttr ip;
     unsigned serverIpPortPasswordHash;
     int port;
-    unsigned timeout;
+    TimeoutHandler timeout;
     int database; //NOTE: redis stores the maximum number of dbs as an 'int'.
 };
 
@@ -194,12 +209,16 @@ Connection::Connection(ICodeContext * ctx, const char * _options, const char * _
     ip.set(_ip, strlen(_ip));
     connect(ctx, _database, password);
 }
+void Connection::redisConnectWithTimeout()
+{
+    unsigned _timeLeft = timeLeft();
+    struct timeval to = { _timeLeft/1000, (_timeLeft%1000)*1000 };
+    context = ::redisConnectWithTimeout(ip.str(), port, to);
+    assertConnection("connection");
+}
 void Connection::connect(ICodeContext * ctx, int _database, const char * password)
 {
-    struct timeval to = { timeout/1000, (timeout%1000)*1000 };
-    context = redisConnectWithTimeout(ip.str(), port, to);
-    assertConnection("connection");
-    redisSetTimeout(context, to);
+    redisConnectWithTimeout();
 
     //The following is the dissemination of the two methods authenticate(ctx, password) & selectDB(ctx, _database)
     //such that they may be pipelined to save an extra round trip to the server and back.
@@ -222,6 +241,36 @@ void Connection::connect(ICodeContext * ctx, int _database, const char * passwor
         VStringBuffer cmd("SELECT %d", _database);
         readReplyAndAssertWithCmdMsg(reply, cmd.str());
         database = _database;
+    }
+}
+void * Connection::redisCommand(redisContext * context, const char * format, ...)
+{
+    //Copied from https://github.com/redis/hiredis/blob/master/hiredis.c ~line:1008 void * redisCommand(redisContext * context, const char * format, ...)
+    //with redisSetTimeout(); added.
+    va_list parameters;
+    void * reply = NULL;
+    va_start(parameters, format);
+    redisSetTimeout();
+    reply = ::redisvCommand(context, format, parameters);
+    va_end(parameters);
+    return reply;
+}
+unsigned Connection::timeLeft()
+{
+    unsigned timeLeft = timeout.timeLeft();
+    if (timeLeft == 0)
+        ::rtlFail(0, "RedisPlugin: ERROR - function timed out internally.");
+    return timeLeft;
+}
+void Connection::redisSetTimeout()
+{
+    unsigned _timeLeft = timeLeft();
+    struct timeval to = { _timeLeft/1000, (_timeLeft%1000)*1000 };
+    assertex(context);
+    if (::redisSetTimeout(context, to) != REDIS_OK)
+    {
+        assertConnection("request to set timeout");
+        throwUnexpected();//In case there is a bug in hiredis such that the above err is not reflected in the 'context' (checked in assertConnection) as expected.
     }
 }
 bool Connection::isSameConnection(ICodeContext * ctx, const char * _options, const char * password) const
@@ -275,6 +324,7 @@ void Connection::resetContextErr()
 void Connection::readReply(Reply * reply)
 {
     redisReply * nakedReply = NULL;
+    redisSetTimeout();
     redisGetReply(context, (void**)&nakedReply);
     reply->setClear(nakedReply);
 }
@@ -306,7 +356,7 @@ Connection * Connection::createConnection(ICodeContext * ctx, const char * optio
         //MORE: should perhaps check that the connection has not expired (think hiredis REDIS_KEEPALIVE_INTERVAL is defaulted to 15s).
         //At present updateTimeout calls assertConnection.
         cachedConnection->resetContextErr();//reset the context err to allow reuse when an error previously occurred.
-        cachedConnection->updateTimeout(_timeout);
+        cachedConnection->timeout.reset(_timeout);
         cachedConnection->selectDB(ctx, _database);
         return LINK(cachedConnection);
     }
@@ -329,30 +379,11 @@ void Connection::rtlFail(const char * cmd, const char * errmsg, const char * key
 {
     if (key)
     {
-        VStringBuffer msg("Redis Plugin: ERROR - %s '%s' on database %" I64F "u for %s:%d failed : %s", cmd, key, database, ip.str(), port, errmsg);
+        VStringBuffer msg("Redis Plugin: ERROR - %s '%s' on database %d for %s:%d failed : %s", cmd, key, database, ip.str(), port, errmsg);
         ::rtlFail(0, msg.str());
     }
-    VStringBuffer msg("Redis Plugin: ERROR - %s on database %" I64F "u for %s:%d failed : %s", cmd, database, ip.str(), port, errmsg);
+    VStringBuffer msg("Redis Plugin: ERROR - %s on database %d for %s:%d failed : %s", cmd, database, ip.str(), port, errmsg);
     ::rtlFail(0, msg.str());
-}
-void Connection::updateTimeout(unsigned _timeout)
-{
-    if (timeout == _timeout)
-        return;
-    assertConnection("updateTimeout");
-    timeout = _timeout;
-    struct timeval to = { timeout/1000, (timeout%1000)*1000 };
-    assertex(context);
-    if (redisSetTimeout(context, to) != REDIS_OK)
-    {
-        if (context->err)
-        {
-            VStringBuffer msg("Redis Plugin: failed to set timeout - %s", context->errstr);
-            rtlFail(0, msg.str());
-        }
-        else
-            rtlFail(0, "Redis Plugin: failed to set timeout - no message available");
-    }
 }
 void Connection::assertOnError(const redisReply * reply, const char * _msg)
 {
@@ -724,7 +755,7 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
 
     //SUB before GET
     //Requires separate connection from GET so that the replies are not mangled. This could be averted
-    Owned<Connection> subConnection = new Connection(ctx, options.str(), ip.str(), port, serverIpPortPasswordHash, database, password, timeout);
+    Owned<Connection> subConnection = new Connection(ctx, options.str(), ip.str(), port, serverIpPortPasswordHash, database, password, timeLeft());
     OwnedReply reply = Reply::createReply(redisCommand(subConnection->context, "SUBSCRIBE %b", channel.str(), (size_t)channel.length()));
     assertOnErrorWithCmdMsg(reply->query(), "GetOrLock<type>", key);
     if (reply->query()->type == REDIS_REPLY_ARRAY && strcmp("subscribe", reply->query()->element[0]->str) != 0 )
@@ -769,7 +800,7 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
         }
 #if(0)//Added to allow for manual pub testing via redis-cli
         struct timeval to = { 10, 0 };//10secs
-        redisSetTimeout(subConnection->context, to);
+        ::redisSetTimeout(subConnection->context, to);
 #endif
         //Locked so SUBSCRIBE
         subConnection->readReply(reply);
