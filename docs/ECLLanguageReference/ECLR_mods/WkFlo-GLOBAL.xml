@@ -72,12 +72,14 @@
 
   <programlisting>I := RANDOM() : INDEPENDENT;  //calculated once, period
 G := RANDOM() : GLOBAL;       //calculated once in each graph
+A := RANDOM();                //calculated each time used
 
-ds := DATASET([{1,0,0},{2,0,0}],{UNSIGNED1 rec,UNSIGNED Ival, UNSIGNED Gval });
+ds := DATASET([{1,0,0,0},{2,0,0,0}],{UNSIGNED1 rec,UNSIGNED Ival, UNSIGNED Gval , UNSIGNED Aval });
 
 RECORDOF(ds) XF(ds L) := TRANSFORM
   SELF.Ival := I;
   SELF.Gval := G;
+  SELF.Aval := A;
   SELF := L;
 END;
 
@@ -85,7 +87,7 @@ P1 := PROJECT(ds,XF(left)) : PERSIST('~RTTEST::PERSIST::IndependentVsGlobal1');
 P2 := PROJECT(ds,XF(left)) : PERSIST('~RTTEST::PERSIST::IndependentVsGlobal2');
 
 OUTPUT(P1);    
-OUTPUT(P2);    //this gets the same Ival values as P1, but different Gval values
+OUTPUT(P2);    //this gets the same Ival values as P1, but the Gval value is different than P1
 </programlisting>
 
   <para>See Also: <link linkend="GLOBAL">GLOBAL function</link>, <link
