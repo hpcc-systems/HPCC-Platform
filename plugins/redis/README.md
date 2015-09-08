@@ -106,7 +106,7 @@ myRedis.GetString('myKey');
 ```
 
 ###A Redis 'Database'
-The notion of a *database* within a redis cache is a that of an UNSIGNED INTEGER, effectively partitioning the cache such that it may contain an identical key per database e.g.
+The notion of a *database* within a redis cache is that of a partition, such that it may contain an identical key per database e.g.
 ```
 myRedis.SetString('myKey', 'foo', 0);
 myRedis.SetString('myKey', 'bar', 1);
@@ -114,7 +114,7 @@ myRedis.SetString('myKey', 'bar', 1);
 myRedis.GetString('myKey', 0);//returns 'foo'
 myRedis.GetString('myKey', 1);//returns 'bar'
 ```
-*Note:* that the default database is 0.
+*Note:* that the default database is 0. The maximum number of databases allowed by **Redis** is 32768 (+ve range of int32).
 
 
 Race Retrieval and Locking Keys
