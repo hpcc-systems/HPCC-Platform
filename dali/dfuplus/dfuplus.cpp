@@ -343,6 +343,9 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
     if(globals->hasProp("transferbuffersize"))
         req->setTransferBufferSize(globals->getPropInt("transferbuffersize"));
 
+    if(globals->hasProp("failIfNoSourceFile"))
+        req->setFailIfNoSourceFile(globals->getPropBool("failIfNoSourceFile",false));
+
     if(srcxml == NULL)
         info("\nFixed spraying from %s on %s to %s\n", srcfile, srcip, dstname);
     else

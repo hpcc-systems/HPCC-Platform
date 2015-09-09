@@ -2902,6 +2902,9 @@ bool FileSprayer::isSameSizeHeaderFooter()
     headerSize = 0;
     footerSize = 0;
 
+    if (sources.ordinality() == 0)
+        return retVal;
+
     ForEachItemIn(idx, partition)
     {
         PartitionPoint & cur = partition.item(idx);
