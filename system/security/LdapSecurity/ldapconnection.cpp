@@ -981,6 +981,202 @@ public:
     inline operator LDAPMessage *() const { return msg; }
 };
 
+//------------------------------------------------------
+// class CPagedLDAPSearch
+//
+//  Performs a "paged" LDAP search, which allows for
+//  searching when there are over 1000 matching entries. Also
+//  works when there are less than 1000, but not as efficient as
+//  simply calling ldap_search_ext_s()
+//------------------------------------------------------
+#define MAX_ENTRIES 1000
+class CPagedLDAPSearch
+{
+private:
+    LDAP *          m_pLdapConn;
+    char *          m_pszDN;
+    unsigned long   m_scope;
+    char *          m_pszFilter;
+    char * *        m_pszAttrs;
+
+    bool            m_morePages;
+    struct berval * m_pCookie;
+    LDAPMessage *   m_pPageEntry;
+    LDAPMessage *   m_pPageBlock;
+
+    //---------------------------------------------------
+    // Request next page of search results
+    //---------------------------------------------------
+    bool requestNextPage()
+    {
+        if (!m_morePages)
+            return false;
+        LDAPControl * pageControl = NULL;
+        LDAPControl **  returnedCtrls = NULL;
+        try
+        {
+            int rc = ldap_create_page_control(m_pLdapConn, MAX_ENTRIES, m_pCookie, false, &pageControl);//cookie gets set on first call to ldap_parse_page_control()
+            if (rc != LDAP_SUCCESS)
+            {
+                int err = GetLastError();
+                throw MakeStringException(-1, "ldap_create_page_control failed with 0x%x (%s)",err, ldap_err2string( err ));
+            }
+
+            LDAPControl * svrCtrls[] = { pageControl, NULL };
+
+            if (m_pPageBlock)
+                ldap_msgfree(m_pPageBlock);
+            TIMEVAL timeOut = {LDAPTIMEOUT,0};
+            rc = ldap_search_ext_s(m_pLdapConn, m_pszDN, m_scope, m_pszFilter, m_pszAttrs, 0, svrCtrls, NULL, &timeOut, 0, &m_pPageBlock);
+            if (rc != LDAP_SUCCESS)
+            {
+                int err = GetLastError();
+                if (err && rc != LDAP_PARTIAL_RESULTS)//389DirectoryServer sometimes returns rc, but GetLastError returns 0. In this scenario continuing the query succeeds
+                {
+                    ldap_control_free(pageControl);
+                    if (m_pCookie)
+                    {
+                        ber_bvfree(m_pCookie);
+                        m_pCookie = NULL;
+                    }
+                    throw MakeStringException(-1, "ldap_search_ext_s failed with 0x%x (%s)",err, ldap_err2string( err ));
+                }
+            }
+
+            int l_errcode;
+            rc = ldap_parse_result(m_pLdapConn, m_pPageBlock, &l_errcode, NULL, NULL, NULL, &returnedCtrls, false);
+
+            if (m_pCookie)
+            {
+                ber_bvfree(m_pCookie);
+                m_pCookie = NULL;
+            }
+
+            if (rc != LDAP_SUCCESS)
+            {
+                ldap_control_free(pageControl);
+                int err = GetLastError();
+                throw MakeStringException(-1, "ldap_parse_result failed with 0x%x (%s)",err, ldap_err2string( err ));
+            }
+
+            int totCount;
+            rc = ldap_parse_page_control(m_pLdapConn, returnedCtrls, &totCount, &m_pCookie);//sets cookie for next call to ldap_create_page_control()
+            if (rc != LDAP_SUCCESS)
+            {
+                ldap_control_free(pageControl);
+                if (returnedCtrls)
+                {
+                    ldap_controls_free(returnedCtrls);
+                    returnedCtrls = NULL;
+                }
+                int err = GetLastError();
+                throw MakeStringException(-1, "ldap_parse_page_control failed with 0x%x (%s)",err, ldap_err2string( err ));
+            }
+
+            if (!(m_pCookie && m_pCookie->bv_val != NULL && (strlen(m_pCookie->bv_val) > 0)))
+                m_morePages = false;
+
+            if (returnedCtrls)
+            {
+                ldap_controls_free(returnedCtrls);
+                returnedCtrls = NULL;
+            }
+            ldap_control_free(pageControl);
+        }
+
+        catch(IException* e)
+        {
+            StringBuffer emsg;
+            e->errorMessage(emsg);
+            throw MakeStringException(-1, "LDAP Paged Search - %s", emsg.str());
+        }
+
+        catch(...)
+        {
+            if (pageControl)
+            {
+                ldap_control_free(pageControl);
+                pageControl = NULL;
+            }
+
+            if (returnedCtrls)
+            {
+                ldap_controls_free(returnedCtrls);
+                returnedCtrls = NULL;
+            }
+
+            throw MakeStringException(-1, "Unknown Exception calling LDAP Paged Search");
+        }
+
+        return true;
+    }
+
+public:
+
+    CPagedLDAPSearch(LDAP* _pLdapConn, char * _pszDN, unsigned long _scope, char * _pszFilter, char * _pszAttrs[])
+    {
+        m_pLdapConn =_pLdapConn;
+        m_pszDN = _pszDN;
+        m_scope = _scope;
+        m_pszFilter = _pszFilter;
+        m_pszAttrs = _pszAttrs;
+
+        m_pCookie = NULL;
+        m_morePages = true;
+        m_pPageEntry = NULL;
+        m_pPageBlock = NULL;
+    }
+
+    virtual ~CPagedLDAPSearch()
+    {
+        if (m_pPageBlock)
+            ldap_msgfree(m_pPageBlock);
+        if (m_pCookie)
+            ber_bvfree(m_pCookie);
+    }
+
+    //---------------------------------------------------
+    // Returns the count of the matching DN/filter/scope entries
+    //---------------------------------------------------
+    unsigned countEntries()
+    {
+        unsigned count = 0;
+        while (requestNextPage())
+            count += ldap_count_entries(m_pLdapConn, m_pPageBlock);
+        return count;
+    }
+
+    //---------------------------------------------------
+    // Get the first/next entry
+    // Returns NULL when no more
+    //---------------------------------------------------
+    LDAPMessage * getFirstEntry()
+    {
+        if (!requestNextPage())
+        {
+            m_morePages = false;
+            return NULL;
+        }
+        return getNextEntry();
+    }
+
+    LDAPMessage * getNextEntry()
+    {
+        if (!m_pPageEntry)
+            m_pPageEntry = LdapFirstEntry(m_pLdapConn, m_pPageBlock);
+        else
+            m_pPageEntry = LdapNextEntry(m_pLdapConn, m_pPageEntry);
+
+        if (!m_pPageEntry)
+        {
+            if (!requestNextPage())
+                return NULL;
+            m_pPageEntry = LdapFirstEntry(m_pLdapConn, m_pPageBlock);
+        }
+        return m_pPageEntry;
+    }
+};
+
 static CriticalSection  mpaCrit;
 static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _baseDN)
 {
@@ -2032,26 +2228,21 @@ public:
         }
 
         char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", NULL};
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
-        if ( rc != LDAP_SUCCESS )
-        {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
-            return false;
-        }
 
-
-        // Go through the search results by checking message types
-        for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
+        CPagedLDAPSearch pagedSrch(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
+        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
             bool accountPwdNeverExpires = false;
             Owned<ISecUser> user = new CLdapSecUser("", "");
-
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
+            // Go through the search results by checking message types
+            CLDAPGetAttributesWrapper   atts(ld, message);
             for ( attribute = atts.getFirst();
                   attribute != NULL;
                   attribute = atts.getNext())
             {
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
+                if (!vals.hasValues())
+                    continue;
                 if(stricmp(attribute, "cn") == 0)
                 {
                     CLDAPGetValuesLenWrapper vals(ld, message, attribute);
@@ -2116,8 +2307,10 @@ public:
                     }
                 }
             }
-            users.append(*LINK(user.get()));
+            if (user->getName() && *user->getName())
+                users.append(*LINK(user.get()));
         }
+
         return true;
     }
 
@@ -2837,62 +3030,62 @@ public:
         else
             fldname = "ou";
         char        *attrs[] = {(char*)fldname, "description", NULL};
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
-        if ( rc != LDAP_SUCCESS )
+        CPagedLDAPSearch pagedSrch(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
+        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basednbuf.str());
-            return false;
-        }
-
-        // Go through the search results by checking message types
-        for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
-        {
-            StringBuffer descbuf;
-            StringBuffer curname;
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
+            // Go through the search results by checking message types
+            CLDAPGetAttributesWrapper   atts(ld, message);
             for ( attribute = atts.getFirst();
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
-                if (vals.hasValues())
+                StringBuffer descbuf;
+                StringBuffer curname;
+                CLDAPGetAttributesWrapper   atts(ld, message);
+                for ( attribute = atts.getFirst();
+                      attribute != NULL;
+                      attribute = atts.getNext())
                 {
-                    const char* val = vals.queryCharValue(0);
-                    if(val != NULL)
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
+                    if (vals.hasValues())
                     {
-                        if(stricmp(attribute, fldname) == 0)
+                        const char* val = vals.queryCharValue(0);
+                        if(val != NULL)
                         {
-                            curname.append(val);
-                        }
-                        else if(stricmp(attribute, "description") == 0)
-                        {
-                            descbuf.append(val);
+                            if(stricmp(attribute, fldname) == 0)
+                            {
+                                curname.append(val);
+                            }
+                            else if(stricmp(attribute, "description") == 0)
+                            {
+                                descbuf.append(val);
+                            }
                         }
                     }
                 }
-            }
-            if(curname.length() == 0)
-                continue;
-            StringBuffer resourcename;
-            if(prefix != NULL && *prefix != '\0')
-                resourcename.append(prefix);
-            resourcename.append(curname.str());
-            CLdapSecResource* resource = new CLdapSecResource(resourcename.str());
-            resource->setDescription(descbuf.str());
-            resources.append(*resource);
-            if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
-            {
-                StringBuffer nextbasedn;
-                nextbasedn.append("ou=").append(curname.str()).append(",").append(basedn);
-                StringBuffer nextprefix;
+                if(curname.length() == 0)
+                    continue;
+                StringBuffer resourcename;
                 if(prefix != NULL && *prefix != '\0')
-                    nextprefix.append(prefix);
-                nextprefix.append(curname.str()).append("::");
-                getResources(rtype, nextbasedn.str(), nextprefix.str(), resources);
+                    resourcename.append(prefix);
+                resourcename.append(curname.str());
+                CLdapSecResource* resource = new CLdapSecResource(resourcename.str());
+                resource->setDescription(descbuf.str());
+                resources.append(*resource);
+                if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
+                {
+                    StringBuffer nextbasedn;
+                    nextbasedn.append("ou=").append(curname.str()).append(",").append(basedn);
+                    StringBuffer nextprefix;
+                    if(prefix != NULL && *prefix != '\0')
+                        nextprefix.append(prefix);
+                    nextprefix.append(curname.str()).append("::");
+                    getResources(rtype, nextbasedn.str(), nextprefix.str(), resources);
+                }
             }
         }
+
         return true;
     }
 
@@ -2922,21 +3115,14 @@ public:
         else
             fldname = "ou";
         char        *attrs[] = {(char*)fldname, "description", NULL};
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
-        if ( rc != LDAP_SUCCESS )
+        CPagedLDAPSearch pagedSrch(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
+        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basednbuf.str());
-            return false;
-        }
-
-        // Go through the search results by checking message types
-        for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
-        {
+            // Go through the search results by checking message types
             StringBuffer descbuf;
             StringBuffer curname;
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
+            CLDAPGetAttributesWrapper   atts(ld, message);
             for ( attribute = atts.getFirst();
                   attribute != NULL;
                   attribute = atts.getNext())
@@ -2978,6 +3164,7 @@ public:
                 getResources(rtype, nextbasedn.str(), nextprefix.str(), resources);
             }
         }
+
         return true;
     }
 
@@ -3031,19 +3218,12 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         char *attrs[] = {"cn", "managedBy", "description", NULL};
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
 
-        if ( rc != LDAP_SUCCESS )
+        CPagedLDAPSearch pagedSrch(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
+        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getGroupBasedn());
-            return;
-        }
-
-        // Go through the search results by checking message types
-        for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
-        {
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
+            // Go through the search results by checking message types
+            CLDAPGetAttributesWrapper   atts(ld, message);
             for ( attribute = atts.getFirst();
                   attribute != NULL;
                   attribute = atts.getNext())
@@ -3063,6 +3243,7 @@ public:
                     descriptions.replace(vals.queryCharValue(0), groups.length() - 1);
             }
         }
+
     }
 
     virtual bool changePermission(CPermissionAction& action)
@@ -3491,25 +3672,12 @@ public:
         char        *attrs[] = {(char*)memfieldname, NULL};
         StringBuffer groupbasedn;
         getGroupBaseDN(groupname, groupbasedn);
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)groupbasedn.str(),LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
-        if ( rc != LDAP_SUCCESS )
+        CPagedLDAPSearch pagedSrch(ld, (char*)groupbasedn.str(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
+        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getBasedn());
-            return;
-        }
-        
-        unsigned entries = ldap_count_entries(ld, searchResult);
-        if(entries == 0)
-        {
-            throw MakeStringException(-1, "group %s not found", groupname);
-        }
-
-        // Go through the search results by checking message types
-        for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
-        {
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
+            // Go through the search results by checking message types
+            CLDAPGetAttributesWrapper   atts(ld, message);
             for ( attribute = atts.getFirst();
                   attribute != NULL;
                   attribute = atts.getNext())
@@ -3528,6 +3696,7 @@ public:
                 }
             }
         }
+
     }
 
     virtual void deleteResource(SecResourceType rtype, const char* name, const char* basedn)
@@ -3687,18 +3856,8 @@ public:
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
         char *attrs[] = { LDAP_NO_ATTRS, NULL };
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter, attrs, 0, NULL, NULL, &timeOut, limit, &searchResult.msg );
-
-        if ( rc != LDAP_SUCCESS )
-        {
-            if(rc == LDAP_SIZELIMIT_EXCEEDED)
-                return -1;
-            else
-                throw MakeStringException(-1, "ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter, basedn);
-        }
-
-        int entries = ldap_count_entries(ld, searchResult);
+        CPagedLDAPSearch pagedSrch(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter, attrs);
+        int entries = pagedSrch.countEntries();
         return entries;
     }
 
