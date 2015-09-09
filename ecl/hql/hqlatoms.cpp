@@ -178,7 +178,7 @@ IAtom * fixedAtom;
 IAtom * flagAtom;
 IAtom * flagsAtom;
 IAtom * flatAtom;
-IAtom * _folded_Atom;
+IAtom * foldAtom;
 IAtom * formatAtom;
 IAtom * forwardAtom;
 IAtom * fullonlyAtom;
@@ -278,6 +278,7 @@ IAtom * newSetAtom;
 IAtom * _nlpParse_Atom;
 IAtom * noBoundCheckAtom;
 IAtom * noCaseAtom;
+IAtom * nofoldAtom;
 IAtom * _noHoist_Atom;
 IAtom * noLocalAtom;
 IAtom * _nonEmpty_Atom;
@@ -615,7 +616,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(flag);
     MAKEATOM(flags);
     MAKEATOM(flat);
-    MAKESYSATOM(folded);
+    MAKEATOM(fold);
     MAKEATOM(format);
     MAKEATOM(forward);
     fullonlyAtom = createLowerCaseAtom("full only");        // different to get the ECL regeneration correct..
@@ -716,6 +717,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKESYSATOM(nlpParse);
     MAKEATOM(noBoundCheck);
     MAKEATOM(noCase);
+    MAKEATOM(nofold);
     MAKESYSATOM(noHoist);
     MAKEATOM(noLocal);
     MAKESYSATOM(nonEmpty);

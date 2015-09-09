@@ -27,7 +27,7 @@ static const char * HoleDefinition = NULL;
 
 static const char * EclDefinition =
 "export ExampleLib := SERVICE\n"
-"  string EchoString(const string src) : c, pure,entrypoint='elEchoString'; \n"
+"  string EchoString(const string src) : c, pure,fold,entrypoint='elEchoString'; \n"
 "END;";
 
 EXAMPLELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 

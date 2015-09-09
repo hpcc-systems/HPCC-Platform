@@ -29,7 +29,7 @@ const char * cppSystemText[]  = {
     "shared IOutputMetaData := boolean;",
     "shared size32_t := unsigned4;",
     
-    "export InternalCppService := SERVICE",
+    "export InternalCppService := SERVICE:fold",
     //  searchTableStringN(unsigned4 num, string table, string search) : library='eclrtl';
     //  memcpy(void * target, void * src, unsigned len);
     //internal code generation helper functions...

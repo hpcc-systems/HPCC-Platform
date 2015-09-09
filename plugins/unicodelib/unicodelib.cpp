@@ -38,7 +38,7 @@ static UChar const u16query = '?';
 static UChar const u16space = ' ';
 
 static const char * EclDefinition =
-"export UnicodeLib := SERVICE\n"
+"export UnicodeLib := SERVICE:fold\n"
 "  unicode UnicodeFilterOut(const unicode src, const unicode _within) : c, pure,entrypoint='ulUnicodeFilterOut'; \n"
 "  unicode UnicodeFilter(const unicode src, const unicode _within) : c, pure,entrypoint='ulUnicodeFilter'; \n"
 "  unicode UnicodeSubstituteOut(const unicode src, const unicode _within, const unicode _newchar) : c, pure,entrypoint='ulUnicodeSubsOut'; \n"

@@ -17,7 +17,7 @@
 
 /* Proxy plugin definition for dmetaphone library version DMETAPHONE 1.1.05 */
 
-export MetaphoneLib := SERVICE : plugin('dmetaphone')
+export MetaphoneLib := SERVICE : plugin('dmetaphone'),fold
   string DMetaphone1(const string src) : c,pure,entrypoint='mpDMetaphone1';
   string DMetaphone2(const string src) : c,pure,entrypoint='mpDMetaphone2';
   string DMetaphoneBoth(const string src) : c,pure,entrypoint='mpDMetaphoneBoth';

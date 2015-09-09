@@ -22,7 +22,7 @@ EXPORT GeohashDecodeResultRecord := RECORD
     REAL latitude_err;
     REAL longitude_err;
 END;
-export SaltLib := SERVICE : plugin('saltlib')
+export SaltLib := SERVICE : plugin('saltlib'),fold
   boolean UnicodeLocaleWithinEditN(const unicode left, const unicode right, unsigned4 distance,  const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWithinEditN', hole;
   boolean UnicodeWithinEditN(const unicode left, const unicode right, unsigned4 distance) : c, pure,entrypoint='ulUnicodeWithinEditN', hole;
   unsigned4 UnicodeLocaleHyphenMatch(const unicode left, const unicode right, unsigned4 minlen,  const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleHyphenMatch', hole;

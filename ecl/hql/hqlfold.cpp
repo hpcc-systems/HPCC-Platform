@@ -557,73 +557,84 @@ static bool isSimpleComparisonArg(IHqlExpression * expr)
  *       functions need to be declared with extern "C".
  *********************************************************/
  //MORE: This function never unloads the plugin dll - this may cause problems in the long run.
-IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateContext *templateContext) 
+
+bool checkExternFoldable(IHqlExpression* expr, unsigned foldOptions, StringBuffer &library, StringBuffer &entry)
 {
     IHqlExpression * funcdef = expr->queryExternalDefinition();
-    if(!funcdef) 
-        return NULL;
+    if(!funcdef)
+        return false;
     IHqlExpression *body = funcdef->queryChild(0);
-    if(!body) 
-        return NULL;
+    if(!body)
+        return false;
 
     //Check all parameters are constant - saves dll load etc.
     unsigned numParam = expr->numChildren();
-    for(unsigned iparam = 0; iparam < numParam; iparam++) 
+    for(unsigned iparam = 0; iparam < numParam; iparam++)
     {
         if (!expr->queryChild(iparam)->queryValue())            //NB: Already folded...
-            return NULL;
+            return false;
     }
 
     IHqlExpression * formals = funcdef->queryChild(1);
     unsigned numArg = formals->numChildren();
-    if(numParam > numArg) 
+    if(numParam > numArg)
     {
         if (foldOptions & HFOthrowerror)
-            throw MakeStringException(ERR_PARAM_TOOMANY,"Too many parameters passed to function '%s': expected %d, given %d", 
+            throw MakeStringException(ERR_PARAM_TOOMANY,"Too many parameters passed to function '%s': expected %d, given %d",
                                       str(expr->queryName()), numParam, numArg);
-        return NULL;
+        return false;
     }
-    else if(numParam < numArg) 
+    else if(numParam < numArg)
     {
         if (foldOptions & HFOthrowerror)
-            throw MakeStringException(ERR_PARAM_TOOFEW,"Not enough parameters passed to function '%s': expected %d, given %d", 
+            throw MakeStringException(ERR_PARAM_TOOFEW,"Not enough parameters passed to function '%s': expected %d, given %d",
                                       str(expr->queryName()), numParam, numArg);
-        return NULL;
+        return false;
     }
 
-    StringBuffer entry;
     StringBuffer mangledEntry;
-    StringBuffer lib;
     getAttribute(body, entrypointAtom, entry);
-    getAttribute(body, libraryAtom, lib);
-    if (!lib.length())
-        getAttribute(body, pluginAtom, lib);
+    getAttribute(body, libraryAtom, library);
+    if (!library.length())
+        getAttribute(body, pluginAtom, library);
     if(entry.length() == 0)
     {
         if (foldOptions & HFOthrowerror)
             throw MakeStringException(ERR_SVC_NOENTRYPOINT,"Missing entrypoint for function folding");
-        return NULL;
+        return false;
     }
-    if (lib.length() == 0) 
+    if (library.length() == 0)
     {
         if (foldOptions & HFOthrowerror)
             throw MakeStringException(ERR_SVC_NOLIBRARY,"Missing library for function folding");
-        return NULL;
+        return false;
     }
 
-    if (!pathExtension(lib))
+    if (!pathExtension(library))
     {
-        lib.insert(0, SharedObjectPrefix);
-        ensureFileExtension(lib, SharedObjectExtension);
+        library.insert(0, SharedObjectPrefix);
+        ensureFileExtension(library, SharedObjectExtension);
     }
 
-    const char * entrypoint = entry.str();
-    const char * library = lib.str();
+    if (!body->hasAttribute(foldAtom) || body->hasAttribute(nofoldAtom))
+    {
+        if (foldOptions & HFOthrowerror)
+            throw MakeStringException(ERR_TMPLT_NOFOLDFUNC, "%s does not have FOLD specified, can't constant fold it", str(expr->queryName()));
+        return false;
+    }
     if(!body->hasAttribute(pureAtom) && !body->hasAttribute(templateAtom) && !(foldOptions & (HFOfoldimpure|HFOforcefold)))
     {
         if (foldOptions & HFOthrowerror)
-            throw MakeStringException(ERR_TMPLT_NONPUREFUNC, "%s/%s is not a pure function, can't constant fold it", library, entrypoint);
-        return NULL;
+            throw MakeStringException(ERR_TMPLT_NONPUREFUNC, "%s/%s is not a pure function, can't constant fold it", library.str(), entry.str());
+        return false;
+    }
+
+    if(body->hasAttribute(contextAtom) || body->hasAttribute(globalContextAtom) ||
+       body->hasAttribute(gctxmethodAtom) || body->hasAttribute(ctxmethodAtom) || body->hasAttribute(omethodAtom))
+    {
+        if (foldOptions & HFOthrowerror)
+            throw MakeStringException(ERR_TMPLT_NONEXTERNCFUNC, "%s/%s requires a runtime context to be executed, can't constant fold it", library.str(), entry.str());
+        return false;
     }
 
     if(!body->hasAttribute(cAtom))
@@ -631,19 +642,18 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         if (!createMangledFunctionName(mangledEntry, funcdef))
         {
             if (foldOptions & HFOthrowerror)
-                throw MakeStringException(ERR_TMPLT_NONEXTERNCFUNC, "%s/%s is not declared as extern C, can't constant fold it", library, entrypoint);
-            return NULL;
+                throw MakeStringException(ERR_TMPLT_NONEXTERNCFUNC, "%s/%s is not declared as extern C, can't constant fold it", library.str(), entry.str());
+            return false;
         }
-        entrypoint = mangledEntry.str();
+        entry.set(mangledEntry);
     }
+    return true;
+}
 
-    if(body->hasAttribute(contextAtom) || body->hasAttribute(globalContextAtom) ||
-       body->hasAttribute(gctxmethodAtom) || body->hasAttribute(ctxmethodAtom) || body->hasAttribute(omethodAtom))
-    {
-        if (foldOptions & HFOthrowerror)
-            throw MakeStringException(ERR_TMPLT_NONEXTERNCFUNC, "%s/%s requires a runtime context to be executed, can't constant fold it", library, entrypoint);
-        return NULL;
-    }
+IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateContext *templateContext, const char *library, const char *entrypoint)
+{
+    IHqlExpression * funcdef = expr->queryExternalDefinition();
+    IHqlExpression *body = funcdef->queryChild(0);
 
     // Get the handle to the library and procedure.
     HINSTANCE hDLL=LoadSharedObject(library, false, false);
@@ -750,6 +760,8 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     }
 
     // process all the parameters passed in
+    unsigned numParam = expr->numChildren();
+    IHqlExpression * formals = funcdef->queryChild(1);
     for(unsigned i = 0; i < numParam; i++) 
     {
         IHqlExpression * curParam = expr->queryChild(i);            //NB: Already folded...
@@ -1288,6 +1300,14 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     return result;
 }
 
+IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateContext *templateContext)
+{
+    StringBuffer library;
+    StringBuffer entry;
+    if (!checkExternFoldable(expr, foldOptions, library, entry))
+        return NULL;
+    return doFoldExternalCall(expr, foldOptions, templateContext, library.str(), entry.str());
+}
 //------------------------------------------------------------------------------------------
 
 // optimize ((a BAND b) <> 0) OR ((a BAND c) <> 0) to ((a BAND (b BOR c)) <> 0)
