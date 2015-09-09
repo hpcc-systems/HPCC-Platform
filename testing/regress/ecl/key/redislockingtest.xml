@@ -137,5 +137,5 @@
  <Row><Result_46></Result_46></Row>
 </Dataset>
 <Dataset name='Result 47'>
- <Row><value>Redis Plugin: ERROR - GetOrLock&lt;type&gt; &apos;timeoutTest2&apos; on database 0 for 127.0.0.1:6379 failed : Resource temporarily unavailable</value></Row>
+ <Row><value>Timed Out</value></Row>
 </Dataset>
