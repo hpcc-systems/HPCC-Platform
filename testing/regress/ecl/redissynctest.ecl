@@ -162,8 +162,8 @@ SEQUENTIAL(
 
 //Test some exceptions
 myRedis4 := RedisServer(server);
-STRING noauth := 'Redis Plugin: server authentication failed - NOAUTH Authentication required.';
-STRING opNotPerm :=  'Redis Plugin: server authentication failed - ERR operation not permitted';
+STRING noauth := 'Redis Plugin: ERROR - authentication for 127.0.0.1:6379 failed : NOAUTH Authentication required.';
+STRING opNotPerm :=  'Redis Plugin: ERROR - authentication for 127.0.0.1:6379 failed : ERR operation not permitted';
 ds1 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis4.GetString('authTest' + (string)COUNTER)));
 SEQUENTIAL(
     myRedis.FlushDB();
