@@ -192,11 +192,13 @@ SEQUENTIAL(
     OUTPUT(CATCH(dsTO, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
     );
 
+STRING pluginTO := 'Redis Plugin: ERROR - function timed out internally.';
+STRING redisTO := 'Redis Plugin: ERROR - GetOrLock&lt;type&gt; &apos;timeoutTest2&apos; on database 0 for 127.0.0.1:6379 failed : Resource temporarily unavailable';
 dsTO2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := redis.GetOrLockString('timeoutTest' + (string)(1+COUNTER), server, /*database*/, password, 1/*ms*/)));
 SEQUENTIAL(
     myRedis.FlushDB();
     myRedis.GetOrLockString('timeoutTest2');
-    OUTPUT(CATCH(dsTO2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));//NOTE: 1ms may still be too long on some setups and thus this test may cause a diff conflict with its key.
+    OUTPUT(CATCH(dsTO2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = pluginTO OR FAILMESSAGE = redisTO, 'Timed Out', 'Unexpected Error')))));
     );
 
 myRedis.FlushDB();

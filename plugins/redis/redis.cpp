@@ -259,7 +259,7 @@ unsigned Connection::timeLeft()
 {
     unsigned timeLeft = timeout.timeLeft();
     if (timeLeft == 0)
-        ::rtlFail(0, "RedisPlugin: ERROR - function timed out internally.");
+        ::rtlFail(0, "Redis Plugin: ERROR - function timed out internally.");
     return timeLeft;
 }
 void Connection::redisSetTimeout()
