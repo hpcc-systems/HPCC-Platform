@@ -30,3 +30,4 @@ mpTraceLevel=0
 #dfsSSLCertFile=/certfilepath/certfile
 #dfsSSLPrivateKeyFile=/keyfilepath/keyfile
 jvmoptions=-XX:-UsePerfData
+#java=/absolute/path/to/alternative/libjvm.so
