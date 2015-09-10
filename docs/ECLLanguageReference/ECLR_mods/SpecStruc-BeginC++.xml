@@ -60,6 +60,10 @@
   plugin would be a better solution (see the <emphasis role="bold">External
   Service Implementation</emphasis> discussion).</para>
 
+  <para>The implementation must be written to be thread safe and any calls to
+  external libraries must be made to thread safe versions of those
+  libraries.</para>
+
   <para><emphasis role="bold">WARNING: This feature could create memory
   corruption and/or security issues, so great care and forethought are
   advised—consult with Technical Support before using.</emphasis></para>
@@ -165,7 +169,7 @@ STREAMED DATASET(r)
     <para>A function that takes a string parameter should also have the type
     prefixed by <emphasis role="bold">const</emphasis> in the ECL code so that
     modern compilers don't report errors when constant strings are passed to
-    the function. </para>
+    the function.</para>
 
     <programlisting>BOOLEAN isUpper(const string mystring) := BEGINC++
   size_t i=0;
