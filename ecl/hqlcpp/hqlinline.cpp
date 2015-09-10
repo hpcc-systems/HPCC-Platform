@@ -1480,6 +1480,11 @@ bool EvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool h
     case no_loopcounter:
         return !translator.isCurrentActiveGraph(ctx, expr->queryChild(0));
     case no_getgraphresult:
+        if (expr->hasAttribute(externalAtom))
+        {
+            IHqlExpression * resultInstance = queryAttributeChild(expr, externalAtom, 0);
+            return !ctx.queryMatchExpr(resultInstance);
+        }
         return !translator.isCurrentActiveGraph(ctx, expr->queryChild(1));
     case no_getresult:
     case no_workunit_dataset:
