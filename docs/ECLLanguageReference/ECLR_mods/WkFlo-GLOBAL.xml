@@ -72,14 +72,13 @@
 
   <programlisting>I := RANDOM() : INDEPENDENT;  //calculated once, period
 G := RANDOM() : GLOBAL;       //calculated once in each graph
-A := RANDOM();                //calculated each time used
 
 ds := DATASET([{1,0,0,0},{2,0,0,0}],{UNSIGNED1 rec,UNSIGNED Ival, UNSIGNED Gval , UNSIGNED Aval });
 
 RECORDOF(ds) XF(ds L) := TRANSFORM
   SELF.Ival := I;
   SELF.Gval := G;
-  SELF.Aval := A;
+  SELF.Aval := RANDOM();     //calculated each time used
   SELF := L;
 END;
 
