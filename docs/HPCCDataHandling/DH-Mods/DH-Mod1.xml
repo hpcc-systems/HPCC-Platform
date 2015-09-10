@@ -470,9 +470,9 @@
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+                <colspec colwidth="1*" />
 
-                <colspec colwidth="333.00pt" />
+                <colspec colwidth="3*" />
 
                 <tbody>
                   <row>
@@ -533,6 +533,13 @@
                     Separator</emphasis></entry>
 
                     <entry>Check this box to omit the separator.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Escape</emphasis></entry>
+
+                    <entry>A null-terminated string containing the CSV escape
+                    characters.</entry>
                   </row>
 
                   <row>
@@ -597,6 +604,14 @@
                     character can be included in a quoted field. If unchecked,
                     it allows quicker partitioning of the file (avoiding a
                     complete file scan).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Record Structure
+                    Present</emphasis></entry>
+
+                    <entry>Flag indicating whether to derive the record
+                    structure from the header of the file.</entry>
                   </row>
                 </tbody>
               </tgroup>
