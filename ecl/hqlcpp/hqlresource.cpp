@@ -2740,7 +2740,8 @@ IHqlExpression * SpillerInfo::createSpilledWrite(IHqlExpression * transformed, b
 
 void SpillerInfo::setPotentialSpillFile(IHqlExpression * expr)
 {
-    if (!expr || canUseResultInChildQuery(expr) || !isUsedFromChild())
+    if (!expr ||
+        ((canUseResultInChildQuery(expr) || !isUsedFromChild()) && (expr->getOperator() != no_setgraphresult)))
         outputToUseForSpill = expr;
 }
 

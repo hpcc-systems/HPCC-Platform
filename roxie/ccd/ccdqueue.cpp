@@ -992,7 +992,7 @@ public:
                 header.toString(s);
                 logctx.logOperatorException(E, NULL, 0, "%s", s.str());
                 header.setException();
-                if (!header.allChannelsFailed())
+                if (!header.allChannelsFailed() && !localSlave)
                 {
                     if (logctx.queryTraceLevel() > 1) 
                         logctx.CTXLOG("resending packet from slave in case others want to try it");

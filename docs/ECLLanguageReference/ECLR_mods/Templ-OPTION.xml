@@ -1261,6 +1261,16 @@
               <entry>Number of activities in each c++ file (requires
               spanMultipleCpp)</entry>
             </row>
+
+            <row>
+              <entry><emphasis>obfuscateOutput</emphasis></entry>
+
+              <entry>Default false</entry>
+
+              <entry>If true, details are removed from the generated workunit,
+              including ECL code, estimates of record size, and number of
+              records.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>

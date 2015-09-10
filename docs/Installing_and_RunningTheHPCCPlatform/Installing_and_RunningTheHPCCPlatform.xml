@@ -563,8 +563,7 @@
               <para>A Workunit is a record of a task submitted to an HPCC. It
               contains an identifier--workunit ID, the ECL code, results, and
               other information about the job.</para>
-            </footnote> ID, status, and result are returned to the command
-          line.</para>
+            </footnote> result is returned to the command line.</para>
 
           <para>View the full details of the workunit using the ECL Watch
           interface for your HPCC at this location
@@ -1646,13 +1645,13 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Make sure the <emphasis role="bold">Overwrite</emphasis> and
-            <emphasis role="bold">Replicate</emphasis><emphasis role="bold">
-            </emphasis>boxes are checked.</para>
+            <para>Make sure the <emphasis role="bold">Overwrite</emphasis> box
+            is checked.</para>
 
-            <para><emphasis role="bold">Note:</emphasis> The <emphasis
-            role="bold">Replicate</emphasis> option is only available on
-            systems where replication has been enabled.</para>
+            <para>If available, make sure the <emphasis
+            role="bold">Replicate</emphasis> box is checked. (The Replicate
+            option is only available on systems where replication has been
+            enabled.)</para>
           </listitem>
 
           <listitem>

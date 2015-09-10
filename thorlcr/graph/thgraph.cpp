@@ -373,7 +373,7 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) 
     whichBranch = (unsigned)-1;
     whichBranchBitSet.setown(createThreadSafeBitSet());
     newWhichBranch = false;
-    isEof = false;
+    hasNullInput = false;
     log = true;
     sentActInitData.setown(createThreadSafeBitSet());
 }
@@ -476,7 +476,7 @@ void CGraphElementBase::doconnect()
     {
         CIOConnection *io = connectedInputs.item(i);
         if (io)
-            io->connect(i, activity);
+            io->connect(i, queryActivity());
     }
 }
 
@@ -619,7 +619,7 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                 return false;
         }
         whichBranch = (unsigned)-1;
-        isEof = false;
+        hasNullInput = false;
         alreadyUpdated = false;
         switch (getKind())
         {
@@ -688,16 +688,16 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                 switch (getKind())
                 {
                     case TAKfilter:
-                        isEof = !((IHThorFilterArg *)baseHelper.get())->canMatchAny();
+                        hasNullInput = !((IHThorFilterArg *)baseHelper.get())->canMatchAny();
                         break;
                     case TAKfiltergroup:
-                        isEof = !((IHThorFilterGroupArg *)baseHelper.get())->canMatchAny();
+                        hasNullInput = !((IHThorFilterGroupArg *)baseHelper.get())->canMatchAny();
                         break;
                     case TAKfilterproject:
-                        isEof = !((IHThorFilterProjectArg *)baseHelper.get())->canMatchAny();
+                        hasNullInput = !((IHThorFilterProjectArg *)baseHelper.get())->canMatchAny();
                         break;
                 }
-                if (isEof)
+                if (hasNullInput)
                     return true;
                 break;
             }
@@ -831,45 +831,45 @@ void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *par
                 break;
             }
             default:
-                if (!isEof)
+                if (!hasNullInput)
                 {
                     ForEachItemIn(i, inputs)
                     {
                         CGraphElementBase *input = inputs.item(i)->activity;
                         input->createActivity(parentExtractSz, parentExtract);
                     }
-                }
-                onCreate();
-                if (isDiskInput(getKind()))
-                    onStart(parentExtractSz, parentExtract);
-                ForEachItemIn(i2, inputs)
-                {
-                    CIOConnection *inputIO = inputs.item(i2);
-                    loop
+                    onCreate();
+                    if (isDiskInput(getKind()))
+                        onStart(parentExtractSz, parentExtract);
+                    ForEachItemIn(i2, inputs)
                     {
-                        CGraphElementBase *input = inputIO->activity;
-                        switch (input->getKind())
+                        CIOConnection *inputIO = inputs.item(i2);
+                        loop
                         {
-                            case TAKif:
-                            case TAKcase:
+                            CGraphElementBase *input = inputIO->activity;
+                            switch (input->getKind())
                             {
-                                if (input->whichBranch >= input->getInputs()) // if, will have TAKnull activity, made at create time.
+                                case TAKif:
+                                case TAKcase:
                                 {
-                                    input = NULL;
+                                    if (input->whichBranch >= input->getInputs()) // if, will have TAKnull activity, made at create time.
+                                    {
+                                        input = NULL;
+                                        break;
+                                    }
+                                    inputIO = input->inputs.item(input->whichBranch);
+                                    assertex(inputIO);
                                     break;
                                 }
-                                inputIO = input->inputs.item(input->whichBranch);
-                                assertex(inputIO);
-                                break;
+                                default:
+                                    input = NULL;
+                                    break;
                             }
-                            default:
-                                input = NULL;
+                            if (!input)
                                 break;
                         }
-                        if (!input)
-                            break;
+                        connectInput(i2, inputIO->activity, inputIO->index);
                     }
-                    connectInput(i2, inputIO->activity, inputIO->index);
                 }
                 initActivity();
                 break;
@@ -1591,14 +1591,14 @@ public:
     CGraphTraverseConnectedIterator(CGraphBase &graph) : CGraphTraverseIteratorBase(graph) { }
     virtual bool next()
     {
-        if (cur->isEof)
+        if (cur->hasNullInput)
         {
             do
             {
                 if (!popNext())
                     return false;
             }
-            while (cur->isEof);
+            while (cur->hasNullInput);
         }
         else
             setNext(cur->connectedInputs);

@@ -965,6 +965,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
         if (!numChannels)
             throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels calculated at 0");
+        if (numChannels > 1 && localSlave)
+            throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - localSlave requires single channel (%d channels specified)", numChannels);
         // Now we know all the channels, we can open and subscribe the multicast channels
         if (!localSlave)
             openMulticastSocket();

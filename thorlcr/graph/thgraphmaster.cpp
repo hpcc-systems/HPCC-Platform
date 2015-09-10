@@ -585,10 +585,10 @@ bool CMasterGraphElement::checkUpdate()
 void CMasterGraphElement::initActivity()
 {
     CriticalBlock b(crit);
-    bool first = (NULL == activity);
+    bool first = (NULL == queryActivity());
     CGraphElementBase::initActivity();
-    if (first || activity->needReInit())
-        ((CMasterActivity *)activity.get())->init();
+    if (first || queryActivity()->needReInit())
+        ((CMasterActivity *)queryActivity())->init();
 }
 
 void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte *parentExtract)
@@ -627,7 +627,7 @@ void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte 
 
 void CMasterGraphElement::slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
 {
-    ((CMasterActivity *)activity.get())->slaveDone(slaveIdx, mb);
+    ((CMasterActivity *)queryActivity())->slaveDone(slaveIdx, mb);
 }
 
 
