@@ -30,6 +30,76 @@
 #include "fvrelate.hpp"
 #include "dadfs.hpp"
 
+class CThorNodeGroup: public CInterface
+{
+    unsigned timeCached;
+    StringAttr groupName;
+    unsigned keyhash;
+    unsigned nodeCount;
+    bool replicateOutputs;
+
+public:
+    IMPLEMENT_IINTERFACE;
+    CThorNodeGroup(const char* _groupName, unsigned _nodeCount, bool _replicateOutputs)
+        : groupName(_groupName), nodeCount(_nodeCount), replicateOutputs(_replicateOutputs)
+    {
+        keyhash = hashnc((const byte *)groupName.get(),groupName.length(),0);
+        timeCached = msTick();
+    }
+
+    inline unsigned queryHash() const { return keyhash; }
+    inline const char *queryGroupName() const { return groupName.get(); }
+
+    inline unsigned queryNodeCount() const { return nodeCount; };
+    inline bool queryReplicateOutputs() const { return replicateOutputs; };
+    inline bool queryCanReplicate() const { return replicateOutputs && (nodeCount > 1); };
+    inline bool checkTimeout(unsigned timeout) const { return msTick()-timeCached >= timeout; }
+};
+
+class CThorNodeGroupCache: public SuperHashTableOf<CThorNodeGroup, const char>
+{
+    CriticalSection sect;
+    CThorNodeGroup* readNodeGroup(const char* _groupName);
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    ~CThorNodeGroupCache() { releaseAll(); }
+
+    inline void onAdd(void *e)
+    {
+        // not used
+    }
+
+    inline void onRemove(void *e)
+    {
+        CThorNodeGroup *g = (CThorNodeGroup *)e;
+        g->Release();
+    }
+
+    inline unsigned getHashFromElement(const void *e) const
+    {
+        return ((CThorNodeGroup *) e)->queryHash();
+    }
+
+    inline unsigned getHashFromFindParam(const void *fp) const
+    {
+        return hashnc((const unsigned char *)fp, strlen((const char *)fp), 0);
+    }
+
+    inline const void * getFindParam(const void *e) const
+    {
+        return ((CThorNodeGroup *) e)->queryGroupName();
+    }
+
+    inline bool matchesFindParam(const void * e, const void *fp, unsigned) const
+    {
+        return (strieq(((CThorNodeGroup *) e)->queryGroupName(), (const char *)fp));
+    }
+
+    CThorNodeGroup *lookup(const char* groupName, unsigned timeOutMinutes);
+};
+
 class CWsDfuSoapBindingEx : public CWsDfuSoapBinding
 {
 public:
@@ -46,6 +116,8 @@ class CWsDfuEx : public CWsDfu
 private:
     Owned<IXslProcessor> m_xsl;
     Mutex m_superfilemutex;
+    unsigned nodeGroupCacheTimeout;
+    Owned<CThorNodeGroupCache> thorNodeGroupCache;
 
 public:
     IMPLEMENT_IINTERFACE;

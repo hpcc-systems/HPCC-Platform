@@ -71,15 +71,51 @@ static const char* FEATURE_URL="DfuAccess";
 
 #define REMOVE_FILE_SDS_CONNECT_TIMEOUT (1000*15)  // 15 seconds
 
+const unsigned NODE_GROUP_CACHE_DEFAULT_TIMEOUT = 30*60*1000; //30 minutes
+
 const int DESCRIPTION_DISPLAY_LENGTH = 12;
 const unsigned MAX_VIEWKEYFILE_ROWS = 1000;
 const unsigned MAX_KEY_ROWS = 20;
 
 short days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
+CThorNodeGroup* CThorNodeGroupCache::readNodeGroup(const char* _groupName)
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
+
+    Owned<IPropertyTree> root = &env->getPTree();
+    Owned<IPropertyTreeIterator> it= root->getElements("Software/ThorCluster");
+    ForEach(*it)
+    {
+        IPropertyTree& cluster = it->query();
+        StringBuffer groupName;
+        getClusterGroupName(cluster, groupName);
+        if (groupName.length() && strieq(groupName.str(), _groupName))
+            return new CThorNodeGroup(_groupName, cluster.getCount("ThorSlaveProcess"), cluster.getPropBool("@replicateOutputs", false));
+    }
+
+    return NULL;
+}
+
+CThorNodeGroup* CThorNodeGroupCache::lookup(const char* groupName, unsigned timeout)
+{
+    CriticalBlock block(sect);
+    CThorNodeGroup* item=SuperHashTableOf<CThorNodeGroup, const char>::find(groupName);
+    if (item && !item->checkTimeout(timeout))
+        return LINK(item);
+
+    Owned<CThorNodeGroup> e = readNodeGroup(groupName);
+    if (e)
+        replace(*e.getLink()); //if not exists, will be added.
+
+    return e.getClear();
+}
+
 void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
-
     StringBuffer xpath;
     
     DBGLOG("Initializing %s service [process = %s]", service, process);
@@ -110,6 +146,14 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
     m_disableUppercaseTranslation = false;
     if (streq(disableUppercaseTranslation.str(), "true"))
         m_disableUppercaseTranslation = true;
+
+    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/NodeGroupCacheMinutes", process, service);
+    int timeout = cfg->getPropInt(xpath.str(), -1);
+    if (timeout > -1)
+        nodeGroupCacheTimeout = (unsigned) timeout*60*1000;
+    else
+        nodeGroupCacheTimeout = NODE_GROUP_CACHE_DEFAULT_TIMEOUT;
+    thorNodeGroupCache.setown(new CThorNodeGroupCache());
 
     if (!daliClientActive())
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
@@ -1749,6 +1793,9 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
             if (clusterInfo) //Should be valid. But, check it just in case.
             {
                 partsOnCluster->setReplicate(clusterInfo->queryPartDiskMapping().isReplicated());
+                Owned<CThorNodeGroup> nodeGroup = thorNodeGroupCache->lookup(clusterName, nodeGroupCacheTimeout);
+                if (nodeGroup)
+                    partsOnCluster->setCanReplicate(nodeGroup->queryCanReplicate());
                 const char* defaultDir = fdesc->queryDefaultDir();
                 if (defaultDir && *defaultDir)
                 {
