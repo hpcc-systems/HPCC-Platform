@@ -1151,6 +1151,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
       const char* name    = pComponent->queryProp("@name");
       const char* build   = pComponent->queryProp("@build");
       const char* buildSet= pComponent->queryProp("@buildSet");
+      const char* masterPort = pComponent->queryProp("@masterport");
       const char* logDir = NULL;
 
       if ((!strcmp(buildSet,"thor") || !strcmp(buildSet,"roxie")) && !pTopologyComponents.contains(name))
@@ -1212,6 +1213,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
                 pInstance->addProp("@name", pInst->queryProp("@name"));
                 pInstance->addProp("@computer", computer);
                 pInstance->addProp("@netAddress", netAddr);
+                pInstance->addProp("@masterport", masterPort);
               }
             }
           }

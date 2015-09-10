@@ -462,7 +462,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="masterport" type="xs:nonNegativeInteger" use="optional">
+      <xs:attribute name="masterport" type="xs:nonNegativeInteger" default="20000">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Base port to use for master</tooltip>
