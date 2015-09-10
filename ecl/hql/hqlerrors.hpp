@@ -68,6 +68,8 @@
 #define WRN_SILLY_EXISTS            1051
 #define WRN_INT_OR_RANGE_EXPECTED   1052 /* Integer or integer range (i.e. 2..3) expected when real detected */
 #define WRN_UNRESOLVED_SYMBOL       1053
+#define WRN_REQUIRES_SIGNED         1054
+#define WRN_DISALLOWED              1055
 
 //Do not define any warnings > 1099 - use the range below instead
 
@@ -278,7 +280,7 @@
 #define ERR_SVC_NOSCOPEMODIFIER     2234 /* Function in service can not specify EXPORT or SHARED */
 #define ERR_SVC_NOENTRYPOINT        2235 /* Entrypoint is not defined, default to XXX */
 #define ERR_SVC_INVALIDINCLUDE      2236 /* Invalid include entry */
-#define ERR_SVC_NOYPENEEDED         2237 /* Serive does need a type */
+#define ERR_SVC_NOYPENEEDED         2237 /* Service does need a type */
 #define ERR_SVC_ATTRCONFLICTS       2238 /* Conflicted attributes defined */
 #define ERR_SVC_INVALIDINITFUNC     2239 /* Invalid initfunction: must be valid C identifier */
 

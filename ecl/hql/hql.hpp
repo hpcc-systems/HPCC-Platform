@@ -188,6 +188,12 @@ interface IEclRepositoryCallback : public IEclRepository
     virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName) = 0;
 };
 
+interface ICodegenContextCallback : public IInterface
+{
+    virtual void noteCluster(const char *clusterName) = 0;
+    virtual bool allowAccess(const char * category, bool isSigned) = 0;
+};
+
 
 #if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
  #undef new

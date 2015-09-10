@@ -53,7 +53,7 @@ class NullContextCallback : public CInterface, implements ICodegenContextCallbac
     IMPLEMENT_IINTERFACE
 
     virtual void noteCluster(const char *clusterName) {}
-    virtual bool allowAccess(const char * category) { return true; }
+    virtual bool allowAccess(const char * category, bool isSigned) { return true; }
 };
 
 class HqlDllGenerator : public CInterface, implements IHqlExprDllGenerator, implements IAbortRequestCallback

@@ -316,7 +316,7 @@ void HqlLex::pushText(IFileContents * text, int startLineNo, int startColumn)
 
 void HqlLex::pushText(const char *s, int startLineNo, int startColumn)
 {
-    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath);
+    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, false); // MORE - may be wrong
     pushText(macroContents, startLineNo, startColumn);
 }
 
@@ -326,7 +326,7 @@ void HqlLex::pushText(const char *s)
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::pushText");
 #endif
-    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath);
+    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, false);  // MORE - may be wrong
     inmacro = new HqlLex(yyParser, macroContents, NULL, NULL);
     inmacro->set_yyLineNo(yyLineNo);
     inmacro->set_yyColumn(yyColumn);
@@ -612,7 +612,7 @@ void HqlLex::processEncrypted()
     decryptEclAttribute(decrypted, encoded64.str());
     decrypted.append(0);    // add a null terminator to the string...
     Owned<ISourcePath> sourcePath = createSourcePath("<encrypted>");
-    Owned<IFileContents> decryptedContents = createFileContentsFromText((const char *)decrypted.toByteArray(), sourcePath);
+    Owned<IFileContents> decryptedContents = createFileContentsFromText((const char *)decrypted.toByteArray(), sourcePath, yyParser->inSignedModule);
     inmacro = new HqlLex(yyParser, decryptedContents, NULL, NULL);
     inmacro->setParentLex(this);
     inmacro->encrypted = true;
@@ -1030,7 +1030,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         try
         {
             HqlLookupContext ctx(yyParser->lookupCtx);
-            Owned<IFileContents> exportContents = createFileContentsFromText(curParam.str(), sourcePath);
+            Owned<IFileContents> exportContents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule);
             expr.setown(parseQuery(scope, exportContents, ctx, xmlScope, NULL, true));
 
             if (expr && (expr->getOperator() == no_sizeof))
@@ -1172,8 +1172,8 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
 
     forLoop = getSubScopes(returnToken, str(name), doAll);
     if (forFilterText.length())
-        forFilter.setown(createFileContentsFromText(forFilterText, sourcePath));
-    forBody.setown(createFileContentsFromText(forBodyText, sourcePath));
+        forFilter.setown(createFileContentsFromText(forFilterText, sourcePath, yyParser->inSignedModule));
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule));
 
     loopTimes = 0;
     if (forLoop && forLoop->first()) // more - check filter
@@ -1222,7 +1222,7 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
     ::Release(forLoop);
     forLoop = new CDummyScopeIterator(ensureTopXmlScope());
     forFilter.clear();
-    forBody.setown(createFileContentsFromText(forBodyText, sourcePath));
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule));
     loopTimes = 0;
     if (forLoop->first()) // more - check filter
         checkNextLoop(returnToken, true,startLine,startCol);
@@ -1463,7 +1463,7 @@ void HqlLex::doIsValid(YYSTYPE & returnToken)
     {
         HqlLookupContext ctx(yyParser->lookupCtx);
         ctx.errs.clear();   //Deliberately ignore any errors
-        Owned<IFileContents> contents = createFileContentsFromText(curParam.str(), sourcePath);
+        Owned<IFileContents> contents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule);
         expr = parseQuery(scope, contents, ctx, xmlScope, NULL, true);
 
         if(expr)
@@ -1730,7 +1730,7 @@ IHqlExpression *HqlLex::parseECL(IFileContents * contents, IXmlScope *xmlScope, 
     //  Use an ECL reserved word as the scope name to avoid name conflicts with these defined localscope.
     Owned<IHqlScope> scope = new CHqlMultiParentScope(sharedId,yyParser->queryPrimaryScope(false),yyParser->queryPrimaryScope(true),yyParser->parseScope.get(),NULL);
 
-    HqlGramCtx parentContext(yyParser->lookupCtx);
+    HqlGramCtx parentContext(yyParser->lookupCtx, yyParser->inSignedModule);
     yyParser->saveContext(parentContext, false);
     HqlGram parser(parentContext, scope, contents, xmlScope, true);
     parser.getLexer()->set_yyLineNo(startLine);
@@ -1741,7 +1741,7 @@ IHqlExpression *HqlLex::parseECL(IFileContents * contents, IXmlScope *xmlScope, 
 
 IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int startLine, int startCol)
 {
-    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath());
+    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath(), yyParser->inSignedModule);
     return parseECL(contents, xmlScope, startLine, startCol);
 }
 

@@ -10394,8 +10394,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     else if (filename->getOperator()==no_pipe)
         pipe = filename->queryChild(0);
 
-    if (pipe)
-        checkPipeAllowed();
+    if (pipe && expr->hasAttribute(_disallowed_Atom))
+        throwError(HQLERR_PipeNotAllowed);
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     ThorActivityKind kind = TAKdiskwrite;
@@ -11329,8 +11329,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDictionaryWorkunitWrite(BuildC
 
 ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IHqlExpression * expr)
 {
-    checkPipeAllowed();
-
+    if (expr->hasAttribute(_disallowed_Atom))
+        throwError(HQLERR_PipeNotAllowed);
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * pipe = expr->queryChild(1);
     IHqlExpression * output = expr->queryAttribute(outputAtom);

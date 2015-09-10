@@ -84,12 +84,6 @@ The following debug options are currently supported by the code generator:
 
 #define CREATE_DEAULT_ROW_IF_NULL
 
-interface ICodegenContextCallback : public IInterface
-{
-    virtual void noteCluster(const char *clusterName) = 0;
-    virtual bool allowAccess(const char * category) = 0;
-};
-
 //interface that represents a implementation of a query
 //ready for passing to the thing that executes it.
 interface HQLCPP_API IHqlQueryInstance : public IInterface
