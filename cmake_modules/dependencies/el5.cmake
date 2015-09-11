@@ -1,5 +1,1 @@
-if ( CPACK_RPM_PACKAGE_REQUIRES )
-    set ( CPACK_RPM_PACKAGE_REQUIRES "${CPACK_RPM_PACKAGE_REQUIRES}, boost141-regex, openldap, libicu, m4, libtool, libxslt, libxml2, gcc-c++, openssh-server, openssh-clients, expect, libarchive, rsync, apr, apr-util, zip, tbb" CACHE STRING "" FORCE )
-else()
-    set ( CPACK_RPM_PACKAGE_REQUIRES "boost141-regex, openldap, libicu, m4, libtool, libxslt, libxml2, gcc-c++, openssh-server, openssh-clients, expect, libarchive, rsync, apr, apr-util, zip, tbb" CACHE STRING "" )
-endif()
+SET_DEPENDENCIES ( "boost141-regex, openldap, libicu, m4, libtool, libxslt, libxml2, gcc-c++, openssh-server, openssh-clients, expect, libarchive, rsync, apr, apr-util, zip, tbb" CPACK_RPM_PACKAGE_REQUIRES )

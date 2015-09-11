@@ -739,4 +739,16 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif()
   ENDMACRO()
 
+  ###########################################################################
+  ###
+  ## The following sets the dependency list for a package
+  ###
+  MACRO(SET_DEPENDENCIES dependencies cpackvar)
+    if ( ${cpackvar} )
+      set ( ${cpackvar} "${dependencies}, ${${cpackvar}}" CACHE STRING "" FORCE )
+    else()
+      set ( ${cpackvar} "${dependencies}" CACHE STRING "" )
+    endif()
+  ENDMACRO()
+
 endif ("${COMMONSETUP_DONE}" STREQUAL "")

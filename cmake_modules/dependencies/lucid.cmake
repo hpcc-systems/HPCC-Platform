@@ -1,5 +1,1 @@
-if ( CPACK_DEBIAN_PACKAGE_DEPENDS )
-    set ( CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libboost-regex1.40.0, libicu42, libxslt1.1, libxml2, binutils, libldap-2.4-2, openssl, zlib1g, g++, openssh-client, openssh-server, expect, libarchive1, rsync, zip, python, libtbb2" CACHE STRING "" FORCE)
-else()
-    set ( CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-regex1.40.0, libicu42, libxslt1.1, libxml2, binutils, libldap-2.4-2, openssl, zlib1g, g++, openssh-client, openssh-server, expect, libarchive1, rsync, zip, python, libtbb2" CACHE STRING "")
-endif()
+SET_DEPENDENCIES ( "libboost-regex1.40.0, libicu42, libxslt1.1, libxml2, binutils, libldap-2.4-2, openssl, zlib1g, g++, openssh-client, openssh-server, expect, libarchive1, rsync, zip, python, libtbb2" CPACK_DEBIAN_PACKAGE_DEPENDS )
