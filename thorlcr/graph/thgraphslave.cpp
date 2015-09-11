@@ -28,6 +28,7 @@
 #include "thgraphslave.hpp"
 #include "thcompressutil.hpp"
 #include "enginecontext.hpp"
+#include "traceslave.hpp"
 
 //////////////////////////////////
 
@@ -88,7 +89,7 @@ public:
                 throw e.getClear();
             else
                 throw createBarrierAbortException();
-        }   
+        }
         return true;
     }
     virtual void cancel(IException *e)
@@ -140,7 +141,10 @@ void CSlaveActivity::setInput(unsigned index, CActivityBase *inputActivity, unsi
         outLink.set(((CSlaveActivity *)inputActivity)->queryOutput(inputOutIdx));
     assertex(outLink);
     while (inputs.ordinality()<=index) inputs.append(NULL);
-    inputs.replace(outLink.getClear(), index);
+
+    if (queryJob().getOptBool("TRACEROW"))
+        outLink.setown(new CTracingThorDataLink(outLink.getClear(),queryHelper()));
+    inputs.replace( outLink.getClear(), index);
 }
 
 IThorDataLink *CSlaveActivity::queryOutput(unsigned index)

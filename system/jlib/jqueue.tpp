@@ -20,7 +20,7 @@
 #define JQueue_TINCL
 #include "jmutex.hpp"
 
-// Simple Queue Template for an expanding circular buffer queue
+// Simple Expanding Queue Template
 
 
 typedef bool (*priorityGreaterFunction)(const void * left, const void * right);
@@ -546,5 +546,126 @@ public:
 #define ForEachQueueItemInRev(x,y)  unsigned x = (y).ordinality();              \
                                     while (x--) 
 
+
+template <class BASE>
+class RingBufferOf
+{
+    typedef RingBufferOf<BASE> SELF;
+    BASE **ptrs;
+    unsigned headp;
+    unsigned tailp;
+    unsigned maxSize;
+    unsigned currentSize;
+
+public:
+
+    inline RingBufferOf() : ptrs(NULL), headp(0), tailp(0), maxSize(0), currentSize(0){};
+
+    virtual ~RingBufferOf() { clear(); free(ptrs);}
+
+    inline void clear()
+    {
+        while (currentSize)
+        {
+            delete ptrs[headp];
+            ++headp;
+            --currentSize;
+            if (headp==maxSize) headp=0;
+        }
+        headp=tailp=0;
+    }
+    inline void ensure(unsigned newSize)
+    {
+        if (newSize==maxSize) return;
+
+        if (!currentSize)
+            tailp = headp = 0;
+        else if (newSize < maxSize)
+        {
+            const unsigned dropDataElements = (newSize<currentSize) ? (currentSize-newSize) : 0;
+            for (int n=0;n<dropDataElements;++n)
+            {
+                delete(ptrs[headp]);
+                ++headp;
+                if (headp==maxSize)
+                    headp = 0;
+            }
+            currentSize -= dropDataElements;
+            if (headp && headp<tailp)
+            {
+                if (tailp<newSize)
+                {
+                    memmove(ptrs,ptrs+headp, currentSize*sizeof(BASE *));
+                    tailp = currentSize;
+                    headp = 0;
+                }
+            }
+            else if (tailp!=headp)
+            {
+                const unsigned freePositions = (newSize>currentSize) ? (newSize-currentSize) : 0;
+                memmove(ptrs+tailp+freePositions,ptrs+headp,(maxSize-headp)*sizeof(BASE *));
+                headp = tailp+freePositions;
+            }
+        }
+        ptrs = (BASE **)realloc(ptrs,newSize*sizeof(BASE *));
+        assertex(!newSize || ptrs);
+
+        if (maxSize && currentSize && newSize > maxSize && tailp<=headp)
+        {
+            const unsigned extraEmptyInBetween = newSize-maxSize;
+            memmove(ptrs+headp+extraEmptyInBetween,ptrs+headp,(maxSize-headp)*sizeof(BASE *));
+            headp += extraEmptyInBetween;
+        }
+
+        maxSize = newSize;
+    }
+    inline void enqueue(BASE *e)
+    {
+        if (e && maxSize)
+        {
+            ++currentSize;
+            if (currentSize>maxSize)
+            {
+                delete ptrs[headp];
+                ++headp;
+                if (headp==maxSize) headp=0;
+                --currentSize;
+            }
+            ptrs[tailp] = e;
+            ++tailp;
+            if (tailp==maxSize)
+                tailp=0;
+        }
+    }
+    inline BASE *dequeue()
+    {
+        if (!currentSize)
+            return NULL;
+        BASE *ret = ptrs[headp];
+        ++headp;
+        if (headp==maxSize) headp=0;
+        --currentSize;
+        return ret;
+    }
+    inline unsigned ordinality() const { return currentSize; }
+};
+
+template <class BASE>
+class SafeRingBufferOf : private RingBufferOf<BASE>
+{
+   typedef SafeRingBufferOf<BASE> SELF;
+protected:
+    mutable CriticalSection crit;
+    inline void unsafeenqueue(BASE *e) { RingBufferOf<BASE>::enqueue(e); }
+    inline BASE *unsafedequeue() { return RingBufferOf<BASE>::dequeue(); }
+    inline unsigned unsafeordinality() { return RingBufferOf<BASE>::ordinality(); }
+
+public:
+    inline void ensure(unsigned bufSize) { RingBufferOf<BASE>::ensure(bufSize);}
+    void clear() { CriticalBlock b(crit); RingBufferOf<BASE>::clear(); }
+    void enqueue(BASE *e) { CriticalBlock b(crit); RingBufferOf<BASE>::enqueue(e); }
+    BASE *dequeue() { CriticalBlock b(crit); return RingBufferOf<BASE>::dequeue(); }
+    inline unsigned ordinality() const { CriticalBlock b(crit); return RingBufferOf<BASE>::ordinality(); }
+};
 
 #endif
