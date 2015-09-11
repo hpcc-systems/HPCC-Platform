@@ -154,6 +154,7 @@ public:
     inline void setown(byte * _row)     { dispose(); row = _row; }
     inline void set(const void * _row)  { rtlLinkRow(_row); setown(_row); }
     inline void setown(const void * _row)   { dispose(); row = static_cast<byte *>(const_cast<void *>(_row)); } // ugly - need to clean up const tracking in code generator
+    inline void set(const rtlRowAttr & other) { set(other.getbytes()); }
 
 protected:
     inline void dispose()               { rtlReleaseRow(row); }
