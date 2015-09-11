@@ -2796,6 +2796,11 @@ public:
     }
     virtual void remove(SubscriptionId id)
     {
+        /* important to ensure have exclusive data lock on removal, ahead of subscriber lock
+         * as can get notifications whilst holding data lock, e.g. notifyDelete on node destruction.
+         */
+        CHECKEDDALIREADLOCKBLOCK(owner.dataRWLock, readWriteTimeout);
+        CHECKEDCRITICALBLOCK(owner.treeRegCrit, fakeCritTimeout);
         CriticalBlock b(lock);
         /* calls back out to owner to protect root/treereg.
          * It calls back into removeSubscriberAssociation.
@@ -8630,8 +8635,6 @@ void CCovenSDSManager::addNodeSubscriber(ISubscription *sub, SubscriptionId id)
 
 void CCovenSDSManager::removeNodeSubscriber(SubscriptionId id)
 {
-    CHECKEDDALIREADLOCKBLOCK(dataRWLock, readWriteTimeout);
-    CHECKEDCRITICALBLOCK(treeRegCrit, fakeCritTimeout);
     nodeSubscriptionManager->removeSubscriberAssociation(id);
 }
 
