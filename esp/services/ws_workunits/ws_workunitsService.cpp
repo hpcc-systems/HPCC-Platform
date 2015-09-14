@@ -1569,6 +1569,34 @@ bool addWUQueryFilterApplication(WUSortField *filters, unsigned short &count, Me
     return true;
 }
 
+void readWUQuerySortOrder(const char* sortBy, const bool descending, WUSortField& sortOrder)
+{
+    if (isEmpty(sortBy))
+    {
+        sortOrder = (WUSortField) (WUSFwuid | WUSFreverse);
+        return;
+    }
+
+    if (strieq(sortBy, "Owner"))
+        sortOrder = WUSFuser;
+    else if (strieq(sortBy, "JobName"))
+        sortOrder = WUSFjob;
+    else if (strieq(sortBy, "Cluster"))
+        sortOrder = WUSFcluster;
+    else if (strieq(sortBy, "Protected"))
+        sortOrder = WUSFprotected;
+    else if (strieq(sortBy, "State"))
+        sortOrder = WUSFstate;
+    else if (strieq(sortBy, "ClusterTime"))
+        sortOrder = (WUSortField) (WUSFtotalthortime+WUSFnumeric);
+    else
+        sortOrder = WUSFwuid;
+
+    sortOrder = (WUSortField) (sortOrder | WUSFnocase);
+    if (descending)
+        sortOrder = (WUSortField) (sortOrder | WUSFreverse);
+}
+
 void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
 {
     SecAccessFlags accessOwn;
@@ -1607,30 +1635,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         pagesize = count;
     }
 
-    WUSortField sortorder = (WUSortField) (WUSFwuid | WUSFreverse);
-    if (notEmpty(req.getSortby()))
-    {
-        const char *sortby = req.getSortby();
-        if (strieq(sortby, "Owner"))
-            sortorder = WUSFuser;
-        else if (strieq(sortby, "JobName"))
-            sortorder = WUSFjob;
-        else if (strieq(sortby, "Cluster"))
-            sortorder = WUSFcluster;
-        else if (strieq(sortby, "Protected"))
-            sortorder = WUSFprotected;
-        else if (strieq(sortby, "State"))
-            sortorder = WUSFstate;
-        else if (strieq(sortby, "ClusterTime"))
-            sortorder = (WUSortField) (WUSFtotalthortime+WUSFnumeric);
-        else
-            sortorder = WUSFwuid;
-
-        sortorder = (WUSortField) (sortorder | WUSFnocase);
-        bool descending = req.getDescending();
-        if (descending)
-            sortorder = (WUSortField) (sortorder | WUSFreverse);
-    }
+    WUSortField sortorder;
+    readWUQuerySortOrder(req.getSortby(), req.getDescending(), sortorder);
 
     WUSortField filters[10];
     unsigned short filterCount = 0;
@@ -1687,12 +1693,6 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     ForEach(*it)
     {
         IConstWorkUnitInfo& cw = it->query();
-        if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
-        {
-            numWUs--;
-            continue;
-        }
-
         if (bDoubleCheckState && (cw.getState() != WUStateSubmitted))
         {
             numWUs--;
@@ -1706,9 +1706,17 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             numWUs--;
             continue;
         }
+
         actualCount++;
         Owned<IEspECLWorkunit> info = createECLWorkunit("","");
         info->setWuid(cw.queryWuid());
+        if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
+        {
+            info->setState("<Hidden>");
+            results.append(*info.getClear());
+            continue;
+        }
+
         info->setProtected(cw.isProtected() ? 1 : 0);
         info->setJobname(cw.queryJobName());
         info->setOwner(cw.queryUser());
@@ -1811,241 +1819,468 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     return;
 }
 
+void doWULightWeightQueryWithSort(IEspContext &context, IEspWULightWeightQueryRequest & req, IEspWULightWeightQueryResponse & resp)
+{
+    SecAccessFlags accessOwn;
+    SecAccessFlags accessOthers;
+    getUserWuAccessFlags(context, accessOwn, accessOthers, true);
+
+    double version = context.getClientVersion();
+
+    int pageStartFrom = 0;
+    int pageSize = 100;
+    if (!req.getPageStartFrom_isNull())
+        pageStartFrom = req.getPageStartFrom();
+    if (!req.getPageSize_isNull())
+        pageSize = req.getPageSize();
+
+    WUSortField sortOrder;
+    readWUQuerySortOrder(req.getSortBy(), req.getDescending(), sortOrder);
+
+    WUSortField filters[10];
+    unsigned short filterCount = 0;
+    MemoryBuffer filterbuf;
+
+    // Query filters should be added in order of expected power - add the most restrictive filters first
+
+    bool bDoubleCheckState = false;
+    if(req.getState() && *req.getState())
+    {
+        filters[filterCount++] = WUSFstate;
+        if (!strieq(req.getState(), "unknown"))
+            filterbuf.append(req.getState());
+        else
+            filterbuf.append("");
+        if (strieq(req.getState(), "submitted"))
+            bDoubleCheckState = true;
+    }
+
+    addWUQueryFilter(filters, filterCount, filterbuf, req.getWuid(), WUSFwildwuid);
+    addWUQueryFilter(filters, filterCount, filterbuf, req.getCluster(), WUSFcluster);
+    addWUQueryFilter(filters, filterCount, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
+    addWUQueryFilter(filters, filterCount, filterbuf, req.getJobName(), (WUSortField) (WUSFjob | WUSFnocase));
+
+    //StartDate example: 2015-08-26T14:26:00
+    addWUQueryFilterTime(filters, filterCount, filterbuf, req.getStartDate(), WUSFwuid);
+    addWUQueryFilterTime(filters, filterCount, filterbuf, req.getEndDate(), WUSFwuidhigh);
+    IArrayOf<IConstApplicationValue>& applicationFilters = req.getApplicationValues();
+    ForEachItemIn(i, applicationFilters)
+    {
+        IConstApplicationValue &item = applicationFilters.item(i);
+        addWUQueryFilterApplication(filters, filterCount, filterbuf, item.getApplication(), item.getName(), item.getValue());
+    }
+
+    filters[filterCount] = WUSFterm;
+
+    __int64 cacheHint = 0;
+    if (!req.getCacheHint_isNull())
+        cacheHint = req.getCacheHint();
+
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    unsigned numWUs;
+    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortOrder, filters, filterbuf.bufferBase(), pageStartFrom, pageSize+1, &cacheHint, &numWUs); // MORE - need security flags here!
+    resp.setCacheHint(cacheHint);
+
+    IArrayOf<IEspECLWorkunitLW> results;
+    ForEach(*it)
+    {
+        IConstWorkUnitInfo& cw = it->query();
+        if (bDoubleCheckState && (cw.getState() != WUStateSubmitted))
+        {
+            numWUs--;
+            continue;
+        }
+
+        // This test is presumably trying to remove the global workunit, though it's not the right way to do so (since it will mess up page counts etc)
+        const char* wuid = cw.queryWuid();
+        if (!looksLikeAWuid(wuid, 'W'))
+        {
+            numWUs--;
+            continue;
+        }
+
+        Owned<IEspECLWorkunitLW> info = createECLWorkunitLW("","");
+        info->setWuid(cw.queryWuid());
+        if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
+        {
+            info->setStateDesc("<Hidden>");
+            results.append(*info.getClear());
+            continue;
+        }
+
+        SCMStringBuffer s;
+        info->setIsProtected(cw.isProtected() ? 1 : 0);
+        info->setJobName(cw.queryJobName());
+        info->setWuScope(cw.queryWuScope());
+        info->setOwner(cw.queryUser());
+        info->setClusterName(cw.queryClusterName());
+        info->setState(cw.getState());
+        info->setStateDesc(cw.queryStateDesc());
+        info->setAction(cw.getAction());
+        info->setActionDesc(cw.queryActionDesc());
+        info->setPriority(cw.getPriority());
+        info->setPriorityLevel(cw.getPriorityLevel());
+        info->setPriorityDesc(cw.queryPriorityDesc());
+        info->setTotalClusterTime(cw.getTotalThorTime());
+
+        WsWuDateTime dt;
+        cw.getTimeScheduled(dt);
+        if(dt.isValid())
+            info->setDateTimeScheduled(dt.getString(s).str());
+
+        IArrayOf<IEspApplicationValue> av;
+        Owned<IConstWUAppValueIterator> app(&cw.getApplicationValues());
+        ForEach(*app)
+        {
+            IConstWUAppValue& val=app->query();
+            Owned<IEspApplicationValue> t= createApplicationValue("","");
+            t->setApplication(val.queryApplication());
+            t->setName(val.queryName());
+            t->setValue(val.queryValue());
+            av.append(*t.getClear());
+
+        }
+        info->setApplicationValues(av);
+        results.append(*info.getClear());
+    }
+
+    resp.setNumWUs(numWUs);
+    if (results.length() > (aindex_t)pageSize)
+        results.pop();
+
+    resp.setWorkunits(results);
+    return;
+}
+
+class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
+{
+    IEspContext& context;
+    unsigned pageFrom, pageSize;
+    StringAttr sashaServerIP;
+    unsigned sashaServerPort;
+    unsigned cacheMinutes;
+    StringBuffer filterStr;
+    ArchivedWuCache& archivedWuCache;
+    unsigned numberOfWUsReturned;
+    bool hasMoreWU;
+
+    void readDateFilters(const char* startDateReq, const char* endDateReq, StringBuffer& from, StringBuffer& to)
+    {
+        CDateTime timeFrom, timeTo;
+        if(notEmpty(endDateReq))
+        {//endDateReq example: 2015-08-26T14:26:00
+            unsigned year, month, day, hour, minute, second, nano;
+            timeTo.setString(endDateReq, NULL, true);
+            timeTo.getDate(year, month, day, true);
+            timeTo.getTime(hour, minute, second, nano, true);
+            to.setf("%4d%02d%02d%02d%02d%02d", year, month, day, hour, minute, second);
+        }
+
+        if(isEmpty(startDateReq))
+            return;
+
+        timeFrom.setString(startDateReq, NULL, true);
+        if (timeFrom >= timeTo)
+            return;
+
+        unsigned year0, month0, day0, hour0, minute0, second0, nano0;
+        timeFrom.getDate(year0, month0, day0, true);
+        timeFrom.getTime(hour0, minute0, second0, nano0, true);
+        from.setf("%4d%02d%02d%02d%02d%02d", year0, month0, day0, hour0, minute0, second0);
+        return;
+    }
+
+    bool addToFilterString(const char *name, const char *value)
+    {
+        if (isEmpty(name) || isEmpty(value))
+            return false;
+        filterStr.append(';').append(name).append("=").append(value);
+        return true;
+    }
+
+    bool addToFilterString(const char *name, unsigned value)
+    {
+        if (isEmpty(name))
+            return false;
+        filterStr.append(';').append(name).append("=").append(value);
+        return true;
+    }
+
+    void setFilterString(IEspWUQueryRequest& req)
+    {
+        filterStr.set("0");
+        addToFilterString("wuid", req.getWuid());
+        addToFilterString("cluster", req.getCluster());
+        addToFilterString("owner", req.getOwner());
+        addToFilterString("jobName", req.getJobname());
+        addToFilterString("state", req.getState());
+        addToFilterString("timeFrom", req.getStartDate());
+        addToFilterString("timeTo", req.getEndDate());
+        addToFilterString("pageStart", pageFrom);
+        addToFilterString("pageSize", pageSize);
+        if (sashaServerIP && *sashaServerIP)
+        {
+            addToFilterString("sashaServerIP", sashaServerIP.get());
+            addToFilterString("sashaServerPort", sashaServerPort);
+        }
+    }
+
+    void setFilterStringLW(IEspWULightWeightQueryRequest& req)
+    {
+        filterStr.set("1");
+        addToFilterString("wuid", req.getWuid());
+        addToFilterString("cluster", req.getCluster());
+        addToFilterString("owner", req.getOwner());
+        addToFilterString("jobName", req.getJobName());
+        addToFilterString("state", req.getState());
+        addToFilterString("timeFrom", req.getStartDate());
+        addToFilterString("timeTo", req.getEndDate());
+        addToFilterString("pageStart", pageFrom);
+        addToFilterString("pageSize", pageSize);
+        if (sashaServerIP && *sashaServerIP)
+        {
+            addToFilterString("sashaServerIP", sashaServerIP.get());
+            addToFilterString("sashaServerPort", sashaServerPort);
+        }
+    }
+
+    void initSashaCommand(ISashaCommand* cmd)
+    {
+        cmd->setAction(SCA_LIST);
+        cmd->setOutputFormat("owner,jobname,cluster,state");
+        cmd->setOnline(false);
+        cmd->setArchived(true);
+        cmd->setStart(pageFrom);
+        cmd->setLimit(pageSize+1); //read an extra WU to check hasMoreWU
+    }
+
+    void setSashaCommand(IEspWUQueryRequest& req, ISashaCommand* cmd)
+    {
+        if (notEmpty(req.getWuid()))
+            cmd->addId(req.getWuid());
+        if (notEmpty(req.getCluster()))
+            cmd->setCluster(req.getCluster());
+        if (notEmpty(req.getOwner()))
+            cmd->setOwner(req.getOwner());
+        if (notEmpty(req.getJobname()))
+            cmd->setJobName(req.getJobname());
+        if (notEmpty(req.getState()))
+            cmd->setState(req.getState());
+
+        StringBuffer timeFrom, timeTo;
+        readDateFilters(req.getStartDate(), req.getEndDate(), timeFrom, timeTo);
+        if (timeFrom.length())
+            cmd->setAfter(timeFrom.str());
+        if (timeTo.length())
+            cmd->setBefore(timeTo.str());
+        return;
+    }
+
+    void setSashaCommandLW(IEspWULightWeightQueryRequest& req, ISashaCommand* cmd)
+    {
+        if (notEmpty(req.getWuid()))
+            cmd->addId(req.getWuid());
+        if (notEmpty(req.getCluster()))
+            cmd->setCluster(req.getCluster());
+        if (notEmpty(req.getOwner()))
+            cmd->setOwner(req.getOwner());
+        if (notEmpty(req.getJobName()))
+            cmd->setJobName(req.getJobName());
+        if (notEmpty(req.getState()))
+            cmd->setState(req.getState());
+
+        StringBuffer timeFrom, timeTo;
+        readDateFilters(req.getStartDate(), req.getEndDate(), timeFrom, timeTo);
+        if (timeFrom.length())
+            cmd->setAfter(timeFrom.str());
+        if (timeTo.length())
+            cmd->setBefore(timeTo.str());
+
+        return;
+    }
+
+    IEspECLWorkunit *createArchivedWUEntry(StringArray& wuDataArray, bool canAccess)
+    {
+        Owned<IEspECLWorkunit> info= createECLWorkunit();
+        info->setWuid(wuDataArray.item(0));
+        if (!canAccess)
+        {
+            info->setState("<Hidden>");
+            return info.getClear();
+        }
+
+        const char* owner = wuDataArray.item(1);
+        const char* jobName = wuDataArray.item(2);
+        const char* cluster = wuDataArray.item(3);
+        const char* state = wuDataArray.item(4);
+        if (notEmpty(owner))
+            info->setOwner(owner);
+        if (notEmpty(jobName))
+            info->setJobname(jobName);
+        if (notEmpty(cluster))
+            info->setCluster(cluster);
+        if (notEmpty(state))
+            info->setState(state);
+        return info.getClear();
+    }
+    IEspECLWorkunitLW *createArchivedLWWUEntry(StringArray& wuDataArray, bool canAccess)
+    {
+        Owned<IEspECLWorkunitLW> info= createECLWorkunitLW();
+        info->setWuid(wuDataArray.item(0));
+        if (!canAccess)
+        {
+            info->setStateDesc("<Hidden>");
+            return info.getClear();
+        }
+
+        const char* owner = wuDataArray.item(1);
+        const char* jobName = wuDataArray.item(2);
+        const char* cluster = wuDataArray.item(3);
+        const char* state = wuDataArray.item(4);
+        if (notEmpty(owner))
+            info->setOwner(owner);
+        if (notEmpty(jobName))
+            info->setJobName(jobName);
+        if (notEmpty(cluster))
+            info->setClusterName(cluster);
+        if (notEmpty(state))
+            info->setStateDesc(state);
+        return info.getClear();
+    }
+    static int compareWuids(IInterface * const *_a, IInterface * const *_b)
+    {
+        IEspECLWorkunit *a = *(IEspECLWorkunit **)_a;
+        IEspECLWorkunit *b = *(IEspECLWorkunit **)_b;
+        return strcmp(b->getWuid(), a->getWuid());
+    }
+    static int compareLWWuids(IInterface * const *_a, IInterface * const *_b)
+    {
+        IEspECLWorkunitLW *a = *(IEspECLWorkunitLW **)_a;
+        IEspECLWorkunitLW *b = *(IEspECLWorkunitLW **)_b;
+        return strcmp(b->getWuid(), a->getWuid());
+    }
+public:
+    IMPLEMENT_IINTERFACE_USING(CInterface);
+
+    CArchivedWUsReader(IEspContext& _context, const char* _sashaServerIP, unsigned _sashaServerPort, ArchivedWuCache& _archivedWuCache,
+        unsigned _cacheMinutes, unsigned _pageFrom, unsigned _pageSize)
+        : context(_context), sashaServerIP(_sashaServerIP), sashaServerPort(_sashaServerPort),
+        archivedWuCache(_archivedWuCache), cacheMinutes(_cacheMinutes), pageFrom(_pageFrom), pageSize(_pageSize)
+    {
+        hasMoreWU = false;
+        numberOfWUsReturned = 0;
+    }
+
+    void getArchivedWUs(bool lightWeight, IEspWUQueryRequest& req, IEspWULightWeightQueryRequest& reqLW, IArrayOf<IEspECLWorkunit>& archivedWUs, IArrayOf<IEspECLWorkunitLW>& archivedLWWUs)
+    {
+        if (!lightWeight)
+            setFilterString(req);
+        else
+            setFilterStringLW(reqLW);
+        Owned<ArchivedWuCacheElement> cachedResults = archivedWuCache.lookup(context, filterStr, "AddWhenAvailable", cacheMinutes);
+        if (cachedResults)
+        {
+            hasMoreWU = cachedResults->m_hasNextPage;
+            numberOfWUsReturned = cachedResults->numWUsReturned;
+            if (!lightWeight && cachedResults->m_results.length())
+            {
+                ForEachItemIn(i, cachedResults->m_results)
+                    archivedWUs.append(*LINK(&cachedResults->m_results.item(i)));
+            }
+            if (lightWeight && cachedResults->resultsLW.length())
+            {
+                ForEachItemIn(i, cachedResults->resultsLW)
+                    archivedLWWUs.append(*LINK(&cachedResults->resultsLW.item(i)));
+            }
+            return;
+        }
+
+        SocketEndpoint ep;
+        if (sashaServerIP && *sashaServerIP)
+            ep.set(sashaServerIP, sashaServerPort);
+        else
+            getSashaNode(ep);
+        Owned<INode> sashaserver = createINode(ep);
+
+        Owned<ISashaCommand> cmd = createSashaCommand();
+        initSashaCommand(cmd);
+        if (!lightWeight)
+            setSashaCommand(req, cmd);
+        else
+            setSashaCommandLW(reqLW, cmd);
+        if (!cmd->send(sashaserver))
+        {
+            StringBuffer msg("Cannot connect to archive server at ");
+            sashaserver->endpoint().getUrlStr(msg);
+            throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, "%s", msg.str());
+        }
+
+        numberOfWUsReturned = cmd->numIds();
+        hasMoreWU = (numberOfWUsReturned > pageSize);
+        if (hasMoreWU)
+            numberOfWUsReturned--;
+
+        if (numberOfWUsReturned == 0)
+            return;
+
+        SecAccessFlags accessOwn, accessOthers;
+        getUserWuAccessFlags(context, accessOwn, accessOthers, true);
+
+        for (unsigned i=0; i<numberOfWUsReturned; i++)
+        {
+            const char *csline = cmd->queryId(i);
+            if (!csline || !*csline)
+                continue;
+
+            StringArray wuDataArray;
+            wuDataArray.appendList(csline, ",");
+
+            const char* wuid = wuDataArray.item(0);
+            if (isEmpty(wuid))
+            {
+                WARNLOG("Empty WUID in SCA_LIST response"); // JCS->KW - have u ever seen this happen?
+                continue;
+            }
+            const char* owner = wuDataArray.item(1);
+            bool canAccess = chooseWuAccessFlagsByOwnership(context.queryUserId(), owner, accessOwn, accessOthers) >= SecAccess_Read;
+            if (!lightWeight)
+            {
+                Owned<IEspECLWorkunit> info = createArchivedWUEntry(wuDataArray, canAccess);
+                archivedWUs.append(*info.getClear());
+            }
+            else
+            {
+                Owned<IEspECLWorkunitLW> info = createArchivedLWWUEntry(wuDataArray, canAccess);
+                archivedLWWUs.append(*info.getClear());
+            }
+        }
+        if (!lightWeight)
+            archivedWUs.sort(compareWuids);
+        else
+            archivedLWWUs.sort(compareLWWuids);
+
+        archivedWuCache.add(filterStr, "AddWhenAvailable", hasMoreWU, numberOfWUsReturned, archivedWUs, archivedLWWUs);
+        return;
+    };
+
+    bool getHasMoreWU() { return hasMoreWU; };
+    unsigned getNumberOfWUsReturned() { return numberOfWUsReturned; };
+};
+
 void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsigned sashaServerPort,
        ArchivedWuCache &archivedWuCache, unsigned cacheMinutes, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
 {
-    class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
-    {
-        IEspContext& context;
-        IEspWUQueryRequest& req;
-        unsigned pageFrom, pageSize;
-        StringAttr sashaServerIP;
-        unsigned sashaServerPort;
-        unsigned cacheMinutes;
-        StringBuffer filterStr;
-        ArchivedWuCache& archivedWuCache;
-        unsigned numberOfWUsReturned;
-        bool hasMoreWU;
-
-        void readDateFilters(StringBuffer& from, StringBuffer& to)
-        {
-            CDateTime timeFrom, timeTo;
-            if(notEmpty(req.getEndDate()))
-                timeTo.setString(req.getEndDate(), NULL, true);
-            else
-                timeTo.setNow();
-
-            unsigned year, month, day, hour, minute, second, nano;
-            timeTo.getDate(year, month, day, true);
-            timeTo.getTime(hour, minute, second, nano, true);
-            to.setf("%4d%02d%02d%02d%02d", year, month, day, hour, minute);
-
-            if(!notEmpty(req.getStartDate()))
-                return;
-
-            timeFrom.setString(req.getStartDate(), NULL, true);
-            if (timeFrom >= timeTo)
-                return;
-
-            unsigned year0, month0, day0, hour0, minute0, second0, nano0;
-            timeFrom.getDate(year0, month0, day0, true);
-            timeFrom.getTime(hour0, minute0, second0, nano0, true);
-            from.setf("%4d%02d%02d%02d%02d", year0, month0, day0, hour0, minute0);
-
-            return;
-        }
-
-        bool addToFilterString(const char *name, const char *value)
-        {
-            if (isEmpty(name) || isEmpty(value))
-                return false;
-            if (filterStr.length())
-                filterStr.append(';');
-            filterStr.append(name).append("=").append(value);
-            return true;
-        }
-
-        bool addToFilterString(const char *name, unsigned value)
-        {
-            if (isEmpty(name))
-                return false;
-            if (filterStr.length())
-                filterStr.append(';');
-            filterStr.append(name).append("=").append(value);
-            return true;
-        }
-
-        void setFilterString()
-        {
-            addToFilterString("wuid", req.getWuid());
-            addToFilterString("cluster", req.getCluster());
-            addToFilterString("owner", req.getOwner());
-            addToFilterString("jobName", req.getJobname());
-            addToFilterString("state", req.getState());
-            addToFilterString("timeFrom", req.getStartDate());
-            addToFilterString("timeTo", req.getEndDate());
-            addToFilterString("pageStart", pageFrom);
-            addToFilterString("pageSize", pageSize);
-            if (sashaServerIP && *sashaServerIP)
-            {
-                addToFilterString("sashaServerIP", sashaServerIP.get());
-                addToFilterString("sashaServerPort", sashaServerPort);
-            }
-        }
-
-        void setSashaCommand(INode* sashaserver, ISashaCommand* cmd)
-        {
-            cmd->setAction(SCA_LIST);
-            cmd->setOutputFormat("owner,jobname,cluster,state");
-            cmd->setOnline(false);
-            cmd->setArchived(true);
-            cmd->setStart(pageFrom);
-            cmd->setLimit(pageSize+1); //read an extra WU to check hasMoreWU
-            if (notEmpty(req.getWuid()))
-                cmd->addId(req.getWuid());
-            if (notEmpty(req.getCluster()))
-                cmd->setCluster(req.getCluster());
-            if (notEmpty(req.getOwner()))
-                cmd->setOwner(req.getOwner());
-            if (notEmpty(req.getJobname()))
-                cmd->setJobName(req.getJobname());
-            if (notEmpty(req.getState()))
-                cmd->setState(req.getState());
-
-            StringBuffer timeFrom, timeTo;
-            readDateFilters(timeFrom, timeTo);
-            if (timeFrom.length())
-                cmd->setAfter(timeFrom.str());
-            if (timeTo.length())
-                cmd->setBefore(timeTo.str());
-
-            return;
-        }
-
-        IEspECLWorkunit *createArchivedWUEntry(StringArray& wuDataArray, bool canAccess)
-        {
-            Owned<IEspECLWorkunit> info= createECLWorkunit("","");
-            const char* wuid = wuDataArray.item(0);
-            const char* owner = wuDataArray.item(1);
-            const char* jobName = wuDataArray.item(2);
-            const char* cluster = wuDataArray.item(3);
-            const char* state = wuDataArray.item(4);
-            info->setWuid(wuid);
-            if (!canAccess)
-                info->setState("<Hidden>");
-            else
-            {
-                if (notEmpty(owner))
-                    info->setOwner(owner);
-                if (notEmpty(jobName))
-                    info->setJobname(jobName);
-                if (notEmpty(cluster))
-                    info->setCluster(cluster);
-                if (notEmpty(state))
-                    info->setState(state);
-            }
-            return info.getClear();
-        }
-        static int compareWuids(IInterface * const *_a, IInterface * const *_b)
-        {
-            IEspECLWorkunit *a = *(IEspECLWorkunit **)_a;
-            IEspECLWorkunit *b = *(IEspECLWorkunit **)_b;
-            return strcmp(b->getWuid(), a->getWuid());
-        }
-    public:
-        IMPLEMENT_IINTERFACE_USING(CInterface);
-
-        CArchivedWUsReader(IEspContext& _context, const char* _sashaServerIP, unsigned _sashaServerPort, ArchivedWuCache& _archivedWuCache,
-            unsigned _cacheMinutes, unsigned _pageFrom, unsigned _pageSize, IEspWUQueryRequest& _req)
-            : context(_context), sashaServerIP(_sashaServerIP), sashaServerPort(_sashaServerPort),
-            archivedWuCache(_archivedWuCache), cacheMinutes(_cacheMinutes), pageFrom(_pageFrom), pageSize(_pageSize), req(_req)
-        {
-            hasMoreWU = false;
-            numberOfWUsReturned = 0;
-        }
-
-        void getArchivedWUs(IArrayOf<IEspECLWorkunit>& archivedWUs)
-        {
-            setFilterString();
-            Owned<ArchivedWuCacheElement> cachedResults = archivedWuCache.lookup(context, filterStr, "AddWhenAvailable", cacheMinutes);
-            if (cachedResults)
-            {
-                hasMoreWU = cachedResults->m_hasNextPage;
-                numberOfWUsReturned = cachedResults->numWUsReturned;
-                if (cachedResults->m_results.length())
-                {
-                    ForEachItemIn(ai, cachedResults->m_results)
-                        archivedWUs.append(*LINK(&cachedResults->m_results.item(ai)));
-                }
-            }
-            else
-            {
-                SocketEndpoint ep;
-                if (sashaServerIP && *sashaServerIP)
-                    ep.set(sashaServerIP, sashaServerPort);
-                else
-                    getSashaNode(ep);
-                Owned<INode> sashaserver = createINode(ep);
-
-                Owned<ISashaCommand> cmd = createSashaCommand();
-                setSashaCommand(sashaserver, cmd);
-                if (!cmd->send(sashaserver))
-                {
-                    StringBuffer msg("Cannot connect to archive server at ");
-                    sashaserver->endpoint().getUrlStr(msg);
-                    throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, "%s", msg.str());
-                }
-
-                numberOfWUsReturned = cmd->numIds();
-                hasMoreWU = (numberOfWUsReturned > pageSize);
-                if (hasMoreWU)
-                    numberOfWUsReturned--;
-
-                if (numberOfWUsReturned > 0)
-                {
-                    SecAccessFlags accessOwn, accessOthers;
-                    getUserWuAccessFlags(context, accessOwn, accessOthers, true);
-
-                    for (unsigned i=0; i<numberOfWUsReturned; i++)
-                    {
-                        const char *csline = cmd->queryId(i);
-                        if (!csline || !*csline)
-                            continue;
-
-                        StringArray wuDataArray;
-                        wuDataArray.appendList(csline, ",");
-
-                        const char* wuid = wuDataArray.item(0);
-                        if (isEmpty(wuid))
-                        {
-                            WARNLOG("Empty WUID in SCA_LIST response"); // JCS->KW - have u ever seen this happen?
-                            continue;
-                        }
-                        const char* owner = wuDataArray.item(1);
-                        bool canAccess = chooseWuAccessFlagsByOwnership(context.queryUserId(), owner, accessOwn, accessOthers) >= SecAccess_Read;
-                        Owned<IEspECLWorkunit> info = createArchivedWUEntry(wuDataArray, canAccess);
-                        archivedWUs.append(*info.getClear());
-                    }
-                    archivedWUs.sort(compareWuids);
-
-                    archivedWuCache.add(filterStr, "AddWhenAvailable", hasMoreWU, numberOfWUsReturned, archivedWUs);
-                }
-            }
-            return;
-        };
-
-        bool getHasMoreWU() { return hasMoreWU; };
-        unsigned getNumberOfWUsReturned() { return numberOfWUsReturned; };
-    };
-
     unsigned pageStart = (unsigned) req.getPageStartFrom();
     unsigned pageSize = (unsigned) req.getPageSize();
     if(pageSize < 1)
         pageSize=500;
-    IArrayOf<IEspECLWorkunit> archivedWUs;
     Owned<IArchivedWUsReader> archiveWUsReader = new CArchivedWUsReader(context, sashaServerIP, sashaServerPort, archivedWuCache,
-        cacheMinutes, pageStart, pageSize, req);
-    archiveWUsReader->getArchivedWUs(archivedWUs);
+        cacheMinutes, pageStart, pageSize);
+
+    IArrayOf<IEspECLWorkunit> archivedWUs;
+    IArrayOf<IEspECLWorkunitLW> dummyWUs;
+    Owned<CWULightWeightQueryRequest> dummyReq = new CWULightWeightQueryRequest("WsWorkunits");
+    archiveWUsReader->getArchivedWUs(false, req, *dummyReq, archivedWUs, dummyWUs);
 
     resp.setWorkunits(archivedWUs);
     resp.setNumWUs(archiveWUsReader->getNumberOfWUsReturned());
@@ -2061,6 +2296,27 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
     }
     if (archiveWUsReader->getHasMoreWU())
         resp.setNextPage(pageStart + pageSize);
+    return;
+}
+
+void doWULightWeightQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsigned sashaServerPort,
+       ArchivedWuCache &archivedWuCache, unsigned cacheMinutes, IEspWULightWeightQueryRequest & req, IEspWULightWeightQueryResponse & resp)
+{
+    int pageStart = 0;
+    int pageSize=500;
+    if (!req.getPageStartFrom_isNull())
+        pageStart = req.getPageStartFrom();
+    if (!req.getPageSize_isNull())
+        pageSize = req.getPageSize();
+    Owned<IArchivedWUsReader> archiveWUsReader = new CArchivedWUsReader(context, sashaServerIP, sashaServerPort, archivedWuCache,
+        cacheMinutes, pageStart, pageSize);
+    Owned<CWUQueryRequest> dummyReq = new CWUQueryRequest("WsWorkunits");
+    IArrayOf<IEspECLWorkunit> dummyWUs;
+    IArrayOf<IEspECLWorkunitLW> archivedWUs;
+    archiveWUsReader->getArchivedWUs(true, *dummyReq, req, dummyWUs, archivedWUs);
+
+    resp.setWorkunits(archivedWUs);
+    resp.setNumWUs(archiveWUsReader->getNumberOfWUsReturned());
     return;
 }
 
@@ -2122,6 +2378,22 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
             resp.setECL(Utils::url_encode(req.getECL(), s).str());
         if(notEmpty(req.getJobname()))
             resp.setJobname(Utils::url_encode(req.getJobname(), s.clear()).str());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsWorkunitsEx::onWULightWeightQuery(IEspContext &context, IEspWULightWeightQueryRequest & req, IEspWULightWeightQueryResponse & resp)
+{
+    try
+    {
+        if (req.getType() && strieq(req.getType(), "archived workunits"))
+            doWULightWeightQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
+        else
+            doWULightWeightQueryWithSort(context, req, resp);
     }
     catch(IException* e)
     {

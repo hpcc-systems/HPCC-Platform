@@ -184,6 +184,27 @@ ESPStruct [nil_remove] ThorLogInfo
     int    NumberSlaves;
 };
 
+ESPStruct [nil_remove] ECLWorkunitLW
+{
+    string Wuid;
+    string Owner; //IConstWorkUnitInfo queryUser()
+    string JobName;
+    string WuScope;
+    string ClusterName;
+    int State;
+    string StateDesc;
+    int Action;
+    string ActionDesc;
+    int Priority;
+    string PriorityDesc;
+    int PriorityLevel;
+    bool IsProtected;
+    xsdDateTime DateTimeScheduled;
+
+    unsigned TotalClusterTime;
+    ESParray<ESPstruct ApplicationValue> ApplicationValues;
+};
+
 ESPStruct [nil_remove] ECLWorkunit
 {
     string Wuid;
@@ -418,6 +439,34 @@ ESPresponse [nil_remove, exceptions_inline] WUQueryResponse
     ESParray<ESPstruct ECLWorkunit> Workunits;
 };
 
+ESPrequest [nil_remove] WULightWeightQueryRequest
+{
+    string Wuid;
+    string Type;  //archived or non-archived
+    string Cluster;
+    string Owner;
+    string JobName;
+    string StartDate;
+    string EndDate;
+    string State;
+
+    ESParray<ESPstruct ApplicationValue> ApplicationValues;
+
+    int64 PageStartFrom;
+    unsigned PageSize;
+    string SortBy;
+    bool Descending(false);
+
+    int64 CacheHint;
+};
+
+
+ESPresponse [nil_remove, exceptions_inline] WULightWeightQueryResponse
+{
+    int NumWUs;
+    int64 CacheHint;
+    ESParray<ESPstruct ECLWorkunitLW> Workunits;
+};
 
 ESPrequest [nil_remove] WUUpdateRequest
 {
@@ -1689,6 +1738,7 @@ ESPservice [
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
+    ESPmethod WULightWeightQuery(WULightWeightQueryRequest, WULightWeightQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUInfo(WUInfoRequest, WUInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuiddetails.xslt")]     WUInfoDetails(WUInfoRequest, WUInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUGraphTiming(WUGraphTimingRequest, WUGraphTimingResponse);
