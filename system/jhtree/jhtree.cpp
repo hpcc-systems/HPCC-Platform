@@ -2869,7 +2869,7 @@ extern jhtree_decl IKeyManager *createSingleKeyMerger(IKeyIndex * _onekey, unsig
 
 class CKeyIndexSet : public CInterface, implements IKeyIndexSet
 {
-    IArrayOf<IKeyIndex> indexes;
+    IPointerArrayOf<IKeyIndex> indexes;
     offset_t recordCount;
     offset_t totalSize;
     StringAttr origFileName;
@@ -2878,9 +2878,9 @@ public:
     IMPLEMENT_IINTERFACE;
     
     virtual bool IsShared() const { return CInterface::IsShared(); }
-    void addIndex(IKeyIndex *i) { indexes.append(*i); }
+    void addIndex(IKeyIndex *i) { indexes.append(i); }
     virtual unsigned numParts() { return indexes.length(); }
-    virtual IKeyIndex *queryPart(unsigned partNo) { return &indexes.item(partNo); }
+    virtual IKeyIndex *queryPart(unsigned partNo) { return indexes.item(partNo); }
     virtual void setRecordCount(offset_t count) { recordCount = count; }
     virtual void setTotalSize(offset_t size) { totalSize = size; }
     virtual offset_t getRecordCount() { return recordCount; }

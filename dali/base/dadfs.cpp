@@ -3001,7 +3001,7 @@ public:
                     queryLogicalName(), superRepO);
     }
 
-    virtual void getSuperOwners(StringArray &owners)
+    void getSuperOwners(StringArray &owners)
     {
         if (root)
         {
@@ -4763,9 +4763,20 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 ForEach (*iter)
                 {
                     IDistributedFile *file = &iter->query();
-                    CDistributedFile *_file = QUERYINTERFACE(file, CDistributedFile);
+                    IDistributedSuperFile *super = file->querySuperFile();
                     StringArray owners;
-                    _file->getSuperOwners(owners);
+                    if (super)
+                    {
+                        CDistributedSuperFile *_super = QUERYINTERFACE(super, CDistributedSuperFile);
+                        if (_super)
+                            _super->getSuperOwners(owners);
+                    }
+                    else
+                    {
+                        CDistributedFile *_file = QUERYINTERFACE(file, CDistributedFile);
+                        if (_file)
+                            _file->getSuperOwners(owners);
+                    }
 
                     if (NotFound == owners.find(parentlname))
                         ThrowStringException(-1, "removeOwnedSubFiles: SuperFile %s, subfile %s - subfile not owned by superfile", parentlname.get(), file->queryLogicalName());
@@ -4935,27 +4946,6 @@ protected:
             throw exceptions.getClear();
     }
 
-    virtual void getSuperOwners(StringArray &owners)
-    {
-        ForEachItemIn(i, subfiles)
-        {
-            IDistributedFile *file = &subfiles.item(i);
-            IDistributedSuperFile *super = file->querySuperFile();
-            if (super)
-            {
-                CDistributedSuperFile *_super = QUERYINTERFACE(super, CDistributedSuperFile);
-                if (_super)
-                    _super->getSuperOwners(owners);
-            }
-            else
-            {
-                CDistributedFile *_file = QUERYINTERFACE(file, CDistributedFile);
-                if (_file)
-                    _file->getSuperOwners(owners);
-            }
-        }
-
-    }
     static StringBuffer &getSubPath(StringBuffer &path,unsigned idx)
     {
         return path.append("SubFile[@num=\"").append(idx+1).append("\"]");
