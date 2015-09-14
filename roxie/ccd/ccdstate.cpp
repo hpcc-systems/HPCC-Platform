@@ -614,18 +614,27 @@ protected:
                 const char *name = super.queryProp("@id");
                 if (name)
                 {
-                    const IResolvedFile *resolved = lookupFileName(name, false, true, true, NULL, true);
-                    if (resolved)
+                    try
                     {
-                        files.append(*const_cast<IResolvedFile *>(resolved));
-                        doPreload(0, resolved);
-                        Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
-                        ForEach(*it)
+                        const IResolvedFile *resolved = lookupFileName(name, false, true, true, NULL, true);
+                        if (resolved)
                         {
-                            unsigned channelNo = it->query().getPropInt("@channel", 0);
-                            assertex(channelNo);
-                            doPreload(channelNo, resolved);
+                            files.append(*const_cast<IResolvedFile *>(resolved));
+                            doPreload(0, resolved);
+                            Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
+                            ForEach(*it)
+                            {
+                                unsigned channelNo = it->query().getPropInt("@channel", 0);
+                                assertex(channelNo);
+                                doPreload(channelNo, resolved);
+                            }
                         }
+                    }
+                    catch (IException *E)
+                    {
+                        VStringBuffer msg("Failed to preload file %s for package node %s", name, queryId());
+                        EXCLOG(E, msg.str());
+                        E->Release();
                     }
                 }
             }
