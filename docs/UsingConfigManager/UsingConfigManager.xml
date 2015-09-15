@@ -748,7 +748,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Dali-Server-Include-XXX1-->
 
           <para>
-          
             <xi:include href="XMLGeneration/xml/dali.xsd.mod.xml"
                         xpointer="da.t1"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -772,7 +771,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Dali-Server-Include-XXX2-->
 
           <para>
-          
             <xi:include href="XMLGeneration/xml/dali.xsd.mod.xml"
                         xpointer="da.t2"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -793,7 +791,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-DaliServer-LDAP-Include-XXX3-->
 
           <para>
-            
             <xi:include href="XMLGeneration/xml/dali.xsd.mod.xml"
                         xpointer="da.t4"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -865,7 +862,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-DaFileSrv-Include-XXX4-->
 
           <para>
-
             <xi:include href="XMLGeneration/xml/dafilesrv.xsd.mod.xml"
                         xpointer="daFs.t"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -914,7 +910,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-DFUSrvr-Attr-Include-XXX6-->
 
           <para>
-            
             <xi:include href="XMLGeneration/xml/dfuserver.xsd.mod.xml"
                         xpointer="DF.t1"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -933,7 +928,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-DFUSrvr-SSH-Include-XXX7-->
 
           <para>
-              
             <xi:include href="XMLGeneration/xml/dfuserver.xsd.mod.xml"
                         xpointer="DF.t2"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1128,7 +1122,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-ECLAgent-Attr-Include-XXX8-->
 
           <para>
-           
             <xi:include href="XMLGeneration/xml/eclagent_config.xsd.mod.xml"
                         xpointer="EA.t1"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1147,7 +1140,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-ECLAgent-Options-Include-XXX9-->
 
           <para>
-
             <xi:include href="XMLGeneration/xml/eclagent_config.xsd.mod.xml"
                         xpointer="EA.t2"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1207,7 +1199,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--ECLCCServer-Include-cc.t2-XXX-X-->
 
           <para>
-         
             <xi:include href="XMLGeneration/xml/eclccserver.xsd.mod.xml"
                         xpointer="cc.t2"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1336,7 +1327,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--MyESP-Include-ESP.t6-XXX12-->
 
           <para>
-  
             <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="ESP.t6"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1362,11 +1352,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--MyESP-Include-ESP.t1-XXXIII-->
 
           <para>
-           
-             <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
+            <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="ESP.t1"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />  
-    
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
           <para>The following tables describe the ESPProcess Service Bindings,
@@ -1375,22 +1363,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--MyESP-Include-ES.t2-XXX-14-->
 
           <para>
-            
-           <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
+            <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="ESP.t2"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />  
-            
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
           <para>
             <!--MyESP-Include-ES.t3-XXX-15-->
 
- 
-           <!-- <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
+            <!-- <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="ES.t3"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />  -->
- 
-
           </para>
 
           <para />
@@ -1411,11 +1394,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--MyESP-Authentication-ES.t4-XXX-16-->
 
           <para>
-            
-           <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
+            <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="ESP.t4"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" /> 
-          
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
 
@@ -1432,11 +1413,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <!--MyESP-HTTPS.t5-XXX-17-->
 
-          <para> 
-           <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
+          <para>
+            <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="ESP.t5"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" /> 
-           </para>
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
         </sect3>
 
         <sect3>
@@ -1505,7 +1486,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--FTSlave-Include-XXX-18-->
 
           <para>
-          
             <xi:include href="XMLGeneration/xml/ftslave_linux.xsd.mod.xml"
                         xpointer="FTS.t1"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1536,6 +1516,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </para>
 
         <!--LdapServer-Include-fullDoc-XXX-19-->
+
         <xi:include href="XMLGeneration/xml/ldapserver.xsd.mod.xml"
                     xpointer="ldapSrv"
                     xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1554,8 +1535,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <orderedlist>
             <listitem>
               <para>On the <emphasis role="bold">Instances</emphasis> tab,
-              right-click on the table on the right hand side, choose <emphasis
-              role="bold">Add Instances...</emphasis></para>
+              right-click on the table on the right hand side, choose
+              <emphasis role="bold">Add Instances...</emphasis></para>
             </listitem>
 
             <listitem>
@@ -1636,7 +1617,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Sasha-Archiver-Include-XXX-21-->
 
           <para>
-            
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t2"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1658,7 +1638,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Sasha-Coaleser-Include-XXX-22-->
 
           <para>
-          
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t3"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1680,7 +1659,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Sasha-DfuXref-Include-XXX-23-->
 
           <para>
-            
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t4"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1704,7 +1682,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Sasha-DfuExpiry-Include-XXX-24-->
 
           <para>
-               
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t5"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1726,7 +1703,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Sasha-ThorQMon-IncludeXXX-25-->
 
           <para>
-              
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t6"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1748,7 +1724,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Sasha-DafiSrvMon-Include-XXX26-->
 
           <para>
-           
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="sh.t7"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1955,11 +1930,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>On systems with a lot of memory, the default 75% of physical
           memory is probably too conservative and reserving total physical
           minus 2GB (for the OS and other processes) is sensible. You should
-          then divide that number by the number of slavesPerNode. </para>
+          then divide that number by the number of slavesPerNode.</para>
 
           <para>If there are multiple Thors sharing the same nodes, then
-          globalMemorySize must be configured to take that into account.
-          </para>
+          globalMemorySize must be configured to take that into
+          account.</para>
 
           <para>For example, if there are 2 Thors each with 2 slaves per box,
           that will mean there are 4 slaves per physical node. So you should
@@ -1970,8 +1945,16 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>Without any specified setting, Thor assumes it has exclusive
           access to the memory and would therefore use too much (because each
-          Thor is unaware of the other's configuration and memory usage).
-          </para>
+          Thor is unaware of the other's configuration and memory
+          usage).</para>
+
+          <para>if <emphasis role="bold">localThor</emphasis> is set to true
+          and <emphasis role="bold">masterMemorySize</emphasis> and <emphasis
+          role="bold">globalMemorySize</emphasis> are unspecified, then the
+          defaults will be 50% for <emphasis
+          role="bold">globalMemorySize</emphasis> (divided by <emphasis
+          role="bold">slavesPerNode</emphasis>) and 25% for <emphasis
+          role="bold">masterMemorySize.</emphasis></para>
 
           <para>Although a configuration may be set using upper memory limits
           that exceed total physical memory, Thor will not actually reserve
@@ -2050,7 +2033,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <!--configMgr-Thor-Backup-Include-XXX-->
 
           <para>
-               <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
+            <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
                         xpointer="Th.t5"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
