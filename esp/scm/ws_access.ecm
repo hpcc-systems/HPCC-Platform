@@ -15,6 +15,24 @@
     limitations under the License.
 ############################################################################## */
 
+ESPenum UserSortBy : string
+{
+    Name("Name"),
+    FullName("FullName"),
+    PasswordExpiration("PasswordExpiration"),
+};
+
+ESPenum GroupSortBy : string
+{
+    Name("Name"),
+    ManagedBy("ManagedBy"),
+};
+
+ESPenum ResourceSortBy : string
+{
+    Name("Name"),
+};
+
 ESPstruct UserInfo
 {
     string username;
@@ -67,6 +85,24 @@ ESPresponse UserResponse
     bool toomany;
     bool posixok;
     ESParray<ESPstruct UserInfo, User> Users;
+};
+
+ESPrequest [nil_remove] UserQueryRequest
+{
+    string Name;
+    unsigned PageSize;
+    int64 PageStartFrom;
+    ESPenum UserSortBy SortBy;
+    bool Descending(false);
+    int64 CacheHint;
+};
+
+ESPresponse [nil_remove] UserQueryResponse
+{
+    bool NoSecMngr(false);
+    ESParray<ESPstruct UserInfo, User> Users;
+    int64 TotalUsers;
+    int64 CacheHint;
 };
 
 ESPrequest UserEditRequest
@@ -260,6 +296,23 @@ ESPresponse GroupResponse
     ESParray<ESPstruct GroupInfo, Group> Groups;
 };
 
+ESPrequest [nil_remove] GroupQueryRequest
+{
+    unsigned PageSize;
+    int64 PageStartFrom;
+    ESPenum GroupSortBy SortBy;
+    bool Descending(false);
+    int64 CacheHint;
+};
+
+ESPresponse [nil_remove] GroupQueryResponse
+{
+    bool NoSecMngr(false);
+    ESParray<ESPstruct GroupInfo, Group> Groups;
+    int64 TotalGroups;
+    int64 CacheHint;
+};
+
 ESPrequest GroupAddRequest
 {
     string groupname;
@@ -299,6 +352,24 @@ ESPresponse GroupEditResponse
 {
     string groupname;
     ESParray<ESPstruct UserInfo, User> Users;
+};
+
+ESPrequest [nil_remove] GroupMemberQueryRequest
+{
+    string GroupName;
+    unsigned PageSize;
+    int64 PageStartFrom;
+    ESPenum UserSortBy SortBy;
+    bool Descending(false);
+    int64 CacheHint;
+};
+
+ESPresponse [nil_remove] GroupMemberQueryResponse
+{
+    bool NoSecMngr(false);
+    ESParray<ESPstruct UserInfo, User> Users;
+    int64 TotalUsers;
+    int64 CacheHint;
 };
 
 ESPrequest GroupMemberEditInputRequest
@@ -385,6 +456,28 @@ ESPresponse ResourcesResponse
     string prefix;
     [min_ver("1.05")] bool toomany;
     [min_ver("1.08")] ESPstruct ScopeScanStatusStruct scopeScansStatus;
+};
+
+ESPrequest [nil_remove] ResourceQueryRequest
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string prefix;
+    string Name;
+    unsigned PageSize;
+    int64 PageStartFrom;
+    ESPenum ResourceSortBy SortBy;
+    bool Descending(false);
+    int64 CacheHint;
+};
+
+ESPresponse [nil_remove] ResourceQueryResponse
+{
+    bool NoSecMngr(false);
+    ESParray<ESPstruct Resource, Resource> Resources;
+    int64 TotalResources;
+    int64 CacheHint;
 };
 
 ESPrequest ResourceAddInputRequest
@@ -735,7 +828,10 @@ ESPservice [version("1.09"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws
     ESPmethod [client_xslt("/esp/xslt/access_disablescopescans.xslt")] DisableScopeScans(DisableScopeScansRequest, DisableScopeScansResponse);
     //ESPmethod [client_xslt("/esp/xslt/access_useraccountexport.xslt")] UserAccountExport(UserAccountExportRequest, UserAccountExportResponse);
     ESPmethod UserAccountExport(UserAccountExportRequest, UserAccountExportResponse);
-
+    ESPmethod UserQuery(UserQueryRequest, UserQueryResponse);
+    ESPmethod GroupQuery(GroupQueryRequest, GroupQueryResponse);
+    ESPmethod GroupMemberQuery(GroupMemberQueryRequest, GroupMemberQueryResponse);
+    ESPmethod ResourceQuery(ResourceQueryRequest, ResourceQueryResponse);
 };
 
 SCMexportdef(ws_access);

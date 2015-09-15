@@ -371,6 +371,7 @@ public:
     virtual ISecUser * findUser(const char * username);
     virtual ISecUserIterator * getAllUsers();
     virtual void searchUsers(const char* searchstr, IUserArray& users);
+    virtual ISecItemIterator* getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
     virtual void getAllUsers(IUserArray& users);
     virtual void setExtraParam(const char * name, const char * value);
     virtual IAuthMap * createAuthMap(IPropertyTree * authconfig);
@@ -384,10 +385,14 @@ public:
 
     virtual bool getResources(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& resources);
     virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char * searchstr, IArrayOf<ISecResource>& resources);
+    virtual ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char* basedn, const char* resourceName, unsigned extraNameFilter,
+        ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
     virtual void cacheSwitch(SecResourceType rtype, bool on);
 
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions);
     virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions);
+    virtual ISecItemIterator* getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
+    virtual ISecItemIterator* getGroupMembersSorted(const char* groupName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
     virtual void getGroups(const char* username, StringArray & groups);
     virtual bool changePermission(CPermissionAction& action);
     virtual void changeUserGroup(const char* action, const char* username, const char* groupname);

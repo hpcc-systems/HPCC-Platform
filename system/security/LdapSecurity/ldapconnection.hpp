@@ -70,7 +70,50 @@ enum ACT_TYPE
     USER_ACT = 0,
     GROUP_ACT = 1
 };
-    
+
+enum UserField
+{
+    UFUserID = 0,
+    UFName = 1,
+    UFFullName = 2,
+    UFPasswordExpiration = 3,
+    UFterm = 4,
+    UFreverse = 256,
+    UFnocase = 512,
+    UFnumeric = 1024
+};
+
+enum GroupField
+{
+    GFName = 0,
+    GFManagedBy = 1,
+    GFDesc = 2,
+    GFterm = 3,
+    GFreverse = 256,
+    GFnocase = 512,
+    GFnumeric = 1024
+};
+
+#define RF_NONE                     0x00
+#define RF_RT_FILE_SCOPE_FILE       0x01
+#define RF_RT_MODULE_NO_REPOSITORY  0x02
+
+enum ResourceField
+{
+    RFName = 0,
+    RFDesc = 1,
+    RFterm = 2,
+    RFreverse = 256,
+    RFnocase = 512,
+    RFnumeric = 1024
+};
+
+extern __declspec(dllimport) const char* getUserFieldNames(UserField feild);
+extern __declspec(dllimport) const char* getGroupFieldNames(GroupField feild);
+extern __declspec(dllimport) const char* getResourceFieldNames(ResourceField feild);
+
+typedef IIteratorOf<IPropertyTree> ISecItemIterator;
+
 interface IPermissionProcessor;
 
 interface ILdapConnection : extends IInterface
@@ -170,7 +213,16 @@ interface ILdapClient : extends IInterface
     virtual void setPermissionProcessor(IPermissionProcessor* pp) = 0;
     virtual bool retrieveUsers(IUserArray& users) = 0;
     virtual bool retrieveUsers(const char* searchstr, IUserArray& users) = 0;
+    virtual IPropertyTreeIterator* getUserIterator(const char* userName) = 0;
+    virtual ISecItemIterator* getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+        unsigned *total, __int64 *cachehint) = 0;
     virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions) = 0;
+    virtual IPropertyTreeIterator* getGroupIterator() = 0;
+    virtual ISecItemIterator* getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+        unsigned *total, __int64 *cachehint) = 0;
+    virtual IPropertyTreeIterator* getGroupMemberIterator(const char* groupName) = 0;
+    virtual ISecItemIterator* getGroupMembersSorted(const char* groupName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+        unsigned *total, __int64 *cachehint) = 0;
     virtual void setResourceBasedn(const char* rbasedn, SecResourceType rtype = RT_DEFAULT) = 0;
     virtual ILdapConfig* getLdapConfig() = 0;
     virtual bool userInGroup(const char* userdn, const char* groupdn) = 0;
@@ -179,6 +231,10 @@ interface ILdapClient : extends IInterface
     virtual bool updateUserPassword(const char* username, const char* newPassword) = 0;
     virtual bool getResources(SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources) = 0;
     virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char* prefix, const char* searchstr, IArrayOf<ISecResource>& resources) = 0;
+    virtual IPropertyTreeIterator* getResourceIterator(SecResourceType rtype, const char * basedn, const char* prefix,
+        const char* resourceName, unsigned extraNameFilter) = 0;
+    virtual ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char * basedn, const char* resourceName, unsigned extraNameFilter,
+        ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned *total, __int64 *cachehint) = 0;
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions) = 0;
     virtual bool changePermission(CPermissionAction& action) = 0;
     virtual void changeUserGroup(const char* action, const char* username, const char* groupname) = 0;

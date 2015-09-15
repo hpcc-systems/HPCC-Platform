@@ -88,12 +88,16 @@ public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
 
     virtual bool onUsers(IEspContext &context, IEspUserRequest &req, IEspUserResponse &resp);
+    virtual bool onUserQuery(IEspContext &context, IEspUserQueryRequest &req, IEspUserQueryResponse &resp);
     virtual bool onUserEdit(IEspContext &context, IEspUserEditRequest &req, IEspUserEditResponse &resp);
     virtual bool onGroups(IEspContext &context, IEspGroupRequest &req, IEspGroupResponse &resp);
+    virtual bool onGroupQuery(IEspContext &context, IEspGroupQueryRequest &req, IEspGroupQueryResponse &resp);
+    virtual bool onGroupMemberQuery(IEspContext &context, IEspGroupMemberQueryRequest &req, IEspGroupMemberQueryResponse &resp);
     virtual bool onAddUser(IEspContext &context, IEspAddUserRequest &req, IEspAddUserResponse &resp);
     virtual bool onUserAction(IEspContext &context, IEspUserActionRequest &req, IEspUserActionResponse &resp);
     virtual bool onPermissions(IEspContext &context, IEspBasednsRequest &req, IEspBasednsResponse &resp);
     virtual bool onResources(IEspContext &context, IEspResourcesRequest &req, IEspResourcesResponse &resp);
+    virtual bool onResourceQuery(IEspContext &context, IEspResourceQueryRequest &req, IEspResourceQueryResponse &resp);
     virtual bool onResourceAdd(IEspContext &context, IEspResourceAddRequest &req, IEspResourceAddResponse &resp);
     virtual bool onResourceAddInput(IEspContext &context, IEspResourceAddInputRequest &req, IEspResourceAddInputResponse &resp);
     virtual bool onResourcePermissions(IEspContext &context, IEspResourcePermissionsRequest &req, IEspResourcePermissionsResponse &resp);
