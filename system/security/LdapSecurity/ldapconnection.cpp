@@ -1004,6 +1004,24 @@ private:
     LDAPMessage *   m_pPageEntry;
     LDAPMessage *   m_pPageBlock;
 
+    //local helper class, ensures ldap Page Control memory freed
+    class CPageControlMemWrapper
+    {
+        LDAPControl *   m_pageControl;
+        LDAPControl **  m_returnedCtrls;
+    public:
+        CPageControlMemWrapper()                        { m_pageControl = NULL; m_returnedCtrls = NULL; }
+        void setPageControl(LDAPControl * _pageCtrl)    { m_pageControl = _pageCtrl; }
+        void setRetControls(LDAPControl ** _retCtrls)   { m_returnedCtrls = _retCtrls; }
+        virtual ~CPageControlMemWrapper()
+        {
+            if (m_pageControl)
+                ldap_control_free(m_pageControl);
+            if (m_returnedCtrls)
+                ldap_controls_free(m_returnedCtrls);
+        }
+    };
+
     //---------------------------------------------------
     // Request next page of search results
     //---------------------------------------------------
@@ -1011,17 +1029,19 @@ private:
     {
         if (!m_morePages)
             return false;
-        LDAPControl * pageControl = NULL;
-        LDAPControl **  returnedCtrls = NULL;
+
+        CPageControlMemWrapper pageCtrlMem;
+
         try
         {
+            LDAPControl * pageControl = NULL;
             int rc = ldap_create_page_control(m_pLdapConn, MAX_ENTRIES, m_pCookie, false, &pageControl);//cookie gets set on first call to ldap_parse_page_control()
             if (rc != LDAP_SUCCESS)
             {
                 int err = GetLastError();
                 throw MakeStringException(-1, "ldap_create_page_control failed with 0x%x (%s)",err, ldap_err2string( err ));
             }
-
+            pageCtrlMem.setPageControl(pageControl);
             LDAPControl * svrCtrls[] = { pageControl, NULL };
 
             if (m_pPageBlock)
@@ -1033,7 +1053,6 @@ private:
                 int err = GetLastError();
                 if (err && rc != LDAP_PARTIAL_RESULTS)//389DirectoryServer sometimes returns rc, but GetLastError returns 0. In this scenario continuing the query succeeds
                 {
-                    ldap_control_free(pageControl);
                     if (m_pCookie)
                     {
                         ber_bvfree(m_pCookie);
@@ -1044,6 +1063,7 @@ private:
             }
 
             int l_errcode;
+            LDAPControl **  returnedCtrls = NULL;
             rc = ldap_parse_result(m_pLdapConn, m_pPageBlock, &l_errcode, NULL, NULL, NULL, &returnedCtrls, false);
 
             if (m_pCookie)
@@ -1054,34 +1074,21 @@ private:
 
             if (rc != LDAP_SUCCESS)
             {
-                ldap_control_free(pageControl);
                 int err = GetLastError();
                 throw MakeStringException(-1, "ldap_parse_result failed with 0x%x (%s)",err, ldap_err2string( err ));
             }
 
+            pageCtrlMem.setRetControls(returnedCtrls);
             int totCount;
             rc = ldap_parse_page_control(m_pLdapConn, returnedCtrls, &totCount, &m_pCookie);//sets cookie for next call to ldap_create_page_control()
             if (rc != LDAP_SUCCESS)
             {
-                ldap_control_free(pageControl);
-                if (returnedCtrls)
-                {
-                    ldap_controls_free(returnedCtrls);
-                    returnedCtrls = NULL;
-                }
                 int err = GetLastError();
                 throw MakeStringException(-1, "ldap_parse_page_control failed with 0x%x (%s)",err, ldap_err2string( err ));
             }
 
             if (!(m_pCookie && m_pCookie->bv_val != NULL && (strlen(m_pCookie->bv_val) > 0)))
                 m_morePages = false;
-
-            if (returnedCtrls)
-            {
-                ldap_controls_free(returnedCtrls);
-                returnedCtrls = NULL;
-            }
-            ldap_control_free(pageControl);
         }
 
         catch(IException* e)
@@ -1093,18 +1100,6 @@ private:
 
         catch(...)
         {
-            if (pageControl)
-            {
-                ldap_control_free(pageControl);
-                pageControl = NULL;
-            }
-
-            if (returnedCtrls)
-            {
-                ldap_controls_free(returnedCtrls);
-                returnedCtrls = NULL;
-            }
-
             throw MakeStringException(-1, "Unknown Exception calling LDAP Paged Search");
         }
 
