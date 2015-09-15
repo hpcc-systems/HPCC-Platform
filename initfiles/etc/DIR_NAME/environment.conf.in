@@ -29,3 +29,4 @@ mpTraceLevel=0
 #dfsUseSSL=false
 #dfsSSLCertFile=/certfilepath/certfile
 #dfsSSLPrivateKeyFile=/keyfilepath/keyfile
+jvmoptions=-XX:-UsePerfData
