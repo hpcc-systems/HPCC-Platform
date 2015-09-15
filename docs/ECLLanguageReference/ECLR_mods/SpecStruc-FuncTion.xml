@@ -44,9 +44,9 @@
         <row>
           <entry><emphasis>parameterlist</emphasis></entry>
 
-          <entry>The parameters to pass to the <emphasis>code</emphasis>.
-          These are available to all attributes defined in the FUNCTION's
-          <emphasis>code</emphasis>.</entry>
+          <entry>A comma separated list of the parameters to pass to the
+          <emphasis>function</emphasis>. These are available to all attributes
+          defined in the FUNCTION's <emphasis>code</emphasis>.</entry>
         </row>
 
         <row>
