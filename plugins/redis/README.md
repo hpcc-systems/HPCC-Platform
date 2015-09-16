@@ -45,7 +45,7 @@ The Actual Plugin
 -----------------
 
 The bulk of this redis plugin for **ECL** is made up of the various `SET` and `GET` commands e.g. `GetString` or `SetReal`. They are accessible via the module `redis`
-from the redis plugin **ECL** library `lib-redis`. i.e.
+from the redis plugin **ECL** [library](https://github.com/hpcc-systems/HPCC-Platform/blob/master/plugins/redis/lib_redis.ecllib) `lib-redis`. i.e.
 ```
 IMPORT redis FROM lib_redis;
 ```
@@ -91,8 +91,7 @@ The core points to note here are:
    STRING of length 8, set with SetString, being successfully retrieved from the cache via GetInteger without an **ECL** exception being thrown.
    * `CONST VARSTRING options` passes the server **IP** and **port** to the plugin in the *strict* format - `--SERVER=<ip>:<port>`. If `options` is empty, the default
    127.0.0.1:6379 is used. *Note:* 6379 is the default port for **redis-server**.
-   * `UNSIGNED timeout` has units *ms* and has a default value of 1 second. This is not a timeout duration for an entire plugin call but rather that set for each
-   communication transaction with the redis server. *c.f.* 'Behaviour and Implementation Details' below.
+   * `UNSIGNED timeout` has units *ms* and has a default value of 1 second. *c.f.* 'Timeout Values' below for advice on choosing appropriate values.
    * `UNSIGNED expire` has units *ms* and a default of **0**, i.e. *forever*.
 
 ###The redisServer MODULE
@@ -106,7 +105,7 @@ myRedis.GetString('myKey');
 ```
 
 ###A Redis 'Database'
-The notion of a *database* within a redis cache is a that of an UNSIGNED INTEGER, effectively partitioning the cache such that it may contain an identical key per database e.g.
+The notion of a *database* within a redis cache is that of a partition, such that it may contain an identical key per database e.g.
 ```
 myRedis.SetString('myKey', 'foo', 0);
 myRedis.SetString('myKey', 'bar', 1);
@@ -114,7 +113,8 @@ myRedis.SetString('myKey', 'bar', 1);
 myRedis.GetString('myKey', 0);//returns 'foo'
 myRedis.GetString('myKey', 1);//returns 'bar'
 ```
-*Note:* that the default database is 0.
+
+*Note:* that the default database is 0. The maximum number of databases allowed by **Redis** is 32768 (+ve range of int32).
 
 
 Race Retrieval and Locking Keys
@@ -152,12 +152,27 @@ SEQUENTIAL(
     );
 ```
 
+*Note:* further **ECL** examples can be found in the following files regarding the [locking](https://github.com/hpcc-systems/HPCC-Platform/blob/master/testing/regress/ecl/redislockingtest.ecl) and [non-locking](https://github.com/hpcc-systems/HPCC-Platform/blob/master/testing/regress/ecl/redissynctest.ecl) functions.
+
+###Timeout Values
+The timeout durations are effectively for the entire duration of a call to each of the functions exported by this plugin library. By 'effectively', it is meant that a timer is
+initiated at the start of each call and upon each internal communication with the redis server, any time remaining (at this point) is the timeout value passed to the redis API
+(hiredis) for that communication call. Since some plugin functions make more calls to the server than others (*c.f.* 'Behaviour and Implementation Details' below) it is
+possible for those functions with more server calls to timeout more regularly than those with less. To avoid this, it is advised to set the timeouts to a multiple of the
+anticipated latency of the client-server-IO, where such multiple should be at least the maximum expected number of internal redis calls made by these plugin functions, e.g. 12.
+
+When using the **ECL** pattern described in the above section *An ECL Example*, it is required to set the timeout and lock expiration to be equal to the timeout (if any)
+of `myFunc` **+** that passed to `SetAndPublish<type>`, such that both the lock and waiting subscribers live long enough for a value to be set/published.
+
+It should also be noted that, whilst it is possible to set different values for `timeout` and `expire` to the function `GetOrLock<type>`, it is advisable not to.
+This is such that the lock does not out live all waiting subscribers that collectively timeout and thus not blocking any subsequent retries of the locking pattern.
+
 Behaviour and Implementation Details
 ------------------------------------
 A few notes to point out here:
    * PUB-SUB channels are not disconnected from the keyspace as they are in their native redis usage. The key itself is used as the lock with its value being set as the channel to later
-   PUBLISH on or SUBSCRIBE to. This channel is a string, unique by only the *key* and *database*, prefixed with **'redis_ecl_lock'**.
-   * The lock itself is set to expire with a duration equal to the `timeout` value passed to the `GetOrLock<type>` function (default 1s).
+   PUBLISH on or SUBSCRIBE to. This channel is a string, unique by only the *key* and *database*, prefixed with **'redis_ecl_lock'**. E.g. the *key* 'myKey' designated for *database* 1,
+   will have the following lock id - 'redis_ecl_lock_myKey_1'.
    * It is possible to manually 'unlock' this lock (`DELETE` the key) via the `Unlock(<key>)` function. *Note:* this function will fail on any communication or reply error however,
    it will **silently fail**, leaving the lock to expire, if the server observes any change to the key during the function call duration.
    * When the *race-winner* publishes, it actually publishes the value itself and that any subscriber will then obtain the key-value in this fashion. Therefore, not requiring an
@@ -165,10 +180,8 @@ A few notes to point out here:
     have the key-value received on another, and yet, the key-value still does not exist on the cache.
    * At present the 'lock' is not as such an actual lock, as only the locking functions acknowledge it. By current implementation it is better thought as a flag for
    `GET` to wait and subscribe. I.e. the locked key can be deleted and re-set just as any other key can be.
-   * Since the timeout duration is not for an individual plugin call but instead that waiting for each reply from the server, the actual possible maximum timeout duration differs from
-     various functions within this plugin, i.e. some functions do more than others. Below is a table for each of the plugin functions (or categories of) including the maximum possible and
-     nominal expected, where the latter is due to using a cached connection, i.e. neither the server IP, port, nor password have changed from the function called prior to the one in
-     question. The values given are multiples of the given timeout.
+   * Below is a table of the number of calls to the redis server for each of the plugin functions (or categories of) including the maximum possible and nominal expected, where the
+   latter is due to using a cached connection, i.e. neither the server IP, port, nor password have changed from the function called prior to the one in question.
 
 | Operation/Function  | Nominal | Maximum | Diff due to...   |
 |:--------------------|:-------:|:-------:|-----------------:|
