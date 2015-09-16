@@ -167,7 +167,7 @@ STRING opNotPerm :=  'Redis Plugin: ERROR - authentication for 127.0.0.1:6379 fa
 ds1 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis4.GetString('authTest' + (string)COUNTER)));
 SEQUENTIAL(
     myRedis.FlushDB();
-    OUTPUT(CATCH(ds1, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = noauth OR FAILMESSAGE = opNotPerm, 'Auth Failed', 'Unexpected Error')))));
+    OUTPUT(CATCH(ds1, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = noauth OR FAILMESSAGE = opNotPerm, 'Auth Failed', 'Unexpected Error - ' + FAILMESSAGE)))));
     );
 
 ds2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetString('authTest' + (string)COUNTER)));
