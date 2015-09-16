@@ -264,7 +264,7 @@ class Regression:
                                 if self.taskParam[threadId]['retryCount'] > 0:
                                     self.timeouts[threadId] =  self.taskParam[threadId]['timeoutValue']
                                     self.loggermutex.acquire()
-                                    logging.warn("%3d. Does not started yet. Reset timeout to %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                    logging.warn("%3d. Has not started yet. Reset due to timeout after %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                     logging.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (self.taskParam[threadId]['taskId']+1, threadId,  suiteItems[self.taskParam[threadId]['taskId']].ecl,   wuid['state'],  self.taskParam[threadId]['retryCount'] ),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                     self.loggermutex.release()
                                 else:
@@ -281,7 +281,7 @@ class Regression:
                                         self.exitmutexes[threadId].release()
                                         self.loggermutex.acquire()
                                         query = suiteItems[self.taskParam[threadId]['taskId']]
-                                        query.setAborReason('Timeout (does not started yet and retry count exhausted)')
+                                        query.setAborReason('Timeout (has not started yet and retry count exhausted)')
                                         logging.info("%3d. Timeout occured and no more attempt left. Force to abort... " % (self.taskParam[threadId]['taskId']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                         logging.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                         self.loggermutex.release()
@@ -343,20 +343,21 @@ class Regression:
         self.timeoutThread.start()
 
     def CheckTimeout(self, cnt,  threadId,  query):
+        defSleepTime=0.1
         while  self.exitmutexes[threadId].locked():
-            sleepTime = 1.0
+            sleepTime = defSleepTime
             if self.timeouts[threadId] >= 0:
                 self.loggermutex.acquire()
                 logging.debug("%3d. timeout counter:%d" % (cnt, self.timeouts[threadId]),  extra={'taskId':cnt})
                 self.loggermutex.release()
-                sleepTime = 1.0
+                sleepTime = defSleepTime
             if self.timeouts[threadId] == 0:
                 wuid =  queryWuid(query.getJobname(),  query.getTaskId())
                 self.retryCount -= 1;
                 if self.retryCount> 0:
                     self.timeouts[threadId] =  self.timeout
                     self.loggermutex.acquire()
-                    logging.warn("%3d. Does not started yet. Reset timeout to %d sec (%d retry attempt(s) remains)." % (cnt, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
+                    logging.warn("%3d. Has not started yet. Reset due to timeout after %d sec (%d retry attempt(s) remain)." % (cnt, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
                     logging.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (cnt, threadId,  query.ecl,   wuid['state'],  self.retryCount),  extra={'taskId':cnt})
                     self.loggermutex.release()
                 else:
