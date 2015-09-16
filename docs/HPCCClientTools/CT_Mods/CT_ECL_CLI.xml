@@ -248,20 +248,24 @@ ECL_RESULT_LIMIT
       <sect2 role="brk">
         <title>ecl deploy</title>
 
-        <para><emphasis role="bold">ecl deploy --target=&lt;value&gt;
-        --name=&lt;value&gt; &lt;ecl_file | - &gt; </emphasis></para>
+        <para><emphasis role="bold">ecl deploy &lt;target&gt; &lt;file&gt;
+        [--name=&lt;value&gt;] </emphasis></para>
 
-        <para><emphasis role="bold">ecl deploy --target=&lt;value&gt;
-        --name=&lt;value&gt; &lt;archive | - &gt; </emphasis></para>
+        <para><emphasis role="bold">ecl deploy &lt;target&gt; &lt;archive&gt;
+        [--name=&lt;value&gt;] </emphasis></para>
 
-        <para><emphasis role="bold">ecl deploy [--target=&lt;value&gt;]
-        [--name=&lt;value&gt;] &lt;so | dll | - &gt;</emphasis></para>
+        <para><emphasis role="bold">ecl deploy &lt;target&gt; &lt;so | dll
+        &gt; [--name=&lt;value&gt;] </emphasis></para>
+
+        <para><emphasis role="bold">ecl deploy &lt;target&gt; -
+        [--name=&lt;val&gt;]</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl deploy --target=roxie --name=FindPersonService findperson.ecl
-ecl deploy --target=roxie --name=FindPersonService ArchiveQuery.xml
-ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
+        <programlisting>ecl deploy roxie findperson.ecl --name=FindPersonService 
+ecl deploy roxie ArchiveQuery.xml --name=FindPersonService 
+ecl deploy roxie libW20150914-125557.so --name=FindPersonService 
+ecl deploy roxie - --name=FindPersonService 
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -288,7 +292,13 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
                 </row>
 
                 <row>
-                  <entry>ecl_file</entry>
+                  <entry>target</entry>
+
+                  <entry>The target cluster to which to deploy </entry>
+                </row>
+
+                <row>
+                  <entry>file</entry>
 
                   <entry>The ECL text file to deploy</entry>
                 </row>
@@ -296,7 +306,7 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
                 <row>
                   <entry>archive</entry>
 
-                  <entry>TheECL archive to deploy</entry>
+                  <entry>The ECL archive to deploy</entry>
                 </row>
 
                 <row>
@@ -307,19 +317,19 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry>-</entry>
+
+                  <entry>Specifies object should be read from stdin</entry>
                 </row>
 
                 <row>
-                  <entry>-t, --target</entry>
-
-                  <entry>The target cluster to associate workunit with</entry>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
                 </row>
 
                 <row>
                   <entry>-n, --name</entry>
 
-                  <entry>The workunit query name</entry>
+                  <entry>The published query name</entry>
                 </row>
 
                 <row>
@@ -363,8 +373,8 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
                 <row>
                   <entry>--main</entry>
 
-                  <entry>The definition to use from legacy ECL
-                  repository</entry>
+                  <entry>The definition to use from legacy ECL repository
+                  </entry>
                 </row>
 
                 <row>
@@ -408,30 +418,30 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
       <sect2 role="brk">
         <title>ecl publish</title>
 
-        <para><emphasis role="bold">ecl publish [--target=&lt;val&gt;]
-        [--name=&lt;val&gt;] [--activate | --no-activate] &lt;wuid&gt;
-        </emphasis></para>
+        <para><emphasis role="bold">ecl publish &lt;target&gt; &lt;file&gt;
+        [--name=&lt;val&gt;] </emphasis></para>
 
-        <para><emphasis role="bold">ecl publish [--target=&lt;val&gt;]
-        [--name=&lt;val&gt;] [--activate | --no-activate] &lt;so | dll | -
-        &gt;</emphasis></para>
+        <para><emphasis role="bold">ecl publish &lt;target&gt; &lt;wuid&gt;
+        [--name=&lt;val&gt;] </emphasis></para>
 
-        <para><emphasis role="bold">ecl publish --target=&lt;val&gt;
-        --name=&lt;val&gt; [--activate | --no-activate] &lt;archive | - &gt;
-        </emphasis></para>
+        <para><emphasis role="bold">ecl publish &lt;target&gt; &lt;so |
+        dll&gt; [--name=&lt;val&gt;] </emphasis></para>
 
-        <para><emphasis role="bold">ecl publish --target=&lt;val&gt;
-        --name=&lt;val&gt; [--activate | --no-activate] &lt;ecl_file | -
-        &gt;</emphasis></para>
+        <para><emphasis role="bold">ecl publish &lt;target&gt; &lt;archive&gt;
+        [--name=&lt;val&gt;] </emphasis></para>
+
+        <para><emphasis role="bold">ecl publish &lt;target&gt; -
+        [--name=&lt;val&gt;] </emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl publish --target=roxie --name=FindPersonService -A W20120224-125557
-ecl publish --target=roxie --name=FindPersonService -A libW20120224-125557.so
-ecl publish --target=roxie --name=FindPersonService -A ArchiveQuery.xml
-ecl publish --target=roxie --name=FindPersonService --activate findperson.ecl
-ecl publish --target=roxie --name=FindPersonService --activate --no-files findperson.ecl
-ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
+        <programlisting>ecl publish roxie findperson.ecl --name=FindPersonService -A 
+ecl publish roxie W20150914-125557 --name=FindPersonService -A 
+ecl publish roxie libW20150914-125557.so --name=FindPersonService -A 
+ecl publish roxie ArchiveQuery.xml --name=FindPersonService -A 
+ecl publish roxie - --name=FindPersonService --activate
+ecl publish roxie findperson.ecl --name=FindPersonService --no-activate 
+ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate 
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -457,28 +467,40 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 </row>
 
                 <row>
+                  <entry>target</entry>
+
+                  <entry>The target cluster to which to publish</entry>
+                </row>
+
+                <row>
                   <entry>wuid</entry>
 
                   <entry>The workunit id to publish</entry>
                 </row>
 
                 <row>
-                  <entry>ecl_file</entry>
+                  <entry>file</entry>
 
-                  <entry>The ECL text file to deploy</entry>
+                  <entry>The ECL text file to publish</entry>
                 </row>
 
                 <row>
                   <entry>archive</entry>
 
-                  <entry>The ECL archive to deploy</entry>
+                  <entry>The ECL archive to publish</entry>
                 </row>
 
                 <row>
                   <entry>so | dll</entry>
 
                   <entry>The workunit dynamic linked library or shared object
-                  to deploy</entry>
+                  to publish</entry>
+                </row>
+
+                <row>
+                  <entry>-</entry>
+
+                  <entry>Specifies object should be read from stdin</entry>
                 </row>
 
                 <row>
@@ -486,15 +508,9 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 </row>
 
                 <row>
-                  <entry>-t, --target</entry>
-
-                  <entry>The target cluster to associate workunit with</entry>
-                </row>
-
-                <row>
                   <entry>-n, --name</entry>
 
-                  <entry>The workunit job name</entry>
+                  <entry>The published query name</entry>
                 </row>
 
                 <row>
@@ -749,33 +765,35 @@ ecl unpublish roxie "FindpersonService*"
       <sect2 role="brk">
         <title>ecl run</title>
 
-        <para><emphasis role="bold">ecl run
-        [--target=&lt;val&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
-        &lt;wuid&gt; </emphasis></para>
+        <para><emphasis role="bold">ecl run &lt;target&gt; &lt;file&gt;
+        [--name=&lt;val&gt;] [--input=&lt;file|xml&gt;] [--wait=&lt;i&gt;]
+        </emphasis></para>
 
-        <para><emphasis role="bold">ecl run
-        [--target=&lt;c&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
-        &lt;queryset&gt; &lt;query&gt; </emphasis></para>
+        <para><emphasis role="bold">ecl run &lt;target&gt; &lt;wuid&gt;
+        [--input=&lt;file|xml&gt;] [--wait=&lt;ms&gt;]</emphasis></para>
 
-        <para><emphasis role="bold">ecl run
-        [--target=&lt;c&gt;][--name=&lt;nm&gt;][--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
-        &lt;dll|-&gt; </emphasis></para>
+        <para><emphasis role="bold">ecl run &lt;target&gt; &lt;query&gt;
+        [--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]</emphasis></para>
 
-        <para><emphasis role="bold">ecl run --target=&lt;c&gt;
-        --name=&lt;nm&gt; [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
-        &lt;archive|-&gt; </emphasis></para>
+        <para><emphasis role="bold">ecl run &lt;target&gt; &lt;so | dll&gt;
+        [--name=&lt;val&gt;][--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]</emphasis></para>
 
-        <para><emphasis role="bold">ecl run --target=&lt;c&gt;
-        --name=&lt;nm&gt; [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
-        &lt;eclfile|-&gt;</emphasis></para>
+        <para><emphasis role="bold">ecl run &lt;target&gt; &lt;archive&gt;
+        --name=&lt;val&gt;
+        [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]</emphasis></para>
+
+        <para><emphasis role="bold">ecl run &lt;target&gt; -
+        --name=&lt;val&gt;
+        [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]</emphasis></para>
 
         <para><emphasis role="bold">Examples</emphasis>:</para>
 
-        <programlisting>ecl run --target=thor --input=data.xml --wait=1000 W20120224-125557
-ecl run --target=thor --input=data.xml --wait=1000 thor findpersonservice
-ecl run --target=thor --input=data.xml --wait=1000 ArchiveQuery.xml
-ecl run --target=thor --input=data.xml --wait=1000 findperson.ecl
-ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" findperson.ecl
+        <programlisting>ecl run thor findperson.ecl --name=findperson --input=data.xml --wait=1000
+ecl run thor W20150914-125557 --input=data.xml --wait=1000
+ecl run thor findperson --input=data.xml --wait=1000
+ecl run thor libW20150914-125557.so --input=data.xml --wait=1000
+ecl run thor - --input=data.xml --wait=1000
+ecl run thor findperson.ecl --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" 
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -799,38 +817,44 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 </row>
 
                 <row>
-                  <entry>wuid</entry>
+                  <entry>target</entry>
 
-                  <entry>The workunit id to publish</entry>
+                  <entry>The target cluster to which to publish</entry>
                 </row>
 
                 <row>
-                  <entry>ecl_file</entry>
+                  <entry>wuid</entry>
 
-                  <entry>The ECL text file to deploy</entry>
+                  <entry>The workunit id to run</entry>
+                </row>
+
+                <row>
+                  <entry>file</entry>
+
+                  <entry>The ECL text file to run</entry>
                 </row>
 
                 <row>
                   <entry>archive</entry>
 
-                  <entry>TheECL archive to deploy</entry>
+                  <entry>The ECL archive to run</entry>
                 </row>
 
                 <row>
                   <entry>so | dll</entry>
 
                   <entry>The workunit dynamic linked library or shared object
-                  to deploy</entry>
+                  to run</entry>
+                </row>
+
+                <row>
+                  <entry>-</entry>
+
+                  <entry>Specifies object should be read from stdin</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
-                </row>
-
-                <row>
-                  <entry>-t, --target</entry>
-
-                  <entry>The target cluster to associate workunit with</entry>
                 </row>
 
                 <row>
