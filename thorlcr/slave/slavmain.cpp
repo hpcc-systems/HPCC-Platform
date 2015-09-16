@@ -366,10 +366,7 @@ public:
                             msg.append(false);
                             Owned<CSlaveGraph> graph = (CSlaveGraph *)job->getGraph(gid);
                             if (graph)
-                            {
-                                graph->getDone(msg);
-                                graph->join(); // graph will wind-up.
-                            }
+                                graph->getDone(msg); // graph will start to wind-up
                             else
                             {
                                 msg.clear();

@@ -421,7 +421,7 @@ interface IPropertyTree;
 class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, implements IThorChildGraph, implements IExceptionHandler
 {
     mutable CriticalSection crit;
-    CriticalSection evaluateCrit;
+    CriticalSection evaluateCrit, executeCrit;
     CGraphElementTable containers;
     CGraphElementArray sinks, activeSinks;
     bool sink, complete, global, localChild;
@@ -553,7 +553,6 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    PooledThreadHandle poolThreadHandle;
     CGraphArrayCopy dependentSubGraphs;
 
     CGraphBase(CJobBase &job);
@@ -608,7 +607,6 @@ public:
         }
     }
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
-    void join();
     virtual void execute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool async);
     IThorActivityIterator *getIterator()
     {
@@ -814,7 +812,6 @@ public:
     virtual void startJob();
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     virtual CGraphBase *createGraph() = 0;
-    void joinGraph(CGraphBase &graph);
     void startGraph(CGraphBase &graph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract);
 
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
