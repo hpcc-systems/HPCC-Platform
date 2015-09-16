@@ -659,6 +659,12 @@ IHqlExpression * normalizeDistribution(IHqlExpression * distribution)
 
 static bool sortComponentMatches(IHqlExpression * curNew, IHqlExpression * curExisting)
 {
+    //A component of (trim)x is identical to x since spaces are always ignored
+    while (isOpRedundantForCompare(curNew))
+        curNew = curNew->queryChild(0);
+    while (isOpRedundantForCompare(curExisting))
+        curExisting = curExisting->queryChild(0);
+
     IHqlExpression * newBody = curNew->queryBody();
     IHqlExpression * existingBody = curExisting->queryBody();
     if (newBody == existingBody)

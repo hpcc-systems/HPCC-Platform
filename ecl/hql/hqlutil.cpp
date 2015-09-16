@@ -3791,7 +3791,6 @@ IAtom * queryCsvTableEncoding(IHqlExpression * tableExpr)
     return queryCsvEncoding(mode);
 }
 
-
 IHqlExpression * createTrimExpr(IHqlExpression * value, IHqlExpression * flags)
 {
     LinkedHqlExpr expr = value;
@@ -3817,6 +3816,27 @@ IHqlExpression * createTrimExpr(IHqlExpression * value, IHqlExpression * flags)
     if (flags)
         flags->unwindList(args, no_comma);
     return createValue(no_trim, tgtType, args);
+}
+
+bool isRightTrim(IHqlExpression * expr)
+{
+    if (expr->getOperator() != no_trim)
+        return false;
+    if (expr->hasAttribute(leftAtom) || expr->hasAttribute(allAtom))
+        return false;
+    return true;
+}
+
+bool isOpRedundantForCompare(IHqlExpression * expr)
+{
+    if (isRightTrim(expr))
+    {
+        ITypeInfo * baseType = expr->queryChild(0)->queryType();
+        if (baseType->getTypeCode() == type_data)
+            return false;
+        return true;
+    }
+    return false;
 }
 
 bool isLengthPreservingCast(IHqlExpression * expr)
