@@ -1110,7 +1110,6 @@ CGraphBase::CGraphBase(CJobBase &_job) : job(_job)
     startBarrier = waitBarrier = doneBarrier = NULL;
     mpTag = waitBarrierTag = startBarrierTag = doneBarrierTag = TAG_NULL;
     executeReplyTag = TAG_NULL;
-    poolThreadHandle = 0;
     parentExtractSz = 0;
     counter = 0; // loop/graph counter, will be set by loop/graph activity if needed
 }
@@ -1253,6 +1252,7 @@ bool CGraphBase::preStart(size32_t parentExtractSz, const byte *parentExtract)
 
 void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExtract)
 {
+    CriticalBlock b(executeCrit);
     if (job.queryPausing())
         return;
     Owned<IException> exception;
@@ -1317,12 +1317,6 @@ void CGraphBase::execute(size32_t _parentExtractSz, const byte *parentExtract, b
         }
         executeSubGraph(parentExtractSz, parentExtract);
     }
-}
-
-void CGraphBase::join()
-{
-    if (poolThreadHandle)
-        queryJob().joinGraph(*this);
 }
 
 void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies)
@@ -2137,7 +2131,7 @@ class CGraphExecutor : public CInterface, implements IGraphExecutor
     unsigned limit;
     unsigned waitOnRunning;
     CriticalSection crit;
-    Semaphore sem, runningSem;
+    Semaphore runningSem;
     Owned<IThreadPool> graphPool;
 
     class CGraphExecutorFactory : public CInterface, implements IThreadFactory
@@ -2164,24 +2158,35 @@ class CGraphExecutor : public CInterface, implements IGraphExecutor
                 }
                 void main()
                 {
-                    Linked<CGraphBase> graph = graphInfo->subGraph;
-                    Owned<IException> e;
-                    try
+                    loop
                     {
-                        graphInfo->callback.runSubgraph(*graph, graphInfo->parentExtractMb.length(), (const byte *)graphInfo->parentExtractMb.toByteArray());
+                        Linked<CGraphBase> graph = graphInfo->subGraph;
+                        Owned<IException> e;
+                        try
+                        {
+                            PROGLOG("CGraphExecutor: Running graph, graphId=%" GIDPF "d", graph->queryGraphId());
+                            graphInfo->callback.runSubgraph(*graph, graphInfo->parentExtractMb.length(), (const byte *)graphInfo->parentExtractMb.toByteArray());
+                        }
+                        catch (IException *_e)
+                        {
+                            e.setown(_e);
+                        }
+                        Owned<CGraphExecutorGraphInfo> nextGraphInfo;
+                        try
+                        {
+                            nextGraphInfo.setown(graphInfo->executor.graphDone(*graphInfo, e));
+                        }
+                        catch (IException *e)
+                        {
+                            GraphPrintLog(graph, e, "graphDone");
+                            e->Release();
+                        }
+                        if (e)
+                            throw e.getClear();
+                        if (!nextGraphInfo)
+                            return;
+                        graphInfo.setown(nextGraphInfo.getClear());
                     }
-                    catch (IException *_e)
-                    {
-                        e.setown(_e);
-                    }
-                    try { graphInfo->executor.graphDone(*graphInfo, e); }
-                    catch (IException *e)
-                    {
-                        GraphPrintLog(graph, e, "graphDone");
-                        e->Release();
-                    }
-                    if (e)
-                        throw e.getClear();
                 }
                 bool canReuse() { return true; }
                 bool stop() { return true; }
@@ -2206,6 +2211,7 @@ public:
     CGraphExecutor(CJobBase &_job) : job(_job)
     {
         limit = (unsigned)job.getWorkUnitValueInt("concurrentSubGraphs", globals->getPropInt("@concurrentSubGraphs", 1));
+        PROGLOG("CGraphExecutor: limit = %d", limit);
         waitOnRunning = 0;
         stopped = false;
         factory = new CGraphExecutorFactory(*this);
@@ -2214,10 +2220,10 @@ public:
     ~CGraphExecutor()
     {
         stopped = true;
-        sem.signal();
+        graphPool->joinAll();
         factory->Release();
     }
-    void graphDone(CGraphExecutorGraphInfo &doneGraphInfo, IException *e)
+    CGraphExecutorGraphInfo *graphDone(CGraphExecutorGraphInfo &doneGraphInfo, IException *e)
     {
         CriticalBlock b(crit);
         running.zap(doneGraphInfo);
@@ -2231,8 +2237,7 @@ public:
         {
             stopped = true;
             stack.kill();
-            sem.signal();
-            return;
+            return NULL;
         }
         if (job.queryPausing())
             stack.kill();
@@ -2281,7 +2286,20 @@ public:
         }
         job.markWuDirty();
         PROGLOG("CGraphExecutor running=%d, waitingToRun=%d, dependentsWaiting=%d", running.ordinality(), toRun.ordinality(), stack.ordinality());
-        sem.signal();
+
+        while (toRun.ordinality())
+        {
+            if (job.queryPausing())
+                return NULL;
+            Linked<CGraphExecutorGraphInfo> nextGraphInfo = &toRun.item(0);
+            toRun.remove(0);
+            if (!nextGraphInfo->subGraph->isComplete() && (NULL == findRunning(nextGraphInfo->subGraph->queryGraphId())))
+            {
+                running.append(*nextGraphInfo.getLink());
+                return nextGraphInfo.getClear();
+            }
+        }
+        return NULL;
     }
 // IGraphExecutor
     virtual void add(CGraphBase *subGraph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSz, const byte *parentExtract)
@@ -2342,8 +2360,7 @@ public:
             {
                 running.append(*LINK(graphInfo));
                 PROGLOG("Add: Launching graph thread for graphId=%" GIDPF "d", subGraph->queryGraphId());
-                PooledThreadHandle h = graphPool->start(graphInfo.getClear());
-                subGraph->poolThreadHandle = h;
+                graphPool->start(graphInfo.getClear());
             }
             else
                 stack.add(*graphInfo.getClear(), 0); // push to front, no dependency, free to run next.
@@ -2352,74 +2369,11 @@ public:
             stack.append(*graphInfo.getClear()); // as dependencies finish, may move up the list
     }
     virtual IThreadPool &queryGraphPool() { return *graphPool; }
-
     virtual void wait()
     {
-        loop
-        {
-            CriticalBlock b(crit);
-            if (stopped || job.queryAborted() || job.queryPausing())
-                break;
-            if (0 == stack.ordinality() && 0 == toRun.ordinality() && 0 == running.ordinality())
-                break;
-            if (job.queryPausing())
-                break; // pending graphs will re-run on resubmission
-
-            bool signalled;
-            {
-                CriticalUnblock b(crit);
-                signalled = sem.wait(MEDIUMTIMEOUT);
-            }
-            if (signalled)
-            {
-                bool added = false;
-                if (running.ordinality() < limit)
-                {
-                    while (toRun.ordinality())
-                    {
-                        Linked<CGraphExecutorGraphInfo> graphInfo = &toRun.item(0);
-                        toRun.remove(0);
-                        running.append(*LINK(graphInfo));
-                        CGraphBase *subGraph = graphInfo->subGraph;
-                        PROGLOG("Wait: Launching graph thread for graphId=%" GIDPF "d", subGraph->queryGraphId());
-                        added = true;
-                        PooledThreadHandle h = graphPool->start(graphInfo.getClear());
-                        subGraph->poolThreadHandle = h;
-                        if (running.ordinality() >= limit)
-                            break;
-                    }
-                }
-                if (!added)
-                    Sleep(1000); // still more to come
-            }
-            else
-                PROGLOG("Waiting on executing graphs to complete.");
-            StringBuffer str("Currently running graphId = ");
-
-            if (running.ordinality())
-            {
-                ForEachItemIn(r, running)
-                {
-                    CGraphExecutorGraphInfo &graphInfo = running.item(r);
-                    str.append(graphInfo.subGraph->queryGraphId());
-                    if (r != running.ordinality()-1)
-                        str.append(", ");
-                }
-                PROGLOG("%s", str.str());
-            }
-            if (stack.ordinality())
-            {
-                str.clear().append("Queued in stack graphId = ");
-                ForEachItemIn(s, stack)
-                {
-                    CGraphExecutorGraphInfo &graphInfo = stack.item(s);
-                    str.append(graphInfo.subGraph->queryGraphId());
-                    if (s != stack.ordinality()-1)
-                        str.append(", ");
-                }
-                PROGLOG("%s", str.str());
-            }
-        }
+        PROGLOG("CGraphExecutor exiting, waiting on graph pool");
+        graphPool->joinAll();
+        PROGLOG("CGraphExecutor graphPool finished");
     }
 };
 
@@ -2736,12 +2690,6 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
 void CJobBase::startGraph(CGraphBase &graph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract)
 {
     graphExecutor->add(&graph, callback, checkDependencies, parentExtractSize, parentExtract);
-}
-
-void CJobBase::joinGraph(CGraphBase &graph)
-{
-    if (graph.poolThreadHandle)
-        graphExecutor->queryGraphPool().join(graph.poolThreadHandle);
 }
 
 ICodeContext &CJobBase::queryCodeContext() const
