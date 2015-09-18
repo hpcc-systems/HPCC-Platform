@@ -15,12 +15,13 @@
 #    limitations under the License.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (hpcc)
+HPCC_ADD_SUBDIRECTORY (ecl)
 
 configure_file("environment.xml.in" "environment.xml")
 
 Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.xml DESTINATION "./testing/regress" COMPONENT Runtime )
 
-Install ( DIRECTORY download hpcc DESTINATION "./testing/regress" COMPONENT Runtime
+Install ( DIRECTORY download hpcc ecl DESTINATION "./testing/regress" COMPONENT Runtime
           USE_SOURCE_PERMISSIONS
           FILES_MATCHING
           PATTERN "hpcc/__init__.py"
@@ -28,4 +29,6 @@ Install ( DIRECTORY download hpcc DESTINATION "./testing/regress" COMPONENT Runt
           PATTERN "download/donQuixote.txt"
           PATTERN "download/pge0112.txt"
           PATTERN "download/spray_test.txt"
- )
+          PATTERN "ecl/*.ecl"
+          PATTERN "ecl/*.xml"
+          PATTERN "ecl/*.queryxml" )
