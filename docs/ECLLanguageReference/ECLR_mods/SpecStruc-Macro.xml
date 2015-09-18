@@ -46,8 +46,8 @@
         <row>
           <entry><emphasis>parameterlist</emphasis></entry>
 
-          <entry>A list of names (tokens) of the parameters that will be
-          passed to the macro. These names are used in the
+          <entry>A comma separated list of names (tokens) of the parameters
+          that will be passed to the macro. These names are used in the
           <emphasis>tokenstream</emphasis> to indicate where the passed
           parameters are substituted when the macro is used. Value types for
           these parameters are not allowed, but default values may be
@@ -159,6 +159,8 @@ MAC_join(J1,People,Property,'LEFT.ID=RIGHT.PeopleID,LEFT  OUTER')
 //expands out to:
 // J1 := JOIN(People,Property,LEFT.ID=RIGHT.PeopleID,LEFT OUTER);</programlisting>
 
-  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="_UNIQUENAME">#UNIQUENAME</link>,
-  <link linkend="_EXPAND">#EXPAND</link></para>
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+  Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>,
+  <link linkend="_UNIQUENAME">#UNIQUENAME</link>, <link
+  linkend="_EXPAND">#EXPAND</link></para>
 </sect1>

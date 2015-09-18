@@ -144,6 +144,9 @@ extern HQL_API IHqlExpression * convertScalarToGraphResult(IHqlExpression * valu
 extern HQL_API IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq);
 
 extern HQL_API IHqlExpression * createTrimExpr(IHqlExpression * value, IHqlExpression * flags);
+extern HQL_API bool isRightTrim(IHqlExpression * expr);
+extern HQL_API bool isOpRedundantForCompare(IHqlExpression * expr);
+
 extern HQL_API bool isLengthPreservingCast(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * createTransformFromRow(IHqlExpression * expr);

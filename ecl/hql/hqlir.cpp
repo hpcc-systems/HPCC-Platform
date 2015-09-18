@@ -659,6 +659,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,merge_pending);
     EXPAND_CASE(no,httpcall);
     EXPAND_CASE(no,getenv);
+    EXPAND_CASE(no,json);
     }
 
     return "<unknown>";

@@ -64,9 +64,10 @@
         <row>
           <entry><emphasis>parameterlist</emphasis></entry>
 
-          <entry>The value types and labels of the parameters that will be
-          passed to the TRANSFORM function. These are usually the dataset
-          records or COUNTER parameters but are not limited to those.</entry>
+          <entry>A comma separated list of the value types and labels of the
+          parameters that will be passed to the TRANSFORM function. These are
+          usually the dataset records or COUNTER parameters but are not
+          limited to those.</entry>
         </row>
 
         <row>
@@ -295,7 +296,14 @@ projected2 := PROJECT(namesTable, TRANSFORM(namesIdRecord,
 projected3 := PROJECT(namesTable, TRANSFORM(LEFT));
 //projected1, projected2, and projected3 all do the same thing</programlisting>
 
-    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="RECORDOF">RECORDOF</link>, <link linkend="TYPEOF">TYPEOF</link>, <link linkend="JOIN">JOIN</link>, <link linkend="PROJECT">PROJECT</link>, <link linkend="ITERATE">ITERATE</link>,
-    <link linkend="ROLLUP">ROLLUP</link>, <link linkend="NORMALIZE">NORMALIZE</link>, <link linkend="DENORMALIZE">DENORMALIZE</link>, <link linkend="FETCH">FETCH</link>, <link linkend="PARSE">PARSE</link>, <link linkend="ROW">ROW</link></para>
+    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
+    <link linkend="RECORDOF">RECORDOF</link>, <link
+    linkend="TYPEOF">TYPEOF</link>, <link linkend="JOIN">JOIN</link>, <link
+    linkend="PROJECT">PROJECT</link>, <link linkend="ITERATE">ITERATE</link>,
+    <link linkend="ROLLUP">ROLLUP</link>, <link
+    linkend="NORMALIZE">NORMALIZE</link>, <link
+    linkend="DENORMALIZE">DENORMALIZE</link>, <link
+    linkend="FETCH">FETCH</link>, <link linkend="PARSE">PARSE</link>, <link
+    linkend="ROW">ROW</link></para>
   </sect2>
 </sect1>

@@ -1905,7 +1905,7 @@ interface INodeSubscriptionManager : extends ISubscriptionManager
 {
     virtual void associateSubscriber(CNodeSubscriberContainer &subscriber) = 0;
     virtual void removeSubscriberAssociation(SubscriptionId id) = 0;
-    virtual void notifyDelete(CServerRemoteTree &node) = 0;
+    virtual void notifyDelete(CServerRemoteTree *node) = 0;
     virtual void notify(CServerRemoteTree &node, PDState state) = 0;
     virtual MemoryBuffer &collectSubscribers(MemoryBuffer &out) const = 0;
 };
@@ -1936,7 +1936,7 @@ public:
     CLock *queryLock(__int64 id) { return lockTable.find(&id); }
     CSubscriberTable &querySubscriberTable() { return subscribers; }
     IExternalHandler *queryExternalHandler(const char *handler) { if (!handler) return NULL; CExternalHandlerMapping *mapping = externalHandlers.find(handler); return mapping ? &mapping->query() : NULL; }
-    void handleNotify(CSubscriberContainerBase &subscriber, MemoryBuffer &notifyData);
+    void handleNotify(CSubscriberContainerBase *subscriber, MemoryBuffer &notifyData);
     void startNotification(IPropertyTree &changeTree, CPTStack &stack, CBranchChange &changes); // subscription notification
     MemoryBuffer &collectUsageStats(MemoryBuffer &out);
     MemoryBuffer &collectConnections(MemoryBuffer &out);
@@ -2696,6 +2696,11 @@ public:
         }
         const void *queryFindParam() const { return &node; }
         ICopyArrayOf<CNodeSubscriberContainer> &querySubscribers() { return subscribers; }
+        void getSubscribers(IArrayOf<CNodeSubscriberContainer> &linkedSubscribers)
+        {
+            ForEachItemIn(s, subscribers)
+                linkedSubscribers.append(*LINK(&subscribers.item(s)));
+        }
         void add(CNodeSubscriberContainer &subscriber) { subscribers.append(subscriber); }
     };
 
@@ -2704,17 +2709,14 @@ public:
     OwningSimpleHashTableOf<CNodeSubscriberContainerList, CServerRemoteTree *> subscriberListByNode;
     CriticalSection lock;
 
-    void _notify(CServerRemoteTree *node, PDState state)
+    void _notify(CServerRemoteTree *node, PDState state, IArrayOf<CNodeSubscriberContainer> &subscribers)
     {
         MemoryBuffer sendValueNotifyData;
-        CNodeSubscriberContainerList *subscriberList = subscriberListByNode.find(node);
-        assertex(subscriberList);
-        ICopyArrayOf<CNodeSubscriberContainer> &subscribers = subscriberList->querySubscribers();
         int lastSendValue = -1;
-        ForEachItemIn(s, subscribers)
+        while (subscribers.ordinality())
         {
-            CNodeSubscriberContainer &subscriber = subscribers.item(s);
-            if (subscriber.querySendValue())
+            Owned<CNodeSubscriberContainer> subscriber = &subscribers.popGet();
+            if (subscriber->querySendValue())
             {
                 if (1 != lastSendValue) // overkill unless many subscribers to same node
                 {
@@ -2723,7 +2725,7 @@ public:
                     buildNotifyData(sendValueNotifyData.clear(), state, NULL, &mb);
                     lastSendValue = 1;
                 }
-                SDSManager->handleNotify(subscriber, sendValueNotifyData);
+                SDSManager->handleNotify(subscriber.getClear(), sendValueNotifyData);
             }
             else
             {
@@ -2732,9 +2734,17 @@ public:
                     buildNotifyData(sendValueNotifyData.clear(), state, NULL, NULL);
                     lastSendValue = 0;
                 }
-                SDSManager->handleNotify(subscriber, sendValueNotifyData);
+                SDSManager->handleNotify(subscriber.getClear(), sendValueNotifyData);
             }
         }
+    }
+    void _notify(CServerRemoteTree *node, PDState state)
+    {
+        CNodeSubscriberContainerList *subscriberList = subscriberListByNode.find(node);
+        assertex(subscriberList);
+        IArrayOf<CNodeSubscriberContainer> subscribers;
+        subscriberList->getSubscribers(subscribers);
+        _notify(node, state, subscribers);
     }
     void _removeNode(CServerRemoteTree *node, SubscriptionId id)
     {
@@ -2748,10 +2758,9 @@ public:
             {
                 ICopyArrayOf<CServerRemoteTree> &nodes = subscriber.queryNodes();
                 verifyex(nodes.zap(*node));
-                SubscriptionId sid = subscriber.queryId();
                 subscribers.remove(s);
                 if (0 == nodes.ordinality()) // IOW this was the last node this subscriber was associated with
-                    subscribersById.remove(&sid);
+                    subscribersById.removeExact(&subscriber);
             }
             else if (subscriber.queryId() == id)
                 subscribers.remove(s);
@@ -2772,12 +2781,24 @@ public:
         CriticalBlock b(lock);
         _notify(&node, state);
     }
-    void notifyDelete(CServerRemoteTree &node)
+    void notifyDelete(CServerRemoteTree *node)
     {
         // shouldn't be here, unless node is in subscribers table
         CriticalBlock b(lock);
-        _notify(&node, PDS_Deleted);
-        _removeNode(&node, 0);
+        /* Need to be careful not to release subscribers here (on this thread)
+         * 1) gather subscribers(linked)
+         * 2) remove nodes and lists, so no longer in use by SDS
+         * 3) Hand ownership over to notification mechanism
+         *
+         * Subscribers will be released when notification is done with them.
+         */
+        CNodeSubscriberContainerList *subscriberList = subscriberListByNode.find(node);
+        assertex(subscriberList);
+        IArrayOf<CNodeSubscriberContainer> linkedSubscribers;
+        subscriberList->getSubscribers(linkedSubscribers);
+        _removeNode(node, 0);
+        // NB: Notification will take ownership of subscribers being notified.
+        _notify(node, PDS_Deleted, linkedSubscribers);
     }
     // ISubscriptionManager impl.
     virtual void add(ISubscription *sub, SubscriptionId id)
@@ -8076,8 +8097,9 @@ void CCovenSDSManager::handleNodeNotify(notifications n, CServerRemoteTree &tree
     }
 }
 
-void CCovenSDSManager::handleNotify(CSubscriberContainerBase &subscriber, MemoryBuffer &notifyData)
+void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, MemoryBuffer &notifyData)
 {
+    Owned<CSubscriberContainerBase> subscriber = _subscriber;
     class CNotifyPoolFactory : public CInterface, public IThreadFactory
     {
         class CNotifyHandler : public CInterface, implements IPooledThread
@@ -8122,7 +8144,7 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase &subscriber, Memory
 
     Owned<CSubscriberNotifier> _notifier;
     { CHECKEDCRITICALBLOCK(nfyTableCrit, fakeCritTimeout);
-        SubscriptionId id = subscriber.queryId();
+        SubscriptionId id = subscriber->queryId();
         CSubscriberNotifier *notifier = subscriberNotificationTable.find(id);
         if (notifier)
         {
@@ -8131,7 +8153,7 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase &subscriber, Memory
         }
         else
         {
-            _notifier.setown(new CSubscriberNotifier(subscriberNotificationTable, subscriber, notifyData));
+            _notifier.setown(new CSubscriberNotifier(subscriberNotificationTable, *subscriber, notifyData));
             subscriberNotificationTable.replace(*_notifier);
         }
     }
@@ -8272,7 +8294,7 @@ public:
                         {
                             if (0 == notifyData.length())
                                 buildNotifyData(notifyData, state, &stack, NULL);
-                            SDSManager->handleNotify(subscriber, notifyData);
+                            SDSManager->handleNotify(LINK(&subscriber), notifyData);
                         }
                         else
                             pruned.append(*LINK(&subscriber));
@@ -8293,7 +8315,7 @@ public:
                             {
                                 if (0 == notifyData.length())
                                     buildNotifyData(notifyData, state, &stack, NULL);
-                                SDSManager->handleNotify(subscriber, notifyData);
+                                SDSManager->handleNotify(LINK(&subscriber), notifyData);
                             }
                             else
                                 pruned.append(*LINK(&subscriber));
@@ -8366,7 +8388,7 @@ public:
                                     lastSendValue = 0;
                                 }
                             }
-                            SDSManager->handleNotify(subscriber, notifyData);
+                            SDSManager->handleNotify(LINK(&subscriber), notifyData);
                         }
                         else
                             pruned.append(*LINK(&subscriber));
@@ -8600,7 +8622,7 @@ void CCovenSDSManager::removeNodeSubscriber(SubscriptionId id)
 
 void CCovenSDSManager::notifyNodeDelete(CServerRemoteTree &node)
 {
-    nodeSubscriptionManager->notifyDelete(node);
+    nodeSubscriptionManager->notifyDelete(&node);
 }
 
 void CCovenSDSManager::notifyNode(CServerRemoteTree &node, PDState state)

@@ -33,7 +33,7 @@
         <row>
           <entry><emphasis>parameterlist</emphasis></entry>
 
-          <entry>The parameters to pass to the
+          <entry>A comma separated list of the parameters to pass to the
           <emphasis>function</emphasis>.</entry>
         </row>
 

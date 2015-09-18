@@ -45,9 +45,9 @@
         <row>
           <entry><emphasis>parameterlist</emphasis></entry>
 
-          <entry>A list of names (tokens) of the parameters that will be
-          passed to the function/macro. These names are used in the
-          <emphasis>code</emphasis> and <emphasis>retval</emphasis> to
+          <entry>A comma separated list of names (tokens) of the parameters
+          that will be passed to the function/macro. These names are used in
+          the <emphasis>code</emphasis> and <emphasis>retval</emphasis> to
           indicate where the passed parameter values are substituted when the
           function/macro is used. Value types for these parameters are not
           allowed, but default values may be specified as string
