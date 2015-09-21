@@ -2809,6 +2809,8 @@ public:
     // ISubscriptionManager impl.
     virtual void add(ISubscription *sub, SubscriptionId id)
     {
+        CHECKEDDALIREADLOCKBLOCK(owner.dataRWLock, readWriteTimeout);
+        CHECKEDCRITICALBLOCK(owner.treeRegCrit, fakeCritTimeout);
         CriticalBlock b(lock);
         /* calls back out to owner to scan for match, so that SDSManager can protect root/treereg.
          * It calls back (associateSubscriber) in this class to add subscribers based on matches.
@@ -8636,8 +8638,6 @@ void CCovenSDSManager::addNodeSubscriber(ISubscription *sub, SubscriptionId id)
     mb.read(xpath);
     mb.read(sendValue);
 
-    CHECKEDDALIREADLOCKBLOCK(dataRWLock, readWriteTimeout);
-    CHECKEDCRITICALBLOCK(treeRegCrit, fakeCritTimeout);
     Owned<IPropertyTreeIterator> iter = root->getElements(xpath+1);
     if (!iter->first())
         throw MakeSDSException(SDSExcpt_SubscriptionNoMatch, "Failed to match any nodes: %s", xpath.get());
