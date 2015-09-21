@@ -8980,7 +8980,6 @@ class CInitGroups
 
     GroupType getGroupType(const char *type)
     {
-
         if (0 == strcmp("ThorCluster", type))
             return grp_thor;
         else if (0 == strcmp("RoxieCluster", type))
@@ -9160,7 +9159,6 @@ class CInitGroups
     {
         if (machinesLoaded)
             return true;
-        machinesLoaded = true;
         //GH->JCS This can't be changed to use getEnvironmentFactory() unless that moved inside dalibase;
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Hardware", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (!conn) {
@@ -9177,6 +9175,7 @@ class CInitGroups
             machinemap.setValue(name, entry);
             machinelist.append(*entry);
         }
+        machinesLoaded = true;
         return true;
     }
 
