@@ -60,101 +60,6 @@ using namespace xpp;
 // ======================================================================================
 // primitive type lookup
 
-typedef MapStringTo<Esdl2Type> EsdlTypeList;
-
-static bool type_list_inited = false;
-static EsdlTypeList TypeList;
-
-void init_type_list_v2(EsdlTypeList &list)
-{
-    static CriticalSection crit;
-    CriticalBlock block(crit);
-    if (!type_list_inited)
-    {
-        //strings:
-        list.setValue("StringBuffer", ESDLT_STRING);
-        list.setValue("string", ESDLT_STRING);
-        list.setValue("binary", ESDLT_STRING);
-        list.setValue("base64Binary", ESDLT_STRING);
-        list.setValue("normalizedString", ESDLT_STRING);
-        list.setValue("xsdString", ESDLT_STRING);
-        list.setValue("xsdBinary", ESDLT_STRING);
-        list.setValue("xsdDuration", ESDLT_STRING);
-        list.setValue("xsdDateTime", ESDLT_STRING);
-        list.setValue("xsdTime", ESDLT_STRING);
-        list.setValue("xsdDate", ESDLT_STRING);
-        list.setValue("xsdYearMonth", ESDLT_STRING);
-        list.setValue("xsdYear", ESDLT_STRING);
-        list.setValue("xsdMonthDay", ESDLT_STRING);
-        list.setValue("xsdDay", ESDLT_STRING);
-        list.setValue("xsdMonth", ESDLT_STRING);
-        list.setValue("xsdAnyURI", ESDLT_STRING);
-        list.setValue("xsdQName", ESDLT_STRING);
-        list.setValue("xsdNOTATION", ESDLT_STRING);
-        list.setValue("xsdToken", ESDLT_STRING);
-        list.setValue("xsdLanguage", ESDLT_STRING);
-        list.setValue("xsdNMTOKEN", ESDLT_STRING);
-        list.setValue("xsdNMTOKENS", ESDLT_STRING);
-        list.setValue("xsdName", ESDLT_STRING);
-        list.setValue("xsdNCName", ESDLT_STRING);
-        list.setValue("xsdID", ESDLT_STRING);
-        list.setValue("xsdIDREF", ESDLT_STRING);
-        list.setValue("xsdIDREFS", ESDLT_STRING);
-        list.setValue("xsdENTITY", ESDLT_STRING);
-        list.setValue("xsdENTITIES", ESDLT_STRING);
-        list.setValue("xsdBase64Binary", ESDLT_STRING);
-        list.setValue("xsdNormalizedString", ESDLT_STRING);
-        list.setValue("EspTextFile", ESDLT_STRING);
-        list.setValue("EspResultSet", ESDLT_STRING);
-        //numeric
-        list.setValue("bool", ESDLT_BOOL);
-        list.setValue("boolean", ESDLT_BOOL);
-        list.setValue("decimal", ESDLT_FLOAT);
-        list.setValue("float", ESDLT_FLOAT);
-        list.setValue("double", ESDLT_DOUBLE);
-        list.setValue("integer", ESDLT_INT32);
-        list.setValue("int64", ESDLT_INT64);
-        list.setValue("long", ESDLT_INT32);
-        list.setValue("int", ESDLT_INT32);
-        list.setValue("unsigned", ESDLT_UINT32);
-        list.setValue("short", ESDLT_INT16);
-        list.setValue("nonPositiveInteger", ESDLT_INT32);
-        list.setValue("negativeInteger", ESDLT_INT32);
-        list.setValue("nonNegativeInteger", ESDLT_UINT32);
-        list.setValue("unsignedLong", ESDLT_UINT32);
-        list.setValue("unsignedInt", ESDLT_UINT32);
-        list.setValue("unsignedShort", ESDLT_UINT16);
-        list.setValue("unsignedByte", ESDLT_UBYTE);
-        list.setValue("positiveInteger", ESDLT_UINT32);
-        list.setValue("xsdBoolean", ESDLT_BOOL);
-        list.setValue("xsdDecimal", ESDLT_FLOAT);
-        list.setValue("xsdInteger", ESDLT_INT32);
-        list.setValue("xsdByte", ESDLT_INT8);
-        list.setValue("xsdNonPositiveInteger", ESDLT_INT32);
-        list.setValue("xsdNegativeInteger", ESDLT_INT32);
-        list.setValue("xsdNonNegativeInteger", ESDLT_UINT32);
-        list.setValue("xsdUnsignedLong", ESDLT_UINT32);
-        list.setValue("xsdUnsignedInt", ESDLT_UINT32);
-        list.setValue("xsdUnsignedShort", ESDLT_UINT16);
-        list.setValue("xsdUnsignedByte", ESDLT_UINT8);
-        list.setValue("xsdPositiveInteger", ESDLT_UINT64);
-        list.setValue("unsigned8", ESDLT_UINT64);
-
-        type_list_inited=true;
-    }
-}
-
-static Esdl2Type simpleType(const char *type)
-{
-    if (!type || !*type)
-        return ESDLT_STRING;
-
-    Esdl2Type *val = TypeList.getValue(type);
-    if (val)
-        return *val;
-    return ESDLT_COMPLEX;
-}
-
 static bool gotoStartTag(XmlPullParser &xppx, const char *name, const char *dsname)
 {
     int level = 1;
@@ -264,7 +169,7 @@ void Esdl2LocalContext::handleDataFor(IXmlWriterExt & writer)
 // ======================================================================================
 // class Esdl2Base
 
-Esdl2Base::Esdl2Base(Esdl2Transformer *xformer, IEsdlDefObject* def, Esdl2Type t, bool might_skip_root_)
+Esdl2Base::Esdl2Base(Esdl2Transformer *xformer, IEsdlDefObject* def, EsdlBasicElementType t, bool might_skip_root_)
 : m_def(def), might_skip_root(might_skip_root_), data_for(NULL), type_id(t)
 {
     if (def->queryProp("optional"))
@@ -542,7 +447,7 @@ Esdl2Base* Esdl2Base::queryChild(const char* name, bool nocase)
 
 void Esdl2Base::mergeBaseType(Esdl2Transformer *xformer, const char *base_type)
 {
-    if (simpleType(base_type)==ESDLT_COMPLEX)
+    if (esdlSimpleType(base_type)==ESDLT_COMPLEX)
     {
         Esdl2Base *esdlBase = xformer->queryType(base_type);
 
@@ -578,7 +483,7 @@ Esdl2Element::Esdl2Element(Esdl2Transformer *xformer, IEsdlDefObject *def) : Esd
     simple_type.set(def->queryProp("type"));
     if (!simple_type.isEmpty())
     {
-        type_id = simpleType(simple_type.get());
+        type_id = esdlSimpleType(simple_type.get());
         if (type_id==ESDLT_COMPLEX)
         {
             DBGLOG("ESDL simple type not defined: %s", simple_type.get());
@@ -728,7 +633,7 @@ Esdl2Array::Esdl2Array(Esdl2Transformer *xformer, IEsdlDefObject *def) : Esdl2Ba
     if (atype)
     {
         type.set(atype);
-        type_id = simpleType(atype);
+        type_id = esdlSimpleType(atype);
     }
 
     const char* itag = def->queryProp("item_tag");
@@ -911,7 +816,7 @@ void Esdl2Array::process(Esdl2TransformerContext &ctx, const char *out_name, Esd
 // ======================================================================================
 // class Esdl2Struct
 
-Esdl2Struct::Esdl2Struct(Esdl2Transformer *xformer, IEsdlDefStruct *def, Esdl2Type t)
+Esdl2Struct::Esdl2Struct(Esdl2Transformer *xformer, IEsdlDefStruct *def, EsdlBasicElementType t)
  : Esdl2Base(xformer, def, t, t==ESDLT_RESPONSE),isElement(false)
 {
     ESDL_DBG("Esdl2Struct: %s", def->queryName());
@@ -1425,8 +1330,7 @@ void Esdl2EnumRef::process(Esdl2TransformerContext &ctx, const char *out_name, E
 Esdl2Transformer::Esdl2Transformer(IEsdlDefinition* def)
 {
     m_def.setown(LINK(def));
-    if (!type_list_inited)
-        init_type_list_v2(TypeList);
+    initEsdlTypeList();
 }
 
 void Esdl2Transformer::serialize(StringBuffer &out)

@@ -602,6 +602,17 @@ public:
     ~REmbedFunctionContext()
     {
     }
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+    {
+        return NULL;
+    }
+    virtual void paramWriterCommit(IInterface *writer)
+    {
+    }
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+    {
+    }
+
 
     virtual bool getBooleanResult()
     {
@@ -1087,6 +1098,10 @@ public:
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
     {
         return new REmbedFunctionContext(*queryGlobalState()->R, options);
+    }
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    {
+        throwUnexpected();
     }
 };
 

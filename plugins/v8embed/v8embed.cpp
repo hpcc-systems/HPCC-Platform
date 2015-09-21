@@ -460,6 +460,17 @@ public:
         isolate->Exit();
         isolate->Dispose();
     }
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+    {
+        return NULL;
+    }
+    virtual void paramWriterCommit(IInterface *writer)
+    {
+    }
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+    {
+    }
+
 
     virtual void bindBooleanParam(const char *name, bool val)
     {
@@ -945,6 +956,10 @@ public:
             threadHookChain = addThreadTermFunc(releaseContext);
         }
         return LINK(theFunctionContext);
+    }
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    {
+        throwUnexpected();
     }
 } theEmbedContext;
 

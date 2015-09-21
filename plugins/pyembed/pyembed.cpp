@@ -1492,6 +1492,17 @@ public:
     ~Python27EmbedScriptContext()
     {
     }
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+    {
+        return NULL;
+    }
+    virtual void paramWriterCommit(IInterface *writer)
+    {
+    }
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+    {
+    }
+
 
     virtual void importFunction(size32_t lenChars, const char *text)
     {
@@ -1534,6 +1545,17 @@ public:
     ~Python27EmbedImportContext()
     {
     }
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+    {
+        return NULL;
+    }
+    virtual void paramWriterCommit(IInterface *writer)
+    {
+    }
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+    {
+    }
+
 
     virtual void importFunction(size32_t lenChars, const char *utf)
     {
@@ -1575,6 +1597,10 @@ public:
             return new Python27EmbedImportContext(threadContext, options);
         else
             return new Python27EmbedScriptContext(threadContext, options);
+    }
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    {
+        throwUnexpected();
     }
 };
 
