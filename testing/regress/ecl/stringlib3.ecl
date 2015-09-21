@@ -68,18 +68,6 @@ output('StringLib.EbcdicStringFind(const ebcdic string src, const ebcdic string 
 output('FAILED StringLib.EbcdicStringFind(const ebcdic string src, const ebcdic string tofind , unsigned4 instance )'); 
 #END
 
-#IF(lib_stringlib.StringLib.StringUnboundedUnsafeFind('ABCDE', 'BC') = 2)
-output('Str.UnboundedUnsafeFind(const string src, const string tofind )');                              
-#ELSE
-output('FAILED Str.UnboundedUnsafeFind(const string src, const string tofind )');                               
-#END
-
-#IF(lib_stringlib.StringLib.EbcdicStringUnboundedUnsafeFind(a, b) = 2)
-output('StringLib.EbcdicStringUnboundedUnsafeFind(const ebcdic string src, const ebcdic string tofind )');          
-#ELSE
-output('FAILED StringLib.EbcdicStringUnboundedUnsafeFind(const ebcdic string src, const ebcdic string tofind )');           
-#END
-
 #IF(Str.Extract('AB,CD,E', 2) = 'CD')
 output('Str.Extract(const string src, unsigned4 instance)');                                
 #ELSE

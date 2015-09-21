@@ -17,7 +17,7 @@
 
 /* Proxy plugin definition for (EE only) metaphone3 library */
 
-export Metaphone3Lib := SERVICE : plugin('metaphone3')
+export Metaphone3Lib := SERVICE : plugin('metaphone3'),fold
   string Metaphone3(const string src, boolean encodeVowels=true, boolean encodeExact=true, unsigned4 maxLength=0) : c,pure,entrypoint='m3DMetaphone1';
   string Metaphone3Alt(const string src, boolean encodeVowels=true, boolean encodeExact=true, unsigned4 maxLength=0) : c,pure,entrypoint='m3DMetaphone2';
   string Metaphone3Both(const string src, boolean encodeVowels=true, boolean encodeExact=true, unsigned4 maxLength=0) : c,pure,entrypoint='m3DMetaphoneBoth';

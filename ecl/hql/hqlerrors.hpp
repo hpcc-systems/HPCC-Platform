@@ -255,6 +255,7 @@
 #define ERR_TMPLT_NONPUREFUNC       2212 /* Can not fold non pure function */
 #define ERR_TMPLT_NONEXTERNCFUNC    2213 /* Can not fold non c function */
 #define ERR_TMPLT_EXTRAELIF         2214 /* #ELIF does not match a #IF */
+#define ERR_TMPLT_NOFOLDFUNC        2215 /* Can not fold function not marked as foldable */
 
 /* security */
 #define ERR_SECURITY_BADFORMAT      2216  /* Bad format for access token */

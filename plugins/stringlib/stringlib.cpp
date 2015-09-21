@@ -41,7 +41,7 @@ static const char * compatibleVersions[] = {
 #define STRINGLIB_VERSION "STRINGLIB 1.1.14"
 
 static const char * EclDefinition =
-"export StringLib := SERVICE\n"
+"export StringLib := SERVICE:fold\n"
 "  string StringFilterOut(const string src, const string _within) : c, pure,entrypoint='slStringFilterOut'; \n"
 "  string StringFilter(const string src, const string _within) : c, pure,entrypoint='slStringFilter'; \n"
 "  string StringSubstituteOut(const string src, const string _within, const string _newchar) : c, pure,entrypoint='slStringSubsOut'; \n"
@@ -49,11 +49,13 @@ static const char * EclDefinition =
 "  string StringRepad(const string src, unsigned4 size) : c, pure,entrypoint='slStringRepad'; \n"
 "  string StringTranslate(const string src, const string _within, const string _mapping) : c, pure,entrypoint='slStringTranslate'; \n"
 "  unsigned integer4 StringFind(const string src, const string tofind, unsigned4 instance ) : c, pure,entrypoint='slStringFind'; \n"
-"  unsigned integer4 StringUnboundedUnsafeFind(const string src, const string tofind ) : c, pure,entrypoint='slStringFind2'; \n"
+"  unsigned integer4 StringUnboundedUnsafeFind(const string src, const string tofind ) : c,pure,nofold,entrypoint='slStringFind2'; \n"
 "  unsigned integer4 StringFindCount(const string src, const string tofind) : c, pure,entrypoint='slStringFindCount'; \n"
 "  unsigned integer4 EbcdicStringFind(const ebcdic string src, const ebcdic string tofind , unsigned4 instance ) : c,pure,entrypoint='slStringFind'; \n"
-"  unsigned integer4 EbcdicStringUnboundedUnsafeFind(const ebcdic string src, const ebcdic string tofind ) : c,pure,entrypoint='slStringFind2'; \n"
+"  unsigned integer4 EbcdicStringUnboundedUnsafeFind(const ebcdic string src, const ebcdic string tofind ) : c,pure,nofold,entrypoint='slStringFind2'; \n"
 "  string StringExtract(const string src, unsigned4 instance) : c,pure,entrypoint='slStringExtract'; \n"
+// NOTE - the next 2 are foldable but not pure, meaning it will only be folded if found in a #IF or similar
+// This is because you usually want them to be executed at runtime
 "  string8 GetDateYYYYMMDD() : c,once,entrypoint='slGetDateYYYYMMDD2';\n"
 "  varstring GetBuildInfo() : c,once,entrypoint='slGetBuildInfo';\n"
 "  string Data2String(const data src) : c,pure,entrypoint='slData2String';\n"
