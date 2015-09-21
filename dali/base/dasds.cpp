@@ -2713,7 +2713,7 @@ public:
     CCovenSDSManager &owner;
     OwningSimpleHashTableOf<CNodeSubscriberContainer, SubscriptionId> subscribersById;
     OwningSimpleHashTableOf<CNodeSubscriberContainerList, CServerRemoteTree *> subscriberListByNode;
-    CriticalSection lock;
+    mutable CriticalSection subscriberListCrit;
 
     void _notify(CServerRemoteTree *node, PDState state, IArrayOf<CNodeSubscriberContainer> &subscribers)
     {
@@ -2784,13 +2784,13 @@ public:
     void notify(CServerRemoteTree &node, PDState state)
     {
         // shouldn't be here, unless node is in subscribers table
-        CriticalBlock b(lock);
+        CriticalBlock b(subscriberListCrit);
         _notify(&node, state);
     }
     void notifyDelete(CServerRemoteTree *node)
     {
         // shouldn't be here, unless node is in subscribers table
-        CriticalBlock b(lock);
+        CriticalBlock b(subscriberListCrit);
         /* Need to be careful not to release subscribers here (on this thread)
          * 1) gather subscribers(linked)
          * 2) remove nodes and lists, so no longer in use by SDS
@@ -2811,7 +2811,7 @@ public:
     {
         CHECKEDDALIREADLOCKBLOCK(owner.dataRWLock, readWriteTimeout);
         CHECKEDCRITICALBLOCK(owner.treeRegCrit, fakeCritTimeout);
-        CriticalBlock b(lock);
+        CriticalBlock b(subscriberListCrit);
         /* calls back out to owner to scan for match, so that SDSManager can protect root/treereg.
          * It calls back (associateSubscriber) in this class to add subscribers based on matches.
          */
@@ -2824,7 +2824,7 @@ public:
          */
         CHECKEDDALIREADLOCKBLOCK(owner.dataRWLock, readWriteTimeout);
         CHECKEDCRITICALBLOCK(owner.treeRegCrit, fakeCritTimeout);
-        CriticalBlock b(lock);
+        CriticalBlock b(subscriberListCrit);
         /* calls back out to owner to protect root/treereg.
          * It calls back into removeSubscriberAssociation.
          */
@@ -2864,6 +2864,12 @@ public:
     }
     MemoryBuffer &collectSubscribers(MemoryBuffer &out) const
     {
+        /* important to ensure have exclusive data lock on removal, ahead of subscriber lock
+         * as can get notifications whilst holding data lock, e.g. notifyDelete on node destruction.
+         */
+        CHECKEDDALIREADLOCKBLOCK(owner.dataRWLock, readWriteTimeout);
+        CHECKEDCRITICALBLOCK(owner.treeRegCrit, fakeCritTimeout);
+        CriticalBlock b(subscriberListCrit);
         out.append(subscribersById.count());
         SuperHashIteratorOf<CNodeSubscriberContainer> sdsNodeIter(subscribersById);
         ForEach(sdsNodeIter)

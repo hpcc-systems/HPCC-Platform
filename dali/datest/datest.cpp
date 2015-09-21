@@ -2409,12 +2409,13 @@ void TestNodeSubs()
         {
             try
             {
-                unsigned t = getRandom()%4;
+                unsigned t = getRandom()%5;
                 switch (t)
                 {
                     case 0:
                     {
                         // connect thread
+                        PROGLOG("Creating SDS node");
                         Owned<IRemoteConnection> conn = querySDS().connect("/nodesubtest", myProcessSession(), RTM_CREATE|RTM_LOCK_WRITE, INFINITE);
                         MilliSleep(5+getRandom()%50);
                         conn.clear();
@@ -2424,7 +2425,11 @@ void TestNodeSubs()
                     {
                         // node sub test
                         CriticalBlock b(sidCrit);
-                        sid = querySDS().subscribeExact("/nodesubtest", *subscriber, false);
+                        if (!sid)
+                        {
+                            PROGLOG("Subscribing to node");
+                            sid = querySDS().subscribeExact("/nodesubtest", *subscriber, false);
+                        }
                         break;
                     }
                     case 2:
@@ -2433,6 +2438,7 @@ void TestNodeSubs()
                         CriticalBlock b(sidCrit);
                         if (sid)
                         {
+                            PROGLOG("Unsubscribing to node");
                             querySDS().unsubscribeExact(sid);
                             sid = 0;
                         }
@@ -2440,9 +2446,19 @@ void TestNodeSubs()
                     }
                     case 3:
                     {
+                        PROGLOG("Deleting node");
                         Owned<IRemoteConnection> conn = querySDS().connect("/nodesubtest", myProcessSession(), RTM_LOCK_WRITE, INFINITE);
                         if (conn)
                             conn->close(true);
+                        break;
+                    }
+                    case 4:
+                    {
+                        PROGLOG("Gathering subscriber info");
+                        StringBuffer info;
+                        querySDS().getSubscribers(info);
+                        if (info.length())
+                            PROGLOG("Subscribers: \n%s", info.str());
                         break;
                     }
                 }
@@ -2487,7 +2503,6 @@ void TestNodeSubs()
     unsigned tests = testParams.ordinality() ? atoi(testParams.item(0)) : 10;
     for (unsigned t=0; t<tests; t++)
     {
-        PROGLOG("Created test thread %d", t);
         pool->start(NULL);
     }
 
@@ -3009,7 +3024,7 @@ void usage(const char *error=NULL)
 {
     if (error) printf("%s\n", error);
     printf("usage: DATEST <server_ip:port>* [/test <name> [<test params...>] [/NITER <iterations>]\n");
-    printf("where name = RANDTEST | DFS | QTEST | QTEST2 | SESSION | LOCKS | SDS1 | SDS2 | XPATHS| STRESS | STRESS2 | SHUTDOWN | EXTERNAL | SUBLOCKS | SUBSCRIPTION | CONNECTIONSUBS | MULTIFILE\n");
+    printf("where name = RANDTEST | DFS | QTEST | QTEST2 | SESSION | LOCKS | SDS1 | SDS2 | XPATHS| STRESS | STRESS2 | SHUTDOWN | EXTERNAL | SUBLOCKS | SUBSCRIPTION | CONNECTIONSUBS | MULTIFILE | NODESUBS\n");
     printf("eg:  datest . /test QTEST put          -- one coven server running locally, running qtest with param \"put\"\n");
     printf("     datest eq0001016 eq0001017        -- two coven servers, use default test %s\n", DEFAULT_TEST);
 }
