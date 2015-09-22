@@ -5,6 +5,12 @@
    <Name>
     <First>Joe</First>
     <Last>Doe</Last>
+    <Aliases>
+     <Alias>John</Alias>
+     <Alias>James</Alias>
+     <Alias>Joseph</Alias>
+     <Alias>Jessy</Alias>
+    </Aliases>
    </Name>
    <Addresses>
     <Address>
