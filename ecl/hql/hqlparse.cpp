@@ -169,6 +169,7 @@ void HqlLex::init(IFileContents * _text)
     inmacro = NULL;
     parentLex = NULL;
     inComment = false;
+    inSignature = false;
     inCpp = false;
     hasHashbreak = false;
     encrypted = false;
@@ -565,6 +566,52 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         inmacro->yyColumn = macroBodyExpr->getStartColumn();
         inmacro->setParentLex(this);
         inmacro->macroParms.setown(macroParms.getClear());
+    }
+}
+
+void HqlLex::checkSignature()
+{
+    YYSTYPE dummyToken;
+    dummyToken.setPosition(0,0,0,text->querySourcePath());
+    Owned<IPipeProcess> pipe = createPipeProcess();
+    pipe->run("gpg", "gpg --verify -", ".", true, false, true, 0, false);
+    try
+    {
+        pipe->write(text->length(), text->getText());
+        pipe->closeInput();
+        unsigned retcode = pipe->wait();
+        if (retcode)
+        {
+            StringBuffer buf;
+            Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
+            const size32_t chunkSize = 8192;
+            for (;;)
+            {
+                size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
+                if (sizeRead < chunkSize)
+                {
+                    buf.setLength(buf.length() - (chunkSize - sizeRead));
+                    break;
+                }
+            }
+            DBGLOG("GPG %d %s", retcode, buf.str());
+            StringArray allErrs;
+            allErrs.appendList(buf, "\n");
+            ForEachItemIn(idx, allErrs)
+            {
+                if (strlen(allErrs.item(idx)))
+                    reportWarning(CategorySecurity, dummyToken, WRN_SECURITY_SIGNERROR, "gpg error: %s", allErrs.item(idx));
+            }
+        }
+        else
+            yyParser->inSignedModule = true;
+    }
+    catch (IException *e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        reportWarning(CategorySecurity, dummyToken, WRN_SECURITY_SIGNERROR, "Failed to execute gpg: %d %s. Module will be treated as unsigned", e->errorCode(), msg.str());
+        e->Release();
     }
 }
 
@@ -2181,6 +2228,8 @@ int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
             setTokenPosition(returnToken);
             if (inComment)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"Comment is not terminated");
+            else if (inSignature)
+                reportError(returnToken, ERR_COMMENT_UNENDED,"Signature is not terminated");
             else if (inCpp)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"BEGINC++ or EMBED is not terminated");
             if (hashendKinds.ordinality())

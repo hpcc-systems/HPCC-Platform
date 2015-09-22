@@ -1091,6 +1091,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     bool withinRepository = (queryAttributePath && *queryAttributePath);
     bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false);
+    if (syntaxChecking || instance.archive)
+        severityMapper->addMapping("security", "ignore");
+
     size32_t prevErrs = errorProcessor.errCount();
     cycle_t startCycles = get_cycles_now();
     const char * sourcePathname = queryContents ? str(queryContents->querySourcePath()) : NULL;

@@ -261,6 +261,7 @@
 
 /* security */
 #define ERR_SECURITY_BADFORMAT      2216  /* Bad format for access token */
+#define WRN_SECURITY_SIGNERROR      2217  /* Errors validating signature */
 
 /* User type */
 /* Error 2192, 2011, 2015, 2065, warning 1014  are also possible */
