@@ -2347,10 +2347,15 @@ void CWsSMCEx::setActiveWUs(IEspContext &context, IEspActiveWorkunit& wu, IEspAc
 
 static const char *LockModeNames[] = { "READ", "WRITE", "HOLD", "SUB" };
 
-void CWsSMCEx::addLockInfo(CLockMetaData& lD, const char* xPath, unsigned msNow, time_t ttNow, IArrayOf<IEspLock>& locks)
+void CWsSMCEx::addLockInfo(CLockMetaData& lD, const char* xPath, const char* lfn, unsigned msNow, time_t ttNow, IArrayOf<IEspLock>& locks)
 {
     Owned<IEspLock> lock = createLock();
-    lock->setXPath(xPath);
+    if (xPath && *xPath)
+        lock->setXPath(xPath);
+    else if (lfn && *lfn)
+        lock->setLogicalFile(lfn);
+    else
+        return; //Should not happen
     lock->setEPIP(lD.queryEp());
     lock->setSessionID(lD.sessId);
 
@@ -2361,7 +2366,7 @@ void CWsSMCEx::addLockInfo(CLockMetaData& lD, const char* xPath, unsigned msNow,
     StringBuffer timeStr;
     time_t ttLocked = ttNow - duration/1000;
     timeLocked.set(ttLocked);
-    timeLocked.getString(timeStr.clear());
+    timeLocked.getString(timeStr);
     lock->setTimeLocked(timeStr.str());
 
     unsigned mode = lD.mode;
@@ -2398,9 +2403,6 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
             unsigned modeReq;
             switch (mode)
             {
-            case CLockModes_READ:
-                modeReq = RTM_LOCK_READ;
-                break;
             case CLockModes_WRITE:
                 modeReq = RTM_LOCK_WRITE;
                 break;
@@ -2410,6 +2412,9 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
             case CLockModes_SUB:
                 modeReq = RTM_LOCK_SUB;
                 break;
+            default:
+                modeReq = RTM_LOCK_READ;
+                break;
             }
             if (lockMode & modeReq)
                 return true;
@@ -2417,8 +2422,6 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
             return false;
         }
     public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
         CLockPostFilter(IEspLockQueryRequest& req)
         {
             mode = req.getMode();
@@ -2474,13 +2477,13 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
     try
     {
         CLockPostFilter postFilter(req);
-        const char* xPath = NULL;
+        StringBuffer xPath;
         if (req.getAllFileLocks())
-            xPath = "/Files/*";
+            xPath.appendf("/%s/*", querySdsFilesRoot());
         else
             xPath = req.getXPath();
 
-        Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks(req.getEPIP(), xPath);
+        Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks(req.getEPIP(), xPath.str());
 
         IArrayOf<IEspLock> locks;
         CDateTime time;
@@ -2492,16 +2495,17 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
             ILockInfo& lockInfo = lockInfoCollection->queryLock(l);
 
             CDfsLogicalFileName dlfn;
+            const char* lfn = NULL;
             const char* xPath = NULL;
             if (dlfn.setFromXPath(lockInfo.queryXPath()))
-                xPath = dlfn.get();
+                lfn = dlfn.get();
             else
                 xPath = lockInfo.queryXPath();
             for (unsigned i=0; i<lockInfo.queryConnections(); i++)
             {
                 CLockMetaData& lMD = lockInfo.queryLockData(i);
                 if (postFilter.check(lMD, msNow, ttNow))
-                    addLockInfo(lMD, xPath, msNow, ttNow, locks);
+                    addLockInfo(lMD, xPath, lfn, msNow, ttNow, locks);
             }
         }
         unsigned numLocks = locks.length();

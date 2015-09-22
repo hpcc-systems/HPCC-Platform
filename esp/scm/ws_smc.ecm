@@ -369,6 +369,7 @@ ESPStruct [nil_remove] Lock
 {
     string EPIP;
     string XPath;
+    string LogicalFile;
     int64 SessionID;
     unsigned DurationMS;
     string TimeLocked;
