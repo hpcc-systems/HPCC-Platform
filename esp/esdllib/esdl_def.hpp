@@ -19,9 +19,6 @@
 #define ESDLDEF_HPP
 
 #include "jliball.hpp"
-//#include "esp.hpp"
-//#include "soapesp.hpp"
-//#include "ws_ecl_client.hpp"
 #include "jqueue.tpp"
 
 #ifdef _WIN32
@@ -222,6 +219,5 @@ esdl_decl void releaseEsdlDefinition(const char *esdl_ns=NULL);
 
 esdl_decl void initEsdlTypeList();
 esdl_decl EsdlBasicElementType esdlSimpleType(const char *type);
-
 
 #endif //ESDLDEF_HPP

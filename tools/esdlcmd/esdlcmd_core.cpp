@@ -824,7 +824,6 @@ public:
     void setFlag( unsigned f ) { optFlags |= f; }
     void unsetFlag( unsigned f ) { optFlags &= ~f; }
 
-
 public:
     StringAttr optService;
     StringAttr optXsltPath;
@@ -871,7 +870,6 @@ IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
         return new EsdlListESDLDefCmd();
     if (strieq(cmdname, "LIST-BINDINGS"))
         return new EsdlListESDLBindingsCmd();
-
 
     return NULL;
 }

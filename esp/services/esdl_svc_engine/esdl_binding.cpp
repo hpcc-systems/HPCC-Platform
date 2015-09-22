@@ -33,6 +33,7 @@
 #include "thorxmlwrite.hpp" //JSON WRITER
 #include "workunit.hpp"
 #include "wuwebview.hpp"
+#include "build-config.h"
 
 /*
  * trim xpath at first instance of element
@@ -197,7 +198,6 @@ bool EsdlServiceImpl::loadLogggingManager()
     return true;
 }
 
-
 void EsdlServiceImpl::init(const IPropertyTree *cfg,
                            const char *process,
                            const char *service)
@@ -232,7 +232,7 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
         throw MakeStringException(-1, "Could not access ESDL service configuration: esp process '%s' service name '%s'", process, service);
 }
 
-void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &entry)
+void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &entry, const char *classPath)
 {
     const char *javaScopedMethod = entry.queryProp("@javamethod");
     if (!javaScopedMethod || !*javaScopedMethod)
@@ -258,7 +258,8 @@ void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &ent
 
     if (!javaServiceMap.getValue(javaScopedClass))
     {
-        Owned<IEmbedServiceContext> srvctx = ensureJavaEmbeded().createServiceContext(javaScopedClass, EFimport, "classpath=/opt/HPCCSystems/classes");
+        VStringBuffer classPathOption("classpath=%s", classPath);
+        Owned<IEmbedServiceContext> srvctx = ensureJavaEmbeded().createServiceContext(javaScopedClass, EFimport, classPathOption);
         javaServiceMap.setValue(javaScopedClass, srvctx.getClear());
     }
 }
@@ -306,6 +307,13 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
         ForEach(*itns)
             m_pServiceMethodTargets->addPropTree("Target", createPTreeFromIPT(&itns->query()));
 
+        StringBuffer classPath;
+        Owned<IProperties> envConf = createProperties(CONFIG_DIR PATHSEPSTR "environment.conf", true);
+        if (envConf && envConf->hasProp("classpath"))
+            envConf->getProp("classpath", classPath);
+        else
+            classPath.append(INSTALL_DIR).append(PATHSEPCHAR).append("classes");
+
         Owned<IPropertyTreeIterator> iter = m_pServiceMethodTargets->getElements("Target");
         ForEach(*iter)
         {
@@ -314,7 +322,7 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
                 throw MakeStringException(-1, "ESDL binding - found target method entry without name!");
             const char *type = iter->query().queryProp("@querytype");
             if (type && strieq(type, "java"))
-                configureJavaMethod(method, iter->query());
+                configureJavaMethod(method, iter->query(), classPath);
             else
                 configureUrlMethod(method, iter->query());
         }
@@ -1036,10 +1044,6 @@ void EsdlBindingImpl::initEsdlServiceInfo(IEsdlDefService &srvdef)
     xsltpath.append("xslt/esxdl2xsd.xslt");
     m_xsdgen->loadTransform(xsltpath, xsdparams, EsdlXslToXsd );
     m_xsdgen->loadTransform(xsltpath, wsdlparams, EsdlXslToWsdl );
-
-
-//   xsltpath.set(getCFD()).append("xslt/esdl2java_srvbase.xslt");
-//   m_xsdgen->loadTransform(xsltpath, NULL, EsdlXslToJavaPlugin );
 }
 
 void EsdlBindingImpl::getSoapMessage(StringBuffer& soapmsg,
@@ -1490,11 +1494,11 @@ int EsdlBindingImpl::onJavaPlugin(IEspContext &context,
         }
         catch (IException *E)
         {
-            throw makeWsException(*E, WSERR_CLIENT , "ESP");
+            throw makeWsException(*E, WSERR_CLIENT , "ESDL");
         }
         catch (...)
         {
-            throw makeWsException(ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT , "ESP", "Could not generate JavaPlugin for this service." );
+            throw makeWsException(ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT , "ESDL", "Could not generate JavaPlugin for this service." );
         }
         response->setStatus(HTTP_STATUS_OK);
     }

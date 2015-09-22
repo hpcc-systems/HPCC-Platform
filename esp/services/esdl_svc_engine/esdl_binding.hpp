@@ -127,7 +127,7 @@ public:
     virtual bool loadLogggingManager();
     virtual void init(const IPropertyTree *cfg, const char *process, const char *service);
     virtual void configureTargets(IPropertyTree *cfg, const char *service);
-    void configureJavaMethod(const char *method, IPropertyTree &entry);
+    void configureJavaMethod(const char *method, IPropertyTree &entry, const char *classPath);
     void configureUrlMethod(const char *method, IPropertyTree &entry);
 
     virtual void handleServiceRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, const char *ns, const char *schema_location, IPropertyTree *req, StringBuffer &out, StringBuffer &logdata, unsigned int flags);

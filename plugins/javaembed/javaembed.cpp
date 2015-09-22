@@ -1304,10 +1304,6 @@ public:
         writeChildren(JNIenv->GetObjectClass(fieldObj), fieldObj, defStruct);
         writer.outputEndNested(fieldname);
     }
-    void writeSimpleArray(jclass parentClass, jobject parentObject, IEsdlDefObject &defObject)
-    {
-        //tbd
-    }
     void writeComplexArray(jclass parentClass, jobject parentObject, IEsdlDefObject &defObject)
     {
         IEsdlDefStruct *defStruct = esdl.queryStruct(defObject.queryProp("type"));
@@ -2025,7 +2021,7 @@ public:
     }
     IXmlWriterExt & clear()
     {
-        UNIMPLEMENTED;
+        throwUnexpected();
     }
     virtual size32_t length() const
     {
@@ -2033,10 +2029,12 @@ public:
     }
     virtual const char *str() const
     {
-        UNIMPLEMENTED;
+        throwUnexpected();
     }
     virtual void rewindTo(unsigned int prevlen)
     {
+        //needs to be a no-op because it is used, but the way its used to trim empty xml sections I think we're fairly safe.
+        //revisit cleaning up any empty objects later.
     }
     inline IEsdlDefStruct *queryCurrentEsdlStruct()
     {

@@ -56,6 +56,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/esp/esdllib
          ${HPCC_SOURCE_DIR}/esp/logging
+         ${CMAKE_BINARY_DIR}
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

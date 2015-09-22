@@ -2095,7 +2095,7 @@ static bool type_list_inited = false;
 typedef MapStringTo<EsdlBasicElementType> EsdlTypeList;
 static EsdlTypeList esdlTypeList;
 
-void init_type_list_v2(EsdlTypeList &list)
+void init_type_list(EsdlTypeList &list)
 {
     static CriticalSection crit;
     CriticalBlock block(crit);
@@ -2177,7 +2177,7 @@ void init_type_list_v2(EsdlTypeList &list)
 esdl_decl void initEsdlTypeList()
 {
     if (!type_list_inited)
-        init_type_list_v2(esdlTypeList);
+        init_type_list(esdlTypeList);
 }
 
 esdl_decl EsdlBasicElementType esdlSimpleType(const char *type)
