@@ -45,7 +45,7 @@ protected:
     Owned<EsdlCmdHelper> esdlHelper;
 
 public:
-    EsdlPublishCmdCommon()
+    EsdlPublishCmdCommon() : optWSProcAddress("."), optWSProcPort("8010")
     {
         esdlHelper.setown(EsdlCmdHelper::createEsdlHelper());
     }

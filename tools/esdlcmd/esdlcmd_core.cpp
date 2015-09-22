@@ -196,18 +196,18 @@ public:
     virtual void doTransform(IEsdlDefObjectIterator& objs, StringBuffer &target, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )
     {
         TimeSection ts("transforming via XSLT");
-        helper->toXSD( objs, target, EsdlXslToXsd, optVersion, opts, NULL, optFlags );
+        cmdHelper.defHelper->toXSD( objs, target, EsdlXslToXsd, optVersion, opts, NULL, optFlags );
     }
 
     virtual void loadTransform( StringBuffer &xsltpath, IProperties *params)
     {
         TimeSection ts("loading XSLT");
-        helper->loadTransform( xsltpath, params, EsdlXslToXsd );
+        cmdHelper.defHelper->loadTransform( xsltpath, params, EsdlXslToXsd );
     }
 
     virtual void setTransformParams(IProperties *params )
     {
-        helper->setTransformParams(EsdlXslToXsd, params);
+        cmdHelper.defHelper->setTransformParams(EsdlXslToXsd, params);
     }
 
     virtual int processCMD()
@@ -215,7 +215,7 @@ public:
         loadServiceDef();
         createOptionals();
 
-        Owned<IEsdlDefObjectIterator> structs = esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optVersion, opts.get(), optFlags );
+        Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optVersion, opts.get(), optFlags );
 
         if( optRawOutput )
         {
@@ -292,7 +292,7 @@ public:
             StringBuffer empty;
 
             xmlOut.appendf( "<esxdl name=\"%s\">", optService.get());
-            helper->toXML( obj, xmlOut, optVersion, opts.get(), optFlags );
+            cmdHelper.defHelper->toXML( obj, xmlOut, optVersion, opts.get(), optFlags );
             xmlOut.append("</esxdl>");
 
             saveAsFile( optPreprocessOutputDir.get(), empty, xmlOut.str(), NULL );
@@ -354,7 +354,7 @@ public:
                     // Web Service at a time, and must load files by explicitly loading
                     // only the top-level ws_<service> definition file, and allowing the
                     // load code to handle loading only the minimal set of required includes
-                    esdlDef->addDefinitionsFromFile( serviceDef->queryFilename() );
+                    cmdHelper.esdlDef->addDefinitionsFromFile( serviceDef->queryFilename() );
                 }
                 else
                 {
@@ -394,7 +394,7 @@ public:
        /*
        StringBuffer ns_optionals;
        //IProperties *params = context.queryRequestParameters();
-       Owned<IPropertyIterator> esdl_optionals = esdlDef->queryOptionals()->getIterator();
+       Owned<IPropertyIterator> esdl_optionals = cmdHelper.esdlDef->queryOptionals()->getIterator();
        ForEach(*esdl_optionals)
        {
            const char *key = esdl_optionals->getPropKey();
@@ -518,18 +518,18 @@ public:
     virtual void doTransform(IEsdlDefObjectIterator& objs, StringBuffer &target, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )
     {
         TimeSection ts("transforming via XSLT");
-        helper->toWSDL(objs, target, EsdlXslToWsdl, optVersion, opts, NULL, optFlags);
+        cmdHelper.defHelper->toWSDL(objs, target, EsdlXslToWsdl, optVersion, opts, NULL, optFlags);
     }
 
     virtual void loadTransform( StringBuffer &xsltpath, IProperties *params)
     {
         TimeSection ts("loading XSLT");
-        helper->loadTransform( xsltpath, params, EsdlXslToWsdl );
+        cmdHelper.defHelper->loadTransform( xsltpath, params, EsdlXslToWsdl );
     }
 
     virtual void setTransformParams(IProperties *params )
     {
-        helper->setTransformParams(EsdlXslToWsdl, params);
+        cmdHelper.defHelper->setTransformParams(EsdlXslToWsdl, params);
     }
 
     virtual int processCMD()
@@ -537,7 +537,7 @@ public:
         loadServiceDef();
         createOptionals();
 
-        Owned<IEsdlDefObjectIterator> structs = esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optVersion, opts.get(), optFlags );
+        Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optVersion, opts.get(), optFlags );
 
         if( optRawOutput )
         {
@@ -605,6 +605,239 @@ public:
     StringAttr optWsdlAddress;
 };
 
+#define XSLT_ESDL2JAVABASE "esdl2java_srvbase.xslt"
+#define XSLT_ESDL2JAVADUMMY "esdl2java_srvdummy.xslt"
+
+class Esdl2JavaCmd : public EsdlHelperConvertCmd
+{
+public:
+    Esdl2JavaCmd() : optVersion(0), optFlags(0)
+    {}
+
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        //First two parameters' order is fixed.
+        for (int par = 0; par < 2 && !iter.done(); par++)
+        {
+            const char *arg = iter.query();
+            if (*arg != '-')
+            {
+                if (optSource.isEmpty())
+                    optSource.set(arg);
+                else if (optService.isEmpty())
+                    optService.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument detected before required parameters: %s\n", arg);
+                    usage();
+                    return false;
+                }
+            }
+            else
+            {
+                fprintf(stderr, "\noption detected before required parameters: %s\n", arg);
+                usage();
+                return false;
+            }
+
+            iter.next();
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            if (parseCommandLineOption(iter))
+                continue;
+
+            if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
+                return false;
+        }
+
+        return true;
+    }
+
+    virtual bool parseCommandLineOption(ArgvIterator &iter)
+    {
+        if (iter.matchOption(optVersionStr, ESDLOPT_VERSION))
+            return true;
+        if (iter.matchOption(optService, ESDLOPT_SERVICE))
+            return true;
+        if (iter.matchOption(optMethod, ESDLOPT_METHOD))
+            return true;
+        if (iter.matchOption(optXsltPath, ESDLOPT_XSLT_PATH))
+            return true;
+        if (iter.matchOption(optPreprocessOutputDir, ESDLOPT_PREPROCESS_OUT))
+            return true;
+        if (EsdlConvertCmd::parseCommandLineOption(iter))
+            return true;
+
+        return false;
+    }
+
+    esdlCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
+    {
+        return EsdlConvertCmd::matchCommandLineOption(iter, true);
+    }
+
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (optSource.isEmpty())
+        {
+            usage();
+            throw( MakeStringException(0, "\nError: Source file parameter required\n"));
+        }
+
+        if( optService.isEmpty() )
+        {
+            usage();
+            throw( MakeStringException(0, "A service name must be provided") );
+        }
+
+        if (!optVersionStr.isEmpty())
+        {
+            optVersion = atof( optVersionStr.get() );
+            if( optVersion <= 0 )
+                throw MakeStringException( 0, "Version option must be followed by a real number > 0" );
+        }
+
+        if (!optXsltPath.length())
+        {
+            StringBuffer binXsltPath;
+            getComponentFilesRelPathFromBin(binXsltPath);
+            binXsltPath.append("/xslt/");
+            StringBuffer temp;
+            if (checkFileExists(temp.append(binXsltPath).append(XSLT_ESDL2JAVABASE)))
+                optXsltPath.set(binXsltPath);
+            else
+                optXsltPath.set(temp.set(COMPONENTFILES_DIR).append("/xslt/"));
+        }
+        return true;
+    }
+
+    virtual void doTransform(IEsdlDefObjectIterator& objs, StringBuffer &out, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )
+    {
+    }
+    virtual void loadTransform( StringBuffer &xsltpath, IProperties *params )
+    {
+    }
+
+    virtual void setTransformParams(IProperties *params )
+    {
+    }
+
+    virtual int processCMD()
+    {
+        cmdHelper.loadDefinition(optSource, optService, optVersion);
+        Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService, optMethod, ESDLOPTLIST_DELIMITER, optVersion, NULL, optFlags );
+
+        if(!optPreprocessOutputDir.isEmpty())
+        {
+            outputRaw(*structs);
+        }
+
+        StringBuffer xsltpathServiceBase(optXsltPath);
+        xsltpathServiceBase.append(XSLT_ESDL2JAVABASE);
+        cmdHelper.defHelper->loadTransform( xsltpathServiceBase, NULL, EsdlXslToJavaServiceBase);
+        cmdHelper.defHelper->toJavaService( *structs, outputBuffer, EsdlXslToJavaServiceBase, NULL, optFlags );
+
+        VStringBuffer javaFileNameBase("%sServiceBase.java", optService.get());
+        saveAsFile(".", javaFileNameBase, outputBuffer.str(), NULL);
+
+        StringBuffer xsltpathServiceDummy(optXsltPath);
+        xsltpathServiceDummy.append(XSLT_ESDL2JAVADUMMY);
+        cmdHelper.defHelper->loadTransform( xsltpathServiceDummy, NULL, EsdlXslToJavaServiceDummy);
+        cmdHelper.defHelper->toJavaService( *structs, outputBuffer.clear(), EsdlXslToJavaServiceDummy, NULL, optFlags );
+
+        VStringBuffer javaFileNameDummy("%sServiceDummy.java", optService.get());
+        saveAsFile(".", javaFileNameDummy, outputBuffer.str(), NULL);
+
+        return 0;
+    }
+
+    void printOptions()
+    {
+        puts("Options:");
+        puts("  --version <version number> : Constrain to interface version\n");
+        puts("  --method <method name>[;<method name>]* : Constrain to list of specific method(s)\n" );
+        puts("  --xslt <xslt file path> : Path to xslt files used to transform EsdlDef to Java code\n" );
+        puts("  --preprocess-output <raw output directory> : Output pre-processed xml file to specified directory before applying XSLT transform\n" );
+        puts("  --show-inheritance : Turns off the collapse feature. Collapsing optimizes the XML output to strip out structures\n" );
+        puts("                        only used for inheritance, and collapses their elements into their child. That simplifies the\n" );
+        puts("                        stylesheet. By default this option is on.");
+    }
+
+    virtual void usage()
+    {
+        puts("Usage:");
+        puts("esdl java sourcePath serviceName [options]\n" );
+        puts("\nsourcePath must be absolute path to the ESDL Definition file containing the" );
+        puts("EsdlService definition for the service you want to work with.\n" );
+        puts("serviceName EsdlService definition for the service you want to work with.\n" );
+
+        printOptions();
+        EsdlConvertCmd::usage();
+    }
+
+    virtual void outputRaw( IEsdlDefObjectIterator& obj)
+    {
+        if (optPreprocessOutputDir.isEmpty())
+            return;
+
+        StringBuffer xml;
+
+        xml.appendf( "<esxdl name='%s'>", optService.get());
+        cmdHelper.defHelper->toXML( obj, xml, optVersion, NULL, optFlags );
+        xml.append("</esxdl>");
+        saveAsFile(optPreprocessOutputDir, NULL, xml, NULL );
+    }
+
+    void saveAsFile(const char * dir, const char *name, const char *text, const char *ext="")
+    {
+        StringBuffer path(dir);
+        if (name && *name)
+        {
+            if (*name!=PATHSEPCHAR)
+                addPathSepChar(path);
+            path.append(name);
+        }
+
+        if( ext && *ext )
+            path.append(ext);
+
+        Owned<IFile> file = createIFile(path);
+        Owned<IFileIO> io;
+        io.setown(file->open(IFOcreaterw));
+
+        DBGLOG("Writing java to file %s", file->queryFilename());
+
+        if (io.get())
+            io->write(0, strlen(text), text);
+        else
+            DBGLOG("File %s can't be created", file->queryFilename());
+    }
+
+    void setFlag( unsigned f ) { optFlags |= f; }
+    void unsetFlag( unsigned f ) { optFlags &= ~f; }
+
+public:
+    StringAttr optService;
+    StringAttr optXsltPath;
+    StringAttr optMethod;
+    StringAttr optPreprocessOutputDir;
+    StringAttr optVersionStr;
+    double optVersion;
+    unsigned optFlags;
+
+protected:
+    StringBuffer outputBuffer;
+    Owned<IProperties> params;
+};
+
 //=========================================================================================
 
 IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
@@ -615,6 +848,8 @@ IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
         return new Esdl2XSDCmd();
     if (strieq(cmdname, "ECL"))
         return new Esdl2EclCmd();
+    if (strieq(cmdname, "JAVA"))
+       return new Esdl2JavaCmd();
     if (strieq(cmdname, "WSDL"))
         return new Esdl2WSDLCmd();
     if (strieq(cmdname, "PUBLISH"))
@@ -635,7 +870,6 @@ IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
         return new EsdlListESDLDefCmd();
     if (strieq(cmdname, "LIST-BINDINGS"))
         return new EsdlListESDLBindingsCmd();
-
 
     return NULL;
 }

@@ -25,6 +25,9 @@
 #include "esdl_transformer.hpp"
 #include <xpp/XmlPullParser.h>
 #include <map>
+#include "esp.hpp"
+#include "soapesp.hpp"
+#include "ws_ecl_client.hpp"
 #include "esdl_def.hpp"
 #include "eclhelper.hpp"
 
@@ -41,29 +44,6 @@ typedef MapStringTo<EsdlBaseArrayPtr> EsdlBaseArrayMap;
 typedef MapStringTo<IPTreePtr> AddedList;
 
 // ======================================================================================
-
-typedef enum
-{
-    ESDLT_UNKOWN,
-    ESDLT_STRUCT,
-    ESDLT_REQUEST,
-    ESDLT_RESPONSE,
-    ESDLT_COMPLEX,
-    ESDLT_STRING,
-    ESDLT_INT8,
-    ESDLT_INT16,
-    ESDLT_INT32,
-    ESDLT_INT64,
-    ESDLT_UINT8,
-    ESDLT_UINT16,
-    ESDLT_UINT32,
-    ESDLT_UINT64,
-    ESDLT_BOOL,
-    ESDLT_FLOAT,
-    ESDLT_DOUBLE,
-    ESDLT_BYTE,
-    ESDLT_UBYTE
-} Esdl2Type;
 
 // ======================================================================================
 // Context for ESDL transformer
@@ -149,7 +129,7 @@ class Esdl2Base : public CInterface
 {
 protected:
     IEsdlDefObject* m_def;
-    Esdl2Type type_id;
+    EsdlBasicElementType type_id;
 
     StringAttr xml_tag;
     StringAttr param_group;
@@ -164,7 +144,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    Esdl2Base(Esdl2Transformer *xformer, IEsdlDefObject* def, Esdl2Type t=ESDLT_UNKOWN, bool might_skip_root_=false);
+    Esdl2Base(Esdl2Transformer *xformer, IEsdlDefObject* def, EsdlBasicElementType t=ESDLT_UNKOWN, bool might_skip_root_=false);
     virtual ~Esdl2Base();
 
     virtual bool hasChild() { return false; }
@@ -358,7 +338,7 @@ private:
     EsdlBaseMap   m_child_map;
 
 public:
-    Esdl2Struct(Esdl2Transformer *xformer, IEsdlDefStruct *def, Esdl2Type t=ESDLT_STRUCT);
+    Esdl2Struct(Esdl2Transformer *xformer, IEsdlDefStruct *def, EsdlBasicElementType t=ESDLT_STRUCT);
     virtual ~Esdl2Struct();
 
     virtual bool hasChild() { return !m_children.empty(); }

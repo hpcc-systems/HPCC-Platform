@@ -19,9 +19,6 @@
 #define ESDLDEF_HPP
 
 #include "jliball.hpp"
-#include "esp.hpp"
-#include "soapesp.hpp"
-#include "ws_ecl_client.hpp"
 #include "jqueue.tpp"
 
 #ifdef _WIN32
@@ -33,6 +30,29 @@
 #else
  #define esdl_decl
 #endif
+
+typedef enum
+{
+    ESDLT_UNKOWN,
+    ESDLT_STRUCT,
+    ESDLT_REQUEST,
+    ESDLT_RESPONSE,
+    ESDLT_COMPLEX,
+    ESDLT_STRING,
+    ESDLT_INT8,
+    ESDLT_INT16,
+    ESDLT_INT32,
+    ESDLT_INT64,
+    ESDLT_UINT8,
+    ESDLT_UINT16,
+    ESDLT_UINT32,
+    ESDLT_UINT64,
+    ESDLT_BOOL,
+    ESDLT_FLOAT,
+    ESDLT_DOUBLE,
+    ESDLT_BYTE,
+    ESDLT_UBYTE
+} EsdlBasicElementType;
 
 typedef enum EsdlDefTypeId_
 {
@@ -189,6 +209,7 @@ interface IEsdlDefinition : extends IInterface
     virtual bool hasFileLoaded(const char *filename)=0;
     virtual bool hasXMLDefintionLoaded(const char *esdlDefName, int ver)=0;
     virtual bool hasXMLDefintionLoaded(const char *esdlDefId)=0;
+    virtual EsdlBasicElementType translateSimpleType(const char *type)=0;
 };
 
 esdl_decl IEsdlDefinition *createNewEsdlDefinition(const char *esdl_ns=NULL);
@@ -196,5 +217,7 @@ esdl_decl IEsdlDefinition *createEsdlDefinition(const char *esdl_ns=NULL);
 esdl_decl IEsdlDefinition *queryEsdlDefinition(const char *esdl_ns=NULL);
 esdl_decl void releaseEsdlDefinition(const char *esdl_ns=NULL);
 
+esdl_decl void initEsdlTypeList();
+esdl_decl EsdlBasicElementType esdlSimpleType(const char *type);
 
 #endif //ESDLDEF_HPP

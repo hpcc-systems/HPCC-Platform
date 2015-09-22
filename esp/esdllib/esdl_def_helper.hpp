@@ -30,7 +30,9 @@
 typedef enum EsdlXslTypeId_
 {
     EsdlXslToXsd,
-    EsdlXslToWsdl
+    EsdlXslToWsdl,
+    EsdlXslToJavaServiceBase,
+    EsdlXslToJavaServiceDummy
 } EsdlXslTypeId;
 
 interface IEsdlDefinitionHelper : extends IInterface
@@ -42,6 +44,7 @@ interface IEsdlDefinitionHelper : extends IInterface
     virtual void toXSD( IEsdlDefObjectIterator& objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )=0;
     virtual void toXSD( IEsdlDefObjectIterator& objs, StringBuffer &xsd, StringBuffer& xslt, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )=0;
     virtual void toWSDL( IEsdlDefObjectIterator& objs, StringBuffer &wsdl, EsdlXslTypeId xslId, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )=0;
+    virtual void toJavaService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId implType, IProperties *opts=NULL, unsigned flags=0 )=0;
 };
 
 

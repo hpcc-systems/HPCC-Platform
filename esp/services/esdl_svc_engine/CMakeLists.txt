@@ -49,10 +49,14 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/deftype
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/common/workunit
+         ${HPCC_SOURCE_DIR}/common/wuwebview
          ${HPCC_SOURCE_DIR}/ecl/hql
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/esp/esdllib
          ${HPCC_SOURCE_DIR}/esp/logging
+         ${CMAKE_BINARY_DIR}
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

@@ -41,6 +41,8 @@ if (USE_JNI)
              ./../../common/deftype
              ./../../system/jlib
              ./../../roxie/roxiemem
+             ${HPCC_SOURCE_DIR}/esp/esdllib
+             ${HPCC_SOURCE_DIR}/common/thorhelper
              ${CMAKE_BINARY_DIR}
              ${CMAKE_BINARY_DIR}/oss
         )

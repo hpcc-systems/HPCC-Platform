@@ -18,6 +18,9 @@
 #ifndef __ESDL_TRANSFORMER_HPP__
 #define __ESDL_TRANSFORMER_HPP__
 
+#include "esp.hpp"
+#include "soapesp.hpp"
+#include "ws_ecl_client.hpp"
 #include "esdl_def.hpp"
 
 typedef  enum EsdlProcessMode_

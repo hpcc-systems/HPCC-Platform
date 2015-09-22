@@ -131,18 +131,18 @@ public:
 
 class EsdlCmdHelper : public CInterface
 {
-protected:
+public:
     Owned<IEsdlDefinition> esdlDef;
-    Owned<IEsdlDefinitionHelper> helper;
+    Owned<IEsdlDefinitionHelper> defHelper;
     Owned<IFile> serviceDefFile;
 
+public:
     EsdlCmdHelper()
     {
         esdlDef.set(createEsdlDefinition());
-        helper.set(createEsdlDefinitionHelper());
+        defHelper.set(createEsdlDefinitionHelper());
     }
 
-public:
     IMPLEMENT_IINTERFACE;
 
     static EsdlCmdHelper * createEsdlHelper()
@@ -150,7 +150,7 @@ public:
         return new EsdlCmdHelper();
     }
 
-    void getServiceESXDL(const char * sourceFileName, const char * serviceName, StringBuffer & xmlOut, double version, IProperties *opts=NULL, unsigned flags=0)
+    void loadDefinition(const char * sourceFileName, const char * serviceName, double version)
     {
         if (!esdlDef.get())
             esdlDef.set(createEsdlDefinition());
@@ -171,6 +171,11 @@ public:
                 loadEsdlDef(sourceFileName);
             }
         }
+    }
+
+    void getServiceESXDL(const char * sourceFileName, const char * serviceName, StringBuffer & xmlOut, double version, IProperties *opts=NULL, unsigned flags=0)
+    {
+        loadDefinition(sourceFileName, serviceName, version);
 
         if (esdlDef)
         {
@@ -179,7 +184,7 @@ public:
             if( deps )
             {
                 xmlOut.appendf( "<esxdl name=\"%s\">", serviceName);
-                helper->toXML( *deps, xmlOut, version, opts, flags );
+                defHelper->toXML( *deps, xmlOut, version, opts, flags );
                 xmlOut.append("</esxdl>");
             }
             else
@@ -288,13 +293,10 @@ public:
 class EsdlHelperConvertCmd : public EsdlConvertCmd
 {
 protected:
-    Owned<IEsdlDefinition> esdlDef;
-    Owned<IEsdlDefinitionHelper> helper;
+    EsdlCmdHelper cmdHelper;
 public:
     EsdlHelperConvertCmd()
     {
-        esdlDef.set(createEsdlDefinition());
-        helper.set(createEsdlDefinitionHelper());
     }
 
     virtual void usage()

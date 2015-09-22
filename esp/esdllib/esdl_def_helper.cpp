@@ -72,6 +72,7 @@ public:
     virtual void toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0 );
     virtual void toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, StringBuffer &xslt, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0 );
     virtual void toWSDL( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0 );
+    virtual void toJavaService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId classType, IProperties *opts, unsigned flags);
 
     void loadTransformParams( EsdlXslTypeId xslId );
 
@@ -254,6 +255,34 @@ void EsdlDefinitionHelper::loadTransformParams( EsdlXslTypeId xslId)
             trans->setParameter(paramName, StringBuffer().append('\'').append(params->queryProp(key)).append('\'').str());
         }
     }
+}
+
+void EsdlDefinitionHelper::toJavaService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId implType, IProperties *opts, unsigned flags)
+{
+    StringBuffer xml;
+    int xmlLen = 0;
+    IXslTransform* trans = *( transforms.getValue( implType ) );
+
+    this->loadTransformParams( implType );
+
+    if( trans )
+    {
+        IProperties* params = *( parameters.getValue(implType) );
+
+        xml.appendf("<esxdl name='custom' EsdlXslTypeId='%d' xmlns:tns='%s' ns_uri='%s' version='0'>", implType, "urn:unknown", "urn:unknown");
+        this->toXML( objs, xml, 0, opts, flags );
+        xml.append("</esxdl>");
+
+        trans->setXmlSource( xml.str(), xml.length() );
+        trans->transform(content);
+        //content.append(xml);
+    }
+    else
+    {
+        throw (MakeStringExceptionDirect( 0, "Unable to find transform for creating java service plugin"));
+    }
+
+    return;
 }
 
 esdl_decl IEsdlDefinitionHelper* createEsdlDefinitionHelper( )
