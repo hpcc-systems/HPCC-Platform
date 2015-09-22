@@ -7538,7 +7538,6 @@ IHqlExpression * createJavadocAnnotation(IHqlExpression * _ownedBody, IPropertyT
 CFileContents::CFileContents(IFile * _file, ISourcePath * _sourcePath) : file(_file), sourcePath(_sourcePath)
 {
     delayedRead = false;
-    isSigned = false;
     if (!preloadFromFile())
         file.clear();
 }
@@ -7610,19 +7609,14 @@ void CFileContents::ensureLoaded()
 
     if (sizeRead != sizeToRead)
         throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeRead, sizeToRead);
-    if (strstr(file->queryFilename(), "pipe"))  // TEmporary hack for testing!
-    {
-        DBGLOG("setting signed to true, %p", this);
-        isSigned = true;
-    }
 }
 
-CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath, bool _isSigned)
+CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath) 
 : sourcePath(_sourcePath)
 {
     if (query)
         setContents(strlen(query), query);
-    isSigned = _isSigned;
+
     delayedRead = false;
 }
 
@@ -7631,7 +7625,6 @@ CFileContents::CFileContents(unsigned len, const char *query, ISourcePath * _sou
 {
     setContents(len, query);
     delayedRead = false;
-    isSigned = false;
 }
 
 
@@ -7655,10 +7648,10 @@ IFileContents * createFileContentsFromText(unsigned len, const char * text, ISou
     return new CFileContents(len, text, sourcePath);
 }
 
-IFileContents * createFileContentsFromText(const char * text, ISourcePath * sourcePath, bool isSigned)
+IFileContents * createFileContentsFromText(const char * text, ISourcePath * sourcePath)
 {
     //MORE: Treatment of nulls?
-    return new CFileContents(text, sourcePath, isSigned);
+    return new CFileContents(text, sourcePath);
 }
 
 IFileContents * createFileContentsFromFile(const char * filename, ISourcePath * sourcePath)
@@ -7684,7 +7677,6 @@ public:
     virtual ISourcePath * querySourcePath() { return contents->querySourcePath(); }
     virtual const char *getText() { return contents->getText() + offset; }
     virtual size32_t length() { return len; }
-    virtual bool isSignedModule() { return contents->isSignedModule(); }
 
 protected:
     Linked<IFileContents> contents;

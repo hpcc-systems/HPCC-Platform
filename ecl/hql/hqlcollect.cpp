@@ -289,7 +289,7 @@ bool FileSystemFile::checkValid()
                         version.set(pb.version);
 
                         Owned<ISourcePath> pluginPath = createSourcePath(pb.moduleName);
-                        fileContents.setown(createFileContentsFromText(pb.ECL, pluginPath, false)); // MORE - isSigned
+                        fileContents.setown(createFileContentsFromText(pb.ECL, pluginPath));
 
                         //if (traceMask & PLUGIN_DLL_MODULE)
                         DBGLOG("Loading plugin %s[%s] version = %s", filename, pb.moduleName, version.get());
@@ -665,7 +665,7 @@ IFileContents * CXmlEclElement::queryFileContents()
                 getFullName(defaultName);
                 sourcePath.setown(createSourcePath(defaultName));
             }
-            fileContents.setown(createFileContentsFromText(text, sourcePath, elemTree->getPropBool("@isSigned", false)));
+            fileContents.setown(createFileContentsFromText(text, sourcePath));
         }
     }
     return fileContents;
@@ -799,9 +799,9 @@ IEclSourceCollection * createSingleDefinitionEclCollection(const char * moduleNa
     if (filename)
         attr->setProp("@sourcePath", filename);
 
-    attr->setProp("", contents->getText());
-    if (contents->isSignedModule())
-        attr->setPropBool("@isSigned", true);  // MORE - this is wrong!
+    StringBuffer temp;
+    temp.append(contents->length(), contents->getText());
+    attr->setProp("", temp.str());
     return createArchiveEclCollection(archive);
 }
 

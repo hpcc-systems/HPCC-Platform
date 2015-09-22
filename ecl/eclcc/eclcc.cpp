@@ -1325,7 +1325,7 @@ void EclCC::processDefinitions(EclRepositoryArray & repositories)
         }
 
         //Create a repository with just that attribute.
-        Owned<IFileContents> contents = createFileContentsFromText(value, NULL, false);
+        Owned<IFileContents> contents = createFileContentsFromText(value, NULL);
         repositories.append(*createSingleDefinitionEclRepository(module, attr, contents));
     }
 }
@@ -1402,7 +1402,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     {
         const char * sourceFilename = archiveTree->queryProp("Query/@originalFilename");
         Owned<ISourcePath> sourcePath = createSourcePath(sourceFilename);
-        contents.setown(createFileContentsFromText(queryText, sourcePath, false));
+        contents.setown(createFileContentsFromText(queryText, sourcePath));
         if (queryAttributePath && queryText && *queryText)
         {
             Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(queryAttributePath, contents);
@@ -1423,7 +1423,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
         queryAttributePath = fullPath.str();
 
         //Create a repository with just that attribute, and place it before the archive in the resolution order.
-        Owned<IFileContents> contents = createFileContentsFromText(queryText, NULL, false);
+        Owned<IFileContents> contents = createFileContentsFromText(queryText, NULL);
         repositories.append(*createSingleDefinitionEclRepository(syntaxCheckModule, syntaxCheckAttribute, contents));
     }
 
