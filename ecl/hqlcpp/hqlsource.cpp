@@ -2790,7 +2790,8 @@ void DiskReadBuilder::buildMembers(IHqlExpression * expr)
     //---- virtual const char * getPipeProgram() { return "grep"; } ----
     if (modeOp==no_pipe)
     {
-        translator.checkPipeAllowed();
+        if (expr->hasAttribute(_disallowed_Atom))
+            throwError(HQLERR_PipeNotAllowed);
         BuildCtx pipeCtx(instance->startctx);
         pipeCtx.addQuotedCompound("virtual const char * getPipeProgram()");
         translator.buildReturn(pipeCtx, mode->queryChild(0), unknownVarStringType);

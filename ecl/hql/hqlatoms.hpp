@@ -135,6 +135,7 @@ extern HQL_API IAtom * definitionAtom;
 extern HQL_API IAtom * deprecatedAtom;
 extern HQL_API IAtom * descAtom;
 extern HQL_API IAtom * diskAtom;
+extern HQL_API IAtom * _disallowed_Atom;
 extern HQL_API IAtom * distributedAtom;
 extern HQL_API IAtom * _distributed_Atom;
 extern HQL_API IAtom * _dot_Atom;

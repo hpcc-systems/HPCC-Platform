@@ -15975,7 +15975,7 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
 
 extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * dataServer, const char * items)
 {
-    HqlParseContext parseCtx(dataServer, NULL);
+    HqlParseContext parseCtx(dataServer, NULL, NULL);
     parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
     Owned<IErrorReceiver> errorHandler = createNullErrorReceiver();

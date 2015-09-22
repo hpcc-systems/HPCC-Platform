@@ -359,7 +359,10 @@ typedef CIArrayOf<HqlExprArrayItem> HqlExprArrayArray;
 class HqlGramCtx : public CInterface
 {
 public:
-    HqlGramCtx(HqlLookupContext & _lookupCtx) : lookupCtx(_lookupCtx) {}
+    HqlGramCtx(HqlLookupContext & _lookupCtx, bool _inSignedModule)
+      : lookupCtx(_lookupCtx), inSignedModule(_inSignedModule)
+    {
+    }
     bool hasAnyActiveParameters();
 public:
     CIArrayOf<ActiveScopeInfo> defineScopes;
@@ -368,6 +371,7 @@ public:
     Linked<ISourcePath> sourcePath;
     HqlLookupContext lookupCtx;
     HqlExprArray imports;
+    bool inSignedModule;
 };
 
 typedef const IAtom * const * AtomList;
@@ -470,6 +474,7 @@ public:
     void checkAggregateRecords(IHqlExpression * expr, IHqlExpression * record, attribute & errpos);
     void checkExportedModule(const attribute & errpos, IHqlExpression * scopeExpr);
     bool checkCompatibleSymbol(const attribute & errpos, IHqlExpression * prevValue, IHqlExpression * newValue);
+    bool checkAllowed(const attribute & errpos, const char *category, const char *description);
     IHqlExpression * createAveList(const attribute & errpos, IHqlExpression * list);
     IHqlExpression * createIff(attribute & condAttr, attribute & leftAttr, attribute & rightAttr);
     IHqlExpression * createListFromExpressionList(attribute & attr);
@@ -847,6 +852,7 @@ protected:
     bool parseConstantText;
     bool expandingMacroPosition;
     unsigned m_maxErrorsAllowed;
+    bool inSignedModule;
 
     IErrorArray pendingWarnings;
     Linked<ISourcePath> sourcePath;
@@ -1168,6 +1174,7 @@ class HqlLex
         void doSkipUntilEnd(YYSTYPE & returnToken, const char * forwhat);
 
         void processEncrypted();
+        void checkSignature();
 
         void declareUniqueName(const char* name, const char * pattern);
         void checkNextLoop(const YYSTYPE & errpos, bool first,int startLine,int startCol);
@@ -1204,6 +1211,7 @@ private:
         int loopTimes;
 
         bool inComment;
+        bool inSignature;
         bool inCpp;
         bool encrypted;
         StringBuffer javaDocComment;

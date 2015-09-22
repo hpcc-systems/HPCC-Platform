@@ -280,7 +280,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 eclccCmd.appendf(" -I%s", value);
             else if (stricmp(optName, "libraryPath") == 0)
                 eclccCmd.appendf(" -L%s", value);
-            else if (stricmp(optName, "-allow")==0)
+            else if (strnicmp(optName, "-allow", 6)==0)
             {
                 if (isLocal)
                     throw MakeStringException(0, "eclcc-allow option can not be set per-workunit");  // for security reasons

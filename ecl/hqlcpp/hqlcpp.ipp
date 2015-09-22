@@ -1119,8 +1119,6 @@ public:
     void getRecordECL(IHqlExpression * record, StringBuffer & eclText);
     void ensureHasAddress(BuildCtx & ctx, CHqlBoundExpr & tgt);
     void normalizeBoundExpr(BuildCtx & ctx, CHqlBoundExpr & bound);
-    bool allowEmbeddedCpp();
-    void checkPipeAllowed();
 
     IWorkUnit * wu()           { return code->workunit; }
     void useInclude(const char * name)                      { code->useInclude(name); }
@@ -1941,9 +1939,6 @@ protected:
     Linked<IErrorReceiver> errorProcessor;
     HqlCppOptions       options;
     HqlCppDerived       derived;
-    bool                checkedEmbeddedCpp;
-    bool                cachedAllowEmbeddedCpp;
-    bool                checkedPipeAllowed;
     unsigned            activitiesThisCpp;
     unsigned            curCppFile;
     Linked<ICodegenContextCallback> ctxCallback;

@@ -1367,7 +1367,7 @@ IHqlCppInstance * createCppInstance(IWorkUnit *wu, const char * wupathname)
 
 HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soName, IHqlCppInstance * _code, ClusterType _targetClusterType, ICodegenContextCallback *_ctxCallback) : ctxCallback(_ctxCallback)
 {
-    //Insert a couple of warning mapping layers - one for global #onwarnigns, and another for local : onwarning
+    //Insert a couple of warning mapping layers - one for global #onwarnings, and another for local : onwarning
     globalOnWarnings.setown(new ErrorSeverityMapper(*_errors));
     localOnWarnings.setown(new ErrorSeverityMapper((IErrorReceiver &)*globalOnWarnings)); // horrible: cast required, otherwise copy constructor is called!
 
@@ -1425,9 +1425,6 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
     graphSeqNumber = 0;
     nlpParse = NULL;
     outputLibrary = NULL;
-    checkedEmbeddedCpp = false;
-    cachedAllowEmbeddedCpp = true;
-    checkedPipeAllowed = false;
     activitiesThisCpp = 0;
     curCppFile = 0;
     timeReporter.setown(createStdTimeReporter());
@@ -1966,26 +1963,6 @@ IHqlExpression *HqlCppTranslator::addStringLiteral(const char *lit)
         return addBigLiteral(lit, litLen+1);
     else
         return createConstant(createStringValue(lit, litLen));
-}
-
-bool HqlCppTranslator::allowEmbeddedCpp()
-{
-    if (!checkedEmbeddedCpp)
-    {
-        cachedAllowEmbeddedCpp = ctxCallback->allowAccess("cpp");
-        checkedEmbeddedCpp = true;
-    }
-    return cachedAllowEmbeddedCpp;
-}
-
-void HqlCppTranslator::checkPipeAllowed()
-{
-    if (!checkedPipeAllowed)
-    {
-        if (!ctxCallback->allowAccess("pipe"))
-            throwError(HQLERR_PipeNotAllowed);
-        checkedPipeAllowed = true;
-    }
 }
 
 IHqlExpression * HqlCppTranslator::bindFunctionCall(IIdAtom * name, HqlExprArray & args)
@@ -7518,7 +7495,7 @@ void HqlCppTranslator::processCppBodyDirectives(IHqlExpression * expr)
 
 void HqlCppTranslator::doBuildExprEmbedBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt)
 {
-    if (!allowEmbeddedCpp())
+    if (expr->hasAttribute(_disallowed_Atom))
         throwError(HQLERR_EmbeddedCppNotAllowed);
 
     processCppBodyDirectives(expr);
@@ -11933,7 +11910,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
 
     if (bodyCode->getOperator() == no_embedbody)
     {
-        if (!allowEmbeddedCpp())
+        if (bodyCode->hasAttribute(_disallowed_Atom))
             throwError(HQLERR_EmbeddedCppNotAllowed);
 
         IHqlExpression *languageAttr = bodyCode->queryAttribute(languageAtom);

@@ -8791,9 +8791,12 @@ simpleDataSet
                         }
     | PIPE '(' expression ',' recordDef optPipeOptions ')'
                         {
+                            OwnedHqlExpr attrs = $6.getExpr();
+                            if (!parser->checkAllowed($1, "pipe", "PIPE"))
+                                attrs.setown(createComma(attrs.getClear(), createAttribute(_disallowed_Atom)));
                             parser->normalizeExpression($3, type_string, false);
                             parser->checkValidPipeRecord($5, $5.queryExpr(), $6.queryExpr(), NULL);
-                            $$.setExpr(createNewDataset(createConstant(""), $5.getExpr(), createValue(no_pipe, makeNullType(), $3.getExpr()), NULL, NULL, $6.getExpr()));
+                            $$.setExpr(createNewDataset(createConstant(""), $5.getExpr(), createValue(no_pipe, makeNullType(), $3.getExpr()), NULL, NULL, LINK(attrs)));
                             $$.setPosition($1);
                         }
     | PIPE '(' startTopFilter ',' expression optPipeOptions endTopFilter ')'
@@ -8801,6 +8804,8 @@ simpleDataSet
                             parser->normalizeExpression($5, type_string, false);
 
                             OwnedHqlExpr attrs = $6.getExpr();
+                            if (!parser->checkAllowed($1, "pipe", "PIPE"))
+                                attrs.setown(createComma(attrs.getClear(), createAttribute(_disallowed_Atom)));
                             parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), attrs, NULL);
                             parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), NULL, queryAttributeInList(outputAtom, attrs));
 
@@ -8812,6 +8817,8 @@ simpleDataSet
                             parser->normalizeExpression($5, type_string, false);
 
                             OwnedHqlExpr attrs = $8.getExpr();
+                            if (!parser->checkAllowed($1, "pipe", "PIPE"))
+                                attrs.setown(createComma(attrs.getClear(), createAttribute(_disallowed_Atom)));
                             parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), NULL, queryAttributeInList(outputAtom, attrs));
                             parser->checkValidPipeRecord($7, $7.queryExpr()->queryRecord(), attrs, NULL);
 
@@ -10104,7 +10111,10 @@ pipe
     : PIPE '(' expression optPipeOptions ')'    
                         {   
                             parser->normalizeExpression($3, type_string, false);
-                            $$.setExpr(createComma(createValue(no_pipe, makeNullType(), $3.getExpr()), $4.getExpr()));
+                            OwnedHqlExpr attrs = $4.getExpr();
+                            if (!parser->checkAllowed($1, "pipe", "PIPE"))
+                                attrs.setown(createComma(attrs.getClear(), createAttribute(_disallowed_Atom)));
+                            $$.setExpr(createComma(createValue(no_pipe, makeNullType(), $3.getExpr()), LINK(attrs)));
                         }
     ;
 

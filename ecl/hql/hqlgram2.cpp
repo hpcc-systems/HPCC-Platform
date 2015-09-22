@@ -342,6 +342,7 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
     moduleName = _containerScope->queryId();
     forceResult = false;
     parsingTemplateAttribute = false;
+    inSignedModule = false;
 
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
 
@@ -367,6 +368,7 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
     for (unsigned i=0;i<parent.defaultScopes.length();i++)
         defaultScopes.append(*LINK(&parent.defaultScopes.item(i)));
     sourcePath.set(parent.sourcePath);
+    inSignedModule = parent.inSignedModule;
     errorHandler = lookupCtx.errs;
     moduleName = containerScope->queryId();
 
@@ -430,6 +432,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     moduleName = NULL;
     resolveSymbols = true;
     lastpos = 0;
+    inSignedModule = false;
     
     containerScope = _containerScope;
     globalScope = _globalScope;
@@ -921,6 +924,8 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         }
         args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
     }
+    if (!checkAllowed(errpos, "cpp", "Embedded code"))
+        args.append(*createExprAttribute(_disallowed_Atom));
     if (attribs)
         attribs->unwindList(args, no_comma);
     Linked<ITypeInfo> type = current_type;
@@ -2885,7 +2890,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
         return;
     }
 
-    HqlGramCtx * parentCtx = new HqlGramCtx(lookupCtx);
+    HqlGramCtx * parentCtx = new HqlGramCtx(lookupCtx, inSignedModule);
     saveContext(*parentCtx, true);
     Owned<IHqlScope> newScope = createForwardScope(queryGlobalScope(), parentCtx, lookupCtx.queryParseContext());
     IHqlExpression * newScopeExpr = queryExpression(newScope);
@@ -3605,6 +3610,8 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         attrs->unwindList(attrArray,no_comma);
     
     bool hasEntrypoint = false;
+    bool foldSeen = false;
+    bool nofoldSeen = false;
     unsigned count = attrArray.length();
     if (count>0)
     {
@@ -3711,7 +3718,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 bcdApi = true;
                 checkSvcAttrNoValue(attr, errpos);
             }
-            else if (name == pureAtom || name == templateAtom || name == volatileAtom || name == onceAtom || name == actionAtom || name == foldAtom || name == nofoldAtom)
+            else if (name == pureAtom || name == templateAtom || name == volatileAtom || name == onceAtom || name == actionAtom)
             {
                 checkSvcAttrNoValue(attr, errpos);
             }
@@ -3727,10 +3734,13 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
             {
                 //backward compatibility
             }
+            else if (name == foldAtom)
+                foldSeen = true;
+            else if (name == nofoldAtom)
+                nofoldSeen = true;
             else // unsupported
                 reportWarning(CategorySyntax,WRN_SVC_UNSUPPORTED_ATTR, errpos.pos, "Unsupported service attribute: '%s'; ignored", str(name));
         }
-
         // check attribute conflicts
         int apiAttrs = 0;
         if (rtlApi) apiAttrs++;
@@ -3738,6 +3748,12 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         if (bcdApi) apiAttrs++;
         if (apiAttrs>1)
             reportWarning(CategorySyntax, ERR_SVC_ATTRCONFLICTS, errpos.pos, "Attributes eclrtl, bcd, c are conflict: only 1 can be used at a time");
+    }
+    if (foldSeen && !nofoldSeen)
+    {
+        // Check that we are allowed to fold...
+        if (!checkAllowed(errpos, "foldextern", "FOLD attribute"))
+            attrs = createComma(attrs, createAttribute(_disallowed_Atom));
     }
 
     if (!hasEntrypoint)
@@ -9017,6 +9033,20 @@ void HqlGram::checkDerivedCompatible(IIdAtom * name, IHqlExpression * scope, IHq
         }
     }
 }
+
+bool HqlGram::checkAllowed(const attribute & errpos, const char *category, const char *description)
+{
+    if (lookupCtx.queryParseContext().codegenCtx && !lookupCtx.queryParseContext().codegenCtx->allowAccess(category, inSignedModule))
+    {
+        if (!inSignedModule && lookupCtx.queryParseContext().codegenCtx->allowAccess(category, true))
+            reportWarning(CategorySecurity, WRN_REQUIRES_SIGNED, errpos.pos, "%s is only permitted in a signed module", description);
+        else
+            reportWarning(CategorySecurity, WRN_DISALLOWED, errpos.pos, "%s is not permitted by your security settings", description);
+        return false;
+    }
+    return true;
+}
+
 
 bool HqlGram::okToAddSideEffects(IHqlExpression * expr)
 {

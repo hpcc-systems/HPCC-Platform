@@ -298,7 +298,7 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     dataServer.setown(createNewSourceFileEclRepository(errorReporter, name, ESFallowplugins, 0));
 
     HqlScopeArray scopes;
-    HqlParseContext parseCtx(dataServer, NULL);
+    HqlParseContext parseCtx(dataServer, NULL, NULL);
     HqlLookupContext ctx(parseCtx, errorReporter);
     getRootScopes(scopes, dataServer, ctx);
 
