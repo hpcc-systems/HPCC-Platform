@@ -772,6 +772,7 @@ extern da_decl bool removeClusterSpares(const char *clusterName, const char *typ
 // should poss. belong in lib workunit
 extern da_decl StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupName);
 extern da_decl StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, StringBuffer &groupName);
+extern da_decl IGroup *getClusterGroup(const char *clusterName, const char *type, bool expand, unsigned timems=INFINITE);
 
 extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user);
 
