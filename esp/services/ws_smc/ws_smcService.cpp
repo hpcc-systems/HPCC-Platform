@@ -2345,7 +2345,7 @@ void CWsSMCEx::setActiveWUs(IEspContext &context, IEspActiveWorkunit& wu, IEspAc
     }
 }
 
-static const char *LockModeNames[] = { "READ", "WRITE", "HOLD", "SUB" };
+static const char *LockModeNames[] = { "ALL", "READ", "WRITE", "HOLD", "SUB" };
 
 void CWsSMCEx::addLockInfo(CLockMetaData& lD, const char* xPath, const char* lfn, unsigned msNow, time_t ttNow, IArrayOf<IEspLock>& locks)
 {
@@ -2388,7 +2388,7 @@ void CWsSMCEx::addLockInfo(CLockMetaData& lD, const char* xPath, const char* lfn
 
 bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEspLockQueryResponse &resp)
 {
-    class CLockPostFilter : public CSimpleInterface
+    class CLockPostFilter
     {
         CLockModes mode;
         time_t ttLTLow, ttLTHigh;
@@ -2397,12 +2397,12 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
 
         bool checkMode(unsigned lockMode)
         {
-            if (mode == LockModes_Undefined)
-                return true;
-
             unsigned modeReq;
             switch (mode)
             {
+            case CLockModes_READ:
+                modeReq = RTM_LOCK_READ;
+                break;
             case CLockModes_WRITE:
                 modeReq = RTM_LOCK_WRITE;
                 break;
@@ -2413,8 +2413,7 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
                 modeReq = RTM_LOCK_SUB;
                 break;
             default:
-                modeReq = RTM_LOCK_READ;
-                break;
+                return true;
             }
             if (lockMode & modeReq)
                 return true;
@@ -2425,6 +2424,9 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
         CLockPostFilter(IEspLockQueryRequest& req)
         {
             mode = req.getMode();
+            if (mode == LockModes_Undefined)
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Lock Mode");
+
             if (req.getDurationMSLow_isNull())
                 durationLow = -1;
             else

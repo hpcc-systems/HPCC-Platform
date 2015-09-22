@@ -359,6 +359,7 @@ GetStatusServerInfoResponse
 
 ESPenum LockModes : string
 {
+    ALL("ALL"),
     READ("READ"),
     WRITE("WRITE"),
     HOLD("HOLD"),
