@@ -1786,11 +1786,10 @@ class CSubscriberNotifier : public CInterface
     };
 public:
     CSubscriberNotifier(CSubscriberNotifierTable &_table, CSubscriberContainerBase &_subscriber, MemoryBuffer &notifyData)
-        : table(_table), subscriber(_subscriber)
+        : table(_table), subscriber(_subscriber) //NB: takes ownership of subscriber
     {
         INIT_NAMEDCOUNT;
         change.setown(new CChange(notifyData));
-        subscriber.Link();
     }
     ~CSubscriberNotifier() { subscriber.Release(); }
 
@@ -8158,7 +8157,7 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, Memor
             CNotifyHandler() { INIT_NAMEDCOUNT; }
             void init(void *startInfo) 
             {
-                n.set((CSubscriberNotifier *)startInfo);
+                n.setown((CSubscriberNotifier *)startInfo);
             }
             void main()
             {
@@ -8190,22 +8189,26 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, Memor
         factory->Release();
     }
 
-    Owned<CSubscriberNotifier> _notifier;
-    { CHECKEDCRITICALBLOCK(nfyTableCrit, fakeCritTimeout);
-        SubscriptionId id = subscriber->queryId();
-        CSubscriberNotifier *notifier = subscriberNotificationTable.find(id);
-        if (notifier)
-        {
-            notifier->queueChange(notifyData);
-            return;
-        }
-        else
-        {
-            _notifier.setown(new CSubscriberNotifier(subscriberNotificationTable, *subscriber, notifyData));
-            subscriberNotificationTable.replace(*_notifier);
-        }
+    CHECKEDCRITICALBLOCK(nfyTableCrit, fakeCritTimeout);
+    SubscriptionId id = subscriber->queryId();
+    CSubscriberNotifier *notifier = subscriberNotificationTable.find(id);
+
+    /* Must clear 'subscriber' before leaving ntyTableCrit block, so that the notifier thread owns and destroys it
+     * It cannot be destroyed here, because this method may have been called inside the SDS lock during a node
+     * delete and do not want to call into subscriber manager as that can deadlock if processing a request
+     * already that requires SDS lock.
+     */
+    if (notifier)
+    {
+        subscriber.clear();
+        notifier->queueChange(notifyData);
     }
-    notifyPool->start(_notifier.get());
+    else
+    {
+        Owned<CSubscriberNotifier> _notifier = new CSubscriberNotifier(subscriberNotificationTable, *subscriber.getClear(), notifyData);
+        subscriberNotificationTable.replace(*_notifier);
+        notifyPool->start(_notifier.getClear()); // NB: takes ownership (during init())
+    }
 }
 
 /////////////////
