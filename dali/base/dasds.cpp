@@ -8204,6 +8204,12 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, Memor
             _notifier.setown(new CSubscriberNotifier(subscriberNotificationTable, *subscriber, notifyData));
             subscriberNotificationTable.replace(*_notifier);
         }
+        /* Must clear before leaving ntyTableCrit, so that notifier thread owns and destroys the
+         * CSubscriberContainerBase object. It cannot be destroyed here, because this method may have been
+         * called inside the SDS lock during a node delete and do not want to call into subscriber manager
+         * as that can deadlock, if processing a request already that requires SDS lock.
+         */
+        subscriber.clear();
     }
     notifyPool->start(_notifier.get());
 }
