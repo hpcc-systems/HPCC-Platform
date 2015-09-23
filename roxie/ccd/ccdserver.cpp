@@ -7466,6 +7466,268 @@ IRoxieServerActivityFactory *createRoxieServerSortActivityFactory(unsigned _id, 
 
 //=====================================================================================================
 
+static int compareUint64(const void * _left, const void * _right)
+{
+    const unsigned __int64 left = *static_cast<const unsigned __int64 *>(_left);
+    const unsigned __int64 right = *static_cast<const unsigned __int64 *>(_right);
+    if (left < right)
+        return -1;
+    if (left > right)
+        return -1;
+    return 0;
+}
+
+class CRoxieServerQuantileActivity : public CRoxieServerActivity
+{
+protected:
+    Owned<ISortAlgorithm> sorter;
+    IHThorQuantileArg &helper;
+    ConstPointerArray sorted;
+    ICompare *compare;
+    unsigned flags;
+    double skew;
+    unsigned __int64 numDivisions;
+    bool rangeIsAll;
+    size32_t rangeSize;
+    rtlDataAttr rangeValues;
+    bool calculated;
+    bool processedAny;
+    bool anyThisGroup;
+    bool eof;
+    unsigned curQuantile;
+    unsigned curIndex;
+    unsigned curIndexExtra;
+    unsigned skipSize;
+    unsigned skipExtra;
+    unsigned prevIndex;
+
+public:
+    CRoxieServerQuantileActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _flags)
+        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorQuantileArg &)basehelper), flags(_flags)
+    {
+        compare = helper.queryCompare();
+        skew = 0.0;
+        numDivisions = 0;
+        calculated = false;
+        processedAny = false;
+        anyThisGroup = false;
+        eof = false;
+        rangeIsAll = true;
+        rangeSize = 0;
+        curQuantile = 0;
+        prevIndex = 0;
+        curIndex = 0;
+        curIndexExtra = 0;
+        skipSize = 0;
+        skipExtra = 0;
+        if (flags & TQFunstable)
+            sorter.setown(createQuickSortAlgorithm(compare));
+        else
+            sorter.setown(createMergeSortAlgorithm(compare));
+    }
+
+    virtual void reset()
+    {
+        sorter->reset();
+        calculated = false;
+        processedAny = false;
+        anyThisGroup = false;
+        CRoxieServerActivity::reset();
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        skew = helper.getSkew();
+        numDivisions = helper.getNumDivisions();
+        //Check for -ve integer values and treat as out of range
+        if ((__int64)numDivisions < 1)
+            numDivisions = 1;
+        if (flags & TQFhasrange)
+            helper.getRange(rangeIsAll, rangeSize, rangeValues.refdata());
+        else
+        {
+            rangeIsAll = true;
+            rangeSize = 0;
+        }
+        if (rangeSize)
+        {
+            //Sort the range items into order to allow quick comparison
+            qsort(rangeValues.getdata(), rangeSize / sizeof(unsigned __int64), sizeof(unsigned __int64), compareUint64);
+        }
+        calculated = false;
+        processedAny = false;
+        anyThisGroup = false;
+        eof = false;
+        curQuantile = 0;
+        prevIndex = 0;
+        curIndex = 0;
+        curIndexExtra = 0;
+    }
+
+    virtual bool needsAllocator() const { return true; }
+
+    virtual const void * nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities);
+        if (eof)
+            return NULL;
+
+        const void * ret = NULL;
+        for(;;)
+        {
+            if (!calculated)
+            {
+                if (flags & TQFlocalsorted)
+                {
+                    for (;;)
+                    {
+                        const void * next = input->nextInGroup();
+                        if (!next)
+                            break;
+                        sorted.append(next);
+                    }
+                }
+                else
+                {
+                    sorter->prepare(input);
+                    sorter->getSortedGroup(sorted);
+                }
+
+                if (sorted.ordinality() == 0)
+                {
+                    if (processedAny)
+                    {
+                        eof = true;
+                        return NULL;
+                    }
+
+                    //Unusual case 0 rows - add a default row instead
+                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                    size32_t thisSize = helper.createDefault(rowBuilder);
+                    sorted.append(rowBuilder.finalizeRowClear(thisSize));
+                }
+
+                calculated = true;
+                processedAny = true;
+                anyThisGroup = false;
+                curQuantile = 0;
+                curIndex = 0;
+                curIndexExtra = (numDivisions-1) / 2;   // to ensure correctly rounded up
+                prevIndex = curIndex-1; // Ensure it doesn't match
+                skipSize = (sorted.ordinality() / numDivisions);
+                skipExtra = (sorted.ordinality() % numDivisions);
+            }
+
+            if (isQuantileIncluded(curQuantile))
+            {
+                if (!(flags & TQFdedup) || (prevIndex != curIndex))
+                {
+                    const void * lhs = sorted.item(curIndex);
+                    if (flags & TQFneedtransform)
+                    {
+                        unsigned outSize;
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        try
+                        {
+                            outSize = helper.transform(rowBuilder, lhs, curQuantile);
+                        }
+                        catch (IException *E)
+                        {
+                            throw makeWrappedException(E);
+                        }
+
+                        if (outSize)
+                            ret = rowBuilder.finalizeRowClear(outSize);
+                    }
+                    else
+                    {
+                        LinkRoxieRow(lhs);
+                        ret = lhs;
+                    }
+                    prevIndex = curIndex; // even if output was skipped?
+                }
+            }
+
+            curIndex += skipSize;
+            curIndexExtra += skipExtra;
+            if (curIndexExtra >= numDivisions)
+            {
+                curIndex++;
+                curIndexExtra -= numDivisions;
+            }
+            //Ensure the current index always stays valid.
+            if (curIndex >= sorted.ordinality())
+                curIndex = sorted.ordinality()-1;
+            curQuantile++;
+            if (curQuantile > numDivisions)
+            {
+                sorted.kill();
+                sorter->reset();
+                calculated = false; // ready for next group
+            }
+
+            if (ret)
+            {
+                anyThisGroup = true;
+                processed++;
+                return ret;
+            }
+
+            if (curQuantile > numDivisions)
+            {
+                if (anyThisGroup)
+                    return NULL;
+            }
+        }
+    }
+
+    bool isQuantileIncluded(unsigned quantile) const
+    {
+        if (quantile == 0)
+            return (flags & TQFfirst) != 0;
+        if (quantile == numDivisions)
+            return (flags & TQFlast) != 0;
+        if (rangeIsAll)
+            return true;
+        //Compare against the list of ranges provided
+        //MORE: Since the list is sorted should only need to compare the next (and allow for dups)
+        unsigned rangeNum = rangeSize / sizeof(unsigned __int64);
+        const unsigned __int64 * ranges = static_cast<const unsigned __int64 *>(rangeValues.getdata());
+        for (unsigned i = 0; i < rangeNum; i++)
+        {
+            if (ranges[i] == quantile)
+                return true;
+        }
+        return false;
+    }
+};
+
+class CRoxieServerQuantileActivityFactory : public CRoxieServerActivityFactory
+{
+    unsigned flags;
+
+public:
+    CRoxieServerQuantileActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    {
+        Owned<IHThorQuantileArg> quantileHelper = (IHThorQuantileArg *) helperFactory();
+        flags = quantileHelper->getFlags();
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerQuantileActivity(this, _probeManager, flags);
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerQuantileActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+{
+    return new CRoxieServerQuantileActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+}
+
+//=====================================================================================================
+
 class CRoxieServerSortedActivity : public CRoxieServerActivity
 {
     IHThorSortedArg &helper;

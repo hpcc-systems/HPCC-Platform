@@ -362,6 +362,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   PROXYADDRESS
   PULL
   PULLED
+  QUANTILE
   QUOTE
   RANDOM
   RANGE
@@ -393,6 +394,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   RULE
   SAMPLE
   SCAN
+  SCORE
   SECTION
   SELF
   SEPARATOR
@@ -9327,6 +9329,31 @@ simpleDataSet
                         {
                             $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, &$10, &$12, $14, $15), $1);
                         }
+    | QUANTILE '(' startTopLeftSeqFilter ',' expression ',' sortListExpr beginCounterScope ',' transform optQuantileOptions endCounterScope ')' endTopLeftFilter endSelectorSequence
+                        {
+                            parser->normalizeExpression($5, type_int, false);
+                            OwnedHqlExpr ds = $3.getExpr();
+                            OwnedHqlExpr sortlist = $7.getExpr();
+                            OwnedHqlExpr transform = $10.getExpr();
+                            OwnedHqlExpr options = $11.getExpr();
+                            OwnedHqlExpr counter = $12.getExpr();
+                            if (counter)
+                                options.setown(createComma(options.getClear(), createAttribute(_countProject_Atom, counter.getClear())));
+                            OwnedHqlExpr selSeq = $15.getExpr();
+                            $$.setExpr(createDatasetF(no_quantile, ds.getClear(), $5.getExpr(), sortlist.getClear(), transform.getClear(), selSeq.getClear(), options.getClear(), NULL), $1);
+                        }
+    | QUANTILE '(' startTopLeftSeqFilter ',' expression ',' sortListExpr beginCounterScope optQuantileOptions endCounterScope ')' endTopLeftFilter endSelectorSequence
+                        {
+                            parser->normalizeExpression($5, type_int, false);
+                            OwnedHqlExpr ds = $3.getExpr();
+                            OwnedHqlExpr sortlist = $7.getExpr();
+                            OwnedHqlExpr options = $9.getExpr();
+                            OwnedHqlExpr counter = $10.getExpr();
+                            OwnedHqlExpr selSeq = $13.getExpr();
+                            OwnedHqlExpr leftSelect = createSelector(no_left, ds, selSeq);
+                            OwnedHqlExpr transform = parser->createDefaultAssignTransform(ds->queryRecord(), leftSelect, $1);
+                            $$.setExpr(createDatasetF(no_quantile, ds.getClear(), $5.getExpr(), sortlist.getClear(), transform.getClear(), selSeq.getClear(), options.getClear(), NULL), $1);
+                        }
 /*
   //This may cause s/r problems with the attribute version if a dataset name clashes with a hint id
     | HINT '(' dataSet ','  hintList ')'
@@ -9348,7 +9375,7 @@ simpleDataSet
 */
     ;
 
-    
+
 dataSetList
     : dataSet
     | dataSet ',' dataSetList
@@ -9425,6 +9452,52 @@ sideEffectOptions
                         {
                             $$.setExpr(createAttribute(parallelAtom), $2);
                         }
+    ;
+
+optQuantileOptions
+    :
+                        {
+                            $$.setNullExpr();
+                        }
+    | quantileOptions
+    ;
+
+quantileOptions
+    : ',' quantileOption
+                        {
+                            $$.inherit($2);
+                        }
+    | quantileOptions ',' quantileOption
+                        {
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()), $1);
+                        }
+    ;
+
+quantileOption
+    : FIRST
+                        {
+                            $$.setExpr(createExprAttribute(firstAtom), $1);
+                        }
+    | LAST
+                        {
+                            $$.setExpr(createExprAttribute(lastAtom), $1);
+                        }
+    | SCORE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, false);
+                            $$.setExpr(createExprAttribute(scoreAtom, $3.getExpr()), $1);
+                        }
+    | DEDUP
+                        {
+                            $$.setExpr(createExprAttribute(dedupAtom), $1);
+                        }
+    | RANGE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_set, false);
+                            $$.setExpr(createExprAttribute(rangeAtom, $3.getExpr()), $1);
+                        }
+    | skewAttribute
+    | commonAttribute
     ;
 
 limitOptions
@@ -11376,7 +11449,7 @@ nonDatasetExpr
     | dataRow
     | '-' dataRow       {
                             //This is an example of a semantic check that should really take place one everything is
-                            //parsed.  The beingSortOrder productions are a pain, and not strictly correct.
+                            //parsed.  The beginSortOrder productions are a pain, and not strictly correct.
                             if (parser->sortDepth == 0)
                                 parser->normalizeExpression($2, type_numeric, false);
 
@@ -11387,9 +11460,14 @@ nonDatasetExpr
     | dictionary
     ;
 
-sortItem
+simpleSortItem
     : nonDatasetExpr
     | dataSet
+    | expandedSortListByReference
+    ;
+
+sortItem
+    : simpleSortItem
     | FEW               {   $$.setExpr(createAttribute(fewAtom));   }
     | MANY              {   $$.setExpr(createAttribute(manyAtom));  }
     | MERGE             {   $$.setExpr(createAttribute(mergeAtom)); }
@@ -11468,7 +11546,6 @@ sortItem
                             $$.setExpr(createAttribute(parallelAtom), $1);
                         }
     | prefetchAttribute
-    | expandedSortListByReference
     ;
 
 expandedSortListByReference

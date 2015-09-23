@@ -2526,7 +2526,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
             {
                 OwnedHqlExpr mappedDistribution = replaceSelector(distribution, queryActiveTableSelector(), &cur);
                 OwnedHqlExpr mergeAttr;
-                if (bestSortOrder && isAlreadySorted(&cur, bestSortOrder, true, true))
+                if (bestSortOrder && isAlreadySorted(&cur, bestSortOrder, true, true, false))
                     mergeAttr.setown(createExprAttribute(mergeAtom, replaceSelector(bestSortOrder, queryActiveTableSelector(), &cur)));
                 OwnedHqlExpr distributedInput = createDatasetF(no_distribute, LINK(&cur), LINK(mappedDistribution), mergeAttr.getClear(), NULL);
                 distributedInput.setown(cloneInheritedAnnotations(expr, distributedInput));
@@ -2575,7 +2575,7 @@ static bool canReorderMatchExistingLocalSort(HqlExprArray & newElements1, HqlExp
     newElements2.kill();
     if (reorderMatchExistingLocalSort(newElements1, newElements2, ds1, elements1, elements2))
     {
-        if (isAlreadySorted(ds2, newElements2, isLocal||alwaysLocal, true))
+        if (isAlreadySorted(ds2, newElements2, isLocal||alwaysLocal, true, true))
             return true;
 
         if (canSubSort && isWorthShuffling(ds2, newElements2, isLocal||alwaysLocal, true))
@@ -2926,8 +2926,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Worthwhile even for lookup joins
     if (isLightweightJoinCandidate(expr, isLocal, joinInfo.hasOptionalEqualities()))
     {
-        if (isAlreadySorted(leftDs, joinInfo.queryLeftSort(), true, true) &&
-            isAlreadySorted(rightDs, joinInfo.queryRightSort(), true, true))
+        if (isAlreadySorted(leftDs, joinInfo.queryLeftSort(), true, true, false) &&
+            isAlreadySorted(rightDs, joinInfo.queryRightSort(), true, true, false))
         {
             //If this is a lookup join without a many then we need to make sure only the first match is retained.
             return appendOwnedOperand(expr, createAttribute(_lightweight_Atom));
@@ -3171,7 +3171,7 @@ IHqlExpression * ThorHqlTransformer::normalizeSort(IHqlExpression * expr)
 
     bool isLocal = expr->hasAttribute(localAtom);
     bool alwaysLocal = !translator.targetThor();
-    if ((op != no_assertsorted) && isAlreadySorted(dataset, sortlist, isLocal||alwaysLocal, false))
+    if ((op != no_assertsorted) && isAlreadySorted(dataset, sortlist, isLocal||alwaysLocal, false, true))
         return LINK(dataset);
     if (op == no_sorted)
         return normalizeSortSteppedIndex(expr, sortedAtom);

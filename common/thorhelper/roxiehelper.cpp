@@ -618,7 +618,22 @@ extern IGroupedInput *createSortedGroupedInputReader(IInputBase *_input, const I
 
 //========================================================================================= 
 
-class CInplaceSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
+class CSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
+{
+public:
+    virtual void getSortedGroup(ConstPointerArray & result)
+    {
+        loop
+        {
+            const void * row = next();
+            if (!row)
+                return;
+            result.append(row);
+        }
+    }
+};
+
+class CInplaceSortAlgorithm : public CSortAlgorithm
 {
 protected:
     unsigned curIndex;
@@ -644,6 +659,11 @@ public:
             ReleaseRoxieRow(sorted.item(curIndex++));
         curIndex = 0;
         sorted.kill();
+    }
+    virtual void getSortedGroup(ConstPointerArray & result)
+    {
+        sorted.swapWith(result);
+        curIndex = 0;
     }
 };
 
@@ -802,7 +822,7 @@ public:
     }
 };
 
-class CInsertionSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
+class CInsertionSortAlgorithm : public CSortAlgorithm
 {
     SortedBlock *curBlock;
     unsigned blockNo;
@@ -937,7 +957,7 @@ public:
     }
 };
 
-class CHeapSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
+class CHeapSortAlgorithm : public CSortAlgorithm
 {
     unsigned curIndex;
     ConstPointerArray sorted;
@@ -1137,7 +1157,7 @@ public:
     }
 };
 
-class CSpillingSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>, implements roxiemem::IBufferedRowCallback
+class CSpillingSortAlgorithm : public CSortAlgorithm, implements roxiemem::IBufferedRowCallback
 {
     enum {
         InitialSortElements = 0,
@@ -1360,6 +1380,16 @@ extern ISortAlgorithm *createInsertionSortAlgorithm(ICompare *_compare, roxiemem
 extern ISortAlgorithm *createHeapSortAlgorithm(ICompare *_compare)
 {
     return new CHeapSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createMergeSortAlgorithm(ICompare *_compare)
+{
+    return new CMergeSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createParallelMergeSortAlgorithm(ICompare *_compare)
+{
+    return new CParallelMergeSortAlgorithm(_compare);
 }
 
 extern ISortAlgorithm *createSpillingQuickSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable)

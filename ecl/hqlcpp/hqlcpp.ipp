@@ -1478,6 +1478,7 @@ public:
     ABoundActivity * doBuildActivityProject(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityProcess(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityPullActivity(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityQuantile(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityRegroup(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityRemote(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityReturnResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);

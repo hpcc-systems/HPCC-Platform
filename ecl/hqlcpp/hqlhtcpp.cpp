@@ -6539,6 +6539,9 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_map:
                 result = doBuildActivityCase(ctx, expr, isRoot);
                 break;
+            case no_quantile:
+                result = doBuildActivityQuantile(ctx, expr);
+                break;
             case no_chooseds:
             case no_choose:
                 result = doBuildActivityChoose(ctx, expr, isRoot);
@@ -11484,7 +11487,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
     compareName.append("compare").append(sideText);
 
     assertex(dataset.querySide() == no_activetable);
-    bool noNeedToSort = isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true);
+    bool noNeedToSort = isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true, true);
     if (userPreventsSort(noSortAttr, side))
         noNeedToSort = true;
 
@@ -12179,9 +12182,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (joinInfo.hasOptionalEqualities())
         flags.append("|JFlimitedprefixjoin");
 
-    if (isAlreadySorted(dataset1, joinInfo.queryLeftSort(), true, true) || userPreventsSort(noSortAttr, no_left))
+    if (isAlreadySorted(dataset1, joinInfo.queryLeftSort(), true, true, false) || userPreventsSort(noSortAttr, no_left))
         flags.append("|JFleftSortedLocally");
-    if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true) || userPreventsSort(noSortAttr, no_right))
+    if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true, false) || userPreventsSort(noSortAttr, no_right))
         flags.append("|JFrightSortedLocally");
     if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
     if (isSmartJoin || expr->hasAttribute(unstableAtom))
@@ -16577,6 +16580,99 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
 
     if (!streq(flags.str(), "|TAFconstant"))
         instance->classctx.addQuotedF("virtual unsigned getAlgorithmFlags() { return %s; }", flags.str()+1);
+
+    buildInstanceSuffix(instance);
+
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
+    return instance->getBoundActivity();
+}
+
+ABoundActivity * HqlCppTranslator::doBuildActivityQuantile(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
+
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKquantile, expr, "Quantile");
+    buildActivityFramework(instance);
+    buildInstancePrefix(instance);
+
+    IHqlExpression * number = expr->queryChild(1);
+    IHqlExpression * sortlist = expr->queryChild(2);
+    IHqlExpression * transform = expr->queryChild(3);
+    IHqlExpression * score = queryAttributeChild(expr, scoreAtom, 0);
+    IHqlExpression * skew = queryAttributeChild(expr, skewAtom, 0);
+    IHqlExpression * dedupAttr = expr->queryAttribute(dedupAtom);
+    IHqlExpression * range = queryAttributeChild(expr, rangeAtom, 0);
+
+    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
+
+    buildCompareClass(instance->nestedctx, "compare", sortlist, DatasetReference(dataset));
+
+    doBuildUnsigned64Function(instance->startctx, "getNumDivisions", number);
+
+    if (skew)
+        doBuildFunction(instance->startctx, doubleType, "getSkew", skew);
+
+    if (range)
+    {
+        Owned<ITypeInfo> setType = makeSetType(makeIntType(8, false));
+        doBuildFunction(instance->startctx, setType, "getRange", range);
+    }
+
+    if (score)
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual unsigned __int64 getScore(const void * _self)");
+        funcctx.addQuotedLiteral("unsigned char * self = (unsigned char *) _self;");
+        bindTableCursor(funcctx, dataset, "self");
+        buildReturn(funcctx, score);
+    }
+
+    IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
+    IHqlExpression * selSeq = querySelSeq(expr);
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, unsigned __int64 counter)");
+        if (counter)
+            associateCounter(funcctx, counter, "counter");
+        buildTransformBody(funcctx, transform, dataset, NULL, instance->dataset, selSeq);
+    }
+
+    buildClearRecordMember(instance->createctx, "", dataset);
+
+    //If a dataset is sorted by all fields then it is impossible to determine if the original order
+    //was preserved - so mark the sort as potentially unstable (to reduce memory usage at runtime)
+    bool unstable = expr->hasAttribute(unstableAtom);
+    if (options.optimizeSortAllFields &&
+        allFieldsAreSorted(expr->queryRecord(), sortlist, dataset->queryNormalizedSelector(), options.optimizeSortAllFieldsStrict))
+        unstable = true;
+
+    StringBuffer flags;
+    if (expr->hasAttribute(firstAtom))
+        flags.append("|TQFfirst");
+    if (expr->hasAttribute(lastAtom))
+        flags.append("|TQFlast");
+    if (isAlreadySorted(dataset, sortlist, false, false, false))
+        flags.append("|TQFsorted|TQFlocalsorted");
+    else if (isAlreadySorted(dataset, sortlist, true, false, false))
+        flags.append("|TQFlocalsorted");
+    if (score)
+        flags.append("|TQFhasscore");
+    if (range)
+        flags.append("|TQFhasrange");
+    if (skew)
+        flags.append("|TQFhasskew");
+    if (dedupAttr)
+        flags.append("|TQFdedup");
+    if (unstable)
+        flags.append("|TQFunstable");
+    if (!number->queryValue())
+        flags.append("|TQFvariabledivisions");
+    if (!transformReturnsSide(expr, no_left, 0))
+        flags.append("|TQFneedtransform");
+
+    if (flags.length())
+        instance->classctx.addQuotedF("virtual unsigned getFlags() { return %s; }", flags.str()+1);
 
     buildInstanceSuffix(instance);
 

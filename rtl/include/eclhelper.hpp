@@ -923,6 +923,7 @@ enum ThorActivityKind
     TAKjsonwrite,
     TAKjsonread,
     TAKtrace,
+    TAKquantile,
 
     TAKlast
 };
@@ -1062,7 +1063,9 @@ enum ActivityInterfaceEnum
     TAIdictionaryworkunitwritearg_1,
     TAIdictionaryresultwritearg_1,
     TAItracearg_1,
-//Should remain as last of all meaningful tags, but before aliases
+    TAIquantilearg_1,
+
+    //Should remain as last of all meaningful tags, but before aliases
     TAImax,
 
 //Only aliases follow - for interfaces implemented via typedefs
@@ -1322,6 +1325,32 @@ struct IHThorSelectNArg : public IHThorArg
     virtual size32_t createDefault(ARowBuilder & rowBuilder) = 0;
 };
 
+enum
+{
+    TQFfirst            = 0x0001,       // default flags is zero
+    TQFlast             = 0x0002,
+    TQFsorted           = 0x0004,
+    TQFlocalsorted      = 0x0008,
+    TQFhasscore         = 0x0010,
+    TQFhasrange         = 0x0020,
+    TQFhasskew          = 0x0040,
+    TQFdedup            = 0x0080,
+    TQFunstable         = 0x0100,
+    TQFvariabledivisions= 0x0200,       // num divisions is not a constant
+    TQFneedtransform    = 0x0400,       // if not set the records are returned as-is
+};
+
+struct IHThorQuantileArg : public IHThorArg
+{
+    virtual unsigned getFlags() = 0;
+    virtual unsigned __int64 getNumDivisions() = 0;
+    virtual double getSkew() = 0;
+    virtual ICompare * queryCompare() = 0;
+    virtual size32_t createDefault(ARowBuilder & rowBuilder) = 0;
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, unsigned __int64 _counter) = 0;
+    virtual unsigned __int64 getScore(const void * _left) = 0;
+    virtual void getRange(bool & isAll, size32_t & tlen, void * & tgt) = 0;
+};
 
 struct IHThorCombineArg : public IHThorArg
 {
