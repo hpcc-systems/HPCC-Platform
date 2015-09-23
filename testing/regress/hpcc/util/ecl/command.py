@@ -78,7 +78,6 @@ class ECLcmd(Shell):
 
             args = args + eclfile.getStoredInputParameters()
 
-            args.append('-XTargetIP=' + server)
 
             args.append(eclfile.getArchive())
 

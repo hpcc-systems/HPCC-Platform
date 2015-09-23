@@ -494,12 +494,12 @@ class Regression:
             try:
                 if publish:
                     res = eclCmd.runCmd("publish", cluster, query, report[0],
-                                      server=self.config.ip,
+                                      server=self.config.espIp,
                                       username=self.config.username,
                                       password=self.config.password)
                 else:
                     res = eclCmd.runCmd("run", cluster, query, report[0],
-                                      server=self.config.ip,
+                                      server=self.config.espIp,
                                       username=self.config.username,
                                       password=self.config.password)
             except Error as e:
@@ -523,7 +523,7 @@ class Regression:
             wuid="N/A"
 
         if wuid and wuid.startswith("W"):
-            url = "http://" + self.config.ip+self.config.espSocket
+            url = "http://" + self.config.espIp+self.config.espSocket
             url += "/?Widget=WUDetailsWidget&Wuid="
             url += wuid
         else:
