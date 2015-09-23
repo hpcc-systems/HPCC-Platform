@@ -1349,8 +1349,7 @@ public:
             for (jint i=0; i < count; i++)
             {
                 jobject elementObj = JNIenv->GetObjectArrayElement(arrayObj, i);
-                if(JNIenv->ExceptionOccurred())
-                    break;
+                javaembed::checkException(JNIenv, false);
                 writer.outputBeginNested(item_tag, true);
                 writeChildren(elementClass, elementObj, defStruct);
                 writer.outputEndNested(item_tag);
