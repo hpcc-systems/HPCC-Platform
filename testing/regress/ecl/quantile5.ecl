@@ -15,6 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
+//Temporarily disable tests on hthor/thor, until activity is implemented
+//nohthor
+//nothor
+
 rawRecord := { unsigned id; };
 
 quantRec := RECORD(rawRecord)

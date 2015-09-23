@@ -15,6 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
+//Temporarily disable tests on hthor/thor, until activity is implemented
+//nohthor
+//nothor
+
 //version scale=32
 //version scale=0x400
 //version scale=0x10000
