@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-sys := SERVICE
+sys := SERVICE : fold
 
 integer3 rtlCastInt3(integer4 value) : pure,cpp,library('eclrtl'),entrypoint('rtlCastInt3');
 integer5 rtlCastInt5(integer8 value) : pure,cpp,library('eclrtl'),entrypoint('rtlCastInt5');

@@ -4,7 +4,7 @@
 
 
 externals := 
-    SERVICE
+    SERVICE : fold
 STRING EncodeBase64(const data src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Encode';
 DATA DecodeBase64(const string src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Decode';
     END;
