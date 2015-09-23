@@ -97,7 +97,9 @@ public:
             ThorDataLinkMetaInfo info;
             input->getMetaInfo(info);
             // Need lookahead _unless_ row count pre-known.
-            if (info.totalRowsMin == info.totalRowsMax)
+            if (0 == numerator)
+                localRecCount = 0;
+            else if (info.totalRowsMin == info.totalRowsMax)
             {
                 localRecCount = (rowcount_t)info.totalRowsMax;
                 ActPrintLog("%s: row count pre-known to be %" RCPF "d", actStr.str(), localRecCount);
