@@ -1254,22 +1254,36 @@ public:
                 JNIenv->DeleteGlobalRef(*pClass);
         }
     }
-
-    void writeSimpleType(jclass parentClass, jobject parentObject, IEsdlDefObject &defObject)
+    void writeSimpleType(const char *fieldname, jobject fieldObj)
     {
-        const char *fieldname = defObject.queryName();
-        const char *javaSig = esdl2JavaSig(esdl, defObject.queryProp("type"));
-        jfieldID fieldId = JNIenv->GetFieldID(parentClass, fieldname, javaSig); //tbd cache this
+        jstring fieldStr = (jstring) JNIenv->CallObjectMethod(fieldObj, objToString);
+        if (!fieldStr)
+            return;
+        const char *text = JNIenv->GetStringUTFChars(fieldStr, NULL);
+        if (text)
+            writer.outputCString(text, fieldname);
+        JNIenv->DeleteLocalRef(fieldStr);
+    }
+    void writeSimpleType(jclass parentClass, jobject parentObject, const char *fieldname, const char *javaSig)
+    {
+        if (!fieldname || !*fieldname)
+            return;
+        if (!javaSig || !*javaSig)
+            return;
+        jfieldID fieldId = JNIenv->GetFieldID(parentClass, fieldname, javaSig);
         if (!fieldId)
             return;
         jobject fieldObj = (jobject) JNIenv->GetObjectField(parentObject, fieldId);
         if (!fieldObj)
             return;
-        jstring fieldStr = (jstring) JNIenv->CallObjectMethod(fieldObj, objToString);
-        const char *text = JNIenv->GetStringUTFChars(fieldStr, NULL);
-        if (!text)
-            return;
-        writer.outputCString(text, defObject.queryName());
+        writeSimpleType(fieldname, fieldObj);
+        JNIenv->DeleteLocalRef(fieldObj);
+    }
+    void writeSimpleType(jclass parentClass, jobject parentObject, IEsdlDefObject &defObject)
+    {
+        const char *fieldname = defObject.queryName();
+        const char *javaSig = esdl2JavaSig(esdl, defObject.queryProp("type"));
+        writeSimpleType(parentClass, parentObject, fieldname, javaSig);
     }
     void writeEnumType(jclass parentClass, jobject parentObject, IEsdlDefObject &defObject)
     {
@@ -1304,48 +1318,84 @@ public:
         writeChildren(JNIenv->GetObjectClass(fieldObj), fieldObj, defStruct);
         writer.outputEndNested(fieldname);
     }
-    void writeComplexArray(jclass parentClass, jobject parentObject, IEsdlDefObject &defObject)
+
+    void writeSimpleArray(jobjectArray arrayObj, jint count, const char *name, const char *item_tag)
     {
-        IEsdlDefStruct *defStruct = esdl.queryStruct(defObject.queryProp("type"));
-        if (!defStruct)
+        writer.outputBeginNested(name, true);
+        writer.outputBeginArray(item_tag);
+        for (jint i=0; i < count; i++)
+        {
+            jobject elementObj = JNIenv->GetObjectArrayElement(arrayObj, i);
+            if(JNIenv->ExceptionOccurred())
+                break;
+            writeSimpleType(item_tag, elementObj);
+            JNIenv->DeleteLocalRef(elementObj);
+        }
+        writer.outputEndArray(item_tag);
+        writer.outputEndNested(name);
+    }
+    void writeComplexArray(jobjectArray arrayObj, jint count, const char *name, const char *item_tag, const char *itemTypeName)
+    {
+        writer.outputBeginNested(name, true);
+        writer.outputBeginArray(item_tag);
+        {
+            VStringBuffer javaClassName("%s/%s", esdlService.str(), itemTypeName);
+            jclass elementClass = FindClass(javaClassName);
+            if (!elementClass)
+                return;
+            IEsdlDefStruct *defStruct = esdl.queryStruct(itemTypeName);
+            if (!defStruct)
+                return;
+            for (jint i=0; i < count; i++)
+            {
+                jobject elementObj = JNIenv->GetObjectArrayElement(arrayObj, i);
+                javaembed::checkException(JNIenv, false);
+                writer.outputBeginNested(item_tag, true);
+                writeChildren(elementClass, elementObj, defStruct);
+                writer.outputEndNested(item_tag);
+                JNIenv->DeleteLocalRef(elementObj);
+            }
+        }
+        writer.outputEndArray(item_tag);
+        writer.outputEndNested(name);
+    }
+    void writeArray(jclass parentClass, jobject parentObject, IEsdlDefObject &defObject)
+    {
+        const char *itemTypeName = defObject.queryProp("type");
+        if (!itemTypeName)
+            return;
+        const char *item_tag = defObject.queryProp("item_tag");
+        if (!item_tag)
             return;
         const char *fieldname = defObject.queryName();
+        jclass arrayListClass = FindClass("java/util/ArrayList");
+        if (!arrayListClass)
+            return;
+        jmethodID toArrayMethod = JNIenv->GetMethodID(arrayListClass, "toArray", "()[Ljava/lang/Object;" );
+        if (!toArrayMethod)
+            return;
+
         jfieldID fieldId = JNIenv->GetFieldID(parentClass, fieldname, "Ljava/util/ArrayList;");
         if (!fieldId)
             return;
         jobject arrayListObj = (jobject) JNIenv->GetObjectField(parentObject, fieldId);
         if (!arrayListObj)
             return;
-        jclass arrayListClass = FindClass("java/util/ArrayList");
-        if (!arrayListClass)
-            return;
-        jmethodID toArrayMethod = JNIenv->GetMethodID(arrayListClass, "toArray", "()[Ljava/lang/Object;" );
         javaembed::checkException(JNIenv, false);
-        if (!toArrayMethod)
-            return;
-
-        VStringBuffer javaClassName("%s/%s", esdlService.str(), defObject.queryProp("type"));
-        jclass elementClass = FindClass(javaClassName);
-        if (!elementClass)
-            return;
-        const char *item_tag = defObject.queryProp("item_tag");
-        writer.outputBeginNested(defObject.queryName(), true);
-        writer.outputBeginArray(item_tag);
         jobjectArray arrayObj = (jobjectArray) JNIenv->CallObjectMethod(arrayListObj, toArrayMethod);
-        jint i;
-        jint count = JNIenv->GetArrayLength(arrayObj);
-        for (i=0; i < count; i++)
+        if (arrayObj)
         {
-            jobject elementObj = JNIenv->GetObjectArrayElement(arrayObj, i);
-            if(JNIenv->ExceptionOccurred())
-                break;
-            writer.outputBeginNested(item_tag, true);
-            writeChildren(elementClass, elementObj, defStruct);
-            writer.outputEndNested(item_tag);
-            JNIenv->DeleteLocalRef(elementObj);
+            jint count = JNIenv->GetArrayLength(arrayObj);
+            if (count)
+            {
+                if (esdl2JavaSig(esdl, itemTypeName))
+                    writeSimpleArray(arrayObj, count, defObject.queryName(), item_tag);
+                else
+                    writeComplexArray(arrayObj, count, defObject.queryName(), item_tag, itemTypeName);
+            }
+            JNIenv->DeleteLocalRef(arrayObj);
         }
-        writer.outputEndArray(item_tag);
-        writer.outputEndNested(defObject.queryName());
+        JNIenv->DeleteLocalRef(arrayListObj);
     }
     void writeChildren(jclass javaClass, jobject javaObject, IEsdlDefStruct *defStruct)
     {
@@ -1366,7 +1416,7 @@ public:
             }
             else if (child.getEsdlType()==EsdlTypeArray)
             {
-                writeComplexArray(javaClass, javaObject, child); //adf: tbd handle simple array
+                writeArray(javaClass, javaObject, child);
             }
         }
     }
@@ -2090,24 +2140,33 @@ public:
     }
     virtual void outputString(unsigned size, const char *text, const char *fieldname)
     {
-        IEsdlDefStruct *defStruct = queryCurrentEsdlStruct();
-        if (!defStruct)
+        DefStackEntry *parent = defStack.length() ? &defStack.tos() : NULL;
+        if (!parent)
             return;
-        IEsdlDefObject *defField = defStruct->queryChild(fieldname);
-        if (!defField)
-            return;
-        if (defField->getEsdlType()==EsdlTypeEnumRef)
-            return outputEnumString(size, text, fieldname, defField);
+        const char *defTypeName = NULL;
+        bool isArray = (parent->defObj && parent->defObj->getEsdlType()==EsdlTypeArray);
+        if (isArray)
+            defTypeName = parent->defObj->queryProp("type");
+        else
+        {
+            IEsdlDefStruct *defStruct = queryCurrentEsdlStruct();
+            if (!defStruct)
+                return;
+            IEsdlDefObject *defField = defStruct->queryChild(fieldname);
+            if (!defField)
+                return;
+            if (defField->getEsdlType()==EsdlTypeEnumRef)
+                return outputEnumString(size, text, fieldname, defField);
+            defTypeName = defField->queryProp("type");
+        }
 
-        const char *defType = defField->queryProp("type");
-        if (!defType)
+        if (!defTypeName)
             return;
-        const char *javaSig = esdl2JavaSig(*esdl, defType);
-        jfieldID fieldId = JNIenv->GetFieldID(getCurJavaClass(), fieldname, javaSig); //tbd cache this
-        if (!fieldId)
+        const char *javaSig = esdl2JavaSig(*esdl, defTypeName);
+        if (!javaSig)
             return;
 
-        const char *fieldClassName = esdl2JavaFullClassName(*esdl, defType);
+        const char *fieldClassName = esdl2JavaFullClassName(*esdl, defTypeName);
         jclass typeClass = FindClass(fieldClassName);
         jmethodID typeStringConstructor = JNIenv->GetMethodID(typeClass, "<init>", "(Ljava/lang/String;)V"); //All types currently used for ESDL mapping have string constructors
         StringAttr s(text, size);
@@ -2115,7 +2174,16 @@ public:
         jobject value = JNIenv->NewObject(typeClass, typeStringConstructor, strvalue);
         JNIenv->DeleteLocalRef(strvalue);
         checkException();
-        JNIenv->SetObjectField(getCurJavaObject(), fieldId, value);
+        if (!value)
+            return;
+        if (isArray)
+            JNIenv->CallObjectMethod(parent->obj, parent->append, value);
+        else
+        {
+            jfieldID fieldId = JNIenv->GetFieldID(getCurJavaClass(), fieldname, javaSig);
+            if (fieldId)
+                JNIenv->SetObjectField(getCurJavaObject(), fieldId, value);
+        }
         JNIenv->DeleteLocalRef(value);
         checkException();
     }
@@ -2208,12 +2276,14 @@ public:
                 const char *structType = child->queryProp("type");
                 if (structType)
                     return esdl->queryObj(structType);
+                break;
             }
             case EsdlTypeElement:
             {
                 const char *structType = child->queryProp("complex_type");
                 if (structType)
                     return esdl->queryObj(structType);
+                break;
             }
             default:
                 break;
@@ -2252,8 +2322,11 @@ public:
     }
     virtual void outputEndNested(const char *fieldname)
     {
-        if (defStack.length()>1 && streq(fieldname, defStack.tos().name)) //don't destroy root object yet
-            popDefStackEntry(JNIenv);
+        if (defStack.length()<=1)  //don't destroy root object yet
+            return;
+        if (!streq(fieldname, defStack.tos().name)) //should be exception? or forgive and forget?
+            return;
+        popDefStackEntry(JNIenv);
     }
     virtual void outputSetAll()
     {
@@ -2273,14 +2346,14 @@ public:
 
 public:
     JNIEnv *JNIenv;
+    Linked<IEsdlDefinition> esdl;
     StringAttr javaPackage;
     StringAttr esdlType;
-    Linked<IEsdlDefinition> esdl;
     class DefStackEntry : public CInterface, implements IInterface
     {
     public:
         IMPLEMENT_IINTERFACE;
-        DefStackEntry(const char *fieldname, IEsdlDefObject *_defType, IEsdlDefObject *_defObj) : name(fieldname), defType(_defType), defObj(_defObj)
+        DefStackEntry(const char *fieldname, IEsdlDefObject *_defType, IEsdlDefObject *_defObj) : name(fieldname), defType(_defType), defObj(_defObj), Class(0), obj(0), constructor(0), append(0), fieldId(0)
         {
         }
         ~DefStackEntry()
@@ -2298,21 +2371,27 @@ public:
         jobject obj;
     };
 
+    jobject MakeObjectGlobal(jobject local)
+    {
+        if (!local)
+            return 0;
+        jobject global = JNIenv->NewGlobalRef(local);
+        JNIenv->DeleteLocalRef(local);
+        return global;
+    }
     jclass FindClass(const char *name)
     {
         jclass *pClass = javaClasses.getValue(name);
         if (pClass)
             return *pClass;
-        jclass localClass = JNIenv->FindClass(name);
-        if (!localClass)
-            return 0;
-        jclass Class = (jclass) JNIenv->NewGlobalRef(localClass);
-        javaClasses.setValue(name, Class);
-        JNIenv->DeleteLocalRef(localClass);
+        jclass Class = (jclass) MakeObjectGlobal(JNIenv->FindClass(name));
+        javaClasses.setValue(name, Class); //even save if result has no class
         return Class;
     }
     void popDefStackEntry(JNIEnv *JNIenv)
     {
+        if (!defStack.length())
+            return;
         Owned<DefStackEntry> entry = &defStack.popGet();
         if (entry->obj)
             JNIenv->DeleteGlobalRef(entry->obj);
@@ -2330,11 +2409,10 @@ public:
             {
                 entry->constructor = JNIenv->GetMethodID(entry->Class, "<init>", "()V");
                 entry->append = JNIenv->GetMethodID(entry->Class, "add", "(Ljava/lang/Object;)Z");
-                jobject localObj = JNIenv->NewObject(entry->Class, entry->constructor);
+                entry->obj = MakeObjectGlobal(JNIenv->NewObject(entry->Class, entry->constructor));
                 javaembed::checkException(JNIenv, false);
-                if (localObj)
+                if (entry->obj)
                 {
-                    entry->obj = JNIenv->NewGlobalRef(localObj);
                     if (parent && parent->Class)
                     {
                         VStringBuffer javaSig("L%s;", javaClassName);
@@ -2352,17 +2430,14 @@ public:
             if (entry->Class)
             {
                 entry->constructor = JNIenv->GetMethodID(entry->Class, "<init>", "()V");
-                jobject localObj = JNIenv->NewObject(entry->Class, entry->constructor);
+                entry->obj = MakeObjectGlobal(JNIenv->NewObject(entry->Class, entry->constructor));
                 javaembed::checkException(JNIenv, false);
-                if (localObj)
+                if (entry->obj)
                 {
-                    entry->obj = JNIenv->NewGlobalRef(localObj);
                     if (parent)
                     {
                         if (parent->defObj && parent->defObj->getEsdlType()==EsdlTypeArray)
-                        {
                             JNIenv->CallObjectMethod(parent->obj, parent->append, entry->obj);
-                        }
                         else if (parent->Class)
                         {
                             VStringBuffer javaSig("L%s;", javaClassName.str());

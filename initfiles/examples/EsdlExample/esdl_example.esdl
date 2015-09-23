@@ -28,6 +28,7 @@ ESPStruct NameInfo
 {
     string First("Joe");
     string Last("Doe");
+    ESParray<string, Alias> Aliases;
 };
 
 ESPStruct AddressInfo
