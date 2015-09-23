@@ -3173,3 +3173,10 @@ JNIEXPORT jobject JNICALL Java_com_HPCCSystems_HpccUtils__1next (JNIEnv *JNIenv,
         return NULL;
     }
 }
+
+// Used for dynamically loading in ESDL
+
+extern "C" EXPORT IEmbedContext *getEmbedContextDynamic()
+{
+    return javaembed::getEmbedContext();
+}
