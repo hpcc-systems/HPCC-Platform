@@ -25,6 +25,7 @@
 #include "jptree.hpp"
 #include "xsdparser.hpp"
 #include "loggingmanager.h"
+#include "thorplugin.hpp"
 #include "eclrtl.hpp"
 
 static const char* ESDL_DEFS_ROOT_PATH="/ESDL/Definitions/";
@@ -63,7 +64,9 @@ static const char* ESDL_METHOD_HELP="help";
 #define REQ_REF_NUM_NAME    "_req_ref_num"
 #define MCACHE_OBJECT_KEY   "_mcache_object_key_"
 
+#ifdef LINK_STATICALLY  // May be useful for debugging...
 namespace javaembed { IEmbedContext* getEmbedContext(); }
+#endif
 
 class EsdlServiceImpl : public CInterface, implements IEspService
 {
@@ -72,7 +75,11 @@ private:
     MapStringToMyClass<ISmartSocketFactory> connMap;
     MapStringToMyClass<IEmbedServiceContext> javaServiceMap;
     Owned<ILoggingManager> loggingManager;
+#ifndef LINK_STATICALLY
+    Owned<ILoadedDllEntry> javaPluginDll;
+#endif
     Owned<IEmbedContext> javaplugin;
+
 
 public:
     StringBuffer                m_espServiceType;
@@ -96,7 +103,19 @@ public:
     IEmbedContext &ensureJavaEmbeded()
     {
         if (!javaplugin)
+        {
+#ifdef LINK_STATICALLY  // May be useful for debugging...
             javaplugin.setown(javaembed::getEmbedContext());
+#else
+            javaPluginDll.setown(createDllEntry("javaembed", false, NULL));
+            if (!javaPluginDll)
+                throw makeStringException(0, "Failed to load javaembed plugin");
+            GetEmbedContextFunction pf = (GetEmbedContextFunction) javaPluginDll->getEntry("getEmbedContextDynamic");
+            if (!pf)
+                throw makeStringException(0, "Failed to load javaembed plugin");
+            javaplugin.setown(pf());
+#endif
+            }
         return *javaplugin;
     }
 

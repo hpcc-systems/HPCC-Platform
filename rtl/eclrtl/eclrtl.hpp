@@ -836,4 +836,6 @@ interface IEmbedContext : extends IInterface
     // MORE - add syntax checked here!
 };
 
+typedef IEmbedContext * (* GetEmbedContextFunction)();
+
 #endif
