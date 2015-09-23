@@ -28,6 +28,7 @@
 #include "jrespool.tpp"
 #include "mpbase.hpp"
 #include "dautils.hpp"
+#include "dasds.hpp"
 
 #undef new
 #include <map>
@@ -56,6 +57,73 @@
 #endif
 
 #define PWD_NEVER_EXPIRES (__int64)0x8000000000000000
+
+const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration" };
+
+extern __declspec(dllimport) const char* getUserFieldNames(UserField field)
+{
+    if (field < UFterm)
+        return UserFieldNames[field];
+    return NULL;
+}
+
+const char* GroupFieldNames[] = { "@name", "@managedby", "@desc" };
+
+extern __declspec(dllimport) const char* getGroupFieldNames(GroupField field)
+{
+    if (field < GFterm)
+        return GroupFieldNames[field];
+    return NULL;
+}
+
+const char* ResourceFieldNames[] = { "@name", "@desc" };
+
+extern __declspec(dllimport) const char* getResourceFieldNames(ResourceField field)
+{
+    if (field < RFterm)
+        return ResourceFieldNames[field];
+    return NULL;
+}
+
+class CSecItemIterator: public CInterfaceOf<ISecItemIterator>
+{
+    IArrayOf<IPropertyTree> attrs;
+    unsigned index;
+public:
+    CSecItemIterator(IArrayOf<IPropertyTree>& trees)
+    {
+        ForEachItemIn(t, trees)
+            attrs.append(*LINK(&trees.item(t)));
+        index = 0;
+    }
+
+    virtual ~CSecItemIterator()
+    {
+        attrs.kill();
+    }
+
+    bool  first()
+    {
+        index = 0;
+        return (attrs.ordinality()!=0);
+    }
+
+    bool  next()
+    {
+        index++;
+        return (index<attrs.ordinality());
+    }
+
+    bool  isValid()
+    {
+        return (index<attrs.ordinality());
+    }
+
+    IPropertyTree &  query()
+    {
+        return attrs.item(index);
+    }
+};
 
 class CLoadBalancer : public CInterface, implements IInterface
 {
@@ -2309,6 +2377,95 @@ public:
         return true;
     }
 
+    virtual IPropertyTreeIterator* getUserIterator(const char* userName)
+    {
+        IUserArray users;
+        retrieveUsers(userName, users);
+        Owned<IPropertyTree> usersTree = createPTree("Users");
+        ForEachItemIn(i, users)
+            addUserTree(users.item(i), usersTree);
+
+        return usersTree->getElements("*");
+    }
+
+    void addUserTree(ISecUser& usr, IPropertyTree* users)
+    {
+        const char* usrName = usr.getName();
+        if(!usrName || !*usrName)
+            return;
+
+        const char* fullName = usr.getFullName();
+        StringBuffer sb;
+        switch (usr.getPasswordDaysRemaining())//-1 if expired, -2 if never expires
+        {
+        case scPasswordExpired:
+            sb.set("Expired");
+            break;
+        case scPasswordNeverExpires:
+            sb.set("Never");
+            break;
+        default:
+            CDateTime dt;
+            usr.getPasswordExpiration(dt);
+            dt.getDateString(sb);
+            break;
+        }
+
+        Owned<IPTree> userTree = createPTree("User");
+        userTree->addProp(getUserFieldNames(UFName), usrName);
+        if (fullName && *fullName)
+            userTree->addProp(getUserFieldNames(UFFullName), fullName);
+        userTree->addPropInt(getUserFieldNames(UFUserID), usr.getUserID());
+        userTree->addProp(getUserFieldNames(UFPasswordExpiration), sb.str());
+        users->addPropTree("User", userTree.getClear());
+    }
+
+    ISecItemIterator* getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint)
+    {
+        class CElementsPager : public CSimpleInterface, implements IElementsPager
+        {
+            ILdapClient* ldapClient;
+            StringAttr userName;
+            StringAttr sortOrder;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CElementsPager(ILdapClient* _ldapClient, const char* _userName, const char*_sortOrder)
+                : ldapClient(_ldapClient), userName(_userName), sortOrder(_sortOrder) { };
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
+            {
+                StringArray unknownAttributes;
+                Owned<IPropertyTreeIterator> iter = ldapClient->getUserIterator(userName.get());
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                return NULL;
+            }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, ldap always returns all of matched users.
+        };
+
+        StringBuffer so;
+        if (sortOrder)
+        {
+            for (unsigned i=0;sortOrder[i]!=UFterm;i++)
+            {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortOrder[i];
+                if (fmt&UFreverse)
+                    so.append('-');
+                if (fmt&UFnocase)
+                    so.append('?');
+                if (fmt&UFnumeric)
+                    so.append('#');
+                so.append(getUserFieldNames((UserField) (fmt&0xff)));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CElementsPager(this, userName, so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager, pageStartFrom, pageSize, NULL, "", cacheHint, results, total, NULL, false);
+        return new CSecItemIterator(results);
+    }
+
     virtual bool userInGroup(const char* userdn, const char* groupdn)
     {
         const char* fldname;
@@ -2445,7 +2602,7 @@ public:
             };
 
             char *homedir_values[] = {(char*)ldapuser->getHomedirectory(), NULL };
-            LDAPMod homedir_attr = 
+            LDAPMod homedir_attr =
             {
                 LDAP_MOD_REPLACE,
                 "homedirectory",
@@ -2524,7 +2681,7 @@ public:
                 };
 
                 char *homedir_values[] = { NULL };
-                LDAPMod homedir_attr = 
+                LDAPMod homedir_attr =
                 {
                     LDAP_MOD_DELETE,
                     "homedirectory",
@@ -2532,7 +2689,7 @@ public:
                 };
 
                 char *loginshell_values[] = { NULL };
-                LDAPMod loginshell_attr = 
+                LDAPMod loginshell_attr =
                 {
                     LDAP_MOD_DELETE,
                     "loginshell",
@@ -2558,7 +2715,7 @@ public:
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
 
             char *cn_values[] = {(char*)username, NULL };
-            LDAPMod cn_attr = 
+            LDAPMod cn_attr =
             {
                 LDAP_MOD_ADD,
                 "cn",
@@ -2574,7 +2731,7 @@ public:
             };
 
             char *user_values[] = {(char*)username, NULL };
-            LDAPMod user_attr = 
+            LDAPMod user_attr =
             {
                 LDAP_MOD_ADD,
                 "sudoUser",
@@ -2647,7 +2804,7 @@ public:
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-            
+
             int rc = ldap_delete_ext_s(ld, (char*)dn.str(), NULL, NULL);
 
             if ( rc != LDAP_SUCCESS )
@@ -2658,29 +2815,29 @@ public:
         else if(stricmp(type, "sudoersupdate") == 0)
         {
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
-            
+
             char* sudoHost = (char*)ldapuser->getSudoHost();
             char* sudoCommand = (char*)ldapuser->getSudoCommand();
             char* sudoOption = (char*)ldapuser->getSudoOption();
 
             char *host_values[] = {(sudoHost&&*sudoHost)?sudoHost:NULL, NULL };
-            LDAPMod host_attr = 
+            LDAPMod host_attr =
             {
                 LDAP_MOD_REPLACE,
                 "sudoHost",
                 host_values
             };
-            
+
             char *cmd_values[] = {(sudoCommand&&*sudoCommand)?sudoCommand:NULL, NULL };
-            LDAPMod cmd_attr = 
+            LDAPMod cmd_attr =
             {
                 LDAP_MOD_REPLACE,
                 "sudoCommand",
                 cmd_values
             };
-            
+
             char *option_values[] = {(sudoOption&&*sudoOption)?sudoOption:NULL, NULL };
-            LDAPMod option_attr = 
+            LDAPMod option_attr =
             {
                 LDAP_MOD_REPLACE,
                 "sudoOption",
@@ -2689,7 +2846,7 @@ public:
 
             LDAPMod *attrs[4];
             int ind = 0;
-            
+
             attrs[ind++] = &host_attr;
             attrs[ind++] = &cmd_attr;
             attrs[ind++] = &option_attr;
@@ -2730,10 +2887,10 @@ public:
 
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-        char        *attribute, **values = NULL;       
+        char        *attribute, **values = NULL;
         LDAPMessage *message;
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
 
         StringBuffer filter;
         filter.append("sAMAccountName=").append(username);
@@ -2860,7 +3017,7 @@ public:
     {
         if(!username || !*username)
             return false;
-        
+
         const char* sysuser = m_ldapconfig->getSysUser();
         if(sysuser && *sysuser && strcmp(username, sysuser) == 0)
             throw MakeStringException(-1, "You can't change password of the system user.");
@@ -2946,15 +3103,15 @@ public:
 #endif
             changePasswordSSL(username, newPassword);
         }
-        else 
+        else
         {
             StringBuffer filter;
             filter.append("uid=").append(username);
 
-            char        **values = NULL;       
+            char        **values = NULL;
             LDAPMessage *message;
 
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+            TIMEVAL timeOut = {LDAPTIMEOUT,0};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -2971,7 +3128,7 @@ public:
 
             StringBuffer userdn;
             message = LdapFirstEntry( ld, searchResult);
-            
+
             if(message != NULL)
             {
                 char *p = ldap_get_dn(ld, message);
@@ -2979,10 +3136,10 @@ public:
                 ldap_memfree(p);
             }
             char* passwdvalue[] = { (char*)newPassword, NULL };
-            LDAPMod pmod = 
+            LDAPMod pmod =
             {
                 LDAP_MOD_REPLACE,
-                "userpassword", 
+                "userpassword",
                 passwdvalue
             };
 
@@ -3098,7 +3255,7 @@ public:
             filter.appendf(")(|(%s=*%s*)))", "uNCName", searchstr);
         }
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -3163,6 +3320,95 @@ public:
         return true;
     }
 
+    virtual IPropertyTreeIterator* getResourceIterator(SecResourceType rtype, const char * basedn,
+        const char* prefix, const char* resourceName, unsigned extraNameFilter)
+    {
+        IArrayOf<ISecResource> resources;
+        getResourcesEx(rtype, basedn, prefix, resourceName, resources);
+
+        Owned<IPTree> resourceTree = createPTree("Resources");
+        ForEachItemIn(i, resources)
+        {
+            ISecResource& resource = resources.item(i);
+            const char* resourceName = resource.getName();
+            if (!resourceName || !*resourceName)
+                continue;
+            if (checkResourceNameExtraFilter(rtype, resourceName, extraNameFilter))
+                addResourceTree(resourceName, resource.getDescription(), resourceTree);
+        }
+        return resourceTree->getElements("*");
+    }
+
+    bool checkResourceNameExtraFilter(SecResourceType rtype, const char* name, unsigned extraNameFilter)
+    {
+        if((rtype == RT_FILE_SCOPE) && (extraNameFilter & RF_RT_FILE_SCOPE_FILE) && strieq(name, "file"))
+            return false;
+        if((rtype == RT_MODULE) && (extraNameFilter & RF_RT_MODULE_NO_REPOSITORY) && strnicmp(name, "repository.", 11))
+            return false;
+        return true;
+    }
+
+    void addResourceTree(const char* name, const char* desc, IPropertyTree* elements)
+    {
+        if (!name || !*name)
+            return;
+
+        Owned<IPTree> element = createPTree();
+        element->addProp(getResourceFieldNames(RFName), name);
+        if (desc && *desc)
+            element->addProp(getResourceFieldNames(RFDesc), desc);
+        elements->addPropTree("Resource", element.getClear());
+    }
+
+    ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char * basedn, const char* resourceName, unsigned extraNameFilter,
+        ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint)
+    {
+        class CElementsPager : public CSimpleInterface, implements IElementsPager
+        {
+            ILdapClient* ldapClient;
+            StringAttr sortOrder, basedn, resourceName;
+            SecResourceType rtype;
+            unsigned extraNameFilter;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CElementsPager(ILdapClient* _ldapClient, SecResourceType _rtype, const char * _basedn, const char* _resourceName,
+                unsigned _extraNameFilter, const char*_sortOrder) : ldapClient(_ldapClient), rtype(_rtype), basedn(_basedn),
+                resourceName(_resourceName), extraNameFilter(_extraNameFilter), sortOrder(_sortOrder) { };
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
+            {
+                StringArray unknownAttributes;
+                Owned<IPropertyTreeIterator> iter = ldapClient->getResourceIterator(rtype, basedn.get(), "", resourceName.get(), extraNameFilter);
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                return NULL;
+            }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, ldap always returns all of matched users.
+        };
+
+        StringBuffer so;
+        if (sortOrder)
+        {
+            for (unsigned i=0;sortOrder[i]!=RFterm;i++)
+            {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortOrder[i];
+                if (fmt&UFreverse)
+                    so.append('-');
+                if (fmt&UFnocase)
+                    so.append('?');
+                if (fmt&UFnumeric)
+                    so.append('#');
+                so.append(getUserFieldNames((UserField) (fmt&0xff)));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CElementsPager(this, rtype, basedn, resourceName, extraNameFilter, so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager, pageStartFrom, pageSize, NULL, "", cacheHint, results, total, NULL, false);
+        return new CSecItemIterator(results);
+    }
+
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions)
     {
         StringBuffer basednbuf;
@@ -3208,7 +3454,7 @@ public:
         else
             filter.append("objectClass=groupofuniquenames");
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -3239,6 +3485,76 @@ public:
             }
         }
 
+    }
+
+    virtual IPropertyTreeIterator* getGroupIterator()
+    {
+        StringArray groupNames, managedBy, descriptions;
+        getAllGroups(groupNames, managedBy, descriptions);
+
+        Owned<IPTree> groups = createPTree("Groups");
+        ForEachItemIn(i, groupNames)
+            addGroupTree(groupNames.item(i), managedBy.item(i), descriptions.item(i), groups);
+        return groups->getElements("*");
+    }
+
+    void addGroupTree(const char* name, const char* manageBy, const char* desc, IPropertyTree* groups)
+    {
+        if (!name || !*name)
+            return;
+
+        Owned<IPTree> group = createPTree();
+        group->addProp(getGroupFieldNames(GFName), name);
+        if (manageBy && *manageBy)
+            group->addProp(getGroupFieldNames(GFManagedBy), manageBy);
+        if (desc && *desc)
+            group->addProp(getGroupFieldNames(GFDesc), desc);
+        groups->addPropTree("Group", group.getClear());
+    }
+
+    ISecItemIterator* getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint)
+    {
+        class CElementsPager : public CSimpleInterface, implements IElementsPager
+        {
+            ILdapClient* ldapClient;
+            StringAttr sortOrder;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CElementsPager(ILdapClient* _ldapClient, const char*_sortOrder)
+                : ldapClient(_ldapClient), sortOrder(_sortOrder) { };
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
+            {
+                StringArray unknownAttributes;
+                Owned<IPropertyTreeIterator> iter = ldapClient->getGroupIterator();
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                return NULL;
+            }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, ldap always returns all of matched users.
+        };
+
+        StringBuffer so;
+        if (sortOrder)
+        {
+            for (unsigned i=0;sortOrder[i]!=GFterm;i++)
+            {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortOrder[i];
+                if (fmt&UFreverse)
+                    so.append('-');
+                if (fmt&UFnocase)
+                    so.append('?');
+                if (fmt&UFnumeric)
+                    so.append('#');
+                so.append(getUserFieldNames((UserField) (fmt&0xff)));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CElementsPager(this, so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager, pageStartFrom, pageSize, NULL, "", cacheHint, results, total, NULL, false);
+        return new CSecItemIterator(results);
     }
 
     virtual bool changePermission(CPermissionAction& action)
@@ -3692,6 +4008,84 @@ public:
             }
         }
 
+    }
+
+    virtual IPropertyTreeIterator* getGroupMemberIterator(const char* groupName)
+    {
+        StringArray users;
+        getGroupMembers(groupName, users);
+
+        Owned<IPropertyTree> usersTree = createPTree("Users");
+        ForEachItemIn(i, users)
+        {
+            const char* usrName = users.item(i);
+            if (!usrName || !*usrName)
+                continue;
+
+            IUserArray usersInBaseDN;
+            retrieveUsers(usrName, usersInBaseDN);
+            ForEachItemIn(x, usersInBaseDN)
+            {
+                ISecUser& usr = usersInBaseDN.item(x);
+                const char* usrName0 = usr.getName();
+                if(usrName0 && strieq(usrName, usrName0))
+                {
+                    //BUG#41536: The users in the Administrators group are all the users on the whole
+                    //active directory, while the users in the users list are only the users who are
+                    //under the "usersBasedn" of this environment. So, we should only return the users
+                    //who are in the usersBasedn.
+                    addUserTree(usr, usersTree);
+                    break;
+                }
+            }
+        }
+        return usersTree->getElements("*");
+    }
+
+    ISecItemIterator* getGroupMembersSorted(const char* groupName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+        unsigned* total, __int64* cacheHint)
+    {
+        class CElementsPager : public CSimpleInterface, implements IElementsPager
+        {
+            ILdapClient* ldapClient;
+            StringAttr sortOrder, groupName;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CElementsPager(ILdapClient* _ldapClient, const char*_groupName, const char*_sortOrder)
+                : ldapClient(_ldapClient), groupName(_groupName), sortOrder(_sortOrder) { };
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
+            {
+                StringArray unknownAttributes;
+                Owned<IPropertyTreeIterator> iter = ldapClient->getGroupMemberIterator(groupName.str());
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                return NULL;
+            }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, ldap always returns all of matched users.
+        };
+
+        StringBuffer so;
+        if (sortOrder)
+        {
+            for (unsigned i=0;sortOrder[i]!=UFterm;i++)
+            {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortOrder[i];
+                if (fmt&UFreverse)
+                    so.append('-');
+                if (fmt&UFnocase)
+                    so.append('?');
+                if (fmt&UFnumeric)
+                    so.append('#');
+                so.append(getUserFieldNames((UserField) (fmt&0xff)));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CElementsPager(this, groupName, so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager, pageStartFrom, pageSize, NULL, "", cacheHint, results, total, NULL, false);
+        return new CSecItemIterator(results);
     }
 
     virtual void deleteResource(SecResourceType rtype, const char* name, const char* basedn)
