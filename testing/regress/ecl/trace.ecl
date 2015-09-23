@@ -4,7 +4,7 @@ rec := RECORD
     UNSIGNED id;
 END;
 
-ds := NOFOLD(DATASET(10, transform(rec, SELF.id := COUNTER;), LOCAL));
+ds := NOFOLD(DATASET(10, transform(rec, SELF.id := COUNTER;)));
 gds := GROUP(ds, id);
  
 sequential(
