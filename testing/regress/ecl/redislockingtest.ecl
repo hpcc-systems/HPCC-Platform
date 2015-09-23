@@ -20,7 +20,7 @@
 
 //nothor
 
-IMPORT redisServer FROM lib_redis;
+IMPORT * FROM lib_redis;
 IMPORT Std;
 
 STRING server := '--SERVER=127.0.0.1:6379';
@@ -181,6 +181,24 @@ SEQUENTIAL(
 
     myRedis.FlushDB();
     myRedis.FlushDB(1);
+    );
+
+//Test timeout
+myRedisNoTO := redisServerWithoutTimeout(server, password);
+dsTO := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedisNoTO.GetOrLockString('timeoutTest' + (string)COUNTER,,,1000)));
+SEQUENTIAL(
+    myRedis.FlushDB();
+    myRedis.GetOrLockString('timeoutTest1');
+    OUTPUT(CATCH(dsTO, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
+    );
+
+STRING pluginTO := 'Redis Plugin: ERROR - function timed out internally.';
+STRING redisTO := 'Redis Plugin: ERROR - GetOrLock<type> \'timeoutTest2\' on database 0 for 127.0.0.1:6379 failed : Resource temporarily unavailable';
+dsTO2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := redis.GetOrLockString('timeoutTest' + (string)(1+COUNTER), server, /*database*/, password, 1/*ms*/)));
+SEQUENTIAL(
+    myRedis.FlushDB();
+    myRedis.GetOrLockString('timeoutTest2');
+    OUTPUT(CATCH(dsTO2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = pluginTO OR FAILMESSAGE = redisTO, 'Timed Out', 'Unexpected Error - ' + FAILMESSAGE)))));
     );
 
 myRedis.FlushDB();

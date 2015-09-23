@@ -92,8 +92,14 @@
  <Row><value>Auth Failed</value></Row>
 </Dataset>
 <Dataset name='Result 32'>
- <Row><value>Redis Plugin: ERROR - the requested key &apos;authTest1&apos; does not exist on database 0</value></Row>
+ <Row><value>Redis Plugin: ERROR - the requested key &apos;authTest1&apos; does not exist on database 0 on 127.0.0.1:6379</value></Row>
 </Dataset>
 <Dataset name='Result 33'>
- <Row><value>Redis Plugin: Connection failed - Connection refused for 127.0.0.1:9999</value></Row>
+ <Row><value>Redis Plugin: ERROR - connection for 127.0.0.1:9999 failed : Connection refused</value></Row>
+</Dataset>
+<Dataset name='Result 34'>
+ <Row><value>Redis Plugin: ERROR - unsupported option string &apos;blahblahblah&apos;</value></Row>
+</Dataset>
+<Dataset name='Result 35'>
+ <Row><value>Redis Plugin: ERROR - SELECT 16 on database 0 for 127.0.0.1:6379 failed : ERR invalid DB index</value></Row>
 </Dataset>
