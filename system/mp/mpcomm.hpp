@@ -90,8 +90,18 @@ extern mp_decl mptag_t createReplyTag(); // creates (short-lived) reply-tag;
 extern mp_decl ICommunicator *createCommunicator(IGroup *group,bool outer=false); // outer allows nodes outside group to send
 extern mp_decl IInterCommunicator &queryWorldCommunicator();
 
+interface IMPServer : extends IInterface
+{
+    virtual mptag_t createReplyTag() = 0;
+    virtual ICommunicator *createCommunicator(IGroup *group, bool outer=false) = 0;
+    virtual void stop() = 0;
+    virtual INode *queryMyNode() = 0;
+};
+
 extern mp_decl void startMPServer(unsigned port,bool paused=false);
 extern mp_decl void stopMPServer();
+extern mp_decl IMPServer *getMPServer();
+extern mp_decl IMPServer *startNewMPServer(unsigned port);
 
 interface IConnectionMonitor: extends IInterface
 {
