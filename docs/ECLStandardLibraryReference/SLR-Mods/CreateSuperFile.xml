@@ -12,7 +12,7 @@
       <primary>CreateSuperFile</primary>
     </indexterm>(</emphasis> <emphasis> superfile </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>, sequentialparts </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, allow_exist </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, allowExist </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
   role="bold">)</emphasis></para>
 
@@ -39,7 +39,7 @@
         </row>
 
         <row>
-          <entry><emphasis>allow_exist</emphasis></entry>
+          <entry><emphasis>allowExist</emphasis></entry>
 
           <entry>Optional. A boolean value indicating whether to post an error
           if the <emphasis>superfile</emphasis> already exists. If TRUE, no
@@ -82,14 +82,14 @@
 
   <para>[A1,B1,C1,] [A2,B2,C2,] [A3,B3,C3,] [A4,B4,C4]</para>
 
-  <para>so the reads will all be local (i.e. A1,B1,C1 on node 1 etc). Setting
+  <para>so the reads will all be local (i.e., A1,B1,C1 on node 1 etc). Setting
   <emphasis>sequentialparts</emphasis> to TRUE will read the parts in subfile
   order, like this:</para>
 
   <para>[A1,A2,A3,] [A4,B1,B2] [,B3,B4,C1,] [C2,C3,C4]</para>
 
   <para>so that the global order of A,B,C,D is maintained. However, the parts
-  cannot all be read locally (e.g. A2 and A3 will be read on part 1). Because
+  cannot all be read locally (e.g., A2 and A3 will be read on part 1). Because
   of this it is much less efficient to set
   <emphasis>sequentialparts</emphasis> true, and as it is unusual anyway to
   have files that are partitioned in order, it becomes a very unusual option
@@ -97,5 +97,8 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.File.CreateSuperFile('~CLASS::RT::IN::SF1');</programlisting>
+  <programlisting format="linespecific">STD.File.CreateSuperFile('~CLASS::RT::IN::SF1',,1);
+//This is the same but uses named parameter
+STD.File.CreateSuperFile('~CLASS::RT::IN::SF1',allowExist := 1);
+</programlisting>
 </sect1>
