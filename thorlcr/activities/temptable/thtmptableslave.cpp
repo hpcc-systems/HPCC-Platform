@@ -62,8 +62,8 @@ public:
         bool isLocal = container.queryLocalData() || container.queryOwner().isLocalChild();
         if (!isLocal && ((helper->getFlags() & TTFdistributed) != 0))
         {
-            __uint64 nodes = container.queryCodeContext()->getNodes();
-            __uint64 nodeid = container.queryCodeContext()->getNodeNum();
+            __uint64 nodes = queryCodeContext()->getNodes();
+            __uint64 nodeid = queryCodeContext()->getNodeNum();
             startRow = (nodeid * numRows) / nodes;
             maxRow = ((nodeid + 1) * numRows) / nodes;
             ActPrintLog("InlineSLAVE: numRows = %" I64F "d, nodes = %" I64F

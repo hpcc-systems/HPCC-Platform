@@ -39,7 +39,7 @@ public:
             queryCodeContext()->getResultRaw(lenData, tempData, helper->queryName(), helper->querySequence(), helper->queryXmlTransformer(), helper->queryCsvTransformer());
         msg.clear();
         msg.append(lenData, tempData);
-        container.queryJob().queryJobComm().reply(msg);
+        queryJobChannel().queryJobComm().reply(msg);
     }
 };
 

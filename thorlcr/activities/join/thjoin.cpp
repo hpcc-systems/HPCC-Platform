@@ -89,7 +89,7 @@ public:
         lastMsgTime = 0;
         mpTagRPC = container.queryJob().allocateMPTag();
         barrierMpTag = container.queryJob().allocateMPTag();
-        barrier.setown(container.queryJob().createBarrier(barrierMpTag));
+        barrier.setown(container.queryJobChannel().createBarrier(barrierMpTag));
         climitedcmp = NULL;
     }
     ~JoinActivityMaster()
@@ -118,7 +118,7 @@ public:
                 SocketEndpoint ep;
                 ep.deserialize(queryInitializationData(s));
                 
-                imaster->AddSlave(&container.queryJob().queryJobComm(), s+1,ep,mpTagRPC);
+                imaster->AddSlave(&queryJobChannel().queryJobComm(), s+1,ep,mpTagRPC);
             }
         }
     }

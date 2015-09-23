@@ -236,7 +236,7 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         CFirstNSlaveBase::init(data, slaveData);
-        mpTag = container.queryJob().deserializeMPTag(data);
+        mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
     void start()
     {
@@ -277,7 +277,8 @@ public:
             if (limit+skipCount<r)
                 r = limit+skipCount;
             // sneaky short circuit
-            { CriticalBlock b(crit);
+            {
+                CriticalBlock b(crit);
                 if (RCUNBOUND == maxres)
                 {
                     maxres = r;
@@ -319,7 +320,7 @@ public:
         CMessageBuffer msgMb;
         msgMb.append(read);
         msgMb.append(skip);
-        container.queryJob().queryJobComm().send(msgMb, 0, mpTag);
+        queryJobChannel().queryJobComm().send(msgMb, 0, mpTag);
         ActPrintLog("FIRSTN: Read %" RCPF "d records, left to skip=%" RCPF "d", read, skip);
     }
     CATCH_NEXTROW()
@@ -368,10 +369,10 @@ public:
     virtual void onInputFinished(rowcount_t count)  // count is the total read from input (including skipped)
     {
         // sneaky short circuit
-        { CriticalBlock b(crit);
+        {
+            CriticalBlock b(crit);
             if (RCUNBOUND != maxres) return;
             maxres = count;
-            
             sendCount();
         }
         ActPrintLog("FIRSTN: maximum row count %" RCPF "d", count);

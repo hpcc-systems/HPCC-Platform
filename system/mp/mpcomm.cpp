@@ -2967,6 +2967,7 @@ ICommunicator *createCommunicator(IGroup *group,bool outer)
     return MPserver->createCommunicator(group, outer);
 }
 
+
 static IInterCommunicator *worldcomm=NULL;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

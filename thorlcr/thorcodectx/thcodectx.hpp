@@ -37,13 +37,12 @@ interface ILoadedDllEntry;
 interface IConstWUResult;
 interface IWUResult;
 
-class CJobBase;
 class thcodectx_decl CThorCodeContextBase : public CSimpleInterface, implements ICodeContextExt
 {
 protected:
     Linked<IUserDescriptor> userDesc;
     ILoadedDllEntry &querySo;
-    CJobBase &job;
+    CJobChannel &jobChannel;
 
     void expandLogicalName(StringBuffer & fullname, const char * logicalName);
     IConstWUResult * getResult(const char * name, unsigned sequence);
@@ -52,7 +51,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorCodeContextBase(CJobBase &job, ILoadedDllEntry &_querySo, IUserDescriptor &_userDesc);
+    CThorCodeContextBase(CJobChannel &jobChannel, ILoadedDllEntry &_querySo, IUserDescriptor &_userDesc);
 
 // ICodeContext
     virtual const char *loadResource(unsigned id);
@@ -100,7 +99,7 @@ public:
     }
     virtual const IContextLogger &queryContextLogger() const
     {
-        return job.queryContextLogger();
+        return jobChannel.queryJob().queryContextLogger();
     }
 
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { UNIMPLEMENTED; }

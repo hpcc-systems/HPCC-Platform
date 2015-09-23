@@ -288,6 +288,14 @@ void CJobManager::run()
         dp->qn = queueName.get();
     }
 
+    PROGLOG("verifying mp connection to all slaves");
+    Owned<IMPServer> mpServer = getMPServer();
+    Owned<ICommunicator> comm = mpServer->createCommunicator(&queryClusterGroup());
+    if (!comm->verifyAll())
+        ERRLOG("Failed to connect to all slaves");
+    else
+        PROGLOG("verified mp connection to all slaves");
+
     class CThorListener : public CSimpleInterface, implements IThreaded
     {
         bool stopped;

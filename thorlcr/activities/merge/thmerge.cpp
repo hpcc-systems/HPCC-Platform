@@ -47,7 +47,7 @@ public:
     virtual void init()
     {
         CMasterActivity::init();
-        replyTag = createReplyTag();
+        replyTag = queryMPServer().createReplyTag();
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
@@ -104,7 +104,7 @@ public:
 #ifdef _TRACE
                 ActPrintLog("Merge process, Replying to node %d tag %d",i+1,replytags[i]);
 #endif
-                if (!container.queryJob().queryJobComm().send(mb, (rank_t)i+1, replytags[i]))
+                if (!queryJobChannel().queryJobComm().send(mb, (rank_t)i+1, replytags[i]))
                     break;
             }
         

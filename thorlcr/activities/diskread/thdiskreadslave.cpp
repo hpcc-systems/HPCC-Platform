@@ -660,15 +660,18 @@ public:
 
     const void *nextRow()
     {
-        if (!eoi) {
+        if (!eoi)
+        {
             try {
-                if (!activity.queryAbortSoon()) {  
+                if (!activity.queryAbortSoon())
+                {
                     OwnedConstThorRow row = CDiskRecordPartHandler::nextRow();
                     if (row) 
                         return row.getClear();
                 }
             }
-            catch (IException *e) {
+            catch (IException *e)
+            {
                 StringBuffer s;
                 e->errorMessage(s);
                 s.append(" - handling file: ").append(filename.get());
@@ -706,7 +709,7 @@ public:
     {
         CDiskReadSlaveActivityRecord::init(data, slaveData);
         if (!container.queryLocalOrGrouped())
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
         appendOutputLinked(this);
         partHandler.setown(new CDiskSimplePartHandler(*this));
     }
@@ -824,7 +827,7 @@ public:
     {
         CDiskReadSlaveActivityRecord::init(data, slaveData);
         if (!container.queryLocalOrGrouped())
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
         data.read(totalCountKnown);
         data.read(preknownTotalCount);
         appendOutputLinked(this);
@@ -948,7 +951,7 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         CDiskReadSlaveActivityRecord::init(data, slaveData);
-        mpTag = container.queryJob().deserializeMPTag(data);
+        mpTag = container.queryJobChannel().deserializeMPTag(data);
         appendOutputLinked(this);
         partHandler.setown(new CDiskSimplePartHandler(*this));
         allocator.set(queryRowAllocator());
@@ -957,7 +960,7 @@ public:
     {
         CDiskReadSlaveActivityRecord::abort();
         if (merging)
-            container.queryJob().queryJobComm().cancel(0, mpTag);
+            queryJobChannel().queryJobComm().cancel(0, mpTag);
     }
 // IThorDataLink
     virtual void start()

@@ -56,7 +56,7 @@ public:
         appendOutputLinked(this);
 
         if (!container.queryLocal())
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
     void start()
     {
@@ -74,7 +74,7 @@ public:
         resultSent = true;
         CMessageBuffer mb;
         mb.append(r);
-        container.queryJob().queryJobComm().send(mb, 0, mpTag);
+        queryJobChannel().queryJobComm().send(mb, 0, mpTag);
     }
     void stop()
     {

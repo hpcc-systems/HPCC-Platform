@@ -114,7 +114,7 @@ public:
         {
             loop
             {
-                if (!container.queryJob().queryJobComm().send(mb, s+1, mpTag)) return;
+                if (!queryJobChannel().queryJobComm().send(mb, s+1, mpTag)) return;
                 if (!receiveMsg(mb, s+1, mpTag)) return;
                 if (0 == mb.length())
                     break;
@@ -250,7 +250,7 @@ public:
         if (!receiveMsg(replyMsg, sender, mpTag, NULL, 5*60000))
             throwUnexpected();
         replyMsg.swapWith(msg);
-        container.queryJob().queryJobComm().reply(replyMsg); // ack
+        queryJobChannel().queryJobComm().reply(replyMsg); // ack
         
         unsigned numGot;
         msg.read(numGot);
@@ -275,7 +275,7 @@ public:
             messageHandler.setown(new CMessageHandler(*this));
         messageHandler->add(sender);
         msg.clear();
-        container.queryJob().queryJobComm().reply(msg);
+        queryJobChannel().queryJobComm().reply(msg);
     }
 };
 

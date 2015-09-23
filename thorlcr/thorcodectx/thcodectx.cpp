@@ -30,14 +30,14 @@
 #include "thgraph.hpp"
 #include "thorxmlwrite.hpp"
 
-CThorCodeContextBase::CThorCodeContextBase(CJobBase &_job, ILoadedDllEntry &_querySo, IUserDescriptor &_userDesc) : job(_job), querySo(_querySo), userDesc(&_userDesc)
+CThorCodeContextBase::CThorCodeContextBase(CJobChannel &_jobChannel, ILoadedDllEntry &_querySo, IUserDescriptor &_userDesc) : jobChannel(_jobChannel), querySo(_querySo), userDesc(&_userDesc)
 {
 }
 
 char *CThorCodeContextBase::getWuid()
 {
     StringBuffer out;
-    out.append(job.queryWuid());
+    out.append(jobChannel.queryJob().queryWuid());
     return out.detach();
 }
 
@@ -50,7 +50,7 @@ char *CThorCodeContextBase::getJobName()
 char *CThorCodeContextBase::getJobOwner()
 {
     StringBuffer out;
-    out.append(job.queryUser());
+    out.append(jobChannel.queryJob().queryUser());
     return out.detach();
 }
 
@@ -94,8 +94,8 @@ void CThorCodeContextBase::expandLogicalName(StringBuffer & fullname, const char
         logicalName++;
     else
     {
-        if (job.queryScope())
-            fullname.append(job.queryScope()).append("::");
+        if (jobChannel.queryJob().queryScope())
+            fullname.append(jobChannel.queryJob().queryScope()).append("::");
     }
     fullname.append(logicalName);
     fullname.toLowerCase();
@@ -110,29 +110,29 @@ char *CThorCodeContextBase::getExpandLogicalName(const char * logicalName)
 
 IEngineRowAllocator * CThorCodeContextBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
 { 
-    return job.getRowAllocator(meta, activityId);
+    return jobChannel.queryJob().getRowAllocator(meta, activityId);
 }
 
 const char * CThorCodeContextBase::cloneVString(const char * str) const
 {
-    return job.queryRowManager()->cloneVString(str);
+    return jobChannel.queryJob().queryRowManager()->cloneVString(str);
 }
 
 const char * CThorCodeContextBase::cloneVString(size32_t len, const char * str) const
 {
-    return job.queryRowManager()->cloneVString(len, str);
+    return jobChannel.queryJob().queryRowManager()->cloneVString(len, str);
 }
 
 IEclGraphResults *CThorCodeContextBase::resolveLocalQuery(__int64 gid)
 {
-    IEclGraphResults *graph = job.getGraph((graph_id)gid);
+    IEclGraphResults *graph = jobChannel.getGraph((graph_id)gid);
     graph->Release(); // resolveLocalQuery doesn't own, can't otherwise will be circular ref.
     return graph;
 }
 
 IThorChildGraph *CThorCodeContextBase::resolveChildQuery(__int64 gid, IHThorArg *colocal)
 {
-    return job.getGraph((graph_id)gid);
+    return jobChannel.getGraph((graph_id)gid);
 }
 
 void CThorCodeContextBase::getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)

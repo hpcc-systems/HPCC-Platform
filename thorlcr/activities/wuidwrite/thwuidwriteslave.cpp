@@ -45,7 +45,7 @@ public:
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        mpTag = container.queryJob().deserializeMPTag(data);
+        mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
     void processBlock(unsigned &numGot, MemoryBuffer &mb)
     {
@@ -120,7 +120,7 @@ public:
                 msgMb.swapWith(replyMb);
                 replyMb.append((unsigned)0);
             }
-            container.queryJob().queryJobComm().send(msgMb, 0, mpTag);
+            queryJobChannel().queryJobComm().send(msgMb, 0, mpTag);
         } while (!abortSoon && numGot);
     }
     void abort()
@@ -139,7 +139,7 @@ public:
     {
         helper = static_cast <IHThorWorkUnitWriteArg *> (queryHelper());    // really a dynamic_cast
         grouped = 0 != (POFgrouped & helper->getFlags());
-        replyTag = createReplyTag();
+        replyTag = queryMPServer().createReplyTag();
     }
     void process()
     {
@@ -176,7 +176,7 @@ public:
             }
             if (numGot || totalNum)
             {
-                if (!container.queryJob().queryJobComm().send(reqMsg, 0, container.queryJob().querySlaveMpTag(), MEDIUMTIMEOUT))
+                if (!queryJobChannel().queryJobComm().send(reqMsg, 0, container.queryJob().querySlaveMpTag(), MEDIUMTIMEOUT))
                     throwUnexpected();
                 bool got = false;
                 loop
@@ -185,7 +185,7 @@ public:
                     if (receiveMsg(replyMsg, 0, replyTag, NULL, MEDIUMTIMEOUT))
                     {
                         msg.setReplyTag(replyTag);
-                        if (!container.queryJob().queryJobComm().send(msg, 0, mpTag, LONGTIMEOUT))
+                        if (!queryJobChannel().queryJobComm().send(msg, 0, mpTag, LONGTIMEOUT))
                             throwUnexpected();
                         if (!receiveMsg(replyMsg, 0, replyTag, NULL, LONGTIMEOUT))
                             throwUnexpected();

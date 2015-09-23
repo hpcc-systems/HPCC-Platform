@@ -39,8 +39,8 @@ class GroupSlaveActivity : public CSlaveActivity, public CThorDataLink
         {
             useRollover = false;
             // JCSMORE will generate time out log messages, while waiting for next nodes group
-            rank_t myNode = container.queryJob().queryMyRank();
-            nextNodeStream.setown(createRowStreamFromNode(*this, myNode+1, container.queryJob().queryJobComm(), mpTag, abortSoon));
+            rank_t myNode = queryJobChannel().queryMyRank();
+            nextNodeStream.setown(createRowStreamFromNode(*this, myNode+1, queryJobChannel().queryJobComm(), mpTag, abortSoon));
             stream.set(nextNodeStream);
             return stream->nextRow();
         }
@@ -62,7 +62,7 @@ public:
         appendOutputLinked(this);
         if (!container.queryLocalOrGrouped())
         {
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
             rolloverEnabled = true;
         }
     }
@@ -75,7 +75,7 @@ public:
         {
             useRollover = !lastNode();
 #ifdef _TESTING
-            ActPrintLog("Node number = %d, Total Nodes = %d", container.queryJob().queryMyRank(), container.queryJob().querySlaves());
+            ActPrintLog("Node number = %d, Total Nodes = %d", queryJobChannel().queryMyRank(), container.queryJob().querySlaves());
 #endif
         }
 
@@ -92,7 +92,7 @@ public:
             Owned<IRowWriter> writer = collector->getWriter();
             if (next)
             {
-                ActPrintLog("GROUP: Sending first group to previous node(%d)", container.queryJob().queryMyRank()-1);
+                ActPrintLog("GROUP: Sending first group to previous node(%d)", queryJobChannel().queryMyRank()-1);
                 loop
                 {
                     writer->putRow(next.getLink());
@@ -115,7 +115,7 @@ public:
             writer.clear();
             ActPrintLog("GROUP: %" RCPF "d records to send", collector->numRows());
             Owned<IRowStream> strm = collector->getStream();
-            rowServer.setown(createRowServer(this, strm, container.queryJob().queryJobComm(), mpTag));
+            rowServer.setown(createRowServer(this, strm, queryJobChannel().queryJobComm(), mpTag));
         }
     }
     virtual void stop()

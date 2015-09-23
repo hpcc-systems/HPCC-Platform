@@ -185,7 +185,7 @@ public:
         path.append("backup_");
         globals->getProp("@name", path);
         path.append("_");
-        path.append(queryClusterGroup().rank(queryMyNode()));
+        path.append(queryNodeGroup().rank(queryMyNode()));
         path.append(".lst");
         ensureDirectoryForFile(path.str());
         Owned<IFile> iFile = createIFile(path.str());

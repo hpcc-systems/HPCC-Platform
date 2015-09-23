@@ -1949,7 +1949,7 @@ class cMultiThorResourceMutex: public CSimpleInterface, implements ILargeMemLimi
     Owned<cMultiThorResourceMutexThread> thread;
     Owned<IDaliMutex> mutex;
     bool stopping;
-    Linked<ICommunicator> clusterComm;
+    Linked<ICommunicator> nodeComm;
     CSDSServerStatus *status;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -1957,8 +1957,8 @@ public:
     {
         status = _status;
         stopping = false;
-        clusterComm.set(&queryClusterComm());
-        if (clusterComm->queryGroup().rank(queryMyNode())==0) { // master so start thread
+        nodeComm.set(&queryNodeComm());
+        if (nodeComm->queryGroup().rank(queryMyNode())==0) { // master so start thread
             thread.setown(new cMultiThorResourceMutexThread(*this));
             thread->start();
             StringBuffer mname("thorres:");
@@ -1984,7 +1984,7 @@ public:
                 mbuf.clear();
                 rank_t from;
                 unsigned timeout = 1000*60*5;
-                if (clusterComm->recv(mbuf,RANK_ALL,MPTAG_THORRESOURCELOCK,&from,timeout)) {
+                if (nodeComm->recv(mbuf,RANK_ALL,MPTAG_THORRESOURCELOCK,&from,timeout)) {
                     byte req;
                     mbuf.read(req);
                     if (req==1) {
@@ -1995,7 +1995,7 @@ public:
                         if (mutex) 
                             mutex->leave();
                     }
-                    clusterComm->reply(mbuf,1000*60*5);
+                    nodeComm->reply(mbuf,1000*60*5);
                 }
             }
         }
@@ -2011,7 +2011,7 @@ public:
         if (mutex) 
             mutex->kill();
         try {
-            clusterComm->cancel(RANK_ALL,MPTAG_THORRESOURCELOCK);
+            nodeComm->cancel(RANK_ALL,MPTAG_THORRESOURCELOCK);
         }
         catch (IException *e) {
             EXCLOG(e,"cMultiThorResourceMutex::stop");
@@ -2034,7 +2034,7 @@ public:
         byte req = 1;
         mbuf.append(req);
         try {
-            if (!clusterComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
+            if (!nodeComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
                 stopping = true;
         }
         catch (IException *e) {
@@ -2055,7 +2055,7 @@ public:
         byte req = 0;
         mbuf.append(req);
         try {
-            if (!clusterComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
+            if (!nodeComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
                 stopping = true;
         }
         catch (IException *e) {

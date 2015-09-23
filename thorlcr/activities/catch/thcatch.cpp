@@ -24,7 +24,7 @@ public:
     CSkipCatchActivity(CMasterGraphElement * info) : CMasterActivity(info)
     {
         mpTag = container.queryJob().allocateMPTag();
-        barrier.setown(container.queryJob().createBarrier(mpTag));
+        barrier.setown(container.queryJobChannel().createBarrier(mpTag));
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {

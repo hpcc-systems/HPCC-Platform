@@ -86,8 +86,7 @@ public:
 class CJobSlave;
 class graphslave_decl CSlaveGraph : public CGraphBase
 {
-    CJobSlave &jobS;
-    Owned<IInterface> progressHandler;
+    CJobSlave *jobS;
     Semaphore getDoneSem;
     bool initialized, progressActive, progressToCollect;
     CriticalSection progressCrit;
@@ -95,7 +94,7 @@ class graphslave_decl CSlaveGraph : public CGraphBase
 
 public:
 
-    CSlaveGraph(CJobSlave &_job);
+    CSlaveGraph(CJobChannel &jobChannel);
     ~CSlaveGraph() { }
 
     void connect();
@@ -139,42 +138,58 @@ interface ISlaveWatchdog;
 class graphslave_decl CJobSlave : public CJobBase
 {
     ISlaveWatchdog *watchdog;
-    Owned<IPerfMonHook> perfmonhook;
     Owned<IPropertyTree> workUnitInfo;
-    CriticalSection graphRunCrit;
     size32_t oldNodeCacheMem;
 
 public:
     IMPLEMENT_IINTERFACE;
 
     CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *workUnitInfo, const char *graphName, const char *querySo, mptag_t _mptag, mptag_t _slavemptag);
-    ~CJobSlave();
 
+    virtual void addChannel(IMPServer *mpServer);
     virtual void startJob();
     const char *queryFindString() const { return key.get(); } // for string HT
 
+    virtual IGraphTempHandler *createTempHandler(bool errorOnMissing);
     ISlaveWatchdog *queryProgressHandler() { return watchdog; }
 
+    virtual mptag_t deserializeMPTag(MemoryBuffer &mb);
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const;
-    virtual IGraphTempHandler *createTempHandler(bool errorOnMissing);
+// IExceptionHandler
+    virtual bool fireException(IException *e)
+    {
+        return queryJobChannel(0).fireException(e);
+    }
+// IThreadFactory
+    IPooledThread *createNew();
+};
+
+class graphslave_decl CJobSlaveChannel : public CJobChannel
+{
+    CriticalSection graphRunCrit;
+public:
+    CJobSlaveChannel(CJobBase &job, IMPServer *mpServer, unsigned channel);
+
+    virtual IBarrier *createBarrier(mptag_t tag);
     virtual CGraphBase *createGraph()
     {
         return new CSlaveGraph(*this);
     }
-    virtual IBarrier *createBarrier(mptag_t tag);
-
+ // IGraphCallback
+    virtual void runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const byte *parentExtract);
 // IExceptionHandler
     virtual bool fireException(IException *e)
     {
         CMessageBuffer msg;
         msg.append((int)smt_errorMsg);
+        msg.append(queryMyRank()-1);
         IThorException *te = QUERYINTERFACE(e, IThorException);
         bool userOrigin = false;
         if (te)
         {
-            te->setJobId(key);
+            te->setJobId(queryJob().queryKey());
             te->setSlave(queryMyRank());
             if (!te->queryOrigin())
             {
@@ -188,20 +203,16 @@ public:
         if (userOrigin)
         {
             // wait for reply
-            if (!queryJobComm().sendRecv(msg, 0, querySlaveMpTag(), LONGTIMEOUT))
+            if (!queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
                 EXCLOG(e, "Failed to sendrecv to master");
         }
         else
         {
-            if (!queryJobComm().send(msg, 0, querySlaveMpTag(), LONGTIMEOUT))
+            if (!queryJobComm().send(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
                 EXCLOG(e, "Failed to send to master");
         }
         return true;
     }
-// IGraphCallback
-    virtual void runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const byte *parentExtract);
-// IThreadFactory
-    IPooledThread *createNew();
 };
 
 interface IPartDescriptor;

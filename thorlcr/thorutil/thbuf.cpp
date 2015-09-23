@@ -750,6 +750,8 @@ class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBu
 
     void reuse(CRowSet *rowset)
     {
+        if (!reuseRowSets)
+            return;
         rowset->clear();
         CriticalBlock b(rowSetCacheCrit);
         if (cachedRowSets.ordinality() < (outputs.ordinality()*2))
@@ -910,6 +912,7 @@ protected:
     Linked<IOutputMetaData> meta;
     QueueOf<CRowSet, false> chunkPool;
     unsigned maxPoolChunks;
+    bool reuseRowSets;
 
     inline const rowcount_t readerWait(COutput &output, const rowcount_t rowsRead)
     {
@@ -1062,9 +1065,11 @@ public:
         }
         inMemRows.setown(newRowSet(0));
         maxPoolChunks = MIN_POOL_CHUNKS;
+        reuseRowSets = true;
     }
     ~CSharedWriteAheadBase()
     {
+        reuseRowSets = false;
         ForEachItemIn(o, outputs)
         {
             COutput &output = queryCOutput(o);

@@ -477,7 +477,7 @@ protected:
             dedupSamples = dedupSuccesses = 0;
             doDedup = owner.doDedup;
             writerPool.setown(createThreadPool("HashDist writer pool", this, this, owner.writerPoolSize, 5*60*1000));
-            self = owner.activity->queryJob().queryMyRank()-1;
+            self = owner.activity->queryJobChannel().queryMyRank()-1;
 
             targets.ensure(owner.numnodes);
             for (unsigned n=0; n<owner.numnodes; n++)
@@ -993,7 +993,7 @@ public:
     {
         aborted = connected = false;
         doDedup = _doDedup;
-        self = activity->queryJob().queryMyRank() - 1;
+        self = activity->queryJobChannel().queryMyRank() - 1;
         numnodes = activity->queryJob().querySlaves();
         iCompare = NULL;
         ihash = NULL;
@@ -1324,7 +1324,7 @@ public:
     }
     bool sendRecv(ICommunicator &comm, CMessageBuffer &mb, rank_t r, mptag_t tag)
     {
-        mptag_t replyTag = createReplyTag();
+        mptag_t replyTag = activity->queryMPServer().createReplyTag();
         loop
         {
             if (aborted)
@@ -1994,13 +1994,13 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
-        mptag = container.queryJob().deserializeMPTag(data);
+        mptag = container.queryJobChannel().deserializeMPTag(data);
         ActPrintLog("HASHDISTRIB: %sinit tag %d",mergecmp?"merge, ":"",(int)mptag);
 
         if (mergecmp)
-            distributor = createPullHashDistributor(this, container.queryJob().queryJobComm(), mptag, false, this);
+            distributor = createPullHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, this);
         else
-            distributor = createHashDistributor(this, container.queryJob().queryJobComm(), mptag, false, this);
+            distributor = createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, this);
         inputstopped = true;
     }
     void stopInput()
@@ -2181,7 +2181,7 @@ public:
         Owned<IRowStream> ret;
         passthrough = true;
         n = activity->queryContainer().queryJob().querySlaves();
-        self = activity->queryContainer().queryJob().queryJobComm().queryGroup().rank()-1;
+        self = activity->queryJobChannel().queryMyRank()-1;
         ThorDataLinkMetaInfo info;
         in->getMetaInfo(info);
         offset_t sz = info.byteTotal;
@@ -2218,12 +2218,12 @@ public:
         CMessageBuffer mb;
         mb.append(sz);
         ActPrintLog(activity, "REDISTRIBUTE sending size %" I64F "d to master",sz);
-        if (!activity->queryContainer().queryJob().queryJobComm().send(mb, (rank_t)0, statstag)) {
+        if (!activity->queryContainer().queryJobChannel().queryJobComm().send(mb, (rank_t)0, statstag)) {
             ActPrintLog(activity, "REDISTRIBUTE send to master failed");
             throw MakeStringException(-1, "REDISTRIBUTE send to master failed");
         }
         mb.clear();
-        if (!activity->queryContainer().queryJob().queryJobComm().recv(mb, (rank_t)0, statstag)) {
+        if (!activity->queryContainer().queryJobChannel().queryJobComm().recv(mb, (rank_t)0, statstag)) {
             ActPrintLog(activity, "REDISTRIBUTE recv from master failed");
             throw MakeStringException(-1, "REDISTRIBUTE recv from master failed");
         }
@@ -2350,7 +2350,7 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         HashDistributeSlaveBase::init(data, slaveData);
-        mptag_t tag = container.queryJob().deserializeMPTag(data);
+        mptag_t tag = container.queryJobChannel().deserializeMPTag(data);
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
         partitioner.setown(new CHDRproportional(this, distribargs,tag));
         ihash = partitioner;
@@ -3494,8 +3494,8 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         HashDedupSlaveActivityBase::init(data, slaveData);
-        mptag = container.queryJob().deserializeMPTag(data);
-        distributor = createHashDistributor(this, container.queryJob().queryJobComm(), mptag, true, this);
+        mptag = container.queryJobChannel().deserializeMPTag(data);
+        distributor = createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, true, this);
     }
     void start()
     {
@@ -3577,8 +3577,8 @@ public:
     {
         joinargs = (IHThorHashJoinArg *)queryHelper();
         appendOutputLinked(this);
-        mptag = container.queryJob().deserializeMPTag(data);
-        mptag2 = container.queryJob().deserializeMPTag(data);
+        mptag = container.queryJobChannel().deserializeMPTag(data);
+        mptag2 = container.queryJobChannel().deserializeMPTag(data);
         ActPrintLog("HASHJOIN: init tags %d,%d",(int)mptag,(int)mptag2);
     }
     void start()
@@ -3600,7 +3600,7 @@ public:
         ICompare *icompareL = joinargs->queryCompareLeft();
         ICompare *icompareR = joinargs->queryCompareRight();
         if (!lhsDistributor)
-            lhsDistributor.setown(createHashDistributor(this, container.queryJob().queryJobComm(), mptag, false, this, "LHS"));
+            lhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, this, "LHS"));
         Owned<IRowStream> reader = lhsDistributor->connect(queryRowInterfaces(inL), inL, ihashL, icompareL);
         Owned<IThorRowLoader> loaderL = createThorRowLoader(*this, ::queryRowInterfaces(inL), icompareL, stableSort_earlyAlloc, rc_allDisk, SPILL_PRIORITY_HASHJOIN);
         strmL.setown(loaderL->load(reader, abortSoon));
@@ -3611,7 +3611,7 @@ public:
         lhsDistributor->join();
         leftdone = true;
         if (!rhsDistributor)
-            rhsDistributor.setown(createHashDistributor(this, container.queryJob().queryJobComm(), mptag2, false, this, "RHS"));
+            rhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), mptag2, false, this, "RHS"));
         reader.setown(rhsDistributor->connect(queryRowInterfaces(inR), inR, ihashR, icompareR));
         Owned<IThorRowLoader> loaderR = createThorRowLoader(*this, ::queryRowInterfaces(inR), icompareR, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_HASHJOIN);;
         strmR.setown(loaderR->load(reader, abortSoon));
@@ -3756,7 +3756,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
             IMPLEMENT_IINTERFACE;
             CRowAggregatedStream(CActivityBase &_activity, IRowInterfaces *_rowIf, RowAggregator *_localAggregated) : activity(_activity), rowIf(_rowIf), localAggregated(_localAggregated), outBuilder(_rowIf->queryRowAllocator())
             {
-                node = activity.queryContainer().queryJob().queryMyRank();
+                node = activity.queryContainer().queryJobChannel().queryMyRank();
             }
             // IRowStream impl.
             virtual const void *nextRow()
@@ -3794,7 +3794,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
             }
         } nodeCompare(helperExtra.queryHashElement());
         if (!distributor)
-            distributor.setown(createPullHashDistributor(&activity, activity.queryContainer().queryJob().queryJobComm(), mptag, false, NULL, "MERGEAGGS"));
+            distributor.setown(createPullHashDistributor(&activity, activity.queryContainer().queryJobChannel().queryJobComm(), mptag, false, NULL, "MERGEAGGS"));
         strm.setown(distributor->connect(nodeRowMetaRowIf, localAggregatedStream, &nodeCompare, &nodeCompare));
         loop
         {
@@ -3828,7 +3828,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
         };
         Owned<IRowStream> localAggregatedStream = new CRowAggregatedStream(localAggTable);
         if (!distributor)
-            distributor.setown(createHashDistributor(&activity, activity.queryContainer().queryJob().queryJobComm(), mptag, false, NULL, "MERGEAGGS"));
+            distributor.setown(createHashDistributor(&activity, activity.queryContainer().queryJobChannel().queryJobComm(), mptag, false, NULL, "MERGEAGGS"));
         Owned<IRowInterfaces> rowIf = activity.getRowInterfaces(); // create new rowIF / avoid using activities IRowInterface, otherwise suffer from circular link
         strm.setown(distributor->connect(rowIf, localAggregatedStream, helperExtra.queryHashElement(), NULL));
         loop
@@ -3900,7 +3900,7 @@ public:
 
         if (!container.queryLocalOrGrouped())
         {
-            mptag = container.queryJob().deserializeMPTag(data);
+            mptag = container.queryJobChannel().deserializeMPTag(data);
             ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
         }
         localAggTable.setown(new RowAggregator(*helper, *helper));
@@ -3987,7 +3987,7 @@ public:
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
         ihash = distribargs->queryHash();
         input = NULL;
-        myNode = container.queryJob().queryMyRank()-1;
+        myNode = queryJobChannel().queryMyRank()-1;
         nodes = container.queryJob().querySlaves();
     }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)

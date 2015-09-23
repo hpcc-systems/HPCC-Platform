@@ -195,7 +195,7 @@ public:
     {
         data.read(logicalFilename);
         if (!container.queryLocalOrGrouped())
-            mpTag = container.queryJob().deserializeMPTag(data); // channel to pass back partial counts for aggregation
+            mpTag = container.queryJobChannel().deserializeMPTag(data); // channel to pass back partial counts for aggregation
         unsigned parts;
         data.read(parts);
         if (parts)
@@ -853,7 +853,7 @@ public:
     {
         CIndexReadSlaveBase::abort();
         if (merging)
-            container.queryJob().queryJobComm().cancel(0, mpTag);
+            queryJobChannel().queryJobComm().cancel(0, mpTag);
     }
 };
 

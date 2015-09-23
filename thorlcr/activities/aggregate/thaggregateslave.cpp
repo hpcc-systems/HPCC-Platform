@@ -113,7 +113,7 @@ protected:
             serializer->serialize(mbs,(const byte *)row);
             sizeMark.write();
         }
-        container.queryJob().queryJobComm().send(mb, dst, mpTag);
+        queryJobChannel().queryJobComm().send(mb, dst, mpTag);
     }
 public:
     AggregateSlaveBase(CGraphElementBase *_container)
@@ -125,7 +125,7 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         if (!container.queryLocal())
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
         appendOutputLinked(this);
     }
     virtual bool isGrouped() { return false; }

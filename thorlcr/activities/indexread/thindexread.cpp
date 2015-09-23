@@ -41,7 +41,7 @@ protected:
     rowcount_t aggregateToLimit()
     {
         rowcount_t total = 0;
-        ICommunicator &comm = container.queryJob().queryJobComm();
+        ICommunicator &comm = queryJobChannel().queryJobComm();
         unsigned slaves = container.queryJob().querySlaves();
         unsigned s;
         for (s=0; s<slaves; s++)
@@ -116,14 +116,14 @@ protected:
                     {
                         checkTLKConsistency = false;
                         Owned<IException> e = MakeActivityWarning(&container, 0, "Cannot validate that tlks in superfile %s match, some crc attributes are missing", super->queryLogicalName());
-                        container.queryJob().fireException(e);
-                    }       
+                        queryJobChannel().fireException(e);
+                    }
                 }
                 if (rowCrc && fileCrc)
                 {
                     checkTLKConsistency = false;
                     Owned<IException> e = MakeActivityWarning(&container, 0, "Cannot validate that tlks in superfile %s match, due to mixed crc types.", super->queryLogicalName());
-                    container.queryJob().fireException(e);
+                    queryJobChannel().fireException(e);
                 }
                 if (checkTLKConsistency)
                 {
@@ -305,7 +305,7 @@ class CIndexReadActivityMaster : public CIndexReadBase
         }
         CMessageBuffer msg;
         msg.append(total);
-        ICommunicator &comm = container.queryJob().queryJobComm();
+        ICommunicator &comm = queryJobChannel().queryJobComm();
         unsigned slaves = container.queryJob().querySlaves();
         unsigned s=0;
         for (; s<slaves; s++)
@@ -371,7 +371,7 @@ public:
             total = limit;
         CMessageBuffer msg;
         msg.append(total);
-        ICommunicator &comm = container.queryJob().queryJobComm();
+        ICommunicator &comm = queryJobChannel().queryJobComm();
         verifyex(comm.send(msg, 1, mpTag)); // send to 1st slave only
     }
 };
@@ -398,7 +398,7 @@ class CIndexNormalizeActivityMaster : public CIndexReadBase
         }
         CMessageBuffer msg;
         msg.append(total);
-        ICommunicator &comm = container.queryJob().queryJobComm();
+        ICommunicator &comm = queryJobChannel().queryJobComm();
         unsigned slaves = container.queryJob().querySlaves();
         unsigned s=0;
         for (; s<slaves; s++)
@@ -452,7 +452,7 @@ public:
         CMessageBuffer msg;
         CMemoryRowSerializer mbs(msg);
         rowIf->queryRowSerializer()->serialize(mbs,(const byte *)result.get());
-        if (!container.queryJob().queryJobComm().send(msg, 1, mpTag, 5000))
+        if (!queryJobChannel().queryJobComm().send(msg, 1, mpTag, 5000))
             throw MakeThorException(0, "Failed to give result to slave");
     }
 };

@@ -35,7 +35,7 @@ public:
     virtual void init()
     {
         CMasterActivity::init();
-        replyTag = createReplyTag();
+        replyTag = queryMPServer().createReplyTag();
     }
     virtual void abort()
     {

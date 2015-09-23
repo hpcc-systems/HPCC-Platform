@@ -26,7 +26,7 @@ interface IWUGraphProgress;
 class CGraphBase;
 interface IDeMonServer : extends IInterface
 {
-    virtual void takeHeartBeat(const SocketEndpoint &sender, MemoryBuffer &progressMbb) = 0;
+    virtual void takeHeartBeat(MemoryBuffer &progressMbb) = 0;
     virtual void startGraph(CGraphBase *graph) = 0;
     virtual void endGraph(CGraphBase *graph, bool success) = 0;
     virtual void endGraphs() = 0;

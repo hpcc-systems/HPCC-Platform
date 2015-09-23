@@ -903,8 +903,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
 
             requestMpTag = (mptag_t)owner.tags.popGet();
             resultMpTag = (mptag_t)owner.tags.popGet();
-            requestProcessor = new CKeyedFetchRequestProcessor(owner, owner.container.queryJob().queryJobComm(), requestMpTag, resultMpTag); // remote receive of fetch fpos'
-            resultProcessor = new CKeyedFetchResultProcessor(owner, owner.container.queryJob().queryJobComm(), resultMpTag); // asynchronously receiving results back
+            requestProcessor = new CKeyedFetchRequestProcessor(owner, owner.queryJobChannel().queryJobComm(), requestMpTag, resultMpTag); // remote receive of fetch fpos'
+            resultProcessor = new CKeyedFetchResultProcessor(owner, owner.queryJobChannel().queryJobComm(), resultMpTag); // asynchronously receiving results back
 
             threaded.start();
         }
@@ -965,8 +965,9 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                     dstNode = ((FPosTableEntry *)result)->index;
                 }
             }
-            
-            { CriticalBlock b(crit);
+
+            {
+                CriticalBlock b(crit);
                 //must be easier way?
                 size32_t sz = owner.fetchInputMetaAllocator->queryOutputMeta()->getRecordSize(fetchInRow.getSelf());
                 dstLists.item(dstNode)->append(fetchInRow.finalizeRowClear(sz));
@@ -1017,7 +1018,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             for (; n<nodes; n++)
             {
                 CMessageBuffer msg;
-                if (!owner.container.queryJob().queryJobComm().send(msg, n+1, requestMpTag, LONGTIMEOUT))
+                if (!owner.queryJobChannel().queryJobComm().send(msg, n+1, requestMpTag, LONGTIMEOUT))
                     throw MakeActivityException(&owner, 0, "CKeyedFetchHandler::stop - comm send failed");
             }
         }
@@ -1041,7 +1042,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                 if (aborted)
                     return;
                 CMessageBuffer msg;
-                { CriticalBlock b(crit); // keep writer out during flush to this dstNode
+                {
+                    CriticalBlock b(crit); // keep writer out during flush to this dstNode
                     unsigned total = dstLists.item(n)->ordinality();
                     if (total)
                     {
@@ -1095,7 +1097,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                             pendingReplies += requests;
                             total -= requests;
                             { CriticalUnblock ub(crit);
-                                if (!owner.container.queryJob().queryJobComm().send(msg, n+1, requestMpTag, LONGTIMEOUT))
+                                if (!owner.queryJobChannel().queryJobComm().send(msg, n+1, requestMpTag, LONGTIMEOUT))
                                     throw MakeActivityException(&owner, 0, "CKeyedFetchHandler - comm send failed");
                             }
                             if (0 == total)
@@ -1827,7 +1829,7 @@ public:
         statsArr = _statsArr.getArray();
         
         fixedRecordSize = helper->queryIndexRecordSize()->getFixedSize(); // 0 if variable and unused
-        node = container.queryJob().queryMyRank()-1;
+        node = queryJobChannel().queryMyRank()-1;
         onFailTransform = (0 != (joinFlags & JFonfail)) && (0 == (joinFlags & JFmatchAbortLimitSkips));
 
         joinFieldsAllocator.setown(queryJob().getRowAllocator(helper->queryJoinFieldsRecordSize(), queryActivityId()));
@@ -1846,9 +1848,9 @@ public:
         unsigned t;
         for (t=0; t<numTags; t++)
         {
-            mptag_t tag = container.queryJob().deserializeMPTag(data);
+            mptag_t tag = container.queryJobChannel().deserializeMPTag(data);
             tags.append(tag);
-            container.queryJob().queryJobComm().flush(tag);
+            queryJobChannel().queryJobComm().flush(tag);
         }
         indexParts.kill();
         dataParts.kill();

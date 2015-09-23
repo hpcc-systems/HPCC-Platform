@@ -286,7 +286,7 @@ public:
                 abortE->Release();
                 EXCLOG(e2, NULL);
             }
-            graph->queryJob().fireException(te);
+            graph->queryJobChannel().fireException(te);
             throw te;
         }
     }
@@ -387,6 +387,11 @@ CGraphElementBase::~CGraphElementBase()
 CJobBase &CGraphElementBase::queryJob() const
 {
     return owner->queryJob();
+}
+
+CJobChannel &CGraphElementBase::queryJobChannel() const
+{
+    return owner->queryJobChannel();
 }
 
 IGraphTempHandler *CGraphElementBase::queryTempHandler() const
@@ -1094,7 +1099,7 @@ bool isLoopActivity(CGraphElementBase &container)
 }
 /////
 
-CGraphBase::CGraphBase(CJobBase &_job) : job(_job)
+CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob())
 {
     xgmml = NULL;
     parent = owner = NULL;
@@ -1215,7 +1220,7 @@ void CGraphBase::reset()
         dependentSubGraphs.kill();
     }
     if (!queryOwner() || isGlobal())
-        job.queryTimeReporter().reset();
+        jobChannel.queryTimeReporter().reset();
     if (!queryOwner())
         clearNodeStats();
 }
@@ -1225,7 +1230,7 @@ void CGraphBase::addChildGraph(CGraphBase &graph)
     CriticalBlock b(crit);
     childGraphs.append(graph);
     childGraphsTable.replace(graph);
-    job.associateGraph(graph);
+    jobChannel.associateGraph(graph);
 }
 
 IThorGraphIterator *CGraphBase::getChildGraphs() const
@@ -1236,7 +1241,7 @@ IThorGraphIterator *CGraphBase::getChildGraphs() const
 
 bool CGraphBase::fireException(IException *e)
 {
-    return job.fireException(e);
+    return queryJobChannel().fireException(e);
 }
 
 bool CGraphBase::preStart(size32_t parentExtractSz, const byte *parentExtract)
@@ -1278,7 +1283,7 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
             Owned<IThorException> e2 = MakeThorException(e);
             e2->setGraphId(graphId);
             e2->setAction(tea_abort);
-            job.fireException(e2);
+            queryJobChannel().fireException(e2);
             throw;
         }
         if (localResults)
@@ -1307,7 +1312,7 @@ void CGraphBase::execute(size32_t _parentExtractSz, const byte *parentExtract, b
     if (isComplete())
         return;
     if (async)
-        queryJob().startGraph(*this, queryJob(), checkDependencies, parentExtractSz, parentExtract); // may block if enough running
+        queryJobChannel().startGraph(*this, queryJobChannel(), checkDependencies, parentExtractSz, parentExtract); // may block if enough running
     else
     {
         if (!prepare(parentExtractSz, parentExtract, checkDependencies, async, async))
@@ -1447,6 +1452,11 @@ void CGraphBase::done()
         CGraphElementBase &element = iter->query();
         element.queryActivity()->done();
     }
+}
+
+IMPServer &CGraphBase::queryMPServer() const
+{
+    return jobChannel.queryMPServer();
 }
 
 bool CGraphBase::syncInitData()
@@ -1750,7 +1760,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
     CGraphBase *graphContainer = this;
     if (resultsGraph)
         graphContainer = resultsGraph; // JCSMORE is this right?
-    graphCodeContext.setContext(graphContainer, (ICodeContextExt *)&job.queryCodeContext());
+    graphCodeContext.setContext(graphContainer, (ICodeContextExt *)&jobChannel.queryCodeContext());
 
 
     unsigned numResults = xgmml->getPropInt("att[@name=\"_numResults\"]/@value", 0);
@@ -1780,7 +1790,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
         ThorActivityKind kind = (ThorActivityKind) e.getPropInt("att[@name=\"_kind\"]/@value");
         if (TAKsubgraph == kind)
         {
-            Owned<CGraphBase> subGraph = job.createGraph();
+            Owned<CGraphBase> subGraph = queryJobChannel().createGraph();
             subGraph->createFromXGMML(&e, this, parent, resultsGraph);
             addChildGraph(*LINK(subGraph));
             if (!global)
@@ -2124,6 +2134,7 @@ public:
 };
 class CGraphExecutor : public CInterface, implements IGraphExecutor
 {
+    CJobChannel &jobChannel;
     CJobBase &job;
     CIArrayOf<CGraphExecutorGraphInfo> stack, running, toRun;
     UnsignedArray seen;
@@ -2208,14 +2219,14 @@ class CGraphExecutor : public CInterface, implements IGraphExecutor
 public:
     IMPLEMENT_IINTERFACE;
 
-    CGraphExecutor(CJobBase &_job) : job(_job)
+    CGraphExecutor(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob())
     {
         limit = (unsigned)job.getWorkUnitValueInt("concurrentSubGraphs", globals->getPropInt("@concurrentSubGraphs", 1));
         PROGLOG("CGraphExecutor: limit = %d", limit);
         waitOnRunning = 0;
         stopped = false;
         factory = new CGraphExecutorFactory(*this);
-        graphPool.setown(createThreadPool("CGraphExecutor pool", factory, &job, limit));
+        graphPool.setown(createThreadPool("CGraphExecutor pool", factory, &jobChannel, limit));
     }
     ~CGraphExecutor()
     {
@@ -2429,18 +2440,15 @@ CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
     maxDiskUsage = diskUsage = 0;
     dirty = true;
     aborted = false;
-    codeCtx = NULL;
     mpJobTag = TAG_NULL;
-    timeReporter = createStdTimeReporter();
+    globalMemorySize = globals->getPropInt("@globalMemorySize"); // in MB
+    oldNodeCacheMem = 0;
     pluginMap = new SafePluginMap(&pluginCtx, true);
 
 // JCSMORE - Will pass down at job creation time...
     jobGroup.set(&::queryClusterGroup());
-    jobComm.setown(createCommunicator(jobGroup));
     slaveGroup.setown(jobGroup->remove(0));
-    myrank = jobGroup->rank(queryMyNode());
-    globalMemorySize = globals->getPropInt("@globalMemorySize"); // in MB
-    oldNodeCacheMem = 0;
+    nodeGroup.set(&queryNodeGroup());
 }
 
 void CJobBase::init()
@@ -2479,25 +2487,23 @@ void CJobBase::init()
     else
         tracing.append("[unbound]");
     PROGLOG("%s", tracing.str());
-    graphExecutor.setown(new CGraphExecutor(*this));
 }
 
 void CJobBase::beforeDispose()
 {
     endJob();
+    ForEachItemIn(c, jobChannels)
+        jobChannels.item(c).clean();
 }
 
 CJobBase::~CJobBase()
 {
-    clean();
     thorAllocator->queryRowManager()->reportMemoryUsage(false);
     PROGLOG("CJobBase resetting memory manager");
     thorAllocator.clear();
 
-    ::Release(codeCtx);
     ::Release(userDesc);
-    timeReporter->Release();
-    delete pluginMap;
+    ::Release(pluginMap);
 
     StringBuffer memStatsStr;
     roxiemem::memstats(memStatsStr);
@@ -2505,6 +2511,21 @@ CJobBase::~CJobBase()
     memsize_t heapUsage = getMapInfo("heap");
     if (heapUsage) // if 0, assumed to be unavailable
         PROGLOG("Heap usage : %" I64F "d bytes", (unsigned __int64)heapUsage);
+}
+
+CJobChannel &CJobBase::queryJobChannel(unsigned c) const
+{
+    return jobChannels.item(c);
+}
+
+CActivityBase &CJobBase::queryChannelActivity(unsigned c, graph_id gid, activity_id id) const
+{
+    CJobChannel &channel = queryJobChannel(c);
+    Owned<CGraphBase> graph = channel.getGraph(gid);
+    dbgassertex(graph);
+    CGraphElementBase *container = graph->queryElement(id);
+    dbgassertex(container);
+    return *container->queryActivity();
 }
 
 void CJobBase::startJob()
@@ -2550,22 +2571,6 @@ bool CJobBase::queryForceLogging(graph_id graphId, bool def) const
     return def;
 }
 
-void CJobBase::clean()
-{
-    if (graphExecutor)
-    {
-        graphExecutor->queryGraphPool().stopAll();
-        graphExecutor.clear();
-    }
-    subGraphs.kill();
-}
-
-IThorGraphIterator *CJobBase::getSubGraphs()
-{
-    CriticalBlock b(crit);
-    return new CGraphTableIterator(subGraphs);
-}
-
 static void getGlobalDeps(CGraphBase &graph, CICopyArrayOf<CGraphDependency> &deps)
 {
     Owned<IThorActivityIterator> iter = graph.getIterator();
@@ -2583,6 +2588,149 @@ static void getGlobalDeps(CGraphBase &graph, CICopyArrayOf<CGraphDependency> &de
     }
 }
 
+void CJobBase::addSubGraph(IPropertyTree &xgmml)
+{
+    CriticalBlock b(crit);
+    for (unsigned c=0; c<queryJobChannels(); c++)
+    {
+        CJobChannel &jobChannel = queryJobChannel(c);
+        Owned<CGraphBase> subGraph = jobChannel.createGraph();
+        // JCSMORE - clone, instead of recrete
+        subGraph->createFromXGMML(&xgmml, NULL, NULL, NULL);
+        jobChannel.addSubGraph(*subGraph.getClear());
+    }
+}
+
+void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
+{
+    for (unsigned c=0; c<queryJobChannels(); c++)
+    {
+        CJobChannel &jobChannel = queryJobChannel(c);
+        jobChannel.addDependencies(xgmml, failIfMissing);
+    }
+}
+
+bool CJobBase::queryUseCheckpoints() const
+{
+    return globals->getPropBool("@checkPointRecovery") || 0 != getWorkUnitValueInt("checkPointRecovery", 0);
+}
+
+void CJobBase::abort(IException *e)
+{
+    aborted = true;
+    for (unsigned c=0; c<queryJobChannels(); c++)
+    {
+        CJobChannel &jobChannel = queryJobChannel(c);
+        jobChannel.abort(e);
+    }
+}
+
+void CJobBase::increase(offset_t usage, const char *key)
+{
+    diskUsage += usage;
+    if (diskUsage > maxDiskUsage) maxDiskUsage = diskUsage;
+}
+
+void CJobBase::decrease(offset_t usage, const char *key)
+{
+    diskUsage -= usage;
+}
+
+// these getX methods for property in workunit settings, then global setting, defaulting to provided 'dft' if not present
+StringBuffer &CJobBase::getOpt(const char *opt, StringBuffer &out)
+{
+    if (!opt || !*opt)
+        return out; // probably error
+    VStringBuffer gOpt("Debug/@%s", opt);
+    getWorkUnitValue(opt, out);
+    if (0 == out.length())
+        globals->getProp(gOpt, out);
+    return out;
+}
+
+bool CJobBase::getOptBool(const char *opt, bool dft)
+{
+    if (!opt || !*opt)
+        return dft; // probably error
+    VStringBuffer gOpt("Debug/@%s", opt);
+    return getWorkUnitValueBool(opt, globals->getPropBool(gOpt, dft));
+}
+
+int CJobBase::getOptInt(const char *opt, int dft)
+{
+    if (!opt || !*opt)
+        return dft; // probably error
+    VStringBuffer gOpt("Debug/@%s", opt);
+    return (int)getWorkUnitValueInt(opt, globals->getPropInt(gOpt, dft));
+}
+
+__int64 CJobBase::getOptInt64(const char *opt, __int64 dft)
+{
+    if (!opt || !*opt)
+        return dft; // probably error
+    VStringBuffer gOpt("Debug/@%s", opt);
+    return getWorkUnitValueInt(opt, globals->getPropInt64(gOpt, dft));
+}
+
+IEngineRowAllocator *CJobBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+{
+    return thorAllocator->getRowAllocator(meta, activityId, flags);
+}
+
+roxiemem::IRowManager *CJobBase::queryRowManager() const
+{
+    return thorAllocator->queryRowManager();
+}
+
+/// CJobChannel
+
+CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel)
+    : job(_job), mpServer(_mpServer), channel(_channel)
+{
+    aborted = false;
+    codeCtx = NULL;
+    timeReporter = createStdTimeReporter();
+    jobComm.setown(mpServer->createCommunicator(&job.queryJobGroup()));
+    myrank = job.queryJobGroup().rank(queryMyNode());
+    graphExecutor.setown(new CGraphExecutor(*this));
+}
+
+CJobChannel::~CJobChannel()
+{
+    wait();
+    clean();
+    ::Release(codeCtx);
+    timeReporter->Release();
+}
+
+INode *CJobChannel::queryMyNode()
+{
+    return mpServer->queryMyNode();
+}
+
+void CJobChannel::wait()
+{
+    if (graphExecutor)
+        graphExecutor->wait();
+}
+
+ICodeContext &CJobChannel::queryCodeContext() const
+{
+    return *codeCtx;
+}
+
+mptag_t CJobChannel::deserializeMPTag(MemoryBuffer &mb)
+{
+    mptag_t tag;
+    deserializeMPtag(mb, tag);
+    if (TAG_NULL != tag)
+    {
+        PROGLOG("deserializeMPTag: tag = %d", (int)tag);
+        jobComm->flush(tag);
+    }
+    return tag;
+}
+
 static void noteDependency(CGraphElementBase *targetActivity, CGraphElementBase *sourceActivity, CGraphBase *targetGraph, CGraphBase *sourceGraph, unsigned controlId)
 {
     targetActivity->addDependsOn(sourceGraph, controlId);
@@ -2595,7 +2743,7 @@ static void noteDependency(CGraphElementBase *targetActivity, CGraphElementBase 
     sourceGraph->queryXGMML().addPropTree("Dependency", dependencyFor.getClear());
 }
 
-void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
+void CJobChannel::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
 {
     CGraphArrayCopy childGraphs;
     CGraphElementArrayCopy targetActivities, sourceActivities;
@@ -2629,7 +2777,7 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
             {
                 targetGraph = &targetActivity->queryOwner();
                 targetGraphContext = targetGraph->queryParentActivityId();
-                if (sourceGraphContext == targetGraphContext) 
+                if (sourceGraphContext == targetGraphContext)
                     break;
                 targetActivity = targetGraph->queryElement(targetGraphContext);
             }
@@ -2682,131 +2830,33 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
                     subGraph.setGlobal(true);
             }
         }
-        bool log = queryForceLogging(subGraph.queryGraphId(), (NULL == subGraph.queryOwner()) || subGraph.isGlobal());
+        bool log = queryJob().queryForceLogging(subGraph.queryGraphId(), (NULL == subGraph.queryOwner()) || subGraph.isGlobal());
         subGraph.setLogging(log);
     }
 }
 
-void CJobBase::startGraph(CGraphBase &graph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract)
+IThorGraphIterator *CJobChannel::getSubGraphs()
+{
+    CriticalBlock b(crit);
+    return new CGraphTableIterator(subGraphs);
+}
+
+void CJobChannel::clean()
+{
+    if (graphExecutor)
+    {
+        graphExecutor->queryGraphPool().stopAll();
+        graphExecutor.clear();
+    }
+    subGraphs.kill();
+}
+
+void CJobChannel::startGraph(CGraphBase &graph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract)
 {
     graphExecutor->add(&graph, callback, checkDependencies, parentExtractSize, parentExtract);
 }
 
-ICodeContext &CJobBase::queryCodeContext() const
-{
-    return *codeCtx;
-}
-
-bool CJobBase::queryUseCheckpoints() const
-{
-    return globals->getPropBool("@checkPointRecovery") || 0 != getWorkUnitValueInt("checkPointRecovery", 0);
-}
-
-void CJobBase::abort(IException *e)
-{
-    aborted = true;
-    Owned<IThorGraphIterator> iter = getSubGraphs();
-    ForEach (*iter)
-    {
-        CGraphBase &graph = iter->query();
-        graph.abort(e);
-    }
-}
-
-void CJobBase::increase(offset_t usage, const char *key)
-{
-    diskUsage += usage;
-    if (diskUsage > maxDiskUsage) maxDiskUsage = diskUsage;
-}
-
-void CJobBase::decrease(offset_t usage, const char *key)
-{
-    diskUsage -= usage;
-}
-
-mptag_t CJobBase::allocateMPTag()
-{
-    mptag_t tag = allocateClusterMPTag();
-    jobComm->flush(tag);
-    PROGLOG("allocateMPTag: tag = %d", (int)tag);
-    return tag;
-}
-
-void CJobBase::freeMPTag(mptag_t tag)
-{
-    if (TAG_NULL != tag)
-    {
-        freeClusterMPTag(tag);
-        PROGLOG("freeMPTag: tag = %d", (int)tag);
-        jobComm->flush(tag);
-    }
-}
-
-mptag_t CJobBase::deserializeMPTag(MemoryBuffer &mb)
-{
-    mptag_t tag;
-    deserializeMPtag(mb, tag);
-    if (TAG_NULL != tag)
-    {
-        PROGLOG("deserializeMPTag: tag = %d", (int)tag);
-        jobComm->flush(tag);
-    }
-    return tag;
-}
-
-// these getX methods for property in workunit settings, then global setting, defaulting to provided 'dft' if not present
-StringBuffer &CJobBase::getOpt(const char *opt, StringBuffer &out)
-{
-    if (!opt || !*opt)
-        return out; // probably error
-    VStringBuffer gOpt("Debug/@%s", opt);
-    getWorkUnitValue(opt, out);
-    if (0 == out.length())
-        globals->getProp(gOpt, out);
-    return out;
-}
-
-bool CJobBase::getOptBool(const char *opt, bool dft)
-{
-    if (!opt || !*opt)
-        return dft; // probably error
-    VStringBuffer gOpt("Debug/@%s", opt);
-    return getWorkUnitValueBool(opt, globals->getPropBool(gOpt, dft));
-}
-
-int CJobBase::getOptInt(const char *opt, int dft)
-{
-    if (!opt || !*opt)
-        return dft; // probably error
-    VStringBuffer gOpt("Debug/@%s", opt);
-    return (int)getWorkUnitValueInt(opt, globals->getPropInt(gOpt, dft));
-}
-
-__int64 CJobBase::getOptInt64(const char *opt, __int64 dft)
-{
-    if (!opt || !*opt)
-        return dft; // probably error
-    VStringBuffer gOpt("Debug/@%s", opt);
-    return getWorkUnitValueInt(opt, globals->getPropInt64(gOpt, dft));
-}
-
-// IGraphCallback
-void CJobBase::runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const byte *parentExtract)
-{
-    graph.executeSubGraph(parentExtractSz, parentExtract);
-}
-
-IEngineRowAllocator *CJobBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
-{
-    return thorAllocator->getRowAllocator(meta, activityId, flags);
-}
-
-roxiemem::IRowManager *CJobBase::queryRowManager() const
-{
-    return thorAllocator->queryRowManager();
-}
-
-IThorResult *CJobBase::getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId)
+IThorResult *CJobChannel::getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId)
 {
     Owned<CGraphBase> graph = getGraph(gid);
     if (!graph)
@@ -2832,6 +2882,25 @@ IThorResult *CJobBase::getOwnedResult(graph_id gid, activity_id ownerId, unsigne
         throw MakeGraphException(graph, 0, "GraphGetResult: result not found: %d", resultId);
     return result.getClear();
 }
+
+void CJobChannel::abort(IException *e)
+{
+    aborted = true;
+    Owned<IThorGraphIterator> iter = getSubGraphs();
+    ForEach (*iter)
+    {
+        CGraphBase &graph = iter->query();
+        graph.abort(e);
+    }
+}
+
+// IGraphCallback
+void CJobChannel::runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const byte *parentExtract)
+{
+    graph.executeSubGraph(parentExtractSz, parentExtract);
+}
+
+
 
 static IThorResource *iThorResource = NULL;
 void setIThorResource(IThorResource &r)
@@ -3015,7 +3084,7 @@ bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mpta
     // check 'cancelledReceive' every 10 secs
     while (!cancelledReceive && ((MP_WAIT_FOREVER==timeout) || !t.timedout(&remaining)))
     {
-        if (container.queryJob().queryJobComm().recv(mb, rank, mpTag, sender, remaining>10000?10000:remaining))
+        if (queryJobChannel().queryJobComm().recv(mb, rank, mpTag, sender, remaining>10000?10000:remaining))
             return true;
     }
     return false;
@@ -3025,7 +3094,7 @@ void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
 {
     cancelledReceive = true;
     if (receiving)
-        container.queryJob().queryJobComm().cancel(rank, mpTag);
+        queryJobChannel().queryJobComm().cancel(rank, mpTag);
 }
 
 StringBuffer &CActivityBase::getOpt(const char *prop, StringBuffer &out) const

@@ -174,7 +174,7 @@ public:
     }
     StringBuffer &mangleLFN(CJobBase &job, const char *lfn, StringBuffer &out)
     {
-        out.append(lfn).append("__").append(job.queryCodeContext().getWuid());
+        out.append(lfn).append("__").append(job.queryWuid());
         return out;
     }
     StringBuffer &addScope(CJobBase &job, const char *logicalname, StringBuffer &ret, bool temporary=false, bool paused=false)

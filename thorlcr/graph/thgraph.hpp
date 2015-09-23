@@ -238,6 +238,7 @@ typedef ArrayIIteratorOf<const CGraphArray, CGraphBase, IThorGraphIterator> CGra
 typedef ArrayIIteratorOf<const CGraphArrayCopy, CGraphBase, IThorGraphIterator> CGraphArrayCopyIterator;
 
 class CJobBase;
+class CJobChannel;
 class graph_decl CGraphElementBase : public CInterface, implements IInterface
 {
 protected:
@@ -307,6 +308,7 @@ public:
     IThorGraphIterator *getAssociatedChildGraphs() const;
     IGraphTempHandler *queryTempHandler() const;
     CJobBase &queryJob() const;
+    CJobChannel &queryJobChannel() const;
     unsigned getInputs() const { return inputs.ordinality(); }
     unsigned getOutputs() const { return outputs.ordinality(); }
     bool isSource() const { return isActivitySource(kind); }
@@ -409,11 +411,6 @@ public:
         };
         return new CIterator(tmpFiles);
     }
-};
-
-interface IGraphCallback
-{
-    virtual void runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const byte *parentExtract) = 0;
 };
 
 class CJobBase;
@@ -543,6 +540,7 @@ protected:
     bool created, connected, started, aborted, graphDone, prepared, sequential;
     bool reinit, sentInitData, sentStartCtx;
     CJobBase &job;
+    CJobChannel &jobChannel;
     graph_id graphId;
     mptag_t executeReplyTag;
     size32_t parentExtractSz; // keep track of sz when passed in, as may need to serialize later
@@ -555,7 +553,7 @@ public:
 
     CGraphArrayCopy dependentSubGraphs;
 
-    CGraphBase(CJobBase &job);
+    CGraphBase(CJobChannel &jobChannel);
     ~CGraphBase();
 
     const void *queryFindParam() const { return &queryGraphId(); } // for SimpleHashTableOf
@@ -567,9 +565,11 @@ public:
     void createFromXGMML(IPropertyTree *node, CGraphBase *owner, CGraphBase *parent, CGraphBase *resultsGraph);
     bool queryAborted() const { return aborted; }
     CJobBase &queryJob() const { return job; }
+    CJobChannel &queryJobChannel() const { return jobChannel; }
     IGraphTempHandler *queryTempHandler() const { assertex(tmpHandler.get()); return tmpHandler; }
     CGraphBase *queryOwner() { return owner; }
     CGraphBase *queryParent() { return parent?parent:this; }
+    IMPServer &queryMPServer() const;
     bool syncInitData();
     bool isComplete() const { return complete; }
     bool isPrepared() const { return prepared; }
@@ -726,25 +726,17 @@ public:
             CGraphBase & get() { CGraphBase &c = query(); c.Link(); return c; }
 };
 
-interface IGraphExecutor : extends IInterface
-{
-    virtual void add(CGraphBase *subGraph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSz, const byte *parentExtract) = 0;
-    virtual IThreadPool &queryGraphPool() = 0 ;
-    virtual void wait() = 0;
-};
-
 interface ILoadedDllEntry;
 interface IConstWorkUnit;
 interface IThorAllocator;
 class CThorCodeContextBase;
-class graph_decl CJobBase : public CInterface, implements IDiskUsage, implements IExceptionHandler, implements IGraphCallback
+
+class graph_decl CJobBase : public CInterface, implements IDiskUsage, implements IExceptionHandler
 {
 protected:
     Owned<IThorAllocator> thorAllocator;
-    Owned<IGraphExecutor> graphExecutor;
     CriticalSection crit;
     Owned<ILoadedDllEntry> querySo;
-    CThorCodeContextBase *codeCtx;
     IUserDescriptor *userDesc;
     offset_t maxDiskUsage, diskUsage;
     StringAttr key, graphName;
@@ -755,10 +747,7 @@ protected:
     CGraphTable subGraphs;
     CGraphTableCopy allGraphs; // for lookup, includes all childGraphs
     mptag_t mpJobTag, slavemptag;
-    Owned<IGroup> jobGroup, slaveGroup;
-    Owned<ICommunicator> jobComm;
-    rank_t myrank;
-    ITimeReporter *timeReporter;
+    Owned<IGroup> jobGroup, slaveGroup, nodeGroup;
     Owned<IPropertyTree> xgmml;
     Owned<IGraphTempHandler> tmpHandler;
     bool timeActivities;
@@ -767,6 +756,7 @@ protected:
     Owned<IContextLogger> logctx;
     Owned<IPerfMonHook> perfmonhook;
     size32_t oldNodeCacheMem;
+    CIArrayOf<CJobChannel> jobChannels;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -799,7 +789,12 @@ public:
     CJobBase(const char *graphName);
     virtual void beforeDispose();
     ~CJobBase();
-    void clean();
+
+    virtual void addChannel(IMPServer *mpServer) = 0;
+    CJobChannel &queryJobChannel(unsigned c) const;
+    CActivityBase &queryChannelActivity(unsigned c, graph_id gid, activity_id id) const;
+    unsigned queryJobChannels() const { return jobChannels.ordinality(); }
+    ICommunicator &queryNodeComm() const { return ::queryNodeComm(); }
     void init();
     void setXGMML(IPropertyTree *_xgmml) { xgmml.set(_xgmml); }
     IPropertyTree *queryXGMML() { return xgmml; }
@@ -807,13 +802,120 @@ public:
     const char *queryKey() const { return key; }
     const char *queryGraphName() const { return graphName; }
     bool queryForceLogging(graph_id graphId, bool def) const;
-    ITimeReporter &queryTimeReporter() { return *timeReporter; }
     const IContextLogger &queryContextLogger() const { return *logctx; }
     virtual void startJob();
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
+    void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
+    void addSubGraph(IPropertyTree &xgmml);
+
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
+    roxiemem::IRowManager *queryRowManager() const;
+    IThorAllocator *queryThorAllocator() const { return thorAllocator; }
+    bool queryUseCheckpoints() const;
+    bool queryPausing() const { return pausing; }
+    bool queryResumed() const { return resumed; }
+    IGraphTempHandler *queryTempHandler() const { return tmpHandler; }
+    ILoadedDllEntry &queryDllEntry() const { return *querySo; }
+    IUserDescriptor *queryUserDescriptor() const { return userDesc; }
+    virtual IConstWorkUnit &queryWorkUnit() const { throwUnexpected(); }
+    virtual void markWuDirty() { };
+    virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const = 0;
+    virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const = 0;
+    virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const = 0;
+    const char *queryWuid() const { return wuid.str(); }
+    const char *queryUser() const { return user.str(); }
+    const char *queryScope() const { return scope.str(); }
+    IDiskUsage &queryIDiskUsage() const { return *(IDiskUsage *)this; }
+    void setDiskUsage(offset_t _diskUsage) { diskUsage = _diskUsage; }
+    const offset_t queryMaxDiskUsage() const { return maxDiskUsage; }
+    mptag_t querySlaveMpTag() const { return slavemptag; }
+    mptag_t queryJobMpTag() const { return mpJobTag; }
+    unsigned querySlaves() const { return slaveGroup->ordinality(); }
+    unsigned queryNodes() const { return nodeGroup->ordinality()-1; }
+    IGroup &queryJobGroup() const { return *jobGroup; }
+    inline bool queryTimeActivities() const { return timeActivities; }
+    unsigned queryMaxDefaultActivityCores() const { return maxActivityCores; }
+    IGroup &querySlaveGroup() const { return *slaveGroup; }
+    virtual mptag_t deserializeMPTag(MemoryBuffer &mb) { throwUnexpected(); }
+    virtual mptag_t allocateMPTag() { throwUnexpected(); }
+    virtual void freeMPTag(mptag_t tag) { throwUnexpected(); }
+    StringBuffer &getOpt(const char *opt, StringBuffer &out);
+    bool getOptBool(const char *opt, bool dft=false);
+    int getOptInt(const char *opt, int dft=0);
+    unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
+    __int64 getOptInt64(const char *opt, __int64 dft=0);
+    unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
+
+    virtual void abort(IException *e);
+
+//
+    virtual void addCreatedFile(const char *file) { assertex(false); }
+    virtual __int64 addNodeDiskUsage(unsigned node, __int64 sz) { assertex(false); return 0; }
+
+// IDiskUsage
+    virtual void increase(offset_t usage, const char *key=NULL);
+    virtual void decrease(offset_t usage, const char *key=NULL);
+
+// IExceptionHandler
+    virtual bool fireException(IException *e) = 0;
+};
+
+interface IGraphCallback
+{
+    virtual void runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const byte *parentExtract) = 0;
+};
+
+interface IGraphExecutor : extends IInterface
+{
+    virtual void add(CGraphBase *subGraph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSz, const byte *parentExtract) = 0;
+    virtual IThreadPool &queryGraphPool() = 0 ;
+    virtual void wait() = 0;
+};
+
+class graph_decl CJobChannel : public CInterface, implements IGraphCallback, implements IExceptionHandler
+{
+protected:
+    CJobBase &job;
+    Owned<IThorAllocator> thorAllocator;
+    Owned<IGraphExecutor> graphExecutor;
+    ITimeReporter *timeReporter;
+    CriticalSection crit;
+    CGraphTable subGraphs;
+    CGraphTableCopy allGraphs; // for lookup, includes all childGraphs
+    Owned<ICommunicator> jobComm;
+    rank_t myrank;
+    Linked<IMPServer> mpServer;
+    bool aborted;
+    CThorCodeContextBase *codeCtx;
+    unsigned channel;
+
+    void removeAssociates(CGraphBase &graph)
+    {
+        CriticalBlock b(crit);
+        allGraphs.removeExact(&graph);
+        Owned<IThorGraphIterator> iter = graph.getChildGraphs();
+        ForEach(*iter)
+        {
+            CGraphBase &child = iter->query();
+            removeAssociates(child);
+        }
+    }
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CJobChannel(CJobBase &job, IMPServer *mpServer, unsigned channel);
+    ~CJobChannel();
+
+    CJobBase &queryJob() const { return job; }
+    void clean();
+    void init();
+    void wait();
+    ITimeReporter &queryTimeReporter() { return *timeReporter; }
     virtual CGraphBase *createGraph() = 0;
     void startGraph(CGraphBase &graph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract);
-
+    INode *queryMyNode();
+    unsigned queryChannel() const { return channel; }
+    bool isPrimary() const { return 0 == channel; }
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
     void addSubGraph(CGraphBase &graph)
     {
@@ -839,63 +941,21 @@ public:
         return LINK(allGraphs.find(gid));
     }
 
-    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
-    roxiemem::IRowManager *queryRowManager() const;
+    ICodeContext &queryCodeContext() const;
     IThorResult *getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId);
     IThorAllocator *queryThorAllocator() const { return thorAllocator; }
-    bool queryUseCheckpoints() const;
-    bool queryPausing() const { return pausing; }
-    bool queryResumed() const { return resumed; }
-    IGraphTempHandler *queryTempHandler() const { return tmpHandler; }
-    ILoadedDllEntry &queryDllEntry() const { return *querySo; }
-    ICodeContext &queryCodeContext() const;
-    IUserDescriptor *queryUserDescriptor() const { return userDesc; }
-    virtual IConstWorkUnit &queryWorkUnit() const { throwUnexpected(); }
-    virtual void markWuDirty() { };
-    virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const = 0;
-    virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const = 0;
-    virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const = 0;
-    const char *queryWuid() const { return wuid.str(); }
-    const char *queryUser() const { return user.str(); }
-    const char *queryScope() const { return scope.str(); }
-    IDiskUsage &queryIDiskUsage() const { return *(IDiskUsage *)this; }
-    void setDiskUsage(offset_t _diskUsage) { diskUsage = _diskUsage; }
-    const offset_t queryMaxDiskUsage() const { return maxDiskUsage; }
-    mptag_t querySlaveMpTag() const { return slavemptag; }
-    mptag_t queryJobMpTag() const { return mpJobTag; }
-    unsigned querySlaves() const { return slaveGroup->ordinality(); }
     ICommunicator &queryJobComm() const { return *jobComm; }
-    IGroup &queryJobGroup() const { return *jobGroup; }
-    inline bool queryTimeActivities() const { return timeActivities; }
-    unsigned queryMaxDefaultActivityCores() const { return maxActivityCores; }
-    IGroup &querySlaveGroup() const { return *slaveGroup; }
+    IMPServer &queryMPServer() const { return *mpServer; }
     const rank_t &queryMyRank() const { return myrank; }
-    mptag_t allocateMPTag();
-    void freeMPTag(mptag_t tag);
     mptag_t deserializeMPTag(MemoryBuffer &mb);
-    StringBuffer &getOpt(const char *opt, StringBuffer &out);
-    bool getOptBool(const char *opt, bool dft=false);
-    int getOptInt(const char *opt, int dft=0);
-    unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
-    __int64 getOptInt64(const char *opt, __int64 dft=0);
-    unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
 
     virtual void abort(IException *e);
     virtual IBarrier *createBarrier(mptag_t tag) { UNIMPLEMENTED; return NULL; }
 
-
-//
-    virtual void addCreatedFile(const char *file) { assertex(false); }
-    virtual __int64 addNodeDiskUsage(unsigned node, __int64 sz) { assertex(false); return 0; }
-
-// IDiskUsage
-    virtual void increase(offset_t usage, const char *key=NULL);
-    virtual void decrease(offset_t usage, const char *key=NULL);
-
-// IExceptionHandler
-    virtual bool fireException(IException *e) = 0;
 // IGraphCallback
     virtual void runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const byte *parentExtract);
+// IExceptionHandler
+    virtual bool fireException(IException *e) = 0;
 };
 
 interface IOutputMetaData;
@@ -927,7 +987,13 @@ public:
     ~CActivityBase();
     CGraphElementBase &queryContainer() const { return container; }
     CJobBase &queryJob() const { return container.queryJob(); }
+    CJobChannel &queryJobChannel() const { return container.queryJobChannel(); }
+    inline IMPServer &queryMPServer() const { return queryJobChannel().queryMPServer(); }
     CGraphBase &queryGraph() const { return container.queryOwner(); }
+    CActivityBase &queryChannelActivity(unsigned channel) const
+    {
+        return queryJob().queryChannelActivity(channel, queryGraph().queryGraphId(), container.queryId());
+    }
     inline const mptag_t queryMpTag() const { return mpTag; }
     inline bool queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
@@ -936,8 +1002,8 @@ public:
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
-    bool firstNode() { return 1 == container.queryJob().queryMyRank(); }
-    bool lastNode() { return container.queryJob().querySlaves() == container.queryJob().queryMyRank(); }
+    bool firstNode() { return 1 == container.queryJobChannel().queryMyRank(); }
+    bool lastNode() { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
     unsigned queryMaxCores() const { return maxCores; }
     IRowInterfaces *getRowInterfaces();
 

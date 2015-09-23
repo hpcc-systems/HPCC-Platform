@@ -32,7 +32,7 @@ public:
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        mpTag = container.queryJob().deserializeMPTag(data);
+        mpTag = container.queryJobChannel().deserializeMPTag(data);
         helper = static_cast <IHThorDistributionArg *> (queryHelper()); 
         aggy = (IDistributionTable * *)ma.allocate(helper->queryInternalRecordSize()->getMinRecordSize());
     }
@@ -69,7 +69,7 @@ public:
         }
         CMessageBuffer msg;
         helper->serialize(aggy, msg);
-        container.queryJob().queryJobComm().send(msg, 0, mpTag);
+        queryJobChannel().queryJobComm().send(msg, 0, mpTag);
     }
     void endProcess()
     {
