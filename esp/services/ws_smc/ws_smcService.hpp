@@ -19,6 +19,7 @@
 #define _ESPWIZ_WsSMC_HPP__
 
 #include "ws_smc_esp.ipp"
+#include "dautils.hpp"
 #include "wujobq.hpp"
 #include "TpWrapper.hpp"
 #include "WUXMLInfo.hpp"
@@ -194,6 +195,7 @@ public:
     virtual bool onBrowseResources(IEspContext &context, IEspBrowseResourcesRequest & req, IEspBrowseResourcesResponse & resp);
     virtual bool onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdRequest &req, IEspRoxieControlCmdResponse &resp);
     virtual bool onGetStatusServerInfo(IEspContext &context, IEspGetStatusServerInfoRequest &req, IEspGetStatusServerInfoResponse &resp);
+    virtual bool onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEspLockQueryResponse &resp);
 private:
     void addCapabilities( IPropertyTree* pFeatureNode, const char* access, IArrayOf<IEspCapability>& capabilities);
     void addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* serverName,
@@ -231,6 +233,7 @@ private:
     void setActiveWUs(IEspContext &context, const char *serverType, const char *clusterName, const char *queueName, const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
     void setActiveWUs(IEspContext &context, const char *serverType, const char *instance, const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
     void setActiveWUs(IEspContext &context, IEspActiveWorkunit& wu, IEspActiveWorkunit* wuToSet);
+    void addLockInfo(CLockMetaData& lD, const char* xPath, const char* lfn, unsigned msNow, time_t ttNow, IArrayOf<IEspLock>& locks);
 };
 
 
