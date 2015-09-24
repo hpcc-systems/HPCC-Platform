@@ -43,6 +43,9 @@ EXPORT redis := SERVICE : plugin('redis'), namespace('RedisPlugin')
   Expire(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='RExpire';
   UNSIGNED DBSize(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='RDBSize';
 
+  UNSIGNED Publish(CONST VARSTRING keyOrChannel, CONST STRING message, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE) : cpp,once,context,entrypoint='SyncRPub';
+  STRING Subscribe(CONST VARSTRING keyOrChannel, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE) : cpp,once,context,entrypoint='SyncRSub';
+
   STRING   SetAndPublishString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncLockRSetStr';
   UNICODE  SetAndPublishUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncLockRSetUChar';
   UTF8     SetAndPublishUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncLockRSetUtf8';
@@ -81,6 +84,9 @@ EXPORT RedisServer(VARSTRING options, VARSTRING password = '', UNSIGNED4 timeout
   EXPORT Expire(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire)  := redis.Expire(key, options, database, expire, password, timeout);
   EXPORT DBSize(INTEGER4 database = 0) := redis.DBSize(options, database, password, timeout);
 
+  EXPORT Publish(VARSTRING keyOrChannel, STRING message, INTEGER4 database = 0, BOOLEAN lockedKey = FALSE) := redis.Publish(keyOrChannel, message, options, database, password, timeout, lockedKey);
+  EXPORT Subscribe(VARSTRING keyOrChannel, INTEGER4 database = 0, BOOLEAN lockedKey = FALSE) := redis.Subscribe(keyOrChannel, options, database, password, timeout, lockedKey);
+
   EXPORT  SetAndPublishUnicode(VARSTRING key, UNICODE value,  INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishUnicode (key, value, options, database, expire, password, timeout);
   EXPORT   SetAndPublishString(VARSTRING key, STRING value,   INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishString  (key, value, options, database, expire, password, timeout);
   EXPORT     SetAndPublishUtf8(VARSTRING key, UTF8 value,     INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishUtf8    (key, value, options, database, expire, password, timeout);
@@ -118,6 +124,9 @@ EXPORT RedisServerWithoutTimeout(VARSTRING options, VARSTRING password = '') := 
   EXPORT Persist(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Persist(key, options, database, password, timeout);
   EXPORT Expire(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire, UNSIGNED4 timeout = 1000)  := redis.Expire(key, options, database, expire, password, timeout);
   EXPORT DBSize(INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.DBSize(options, database, password, timeout);
+
+  EXPORT Publish(VARSTRING keyOrChannel, STRING message, INTEGER4 database = 0, UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE) := redis.Publish(keyOrChannel, message, options, database, password, timeout, lockedKey);
+  EXPORT Subscribe(VARSTRING keyOrChannel, INTEGER4 database = 0, UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE) := redis.Subscribe(keyOrChannel, options, database, password, timeout, lockedKey);
 
   EXPORT  SetAndPublishUnicode(VARSTRING key, UNICODE value,  INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetAndPublishUnicode (key, value, options, database, expire, password, timeout);
   EXPORT   SetAndPublishString(VARSTRING key, STRING value,   INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetAndPublishString  (key, value, options, database, expire, password, timeout);
