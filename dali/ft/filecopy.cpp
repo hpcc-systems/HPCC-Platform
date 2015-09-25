@@ -1192,7 +1192,7 @@ void FileSprayer::calculateSprayPartition()
         // Store discovered CSV record structure into target logical file.
         StringBuffer recStru;
         partitioners.item(0).getRecordStructure(recStru);
-        if (recStru.length() > 0)
+        if ((recStru.length() > 0) && strstr(recStru.str(),"END;"))
         {
             if (distributedTarget)
                 distributedTarget->setECL(recStru.str());
@@ -2908,7 +2908,7 @@ bool FileSprayer::isSameSizeHeaderFooter()
     ForEachItemIn(idx, partition)
     {
         PartitionPoint & cur = partition.item(idx);
-        if (idx+1 == partition.ordinality() || partition.item(idx+1).whichOutput != cur.whichOutput)
+        if (cur.inputLength && (idx+1 == partition.ordinality() || partition.item(idx+1).whichOutput != cur.whichOutput))
         {
             if (isEmpty)
             {
