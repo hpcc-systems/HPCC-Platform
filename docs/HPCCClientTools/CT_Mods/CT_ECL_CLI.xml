@@ -294,7 +294,7 @@ ecl deploy roxie - --name=FindPersonService
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target cluster to which to deploy </entry>
+                  <entry>The target cluster to which to deploy</entry>
                 </row>
 
                 <row>
@@ -373,8 +373,8 @@ ecl deploy roxie - --name=FindPersonService
                 <row>
                   <entry>--main</entry>
 
-                  <entry>The definition to use from legacy ECL repository
-                  </entry>
+                  <entry>The definition to use from legacy ECL
+                  repository</entry>
                 </row>
 
                 <row>
@@ -559,6 +559,26 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                 </row>
 
                 <row>
+                  <entry>--daliip=</entry>
+
+                  <entry>IP address or hostname of the remote Dali to use for
+                  remote logical file lookups.</entry>
+                </row>
+
+                <row>
+                  <entry>--update-dfs</entry>
+
+                  <entry>Update local DFS info if remote DALI has
+                  changed</entry>
+                </row>
+
+                <row>
+                  <entry>---source-process</entry>
+
+                  <entry>Process cluster from which to copy files</entry>
+                </row>
+
+                <row>
                   <entry>--timeLimit=&lt;sec&gt;</entry>
 
                   <entry>Value to set for query timeLimit
@@ -578,6 +598,19 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                   <entry>Value to set for query memoryLimit configuration.
                   Format &lt;mem&gt; as 500000B, 550K, 100M, 10G, or 1T,
                   etc.</entry>
+                </row>
+
+                <row>
+                  <entry>--priority=&lt;val&gt;</entry>
+
+                  <entry> The priority for this query. Value can be LOW, HIGH,
+                  SLA, NONE. NONE will clear current setting. </entry>
+                </row>
+
+                <row>
+                  <entry>--comment=&lt;string&gt;</entry>
+
+                  <entry>A comment associated with this query</entry>
                 </row>
 
                 <row>
@@ -636,6 +669,26 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                   <entry>--ecl-only</entry>
 
                   <entry>Send ECL query to HPCC as text rather than as a generated archive</entry>
+                </row>
+
+                <row>
+                  <entry>--limit=&lt;limit&gt;</entry>
+
+                  <entry>Sets the result limit for the query, defaults to
+                  100</entry>
+                </row>
+
+                <row>
+                  <entry>-f&lt;option&gt;[=value]</entry>
+
+                  <entry>Set an ECL option (equivalent to #option)</entry>
+                </row>
+
+                <row>
+                  <entry>-Dname=value</entry>
+
+                  <entry>Override the definition of a global attribute
+                  'name'</entry>
                 </row>
 
                 <row>
