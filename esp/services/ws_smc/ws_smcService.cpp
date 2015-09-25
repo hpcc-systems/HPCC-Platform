@@ -2425,6 +2425,8 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
     public:
         CLockPostFilter(IEspLockQueryRequest& req)
         {
+            ttLTLow = 0;
+            ttLTHigh = 0;
             mode = req.getMode();
             if (mode == LockModes_Undefined)
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Lock Mode");
