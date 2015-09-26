@@ -11939,7 +11939,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             isAllJoin = true;
             //A non-many LOOKUP join can't really be converted to an ALL join.
             //Possibly if KEEP(1) was added, no limits, no skipping in transform etc.
-            if (isLookupJoin && !isManyLookup)
+            if ((isLookupJoin && !isManyLookup) || (op == no_selfjoin))
                 isAllJoin = false;
             WARNING(CategoryUnusual, HQLWRN_JoinConditionFoldedNowAll);
         }
