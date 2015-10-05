@@ -505,6 +505,26 @@ public:
                         }
                         break;
                     }
+                    case DebugRequest:
+                    {
+                        StringAttr jobKey;
+                        msg.read(jobKey);
+                        CJobSlave *job = jobs.find(jobKey.get());
+                        if (job)
+                        {
+                            mptag_t replyTag = job->deserializeMPTag(msg);
+                            msg.setReplyTag(replyTag);
+                            StringAttr rawText;
+                            msg.read(rawText);
+                            PROGLOG("DebugRequest: %s %s", jobKey.get(), rawText.get());
+                            msg.clear();
+                            job->debugRequest(msg, rawText);
+                        }
+                        else
+                            PROGLOG("DebugRequest: %s - Job not found", jobKey.get());
+
+                        break;
+                    }
                     default:
                         throwUnexpected();
                 }

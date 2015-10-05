@@ -140,8 +140,27 @@ void CSlaveActivity::setInput(unsigned index, CActivityBase *inputActivity, unsi
     else
         outLink.set(((CSlaveActivity *)inputActivity)->queryOutput(inputOutIdx));
     assertex(outLink);
+
     while (inputs.ordinality()<=index) inputs.append(NULL);
+
     inputs.replace(outLink.getClear(), index);
+}
+
+void CSlaveActivity::appendOutput(IThorDataLink *itdl)
+{
+    if (queryJob().getOptBool("TRACEROWS"))
+    {
+        const unsigned numTraceRows = queryJob().getOptInt("numTraceRows", 10);
+        outputs.append(new CTracingThorDataLink(itdl, queryHelper(), numTraceRows));
+    }
+    else
+        outputs.append(itdl);
+}
+
+void CSlaveActivity::appendOutputLinked(IThorDataLink *itdl)
+{
+    itdl->Link();
+    appendOutput(itdl);
 }
 
 IThorDataLink *CSlaveActivity::queryOutput(unsigned index)
@@ -292,6 +311,11 @@ unsigned __int64 CSlaveActivity::queryTotalCycles() const
     return totalCycles.totalCycles;
 }
 
+unsigned __int64 CSlaveActivity::queryEndCycles() const
+{
+    return totalCycles.endCycles;
+}
+
 void CSlaveActivity::serializeStats(MemoryBuffer &mb)
 {
     CriticalBlock b(crit);
@@ -300,6 +324,11 @@ void CSlaveActivity::serializeStats(MemoryBuffer &mb)
         outputs.item(i)->dataLinkSerialize(mb);
 }
 
+void CSlaveActivity::debugRequest(unsigned edgeIdx, CMessageBuffer &msg)
+{
+    IThorDataLink *link = queryOutput(edgeIdx);
+    if (link) link->debugRequest(msg);
+}
 ///
 
 // CSlaveGraph
@@ -1150,6 +1179,11 @@ bool CJobSlave::getWorkUnitValueBool(const char *prop, bool defVal) const
 {
     StringBuffer propName(prop);
     return workUnitInfo->queryPropTree("Debug")->getPropBool(propName.toLowerCase().str(), defVal);
+}
+
+void CJobSlave::debugRequest(CMessageBuffer &msg, const char *request) const
+{
+    if (watchdog) watchdog->debugRequest(msg, request);
 }
 
 IGraphTempHandler *CJobSlave::createTempHandler(bool errorOnMissing)

@@ -87,6 +87,8 @@ interface IThorDataLink : extends IRowStream
     virtual CActivityBase *queryFromActivity() = 0; // activity that has this as an output
     virtual void dataLinkSerialize(MemoryBuffer &mb)=0;
     virtual unsigned __int64 queryTotalCycles() const=0;
+    virtual unsigned __int64 queryEndCycles() const=0;
+    virtual void debugRequest(MemoryBuffer &mb) = 0;
 };
 #ifdef _MSC_VER
 #pragma warning (pop)

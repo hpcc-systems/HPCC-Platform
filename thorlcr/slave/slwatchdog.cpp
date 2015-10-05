@@ -30,7 +30,7 @@
 
 class CGraphProgressHandlerBase : public CSimpleInterface, implements ISlaveWatchdog, implements IThreaded
 {
-    CriticalSection crit;
+    mutable CriticalSection crit;
     CGraphArray activeGraphs;
     bool stopped, progressEnabled;
     CThreaded threaded;
@@ -130,6 +130,34 @@ public:
                 sizeMark.write();
             }
             activeGraphs.zap(graph);
+        }
+    }
+    virtual void debugRequest(CMessageBuffer &msg, const char *request) const
+    {
+        Owned<IPTree> req = createPTreeFromXMLString(request);
+
+        StringBuffer edgeString;
+        req->getProp("@edgeId", edgeString);
+
+        // Split edge string in activityId and edgeIdx
+        const char *pEdge=edgeString.str();
+        const activity_id actId = _atoi64(pEdge);
+        if (!actId) return;
+
+        while (*pEdge && *pEdge!='_')  ++pEdge;
+        if (!*pEdge) return;
+        const unsigned edgeIdx = _atoi64(++pEdge);
+
+        CriticalBlock b(crit);
+        ForEachItemIn(g, activeGraphs) // NB: 1 for each slavesPerProcess
+        {
+            CGraphBase &graph = activeGraphs.item(g);
+            CGraphElementBase *element = graph.queryElement(actId);
+            if (element)
+            {
+                CSlaveActivity *activity = (CSlaveActivity*) element->queryActivity();
+                if (activity) activity->debugRequest(edgeIdx,msg);
+            }
         }
     }
 
