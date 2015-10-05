@@ -34,6 +34,7 @@
 #include "thorcommon.hpp"
 #include "thgraph.hpp"
 #include "jdebug.hpp"
+#include "traceslave.hpp"
 
 class CSlaveActivity;
 
@@ -64,15 +65,17 @@ public:
     IThorDataLink *queryOutput(unsigned index);
     IThorDataLink *queryInput(unsigned index);
     virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx);
-    void appendOutput(IThorDataLink *itdl) { outputs.append(itdl); };
-    void appendOutputLinked(IThorDataLink *itdl) { itdl->Link(); appendOutput(itdl); };
+    void appendOutput(IThorDataLink *itdl);
+    void appendOutputLinked(IThorDataLink *itdl);
     void startInput(IThorDataLink *itdl, const char *extra=NULL);
     void stopInput(IRowStream *itdl, const char *extra=NULL);
 
     ActivityTimeAccumulator &getTotalCyclesRef() { return totalCycles; }
     unsigned __int64 queryLocalCycles() const;
     virtual unsigned __int64 queryTotalCycles() const; // some acts. may calculate accumulated total from inputs (e.g. splitter)
+    virtual unsigned __int64 queryEndCycles() const;
     virtual void serializeStats(MemoryBuffer &mb);
+    void debugRequest(unsigned edgeIdx, CMessageBuffer &msg);
 };
 
 class graphslave_decl CSlaveGraphElement : public CGraphElementBase
@@ -159,6 +162,8 @@ public:
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const;
     virtual IThorAllocator *createThorAllocator();
+    virtual void debugRequest(CMessageBuffer &msg, const char *request) const;
+
 // IExceptionHandler
     virtual bool fireException(IException *e)
     {

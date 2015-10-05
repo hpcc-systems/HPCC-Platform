@@ -829,7 +829,7 @@ public:
             {
                 IThorDataLink *cur = inputs.item(i);
                 CActivityBase *activity = cur->queryFromActivity();
-                IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(cur);
+                IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(activity);
                 if (nWayInput)
                 {
                     unsigned numRealInputs = nWayInput->numConcreteOutputs();
