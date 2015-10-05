@@ -336,5 +336,98 @@ struct mapEnums { int val; const char *str; };
 
 extern jlib_decl const char *getEnumText(int value, const mapEnums *map);
 
+class jlib_decl QuantilePositionIterator
+{
+public:
+    QuantilePositionIterator(size_t _numRows, unsigned _numDivisions, bool roundUp)
+    : numRows(_numRows), numDivisions(_numDivisions)
+    {
+        assertex(numDivisions);
+        step = numRows / numDivisions;
+        stepDelta = (unsigned)(numRows % numDivisions);
+        initialDelta = roundUp ? (numDivisions)/2 : (numDivisions-1)/2;
+        first();
+    }
+    bool first()
+    {
+        curRow = 0;
+        curDelta = initialDelta;
+        curQuantile = 0;
+        return true;
+    }
+    bool next()
+    {
+        if (curQuantile >= numDivisions)
+            return false;
+        curQuantile++;
+        curRow += step;
+        curDelta += stepDelta;
+        if (curDelta >= numDivisions)
+        {
+            curRow++;
+            curDelta -= numDivisions;
+        }
+        assertex(curRow <= numRows);
+        return true;
+    }
+    size_t get() { return curRow; }
+
+protected:
+    size_t numRows;
+    size_t curRow;
+    size_t step;
+    unsigned numDivisions;
+    unsigned stepDelta;
+    unsigned curQuantile;
+    unsigned curDelta;
+    unsigned initialDelta;
+};
+
+
+class jlib_decl QuantileFilterIterator
+{
+public:
+    QuantileFilterIterator(size_t _numRows, unsigned _numDivisions, bool roundUp)
+    : numRows(_numRows), numDivisions(_numDivisions)
+    {
+        assertex(numDivisions);
+        initialDelta = roundUp ? (numDivisions-1)/2 : (numDivisions)/2;
+        first();
+    }
+    bool first()
+    {
+        curRow = 0;
+        curDelta = initialDelta;
+        curQuantile = 0;
+        isQuantile = true;
+        return true;
+    }
+    bool next()
+    {
+        if (curRow > numRows)
+            return false;
+        curRow++;
+        curDelta += numDivisions;
+        isQuantile = false;
+        if (curDelta >= numRows)
+        {
+            curDelta -= numRows;
+            isQuantile = true;
+        }
+        return true;
+    }
+    size_t get() { return isQuantile; }
+
+protected:
+    size_t numRows;
+    size_t curRow;
+    size_t step;
+    size_t curDelta;
+    unsigned numDivisions;
+    unsigned curQuantile;
+    unsigned initialDelta;
+    bool isQuantile;
+};
+
 #endif
 
