@@ -65,6 +65,7 @@ set (    SRCS
          jobserve.cpp 
          jprop.cpp 
          jptree.cpp 
+         jqueue.cpp
          jregexp.cpp 
          jsem.cpp 
          jset.cpp 
@@ -130,6 +131,7 @@ set (    INCLUDES
         jprop.hpp
         jptree.hpp
         jptree.ipp
+        jqueue.hpp
         jqueue.tpp
         jregexp.hpp
         jrespool.tpp
