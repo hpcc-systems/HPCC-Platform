@@ -26,6 +26,7 @@
 #include "jdebug.hpp"
 #include "jset.hpp"
 #include "sockfile.hpp"
+#include "jqueue.hpp"
 
 #include "unittests.hpp"
 
@@ -526,5 +527,715 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibStringBufferTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStringBufferTest, "JlibStringBufferTest" );
 
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+/*
+For comparison, this example of a lock free queue is taken from http://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue
+
+Copyright (c) 2010-2011 Dmitry Vyukov. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright notice, this list of
+      conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice, this list
+      of conditions and the following disclaimer in the documentation and/or other materials
+      provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY DMITRY VYUKOV "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL DMITRY VYUKOV OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those of the authors and should not be interpreted as representing official policies, either expressed or implied, of Dmitry Vyukov.
+*/
+
+template<typename T>
+class mpmc_bounded_queue
+{
+public:
+  mpmc_bounded_queue(size_t buffer_size)
+    : buffer_(new cell_t [buffer_size])
+    , buffer_mask_(buffer_size - 1)
+  {
+    assert((buffer_size >= 2) &&
+      ((buffer_size & (buffer_size - 1)) == 0));
+    for (size_t i = 0; i != buffer_size; i += 1)
+      buffer_[i].sequence_.store(i, std::memory_order_relaxed);
+    enqueue_pos_.store(0, std::memory_order_relaxed);
+    dequeue_pos_.store(0, std::memory_order_relaxed);
+  }
+
+  ~mpmc_bounded_queue()
+  {
+    delete [] buffer_;
+  }
+
+  bool enqueue(T const& data)
+  {
+    cell_t* cell;
+    size_t pos = enqueue_pos_.load(std::memory_order_relaxed);
+    for (;;)
+    {
+      cell = &buffer_[pos & buffer_mask_];
+      size_t seq =
+        cell->sequence_.load(std::memory_order_acquire);
+      intptr_t dif = (intptr_t)seq - (intptr_t)pos;
+      if (dif == 0)
+      {
+        if (enqueue_pos_.compare_exchange_weak
+            (pos, pos + 1, std::memory_order_relaxed))
+          break;
+      }
+      else if (dif < 0)
+        continue;//return false;
+      else
+        pos = enqueue_pos_.load(std::memory_order_relaxed);
+    }
+    cell->data_ = data;
+    cell->sequence_.store(pos + 1, std::memory_order_release);
+    return true;
+  }
+
+  bool dequeue(T& data)
+  {
+    cell_t* cell;
+    size_t pos = dequeue_pos_.load(std::memory_order_relaxed);
+    for (;;)
+    {
+      cell = &buffer_[pos & buffer_mask_];
+      size_t seq =
+        cell->sequence_.load(std::memory_order_acquire);
+      intptr_t dif = (intptr_t)seq - (intptr_t)(pos + 1);
+      if (dif == 0)
+      {
+        if (dequeue_pos_.compare_exchange_weak
+            (pos, pos + 1, std::memory_order_relaxed))
+          break;
+      }
+      else if (dif < 0)
+        continue;//return false;
+      else
+        pos = dequeue_pos_.load(std::memory_order_relaxed);
+    }
+    data = cell->data_;
+    cell->sequence_.store
+      (pos + buffer_mask_ + 1, std::memory_order_release);
+    return true;
+  }
+
+private:
+  struct cell_t
+  {
+    std::atomic<size_t>   sequence_;
+    T                     data_;
+  };
+
+  static size_t const     cacheline_size = 64;
+  typedef char            cacheline_pad_t [cacheline_size];
+
+  cacheline_pad_t         pad0_;
+  cell_t* const           buffer_;
+  size_t const            buffer_mask_;
+  cacheline_pad_t         pad1_;
+  std::atomic<size_t>     enqueue_pos_;
+  cacheline_pad_t         pad2_;
+  std::atomic<size_t>     dequeue_pos_;
+  cacheline_pad_t         pad3_;
+
+  mpmc_bounded_queue(mpmc_bounded_queue const&);
+  void operator = (mpmc_bounded_queue const&);
+};
+
+template<typename T>
+class spsc_bounded_queue
+{
+public:
+  spsc_bounded_queue(size_t buffer_size)
+    : buffer_(new cell_t [buffer_size])
+    , buffer_mask_(buffer_size - 1)
+  {
+    assert((buffer_size >= 2) &&
+      ((buffer_size & (buffer_size - 1)) == 0));
+    for (size_t i = 0; i != buffer_size; i += 1)
+      buffer_[i].sequence_.store(i, std::memory_order_relaxed);
+    enqueue_pos_ = 0;
+    dequeue_pos_ = 0;
+  }
+
+  ~spsc_bounded_queue()
+  {
+    delete [] buffer_;
+  }
+
+  bool enqueue(T const& data)
+  {
+    cell_t* cell;
+    size_t pos = enqueue_pos_;
+    for (;;)
+    {
+      cell = &buffer_[pos & buffer_mask_];
+      size_t seq =
+        cell->sequence_.load(std::memory_order_acquire);
+      intptr_t dif = (intptr_t)seq - (intptr_t)pos;
+      if (dif == 0)
+      {
+        enqueue_pos_ = pos + 1;
+        break;
+      }
+      //pause/
+    }
+    cell->data_ = data;
+    cell->sequence_.store(pos + 1, std::memory_order_release);
+    return true;
+  }
+
+  bool dequeue(T& data)
+  {
+    cell_t* cell;
+    size_t pos = dequeue_pos_;
+    for (;;)
+    {
+      cell = &buffer_[pos & buffer_mask_];
+      size_t seq =
+        cell->sequence_.load(std::memory_order_acquire);
+      intptr_t dif = (intptr_t)seq - (intptr_t)(pos + 1);
+      if (dif == 0)
+      {
+        dequeue_pos_ = pos + 1;
+        break;
+      }
+      //pause
+    }
+    data = cell->data_;
+    cell->sequence_.store
+      (pos + buffer_mask_ + 1, std::memory_order_release);
+    return true;
+  }
+
+private:
+  struct cell_t
+  {
+    std::atomic<size_t>   sequence_;
+    T                     data_;
+  };
+
+  static size_t const     cacheline_size = 64;
+  typedef char            cacheline_pad_t [cacheline_size];
+
+  cacheline_pad_t         pad0_;
+  cell_t* const           buffer_;
+  size_t const            buffer_mask_;
+  cacheline_pad_t         pad1_;
+  size_t                  enqueue_pos_;
+  cacheline_pad_t         pad2_;
+  size_t                  dequeue_pos_;
+  cacheline_pad_t         pad3_;
+
+  spsc_bounded_queue(spsc_bounded_queue const&);
+  void operator = (spsc_bounded_queue const&);
+};
+
+unsigned nextPowerOfTwo(unsigned value)
+{
+   unsigned ret = 2;
+    while (ret < value)
+        ret += ret;
+    return ret;
+}
+
+class QueueBase : implements CInterfaceOf<IRowQueue>
+{
+public:
+    using IRowQueue::enqueue;
+    virtual unsigned enqueue(size_t count, const void * * items)
+    {
+        for (unsigned i = 0; i < count; i++)
+            enqueue(items[i]);
+        return count;
+    }
+};
+
+class CMPMCQueue : public QueueBase
+{
+public:
+    CMPMCQueue(unsigned _maxItems) : queue(nextPowerOfTwo(_maxItems)) {}
+
+    virtual void enqueue(const void * const item)
+    {
+        while (!queue.enqueue(item))
+        {
+        }
+    }
+    virtual const void * dequeue()
+    {
+        const void * ret;
+        while (!queue.dequeue(ret))
+        {
+        }
+        return ret;
+    }
+
+private:
+    mpmc_bounded_queue<const void *> queue;
+};
+
+class CSPSCQueue : public QueueBase
+{
+public:
+    CSPSCQueue(unsigned _maxItems) : queue(nextPowerOfTwo(_maxItems)) {}
+
+    virtual void enqueue(const void * const item)
+    {
+        queue.enqueue(item);
+    }
+    virtual const void * dequeue()
+    {
+        const void * ret;
+        queue.dequeue(ret);
+        return ret;
+    }
+
+private:
+    spsc_bounded_queue<const void *> queue;
+};
+
+
+//Note, the semaphores don't prevent this being required to loop - just reduce it.
+class CMPMCSemQueue : public QueueBase
+{
+public:
+    CMPMCSemQueue(unsigned _maxItems) : queue(nextPowerOfTwo(_maxItems)), space(_maxItems) {}
+
+    virtual void enqueue(const void * const item)
+    {
+        space.wait();
+        //This still has to loop because the elements may not be returned from dequeue in order.
+        while (!queue.enqueue(item))
+        {}
+        avail.signal();
+    }
+    virtual const void * dequeue()
+    {
+        avail.wait();
+        const void * ret = NULL;
+        while (!queue.dequeue(ret))
+        {}
+        space.signal();
+        return ret;
+    }
+
+private:
+    mpmc_bounded_queue<const void *> queue;
+    Semaphore avail;
+    Semaphore space;
+};
+
+IRowQueue * createMPMCQueue(unsigned queueElements, unsigned numConsumers, unsigned numProducers)
+{
+    if ((numConsumers == 1) && (numProducers == 1))
+        return new CSPSCQueue(queueElements);
+    return new CMPMCQueue(queueElements);
+}
+
+#if 0
+#undef likely
+#undef unlikely
+#include "concurrentqueue.h"
+#include "blockingconcurrentqueue.h"
+
+typedef moodycamel::ConcurrentQueue<const void *> MoodyRowQueue;
+
+class MoodyQueue : public QueueBase
+{
+public:
+    MoodyQueue(unsigned _maxItems) : queue(_maxItems) {}
+
+    virtual void enqueue(const void * const item)
+    {
+        //This still has to loop because the elements may not be returned from dequeue in order.
+        while (!queue.try_enqueue(item))
+        {}
+    }
+    virtual const void * dequeue()
+    {
+        const void * ret = NULL;
+        while (!queue.try_dequeue(ret))
+        {}
+        return ret;
+    }
+
+private:
+    MoodyRowQueue queue;
+};
+
+typedef moodycamel::BlockingConcurrentQueue<const void *> BlockingMoodyRowQueue;
+
+class BlockingMoodyQueue : implements CInterfaceOf<IRowQueue>
+{
+public:
+    BlockingMoodyQueue(unsigned _maxItems) : queue(_maxItems) {}
+
+    virtual void enqueue(const void * const item)
+    {
+        //This still has to loop because the elements may not be returned from dequeue in order.
+        while (!queue.try_enqueue(item))
+        {}
+    }
+    virtual const void * dequeue()
+    {
+        const void * ret = NULL;
+        while (!queue.try_dequeue(ret))
+        {}
+        return ret;
+    }
+
+private:
+    BlockingMoodyRowQueue queue;
+};
+
+#endif
+
+
+/* =========================================================== */
+
+class JlibReaderWriterTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(JlibReaderWriterTest);
+    CPPUNIT_TEST(testCombinations);
+    CPPUNIT_TEST_SUITE_END();
+
+    const static unsigned spinScaling = 1000;
+
+    static unsigned spinCalculation(unsigned prev, unsigned scale)
+    {
+        unsigned value = prev;
+        for (unsigned i = 0; i < scale*spinScaling; i++)
+        {
+            value = (value * 0x1234FEDB + 0x87654321);
+        }
+        return value;
+    }
+
+    class Reader : public Thread
+    {
+    public:
+        Reader(IRowQueue & _source, Semaphore & _doneSem, unsigned _workScale)
+            : Thread("Reader"), source(_source), doneSem(_doneSem), workScale(_workScale), work(0)
+        {
+        }
+
+        virtual int run()
+        {
+            loop
+            {
+                const void * next = source.dequeue();
+                if (!next)
+                    break;
+                std::atomic<byte> * value = (std::atomic<byte> *)next;
+                (*value)++;
+                if (workScale)
+                    work = spinCalculation(work, workScale);
+            }
+            doneSem.signal();
+            return 0;
+        }
+
+    private:
+        IRowQueue & source;
+        Semaphore & doneSem;
+        volatile unsigned work;
+        unsigned workScale;
+    };
+
+    class WriterBase : public Thread
+    {
+    public:
+        WriterBase(IRowQueue & _target, size_t _len, byte * _buffer, Semaphore & _startSem, Semaphore & _doneSem, unsigned _workScale)
+            : Thread("Writer"), target(_target), len(_len), buffer(_buffer), startSem(_startSem), doneSem(_doneSem), workScale(_workScale), work(0)
+        {
+        }
+
+    protected:
+        size_t len;
+        byte * buffer;
+        IRowQueue & target;
+        Semaphore & startSem;
+        Semaphore & doneSem;
+        volatile unsigned work;
+        unsigned workScale;
+    };
+    class Writer : public WriterBase
+    {
+    public:
+        Writer(IRowQueue & _target, size_t _len, byte * _buffer, Semaphore & _startSem, Semaphore & _doneSem, unsigned _workScale)
+            : WriterBase(_target, _len, _buffer, _startSem, _doneSem, _workScale)
+        {
+        }
+
+        virtual int run()
+        {
+            startSem.wait();
+            for (size_t i = 0; i < len; i++)
+            {
+                if (workScale)
+                    work = spinCalculation(work, workScale);
+                const void * rows = buffer+i;
+                target.enqueue(1, &rows);//buffer + i);
+            }
+            doneSem.signal();
+            return 0;
+        }
+    };
+    class BlockWriter : public WriterBase
+    {
+    public:
+        BlockWriter(IRowQueue & _target, size_t _len, byte * _buffer, Semaphore & _startSem, Semaphore & _doneSem, unsigned _workScale, unsigned _blockSize)
+            : WriterBase(_target, _len, _buffer, _startSem, _doneSem, _workScale), blockSize(_blockSize)
+        {
+            rows = new const void * [blockSize];
+        }
+        ~BlockWriter()
+        {
+            delete [] rows;
+        }
+
+        virtual int run()
+        {
+            startSem.wait();
+            unsigned remaining = 0;
+            unsigned space = blockSize;
+            for (size_t i = 0; i < len || remaining;)
+            {
+                unsigned cnt = len - i;
+                if (cnt > space)
+                    cnt = space;
+                if (workScale)
+                    work = spinCalculation(work, workScale*cnt);
+                for (unsigned j=0; j < cnt; j++)
+                {
+                    rows[j+remaining] = buffer+i+j;
+                }
+
+                unsigned chunkSize = remaining + cnt;
+                unsigned consumed = target.enqueue(chunkSize, rows);  // should there be a call that blocks until all added?
+                remaining = chunkSize - consumed;
+                if (remaining)
+                    memmove(rows, rows+consumed, remaining * sizeof(void*));
+                space = consumed;
+                i += cnt;
+            }
+            doneSem.signal();
+            return 0;
+        }
+    protected:
+        const void * * rows;
+        unsigned blockSize;
+    };
+public:
+    const static size_t bufferSize = 0x100000;//0x100000*64;
+    void testQueue(IRowQueue & queue, unsigned numProducers, unsigned numConsumers, unsigned queueElements, unsigned readerWork, unsigned writerWork, unsigned blockSize)
+    {
+        const size_t sizePerProducer = bufferSize / numProducers;
+        const size_t testSize = sizePerProducer * numProducers;
+
+        OwnedMalloc<byte> buffer(bufferSize, true);
+        Semaphore startSem;
+        Semaphore writerDoneSem;
+        Semaphore stopSem;
+
+        Reader * * consumers = new Reader *[numConsumers];
+        for (unsigned i2 = 0; i2 < numConsumers; i2++)
+        {
+            consumers[i2] = new Reader(queue, stopSem, readerWork);
+            consumers[i2]->start();
+        }
+
+        WriterBase * * producers = new WriterBase *[numProducers];
+        for (unsigned i1 = 0; i1 < numProducers; i1++)
+        {
+            if (blockSize == 0)
+                producers[i1] = new Writer(queue, sizePerProducer, buffer + i1 * sizePerProducer, startSem, writerDoneSem, writerWork);
+            else
+                producers[i1] = new BlockWriter(queue, sizePerProducer, buffer + i1 * sizePerProducer, startSem, writerDoneSem, writerWork, blockSize);
+
+            producers[i1]->start();
+        }
+
+        cycle_t startTime = get_cycles_now();
+
+        //Start the writers
+        startSem.signal(numProducers);
+
+        //Wait for the writers to complete
+        for (unsigned i7 = 0; i7 < numProducers; i7++)
+            writerDoneSem.wait();
+
+        //Now add NULL records to the queue so the consumers know to terminate
+        for (unsigned i8 = 0; i8 < numConsumers; i8++)
+            queue.enqueue(NULL);
+
+        //Wait for the readers to complete
+        for (unsigned i3 = 0; i3 < numConsumers; i3++)
+            stopSem.wait();
+
+        cycle_t stopTime = get_cycles_now();
+
+        //All bytes should have been changed to 1, if not a queue item got lost.
+        unsigned failures = 0;
+        unsigned numClear = 0;
+        size_t failPos = ~(size_t)0;
+        byte failValue = 0;
+        for (size_t pos = 0; pos < testSize; pos++)
+        {
+            if (buffer[pos] != 1)
+            {
+                failures++;
+                if (failPos == ~(size_t)0)
+                {
+                    failPos = pos;
+                    failValue = buffer[pos];
+                }
+            }
+
+            if (buffer[pos] == 0)
+                numClear++;
+        }
+
+        unsigned timeMs = cycle_to_nanosec(stopTime - startTime) / 1000000;
+        if (failures)
+        {
+            printf("Fail: Test %u producers %u consumers %u queueItems %u(%u) mismatches fail(@%u=%u)\n", numProducers, numConsumers, queueElements, failures, numClear, (unsigned)failPos, failValue);
+            ASSERT(failures == 0);
+        }
+        else
+            printf("Pass: Test %u(@%u) producers %u(@%u) consumers %u queueItems block(%u) in %ums\n", numProducers, writerWork, numConsumers, readerWork, queueElements, blockSize, timeMs);
+
+
+        for (unsigned i4 = 0; i4 < numConsumers; i4++)
+        {
+            consumers[i4]->join();
+            consumers[i4]->Release();
+        }
+        delete[] consumers;
+
+        for (unsigned i5 = 0; i5 < numProducers; i5++)
+        {
+            producers[i5]->join();
+            producers[i5]->Release();
+        }
+        delete[] producers;
+    }
+
+    void testQueue(unsigned numProducers, unsigned numConsumers, unsigned numElements = 0, unsigned readWork = 0, unsigned writeWork = 0, unsigned blockSize = 0)
+    {
+        unsigned queueElements = (numElements != 0) ? numElements : (numProducers + numConsumers) * 2;
+        Owned<IRowQueue> queue = createRowQueue(numConsumers, numProducers, queueElements, 0);
+        //Owned<IRowQueue> queue = createMPMCQueue(queueElements, numConsumers, numProducers);
+        //Owned<IRowQueue> queue = new CMPMCSemQueue(queueElements);
+        //Owned<IRowQueue> queue = new MoodyQueue(queueElements);
+        //Owned<IRowQueue> queue = new BlockingMoodyQueue(queueElements);
+
+        testQueue(*queue, numProducers, numConsumers, queueElements, readWork, writeWork, blockSize);
+    }
+
+    void testWorkQueue(unsigned numProducers, unsigned numConsumers, unsigned numElements)
+    {
+        for (unsigned readWork = 1; readWork <= 8; readWork = readWork * 2)
+        {
+            for (unsigned writeWork = 1; writeWork <= 8; writeWork = writeWork * 2)
+            {
+                testQueue(numProducers, numConsumers, numElements, readWork, writeWork);
+            }
+        }
+    }
+    void testCombinations()
+    {
+        // 1:1
+        for (unsigned i=0; i < 10; i++)
+            testQueue(1, 1, 10);
+        testQueue(1, 1, 10, 0, 0, 16);
+        testQueue(1, 1, 64, 0, 0, 16);
+
+        //One to Many
+        testQueue(1, 10, 5);
+        testQueue(1, 5, 5);
+        testQueue(1, 5, 10);
+        testQueue(1, 127, 10);
+        testQueue(1, 127, 127);
+
+        //Many to One
+        testQueue(10, 1, 5);
+        testQueue(5, 1, 5);
+        testQueue(5, 1, 10);
+        testQueue(127, 1, 127);
+
+        //How does it scale with number of queue elements?
+        for (unsigned elem = 16; elem < 256; elem *= 2)
+        {
+            testQueue(16, 1, elem, 1, 1, 0);
+            testQueue(16, 1, elem, 1, 1, 1);
+            testQueue(16, 1, elem, 1, 1, 23);
+            testQueue(16, 1, elem, 1, 4, 23);
+        }
+
+        cycle_t startTime = get_cycles_now();
+        volatile unsigned value = 0;
+        for (unsigned i2 = 0; i2 < bufferSize; i2++)
+            value = spinCalculation(value, 1);
+        cycle_t stopTime = get_cycles_now();
+        unsigned timeMs = cycle_to_nanosec(stopTime - startTime) / 1000000;
+        printf("Work(1) takes %ums\n", timeMs);
+
+#if 1
+        //Many to Many
+        for (unsigned readWork = 1; readWork <= 8; readWork = readWork * 2)
+        {
+            for (unsigned writeWork = 1; writeWork <= 8; writeWork = writeWork * 2)
+            {
+                testQueue(1, 1, 63, readWork, writeWork);
+                testQueue(1, 2, 63, readWork, writeWork);
+                testQueue(1, 4, 63, readWork, writeWork);
+                testQueue(1, 8, 63, readWork, writeWork);
+                testQueue(1, 16, 63, readWork, writeWork);
+                testQueue(2, 1, 63, readWork, writeWork);
+                testQueue(4, 1, 63, readWork, writeWork);
+                testQueue(8, 1, 63, readWork, writeWork);
+                testQueue(16, 1, 63, readWork, writeWork);
+
+                testQueue(2, 2, 63, readWork, writeWork);
+                testQueue(4, 4, 63, readWork, writeWork);
+                testQueue(8, 8, 63, readWork, writeWork);
+            }
+
+        }
+#else
+        //Many to Many
+        testWorkQueue(1, 1, 63);
+        testWorkQueue(1, 2, 63);
+        testWorkQueue(1, 4, 63);
+        testWorkQueue(1, 8, 63);
+        testWorkQueue(1, 16, 63);
+        testWorkQueue(2, 1, 63);
+        testWorkQueue(4, 1, 63);
+        testWorkQueue(8, 1, 63);
+        testWorkQueue(16, 1, 63);
+
+        testWorkQueue(2, 2, 63);
+        testWorkQueue(4, 4, 63);
+        testWorkQueue(8, 8, 63);
+#endif
+
+        testQueue(2, 2, 4);
+        testQueue(2, 2, 8);
+        testQueue(2, 2, 16);
+        testQueue(2, 2, 32);
+        testQueue(2, 2, 100);
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(JlibReaderWriterTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibReaderWriterTest, "JlibReaderWriterTest");
 
 #endif // _USE_CPPUNIT
