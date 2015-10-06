@@ -96,7 +96,7 @@
             <row>
               <entry><emphasis role="bold">Roxie</emphasis></entry>
 
-              <entry>Graphs execute on a single (farmer) node.</entry>
+              <entry>Graphs execute on a single (Roxie server) node.</entry>
             </row>
 
             <row>
@@ -110,8 +110,8 @@
             <row>
               <entry></entry>
 
-              <entry>Child queries might execute on a single slave node
-              instead of a farmer node.</entry>
+              <entry>Child queries might execute on a single agent node
+              instead of a Roxie server node.</entry>
             </row>
           </tbody>
         </tgroup>
@@ -121,9 +121,9 @@
   <sect2 id="ALLNODES_vs_THISNODE">
     <title>ALLNODES vs. THISNODE</title>
 
-    <para>In Roxie, graphs execute on a single farmer node unless the
+    <para>In Roxie, graphs execute on a single Roxie server node unless the
     ALLNODES() function is used. ALLNODES() causes the portion of the query it
-    encloses to execute on all slave nodes in parallel. The results are
+    encloses to execute on all agent nodes in parallel. The results are
     calculated independently on each node then merged together, without
     ordering the records. It is generally used to do some complex remote
     processing which only requires local index access, substantially reducing
@@ -157,7 +157,7 @@
     because each node is independently processing its associated parts.
     Specifying that an index read or a keyed JOIN is LOCAL means that only the
     local part is used on each node. A local read of a single part INDEX will
-    only be evaluated on the first slave node (or the farmer node if not
+    only be evaluated on the first agent node (or the farmer node if not
     within an ALLNODES)</para>
 
     <para>Local evaluation can be specified in two ways:</para>
