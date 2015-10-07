@@ -162,6 +162,24 @@
             </row>
 
             <row>
+              <entry><emphasis>FOLD</emphasis></entry>
+
+              <entry>Specifies that the function is evaluated at compile time
+              if all parameters are constants. Specifying FOLD to the SERVICE
+              applys it to all function definitions in the service - in such
+              cases NOFOLD may be useful to override this default for
+              individual functions that are not suitable for constant
+              folding.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>NOFOLD</emphasis></entry>
+
+              <entry>Specifies that the service is not suitable for constant
+              folding.</entry>
+            </row>
+
+            <row>
               <entry><emphasis>ACTION</emphasis></entry>
 
               <entry>Indicates the function has side effects and requires the
