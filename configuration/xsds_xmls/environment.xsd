@@ -1,0 +1,1365 @@
+<!--
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 2 U (http://www.xmlspy.com) by Richard (Seisint, Inc.) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:element name="Environment">
+        <xs:annotation>
+            <xs:documentation>Defines a Seisint Environment</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:choice maxOccurs="unbounded">
+                <xs:element name="Programs">
+                    <xs:annotation>
+                        <xs:documentation>Section to describe the programs that are executed in the environment.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Build" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a build containing instances of various programs.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="BuildSet" maxOccurs="unbounded">
+                                            <xs:annotation>
+                                                <xs:documentation>Describes an instance of a specific version of an InstallSet.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:attribute name="name" type="xs:string"/>
+                                                <xs:attribute name="path" type="xs:string" use="required"/>
+                                                <xs:attribute name="installSet" type="xs:string" use="required"/>
+                                                <xs:attribute name="processName" type="xs:string"/>
+                                                <xs:attribute name="schema" type="xs:string"/>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute name="include" type="xs:string"/>
+                                    <xs:attribute name="url" type="xs:string"/>
+                                    <xs:attribute name="name" type="xs:string"/>
+                                </xs:complexType>
+                                <xs:unique name="buildSetUnique">
+                                    <xs:selector xpath="BuildSet"/>
+                                    <xs:field xpath="@name"/>
+                                </xs:unique>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="include" type="xs:string"/>
+                    </xs:complexType>
+                    <xs:key name="buildKey">
+                        <xs:selector xpath="./Build"/>
+                        <xs:field xpath="@name"/>
+                    </xs:key>
+                </xs:element>
+                <xs:element name="Hardware">
+                    <xs:annotation>
+                        <xs:documentation>Section to describe the hardware that composes the environment.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:choice maxOccurs="unbounded">
+                            <xs:element name="ComputerType" type="ComputerTypeType">
+                                <xs:annotation>
+                                    <xs:documentation>Defines a generalized type of computer that is used in the environment.</xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="Domain" type="DomainType">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a domain that is contained in the environment.</xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="Switch">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a switch that is contained in the environment.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="name" type="xs:string"/>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="Computer">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a computer that is contained in the environment.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="AltAddress" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:annotation>
+                                                <xs:documentation>List of addition network addresses assigned to this computer.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:attribute name="netAddress" type="ipAddress"/>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute name="name" type="xs:string" use="required"/>
+                                    <xs:attribute name="netAddress" type="ipAddress"/>
+                                    <xs:attribute name="state" use="required">
+                                        <xs:simpleType>
+                                            <xs:restriction base="xs:string">
+                                                <xs:enumeration value="Available"/>
+                                                <xs:enumeration value="Unavailable"/>
+                                                <xs:enumeration value=""/>
+                                            </xs:restriction>
+                                        </xs:simpleType>
+                                    </xs:attribute>
+                                    <xs:attribute name="switch" type="xs:string"/>
+                                    <xs:attribute name="domain" type="xs:string"/>
+                                    <xs:attribute name="computerType" type="xs:string"/>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:choice>
+                        <xs:attribute name="include" type="xs:string"/>
+                    </xs:complexType>
+                    <xs:key name="switchKey">
+                        <xs:selector xpath="./Switch"/>
+                        <xs:field xpath="@name"/>
+                    </xs:key>
+                    <xs:keyref name="switchKeyRef" refer="switchKey">
+                        <xs:selector xpath="./*"/>
+                        <xs:field xpath="@switch"/>
+                    </xs:keyref>
+                    <xs:key name="domainKey">
+                        <xs:selector xpath="./Domain"/>
+                        <xs:field xpath="@name"/>
+                    </xs:key>
+                    <xs:keyref name="domainKeyRef" refer="domainKey">
+                        <xs:selector xpath="./*"/>
+                        <xs:field xpath="@domain"/>
+                    </xs:keyref>
+                </xs:element>
+                <xs:element name="Software">
+                    <xs:annotation>
+                        <xs:documentation>Section to describe the processes that run in the environment.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:choice minOccurs="0" maxOccurs="unbounded">
+                            <xs:element name="EspProcess">
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessBase">
+                                            <xs:choice maxOccurs="unbounded">
+                                                <xs:element name="EspProtocol" type="EspProtocolType" maxOccurs="unbounded"/>
+                                                <xs:element name="EspBinding" type="EspBindingType" maxOccurs="unbounded"/>
+                                                <xs:element name="EspTopology" type="EspTopologyType" minOccurs="0"/>
+                                                <xs:element name="EspBindingMap" type="EspBindingMapType" minOccurs="0"/>
+                                                <xs:element name="EspUriMap" type="EspUriMapType" minOccurs="0"/>
+                                            </xs:choice>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="EspService" type="EspServiceType">
+                                <xs:annotation>
+                                    <xs:documentation>Describes an ESP service.</xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="WebServerProcess">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a Web Server.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessBase"/>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="DFSProcess" type="ProcessBase">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a DFS instance.</xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="SybaseProcess">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a sybase database server.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="SimpleProcessBase">
+                                            <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional" default="7560"/>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="MySQLProcess">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a MySQL database server.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="SimpleProcessBase">
+                                            <xs:attribute name="dbUser" type="xs:string" use="optional"/>
+                                            <xs:attribute name="dbPassword" type="xs:string" use="optional"/>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="EclServerProcess">
+                                <xs:annotation>
+                                    <xs:documentation>Describes an ecl repository server</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessServerBase">
+                                            <xs:choice maxOccurs="unbounded">
+                                                <xs:element name="EclJackProcess" minOccurs="0">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes an eclrunagent</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:attribute name="fullXmlLogging" type="xs:boolean" use="optional" default="false"/>
+                                                        <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" use="optional" default="1"/>
+                                                        <xs:attribute name="runAgentName" type="xs:string" use="optional"/>
+                                                        <xs:attribute name="jackIP" type="xs:string" use="required"/>
+                                                        <xs:attribute name="defaultHole" type="xs:string" use="optional"/>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="Model" minOccurs="0" maxOccurs="unbounded">
+                                                    <xs:complexType>
+                                                        <xs:attribute name="dataVersion" type="xs:string" use="required"/>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="Instance" maxOccurs="unbounded">
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="ProcessInstanceBase">
+                                                                <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional" default="7000"/>
+                                                                <xs:attribute name="jackAgentIP" type="xs:string" use="optional"/>
+                                                            </xs:extension>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="PluginRef" minOccurs="0" maxOccurs="unbounded">
+                                                    <xs:complexType>
+                                                        <xs:attribute name="process" type="xs:string" use="required"/>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:choice>
+                                            <xs:attribute name="daliServer" type="xs:string" use="optional"/>
+                                            <xs:attribute name="pluginsPath" type="xs:string" use="optional" default="./plugins"/>
+                                            <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" use="optional" default="1"/>
+                                            <xs:attribute name="sybase" type="xs:string" use="required"/>
+                                            <xs:attribute name="compilerPath" type="xs:string" use="optional" default="./cl"/>
+                                            <xs:attribute name="compileOptions" type="xs:string" use="optional"/>
+                                            <xs:attribute name="queue" type="xs:string" use="optional"/>
+                                            <xs:attribute name="monitorEnabled" type="xs:boolean" use="optional"/>
+                                            <xs:attribute name="monitorDiskThreshold" type="xs:nonNegativeInteger" use="optional"/>
+                                            <xs:attribute name="monitorEmail" type="xs:string" use="optional"/>
+                                            <xs:attribute name="monitorTimeout" type="xs:nonNegativeInteger" use="optional"/>
+                                            <xs:attribute name="thorConnectTimeoutSeconds" type="xs:nonNegativeInteger" use="optional"/>
+                                            <xs:attribute name="generatedEclToWorkUnit" type="xs:boolean" use="optional" default="false"/>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="EclAgentProcess">
+                                <xs:annotation>
+                                    <xs:documentation>Describes an ecl agent.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessServerBase">
+                                            <xs:sequence>
+                                                <xs:element name="Instance" type="ProcessInstanceBase" maxOccurs="unbounded"/>
+                                            </xs:sequence>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="EclBatchProcess">
+                                <xs:annotation>
+                                    <xs:documentation>Describes an eclbatch process</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessServerBase">
+                                            <xs:sequence>
+                                                <xs:element name="ThorRef" maxOccurs="unbounded">
+                                                    <xs:complexType>
+                                                        <xs:attribute name="process" type="xs:string" use="required"/>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:sequence>
+                                            <xs:attribute name="directory" type="absolutePath" use="required"/>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="OldThorCluster">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a thor cluster</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessBase">
+                                            <xs:choice maxOccurs="unbounded">
+                                                <xs:element name="ThorSpareProcess" minOccurs="0" maxOccurs="unbounded">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a thor spare</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="SimpleProcessBase"/>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="ThorSlaveProcess" maxOccurs="unbounded">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a thor slave</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="SimpleProcessBase"/>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="ThorMasterProcess">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a thormaster</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="SimpleProcessBase"/>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="HMonRef" minOccurs="0" maxOccurs="unbounded">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Refers to an HMonProcess instance.</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:attribute name="hmon" type="xs:string" use="required"/>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="Topology">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes the Topology of the given thor cluster</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:sequence maxOccurs="unbounded">
+                                                            <xs:element name="Node" type="NodeType" minOccurs="0"/>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                    <xs:keyref name="thorProcessKeyRef" refer="thorProcessKey">
+                                                        <xs:selector xpath=".//*"/>
+                                                        <xs:field xpath="@process"/>
+                                                    </xs:keyref>
+                                                </xs:element>
+                                            </xs:choice>
+                                            <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional"/>
+                                            <xs:attribute name="slaves" type="xs:nonNegativeInteger" use="required"/>
+                                            <xs:attribute name="slavesName" type="xs:string" use="optional"/>
+                                            <xs:attribute name="sparesName" type="xs:string" use="optional"/>
+                                            <xs:attribute name="holeTimeout" type="xs:nonNegativeInteger" use="optional" default="30000"/>
+                                            <xs:attribute name="holeDirectPrefix" type="xs:string" use="optional"/>
+                                            <xs:attribute name="holePrefix" type="xs:string" use="optional"/>
+                                            <xs:attribute name="watchdogEnabled" type="xs:boolean" use="optional" default="true"/>
+                                            <xs:attribute name="watchdogProgressEnabled" type="xs:boolean" use="optional" default="true"/>
+                                            <xs:attribute name="watchdogProgressInterval" type="xs:nonNegativeInteger" use="optional"/>
+                                            <xs:attribute name="monitorEnabled" type="xs:boolean" use="optional" default="true"/>
+                                            <xs:attribute name="monitorDiskThreshold" type="xs:nonNegativeInteger" use="optional" default="10"/>
+                                            <xs:attribute name="monitorEmail" type="xs:string" use="optional"/>
+                                            <xs:attribute name="monitorTimeout" type="xs:nonNegativeInteger" use="optional" default="120"/>
+                                            <xs:attribute name="perfDataLevel" type="xs:nonNegativeInteger" use="optional" default="1"/>
+                                            <xs:attribute name="jackEnabled" type="xs:boolean" use="optional" default="true"/>
+                                            <xs:attribute name="jackMonitorOutput" type="xs:boolean" use="optional" default="true"/>
+                                            <xs:attribute name="jackTraceLevel" type="xs:nonNegativeInteger" use="optional"/>
+                                            <xs:attribute name="statusMsgsEnabled" type="xs:boolean" use="optional" default="true"/>
+                                            <xs:attribute name="logDir" type="xs:string" use="optional"/>
+                                            <xs:attribute name="createSubDirectories" type="xs:string" use="optional" default="true"/>
+                                            <xs:attribute name="nameServices" type="xs:string" use="optional"/>
+                                            <xs:attribute name="socacheDir" type="xs:string" use="optional"/>
+                                            <xs:attribute name="external_prog_dir" type="xs:string" use="optional"/>
+                                            <xs:attribute name="minimalLogging" type="xs:boolean" use="optional" default="false"/>
+                                            <xs:attribute name="syncSendDlls" type="xs:boolean" use="optional" default="false"/>
+                                            <xs:attribute name="dllToSlaves" type="xs:boolean" use="optional" default="true"/>
+                                            <xs:attribute name="breakoutLimit" type="xs:nonNegativeInteger" use="optional"/>
+                                            <xs:attribute name="refreshRate" type="xs:nonNegativeInteger" use="optional"/>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                                <xs:key name="thorProcessKey">
+                                    <xs:selector xpath="./ThorMasterProcess|./ThorSlaveProcess"/>
+                                    <xs:field xpath="@name"/>
+                                </xs:key>
+                            </xs:element>
+                            <xs:element name="HoleCluster">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a hole cluster</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessBase">
+                                            <xs:choice maxOccurs="unbounded">
+                                                <xs:element name="HoleControlProcess">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a hole control node</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="SimpleProcessBase"/>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="HoleSocketProcess">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a hole socket node</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="SimpleProcessBase">
+                                                                <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional" default="5050"/>
+                                                            </xs:extension>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="HoleCollatorProcess">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a hole socket node</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="SimpleProcessBase">
+                                                                <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional" default="5050"/>
+                                                            </xs:extension>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="HoleProcessorProcess">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a hole socket node</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="SimpleProcessBase">
+                                                                <xs:attribute name="dataSegment" type="xs:nonNegativeInteger" use="required"/>
+                                                                <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional" default="5050"/>
+                                                            </xs:extension>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="HoleStandbyProcess" maxOccurs="unbounded">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a hole standby node</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="SimpleProcessBase">
+                                                                <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional" default="5050"/>
+                                                            </xs:extension>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="HMonRef" minOccurs="0" maxOccurs="unbounded">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Refers to an HMonProcess instance.</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:attribute name="hmon" type="xs:string" use="required"/>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="Topology">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes the topology of the given hole cluster.</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:sequence maxOccurs="unbounded">
+                                                            <xs:element name="Node" type="NodeType" minOccurs="0"/>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                    <xs:keyref name="holeProcessKeyRef" refer="holeProcessKey">
+                                                        <xs:selector xpath=".//*"/>
+                                                        <xs:field xpath="@process"/>
+                                                    </xs:keyref>
+                                                </xs:element>
+                                                <xs:element name="Module" minOccurs="0" maxOccurs="unbounded">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a 'module' section for a .scr file</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:sequence>
+                                                            <xs:element name="Function" maxOccurs="unbounded">
+                                                                <xs:complexType>
+                                                                    <xs:attribute name="name" type="xs:string" use="required"/>
+                                                                    <xs:attribute name="prototype" type="xs:string" use="required"/>
+                                                                    <xs:attribute name="returnType" type="xs:string" use="required"/>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:sequence>
+                                                        <xs:attribute name="name" type="xs:string" use="required"/>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:choice>
+                                            <xs:attribute name="dataBuild" type="xs:string" use="required"/>
+                                            <xs:attribute name="keepCPP" type="xs:boolean" use="optional" default="false">
+                                                <xs:annotation>
+                                                    <xs:documentation>Keep CPP files around (for debuggingpurposes)</xs:documentation>
+                                                </xs:annotation>
+                                            </xs:attribute>
+                                            <xs:attribute name="remoteFormat" type="xs:boolean" use="optional" default="true"/>
+                                            <xs:attribute name="compilerPath" type="xs:string" use="optional" default="c:\cl"/>
+                                            <xs:attribute name="copyDLL" type="xs:boolean" use="optional" default="true"/>
+                                            <xs:attribute name="copyDir" type="xs:string" default="c:\winnt\temp"/>
+                                            <xs:attribute name="tempDir" type="xs:string" default="c:\winnt\temp"/>
+                                            <xs:attribute name="serverCurDir" type="xs:string" default="c:\cl"/>
+                                            <xs:attribute name="processCount" type="xs:nonNegativeInteger" use="required"/>
+                                            <xs:attribute name="localCache" type="xs:string" use="optional" default="c:\cache"/>
+                                            <xs:attribute name="loaderName" type="xs:string" use="required"/>
+                                            <xs:attribute name="customerName" type="xs:string" use="optional"/>
+                                            <xs:attribute name="oprhansAsErrors" type="xs:boolean" use="optional" default="true"/>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                                <xs:key name="holeProcessKey">
+                                    <xs:selector xpath="./HoleControlProcess|./HoleSocketProcess|./HoleCollatorProcess|./HoleProcessorProcess|./HoleStandbyProcess"/>
+                                    <xs:field xpath="@name"/>
+                                </xs:key>
+                            </xs:element>
+                            <xs:element name="CCdCluster">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a ccd cluster</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessBase">
+                                            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                                                <xs:element name="CCdProcess">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a CCD</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="SimpleProcessBase">
+                                                                <xs:sequence>
+                                                                    <xs:element name="Channel" minOccurs="0" maxOccurs="unbounded"/>
+                                                                </xs:sequence>
+                                                                <xs:attribute name="channels" type="xs:string"/>
+                                                            </xs:extension>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="CCdAgentProcess">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes a CCD</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="SimpleProcessBase">
+                                                                <xs:sequence>
+                                                                    <xs:element name="Channel" minOccurs="0" maxOccurs="unbounded"/>
+                                                                </xs:sequence>
+                                                                <xs:attribute name="channels" type="xs:string"/>
+                                                            </xs:extension>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="CCdPlugin" type="PluginsBase"/>
+                                                <xs:element name="Topology">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Describes the Topology of the given thor cluster</xs:documentation>
+                                                    </xs:annotation>
+                                                    <xs:complexType>
+                                                        <xs:sequence maxOccurs="unbounded">
+                                                            <xs:element name="Node" type="NodeType" minOccurs="0"/>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:choice>
+                                            <xs:attribute name="multicastBase" type="xs:string" use="required"/>
+                                            <xs:attribute name="logDir" type="xs:string" use="optional"/>
+                                            <xs:attribute name="clusterSize" type="xs:nonNegativeInteger"/>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="SpareProcess">
+                                <xs:annotation>
+                                    <xs:documentation>Describes an unallocated node</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="SimpleProcessBase"/>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="Topology">
+                                <xs:annotation>
+                                    <xs:documentation>Describes the Topology of the environment.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence maxOccurs="unbounded">
+                                        <xs:element name="Node" type="NodeType" minOccurs="0"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                                <xs:keyref name="processKeyRef" refer="processKey">
+                                    <xs:selector xpath=".//*"/>
+                                    <xs:field xpath="@process"/>
+                                </xs:keyref>
+                            </xs:element>
+                            <xs:element name="DaliServerProcess">
+                                <xs:annotation>
+                                    <xs:documentation>Describes a dali cluster</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessServerBase">
+                                            <xs:sequence>
+                                                <xs:element name="Instance" maxOccurs="unbounded">
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="ProcessInstanceBase">
+                                                                <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional" default="7070"/>
+                                                            </xs:extension>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:sequence>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                                <xs:key name="daliProcessKey">
+                                    <xs:selector xpath="./DaliServerProcess"/>
+                                    <xs:field xpath="@name"/>
+                                </xs:key>
+                            </xs:element>
+                            <xs:element name="OldFTSlaveProcess">
+                                <xs:annotation>
+                                    <xs:documentation>Describes an ftslave installation</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessServerBase">
+                                            <xs:sequence>
+                                                <xs:element name="Instance" type="ProcessInstanceBase" maxOccurs="unbounded"/>
+                                            </xs:sequence>
+                                            <xs:attribute name="version" type="xs:string" use="required"/>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="AttrServerProcess">
+                                <xs:annotation>
+                                    <xs:documentation>Describes an atribute server</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="ProcessServerBase">
+                                            <xs:sequence>
+                                                <xs:element name="AttrServerInstance" maxOccurs="unbounded">
+                                                    <xs:complexType>
+                                                        <xs:complexContent>
+                                                            <xs:extension base="ProcessInstanceBase">
+                                                                <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional"/>
+                                                            </xs:extension>
+                                                        </xs:complexContent>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:sequence>
+                                            <xs:attribute name="sybase" type="xs:string" use="optional"/>
+                                            <xs:attribute name="mysql" type="xs:string" use="optional"/>
+                                            <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" use="optional" default="1"/>
+                                            <xs:attribute name="logDir" type="xs:string" use="optional"/>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="PluginProcess" type="PluginsBase"/>
+                        </xs:choice>
+                        <xs:attribute name="include" type="xs:string"/>
+                        <xs:attribute name="name" type="xs:string"/>
+                    </xs:complexType>
+                    <xs:keyref name="buildKeyRef" refer="buildKey">
+                        <xs:selector xpath="./NameServicesProcess|./WebServerProcess|./JackProcess|./DFSProcess|./EclServerProcess|./EclAgentProcess|./ThorCluster|./HoleCluster|./DaliServer"/>
+                        <xs:field xpath="@build"/>
+                    </xs:keyref>
+                </xs:element>
+                <xs:element name="Data">
+                    <xs:annotation>
+                        <xs:documentation>Section containing definitions of the data that is leveraged in the environment.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:choice maxOccurs="unbounded">
+                            <xs:element name="Build">
+                                <xs:complexType>
+                                    <xs:complexContent>
+                                        <xs:extension base="SettingsBase">
+                                            <xs:sequence>
+                                                <xs:element name="Location" maxOccurs="unbounded">
+                                                    <xs:complexType>
+                                                        <xs:attribute name="logicalName" type="xs:string" use="required"/>
+                                                        <xs:attribute name="table" type="xs:string" use="required"/>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:sequence>
+                                            <xs:attribute name="description" type="xs:string" use="optional"/>
+                                            <xs:attribute name="dataModel" type="xs:string" use="required"/>
+                                            <xs:attribute name="nameservices" type="xs:string" use="optional"/>
+                                            <xs:attribute name="baseLoadName" type="xs:string" use="optional"/>
+                                            <xs:attribute name="prefix" type="xs:string" use="optional"/>
+                                            <xs:attribute name="suffix" type="xs:string" use="optional"/>
+                                            <xs:attribute name="blobDirectory" type="absolutePath" use="optional"/>
+                                            <xs:attribute name="blobName" type="xs:string" use="optional"/>
+                                            <xs:attribute name="useBlobs" type="xs:boolean" use="optional" default="false"/>
+                                        </xs:extension>
+                                    </xs:complexContent>
+                                </xs:complexType>
+                                <xs:keyref name="buildTableKeyRef" refer="dataTableKey">
+                                    <xs:selector xpath="Location"/>
+                                    <xs:field xpath="@table"/>
+                                </xs:keyref>
+                            </xs:element>
+                            <xs:element name="Model" type="ModelType">
+                                <xs:keyref name="dataMapKeyRef" refer="dataMapKey">
+                                    <xs:selector xpath="Map"/>
+                                    <xs:field xpath="@name"/>
+                                </xs:keyref>
+                                <xs:keyref name="dataTableKeyRef" refer="dataTableKey">
+                                    <xs:selector xpath="Table"/>
+                                    <xs:field xpath="@name"/>
+                                </xs:keyref>
+                                <xs:keyref name="dataViewKeyRef" refer="dataViewKey">
+                                    <xs:selector xpath="View"/>
+                                    <xs:field xpath="@name"/>
+                                </xs:keyref>
+                            </xs:element>
+                        </xs:choice>
+                        <xs:attribute name="include" type="xs:string"/>
+                    </xs:complexType>
+                    <xs:key name="dataModelKey">
+                        <xs:selector xpath="Model"/>
+                        <xs:field xpath="@name"/>
+                    </xs:key>
+                    <xs:keyref name="dataModelKeyRef" refer="dataModelKey">
+                        <xs:selector xpath="Build"/>
+                        <xs:field xpath="@model"/>
+                    </xs:keyref>
+                    <xs:key name="dataMapKey">
+                        <xs:selector xpath="Map"/>
+                        <xs:field xpath="@name"/>
+                    </xs:key>
+                    <xs:key name="dataTableKey">
+                        <xs:selector xpath="ThorTable|HoleTable|LogicalTable|SqlTable|FlatTable"/>
+                        <xs:field xpath="@name"/>
+                    </xs:key>
+                    <xs:key name="dataViewKey">
+                        <xs:selector xpath="View"/>
+                        <xs:field xpath="@name"/>
+                    </xs:key>
+                </xs:element>
+            </xs:choice>
+        </xs:complexType>
+        <xs:key name="sybaseProcessKey">
+            <xs:selector xpath=".//SybaseProcess"/>
+            <xs:field xpath="@name"/>
+        </xs:key>
+        <xs:keyref name="sybaseProcessKeyRef" refer="sybaseProcessKey">
+            <xs:selector xpath=".//*"/>
+            <xs:field xpath="@sybase"/>
+        </xs:keyref>
+        <xs:key name="computerTypeKey">
+            <xs:selector xpath=".//ComputerType"/>
+            <xs:field xpath="@name"/>
+        </xs:key>
+        <xs:keyref name="computerTypeKeyRef" refer="computerTypeKey">
+            <xs:selector xpath=".//*"/>
+            <xs:field xpath="@computerType"/>
+        </xs:keyref>
+        <xs:key name="computerKey">
+            <xs:selector xpath=".//Computer"/>
+            <xs:field xpath="@name"/>
+        </xs:key>
+        <xs:keyref name="computerKeyRef" refer="computerKey">
+            <xs:selector xpath=".//*"/>
+            <xs:field xpath="@computer"/>
+        </xs:keyref>
+        <xs:key name="programKey">
+            <xs:selector xpath=".//Program"/>
+            <xs:field xpath="@name"/>
+        </xs:key>
+        <xs:keyref name="programKeyRef" refer="programKey">
+            <xs:selector xpath=".//Program"/>
+            <xs:field xpath="@program"/>
+        </xs:keyref>
+        <xs:key name="processKey">
+            <xs:selector xpath=".//EclServerProcess|.//EclAgentProcess|.//SybaseProcess|.//SpareProcess|.//HoleCluster|.//ThorCluster|.//DaliServer"/>
+            <xs:field xpath="@name"/>
+        </xs:key>
+        <xs:key name="hmonKey">
+            <xs:selector xpath=".//HMonProcess"/>
+            <xs:field xpath="@name"/>
+        </xs:key>
+        <xs:keyref name="hmonKeyRef" refer="hmonKey">
+            <xs:selector xpath=".//*"/>
+            <xs:field xpath="@hmon"/>
+        </xs:keyref>
+    </xs:element>
+    <xs:complexType name="FieldType">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:sequence minOccurs="0">
+                    <xs:element name="Expression"/>
+                </xs:sequence>
+                <xs:attribute name="label" type="xs:string" use="required"/>
+                <xs:attribute name="description" type="xs:string" use="optional"/>
+                <xs:attribute name="type" type="xs:string" use="optional"/>
+                <xs:attribute name="size" type="xs:nonNegativeInteger" use="optional"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="HoleFieldType">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:sequence minOccurs="0">
+                    <xs:element name="Expression"/>
+                </xs:sequence>
+                <xs:attribute name="label" type="xs:string" use="required"/>
+                <xs:attribute name="description" type="xs:string" use="optional"/>
+                <xs:attribute name="type" type="xs:string" use="required"/>
+                <xs:attribute name="physicalSize" type="xs:nonNegativeInteger" use="optional"/>
+                <xs:attribute name="physicalType" type="xs:string" use="optional"/>
+                <xs:attribute name="size" type="xs:nonNegativeInteger" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="ParentTableType">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="Table" type="ChildTableType"/>
+                </xs:sequence>
+                <xs:attribute name="version" type="xs:string" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="ChildTableType">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="Table" type="ChildTableType"/>
+                </xs:sequence>
+                <xs:attribute name="version" type="xs:string" use="required"/>
+                <xs:attribute name="childField" type="xs:string" use="required"/>
+                <xs:attribute name="parentField" type="xs:string" use="required"/>
+                <xs:attribute name="cardinality" type="xs:nonNegativeInteger" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="NodeType">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="Node" type="NodeType"/>
+            <xs:element name="NodeRef">
+                <xs:complexType>
+                    <xs:attribute name="name" type="xs:string" use="optional"/>
+                    <xs:attribute name="node" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Cluster">
+                <xs:complexType>
+                    <xs:sequence maxOccurs="unbounded">
+                        <xs:element name="Node" type="NodeType"/>
+                    </xs:sequence>
+                    <xs:attribute name="name" type="xs:string" use="required"/>
+                    <xs:attribute name="prefix" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:choice>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="process" type="xs:string" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="EspNodeType">
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:choice>
+                <xs:element name="Node" type="EspNodeType"/>
+                <xs:element name="NodeRef">
+                    <xs:complexType>
+                        <xs:attribute name="name" type="xs:string" use="optional"/>
+                        <xs:attribute name="node" type="xs:string" use="required"/>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="Cluster">
+                    <xs:complexType>
+                        <xs:sequence maxOccurs="unbounded">
+                            <xs:element name="Node" type="EspNodeType"/>
+                        </xs:sequence>
+                        <xs:attribute name="name" type="xs:string" use="required"/>
+                        <xs:attribute name="prefix" type="xs:string" use="required"/>
+                    </xs:complexType>
+                </xs:element>
+            </xs:choice>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="process" type="xs:string" use="required"/>
+        <xs:attribute name="binding" type="xs:string" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="ComputerTypeType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="nicSpeed" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="manufacturer" type="xs:string"/>
+        <xs:attribute name="memory" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="computerType" type="xs:string"/>
+        <xs:attribute name="opSys" type="xs:string"/>
+    </xs:complexType>
+    <xs:complexType name="DomainType">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase"/>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="SettingsBase">
+        <xs:attributeGroup ref="BaseAttributes"/>
+    </xs:complexType>
+    <xs:complexType name="SimpleProcessBase">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:attribute name="computer" type="xs:string" use="required"/>
+                <xs:attribute name="netAddress" type="ipAddress" use="optional"/>
+                <xs:attribute name="description" type="xs:string" use="optional"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="ProcessBase">
+        <xs:complexContent>
+            <xs:extension base="SimpleProcessBase">
+                <xs:attributeGroup ref="ProcessFileAttributes"/>
+                <xs:attribute name="daliServer" type="xs:string" use="optional"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="ProcessServerBase">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:attribute name="description" type="xs:string" use="optional"/>
+                <xs:attribute name="build" type="xs:string" use="required"/>
+                <xs:attribute name="buildSet" type="xs:string" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="ProcessInstanceBase">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:attribute name="description" type="xs:string" use="optional"/>
+                <xs:attribute name="computer" type="xs:string" use="required"/>
+                <xs:attribute name="netAddress" type="ipAddress" use="optional"/>
+                <xs:attribute name="directory" type="absolutePath" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="PluginsBase">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:attribute name="description" type="xs:string" use="optional"/>
+                <xs:attribute name="build" type="xs:string" use="required"/>
+                <xs:attribute name="buildSet" type="xs:string" use="required"/>
+                <xs:attribute name="loadOrder" type="xs:string" use="optional"/>
+                <xs:attribute name="directory" type="absolutePath" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="JackServiceBase">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:attributeGroup ref="JackServiceAttributes"/>
+                <xs:attribute name="jackAgentName" type="xs:string" use="required"/>
+                <xs:attribute name="path" type="xs:string"/>
+                <xs:attribute name="build" type="xs:string"/>
+                <xs:attribute name="buildSet" type="xs:string"/>
+                <xs:attribute name="exe" type="xs:string"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="MapTablesType">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="MapFields">
+                        <xs:complexType>
+                            <xs:complexContent>
+                                <xs:extension base="SettingsBase">
+                                    <xs:attribute name="destField" type="xs:string" use="required"/>
+                                    <xs:attribute name="sourceField" type="xs:string" use="required"/>
+                                </xs:extension>
+                            </xs:complexContent>
+                        </xs:complexType>
+                    </xs:element>
+                </xs:sequence>
+                <xs:attribute name="sourceTable" type="xs:string" use="required"/>
+                <xs:attribute name="sourceVersion" type="xs:string" use="required"/>
+                <xs:attribute name="destTable" type="xs:string" use="required"/>
+                <xs:attribute name="destVersion" type="xs:string" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="NotifyType">
+        <xs:attributeGroup ref="NotificationAttributes"/>
+    </xs:complexType>
+    <xs:complexType name="HmonTaskType">
+        <xs:attributeGroup ref="BaseAttributes"/>
+        <xs:attributeGroup ref="NotificationAttributes"/>
+        <xs:attribute name="description" type="xs:string"/>
+        <xs:attribute name="process" type="xs:string"/>
+        <xs:attribute name="logFile" type="xs:string"/>
+        <xs:attribute name="maxLogFileSize" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="deadbeatTimer" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+    <xs:attributeGroup name="NotificationAttributes">
+        <xs:attribute name="nfyEvent" default="Any">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="Any"/>
+                    <xs:enumeration value="Success"/>
+                    <xs:enumeration value="Failure"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="nfyMethod" default="Email">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="Email"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="nfyAddress" type="xs:string"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="BaseAttributes">
+        <xs:attribute name="include" type="xs:string"/>
+        <xs:attribute name="name" type="xs:string"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="ProcessFileAttributes">
+        <xs:attribute name="directory" type="absolutePath" use="required"/>
+        <xs:attribute name="build" type="xs:string" use="required"/>
+        <xs:attribute name="buildSet" type="xs:string" use="required"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="DatabaseAttributes">
+        <xs:attribute name="dbProcess" type="xs:string"/>
+        <xs:attribute name="dbName" type="xs:string"/>
+        <xs:attribute name="dbUser" type="xs:string"/>
+        <xs:attribute name="dbPassword" type="xs:string"/>
+        <xs:attribute name="dbConnections" type="xs:string"/>
+        <xs:attribute name="dbTimeout" type="xs:nonNegativeInteger"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="JackServiceAttributes">
+        <xs:attribute name="traceLevel" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="logfile" type="xs:string"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="PoolingAttributes">
+        <xs:attribute name="poolIdleCount" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="poolIdleTimer" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="poolMinCount" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="poolMaxCount" type="xs:nonNegativeInteger"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="LogFileAttributes"/>
+    <xs:complexType name="EspProtocolType">
+        <xs:attribute name="include" type="xs:string"/>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="type" type="xs:string"/>
+        <xs:attribute name="plugin" type="xs:string"/>
+        <xs:attribute name="computer" type="xs:string"/>
+    </xs:complexType>
+    <xs:complexType name="EspBindingType">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="Scripts"/>
+            <xs:element name="Daliservers"/>
+            <xs:element name="LayoutProgram"/>
+            <xs:element name="Authenticate">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Location">
+                            <xs:complexType>
+                                <xs:attribute name="path" type="xs:string"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                    <xs:attribute name="type" type="xs:string"/>
+                    <xs:attribute name="method" type="xs:string"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:any namespace="##any">
+                <xs:annotation>
+                    <xs:documentation>Allow additional nodes as needed</xs:documentation>
+                </xs:annotation>
+            </xs:any>
+        </xs:choice>
+        <xs:attribute name="include" type="xs:string"/>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="type" type="xs:string"/>
+        <xs:attribute name="protocol" type="xs:string"/>
+        <xs:attribute name="service" type="xs:string"/>
+        <xs:attribute name="port" type="xs:nonNegativeInteger"/>
+        <xs:attribute name="plugin" type="xs:string"/>
+        <xs:attribute name="netAddress" type="ipAddress"/>
+        <xs:anyAttribute namespace="##any"/>
+    </xs:complexType>
+    <xs:complexType name="EspServiceType">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="Daliservers"/>
+            <xs:element name="ClusterName"/>
+            <xs:element name="UserName"/>
+            <xs:element name="EclServer"/>
+            <xs:element name="AttributeServer"/>
+            <xs:element name="DefaultStyle"/>
+            <xs:element name="WuTimeout"/>
+            <xs:element name="FilesPath"/>
+            <xs:element name="StyleSheets">
+                <xs:complexType>
+                    <xs:sequence maxOccurs="unbounded">
+                        <xs:element name="xslt">
+                            <xs:complexType>
+                                <xs:attribute name="name" type="xs:string" use="required"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:any namespace="##any">
+                <xs:annotation>
+                    <xs:documentation>Allow additional nodes as needed</xs:documentation>
+                </xs:annotation>
+            </xs:any>
+        </xs:choice>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="type" type="xs:string"/>
+        <xs:attribute name="plugin" type="xs:string"/>
+        <xs:anyAttribute namespace="##any"/>
+    </xs:complexType>
+    <xs:complexType name="EspBindingMapType">
+        <xs:sequence>
+            <xs:element name="EspBindingEntry" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:attribute name="name" type="xs:string"/>
+                    <xs:attribute name="service" type="xs:string"/>
+                    <xs:attribute name="type" type="xs:string"/>
+                    <xs:attribute name="plugin" type="xs:string"/>
+                    <xs:attribute name="expr" type="xs:string"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="type" type="xs:string"/>
+        <xs:attribute name="protocol" type="xs:string"/>
+        <xs:attribute name="plugin" type="xs:string"/>
+        <xs:attribute name="netAddress" type="ipAddress"/>
+        <xs:attribute name="port" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+    <xs:complexType name="EspUriMapType">
+        <xs:choice maxOccurs="unbounded">
+            <xs:element name="UriLocalFile">
+                <xs:complexType>
+                    <xs:attribute name="regExpr" type="xs:string"/>
+                    <xs:attribute name="fileRoot" type="xs:string"/>
+                    <xs:attribute name="filePath" type="xs:string"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="UriSoap">
+                <xs:complexType>
+                    <xs:attribute name="regExpr" type="xs:string"/>
+                    <xs:attribute name="binding" type="xs:string"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="UriMethod">
+                <xs:complexType>
+                    <xs:attribute name="regExpr" type="xs:string"/>
+                    <xs:attribute name="binding" type="xs:string"/>
+                    <xs:attribute name="method" type="xs:string"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="UriForm">
+                <xs:complexType>
+                    <xs:attribute name="regExpr" type="xs:string"/>
+                    <xs:attribute name="binding" type="xs:string"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="UriWSDL">
+                <xs:complexType>
+                    <xs:attribute name="regExpr" type="xs:string"/>
+                    <xs:attribute name="binding" type="xs:string"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:choice>
+        <xs:attribute name="protocol" type="xs:string"/>
+        <xs:attribute name="port" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+    <xs:complexType name="EspTopologyType">
+        <xs:sequence>
+            <xs:element name="Node" type="EspNodeType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ModelType">
+        <xs:complexContent>
+            <xs:extension base="SettingsBase">
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="View" minOccurs="0">
+                        <xs:complexType>
+                            <xs:sequence>
+                                <xs:element name="Table" type="TableType"/>
+                            </xs:sequence>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Map" minOccurs="0">
+                        <xs:complexType>
+                            <xs:sequence>
+                                <xs:element name="MapTables" maxOccurs="unbounded">
+                                    <xs:complexType>
+                                        <xs:attribute name="destTable" type="xs:string" use="required"/>
+                                        <xs:attribute name="sourceTable" type="xs:string" use="required"/>
+                                    </xs:complexType>
+                                </xs:element>
+                            </xs:sequence>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="ThorTable" minOccurs="0" maxOccurs="unbounded">
+                        <xs:complexType>
+                            <xs:sequence>
+                                <xs:element name="Field" maxOccurs="unbounded">
+                                    <xs:complexType>
+                                        <xs:attribute name="label" type="xs:string" use="required"/>
+                                        <xs:attribute name="name" type="xs:string" use="required"/>
+                                        <xs:attribute name="size" type="xs:byte" use="required"/>
+                                        <xs:attribute name="type" type="xs:string" use="required"/>
+                                        <xs:attribute name="physicalSize" type="xs:byte"/>
+                                        <xs:attribute name="physicalType" type="xs:string"/>
+                                    </xs:complexType>
+                                </xs:element>
+                            </xs:sequence>
+                            <xs:attribute name="name" type="xs:string" use="required"/>
+                            <xs:attribute name="label" type="xs:string"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="HoleTable" minOccurs="0" maxOccurs="unbounded">
+                        <xs:complexType>
+                            <xs:sequence>
+                                <xs:element name="Field" maxOccurs="unbounded">
+                                    <xs:complexType>
+                                        <xs:attribute name="label" type="xs:string" use="required"/>
+                                        <xs:attribute name="name" type="xs:string" use="required"/>
+                                        <xs:attribute name="size" type="xs:byte" use="required"/>
+                                        <xs:attribute name="type" type="xs:string" use="required"/>
+                                        <xs:attribute name="physicalSize" type="xs:byte"/>
+                                        <xs:attribute name="physicalType" type="xs:string"/>
+                                    </xs:complexType>
+                                </xs:element>
+                            </xs:sequence>
+                            <xs:attribute name="name" type="xs:string" use="required"/>
+                            <xs:attribute name="label" type="xs:string" use="required"/>
+                            <xs:attribute name="logicalName" type="xs:string" use="required"/>
+                        </xs:complexType>
+                    </xs:element>
+                    <xs:element name="LogicalTable" minOccurs="0" maxOccurs="unbounded">
+                        <xs:complexType>
+                            <xs:sequence>
+                                <xs:element name="Field" maxOccurs="unbounded">
+                                    <xs:complexType>
+                                        <xs:attribute name="label" type="xs:string" use="required"/>
+                                        <xs:attribute name="name" type="xs:string" use="required"/>
+                                        <xs:attribute name="size" type="xs:byte" use="required"/>
+                                        <xs:attribute name="type" type="xs:string" use="required"/>
+                                        <xs:attribute name="physicalSize" type="xs:byte"/>
+                                        <xs:attribute name="physicalType" type="xs:string"/>
+                                    </xs:complexType>
+                                </xs:element>
+                            </xs:sequence>
+                            <xs:attribute name="name" type="xs:string" use="required"/>
+                            <xs:attribute name="label" type="xs:string" use="optional"/>
+                        </xs:complexType>
+                    </xs:element>
+                </xs:choice>
+                <xs:attribute name="description" type="xs:string" use="optional"/>
+                <xs:attribute name="family" type="xs:string" use="required"/>
+                <xs:attribute name="version" type="xs:string" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="TableType">
+        <xs:sequence>
+            <xs:element name="Table" type="TableType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="childField" type="xs:string"/>
+        <xs:attribute name="parentField" type="xs:string"/>
+        <xs:attribute name="cardinality" type="xs:long"/>
+    </xs:complexType>
+    <xs:simpleType name="buildType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="buildSetType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="computerType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="daliServersType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="dataBuildType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="sybaseType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="ldapServerType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="accurintServerType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="espServiceType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="eclServerType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="espProcessType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="espBindingType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="processType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="xpathType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="roxieClusterType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="mysqlType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="absolutePath">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="relativePath">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="fileName">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="ipAddress">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="ipAddressAndPort">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="roxieAddress">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="sashaServerType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="topologyClusterType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+</xs:schema>
