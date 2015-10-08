@@ -162,7 +162,7 @@ public:
     CJobListener() : excptHandler(*this)
     {
         stopped = true;
-        processPerSlave = globals->getPropBool("@processPerSlave");
+        processPerSlave = globals->getPropBool("@processPerSlave", true);
         slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
         mpServers.append(* getMPServer());
         if (!processPerSlave)

@@ -115,7 +115,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         globals = createPTree(msg);
         mergeCmdParams(globals); // cmd line
 
-        bool processPerSlave = globals->getPropBool("@processPerSlave");
+        bool processPerSlave = globals->getPropBool("@processPerSlave", true);
         unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
         unsigned basePort = getMachinePortBase();

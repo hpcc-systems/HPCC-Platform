@@ -1004,10 +1004,10 @@
                monitorDaliFileServer="true"
                name="mythor"
                pluginsPath="${PLUGINS_PATH}"
+               processPerSlave="true"
                replicateAsync="false"
                replicateOutputs="false"
                slavesPerNode="1"
-               processPerSlave="true"
                watchdogEnabled="true"
                watchdogProgressEnabled="true">
    <Debug/>
