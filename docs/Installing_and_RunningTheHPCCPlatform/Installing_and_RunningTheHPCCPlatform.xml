@@ -173,7 +173,7 @@
         </listitem>
       </orderedlist>
 
-      <sect2>
+      <sect2 id="Installing_NowWhat">
         <title>Now What?</title>
 
         <para>Now that you have HPCC started and running, what do you want to
@@ -403,7 +403,7 @@
           </footnote> code using either ECL IDE, the command line ECL
         compiler, or the ECL Command line tool.</para>
 
-        <sect3>
+        <sect3 id="InstallTheECLIDEandClientTools">
           <title>Install the ECL IDE and HPCC Client Tools</title>
 
           <para><orderedlist>
@@ -477,7 +477,7 @@
             </orderedlist></para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="RunningABasicECLProgram" role="brk">
           <title>Running a basic ECL program</title>
 
           <para>Now that the package is installed on your Linux node and ECL
@@ -538,7 +538,7 @@
           </orderedlist>
         </sect3>
 
-        <sect3>
+        <sect3 id="RunningRemotelyUsingECLCmdLine">
           <title>Running remotely using ECL Command Line</title>
 
           <para>The <emphasis role="bold">ECL Command Line Interface (CLI)
@@ -587,7 +587,7 @@
           listed in your environment's topology section.</para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="RunningABasicECLProgramFromtheIDE" role="brk">
           <title>Running a basic ECL program from the ECL IDE</title>
 
           <para><orderedlist>
@@ -1179,7 +1179,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
         <para>The following commands can be used:</para>
 
-        <sect3>
+        <sect3 id="StartStop_ToStartSystem">
           <title>To start the system:</title>
 
           <para><emphasis role="bold">Centos/Red
@@ -1194,7 +1194,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="StartStop_StopTheSystem">
           <title>To stop the system:</title>
 
           <para><emphasis role="bold">Centos/Red
@@ -1231,7 +1231,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
             </informaltable></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="StartStop_SingleComponents">
           <title>Start or Stop Single Components</title>
 
           <para>To start or stop a single component, you can use the -c flag
@@ -1327,14 +1327,14 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="Installing_MoreECLExamples">
     <title>More Examples</title>
 
     <para>This section contains additional ECL examples you can use on your
     HPCC cluster. You can run these on a single-node system or a larger
     multi-node cluster.</para>
 
-    <sect1 role="nobrk">
+    <sect1 id="ECLExample_Anagram1" role="nobrk">
       <title>ECL Example: Anagram1</title>
 
       <para>This example takes a STRING and produces every possible anagram
@@ -1419,7 +1419,7 @@ OUTPUT(L);</programlisting></para>
       <?hard-pagebreak ?>
     </sect1>
 
-    <sect1>
+    <sect1 id="ECLRoxieExample_Anagram2">
       <title>Roxie Example: Anagram2</title>
 
       <para>In this example, we will download an open source data file of
@@ -1429,7 +1429,7 @@ OUTPUT(L);</programlisting></para>
       file. Using an index and a keyed join would be more efficient, but this
       serves as a simple example.</para>
 
-      <sect2>
+      <sect2 id="RoxieExample_DownloadWordList">
         <title>Download the word list</title>
 
         <para>We will download the word list from <ulink
@@ -1666,7 +1666,7 @@ OUTPUT(L);</programlisting></para>
         </orderedlist>
       </sect2>
 
-      <sect2>
+      <sect2 id="RunTheQueryOnThor">
         <title>Run the query on Thor</title>
 
         <para><orderedlist>
@@ -1747,7 +1747,7 @@ OUTPUT(ValidWords)
           </orderedlist></para>
       </sect2>
 
-      <sect2>
+      <sect2 id="RoxieExample_CompileAndPublishtheQuery">
         <title>Compile and Publish the query to Roxie</title>
 
         <para><orderedlist>
@@ -2019,7 +2019,7 @@ OUTPUT(ValidWords)
     </sect1>
   </chapter>
 
-  <chapter>
+  <chapter id="ExampleECL_NextSteps">
     <title>Next Steps</title>
 
     <para>Available from the menu in the ECL IDE there are several documents
@@ -2129,7 +2129,7 @@ OUTPUT(ValidWords)
           </tgroup>
         </informaltable></para>
 
-      <sect2>
+      <sect2 id="ExampleScripts_install-cluster.sh">
         <title>install-cluster.sh</title>
 
         <para><emphasis
@@ -2254,7 +2254,7 @@ OUTPUT(ValidWords)
         <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="ExampleScripts_deploy-java-files.sh" role="brk">
         <title>deploy-java-files.sh</title>
 
         <para><emphasis
@@ -2382,7 +2382,7 @@ OUTPUT(ValidWords)
         <para><programlisting>./deploy-java-files.sh -H /home/hpcc/hosts.txt -s /home/hpcc/java/* -t /home/hpcc/java/ </programlisting></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="ExampleScripts_hpcc-push.sh" role="brk">
         <title>hpcc-push.sh</title>
 
         <para><emphasis
@@ -2444,7 +2444,7 @@ OUTPUT(ValidWords)
 </programlisting></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="ExampleScripts_hpcc-run.sh" role="brk">
         <title>hpcc-run.sh</title>
 
         <para><emphasis role="bold">hpcc-run.sh
