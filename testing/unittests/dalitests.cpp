@@ -1560,55 +1560,55 @@ public:
         ClusterPartDiskMapSpec map;
         {   // 1: single part file old method
 #define TN "1"
-            removeLogical("test::ftest"TN, user);
+            removeLogical("test::ftest" TN, user);
             Owned<IFileDescriptor> fdesc = createFileDescriptor();
             RemoteFilename rfn;
-            rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest"TN"._1_of_1");
+            rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest" TN "._1_of_1");
             fdesc->setPart(0,rfn);
             fdesc->endCluster(map);
             Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-            file->attach("test::ftest"TN,user);
+            file->attach("test::ftest" TN,user);
 #undef TN
         }
         {   // 2: single part file new method
 #define TN "2"
-            removeLogical("test::ftest"TN, user);
+            removeLogical("test::ftest" TN, user);
             Owned<IFileDescriptor> fdesc = createFileDescriptor();
-            fdesc->setPartMask("ftest"TN"._$P$_of_$N$");
+            fdesc->setPartMask("ftest" TN "._$P$_of_$N$");
             fdesc->setNumParts(1);
             Owned<IGroup> grp = createIGroup("10.150.10.1");
             fdesc->addCluster(grp,map);
             Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-            file->attach("test::ftest"TN,user);
+            file->attach("test::ftest" TN,user);
 #undef TN
         }
         Owned<IGroup> grp3 = createIGroup("10.150.10.1,10.150.10.2,10.150.10.3");
         queryNamedGroupStore().add("__testgroup3__",grp3,true);
         {   // 3: three parts file old method
 #define TN "3"
-            removeLogical("test::ftest"TN, user);
+            removeLogical("test::ftest" TN, user);
             Owned<IFileDescriptor> fdesc = createFileDescriptor();
             RemoteFilename rfn;
-            rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest"TN"._1_of_3");
+            rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest" TN "._1_of_3");
             fdesc->setPart(0,rfn);
-            rfn.setRemotePath("//10.150.10.2/c$/thordata/test/ftest"TN"._2_of_3");
+            rfn.setRemotePath("//10.150.10.2/c$/thordata/test/ftest" TN "._2_of_3");
             fdesc->setPart(1,rfn);
-            rfn.setRemotePath("//10.150.10.3/c$/thordata/test/ftest"TN"._3_of_3");
+            rfn.setRemotePath("//10.150.10.3/c$/thordata/test/ftest" TN "._3_of_3");
             fdesc->setPart(2,rfn);
             fdesc->endCluster(map);
             Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-            file->attach("test::ftest"TN,user);
+            file->attach("test::ftest" TN,user);
 #undef TN
         }
         {   // 4: three part file new method
 #define TN "4"
-            removeLogical("test::ftest"TN, user);
+            removeLogical("test::ftest" TN, user);
             Owned<IFileDescriptor> fdesc = createFileDescriptor();
-            fdesc->setPartMask("ftest"TN"._$P$_of_$N$");
+            fdesc->setPartMask("ftest" TN "._$P$_of_$N$");
             fdesc->setNumParts(3);
             fdesc->addCluster(grp3,map);
             Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-            file->attach("test::ftest"TN,user);
+            file->attach("test::ftest" TN,user);
 #undef TN
         }
     }
