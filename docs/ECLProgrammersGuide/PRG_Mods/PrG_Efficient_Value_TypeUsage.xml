@@ -17,7 +17,7 @@
     the values are integers or contain fractional portions (floating point
     data).</para>
 
-    <sect3>
+    <sect3 id="EfficientValue_IntegerData">
       <title><emphasis role="bold">Integer Data</emphasis></title>
 
       <para>When working with integer data, you should always specify the
@@ -66,7 +66,7 @@ INTEGER8   -9,223,372,036,854,775,808  0 to 18,446,744,073,709,551,615
       interfacing with external data sources, only.</para>
     </sect3>
 
-    <sect3>
+    <sect3 id="EfficientValue_FloatingPoint">
       <title><emphasis role="bold">Floating Point Data</emphasis></title>
 
       <para>When using floating point types, you should always specify the
@@ -109,7 +109,7 @@ REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
     the case, then the selection is simple. However, deciding exactly which
     type of string type to use can be more challenging.</para>
 
-    <sect3>
+    <sect3 id="String_Data_String_vs_Varstring">
       <title><emphasis role="bold">STRING vs. VARSTRING</emphasis></title>
 
       <para>Data that comes in from or goes out to the “outside world” may
@@ -129,7 +129,7 @@ REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
       versus VARUNICODE.</para>
     </sect3>
 
-    <sect3>
+    <sect3 id="String_Data_String_vs_QString">
       <title><emphasis role="bold">STRING vs. QSTRING</emphasis></title>
 
       <para>Depending on what use you need to make of your data, you may or
@@ -154,7 +154,7 @@ REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
       four).</para>
     </sect3>
 
-    <sect3>
+    <sect3 id="StringData_FixedLength_vs_VariableLength_">
       <title><emphasis role="bold">Fixed Length vs. Variable Length
       Strings</emphasis></title>
 
@@ -192,7 +192,7 @@ STRING   CityName := 'Orlando';  // LENGTH(CityName) is 7</programlisting>
     <para>There are several ways you may define your own data types in ECL.
     The RECORD and TYPE structures are the most common.</para>
 
-    <sect3>
+    <sect3 id="EfficientData_RecordStructure">
       <title><emphasis role="bold">RECORD Structure</emphasis></title>
 
       <para>The RECORD structure can be likened to a
@@ -292,7 +292,7 @@ x := Accounts.AcctStruct.Balance;
       output for the CombineRecs TRANSFORM function.</para>
     </sect3>
 
-    <sect3>
+    <sect3 id="EfficientData_TYPE_Structure">
       <title><emphasis role="bold">TYPE Structure</emphasis></title>
 
       <para>The TYPE structure is an obvious user-defined type because you are
@@ -342,7 +342,7 @@ OUTPUT(out);
       length stored as one to four bytes prepended to the data.</para>
     </sect3>
 
-    <sect3>
+    <sect3 id="EfficientData_TypeDefAttributes">
       <title><emphasis role="bold">TypeDef Attributes</emphasis></title>
 
       <para>The TypeDef attribute is another obvious user-defined type because
