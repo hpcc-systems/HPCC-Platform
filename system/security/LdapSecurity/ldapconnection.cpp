@@ -60,7 +60,7 @@
 
 const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration" };
 
-extern __declspec(dllimport) const char* getUserFieldNames(UserField field)
+const char* getUserFieldNames(UserField field)
 {
     if (field < UFterm)
         return UserFieldNames[field];
@@ -69,7 +69,7 @@ extern __declspec(dllimport) const char* getUserFieldNames(UserField field)
 
 const char* GroupFieldNames[] = { "@name", "@managedby", "@desc" };
 
-extern __declspec(dllimport) const char* getGroupFieldNames(GroupField field)
+const char* getGroupFieldNames(GroupField field)
 {
     if (field < GFterm)
         return GroupFieldNames[field];
@@ -78,7 +78,7 @@ extern __declspec(dllimport) const char* getGroupFieldNames(GroupField field)
 
 const char* ResourceFieldNames[] = { "@name", "@desc" };
 
-extern __declspec(dllimport) const char* getResourceFieldNames(ResourceField field)
+const char* getResourceFieldNames(ResourceField field)
 {
     if (field < RFterm)
         return ResourceFieldNames[field];
@@ -1099,9 +1099,10 @@ private:
             return false;
 
         CPageControlMemWrapper pageCtrlMem;
-
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
         try
         {
+#ifdef LDAP_API_FEATURE_PAGED_RESULTS
             LDAPControl * pageControl = NULL;
             int rc = ldap_create_page_control(m_pLdapConn, MAX_ENTRIES, m_pCookie, false, &pageControl);//cookie gets set on first call to ldap_parse_page_control()
             if (rc != LDAP_SUCCESS)
@@ -1114,7 +1115,6 @@ private:
 
             if (m_pPageBlock)
                 ldap_msgfree(m_pPageBlock);
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};
             rc = ldap_search_ext_s(m_pLdapConn, m_pszDN, m_scope, m_pszFilter, m_pszAttrs, 0, svrCtrls, NULL, &timeOut, 0, &m_pPageBlock);
             if (rc != LDAP_SUCCESS)
             {
@@ -1130,10 +1130,13 @@ private:
                 }
             }
 
-            int l_errcode;
+            unsigned long l_errcode;
             LDAPControl **  returnedCtrls = NULL;
+#ifdef _WIN32
             rc = ldap_parse_result(m_pLdapConn, m_pPageBlock, &l_errcode, NULL, NULL, NULL, &returnedCtrls, false);
-
+#else
+            rc = ldap_parse_result(m_pLdapConn, m_pPageBlock, (int*)&l_errcode, NULL, NULL, NULL, &returnedCtrls, false);
+#endif
             if (m_pCookie)
             {
                 ber_bvfree(m_pCookie);
@@ -1147,8 +1150,12 @@ private:
             }
 
             pageCtrlMem.setRetControls(returnedCtrls);
-            int totCount;
+            unsigned long totCount;
+#ifdef _WIN32
             rc = ldap_parse_page_control(m_pLdapConn, returnedCtrls, &totCount, &m_pCookie);//sets cookie for next call to ldap_create_page_control()
+#else
+            rc = ldap_parse_page_control(m_pLdapConn, returnedCtrls, (int*)&totCount, &m_pCookie);//sets cookie for next call to ldap_create_page_control()
+#endif
             if (rc != LDAP_SUCCESS)
             {
                 int err = GetLastError();
@@ -1157,6 +1164,14 @@ private:
 
             if (!(m_pCookie && m_pCookie->bv_val != NULL && (strlen(m_pCookie->bv_val) > 0)))
                 m_morePages = false;
+#else
+            int rc = ldap_search_ext_s(m_pLdapConn, m_pszDN, m_scope, m_pszFilter, m_pszAttrs, 0, NULL, NULL, &timeOut, 0, &m_pPageBlock);
+            m_morePages = false;
+            if (rc != LDAP_SUCCESS)
+            {
+                throw MakeStringException(-1, "ldap_search_ext_s failed with 0x%x (%s)",rc, ldap_err2string( rc ));
+            }
+#endif
         }
 
         catch(IException* e)
@@ -2477,7 +2492,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-        int rc = LDAP_COMPARE_EXT_S(ld, (char*)groupdn, (char*)fldname, (char*)userdn,0,0,0);
+        int rc = LDAP_COMPARE_EXT_S(ld, (const char*)groupdn, (const char*)fldname, (const char*)userdn,0,0,0);
         if(rc == LDAP_COMPARE_TRUE)
             return true;
         else
@@ -2626,10 +2641,10 @@ public:
             attrs[ind++] = &loginshell_attr;
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-            int compresult = LDAP_COMPARE_EXT_S(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"posixAccount",0,0,0);
+            int compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"posixAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
                 attrs[ind++] = &oc_attr;
-            compresult = LDAP_COMPARE_EXT_S(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"shadowAccount",0,0,0);
+            compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"shadowAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
                 attrs[ind++] = &oc1_attr;
             attrs[ind] = NULL;
@@ -2642,7 +2657,7 @@ public:
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-            int compresult = LDAP_COMPARE_EXT_S(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"posixAccount",0,0,0);
+            int compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"posixAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
             {
                 rc = LDAP_SUCCESS;

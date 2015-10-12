@@ -40,11 +40,43 @@
 #endif
 
 #ifdef _WIN32
-    #define LDAP_COMPARE_EXT_S(ld,dn,attr,bval,svrctrls,clientctrls,msgnum) ldap_compare_ext_s(ld,(char*)dn,(char*)attr,(struct berval *)bval,svrctrls,clientctrls,msgnum)
-    #define LDAP_UNBIND(ld) ldap_unbind(ld)
+    #ifndef LDAPSECURITY_EXPORTS
+        #define LDAPSECURITY_API __declspec(dllimport)
+    #else
+        #define LDAPSECURITY_API __declspec(dllexport)
+    #endif//LDAPSECURITY_EXPORTS
 #else
-    #define LDAP_COMPARE_EXT_S(ld,dn,attr,bval,svrctrls,clientctrls,msgnum) ldap_compare_ext_s(ld,(char*)dn,(char*)attr,(struct berval *)bval,svrctrls,clientctrls)
-    #define LDAP_UNBIND(ld) ldap_unbind_ext(ld,0,0)
+    #define LDAPSECURITY_API
+#endif //_WIN32
+
+#ifdef _WIN32
+/*from Winldap.h
+WINLDAPAPI ULONG LDAPAPI ldap_compare_ext_s(
+        LDAP *ld,
+        const PCHAR dn,
+        const PCHAR Attr,
+        const PCHAR Value,            // either value or Data is not null, not both
+        struct berval   *Data,
+        PLDAPControlA   *ServerControls,
+        PLDAPControlA   *ClientControls
+        );
+*/
+    #define LDAP_COMPARE_EXT_S(ld,dn,attr,bval,data,svrctrls,clientctrls) ldap_compare_ext_s(ld,(const PCHAR)dn,(const PCHAR)attr,(const PCHAR)bval,(struct berval *)data,svrctrls,clientctrls)
+    #define LDAP_UNBIND(ld)     ldap_unbind(ld)
+    #define LDAP_INIT(ld,uri)   ldap_init(ld, uri);
+#else
+/* from openLDAP ldap.h
+ldap_compare_ext_s LDAP_P((
+    LDAP            *ld,
+    LDAP_CONST char *dn,
+    LDAP_CONST char *attr,
+    struct berval   *bvalue,
+    LDAPControl    **serverctrls,
+    LDAPControl    **clientctrls ));
+*/
+    #define LDAP_COMPARE_EXT_S(ld,dn,attr,bval,svrctrls,clientctrls,msgnum) ldap_compare_ext_s(ld,(const char*)dn,(const char*)attr,(struct berval *)bval,svrctrls,clientctrls)
+    #define LDAP_UNBIND(ld)     ldap_unbind_ext(ld,0,0)
+    #define LDAP_INIT(ld,uri)   ldap_initialize(ld, uri);
 #endif
 
 #ifdef _WIN32
@@ -108,9 +140,9 @@ enum ResourceField
     RFnumeric = 1024
 };
 
-extern __declspec(dllimport) const char* getUserFieldNames(UserField feild);
-extern __declspec(dllimport) const char* getGroupFieldNames(GroupField feild);
-extern __declspec(dllimport) const char* getResourceFieldNames(ResourceField feild);
+extern LDAPSECURITY_API  const char* getUserFieldNames(UserField feild);
+extern LDAPSECURITY_API  const char* getGroupFieldNames(GroupField feild);
+extern LDAPSECURITY_API  const char* getResourceFieldNames(ResourceField feild);
 
 typedef IIteratorOf<IPropertyTree> ISecItemIterator;
 
