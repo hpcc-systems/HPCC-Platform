@@ -22,7 +22,7 @@
       </varlistentry>
     </variablelist></para>
 
-  <sect2>
+  <sect2 id="UnityLauncher_AddIcon">
     <title><emphasis role="bold">To add the icon:</emphasis></title>
 
     <orderedlist numeration="arabic">
@@ -74,7 +74,7 @@
     </variablelist>
   </sect2>
 
-  <sect2>
+  <sect2 id="UnityLauncher_UseIcon">
     <title><emphasis role="bold">To use the icon:</emphasis></title>
 
     <orderedlist numeration="arabic">
