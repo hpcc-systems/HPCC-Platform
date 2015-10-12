@@ -149,8 +149,9 @@ set (    INCLUDES
         jvmem.hpp
         )
 
-set_source_files_properties (jmalloc.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
-
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+    set_source_files_properties (jmalloc.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
+endif ()
 
 include_directories ( 
          ../../system/win32 

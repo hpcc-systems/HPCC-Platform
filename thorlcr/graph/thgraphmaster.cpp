@@ -1344,7 +1344,7 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
 {
     unsigned groupSizeExcludingMaster = comm.queryGroup().ordinality() - 1;
 
-    mptag_t replyTag;
+    mptag_t replyTag = TAG_NULL;
     if (!sendOnly)
     {
         replyTag = queryJobChannel(0).queryMPServer().createReplyTag();

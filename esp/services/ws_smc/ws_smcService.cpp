@@ -517,7 +517,7 @@ bool CActivityInfo::checkSetUniqueECLWUID(const char* wuid)
     bool* idFound = uniqueECLWUIDs.getValue(wuid);
     if (!idFound || !*idFound)
         uniqueECLWUIDs.setValue(wuid, true);
-    return idFound;
+    return idFound && *idFound;
 }
 
 CWsSMCTargetCluster* CActivityInfo::findWUClusterInfo(const char* wuid, bool isOnECLAgent, CIArrayOf<CWsSMCTargetCluster>& targetClusters,

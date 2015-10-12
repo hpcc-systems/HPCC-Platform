@@ -7360,7 +7360,7 @@ public:
 
     static RoxieSortAlgorithm useAlgorithm(const char *algorithmName, unsigned sortFlags)
     {
-        RoxieSortAlgorithm sortAlgorithm;
+        RoxieSortAlgorithm sortAlgorithm = unknownSortAlgorithm;
         if (!algorithmName)
             algorithmName = "";
         if (stricmp(algorithmName, "quicksort")==0)

@@ -1327,7 +1327,6 @@ void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &s
         if(!fn || !*fn)
             continue;
 
-        DeleteActionResult ar;
         if (DeleteActionFailure==doDeleteFile(fn, userdesc, superFiles, failedFiles, returnStr, actionResults, superFilesOnly, removeFromSuperfiles, deleteRecursively))
             failedFiles.appendUniq(fn);
     }
