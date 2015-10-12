@@ -39,7 +39,7 @@
   encrypted and secure. The Public and Private Keys use 1024-bit RSA
   encryption.</para>
 
-  <sect2>
+  <sect2 id="ConfigureESP_GenerateRSAPrivateKey">
     <title><emphasis role="bold">Generate an RSA Private
     Key</emphasis></title>
 
@@ -61,7 +61,7 @@
     enter it into the Configuration Manager later.</emphasis></para>
   </sect2>
 
-  <sect2 role="brk">
+  <sect2 id="ConfigureESP_GenerateCSReq" role="brk">
     <title><emphasis role="bold">Generate a CSR (Certificate Signing
     Request)</emphasis></title>
 
@@ -140,7 +140,7 @@
       </informaltable></para>
   </sect2>
 
-  <sect2>
+  <sect2 id="ConfigureESP_GenerateSelf-Signed_Certificate">
     <title><emphasis role="bold">Generate a Self-Signed
     Certificate</emphasis></title>
 
@@ -153,7 +153,7 @@
     your CSR.</para>
   </sect2>
 
-  <sect2>
+  <sect2 id="ConfigureESP_InstallPrivateKeyandCertificate">
     <title><emphasis role="bold">Installing the Private Key and Certificate to
     your ESP Server</emphasis></title>
 
@@ -169,11 +169,11 @@ sudo cp server.key /var/lib/HPCCSystems/myesp/privatekey.cer
 </programlisting>
   </sect2>
 
-  <sect2 role="brk">
+  <sect2 id="ConfigureHTTPSonESPServer" role="brk">
     <title><emphasis role="bold">Configure HTTPS on your ESP
     Server</emphasis></title>
 
-    <sect3>
+    <sect3 id="Start_ConfigMgrAdvancedMode">
       <title><emphasis role="bold">Start Configuration Manager in Advanced
       Mode</emphasis></title>
 
@@ -227,7 +227,7 @@ sudo cp server.key /var/lib/HPCCSystems/myesp/privatekey.cer
       </orderedlist>
     </sect3>
 
-    <sect3 role="brk">
+    <sect3 id="Configure_ESP_forHTTPS" role="brk">
       <title><emphasis role="bold">Configure ESP</emphasis></title>
 
       <orderedlist numeration="arabic">
@@ -264,7 +264,7 @@ sudo cp server.key /var/lib/HPCCSystems/myesp/privatekey.cer
       </orderedlist>
     </sect3>
 
-    <sect3>
+    <sect3 id="ConfigureOneorMoreSSLEnabledServiceBindings">
       <title><emphasis role="bold">Configure one or more SSL-Enabled Service
       Bindings</emphasis></title>
 
@@ -323,7 +323,7 @@ sudo cp server.key /var/lib/HPCCSystems/myesp/privatekey.cer
     </sect3>
   </sect2>
 
-  <sect2 role="brk">
+  <sect2 id="DistributeEnvironmentConfigFileToAllNodes" role="brk">
     <title><emphasis role="bold">Distribute the environment configuration file
     to all nodes, Restart, and Certify</emphasis></title>
 

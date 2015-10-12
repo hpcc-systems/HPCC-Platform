@@ -189,7 +189,7 @@ static AtomRefTable *keyTable, *keyTableNC;
 static CAttrValHashTable *attrHT=NULL;
 AttrValue **AttrMap::freelist=NULL; 
 unsigned AttrMap::freelistmax=0; 
-CLargeMemoryAllocator AttrMap::freeallocator((size32_t)-1,0x1000*sizeof(AttrValue),true);
+CLargeMemoryAllocator AttrMap::freeallocator((memsize_t)-1,0x1000*sizeof(AttrValue),true);
 
 
 MODULE_INIT(INIT_PRIORITY_JPTREE)

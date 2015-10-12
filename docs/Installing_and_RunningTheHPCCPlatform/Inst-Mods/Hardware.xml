@@ -199,10 +199,10 @@
           </mediaobject>
         </figure></para>
 
-      <sect2>
+      <sect2 id="LoadBalancerRequirements">
         <title>Load Balancer Requirements</title>
 
-        <sect3>
+        <sect3 id="LoadBalancer_MinimumRequirements">
           <title>Minimum requirements</title>
 
           <para><itemizedlist spacing="compact">
@@ -220,7 +220,7 @@
             </itemizedlist></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="LoadBalancer_StandardRequirements">
           <title>Standard requirements</title>
 
           <para><itemizedlist spacing="compact">
@@ -239,7 +239,7 @@
             </itemizedlist></para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="LoadBalancer_RecommendedCapabilities" role="brk">
           <title>Recommended capabilities</title>
 
           <para><itemizedlist spacing="compact">

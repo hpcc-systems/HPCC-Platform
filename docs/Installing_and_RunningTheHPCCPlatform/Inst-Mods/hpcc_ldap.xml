@@ -47,14 +47,14 @@
     </tgroup>
   </informaltable>
 
-  <sect2>
+  <sect2 id="Using_htpasswd_Authentication">
     <title>Using htpasswd authentication</title>
 
     <para>htpasswd provides basic password authentication to the entire
     system. This section contains the information to install and implement
     htpasswd authentication.</para>
 
-    <sect3>
+    <sect3 id="htpasswd_ConnectToConfigMgr">
       <title>Connect to Configuration Manager</title>
 
       <para>In order to change the configuration for HPCC components, connect
@@ -118,7 +118,7 @@
       </orderedlist>
     </sect3>
 
-    <sect3>
+    <sect3 id="Enabling_htpasswd_AUthentication">
       <title>Enabling htpasswd authentication in HPCC</title>
 
       <orderedlist continuation="continues">
@@ -180,7 +180,7 @@
       </orderedlist>
     </sect3>
 
-    <sect3>
+    <sect3 id="htpasswd_UserAdminWhtpasswd">
       <title>User administration with htpasswd</title>
 
       <para>Users and passwords are kept in the htpasswd file. The htpasswd
@@ -205,7 +205,7 @@
     </sect3>
   </sect2>
 
-  <sect2 role="brk">
+  <sect2 id="Using_LDAP_Authentication" role="brk">
     <title>Using LDAP Authentication</title>
 
     <para>This section contains the information to install and implement LDAP
@@ -217,7 +217,7 @@
 
     <!--***Note: (9/2014) Adding Documentation for initLdap.*** -->
 
-    <sect3>
+    <sect3 id="UsingLDAP_ConnectToConfigMgr">
       <title>Connect to Configuration Manager</title>
 
       <para>In order to change the configuration for HPCC components, connect
@@ -265,7 +265,7 @@
     </sect3>
   </sect2>
 
-  <sect2>
+  <sect2 id="UsingLDAP_ModifyingConfiguration">
     <title>Modifying the configuration</title>
 
     <para>Follow the steps below to modify your configuration.</para>
@@ -346,7 +346,7 @@
     </orderedlist>
   </sect2>
 
-  <sect2>
+  <sect2 id="UsingLDAP_Adding_ldapServer_component">
     <title>Adding the ldapServer component</title>
 
     <para>After the LDAP Server node has been added to the Hardware
@@ -599,7 +599,7 @@
       </informaltable></para>
   </sect2>
 
-  <sect2>
+  <sect2 id="UsingLDAP_Installing_Default_AdminUser">
     <title>Installing the Default Admin user</title>
 
     <para>After enabling your configuration for LDAP security, you must copy
@@ -610,7 +610,7 @@
     the <emphasis role="bold">initldap</emphasis> utility that initializes the
     security components and the default users.</para>
 
-    <sect3>
+    <sect3 id="UsingLDAP_theInitldapUtility">
       <title>The initldap Utility</title>
 
       <para>The initldap utility creates the HPCC Administrator's user account
@@ -642,7 +642,7 @@ Proceed?  y/n
 </programlisting></para>
     </sect3>
 
-    <sect3>
+    <sect3 id="UsingLDAP_Using_addScopesTool">
       <title>Using the addScopes tool</title>
 
       <para>When a new ESP user account is created, a private
