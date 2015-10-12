@@ -17,7 +17,7 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> </para>
+      email to <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Please include <emphasis role="bold">Documentation
       Feedback</emphasis> in the subject line and reference the document name,
@@ -25,13 +25,13 @@
       message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. </para>
+      of Reed Elsevier Properties Inc., used under license.</para>
 
       <para>HPCC Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. </para>
+      registered trademarks of their respective companies.</para>
 
       <para>All names and example data used in this manual are fictitious. Any
       similarity to actual persons, living or dead, is purely
@@ -58,7 +58,7 @@
     </mediaobject>
   </bookinfo>
 
-  <chapter>
+  <chapter id="ECL_Programming_Concepts">
     <title>ECL Programming Concepts</title>
 
     <xi:include href="ECLProgrammersGuide/PRG_Mods/PrG_Attribute_Creation.xml"
@@ -106,7 +106,7 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="WorkingWithSuperFiles">
     <title>Working With SuperFiles</title>
 
     <xi:include href="ECLProgrammersGuide/PRG_Mods/PrG_Superfile_Overview.xml"
@@ -126,7 +126,7 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="ProgGuide_WorkingWithRoxie">
     <title>Working With Roxie</title>
 
     <xi:include href="ECLProgrammersGuide/PRG_Mods/PrG_Roxie_Overview.xml"
@@ -158,7 +158,7 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="GettingThingsDone">
     <title>Getting Things Done</title>
 
     <xi:include href="ECLProgrammersGuide/PRG_Mods/PrG_Cartesian_Product_of_Two_Datasets.xml"

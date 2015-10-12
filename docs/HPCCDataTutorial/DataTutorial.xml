@@ -68,7 +68,7 @@
     </mediaobject>
   </bookinfo>
 
-  <chapter>
+  <chapter id="DataTutorialIntroduction">
     <title>Introduction</title>
 
     <sect1 id="Introduction_Case-Study-and-Tutorial" role="nobrk">

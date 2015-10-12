@@ -187,7 +187,7 @@
         </orderedlist></para>
     </sect3>
 
-    <sect3 role="brk">
+    <sect3 id="UsingSecurity_SettingAndModifyingUserPermissions" role="brk">
       <title>Setting and modifying user permissions</title>
 
       <para>Access to ECL Watch and its features is controlled using a login
@@ -238,7 +238,7 @@
       <para>All current users are identified in the list by their Username and
       Full Name.</para>
 
-      <sect4>
+      <sect4 id="UsingSecurity_AddANewUser">
         <title>To add a new user to the list of authenticated users:</title>
 
         <para>To add a new user you must have Administrator level access.
@@ -293,7 +293,7 @@
         details and set permissions as required.</para>
       </sect4>
 
-      <sect4>
+      <sect4 id="UsingSecurity_ModifyUsersDetails">
         <title>To modify a user's details:</title>
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
@@ -345,7 +345,7 @@
         </orderedlist>
       </sect4>
 
-      <sect4>
+      <sect4 id="UsingSecurity_AddAUserToAGroup">
         <title>To add a user to a group:</title>
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
@@ -403,7 +403,7 @@
         </orderedlist>
       </sect4>
 
-      <sect4>
+      <sect4 id="UsingSecurity_PromoteUsertoAdministrator">
         <title>To promote a user to an Administrator</title>
 
         <para>To modify a users credentials you must have Administrator level
@@ -475,7 +475,7 @@
         </orderedlist>
       </sect4>
 
-      <sect4>
+      <sect4 id="UsingSecurity_DeleteUserFromGroup">
         <title>To delete a user from a group:</title>
 
         <para>To delete a user you must have Administrator level
@@ -530,7 +530,7 @@
           </orderedlist></para>
       </sect4>
 
-      <sect4>
+      <sect4 id="UsingSecurity_ChangeUsersPassword">
         <title>To change a user's password:</title>
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
@@ -583,7 +583,7 @@
         </orderedlist>
       </sect4>
 
-      <sect4>
+      <sect4 id="UsingSecurity_DeleteUserFromListofAuthenticatedUsers">
         <title>To delete a user from the list of authenticated users:</title>
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
@@ -616,7 +616,7 @@
       </sect4>
     </sect3>
 
-    <sect3>
+    <sect3 id="UsingSecurity_SettingPermissionsForIndividualUser">
       <title>Setting permissions for an individual user</title>
 
       <para>There may be occasions when you need to modify the permissions for
@@ -719,7 +719,7 @@
       </sect4>
     </sect3>
 
-    <sect3>
+    <sect3 id="UsingSecurity_SettingUpModifyingGroupPermissions">
       <title>Setting and modifying group permissions</title>
 
       <para>Setting up groups ensures that all users with the same permission
@@ -748,7 +748,7 @@
           </listitem>
         </itemizedlist></para>
 
-      <sect4>
+      <sect4 id="UsingSecurity_AddingEditingGroups">
         <title>Adding and editing groups</title>
 
         <para>When adding or changing the permissions for a group, all members
@@ -764,7 +764,7 @@
         Click on the <emphasis role="bold">Groups</emphasis> tab.</para>
       </sect4>
 
-      <sect4>
+      <sect4 id="UsingSecurity_ToAddNewGroup">
         <title>To add a new group:</title>
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
@@ -804,7 +804,7 @@
           </orderedlist></para>
       </sect4>
 
-      <sect4>
+      <sect4 id="UsingSecurity_ToDeleteGroup">
         <title>To delete a group:</title>
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
@@ -836,7 +836,7 @@
           </orderedlist></para>
       </sect4>
 
-      <sect4>
+      <sect4 id="UsingSecurity_ToAddNewMembersToGroup">
         <title>To add new members to a group:</title>
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
@@ -886,7 +886,7 @@
           </orderedlist></para>
       </sect4>
 
-      <sect4>
+      <sect4 id="UsingSecurity_ToDeleteMembersFromGroup">
         <title>To delete members from a group:</title>
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
@@ -937,7 +937,7 @@
       </sect4>
     </sect3>
 
-    <sect3>
+    <sect3 id="UsingSecurity_SettingPermissionsForGroup">
       <title>Setting permissions for a group</title>
 
       <para>By default, all users are members of the <emphasis
@@ -963,7 +963,7 @@
       access, and the user is in another group where file access is allowed,
       that user will still not have file access.</para>
 
-      <sect4>
+      <sect4 id="UsingSecurity_ToSetPermissionsForGroup">
         <title>To set permissions for a group:</title>
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
@@ -1086,7 +1086,7 @@
     </itemizedlist>
   </sect2>
 
-  <sect2 id="Feature_Resourcesl" role="brk">
+  <sect2 id="Feature_Resources" role="brk">
     <title>Feature resources</title>
 
     <para>There are three types of features for which you can set up access
@@ -1105,7 +1105,7 @@
     <para>ECL Watch feature permission settings that are not listed are not
     relevant and should not be used.</para>
 
-    <sect3>
+    <sect3 id="ModifyPermissionsFeatureResource">
       <title>Modify permissions for a feature resource:</title>
 
       <para>To use the feature permissions, you must apply them to a user or
@@ -1172,13 +1172,13 @@
       </orderedlist>
     </sect3>
 
-    <sect3>
+    <sect3 id="FeaturePermissions">
       <title>Feature Permissions</title>
 
       <para>The following sections show the level of access required to be
       able to use ECL Watch features:</para>
 
-      <sect4>
+      <sect4 id="FeaturePermissions_Login">
         <title>Login</title>
 
         <para>SMCAccess is required by all users to be able to successfully
@@ -1213,7 +1213,7 @@
           </informaltable></para>
       </sect4>
 
-      <sect4>
+      <sect4 id="FeaturePermissions_Cluster">
         <title>Clusters</title>
 
         <para>Users may be given access to the thor queue which can be
@@ -1265,7 +1265,7 @@
           </informaltable></para>
       </sect4>
 
-      <sect4>
+      <sect4 id="FeaturePermissions_ECLWorkunits">
         <title>ECL Workunits</title>
 
         <para>Workunits can also be viewed using this feature of ECL Watch.
@@ -1341,7 +1341,7 @@
           </informaltable></para>
       </sect4>
 
-      <sect4>
+      <sect4 id="FeaturePermissions_Topology">
         <title>Topology</title>
 
         <para>This section shows details about the clusters and other HPCC
@@ -1419,7 +1419,7 @@
           </informaltable></para>
       </sect4>
 
-      <sect4>
+      <sect4 id="FeaturePermissions_DFUWorkunits">
         <title>DFU Workunits</title>
 
         <para>A user must have permission to view DFU Workunits and requires
@@ -1463,7 +1463,7 @@
           </informaltable></para>
       </sect4>
 
-      <sect4>
+      <sect4 id="FeaturePermissions_DFUFiles">
         <title>DFU Files</title>
 
         <para>Users need permission to see files on the dropzone and also to
@@ -1632,7 +1632,7 @@
         </informaltable>
       </sect4>
 
-      <sect4>
+      <sect4 id="FeaturePermissions_RoxieQueries">
         <title>Roxie Queries</title>
 
         <para>Additional permission is required to view roxie queries in ECL
@@ -1667,7 +1667,7 @@
           </informaltable></para>
       </sect4>
 
-      <sect4>
+      <sect4 id="FeaturePermissions_UserPermissions">
         <title>Users/Permissions</title>
 
         <para>To be able to view the <emphasis
@@ -1679,7 +1679,7 @@
     </sect3>
   </sect2>
 
-  <sect2>
+  <sect2 id="FeaturePermissions_FileAccessControl">
     <title><emphasis role="bold">File Access Control</emphasis></title>
 
     <para>The HPCC’s LDAP <emphasis role="bold">Dali Server</emphasis>
@@ -1803,7 +1803,7 @@
       </listitem>
     </orderedlist>
 
-    <sect3>
+    <sect3 id="AddingFileScopes_SettingScopePermissions">
       <title>Setting permissions for file scopes</title>
 
       <para>You must apply permissions for file scopes to users or group(s).
@@ -1872,7 +1872,7 @@
       </orderedlist>
     </sect3>
 
-    <sect3>
+    <sect3 id="Security_FileScopeFeatures">
       <title>File scope features</title>
 
       <para>Below the List of File Scopes, there are buttons that allow you
@@ -1933,7 +1933,7 @@
     </sect3>
   </sect2>
 
-  <sect2>
+  <sect2 id="Security_WorkunitAccessControl">
     <title>Workunit Access Control</title>
 
     <para>There are 2 aspects of workunit (WU) security:</para>
@@ -1978,7 +1978,7 @@
 
     <para><programlisting>#workunit(‘scope’,’MyScopeValue’);</programlisting></para>
 
-    <sect3>
+    <sect3 id="Securing_Workunit_Scopes">
       <title>Securing workunit scopes</title>
 
       <para>ESP (on startup) automatically creates an LDAP OU called <emphasis
@@ -1997,7 +1997,7 @@
       .</emphasis></para>
     </sect3>
 
-    <sect3>
+    <sect3 id="Workunits_Feature_Permissions">
       <title>Workunits feature permissions</title>
 
       <para>Using the <emphasis role="bold">Workunit Scopes</emphasis> feature
@@ -2088,7 +2088,7 @@
       </listitem>
     </orderedlist>
 
-    <sect3>
+    <sect3 id="UsingSecurity_SetScopePermissions">
       <title>Set permissions to the scope.</title>
 
       <para>You apply the workunit scopes to a group. If you want to apply the
