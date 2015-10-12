@@ -60,7 +60,7 @@
 
 const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration" };
 
-extern __declspec(dllimport) const char* getUserFieldNames(UserField field)
+const char* getUserFieldNames(UserField field)
 {
     if (field < UFterm)
         return UserFieldNames[field];
@@ -69,7 +69,7 @@ extern __declspec(dllimport) const char* getUserFieldNames(UserField field)
 
 const char* GroupFieldNames[] = { "@name", "@managedby", "@desc" };
 
-extern __declspec(dllimport) const char* getGroupFieldNames(GroupField field)
+const char* getGroupFieldNames(GroupField field)
 {
     if (field < GFterm)
         return GroupFieldNames[field];
@@ -78,7 +78,7 @@ extern __declspec(dllimport) const char* getGroupFieldNames(GroupField field)
 
 const char* ResourceFieldNames[] = { "@name", "@desc" };
 
-extern __declspec(dllimport) const char* getResourceFieldNames(ResourceField field)
+const char* getResourceFieldNames(ResourceField field)
 {
     if (field < RFterm)
         return ResourceFieldNames[field];
@@ -1130,10 +1130,13 @@ private:
                 }
             }
 
-            int l_errcode;
+            unsigned long l_errcode;
             LDAPControl **  returnedCtrls = NULL;
+#ifdef _WIN32
             rc = ldap_parse_result(m_pLdapConn, m_pPageBlock, &l_errcode, NULL, NULL, NULL, &returnedCtrls, false);
-
+#else
+            rc = ldap_parse_result(m_pLdapConn, m_pPageBlock, (int*)&l_errcode, NULL, NULL, NULL, &returnedCtrls, false);
+#endif
             if (m_pCookie)
             {
                 ber_bvfree(m_pCookie);
@@ -1147,8 +1150,12 @@ private:
             }
 
             pageCtrlMem.setRetControls(returnedCtrls);
-            int totCount;
+            unsigned long totCount;
+#ifdef _WIN32
             rc = ldap_parse_page_control(m_pLdapConn, returnedCtrls, &totCount, &m_pCookie);//sets cookie for next call to ldap_create_page_control()
+#else
+            rc = ldap_parse_page_control(m_pLdapConn, returnedCtrls, (int*)&totCount, &m_pCookie);//sets cookie for next call to ldap_create_page_control()
+#endif
             if (rc != LDAP_SUCCESS)
             {
                 int err = GetLastError();
@@ -2485,7 +2492,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-        int rc = LDAP_COMPARE_EXT_S(ld, (char*)groupdn, (char*)fldname, (char*)userdn,0,0,0);
+        int rc = LDAP_COMPARE_EXT_S(ld, (const char*)groupdn, (const char*)fldname, (const char*)userdn,0,0,0);
         if(rc == LDAP_COMPARE_TRUE)
             return true;
         else
@@ -2634,10 +2641,10 @@ public:
             attrs[ind++] = &loginshell_attr;
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-            int compresult = LDAP_COMPARE_EXT_S(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"posixAccount",0,0,0);
+            int compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"posixAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
                 attrs[ind++] = &oc_attr;
-            compresult = LDAP_COMPARE_EXT_S(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"shadowAccount",0,0,0);
+            compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"shadowAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
                 attrs[ind++] = &oc1_attr;
             attrs[ind] = NULL;
@@ -2650,7 +2657,7 @@ public:
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-            int compresult = LDAP_COMPARE_EXT_S(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"posixAccount",0,0,0);
+            int compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"posixAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
             {
                 rc = LDAP_SUCCESS;

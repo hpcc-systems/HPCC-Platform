@@ -68,7 +68,7 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
         StringBuffer uri("ldaps://");
         uri.appendf("%s:%d", host, secure_port);
         DBGLOG("connecting to %s", uri.str());
-        int rc = ldap_initialize(&ld, uri.str());
+        int rc = LDAP_INIT(&ld, uri.str());
         if(rc != LDAP_SUCCESS)
         {
             DBGLOG("ldap_initialize error %s", ldap_err2string(rc));
@@ -84,7 +84,7 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
         StringBuffer uri;
         uri.appendf("ldap://%s:%d", host, port);
         DBGLOG("connecting to %s", uri.str());
-        int rc = ldap_initialize(&ld, uri.str());
+        int rc = LDAP_INIT(&ld, uri.str());
         if(rc != LDAP_SUCCESS)
         {
             throw MakeStringException(-1, "ldap_initialize(%s) error %s", uri.str(), ldap_err2string(rc));
