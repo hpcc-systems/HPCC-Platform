@@ -1099,9 +1099,10 @@ private:
             return false;
 
         CPageControlMemWrapper pageCtrlMem;
-
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
         try
         {
+#ifdef LDAP_API_FEATURE_PAGED_RESULTS
             LDAPControl * pageControl = NULL;
             int rc = ldap_create_page_control(m_pLdapConn, MAX_ENTRIES, m_pCookie, false, &pageControl);//cookie gets set on first call to ldap_parse_page_control()
             if (rc != LDAP_SUCCESS)
@@ -1114,7 +1115,6 @@ private:
 
             if (m_pPageBlock)
                 ldap_msgfree(m_pPageBlock);
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};
             rc = ldap_search_ext_s(m_pLdapConn, m_pszDN, m_scope, m_pszFilter, m_pszAttrs, 0, svrCtrls, NULL, &timeOut, 0, &m_pPageBlock);
             if (rc != LDAP_SUCCESS)
             {
@@ -1157,6 +1157,14 @@ private:
 
             if (!(m_pCookie && m_pCookie->bv_val != NULL && (strlen(m_pCookie->bv_val) > 0)))
                 m_morePages = false;
+#else
+            int rc = ldap_search_ext_s(m_pLdapConn, m_pszDN, m_scope, m_pszFilter, m_pszAttrs, 0, NULL, NULL, &timeOut, 0, &m_pPageBlock);
+            m_morePages = false;
+            if (rc != LDAP_SUCCESS)
+            {
+                throw MakeStringException(-1, "ldap_search_ext_s failed with 0x%x (%s)",rc, ldap_err2string( rc ));
+            }
+#endif
         }
 
         catch(IException* e)
