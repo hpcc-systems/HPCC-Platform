@@ -1030,7 +1030,7 @@ public:
 
 // IExceptionHandler
     bool fireException(IException *e);
-    void processAndThrowOwnedException(IException * e) __attribute__((noreturn));
+    __declspec(noreturn) void processAndThrowOwnedException(IException * e) __attribute__((noreturn));
 
     virtual IEngineRowAllocator * queryRowAllocator();  
     virtual IOutputRowSerializer * queryRowSerializer(); 

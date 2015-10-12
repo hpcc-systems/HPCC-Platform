@@ -23,12 +23,12 @@
 #include "jiface.hpp"
 
 class StringBuffer;
-class IPropertyTree;
-class IPropertyTreeIterator;
+interface IPropertyTree;
+interface IPropertyTreeIterator;
 
-class IEspStatusReport;
-class IEspComponentStatus;
-class IConstComponentStatus;
+interface IEspStatusReport;
+interface IEspComponentStatus;
+interface IConstComponentStatus;
 template<class IEspComponentStatus> class IArrayOf;
 
 
