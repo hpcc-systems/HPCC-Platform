@@ -31,17 +31,6 @@ class IEspComponentStatus;
 class IConstComponentStatus;
 template<class IEspComponentStatus> class IArrayOf;
 
-
-#ifdef WIN32
-    #ifdef SMCLIB_EXPORTS
-        #define COMPONENTSTATUS_API __declspec(dllexport)
-    #else
-        #define COMPONENTSTATUS_API __declspec(dllimport)
-    #endif
-#else
-    #define COMPONENTSTATUS_API
-#endif
-
 class IESPComponentStatusInfo : public IInterface
 {
 public:
