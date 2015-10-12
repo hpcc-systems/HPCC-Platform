@@ -11,7 +11,8 @@
     </indexterm><indexterm>
       <primary>RemoveOwnedSubFiles</primary>
     </indexterm>(</emphasis> <emphasis> superfile</emphasis><emphasis
-  role="bold">)</emphasis></para>
+  role="bold"> [</emphasis> <emphasis>, delete</emphasis> <emphasis
+  role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -28,6 +29,15 @@
         </row>
 
         <row>
+          <entry><emphasis>delete</emphasis></entry>
+
+          <entry>A boolean flag specifying to delete the sub-files from disk
+          when TRUE or just remove them from the <emphasis>superfile
+          </emphasis>list of files. If omitted, the default is to just remove
+          them from the <emphasis>superfile </emphasis>list of files.</entry>
+        </row>
+
+        <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>Null.</entry>
@@ -41,7 +51,8 @@
   removed if they are soley owned by the superfile. If a subfile is co-owned,
   (i.e.,a member of any other superfile), then the removal is ignored.</para>
 
-  <para>This function may be included in a superfile transaction.</para>
+  <para>This function may be included in a superfile transaction, unless the
+  delete Flag is TRUE.</para>
 
   <para>Example:</para>
 
