@@ -847,7 +847,7 @@ public:
         priorityLevel = calcPriorityValue(&p);
         wuscope.set(p.queryProp("@scope"));
         appvalues.load(&p,"Application/*");
-        totalThorTime = nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), false));
+        totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), false));
         _isProtected = p.getPropBool("@protected", false);
     }
     virtual const char *queryWuid() const { return wuid.str(); }
@@ -3758,7 +3758,7 @@ unsigned CLocalWorkUnit::getDebugAgentListenerPort() const
 unsigned CLocalWorkUnit::getTotalThorTime() const
 {
     CriticalBlock block(crit);
-    return nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), false));
+    return (unsigned)nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), false));
 }
 
 void CLocalWorkUnit::setDebugAgentListenerPort(unsigned port)

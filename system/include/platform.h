@@ -107,6 +107,10 @@ typedef memsize_t rowsize_t;
 
 // **** END   OF X-PLATFORM SECTION ****
 #if defined(_WIN32)
+
+#define _CRT_SECURE_NO_WARNINGS
+#define NO_WARN_MBCS_MFC_DEPRECATION
+
 #if (_MSC_VER>=1300)
 #pragma warning(disable:4996)
 #endif

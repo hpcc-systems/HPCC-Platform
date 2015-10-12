@@ -164,7 +164,7 @@ bool ViewHelper::doit(FILE * fp)
 
                         const MemoryBuffer& resultbuf = res_resp->getResult();
                         count = res_resp->getCount();
-                        total = res_resp->getTotal();
+                        total = (int)res_resp->getTotal();
                         
                         if(format)
                         {

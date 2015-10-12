@@ -236,7 +236,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
     }
     if(auth_ok)
     {
-        for(i = 0; i < plist->count(); i++)
+        for(i = 0; i < (unsigned)plist->count(); i++)
         {
             ISecResource* resource = plist->queryResource(i);
             if(resource != NULL)

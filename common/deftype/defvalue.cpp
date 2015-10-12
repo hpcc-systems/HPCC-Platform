@@ -69,7 +69,7 @@ static double powerOfTen[] = {1e0, 1e1, 1e2, 1e3, 1e4,
                        1e25, 1e26, 1e27, 1e28, 1e29, 
                        1e30, 1e31, 1e32 };
 
-static unsigned __int64 maxUIntValue[]  =   { I64C(0), I64C(0xFF), I64C(0xFFFF), I64C(0xFFFFFF), I64C(0xFFFFFFFF), I64C(0xFFFFFFFFFF), I64C(0xFFFFFFFFFFFF), I64C(0xFFFFFFFFFFFFFF), I64C(0xFFFFFFFFFFFFFFFF) };
+static unsigned __int64 maxUIntValue[]  =   { I64C(0), I64C(0xFF), I64C(0xFFFF), I64C(0xFFFFFF), I64C(0xFFFFFFFF), I64C(0xFFFFFFFFFF), I64C(0xFFFFFFFFFFFF), I64C(0xFFFFFFFFFFFFFF), U64C(0xFFFFFFFFFFFFFFFF) };
 static __int64 maxIntValue[] =  { I64C(0), I64C(0x7F), I64C(0x7FFF), I64C(0x7FFFFF), I64C(0x7FFFFFFF), I64C(0x7FFFFFFFFF), I64C(0x7FFFFFFFFFFF), I64C(0x7FFFFFFFFFFFFF), I64C(0x7FFFFFFFFFFFFFFF) };
 
 int rangeCompare(double value, ITypeInfo * targetType)
