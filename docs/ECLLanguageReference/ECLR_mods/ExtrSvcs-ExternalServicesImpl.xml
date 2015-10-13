@@ -128,7 +128,9 @@
             </row>
 
             <row>
-              <entry><emphasis>INCLUDE</emphasis></entry>
+              <entry><emphasis>INCLUDE<indexterm>
+                  <primary>INCLUDE</primary>
+                </indexterm></emphasis></entry>
 
               <entry>Indicates the function prototype is in the specified
               include file, so the generated CPP must #include that file. If
@@ -144,7 +146,9 @@
             </row>
 
             <row>
-              <entry><emphasis>PURE</emphasis></entry>
+              <entry><emphasis>PURE<indexterm>
+                  <primary>PURE</primary>
+                </indexterm></emphasis></entry>
 
               <entry>Indicates the function returns the same result every time
               you call it with the same parameters and has no side effects.
@@ -153,12 +157,36 @@
             </row>
 
             <row>
-              <entry><emphasis>ONCE</emphasis></entry>
+              <entry><emphasis>ONCE<indexterm>
+                  <primary>ONCE</primary>
+                </indexterm></emphasis></entry>
 
               <entry>Indicates the function has no side effects and is
               evaluated at query execution time, even if the parameters are
               constant. This allows the optimizer to make more efficient calls
               to the function in some cases.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>FOLD<indexterm>
+                  <primary>FOLD</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Specifies that the function is evaluated at compile time
+              if all parameters are constants. Specifying FOLD to the SERVICE
+              applys it to all function definitions in the service - in such
+              cases NOFOLD may be useful to override this default for
+              individual functions that are not suitable for constant
+              folding.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>NOFOLD<indexterm>
+                  <primary>NOFOLD</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Specifies that the service is not suitable for constant
+              folding.</entry>
             </row>
 
             <row>
