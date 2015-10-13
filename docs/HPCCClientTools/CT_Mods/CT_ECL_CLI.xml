@@ -380,7 +380,8 @@ ecl deploy roxie - --name=FindPersonService
                 <row>
                   <entry>--ecl-only</entry>
 
-                  <entry>Send ECL query to HPCC as text rather than as a generated archive</entry>
+                  <entry>Send ECL query to HPCC as text rather than as a
+                  generated archive</entry>
                 </row>
 
                 <row>
@@ -603,8 +604,8 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                 <row>
                   <entry>--priority=&lt;val&gt;</entry>
 
-                  <entry> The priority for this query. Value can be LOW, HIGH,
-                  SLA, NONE. NONE will clear current setting. </entry>
+                  <entry>The priority for this query. Value can be LOW, HIGH,
+                  SLA, NONE. NONE will clear current setting.</entry>
                 </row>
 
                 <row>
@@ -668,7 +669,8 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                 <row>
                   <entry>--ecl-only</entry>
 
-                  <entry>Send ECL query to HPCC as text rather than as a generated archive</entry>
+                  <entry>Send ECL query to HPCC as text rather than as a
+                  generated archive</entry>
                 </row>
 
                 <row>
@@ -840,11 +842,13 @@ ecl unpublish roxie "FindpersonService*"
         <para><emphasis role="bold">Examples</emphasis>:</para>
 
         <programlisting>ecl run thor findperson.ecl --name=findperson --input=data.xml --wait=1000
+ecl run thor findperson.ecl -I C:\MyECL\
 ecl run thor W20150914-125557 --input=data.xml --wait=1000
 ecl run thor findperson --input=data.xml --wait=1000
 ecl run thor libW20150914-125557.so --input=data.xml --wait=1000
 ecl run thor - --input=data.xml --wait=1000
 ecl run thor findperson.ecl --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" 
+ecl run thor findperson.ecl -I C:\MyECL\ 
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -992,7 +996,8 @@ ecl run thor findperson.ecl --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName
                 <row>
                   <entry>--ecl-only</entry>
 
-                  <entry>Send ECL query to HPCC as text rather than as a generated archive</entry>
+                  <entry>Send ECL query to HPCC as text rather than as a
+                  generated archive</entry>
                 </row>
 
                 <row>
@@ -1017,14 +1022,14 @@ ecl run thor findperson.ecl --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName
                 </row>
 
                 <row>
-                  <entry>-Ipath</entry>
+                  <entry>-I &lt;path&gt;</entry>
 
-                  <entry>Add path to locations to search for ecl
-                  imports</entry>
+                  <entry>Add path to locations to search for ECL imports
+                  (e.g., -I C:\MyECL\ ) </entry>
                 </row>
 
                 <row>
-                  <entry>-Lpath</entry>
+                  <entry>-L &lt;path&gt;</entry>
 
                   <entry>Add path to locations to search for system
                   libraries</entry>
