@@ -33,10 +33,33 @@
 #include "SOAP/Platform/soapmessage.hpp"
 
 #include "espsession.ipp"
+#include "jhash.hpp"
 
+typedef enum espAuthState_
+{
+    authUnknown,
+    authRequired,
+    authProvided,
+    authSucceeded,
+    authPending,
+    authUpdatePassword,
+    authFailed
+} EspAuthState;
 
+struct EspAuthRequest
+{
+    IEspContext* ctx;
+    EspHttpBinding* authBinding;
+    IProperties* requestParams;
+    StringBuffer httpPath, httpMethod, serviceName, methodName;
+    sub_service stype = sub_serv_unknown;
+    bool isSoapPost;
+};
+
+interface IRemoteConnection;
 class CEspHttpServer : implements IHttpServerService, public CInterface
 {
+    CriticalSection critDaliSession;
 protected:
     ISocket&                m_socket;
     Owned<CHttpRequest>     m_request;
@@ -46,9 +69,33 @@ protected:
 
     bool m_viewConfig;
     int m_MaxRequestEntityLength;
+    int lastSessionCleanUpTime = 0;
 
     int unsupported();
     EspHttpBinding* getBinding();
+    EspAuthState checkUserAuth();
+    void readAuthRequest(EspAuthRequest& req);
+    EspAuthState preCheckAuth(EspAuthRequest& authReq);
+    EspAuthState checkUserAuthPerRequest(EspAuthRequest& authReq);
+    EspAuthState checkUserAuthPerSession(EspAuthRequest& authReq);
+    EspAuthState authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL);
+    EspAuthState authExistingSession(EspAuthRequest& req, unsigned sessionID);
+    void logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* domainSessions);
+    void askUserLogin(EspAuthRequest& authReq);
+    void handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq);
+    void handlePasswordExpired(bool sessionAuth);
+    EspHttpBinding* getEspHttpBinding(EspAuthRequest& req);
+    bool isAuthRequiredForBinding(EspAuthRequest& req);
+    void authOptionalGroups(EspAuthRequest& req);
+    unsigned createHTTPSession(EspAuthRequest& authReq, const char* loginURL);
+    void timeoutESPSessions(EspHttpBinding* authBinding, IPropertyTree* espSessions);
+    void addCookie(const char* cookieName, const char *cookieValue, int maxAgeSec);
+    void clearCookie(const char* cookieName);
+    unsigned readCookie(const char* cookieName);
+    const char* readCookie(const char* cookieName, StringBuffer& cookieValue);
+    void sendMessage(const char* msg, const char* msgType);
+    IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
+
 public:
     IMPLEMENT_IINTERFACE;
 

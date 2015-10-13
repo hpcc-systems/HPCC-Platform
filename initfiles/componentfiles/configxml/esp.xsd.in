@@ -408,11 +408,11 @@
 	                </xs:appinfo>
 	              </xs:annotation>
 	            </xs:attribute>
-	            <xs:attribute name="resourceURL" type="xs:string" use="optional" default="/favicon.ico,/esp/files/img/favicon.ico,/esp/files/eclwatch/img/Loginlogo.png,/esp/files/dojo/*,/esp/files/eclwatch/nls/*">
+	            <xs:attribute name="unrestrictedResources" type="xs:string" use="optional" default="/favicon.ico,/esp/files/*,/esp/xslt/*">
 	              <xs:annotation>
 	                <xs:appinfo>
 	                  <width>50</width>
-	                  <tooltip>Resource URL</tooltip>
+	                  <tooltip>unrestricted resources for user authentication</tooltip>
 	                  <colIndex>6</colIndex>
 	                </xs:appinfo>
 	              </xs:annotation>
@@ -867,6 +867,13 @@
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>Option string used by ESP memcached client.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="checkSessionTimeoutSeconds" type="xs:nonNegativeInteger" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Check Session Timeout in every given seconds.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>

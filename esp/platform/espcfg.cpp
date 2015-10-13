@@ -111,6 +111,47 @@ StringBuffer &CVSBuildToEspVersion(char const * tag, StringBuffer & out)
     return out;
 }
 
+void CEspConfig::ensureSDSSessionDomains()
+{
+    bool hasDefaultSessionDomain = false;
+    Owned<IPropertyTree> proc_cfg = getProcessConfig(m_envpt, m_process.str());
+    Owned<IPropertyTreeIterator> it = proc_cfg->getElements("AuthDomains/AuthDomain");
+    ForEach(*it)
+    {
+        IPropertyTree& authDomain = it->query();
+        const char* authType = authDomain.queryProp("@authType");
+        if (isEmptyString(authType) || (!strieq(authType, "AuthPerSessionOnly") && !strieq(authType, "AuthTypeMixed")))
+            continue;
+
+        const char* authDomainName = authDomain.queryProp("@name");
+        if (isEmptyString(authDomainName))
+        {
+            if (hasDefaultSessionDomain)
+                throw MakeStringException(-1, ">1 AuthDomains are not named.");
+
+            hasDefaultSessionDomain = true;
+            authDomainName = "default";
+        }
+
+        Owned<IRemoteConnection> conn = querySDS().connect(PathSessionRoot, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SESSION_SDS_LOCK_TIMEOUT);
+        if (!conn)
+            throw MakeStringException(-1, "Failed to connect to %s.", PathSessionRoot);
+
+        ensureESPSessionInTree(conn->queryRoot(), m_process.str());
+    }
+}
+
+void CEspConfig::ensureESPSessionInTree(IPropertyTree* sessionRoot, const char* procName)
+{
+    VStringBuffer xpath("%s[@name=\"%s\"]", PathSessionProcess, procName);
+    IPropertyTree* procSessionTree = sessionRoot->queryBranch(xpath.str());
+    if (!procSessionTree)
+    {
+        IPropertyTree* processSessionTree = sessionRoot->addPropTree(PathSessionProcess);
+        processSessionTree->setProp("@name", procName);
+    }
+}
+
 
 
 CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree* procpt, bool isDali)

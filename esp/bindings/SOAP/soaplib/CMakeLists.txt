@@ -59,6 +59,8 @@ include_directories(
     ./../../../../system/xmllib
     ./..
     ./../../../bindings/SOAP/xpp
+    ./../../../../system/mp 
+    ./../../../../dali/base
     )
 
 add_definitions(-DESPHTTP_EXPORTS)

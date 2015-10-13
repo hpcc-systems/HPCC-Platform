@@ -78,6 +78,8 @@ private:
     unsigned    m_exceptionTime;
     bool        m_hasException;
     int         m_exceptionCode;
+    StringAttr  authenticationMethod;
+    AuthType    domainAuthType;
 
     ESPSerializationFormat respSerializationFormat;
 
@@ -162,6 +164,16 @@ public:
     virtual const char * queryPassword()
     {
         return m_password.get();
+    }
+    virtual bool addUserToken(unsigned token)
+    {
+        if (!m_user)
+            return false;
+
+        MemoryBuffer buf;
+        buf.append(token);
+        m_user->credentials().addToken(&buf);
+        return true;
     }
 
     virtual void setRealm(const char* realm)
@@ -485,6 +497,19 @@ public:
         m_txSummary->clear();
         m_txSummary.clear();
     }
+
+    virtual void setAuthenticationMethod(const char* method)
+    {
+        authenticationMethod.set(method);
+    }
+
+    virtual const char * getAuthenticationMethod()
+    {
+        return authenticationMethod.get();
+    }
+
+    virtual void setDomainAuthType(AuthType type) { domainAuthType = type; }
+    virtual AuthType getDomainAuthType(){ return domainAuthType; }
 
     virtual ESPSerializationFormat getResponseFormat(){return respSerializationFormat;}
     virtual void setResponseFormat(ESPSerializationFormat fmt){respSerializationFormat = fmt;}

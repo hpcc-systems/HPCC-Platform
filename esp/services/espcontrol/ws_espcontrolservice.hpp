@@ -22,7 +22,15 @@
 
 class CWSESPControlEx : public CWSESPControl
 {
+    StringAttr espProcess;
+    MapStringTo<int> sessionTimeoutMinutesMap;
     IEspContainer* m_container;
+
+    const char* readSessionTimeStamp(int t, StringBuffer& str);
+    float readSessionTimeoutMin(int sessionTimeoutMinutes, int lastAccessed);
+    IRemoteConnection* querySDSConnection(const char* xpath, unsigned mode, unsigned timeout);
+    IEspSession* setSessionInfo(const char* sessionID, IPropertyTree* espSessionTree, unsigned port, IEspSession* session);
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -31,7 +39,12 @@ public:
         m_container = container;
     }
 
+    virtual void init(IPropertyTree *cfg, const char *process, const char *service);
     virtual bool onSetLogging(IEspContext &context, IEspSetLoggingRequest &req, IEspSetLoggingResponse &resp);
+    virtual bool onSessionQuery(IEspContext& context, IEspSessionQueryRequest& req, IEspSessionQueryResponse& resp);
+    virtual bool onSessionInfo(IEspContext& context, IEspSessionInfoRequest& req, IEspSessionInfoResponse& resp);
+    virtual bool onCleanSession(IEspContext& context, IEspCleanSessionRequest& req, IEspCleanSessionResponse& resp);
+    virtual bool onSetSessionTimeout(IEspContext& context, IEspSetSessionTimeoutRequest& req, IEspSetSessionTimeoutResponse& resp);
 };
 
 #endif //_ESPWIZ_ws_espcontrol_HPP__

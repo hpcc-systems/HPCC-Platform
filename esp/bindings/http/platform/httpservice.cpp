@@ -34,6 +34,7 @@
 #include "http/platform/httptransport.hpp"
 
 #include "htmlpage.hpp"
+#include "dasds.hpp"
 
 /***************************************************************************
  *              CEspHttpServer Implementation
@@ -93,17 +94,6 @@ CEspHttpServer::~CEspHttpServer()
         ERRLOG("In CEspHttpServer::~CEspHttpServer() -- Unknown Exception.");
     }
 }
-
-typedef enum espAuthState_
-{
-    authUnknown,
-    authRequired,
-    authProvided,
-    authSucceeded,
-    authPending,
-    authFailed
-} EspAuthState;
-
 
 bool CEspHttpServer::rootAuth(IEspContext* ctx)
 {
@@ -265,42 +255,18 @@ int CEspHttpServer::processRequest()
         ctx->setHTTPMethod(method.str());
         ctx->setServiceMethod(methodName.str());
 
-        bool isSoapPost=(stricmp(method.str(), POST_METHOD) == 0 && m_request->isSoapMessage());
-        if (!isSoapPost)
-        {
-            StringBuffer peerStr, pathStr;
-            const char *userid=ctx->queryUserId();
-            DBGLOG("%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), (userid) ? userid : "unknown", m_request->getPeer(peerStr).str());
+        StringBuffer peerStr, pathStr;
+        const char *userid=ctx->queryUserId();
+        ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), (userid) ? userid : "unknown", m_request->getPeer(peerStr).str());
 
-            if (m_apport->rootAuthRequired() && (!ctx->queryUserId() || !*ctx->queryUserId()))
-            {
-                thebinding = dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
-                StringBuffer realmbuf;
-                if(thebinding)
-                {   
-                    realmbuf.append(thebinding->getChallengeRealm());
-                }
-
-                if(realmbuf.length() == 0)
-                    realmbuf.append("ESP");
-                DBGLOG("User authentication required");
-                m_response->sendBasicChallenge(realmbuf.str(), true);
-                return 0;
-            }
-        }
+        authState = checkUserAuth();
+        if ((authState == authUpdatePassword) || (authState == authFailed))
+            return 0;
 
         if (!stricmp(method.str(), GET_METHOD))
         {
             if (stype==sub_serv_root)
             {
-                if (!rootAuth(ctx))
-                    return 0;
-                if (ctx->queryUser() && (ctx->queryUser()->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED))
-                    return 0;//allow user to change password
-                // authenticate optional groups
-                if (authenticateOptionalFailed(*ctx,NULL))
-                    throw createEspHttpException(401,"Unauthorized Access","Unauthorized Access");
-
                 return onGetApplicationFrame(m_request.get(), m_response.get(), ctx);
             }
 
@@ -308,14 +274,7 @@ int CEspHttpServer::processRequest()
             {
                 if (!methodName.length())
                     return 0;
-#ifdef _USE_OPENLDAP
-                if (strieq(methodName.str(), "updatepasswordinput"))//process before authentication check
-                    return onUpdatePasswordInput(m_request.get(), m_response.get());
-#endif
-                if (!rootAuth(ctx) )
-                    return 0;
 
-                checkSetCORSAllowOrigin(m_request, m_response);
                 if (methodName.charAt(methodName.length()-1)=='_')
                     methodName.setCharAt(methodName.length()-1, 0);
                 if (!stricmp(methodName.str(), "files"))
@@ -347,15 +306,6 @@ int CEspHttpServer::processRequest()
                     return onGetBuildSoapRequest(m_request.get(), m_response.get());
             }
         }
-#ifdef _USE_OPENLDAP
-        else if (strieq(method.str(), POST_METHOD) && strieq(serviceName.str(), "esp") && (methodName.length() > 0) && strieq(methodName.str(), "updatepassword"))
-        {
-            EspHttpBinding* thebinding = getBinding();
-            if (thebinding)
-                thebinding->populateRequest(m_request.get());
-            return onUpdatePassword(m_request.get(), m_response.get());
-        }
-#endif
 
         if(m_apport != NULL)
         {
@@ -368,13 +318,14 @@ int CEspHttpServer::processRequest()
                     CEspBindingEntry *entry = m_apport->queryBindingItem(0);
                     thebinding = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : NULL;
 
+                    bool isSoapPost=(strieq(method.str(), POST_METHOD) && m_request->isSoapMessage());
                     if (thebinding && !isSoapPost && !thebinding->isValidServiceName(*ctx, serviceName.str()))
                         thebinding=NULL;
                 }
                 else
                 {
                     EspHttpBinding* lbind=NULL;
-                    for(int index=0; !thebinding && index<ordinality; index++)
+                    for (int index=0; !thebinding && index<ordinality; index++)
                     {
                         CEspBindingEntry *entry = m_apport->queryBindingItem(index);
                         lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : NULL;
@@ -392,57 +343,7 @@ int CEspHttpServer::processRequest()
                 }
                 if (!thebinding && m_defaultBinding)
                     thebinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
-                if (thebinding)
-                {
-                    StringBuffer servName(ctx->queryServiceName(NULL));
-                    if (!servName.length())
-                    {
-                        thebinding->getServiceName(servName);
-                        ctx->setServiceName(servName.str());
-                    }
-                    
-                    thebinding->populateRequest(m_request.get());
-                    if(thebinding->authRequired(m_request.get()) && !thebinding->doAuth(ctx))
-                    {
-                        authState=authRequired;
-                        if(isSoapPost)
-                        {
-                            authState = authPending;
-                            ctx->setToBeAuthenticated(true);
-                        }
-                    }
-                    else
-                        authState = authSucceeded;
-                }
             }
-
-            if (authState==authRequired)
-            {
-                ISecUser *user = ctx->queryUser();
-                if (user && (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED || user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED))
-                {
-                    DBGLOG("ESP password expired for %s", user->getName());
-                    m_response->setContentType(HTTP_TYPE_TEXT_PLAIN);
-                    m_response->setContent("Your ESP password has expired");
-                    m_response->send();
-                }
-                else
-                {
-                    DBGLOG("User authentication required");
-                    StringBuffer realmbuf;
-                    if(thebinding)
-                        realmbuf.append(thebinding->getChallengeRealm());
-                    if(realmbuf.length() == 0)
-                        realmbuf.append("ESP");
-                    m_response->sendBasicChallenge(realmbuf.str(), !isSoapPost);
-                }
-                return 0;
-            }
-
-            // authenticate optional groups
-            if (authenticateOptionalFailed(*ctx,thebinding))
-                throw createEspHttpException(401,"Unauthorized Access","Unauthorized Access");
-
 
             if(strieq(method.str(), OPTIONS_METHOD))
                 return onOptions();
@@ -974,3 +875,536 @@ int CEspHttpServer::onGet()
     return 0;
 }
 
+EspAuthState CEspHttpServer::checkUserAuth()
+{
+    EspAuthRequest authReq;
+    readAuthRequest(authReq);
+    if (authReq.httpPath.isEmpty())
+        throw MakeStringException(-1, "URL query string cannot be empty.");
+
+    if (!authReq.authBinding)
+        throw MakeStringException(-1, "Cannot find ESP HTTP Binding");
+
+    ESPLOG(LogMax, "checkUserAuth: %s %s", m_request->isSoapMessage() ? "SOAP" : "HTTP", authReq.httpMethod.isEmpty() ? "??" : authReq.httpMethod.str());
+
+    //The preCheckAuth() does not return authUnknown when:
+    //No authentication is required for the ESP binding;
+    //Or no authentication is required for certain situations of not rootAuthRequired();
+    //Or a user is trying to access some resources for displaying login/logout pages;
+    //Or this is a user request for updating password.
+    EspAuthState authState = preCheckAuth(authReq);
+    if (authState != authUnknown)
+        return authState;
+
+    StringBuffer servName(authReq.ctx->queryServiceName(nullptr));
+    if (servName.isEmpty())
+    {
+        authReq.authBinding->getServiceName(servName);
+        authReq.ctx->setServiceName(servName.str());
+    }
+
+    AuthType domainAuthType = authReq.authBinding->getDomainAuthType();
+    authReq.ctx->setDomainAuthType(domainAuthType);
+    if (domainAuthType != AuthPerRequestOnly)
+    {//Try session based authentication now.
+        EspAuthState authState = checkUserAuthPerSession(authReq);
+        if (authState != authUnknown)
+            return authState;
+    }
+    if (domainAuthType != AuthPerSessionOnly)
+    {// BasicAuthentication
+        EspAuthState authState = checkUserAuthPerRequest(authReq);
+        if (authState != authUnknown)
+            return authState;
+    }
+
+    //authentication failed. Send out a login page or 401.
+    StringBuffer userName;
+    bool authSession =  false;
+    if ((domainAuthType == AuthPerSessionOnly) || ((domainAuthType == AuthTypeMixed)
+        && !authReq.ctx->getUserID(userName).length() && strieq(authReq.httpMethod.str(), GET_METHOD)))
+    { //This is in session based authentication and the first request from a browser using GET with no userID.
+        authSession = true;
+    }
+    handleAuthFailed(authSession, authReq);
+    return authFailed;
+}
+
+//Read authentication related information into EspAuthRequest.
+void CEspHttpServer::readAuthRequest(EspAuthRequest& req)
+{
+    StringBuffer pathEx;
+    m_request->getEspPathInfo(req.stype, &pathEx, &req.serviceName, &req.methodName, false);
+    m_request->getMethod(req.httpMethod);
+    m_request->getPath(req.httpPath);//m_httpPath
+
+    req.isSoapPost = (strieq(req.httpMethod.str(), POST_METHOD) && m_request->isSoapMessage());
+    req.ctx = m_request->queryContext();
+    req.authBinding = getEspHttpBinding(req);
+    req.requestParams = m_request->queryParameters();
+}
+
+EspHttpBinding* CEspHttpServer::getEspHttpBinding(EspAuthRequest& authReq)
+{
+    if (strieq(authReq.httpMethod.str(), GET_METHOD) && ((authReq.stype == sub_serv_root)
+            || (!authReq.serviceName.isEmpty() && strieq(authReq.serviceName.str(), "esp"))))
+        return getBinding();
+
+    if(!m_apport)
+        return nullptr;
+
+    int ordinality=m_apport->getBindingCount();
+    if (ordinality < 1)
+        return nullptr;
+
+    EspHttpBinding* espHttpBinding = nullptr;
+    if (ordinality==1)
+    {
+        CEspBindingEntry *entry = m_apport->queryBindingItem(0);
+        espHttpBinding = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : NULL;
+        //If there is only one binding on the port, we allow SOAP calls to work if they go
+        //to http://IP:Port without any service name on the path. Even without specifying
+        //the service, if the request matches a method, the method will run. So, the espHttpBinding
+        //is set to nullptr only if !authReq.isSoapPost.
+        if (!authReq.isSoapPost && espHttpBinding && !espHttpBinding->isValidServiceName(*authReq.ctx, authReq.serviceName.str()))
+            espHttpBinding=nullptr;
+        return espHttpBinding;
+    }
+
+    for (unsigned index=0; index<ordinality; index++)
+    {
+        CEspBindingEntry *entry = m_apport->queryBindingItem(index);
+        EspHttpBinding* lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : nullptr;
+        if (lbind && lbind->isValidServiceName(*authReq.ctx, authReq.serviceName.str()))
+        {
+            espHttpBinding=lbind;
+            break;
+        }
+    }
+
+    if (!espHttpBinding && m_defaultBinding)
+        espHttpBinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
+
+    return espHttpBinding;
+}
+
+EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
+{
+    if (!isAuthRequiredForBinding(authReq))
+        return authSucceeded;
+
+    if (!m_apport->rootAuthRequired() && strieq(authReq.httpMethod.str(), GET_METHOD) &&
+        ((authReq.stype == sub_serv_root) || (!authReq.serviceName.isEmpty() && strieq(authReq.serviceName.str(), "esp"))))
+        return authSucceeded;
+
+#ifdef _USE_OPENLDAP
+    if (!authReq.httpMethod.isEmpty() && !authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp"))
+    {
+        if (strieq(authReq.httpMethod.str(), POST_METHOD) && strieq(authReq.methodName.str(), "updatepassword"))
+        {
+            EspHttpBinding* thebinding = getBinding();
+            if (thebinding)
+                thebinding->populateRequest(m_request.get());
+            onUpdatePassword(m_request.get(), m_response.get());
+            return authUpdatePassword;
+        }
+        if (strieq(authReq.httpMethod.str(), GET_METHOD) && strieq(authReq.methodName.str(), "updatepasswordinput"))//process before authentication check
+        {
+            onUpdatePasswordInput(m_request.get(), m_response.get());
+            return authUpdatePassword;
+        }
+    }
+#endif
+
+    if ((authReq.authBinding->getDomainAuthType() != AuthPerRequestOnly) && authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
+        return authSucceeded;//Give the permission to send out some pages used for login or logout.
+
+    return authUnknown;
+}
+
+bool CEspHttpServer::isAuthRequiredForBinding(EspAuthRequest& authReq)
+{
+    IAuthMap* authmap = authReq.authBinding->queryAuthMAP();
+    if (!authmap) //No auth requirement
+        return false;
+
+    const char* authMethod = authReq.authBinding->queryAuthMethod();
+    if (isEmptyString(authMethod) || strieq(authMethod, "none"))
+        return false;
+
+    ISecResourceList* rlist = authmap->getResourceList(authReq.httpPath.str());
+    if(!rlist) //No auth requirement for the httpPath.
+        return false;
+
+    authReq.ctx->setAuthenticationMethod(authMethod);
+    authReq.ctx->setResources(rlist);
+
+    return true;
+}
+
+EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
+{
+    ESPLOG(LogMax, "checkUserAuthPerSession");
+
+    unsigned sessionID = readCookie(authReq.authBinding->querySessionIDCookieName());
+    if (sessionID > 0)
+        return authExistingSession(authReq, sessionID);//Check session based authentication using this session ID.
+
+    StringBuffer urlCookie;
+    readCookie(SESSION_START_URL_COOKIE, urlCookie);
+    if (strieq(authReq.httpPath.str(), authReq.authBinding->queryLoginURL()))
+    {//This is a request to ask for a login page.
+        if (urlCookie.isEmpty())
+            addCookie(SESSION_START_URL_COOKIE, "/", 0); //Will be redirected to / after authenticated.
+        return authSucceeded;
+    }
+
+    if (urlCookie.isEmpty())
+        return authUnknown;
+
+    const char* userName = (authReq.requestParams) ? authReq.requestParams->queryProp("username") : NULL;
+    const char* password = (authReq.requestParams) ? authReq.requestParams->queryProp("password") : NULL;
+    if (!isEmptyString(userName) && !isEmptyString(password))
+        return authNewSession(authReq, userName, password, urlCookie.str());
+
+    if (authReq.isSoapPost) //from SOAP Test page
+        sendMessage("Authentication failed: empty user name or password.", "text/html; charset=UTF-8");
+    else //from other page
+        askUserLogin(authReq);
+    return authFailed;
+}
+
+EspAuthState CEspHttpServer::checkUserAuthPerRequest(EspAuthRequest& authReq)
+{
+    ESPLOG(LogMax, "checkUserAuthPerRequest");
+
+    authReq.authBinding->populateRequest(m_request.get());
+    if (authReq.authBinding->doAuth(authReq.ctx))
+    {//We do pass the authentication per the request
+        // authenticate optional groups. Do we still need?
+        authOptionalGroups(authReq);
+
+        StringBuffer userName, peer;
+        ESPLOG(LogNormal, "Authenticated for %s@%s", authReq.ctx->getUserID(userName).str(), m_request->getPeer(peer).str());
+        return authSucceeded;
+    }
+    if (!authReq.isSoapPost)
+        return authUnknown;
+
+    //If SoapPost, username/password may be in soap:Header which is not in HTTP header.
+    //The doAuth() may check them inside CSoapService::processHeader() later.
+    authReq.ctx->setToBeAuthenticated(true);
+    return authPending;
+}
+
+void CEspHttpServer::sendMessage(const char* msg, const char* msgType)
+{
+    if (!isEmptyString(msg))
+        m_response->setContent(msg);
+    m_response->setContentType(msgType);
+    m_response->setStatus(HTTP_STATUS_OK);
+    m_response->send();
+}
+
+EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL)
+{
+    StringBuffer peer;
+    m_request->getPeer(peer);
+
+    ESPLOG(LogMax, "authNewSession for %s@%s", _userName, peer.str());
+
+    authReq.ctx->setUserID(_userName);
+    authReq.ctx->setPassword(_password);
+    authReq.authBinding->populateRequest(m_request.get());
+    if (!authReq.authBinding->doAuth(authReq.ctx))
+    {
+        ESPLOG(LogMin, "Authentication failed for %s@%s", _userName, peer.str());
+        handleAuthFailed(true, authReq);
+        return authFailed;
+    }
+
+    // authenticate optional groups
+    authOptionalGroups(authReq);
+
+    unsigned sessionID = createHTTPSession(authReq, sessionStartURL);
+    authReq.ctx->addUserToken(sessionID);
+
+    ESPLOG(LogMax, "Authenticated for %s@%s", _userName, peer.str());
+
+    VStringBuffer sessionIDStr("%u", sessionID);
+    addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), authReq.authBinding->getSessionTimeoutSeconds());
+    clearCookie(SESSION_START_URL_COOKIE);
+    m_response->redirect(*m_request, sessionStartURL);
+
+    return authSucceeded;
+}
+
+EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsigned sessionID)
+{
+    ESPLOG(LogMax, "authExistingSession: %s<%u>", PropSessionID, sessionID);
+
+    Owned<IRemoteConnection> conn = getSDSConnection(authReq.authBinding->queryESPSessionSDSPath(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+    IPropertyTree* espSessions = conn->queryRoot();
+    if (authReq.authBinding->getSessionTimeoutSeconds() >= 0)
+    {
+        CDateTime now;
+        now.setNow();
+        time_t timeNow = now.getSimple();
+        if (timeNow - lastSessionCleanUpTime >= authReq.authBinding->getCheckSessionTimeoutSeconds())
+        {
+            lastSessionCleanUpTime = timeNow;
+            timeoutESPSessions(authReq.authBinding, espSessions);
+        }
+    }
+
+    VStringBuffer xpath("%s[@port=\"%d\"]/%s[%s='%u']", PathSessionApplication, authReq.authBinding->getPort(), PathSessionSession, PropSessionID, sessionID);
+    IPropertyTree* sessionTree = espSessions->queryBranch(xpath.str());
+    if (!sessionTree)
+    {
+        ESPLOG(LogMin, "Authentication failed: session:<%u> not found", sessionID);
+        if (authReq.isSoapPost) //from SOAP Test page
+            sendMessage("Session expired. Please close this page and login again.", "text/html; charset=UTF-8");
+        else
+            askUserLogin(authReq);
+        return authFailed;
+    }
+
+    authOptionalGroups(authReq);
+
+    //The UserID has to be set before the populateRequest() because the UserID is used to create the user object.
+    //After the user object is created, we may call addUserToken().
+    StringAttr userName = sessionTree->queryProp(PropSessionUserID);
+    authReq.ctx->setUserID(userName.str());
+    authReq.authBinding->populateRequest(m_request.get());
+    authReq.ctx->addUserToken(sessionID);
+
+    ESPLOG(LogMax, "Authenticated for %s<%u> %s@%s", PropSessionID, sessionID, userName.str(), sessionTree->queryProp(PropSessionNetworkAddress));
+    if (authReq.methodName && strieq(authReq.methodName, "logout"))
+        logoutSession(authReq, sessionID, espSessions);
+    else
+    {
+        CDateTime now;
+        now.setNow();
+        time_t createTime = now.getSimple();
+        sessionTree->setPropInt64(PropSessionLastAccessed, createTime);
+        if (!sessionTree->getPropBool(PropSessionTimeoutByAdmin, false))
+            sessionTree->setPropInt64(PropSessionTimeoutAt, createTime + authReq.authBinding->getSessionTimeoutSeconds());
+
+        ///authReq.ctx->setAuthorized(true);
+        VStringBuffer sessionIDStr("%u", sessionID);
+        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), authReq.authBinding->getSessionTimeoutSeconds());
+    }
+
+    return authSucceeded;
+}
+
+void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* espSessions)
+{
+    //delete this session before logout
+    VStringBuffer path("%s[@port=\"%d\"]", PathSessionApplication, authReq.authBinding->getPort());
+    IPropertyTree* sessionTree = espSessions->queryBranch(path.str());
+    if (sessionTree)
+    {
+        ICopyArrayOf<IPropertyTree> toRemove;
+        path.setf("%s[%s='%d']", PathSessionSession, PropSessionID, sessionID);
+        Owned<IPropertyTreeIterator> it = sessionTree->getElements(path.str());
+        ForEach(*it)
+            toRemove.append(it->query());
+        ForEachItemIn(i, toRemove)
+            sessionTree->removeTree(&toRemove.item(i));
+    }
+    else
+        ESPLOG(LogMin, "Cann't find session tree: %s[@port=\"%d\"]", PathSessionApplication, authReq.authBinding->getPort());
+
+    ///authReq.ctx->setAuthorized(true);
+
+    clearCookie(authReq.authBinding->querySessionIDCookieName());
+    const char* logoutURL = authReq.authBinding->queryLogoutURL();
+    if (!isEmptyString(logoutURL))
+        m_response->redirect(*m_request, authReq.authBinding->queryLogoutURL());
+    else
+        sendMessage(nullptr, "text/html; charset=UTF-8");
+}
+
+void CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq)
+{
+    ISecUser *user = authReq.ctx->queryUser();
+    if (user && (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED || user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED))
+    {
+        ESPLOG(LogMin, "ESP password expired for %s", authReq.ctx->queryUserId());
+        handlePasswordExpired(sessionAuth);
+        return;
+    }
+
+    if (!sessionAuth)
+    {
+        ESPLOG(LogMin, "Authentication failed: send BasicAuthentication.");
+        m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), true);
+        return;
+    }
+
+    ESPLOG(LogMin, "Authentication failed: call askUserLogin.");
+    askUserLogin(authReq);
+}
+
+void CEspHttpServer::askUserLogin(EspAuthRequest& authReq)
+{
+    StringBuffer urlCookie;
+    readCookie(SESSION_START_URL_COOKIE, urlCookie);
+    if (urlCookie.isEmpty())
+    {
+        StringBuffer sessionStartURL = authReq.httpPath;
+        if (authReq.requestParams && authReq.requestParams->hasProp("__querystring"))
+            sessionStartURL.append("?").append(authReq.requestParams->queryProp("__querystring"));
+        if (!sessionStartURL.isEmpty() && streq(sessionStartURL.str(), "/WsSMC/"))
+            sessionStartURL.set("/");
+
+        const char* loginURL = authReq.authBinding->queryLoginURL();
+        if (strieq(loginURL, sessionStartURL))
+            sessionStartURL.set("/");
+
+        addCookie(SESSION_START_URL_COOKIE, sessionStartURL.str(), 0); //time out when browser is closed
+    }
+    m_response->redirect(*m_request, authReq.authBinding->queryLoginURL());
+}
+
+unsigned CEspHttpServer::createHTTPSession(EspAuthRequest& authReq, const char* sessionStartURL)
+{
+    CDateTime now;
+    now.setNow();
+    time_t createTime = now.getSimple();
+
+    StringBuffer peer, sessionIDStr;
+    VStringBuffer idStr("%s_%ld", m_request->getPeer(peer).str(), createTime);
+    unsigned sessionID = hashc((unsigned char *)idStr.str(), idStr.length(), 0);
+    sessionIDStr.append(sessionID);
+
+    VStringBuffer xpath("%s[%s='%u']", PathSessionSession, PropSessionID, sessionID);
+    Owned<IRemoteConnection> conn = getSDSConnection(authReq.authBinding->querySessionSDSPath(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+    IPropertyTree* domainSessions = conn->queryRoot();
+    IPropertyTree* sessionTree = domainSessions->queryBranch(xpath.str());
+    if (sessionTree)
+    {
+        sessionTree->setPropInt64(PropSessionLastAccessed, createTime);
+        if (!sessionTree->getPropBool(PropSessionTimeoutByAdmin, false))
+            sessionTree->setPropInt64(PropSessionTimeoutAt, createTime + authReq.authBinding->getSessionTimeoutSeconds());
+        return sessionID;
+    }
+    ESPLOG(LogMax, "New sessionID <%d> at <%ld> in createHTTPSession()", sessionID, createTime);
+
+    IPropertyTree* ptree = domainSessions->addPropTree(PathSessionSession);
+    ptree->setProp(PropSessionNetworkAddress, peer.str());
+    ptree->setPropInt64(PropSessionID, sessionID);
+    ptree->setPropInt64(PropSessionExternalID, hashc((unsigned char *)sessionIDStr.str(), sessionIDStr.length(), 0));
+    ptree->setProp(PropSessionUserID, authReq.requestParams->queryProp("username"));
+    ptree->setPropInt64(PropSessionCreateTime, createTime);
+    ptree->setPropInt64(PropSessionLastAccessed, createTime);
+    ptree->setPropInt64(PropSessionTimeoutAt, createTime + authReq.authBinding->getSessionTimeoutSeconds());
+    ptree->setProp(PropSessionLoginURL, sessionStartURL);
+    return sessionID;
+}
+
+void CEspHttpServer::timeoutESPSessions(EspHttpBinding* authBinding, IPropertyTree* espSessions)
+{
+    //Removing HTTPSessions if timed out
+    CDateTime now;
+    now.setNow();
+    time_t timeNow = now.getSimple();
+
+    Owned<IPropertyTreeIterator> iter1 = espSessions->getElements(PathSessionApplication);
+    ForEach(*iter1)
+    {
+        ICopyArrayOf<IPropertyTree> toRemove;
+        Owned<IPropertyTreeIterator> iter2 = iter1->query().getElements(PathSessionSession);
+        ForEach(*iter2)
+        {
+            IPropertyTree& item = iter2->query();
+            if (timeNow >= item.getPropInt64(PropSessionTimeoutAt, 0))
+                toRemove.append(item);
+        }
+        ForEachItemIn(i, toRemove)
+            iter1->query().removeTree(&toRemove.item(i));
+    }
+}
+
+void CEspHttpServer::handlePasswordExpired(bool sessionAuth)
+{
+    if (sessionAuth)
+        m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
+    else
+    {
+        Owned<IMultiException> me = MakeMultiException();
+        me->append(*MakeStringException(-1, "Your ESP password has expired."));
+        m_response->handleExceptions(nullptr, me, "ESP Authentication", "PasswordExpired", nullptr);
+    }
+}
+
+void CEspHttpServer::authOptionalGroups(EspAuthRequest& authReq)
+{
+    if (strieq(authReq.httpMethod.str(), GET_METHOD) && (authReq.stype==sub_serv_root) && authenticateOptionalFailed(*authReq.ctx, nullptr))
+        throw MakeStringException(-1, "Unauthorized Access to service root");
+    if ((!strieq(authReq.httpMethod.str(), GET_METHOD) || !strieq(authReq.serviceName.str(), "esp")) && authenticateOptionalFailed(*authReq.ctx, authReq.authBinding))
+        throw MakeStringException(-1, "Unauthorized Access: %s %s", authReq.httpMethod.str(), authReq.serviceName.str());
+}
+
+IRemoteConnection* CEspHttpServer::getSDSConnection(const char* xpath, unsigned mode, unsigned timeout)
+{
+    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT);
+    if (!globalLock)
+        throw MakeStringException(-1, "Unable to connect to ESP Session information in dali %s", xpath);
+    return globalLock.getClear();
+}
+
+void CEspHttpServer::addCookie(const char* cookieName, const char *cookieValue, int maxAgeSec)
+{
+    CEspCookie* cookie = new CEspCookie(cookieName, cookieValue);
+    if (maxAgeSec > 0)
+    {
+        char expiresTime[64];
+        time_t tExpires;
+        time(&tExpires);
+        tExpires += maxAgeSec;
+#ifdef _WIN32
+        struct tm *gmtExpires;
+        gmtExpires = gmtime(&tExpires);
+        strftime(expiresTime, 64, "%a, %d %b %Y %H:%M:%S GMT", gmtExpires);
+#else
+        struct tm gmtExpires;
+        gmtime_r(&tExpires, &gmtExpires);
+        strftime(expiresTime, 64, "%a, %d %b %Y %H:%M:%S GMT", &gmtExpires);
+#endif //_WIN32
+
+        cookie->setExpires(expiresTime);
+    }
+    cookie->setHTTPOnly(true);
+    cookie->setSameSite("Lax");
+    m_response->addCookie(cookie);
+}
+
+void CEspHttpServer::clearCookie(const char* cookieName)
+{
+    CEspCookie* cookie = new CEspCookie(cookieName, "");
+    cookie->setExpires("Thu, 01 Jan 1970 00:00:01 GMT");
+    m_response->addCookie(cookie);
+    m_response->addHeader(cookieName,  "max-age=0");
+}
+
+unsigned CEspHttpServer::readCookie(const char* cookieName)
+{
+    CEspCookie* sessionIDCookie = m_request->queryCookie(cookieName);
+    if (sessionIDCookie)
+    {
+        StringBuffer sessionIDStr = sessionIDCookie->getValue();
+        if (sessionIDStr.length())
+            return atoi(sessionIDStr.str());
+    }
+    return 0;
+}
+
+const char* CEspHttpServer::readCookie(const char* cookieName, StringBuffer& cookieValue)
+{
+    CEspCookie* sessionIDCookie = m_request->queryCookie(cookieName);
+    if (sessionIDCookie)
+        cookieValue.append(sessionIDCookie->getValue());
+    return cookieValue.str();
+}

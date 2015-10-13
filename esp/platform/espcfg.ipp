@@ -30,6 +30,8 @@
 #include "environment.hpp"
 #include <dalienv.hpp>
 
+#include "bindutil.hpp"
+
 //STL
 #include <list>
 #include <map>
@@ -166,12 +168,17 @@ public:
 
     const SocketEndpoint &getLocalEndpoint(){return m_address;}
 
+    void ensureESPSessionInTree(IPropertyTree* sessionRoot, const char* procName);
+    void ensureSDSSessionDomains();
+
     void loadProtocols();
     void loadServices();
     void loadBindings();
 
     void loadAll()
     {
+        ensureSDSSessionDomains();
+
         DBGLOG("loadServices");
         loadServices();
         loadProtocols();
