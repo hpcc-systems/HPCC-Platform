@@ -143,6 +143,10 @@ private:
     StringAttrMapping desc_map;
     StringAttrMapping help_map;
 
+    StringAttr              processName;
+    StringAttr              domainName;
+    StringBuffer            domainSessionSDSPath;
+    AuthType                domainAuthType;
 protected:
     MethodInfoArray m_methods;
     bool                    m_includeSoapTest;
@@ -287,6 +291,17 @@ public:
         return false;
     }
     ISecManager* querySecManager() {return m_secmgr.get(); }
+    IAuthMap* queryAuthMAP(){return m_authmap.get();}
+    const char* queryAuthMethod() {return m_authmethod.str(); }
+    void setProcessName(const char* name){ processName.set(name); }
+    const char* getProcessName(){ return processName.get(); }
+    void setDomainName(const char* name){ domainName.set(name ? name : "default"); }
+    const char* getDomainName(){ return domainName.get(); }
+    void setDomainSessionSDSPath(const char* path){ domainSessionSDSPath.set(path); }
+    const char* getDomainSessionSDSPath(){ return domainSessionSDSPath.str(); }
+    void setDomainAuthType(AuthType type) { domainAuthType = type; }
+    AuthType getDomainAuthType(){ return domainAuthType; }
+    void ensureSDSSessionDomain();
 
     static void escapeSingleQuote(StringBuffer& src, StringBuffer& escaped);
 
@@ -304,7 +319,6 @@ protected:
                             const char *serviceName, const char* methodName);
     void sortResponse(IEspContext& context, CHttpRequest* request,MemoryBuffer& contentconst,
                             const char *serviceName, const char* methodName);
-    const char* queryAuthMethod() {return m_authmethod.str(); }
 };
 
 inline bool isEclIdeRequest(CHttpRequest *request)

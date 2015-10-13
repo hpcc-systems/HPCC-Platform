@@ -33,7 +33,24 @@
 #include "SOAP/Platform/soapmessage.hpp"
 
 #include "espsession.ipp"
+#include "jhash.hpp"
 
+typedef enum espAuthState_
+{
+    authUnknown,
+    authRequired,
+    authProvided,
+    authSucceeded,
+    authPending,
+    authUpdatePassword,
+    authFailed
+} EspAuthState;
+
+enum HTTPSessionState
+{
+    HTTPSS_new,
+    HTTPSS_active
+};
 
 class CEspHttpServer : public CInterface, implements IHttpServerService
 {
@@ -49,6 +66,29 @@ protected:
 
     int unsupported();
     EspHttpBinding* getBinding();
+#ifdef _USE_OPENLDAP
+    EspAuthState preCheckAuth(const char* reqMethod, const char* serviceName, sub_service stype, const char* serviceMethod);
+    EspAuthState checkUserAuth();
+    EspAuthState doSessionAuth(IEspContext* ctx, EspHttpBinding* authBinding, unsigned sessionID,
+        const char* httpPath, const char* httpMethod, const char* serviceName, const char* methodName, sub_service stype);
+    void postSessionAuth(IEspContext* ctx, unsigned sessionID, time_t accessTime, void* _conn, IPropertyTree* sessionTree);
+    void askUserLogOn(unsigned sessionID, void* conn);
+    void handleAuthFailed(IEspContext* ctx, bool sessionAuth, EspHttpBinding* authBinding,
+        void* conn, unsigned sessionID, const char* redirectURL);
+    void handlePasswordExpired(bool sessionAuth);
+    bool handleUserLogOut(EspHttpBinding* authBinding, unsigned sessionID);
+    EspHttpBinding* getEspHttpBinding(IEspContext* ctx, const char* httpMethod, const char* serviceName,
+        sub_service stype, bool isSoapPost);
+    bool isAuthRequiredForBinding(IEspContext* ctx, EspHttpBinding* authBinding, const char* httpPath);
+    void authOptionalGroups(IEspContext* ctx, EspHttpBinding* authBinding, const char* httpMethod, const char* serviceName, sub_service stype);
+    unsigned createHTTPSession(EspHttpBinding* authBinding, IPropertyTree* domainSessions, const char* loginURL);
+    bool deleteHTTPSession(EspHttpBinding* authBinding, unsigned sessionID);
+    IPropertyTree* readAndCleanDomainSessions(void* conn, time_t accessTime);
+    void addCookie(const char* cookieName, const char *cookieValue, unsigned maxAgeSec);
+    void clearCookie(const char* cookieName);
+    unsigned readSessionIDFromCookie();
+#endif
+
 public:
     IMPLEMENT_IINTERFACE;
 

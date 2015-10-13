@@ -360,6 +360,11 @@ function writeESPappname(appname)
         YAHOO.util.Connect.asyncRequest('GET', sUrl, callback);
       }
 
+            var logout = function()
+            {
+                parent.location = 'ESP/logout';
+            }
+
             var copy_url = function()
                 {
                     var inner = parent.frames['main'].location;
@@ -444,6 +449,10 @@ function writeESPappname(appname)
                                     { text: "Refresh", onclick: { fn: refresh_main }}
                                 ]
                         ] }
+                    },
+                    {
+                        text: "<b>Log Out</b>",
+                        onclick: { fn: logout }
                     }
                 ];
 

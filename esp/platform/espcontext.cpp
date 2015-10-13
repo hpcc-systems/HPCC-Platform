@@ -74,6 +74,8 @@ private:
     unsigned    m_exceptionTime;
     bool        m_hasException;
     int         m_exceptionCode;
+    StringAttr  authenticationMethod;
+    AuthType    domainAuthType;
 
     ESPSerializationFormat respSerializationFormat;
 
@@ -471,6 +473,19 @@ public:
 
         DBGLOG("TxSummary[%s]", logstr.str());
     }
+
+    virtual void setAuthenticationMethod(const char* method)
+    {
+        authenticationMethod.set(method);
+    }
+
+    virtual const char * getAuthenticationMethod()
+    {
+        return authenticationMethod.get();
+    }
+
+    virtual void setDomainAuthType(AuthType type) { domainAuthType = type; }
+    virtual AuthType getDomainAuthType(){ return domainAuthType; }
 
     virtual ESPSerializationFormat getResponseFormat(){return respSerializationFormat;}
     virtual void setResponseFormat(ESPSerializationFormat fmt){respSerializationFormat = fmt;}
