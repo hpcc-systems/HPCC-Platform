@@ -22,6 +22,7 @@
 
 #include "jlib.hpp"
 #include <atomic>
+#include <utility>
 #include "jatomic.hpp"
 
 template <typename ELEMENT>
@@ -120,6 +121,9 @@ public:
         delete [] values;
     }
 
+    //Should probably have the following functions instead for correct C++11 integration...
+    //void enqueue(const ELEMENT & value);
+    //void enqueue(ELEMENT && value);
     void enqueue(const ELEMENT value)
     {
         //Note, compare_exchange_weak updates curState when it fails, so don't read inside the main loop
@@ -181,7 +185,8 @@ public:
                         //more: option to back off and yield.
                     }
 
-                    cur.value = value;
+                    //enqueue takes ownership of the object -> use std::move
+                    cur.value = std::move(value);
                     cur.sequence.store(filledSeq, std::memory_order_release);
                     if ((curState & readerMask) != 0)
                         readers.signal();
@@ -262,7 +267,8 @@ public:
                             //more: option to back off and yield.
                         }
 
-                        cur.value = value[i];
+                        //Use std::move to efficiently remove the elements from the queue
+                        cur.value = std::move(value[i]);
                         cur.sequence.store(filledSeq, std::memory_order_release);
                     }
                     while (wakeUp--)
@@ -273,7 +279,7 @@ public:
         }
     }
 
-    ELEMENT dequeue()
+    bool dequeue(ELEMENT & result)
     {
         unsigned numSpins = initialSpinsBeforeWait;
         //Note, compare_exchange_weak updates curState when it fails, so don't read inside the main loop
@@ -334,13 +340,13 @@ public:
                         spinPause();
                     }
 
-                    ELEMENT ret = cur.value;
+                    result = std::move(cur.value);
                     const unsigned numSlots = slotMask + 1;
                     unsigned nextSeq = (curDequeueSeq + numSlots) & sequenceMask;
                     cur.sequence.store(nextSeq, std::memory_order_release);
                     if ((curState & writerMask) != 0)
                         writers.signal();
-                    return ret;
+                    return true;
                 }
             }
         }

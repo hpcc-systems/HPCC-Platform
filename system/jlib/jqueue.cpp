@@ -25,7 +25,10 @@ template <typename state_t, unsigned readerBits, unsigned writerBits, unsigned m
 class CRowQueue : implements CInterfaceOf<IRowQueue>
 {
 public:
-    CRowQueue(unsigned _maxItems) : queue(_maxItems) {}
+    CRowQueue(unsigned _maxItems, unsigned _numProducers) : queue(_maxItems), numProducers(_numProducers)
+    {
+        activeProducers.store(numProducers);
+    }
 
     virtual void enqueue(const void * const item)
     {
@@ -33,15 +36,39 @@ public:
     }
     virtual const void * dequeue()
     {
-        return queue.dequeue();
+        //MORE: This test needs to be inside the queue implementation - so it is only tested when the queue is empty.
+        if (activeProducers.load(std::memory_order_acquire) <= 0)
+            return NULL;
+
+        const void * ret;
+        if (queue.dequeue(ret))
+            return ret;
+        return NULL;
     }
     virtual unsigned enqueue(size_t count, const void * * items)
     {
         return queue.enqueue(count, items);
     }
+    virtual void reset()
+    {
+        activeProducers.store(numProducers);
+        //queue.reset();  What should I do here to clean up the queue and ensure the elements are disposed of?
+    }
+    virtual void noteProducerStopped()
+    {
+        //MORE: If this reduces activeProducers to 0 then it may need to wake up any waiting threads.
+        activeProducers--;
+    }
+    virtual void abort()
+    {
+        //MORE: This may need to wake up any waiting threads.
+        activeProducers.store(0);
+    }
 
 private:
     ReaderWriterQueue<const void *, state_t, readerBits, writerBits, maxSlotBits, slotBits> queue;
+    const unsigned numProducers;
+    std::atomic<int> activeProducers;
 };
 
 
@@ -52,22 +79,22 @@ IRowQueue * createRowQueue(unsigned numReaders, unsigned numWriters, unsigned ma
     assertex(maxSlots == 0 || maxItems < maxSlots);
 
     if ((numReaders == 1) && (numWriters == 1) && (maxItems < 256))
-        return new CRowQueue<unsigned, 1, 1, 8, 8>(maxItems);
+        return new CRowQueue<unsigned, 1, 1, 8, 8>(maxItems, numWriters);
 
     if ((numReaders == 1) && (numWriters == 1) && (maxItems < 0x4000))
-        return new CRowQueue<unsigned, 1, 1, 14, 0>(maxItems);
+        return new CRowQueue<unsigned, 1, 1, 14, 0>(maxItems, numWriters);
 
     if ((numReaders == 1) && (numWriters <= 127) && (maxItems < 256))
-        return new CRowQueue<unsigned, 1, 7, 8, 0>(maxItems);
+        return new CRowQueue<unsigned, 1, 7, 8, 0>(maxItems, numWriters);
 
     if ((numWriters == 1) && (numReaders <= 255) && (maxItems < 2048))
-        return new CRowQueue<unsigned, 8, 1, 11, 0>(maxItems);
+        return new CRowQueue<unsigned, 8, 1, 11, 0>(maxItems, numWriters);
 
     if ((numReaders <= 31) && (numWriters <= 31) && (maxItems < 128))
-        return new CRowQueue<unsigned, 6, 6, 7, 0>(maxItems);
+        return new CRowQueue<unsigned, 6, 6, 7, 0>(maxItems, numWriters);
 
     assertex((numReaders < 0x1000) && (numWriters < 0x400));
-    return new CRowQueue<unsigned __int64, 12, 10, 16, 0>(maxItems);
+    return new CRowQueue<unsigned __int64, 12, 10, 16, 0>(maxItems, numWriters);
 }
 
 //MORE:
