@@ -18,6 +18,7 @@
 #ifndef __JWIN32_HPP
 #define __JWIN32_HPP
 
+#define _CRT_SECURE_NO_WARNINGS
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
 
@@ -57,7 +58,7 @@ public:
         LPVOID msg=0;
         if(::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &msg, 0, NULL) && msg)
         {
-            _tprintf(TEXT("System error %d: %s\n"),code,msg);
+            _tprintf(TEXT("System error %d: %s\n"),code,(const char *)msg);
             ::LocalFree(msg);
         }
     }
@@ -89,7 +90,7 @@ public:
             {
                 int len=_tcslen(buf);
                 if(len<arraysize(buf)-1)
-                    _sntprintf(buf+len,arraysize(buf)-1-len,TEXT(" - (%d) %s"),code,msg);
+                    _sntprintf(buf+len,arraysize(buf)-1-len,TEXT(" - (%d) %s"),code,(const char *)msg);
                 ::LocalFree(msg);
             }
         }

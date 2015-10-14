@@ -1981,7 +1981,7 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
             IHqlExpression * size = static_cast<IHqlExpression *>(builderModifier->queryModifierExtra());
             if (size)
             {
-                unsigned fixedSize = getIntValue(size);
+                unsigned __int64 fixedSize = getIntValue(size);
                 if (fixedSize == 0)
                     out.append("rtlEmptyRowBuilder ").append(targetName);
                 else

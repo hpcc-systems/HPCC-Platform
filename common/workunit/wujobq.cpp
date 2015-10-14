@@ -1085,7 +1085,7 @@ public:
 
     IPropertyTree *queryClientRootSession(sQueueData &qd)
     {
-        VStringBuffer path("Client[@session=\"%"I64F"d\"]", sessionid);
+        VStringBuffer path("Client[@session=\"%" I64F "d\"]", sessionid);
         IPropertyTree *ret = qd.root->queryPropTree(path.str());
         if (!ret)
         {

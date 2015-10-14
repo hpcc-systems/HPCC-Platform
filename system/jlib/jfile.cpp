@@ -17,7 +17,6 @@
 #include "platform.h"
 
 #ifdef _WIN32
-#define _WIN32_WINNT 0x0500  // for CreateHardLink
 #include <errno.h>
 //#include <winsock.h>  // for TransmitFile
 #endif
