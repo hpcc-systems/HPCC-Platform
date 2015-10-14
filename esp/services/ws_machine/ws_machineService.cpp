@@ -1185,7 +1185,7 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
             return exitCode;
 
         IFRunSSH * connection = createFRunSSH();
-        connection->init(command.str(),NULL,userId.str(),password.str(),m_SSHConnectTimeoutSeconds,0);
+        connection->init(command.str(),NULL,NULL,NULL,m_SSHConnectTimeoutSeconds,0);
         connection->exec(sAddress,NULL,true);
     }
     // CFRunSSH uses a MakeStringExceptionDirect throw to pass code and result string
