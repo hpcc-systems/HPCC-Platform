@@ -142,8 +142,8 @@
         </listitem>
 
         <listitem>
-          <para>A virtualization software package: Oracle VM VirtualBox
-          (version 4.0 or later).</para>
+          <para>Oracle VM VirtualBox<superscript>®</superscript> (version 4.0
+          or later).</para>
         </listitem>
 
         <listitem>
@@ -164,13 +164,7 @@
     virtualization software. These packages allow you to run virtual images
     inside a single host. There are a several different vendors who make
     virtualization software, while any or all of these could work, we support
-    the following products:</para>
-
-    <itemizedlist>
-      <listitem>
-        <para>Oracle's VM VirtualBox</para>
-      </listitem>
-    </itemizedlist>
+    Oracle VM VirtualBox<superscript>®</superscript> .</para>
 
     <sect1>
       <title>VM VirtualBox</title>
