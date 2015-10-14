@@ -1928,7 +1928,7 @@ void HqlCppTranslator::buildAssignSerializedDataset(BuildCtx & ctx, const CHqlBo
     }
 
 
-    OwnedHqlExpr call = bindFunctionCall(func, args);
+    OwnedHqlExpr call = bindFunctionCall(func, args, serializedType);
     buildExprAssign(ctx, target, call);
 }
 
