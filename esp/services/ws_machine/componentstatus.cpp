@@ -88,7 +88,7 @@ bool CESPComponentStatusInfo::isSameComponent(const char* ep, int componentTypeI
     const char* ep1 = status.getEndPoint();
     if (!ep1 || !*ep1 || !ep || !*ep)
         return false;
-    bool hasPort = strchr(ep, ':');
+    bool hasPort = strchr(ep, ':') != NULL;
     if (hasPort)
         return streq(ep1, ep);
     //If no port, for now, only one componentType is reported per IP.

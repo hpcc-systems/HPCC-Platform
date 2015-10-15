@@ -2979,10 +2979,10 @@ void FileSprayer::updateTargetProperties()
                 if (!sameSizeHeaderFooter)
                 {
                     FilePartInfo & curHeaderSource = sources.item(whichHeaderInput);
-                    curProps.setPropInt(FPheaderLength, curHeaderSource.xmlHeaderLength);
+                    curProps.setPropInt64(FPheaderLength, curHeaderSource.xmlHeaderLength);
 
                     FilePartInfo & curFooterSource = sources.item(cur.whichInput);
-                    curProps.setPropInt(FPfooterLength, curFooterSource.xmlFooterLength);
+                    curProps.setPropInt64(FPfooterLength, curFooterSource.xmlFooterLength);
 
                     if ( idx+1 != partition.ordinality() )
                         whichHeaderInput = partition.item(idx+1).whichInput;
@@ -3086,8 +3086,8 @@ void FileSprayer::updateTargetProperties()
 
         if (sameSizeHeaderFooter)
         {
-            curProps.setPropInt(FPheaderLength, headerSize);
-            curProps.setPropInt(FPfooterLength, footerSize);
+            curProps.setPropInt64(FPheaderLength, headerSize);
+            curProps.setPropInt64(FPfooterLength, footerSize);
         }
 
         if (srcAttr.get() && !mirroring) {
