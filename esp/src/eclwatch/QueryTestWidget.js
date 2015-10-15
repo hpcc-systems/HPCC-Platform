@@ -85,8 +85,9 @@ define([
             var context = this;
             WsTopology.GetWsEclIFrameURL(type).then(function (response) {
                 var src = response + encodeURIComponent(context.params.QuerySetId + "/" + context.params.Id + (postfix ? postfix : ""));
+                var completeSrc = "http://" + dojoConfig.urlInfo.wseclhostandport + src;
                 target.set("content", dojo.create("iframe", {
-                    src: src,
+                    src: completeSrc,
                     style: "border: 0; width: 100%; height: 100%"
                 }));
             });
