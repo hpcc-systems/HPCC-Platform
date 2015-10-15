@@ -569,7 +569,7 @@ int main( int argc, char *argv[]  )
             nodeGroup.append(thorname);
             globals->setProp("@nodeGroup", thorname);
         }
-        bool processPerSlave = globals->getPropBool("@processPerSlave");
+        bool processPerSlave = globals->getPropBool("@processPerSlave", true);
         Owned<IGroup> rawGroup = getClusterGroup(thorname, "ThorCluster", processPerSlave);
         unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
         if (processPerSlave)

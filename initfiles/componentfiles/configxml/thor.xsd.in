@@ -490,7 +490,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="processPerSlave" type="xs:xs:boolean" use="optional" default="true">
+      <xs:attribute name="processPerSlave" type="xs:boolean" use="optional" default="true">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Makes each slave run in it's own process</tooltip>

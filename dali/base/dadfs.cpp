@@ -9135,7 +9135,7 @@ class CInitGroups
         Owned<IGroup> grp;
         unsigned slavesPerNode = 0;
         if (grp_thor == groupType)
-            slavesPerNode = cluster.getPropInt("@slavesPerNode");
+            slavesPerNode = cluster.getPropInt("@slavesPerNode", 1);
         if (expand && slavesPerNode)
         {
             SocketEndpointArray msEps;
