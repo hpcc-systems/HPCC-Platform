@@ -8054,6 +8054,8 @@ void AutoScopeMigrateTransformer::doAnalyseExpr(IHqlExpression * expr)
     extra->firstUseIsSequential = isSequential;
     switch (expr->getOperator())
     {
+    //Really the child nodes should be visited, and marked to ensure they are never hoisted, implemented
+    //as a prior pass.  However long term this transformation should be removed, so not worth doing now.
     case no_allnodes:
     case no_keyedlimit:
     case no_nothor:
@@ -8106,7 +8108,6 @@ IHqlExpression * AutoScopeMigrateTransformer::createTransformed(IHqlExpression *
     switch (expr->getOperator())
     {
     case no_allnodes:
-    case no_keyedlimit:
     case no_libraryscope:
     case no_nothor:
     case no_sequential:
@@ -12664,6 +12665,8 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         replaceArray(exprs, transformed);
         translator.noteFinishedTiming("compile:tree transform: normalize.scope", startCycles);
     }
+
+    translator.checkNormalized(exprs);
 
     if (translator.queryOptions().normalizeLocations)
         normalizeAnnotations(translator, exprs);
