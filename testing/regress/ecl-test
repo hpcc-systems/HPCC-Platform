@@ -77,7 +77,6 @@ class RegressMain:
         # Go through the cluster list
         for cluster in self.targetClusters:
             try:
-                self.regress.config.ip = self.regress.config.IpAddress[cluster]
                 if len(eclfiles) :
                     #Execute multiple ECL files like RUN to generates summary results and diff report.
                     self.regress.bootstrap(cluster, self.args,  eclfiles)
@@ -96,7 +95,6 @@ class RegressMain:
         # Go through the cluster list
         for cluster in self.targetClusters:
             self.args.target = cluster
-            self.regress.config.ip = self.regress.config.IpAddress[cluster]
             if  self.args.pq :
                 self.regress.runSuiteP(cluster, self.regress.Setup(self.args))
             else:
@@ -107,7 +105,6 @@ class RegressMain:
         for cluster in self.targetClusters:
             self.regress.bootstrap(cluster, self.args)
             self.args.target = cluster
-            self.regress.config.ip = self.regress.config.IpAddress[cluster]
             if  self.args.pq :
                 self.regress.runSuiteP(cluster, self.regress.suites[cluster])
             else:
@@ -234,7 +231,7 @@ class RegressMain:
                     raise Error("4000")
 
         try:
-            checkHpccStatus(self.targetClusters)
+            checkHpccStatus()
         except Error as e:
             exit(e.getErrorCode());
 
