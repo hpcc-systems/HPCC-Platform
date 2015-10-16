@@ -82,7 +82,6 @@ define([
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.filter = registry.byId(this.id + "Filter");
-            this.options = registry.byId(this.id + "Options");
         },
 
         startup: function (args) {
@@ -534,7 +533,8 @@ define([
 
         getGridQuery: function(){
             optionsForm = registry.byId(this.id + "OptionsForm");
-            return lang.mixin(this.filter.toObject(), optionsForm.value);
+            optionsValues = optionsForm.getValues();
+            return lang.mixin(this.filter.toObject(), optionsValues);
         },
 
         ensurePane: function (id, params, workunitTab) {

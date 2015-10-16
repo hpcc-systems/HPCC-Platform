@@ -1268,7 +1268,7 @@ ESPrequest WUQuerySetDetailsRequest
     string  Filter;
     string  ClusterName;
     ESPenum WUQuerySetFilterType FilterType("All");
-    bool CheckAllNodes(false);
+    bool CheckAllNodes(true);
 };
 
 ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
@@ -1308,7 +1308,7 @@ ESPrequest [nil_remove] WUListQueriesRequest
     bool Descending(false);
     int64 CacheHint;
     string FileName;
-    bool CheckAllNodes(false);
+    bool CheckAllNodes(true);
 };
 
 ESPresponse [exceptions_inline] WUListQueriesResponse
@@ -1371,7 +1371,7 @@ ESPrequest WUQueryDetailsRequest
     bool IncludeStateOnClusters(false);
     bool IncludeSuperFiles(false);
     bool IncludeWsEclAddresses(false);
-    bool CheckAllNodes(false);
+    bool CheckAllNodes(true);
 };
 
 ESPStruct QuerySuperFile
@@ -1413,7 +1413,7 @@ ESPrequest WUMultiQuerySetDetailsRequest
     string  QuerySetName;
     string  Filter;
     ESPenum WUQuerySetFilterType FilterType("All");
-    bool CheckAllNodes(false);
+    bool CheckAllNodes(true);
 };
 
 ESPstruct WUQuerySetDetail
