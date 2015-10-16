@@ -63,7 +63,7 @@ WINLDAPAPI ULONG LDAPAPI ldap_compare_ext_s(
 */
     #define LDAP_COMPARE_EXT_S(ld,dn,attr,bval,data,svrctrls,clientctrls) ldap_compare_ext_s(ld,(const PCHAR)dn,(const PCHAR)attr,(const PCHAR)bval,(struct berval *)data,svrctrls,clientctrls)
     #define LDAP_UNBIND(ld)     ldap_unbind(ld)
-    #define LDAP_INIT(ld,uri)   ldap_init(ld, uri);
+    #define LDAP_INIT(host,port) ldap_init((PCHAR)host, (ULONG)port);
 #else
 /* from openLDAP ldap.h
 ldap_compare_ext_s LDAP_P((
@@ -292,7 +292,7 @@ interface ILdapClient : extends IInterface
 ILdapClient* createLdapClient(IPropertyTree* cfg);
 
 #ifdef _WIN32
-bool verifyServerCert(LDAP* ld, PCCERT_CONTEXT pServerCert);
+extern LDAPSECURITY_API bool verifyServerCert(LDAP* ld, PCCERT_CONTEXT pServerCert);
 #endif
 
 
