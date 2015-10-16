@@ -16,6 +16,10 @@ $?doNotIncludeInGeneratedCode$
 ############################################################################## */
 
 $?$/* Template for generating thor/hthor/roxie output */
+#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wextra"
+#endif
 #include "eclinclude4.hpp"
 @include@
 @prototype@
