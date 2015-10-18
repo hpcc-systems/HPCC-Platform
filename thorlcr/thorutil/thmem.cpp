@@ -191,7 +191,7 @@ protected:
         if (!mmRegistered)
         {
             mmRegistered = true;
-            activity.queryJob().queryRowManager()->addRowBuffer(this);
+            activity.queryJobChannel().queryRowManager()->addRowBuffer(this);
         }
     }
     inline void clearSpillingCallback()
@@ -199,7 +199,7 @@ protected:
         if (mmRegistered)
         {
             mmRegistered = false;
-            activity.queryJob().queryRowManager()->removeRowBuffer(this);
+            activity.queryJobChannel().queryRowManager()->removeRowBuffer(this);
         }
     }
 public:
@@ -359,7 +359,7 @@ public:
         granularity = 500; // JCSMORE - rows
 
         // a small amount of rows to read from swappable rows
-        roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
+        roxiemem::IRowManager *rowManager = activity.queryJobChannel().queryRowManager();
         readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId(), inRows.queryDefaultMaxSpillCost()));
         addSpillingCallback();
     }
@@ -614,7 +614,7 @@ CThorExpandingRowArray::CThorExpandingRowArray(CActivityBase &_activity, IRowInt
     rows = NULL;
     maxRows = 0;
     numRows = 0;
-    rowManager = activity.queryJob().queryRowManager();
+    rowManager = activity.queryJobChannel().queryRowManager();
     throwOnOom = false;
     setup(_rowIf, _allowNulls, _stableSort, _throwOnOom);
     setDefaultMaxSpillCost(roxiemem::SpillAllCost);
@@ -1044,7 +1044,7 @@ offset_t CThorExpandingRowArray::serializedSize()
 
 memsize_t CThorExpandingRowArray::getMemUsage()
 {
-    roxiemem::IRowManager *rM = activity.queryJob().queryRowManager();
+    roxiemem::IRowManager *rM = activity.queryJobChannel().queryRowManager();
     IOutputMetaData *meta = rowIf->queryRowMetaData();
     IOutputMetaData *diskMeta = meta->querySerializedDiskMeta(); // GH->JCS - really I want a internalMeta here.
     rowidx_t c = ordinality();
@@ -1663,7 +1663,7 @@ protected:
     {
         if (mmRegistered)
         {
-            activity.queryJob().queryRowManager()->removeRowBuffer(this);
+            activity.queryJobChannel().queryRowManager()->removeRowBuffer(this);
             mmRegistered = false;
         }
     }
@@ -1671,7 +1671,7 @@ protected:
     {
         if (!mmRegistered && spillingEnabled())
         {
-            activity.queryJob().queryRowManager()->addRowBuffer(this);
+            activity.queryJobChannel().queryRowManager()->addRowBuffer(this);
             mmRegistered = true;
         }
     }
@@ -1746,7 +1746,7 @@ public:
         if (mmRegistered && !spillingEnabled())
         {
             mmRegistered = false;
-            activity.queryJob().queryRowManager()->removeRowBuffer(this);
+            activity.queryJobChannel().queryRowManager()->removeRowBuffer(this);
         }
         spillableRows.setup(rowIf, false, stableSort);
     }
@@ -2161,8 +2161,7 @@ public:
 
 IThorAllocator *createThorAllocator(memsize_t memSize, unsigned memorySpillAt, IContextLogger &logctx, bool crcChecking, bool usePacked)
 {
-    PROGLOG("CRC allocator %s", crcChecking?"ON":"OFF");
-    PROGLOG("Packed allocator %s", usePacked?"ON":"OFF");
+    PROGLOG("Thor allocator: Size=%d (MB), CRC=%s, Packed=%s", (unsigned)(memSize/0x100000), crcChecking?"ON":"OFF", usePacked?"ON":"OFF");
     roxiemem::RoxieHeapFlags flags;
     if (usePacked)
         flags = roxiemem::RHFpacked;

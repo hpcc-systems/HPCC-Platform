@@ -140,6 +140,7 @@ class graphslave_decl CJobSlave : public CJobBase
     ISlaveWatchdog *watchdog;
     Owned<IPropertyTree> workUnitInfo;
     size32_t oldNodeCacheMem;
+    unsigned channelMemorySize;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -157,6 +158,7 @@ public:
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const;
+    virtual IThorAllocator *createThorAllocator();
 // IExceptionHandler
     virtual bool fireException(IException *e)
     {

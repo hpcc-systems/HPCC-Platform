@@ -1004,7 +1004,7 @@ public:
         pullBufferSize = DISTRIBUTE_PULL_BUFFER_SIZE;
         selfstopped = false;
         pull = false;
-        rowManager = activity->queryJob().queryRowManager();
+        rowManager = activity->queryJobChannel().queryRowManager();
 
         StringBuffer compType;
         activity->getOpt(THOROPT_HDIST_COMP, compType);
@@ -2855,7 +2855,7 @@ public:
         iCompare = helper->queryCompare();
 
         // JCSMORE - really should ask / lookup what flags the allocator created for extractKey has...
-        allocFlags = queryJob().queryThorAllocator()->queryFlags();
+        allocFlags = queryJobChannel().queryThorAllocator()->queryFlags();
 
         // JCSMORE - it may not be worth extracting the key,
         // if there's an upstream activity that holds onto rows for periods of time (e.g. sort)
@@ -2867,7 +2867,7 @@ public:
             isVariable = km->isVariableSize();
             if (!isVariable && helper->queryOutputMeta()->isFixedSize())
             {
-                roxiemem::IRowManager *rM = queryJob().queryRowManager();
+                roxiemem::IRowManager *rM = queryJobChannel().queryRowManager();
                 memsize_t keySize = rM->getExpectedCapacity(km->getMinRecordSize(), allocFlags);
                 memsize_t rowSize = rM->getExpectedCapacity(helper->queryOutputMeta()->getMinRecordSize(), allocFlags);
                 if (keySize >= rowSize)
@@ -3023,7 +3023,7 @@ CHashTableRowTable::CHashTableRowTable(HashDedupSlaveActivityBase &_activity, IR
 void CHashTableRowTable::init(rowidx_t sz)
 {
     // reinitialize if need bigger or if requested size is much smaller than existing
-    rowidx_t newMaxRows = activity.queryJob().queryRowManager()->getExpectedCapacity(sz * sizeof(rowidx_t *), activity.allocFlags) / sizeof(rowidx_t *);
+    rowidx_t newMaxRows = activity.queryJobChannel().queryRowManager()->getExpectedCapacity(sz * sizeof(rowidx_t *), activity.allocFlags) / sizeof(rowidx_t *);
     if (newMaxRows <= maxRows && ((maxRows-newMaxRows) <= HASHDEDUP_HT_INC_SIZE))
         return;
     ReleaseThorRow(rows);
@@ -3087,7 +3087,7 @@ CBucket::CBucket(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRo
      */
     if (extractKey)
     {
-        _keyAllocator.setown(owner.queryJob().getRowAllocator(keyIf->queryRowMetaData(), owner.queryActivityId(), owner.allocFlags));
+        _keyAllocator.setown(owner.queryJobChannel().getRowAllocator(keyIf->queryRowMetaData(), owner.queryActivityId(), owner.allocFlags));
         keyAllocator = _keyAllocator;
     }
     else
@@ -3277,16 +3277,16 @@ CBucketHandler::CBucketHandler(HashDedupSlaveActivityBase &_owner, IRowInterface
 
 CBucketHandler::~CBucketHandler()
 {
-    owner.queryJob().queryRowManager()->removeRowBuffer(this);
-    owner.queryJob().queryRowManager()->removeRowBuffer(&postSpillFlush);
+    owner.queryJobChannel().queryRowManager()->removeRowBuffer(this);
+    owner.queryJobChannel().queryRowManager()->removeRowBuffer(&postSpillFlush);
     for (unsigned i=0; i<numBuckets; i++)
         ::Release(buckets[i]);
 }
 
 void CBucketHandler::flushBuckets()
 {
-    owner.queryJob().queryRowManager()->removeRowBuffer(this);
-    owner.queryJob().queryRowManager()->removeRowBuffer(&postSpillFlush);
+    owner.queryJobChannel().queryRowManager()->removeRowBuffer(this);
+    owner.queryJobChannel().queryRowManager()->removeRowBuffer(&postSpillFlush);
     for (unsigned i=0; i<numBuckets; i++)
     {
         CBucket &bucket = *buckets[i];
@@ -3335,7 +3335,7 @@ unsigned CBucketHandler::getBucketEstimate(rowcount_t totalRows) const
         // likely to be way off for variable
 
         // JCSMORE - will need to change based on whether upstream keeps packed or not.
-        roxiemem::IRowManager *rM = owner.queryJob().queryRowManager();
+        roxiemem::IRowManager *rM = owner.queryJobChannel().queryRowManager();
 
         memsize_t availMem = roxiemem::getTotalMemoryLimit()-0x500000;
         memsize_t initKeySize = rM->getExpectedCapacity(keyIf->queryRowMetaData()->getMinRecordSize(), owner.allocFlags);
@@ -3382,9 +3382,9 @@ void CBucketHandler::init(unsigned _numBuckets, IRowStream *keyStream)
         htRows.setOwner(buckets[i]);
     }
     ActPrintLog(&owner, "Max %d buckets, current depth = %d", numBuckets, depth+1);
-    owner.queryJob().queryRowManager()->addRowBuffer(this);
+    owner.queryJobChannel().queryRowManager()->addRowBuffer(this);
     // postSpillFlush not needed until after 1 spill event, but not safe to add within callback
-    owner.queryJob().queryRowManager()->addRowBuffer(&postSpillFlush);
+    owner.queryJobChannel().queryRowManager()->addRowBuffer(&postSpillFlush);
     if (keyStream)
     {
         loop

@@ -208,7 +208,7 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         helper = static_cast <IHThorProcessArg *> (queryHelper());
-        rightRowAllocator.setown(queryJob().getRowAllocator(helper->queryRightRecordSize(),queryActivityId()));
+        rightRowAllocator.setown(queryJobChannel().getRowAllocator(helper->queryRightRecordSize(),queryActivityId()));
         IterateSlaveActivityBase::init(data,slaveData);
     }
 

@@ -346,7 +346,7 @@ public:
         {
             IOutputMetaData *keyRowMeta = QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData);
             assertex(keyRowMeta);
-            keyRowAllocator.setown(queryJob().getRowAllocator(keyRowMeta, queryActivityId()));
+            keyRowAllocator.setown(queryJobChannel().getRowAllocator(keyRowMeta, queryActivityId()));
         }
         appendOutputLinked(this);
     }

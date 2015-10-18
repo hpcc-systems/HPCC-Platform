@@ -728,13 +728,11 @@ public:
 
 interface ILoadedDllEntry;
 interface IConstWorkUnit;
-interface IThorAllocator;
 class CThorCodeContextBase;
 
 class graph_decl CJobBase : public CInterface, implements IDiskUsage, implements IExceptionHandler
 {
 protected:
-    Owned<IThorAllocator> thorAllocator;
     CriticalSection crit;
     Owned<ILoadedDllEntry> querySo;
     IUserDescriptor *userDesc;
@@ -757,6 +755,10 @@ protected:
     Owned<IPerfMonHook> perfmonhook;
     size32_t oldNodeCacheMem;
     CIArrayOf<CJobChannel> jobChannels;
+    bool crcChecking;
+    bool usePackedAllocator;
+    unsigned memorySpillAt;
+
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -808,9 +810,7 @@ public:
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
     void addSubGraph(IPropertyTree &xgmml);
 
-    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
     roxiemem::IRowManager *queryRowManager() const;
-    IThorAllocator *queryThorAllocator() const { return thorAllocator; }
     bool queryUseCheckpoints() const;
     bool queryPausing() const { return pausing; }
     bool queryResumed() const { return resumed; }
@@ -845,6 +845,7 @@ public:
     unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
     __int64 getOptInt64(const char *opt, __int64 dft=0);
     unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
+    virtual IThorAllocator *createThorAllocator();
 
     virtual void abort(IException *e);
 
@@ -872,6 +873,7 @@ interface IGraphExecutor : extends IInterface
     virtual void wait() = 0;
 };
 
+interface IThorAllocator;
 class graph_decl CJobChannel : public CInterface, implements IGraphCallback, implements IExceptionHandler
 {
 protected:
@@ -948,6 +950,8 @@ public:
     IMPServer &queryMPServer() const { return *mpServer; }
     const rank_t &queryMyRank() const { return myrank; }
     mptag_t deserializeMPTag(MemoryBuffer &mb);
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
+    roxiemem::IRowManager *queryRowManager() const;
 
     virtual void abort(IException *e);
     virtual IBarrier *createBarrier(mptag_t tag) { UNIMPLEMENTED; return NULL; }

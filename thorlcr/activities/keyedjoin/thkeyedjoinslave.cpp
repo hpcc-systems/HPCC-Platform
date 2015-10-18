@@ -1832,7 +1832,7 @@ public:
         node = queryJobChannel().queryMyRank()-1;
         onFailTransform = (0 != (joinFlags & JFonfail)) && (0 == (joinFlags & JFmatchAbortLimitSkips));
 
-        joinFieldsAllocator.setown(queryJob().getRowAllocator(helper->queryJoinFieldsRecordSize(), queryActivityId()));
+        joinFieldsAllocator.setown(queryJobChannel().getRowAllocator(helper->queryJoinFieldsRecordSize(), queryActivityId()));
         if (onFailTransform || (joinFlags & JFleftouter))
         {
             RtlDynamicRowBuilder rr(joinFieldsAllocator);
@@ -1970,7 +1970,7 @@ public:
                 Owned<IOutputMetaData> fetchInputMeta;
                 if (0 != helper->queryFetchInputRecordSize()->getMinRecordSize())
                 {
-                    fetchInputAllocator.setown(queryJob().getRowAllocator(helper->queryFetchInputRecordSize(), queryActivityId()));
+                    fetchInputAllocator.setown(queryJobChannel().getRowAllocator(helper->queryFetchInputRecordSize(), queryActivityId()));
                     fetchInputMeta.setown(createOutputMetaDataWithChildRow(fetchInputAllocator, FETCHKEY_HEADER_SIZE));
                 }
                 else
@@ -2004,15 +2004,15 @@ public:
         if (needsDiskRead)
         {
             Owned<IOutputMetaData> meta = createFixedSizeMetaData(KEYLOOKUP_HEADER_SIZE);
-            keyLookupAllocator.setown(queryJob().getRowAllocator(meta, queryActivityId()));
+            keyLookupAllocator.setown(queryJobChannel().getRowAllocator(meta, queryActivityId()));
         }
         else
         {
             Owned<IOutputMetaData> meta = createOutputMetaDataWithChildRow(joinFieldsAllocator, KEYLOOKUP_HEADER_SIZE);
-            keyLookupAllocator.setown(queryJob().getRowAllocator(meta, queryActivityId()));
+            keyLookupAllocator.setown(queryJobChannel().getRowAllocator(meta, queryActivityId()));
         }
 
-        indexInputAllocator.setown(queryJob().getRowAllocator(helper->queryIndexReadInputRecordSize(), queryActivityId()));
+        indexInputAllocator.setown(queryJobChannel().getRowAllocator(helper->queryIndexReadInputRecordSize(), queryActivityId()));
 
         ////////////////////
 
