@@ -957,6 +957,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             ".floatdone: \n\t"
             : 
             : "S"(floatstack),"D"(floatSizes)
+            : "cc","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7"
             );
         }           
         __asm__ (
@@ -975,6 +976,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             "add    %%rbx, %%rsp \n\t" // Restore stack pointer (note have popped 6 registers)
             : "=a"(int64result),"=d"(dummy1),"=c"(dummy1),"=S"(dummy3),"=D"(dummy4)
             : "c"(len),"b"(len-REGPARAMS*REGSIZE),"S"(strbuf),"a"(fh)
+            : "cc","r8","r9","xmm0"
             );
         
         // Get real (float/double) return values;
@@ -1015,6 +1017,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             "pop    %%ebx \n\t"
             : "=a"(intresult),"=d"(intresulthigh),"=c"(dummy1),"=S"(dummy2),"=D"(dummy3)
             : "c"(len),"S"(strbuf),"d"(fh)
+            : "cc"
             );
 
         // Get real (float/double) return values;
