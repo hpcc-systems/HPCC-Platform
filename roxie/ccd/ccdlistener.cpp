@@ -670,7 +670,17 @@ public:
         }
         else
         {
+#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 6)
             cpuCores = CPU_COUNT(&cpuMask);
+#else
+            cpuCores = 0;
+            unsigned setSize = CPU_SETSIZE;
+            while (setSize--)
+            {
+                if (CPU_ISSET(setSize, &cpuMask))
+                    ++cpuCores;
+            }
+#endif /* GLIBC */
             if (traceLevel)
                 traceAffinity(&cpuMask);
         }
