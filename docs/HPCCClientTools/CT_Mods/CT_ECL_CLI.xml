@@ -842,7 +842,6 @@ ecl unpublish roxie "FindpersonService*"
         <para><emphasis role="bold">Examples</emphasis>:</para>
 
         <programlisting>ecl run thor findperson.ecl --name=findperson --input=data.xml --wait=1000
-ecl run thor findperson.ecl -I C:\MyECL\
 ecl run thor W20150914-125557 --input=data.xml --wait=1000
 ecl run thor findperson --input=data.xml --wait=1000
 ecl run thor libW20150914-125557.so --input=data.xml --wait=1000
@@ -1025,7 +1024,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
                   <entry>-I &lt;path&gt;</entry>
 
                   <entry>Add path to locations to search for ECL imports
-                  (e.g., -I C:\MyECL\ ) </entry>
+                  (e.g., -I C:\MyECL\ )</entry>
                 </row>
 
                 <row>
