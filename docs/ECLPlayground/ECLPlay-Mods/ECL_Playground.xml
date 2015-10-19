@@ -30,7 +30,7 @@
       Playground then shows you the results and the graph in your browser. The
       view is very similar to what the ECL IDE displays.</para>
 
-      <sect2>
+      <sect2 id="ECLPlayground_AccessingThePlayground">
         <title>Accessing ECL Playground</title>
 
         <para>ECL Playground is installed with the HPCC platform. You can
@@ -90,7 +90,7 @@
           </orderedlist></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="ECLPlayground_Introduction" role="brk">
         <title>Introducing the ECL Playground</title>
 
         <para>The ECL Playground page is a work area where you can see and run
@@ -134,7 +134,7 @@
         The results display at the bottom portion of the page.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="ECLPlayground_RunningECLCode">
         <title>Running ECL Code</title>
 
         <para>To run the selected sample code, choose a target cluster from
@@ -180,7 +180,7 @@
         in the <emphasis>Editor</emphasis>. If there are warnings they are
         displayed in yellow.</para>
 
-        <sect3>
+        <sect3 id="ECLPlayground_AnalyzeResutls">
           <title>Analyze the results</title>
 
           <para>When running ECL Code that has multiple results, each result
@@ -200,7 +200,7 @@
         </sect3>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="ECLPlayground_ECLFromAWorkunit" role="brk">
         <title>ECL from a Workunit</title>
 
         <para>You can access ECL code from inside a Workunit Details page in

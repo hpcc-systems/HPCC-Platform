@@ -145,7 +145,7 @@
 
         <para></para>
 
-        <sect3 role="brk">
+        <sect3 id="CT_ECL_CLI_ecl.ini" role="brk">
           <title>ecl.ini</title>
 
           <para>Many options can be placed in a file called <emphasis
@@ -208,7 +208,7 @@ resultLimit=200
           </itemizedlist>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="CT_CLI_Syntax_EnvironmentVariables" role="brk">
           <title>Environment Variables</title>
 
           <para>Some options can be stored in Environment Variables on your
@@ -245,7 +245,7 @@ ECL_RESULT_LIMIT
         </sect3>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLDeploy" role="brk">
         <title>ecl deploy</title>
 
         <para><emphasis role="bold">ecl deploy &lt;target&gt; &lt;file&gt;
@@ -415,7 +415,7 @@ ecl deploy roxie - --name=FindPersonService
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLPublish" role="brk">
         <title>ecl publish</title>
 
         <para><emphasis role="bold">ecl publish &lt;target&gt; &lt;file&gt;
@@ -604,8 +604,8 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                 <row>
                   <entry>--priority=&lt;val&gt;</entry>
 
-                  <entry> The priority for this query. Value can be LOW, HIGH,
-                  SLA, NONE. NONE will clear current setting. </entry>
+                  <entry>The priority for this query. Value can be LOW, HIGH,
+                  SLA, NONE. NONE will clear current setting.</entry>
                 </row>
 
                 <row>
@@ -724,7 +724,7 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLUnPublish" role="brk">
         <title>ecl unpublish</title>
 
         <para><emphasis role="bold">ecl unpublish &lt;queryset&gt;
@@ -815,7 +815,7 @@ ecl unpublish roxie "FindpersonService*"
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLRun" role="brk">
         <title>ecl run</title>
 
         <para><emphasis role="bold">ecl run &lt;target&gt; &lt;file&gt;
@@ -1043,7 +1043,7 @@ ecl run thor findperson.ecl --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLActivate" role="brk">
         <title>ecl activate</title>
 
         <para><emphasis role="bold">ecl activate &lt;queryset&gt;
@@ -1132,7 +1132,7 @@ ecl run thor findperson.ecl --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLDeactivate" role="brk">
         <title>ecl deactivate</title>
 
         <para><emphasis role="bold">ecl deactivate &lt;queryset&gt;
@@ -1222,7 +1222,7 @@ ecl run thor findperson.ecl --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLQueriesList" role="brk">
         <title id="eclquerieslist">ecl queries list</title>
 
         <para><emphasis role="bold">ecl queries list
@@ -1361,7 +1361,7 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 id="eclqueriescopy" role="brk">
+      <sect2 id="CT_CLI_eclqueriescopy" role="brk">
         <title>ecl queries copy</title>
 
         <para><emphasis role="bold">ecl queries copy &lt;source_query_path&gt;
@@ -1533,7 +1533,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
           </informaltable></para>
       </sect2>
 
-      <sect2 id="eclqueriescopyset" role="brk">
+      <sect2 id="CT_CLI_eclqueriescopyset" role="brk">
         <title>ecl queries copy-set</title>
 
         <para><emphasis role="bold">ecl queries copy-set &lt;source_target&gt;
@@ -2538,7 +2538,7 @@ ecl packagemap validate roxie --active</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLRoxieAttach" role="brk">
         <title>ecl roxie attach</title>
 
         <para><emphasis role="bold">ecl roxie attach
@@ -2610,7 +2610,7 @@ ecl packagemap validate roxie --active</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLRoxieDetach" role="brk">
         <title>ecl roxie detach</title>
 
         <para><emphasis role="bold">ecl roxie detach
@@ -2682,7 +2682,7 @@ ecl packagemap validate roxie --active</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLRoxieReload" role="brk">
         <title>ecl roxie reload</title>
 
         <para><emphasis role="bold">ecl roxie reload
@@ -2754,7 +2754,7 @@ ecl packagemap validate roxie --active</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLRoxieCheck" role="brk">
         <title>ecl roxie check</title>
 
         <para><emphasis role="bold">ecl roxie check
@@ -2832,7 +2832,7 @@ ecl packagemap validate roxie --active</programlisting>
           </informaltable><parameter></parameter></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLBundleDepends" role="brk">
         <title>ecl bundle depends</title>
 
         <para><emphasis role="bold">ecl bundle depends &lt;bundleName&gt;
@@ -2890,7 +2890,7 @@ ecl bundle depends mybundle --version=2</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLBundleInfo" role="brk">
         <title>ecl bundle info</title>
 
         <para><emphasis role="bold">ecl bundle info &lt;bundleName&gt;
@@ -2943,7 +2943,7 @@ ecl bundle info mybundle --version=2</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLBundleInstall" role="brk">
         <title>ecl bundle install</title>
 
         <para><emphasis role="bold">ecl bundle install
@@ -3016,7 +3016,7 @@ ecl bundle install mybundle --keepprior</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLBundleUninstall" role="brk">
         <title>ecl bundle uninstall</title>
 
         <para><emphasis role="bold">ecl bundle uninstall
@@ -3084,7 +3084,7 @@ ecl bundle install mybundle --keepprior</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLBundleList" role="brk">
         <title>ecl bundle list</title>
 
         <para><emphasis role="bold">ecl bundle list
@@ -3138,7 +3138,7 @@ ecl bundle list myb*
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLBundleUse" role="brk">
         <title>ecl bundle use</title>
 
         <para><emphasis role="bold">ecl bundle use &lt;bundleName&gt;
@@ -3191,7 +3191,7 @@ ecl bundle list myb*
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLRoxieUnusedFiles" role="brk">
         <title>ecl roxie unused-files</title>
 
         <para><emphasis role="bold">ecl roxie unused-files
@@ -3272,7 +3272,7 @@ ecl bundle list myb*
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLAbort" role="brk">
         <title>ecl abort</title>
 
         <para><emphasis role="bold">ecl abort -wu &lt;WUID&gt; | -n
@@ -3357,7 +3357,7 @@ ecl abort -n MyJob</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLStatus" role="brk">
         <title>ecl status</title>
 
         <para><emphasis role="bold">ecl status -wu &lt;WUID&gt; | -n
@@ -3442,7 +3442,7 @@ ecl status -n MyJob</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLGetWUID" role="brk">
         <title>ecl getwuid</title>
 
         <para><emphasis role="bold">ecl getwuid -n &lt;jobName&gt;
@@ -3527,7 +3527,7 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_CLI_SyntaxECLGetName" role="brk">
         <title>ecl getname</title>
 
         <para><emphasis role="bold">ecl getname -wu &lt;WUID&gt;
