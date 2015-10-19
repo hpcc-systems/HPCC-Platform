@@ -21,6 +21,13 @@
 #include "platform.h"
 
 #ifdef _WIN32
+inline static void spinPause() { YieldProcessor(); }
+#else
+#include "xmmintrin.h"
+inline static void spinPause() { _mm_pause(); }
+#endif
+
+#ifdef _WIN32
 
 #include <intrin.h>
 

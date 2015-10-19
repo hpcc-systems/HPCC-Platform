@@ -27,7 +27,7 @@
     </informaltable></para>
 
   <para>The <emphasis role="bold">RANDOM </emphasis>function returns a
-  pseudo-random positive integer value.</para>
+  pseudo-random non-negative integer value between 0 and 4,294,967,295.</para>
 
   <para>Example:</para>
 

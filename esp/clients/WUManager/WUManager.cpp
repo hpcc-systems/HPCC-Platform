@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
         return 0 ;
     }
 
-    for (unsigned i=4;i<argc;i++) {
+    for (int i=4;i<argc;i++) {
         char* delim = strstr(argv[i],":");
         if (delim)
         {

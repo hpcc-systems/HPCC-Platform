@@ -1973,7 +1973,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_subgraph:
     case no_deserialize:
     case no_serialize:
-        if (expr->queryChild(0)->isDataset())
+        if (expr->queryChild(0)->isDataset() || expr->queryChild(0)->isDictionary())
             return childdataset_dataset_noscope;
         return childdataset_none;
     case no_pipe:
@@ -2241,9 +2241,15 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_ensureresult:
         return 1;
     case no_executewhen:
+    case no_setresult:
+    case no_sizeof:
+    case no_offsetof:
+    case no_nameof:
+    case no_blob2id:
+    case no_subgraph:
     case no_deserialize:
     case no_serialize:
-        if (dataset->queryChild(0)->isDataset())
+        if (dataset->queryChild(0)->isDataset() || dataset->queryChild(0)->isDictionary())
             return 1;
         return 0;
     case no_childdataset:
@@ -2299,15 +2305,6 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_internalselect:
     case no_purevirtual:
     case no_libraryinput:
-        return 0;
-    case no_subgraph:
-    case no_sizeof:
-    case no_offsetof:
-    case no_nameof:
-    case no_blob2id:
-    case no_setresult:
-        if (dataset->queryChild(0)->isDataset())
-            return 1;
         return 0;
     case no_select:
         if (dataset->hasAttribute(newAtom) && dataset->isDataset())
@@ -6349,7 +6346,9 @@ void CHqlDataset::cacheParent()
     case no_mergejoin:
     case no_nwayjoin:
     case no_nwaymerge:
-        rootTable = this;       //?
+    case no_serialize:
+    case no_deserialize:
+        rootTable = this;
         break;
     case no_table:
         {

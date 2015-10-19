@@ -602,7 +602,6 @@ WORKUNITSERVICES_API void wsWorkunitTimings( ICodeContext *ctx, size32_t & __len
         filter.setMeasure(SMeasureTimeNs);
 
         SCMStringBuffer desc;
-        unsigned tmp;
         Owned<IConstWUStatisticIterator> iter = &wu->getStatistics(&filter);
         ForEach(*iter)
         {

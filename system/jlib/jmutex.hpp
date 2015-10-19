@@ -20,7 +20,6 @@
 #ifndef __JMUTEX__
 #define __JMUTEX__
 
-
 #include <assert.h>
 #include "jiface.hpp"
 #include "jsem.hpp"
@@ -891,6 +890,5 @@ public:
         return sobj;
     }
 */
-
 
 #endif

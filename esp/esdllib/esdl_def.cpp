@@ -1924,7 +1924,8 @@ public:
 
 bool EsdlDefinition::hasFileLoaded(const char *filename)
 {
-    return added.getValue(filename);
+    //The existance of the entry indicates whether it has been added or not
+    return added.getValue(filename) != NULL;
 }
 bool EsdlDefinition::hasXMLDefintionLoaded(const char *esdlDefName, int ver)
 {
@@ -1939,7 +1940,8 @@ bool EsdlDefinition::hasXMLDefintionLoaded(const char *esdlDefName, int ver)
 
 bool EsdlDefinition::hasXMLDefintionLoaded(const char *esdlDefId)
 {
-    return added.getValue(esdlDefId);
+    //The existance of the entry indicates whether it has been added or not
+    return added.getValue(esdlDefId) != NULL;
 }
 
 void EsdlDefinition::addDefinitionsFromFile(const char *filename)

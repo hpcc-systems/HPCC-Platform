@@ -61,6 +61,7 @@ set (    SRCS
          jobserve.cpp 
          jprop.cpp 
          jptree.cpp 
+         jqueue.cpp
          jregexp.cpp 
          jsem.cpp 
          jset.cpp 
@@ -126,6 +127,7 @@ set (    INCLUDES
         jprop.hpp
         jptree.hpp
         jptree.ipp
+        jqueue.hpp
         jqueue.tpp
         jregexp.hpp
         jrespool.tpp
@@ -149,8 +151,9 @@ set (    INCLUDES
         jvmem.hpp
         )
 
-set_source_files_properties (jmalloc.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
-
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+    set_source_files_properties (jmalloc.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
+endif ()
 
 include_directories ( 
          ../../system/win32 
