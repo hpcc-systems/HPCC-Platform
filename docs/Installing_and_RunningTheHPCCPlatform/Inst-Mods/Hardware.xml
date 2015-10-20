@@ -59,14 +59,27 @@
   <chapter id="Hardware-and-Software-Chapter">
     <title>Hardware and Software Requirements</title>
 
-    <para>The following section describes the various hardware and software
-    required in order to run the HPCC.</para>
+    <para>This section describes some hardware and software requirements or
+    recommendations in order to run the HPCC. Essentially the HPCC system is
+    designed to run on commodity hardware, and would probably work well on
+    almost any hardware. To really take advantage of the power of an HPCC
+    system you should deploy your HPCC system on more modern advanced
+    hardware.</para>
+
+    <para>Hardware and software technology are constantly changing and
+    improving, therefore the latest most up to date requirements and
+    recommendation are available on the HPCC Systems Portal. The System
+    requirements page describes in detail the latest platform
+    requirements.</para>
+
+    <para><ulink
+    url="http://hpccsystems.com/permlink/requirements">http://hpccsystems.com/permlink/requirements</ulink></para>
 
     <sect1 id="HW-Switch" role="nobrk">
       <title>Network Switch</title>
 
-      <para>A significant component of HPCC is the infrastructure it runs on,
-      specifically the switch.</para>
+      <para>The network switch is a significant component of the HPCC
+      System.</para>
 
       <sect2 id="Switch-Requirements">
         <title>Switch requirements</title>
@@ -86,65 +99,12 @@
           </listitem>
         </itemizedlist>
 
-        <para><emphasis role="bold">Small:</emphasis> For a very small test
-        system, almost any gigabit switch will suffice. These are inexpensive
-        and readily available in six to 20-port models.</para>
-
-        <para><figure>
-            <title>1 GigE 8-port Switch</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="../../images/DHSMC8508T.jpg"
-                           vendor="hardwareSS" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
-
-        <para><emphasis role="bold">Medium</emphasis>: For medium sized (10-48
-        node) systems, we recommend using a Force10 s25, s50, s55, or s60
-        switch</para>
-
-        <para><figure>
-            <title>Force10 S55 48-port Network Switch</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="../../images/s55.jpg"
-                           vendor="hardwareSS,force10SS" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
-
-        <para><?hard-pagebreak ?><emphasis role="bold">Large</emphasis>: For
-        large (48-350 node) system, the Force10 c150 or c300 are good
-        choices.</para>
-
-        <para><figure>
-            <title>Force 10 c150</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="../../images/c150-lg.jpg"
-                           vendor="hardwareSS,force10SS" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
-
-        <para><?hard-pagebreak ?><emphasis role="bold">Very Large</emphasis>:
-        For very large (more than 300 nodes) system, the Force10 e600 or e1200
-        are good choices.</para>
-
-        <para><figure>
-            <title>Force 10 e600 and e1200</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="../../images/Force10_ExaScaleE6001200.jpg"
-                           vendor="hardwareSS,force10SS" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
+        <para>Ideally your HPCC system will perform better when each node is
+        connected directly into a single switch. You should be able to provide
+        a port for each node on a single switch to optimize system
+        performance. Your switch size should correspond to the size of your
+        system. You would want to ensure that the switch you use has enough
+        capacity for each node to be plugged into it's own port.</para>
       </sect2>
 
       <sect2 id="Switch-additional-recommend">
@@ -152,7 +112,11 @@
 
         <para><itemizedlist mark="square" spacing="compact">
             <listitem>
-              <para>Non-blocking backplane</para>
+              <para>Gigabit speed</para>
+            </listitem>
+
+            <listitem>
+              <para>Non-blocking/Non-oversubscribed backplane</para>
             </listitem>
 
             <listitem>
@@ -171,33 +135,22 @@
               <para>Port channel (port bundling) support</para>
             </listitem>
           </itemizedlist></para>
+
+        <para>Generally, higher-end, higher throughput switches are also going
+        to provide better performance. For larger systems, a high-capacity
+        managed switch that can be configured and tuned for HPCC efficiency is
+        the best choice.</para>
       </sect2>
     </sect1>
 
     <sect1 id="HW-LoadBalancer">
       <title>Load Balancer</title>
 
-      <para>In order to take full advantage of a Roxie cluster, a load
-      balancer is required. Each Roxie Node is capable of receiving requests
-      and returning results. Therefore, a load balancer distributes the load
-      in an efficient manner to get the best performance and avoid a potential
+      <para>A load balancer distributes network traffic across a number of
+      servers. Each Roxie Node is capable of receiving requests and returning
+      results. Therefore, a load balancer distributes the load in an efficient
+      manner to get the best performance and avoid a potential
       bottleneck.</para>
-
-      <para>We recommend the Web Accelerator product line from F5 Networks.
-      See <ulink
-      url="http://www.f5.com/pdf/products/big-ip-webaccelerator-ds.pdf">http://www.f5.com/pdf/products/big-ip-webaccelerator-ds.pdf
-      </ulink> for more information<phrase></phrase>.</para>
-
-      <para><figure>
-          <title>F5 Load Balancers</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="../../images/IR-009a.jpg"
-                         vendor="hardwareSS,F5SS" />
-            </imageobject>
-          </mediaobject>
-        </figure></para>
 
       <sect2 id="LoadBalancerRequirements">
         <title>Load Balancer Requirements</title>
@@ -207,7 +160,7 @@
 
           <para><itemizedlist spacing="compact">
               <listitem>
-                <para>Throughput: 1Gbps Gigabit</para>
+                <para>Throughput: 1 Gigabit</para>
               </listitem>
 
               <listitem>
@@ -239,7 +192,7 @@
             </itemizedlist></para>
         </sect3>
 
-        <sect3 id="LoadBalancer_RecommendedCapabilities" role="brk">
+        <sect3 id="LoadBalancer_RecommendedCapabilities">
           <title>Recommended capabilities</title>
 
           <para><itemizedlist spacing="compact">
@@ -263,6 +216,8 @@
                 (for load balancing clusters not nodes)</para>
 
                 <para>or</para>
+
+                <para> </para>
               </listitem>
 
               <listitem>
@@ -277,7 +232,7 @@
     <sect1 id="Nodes-Hardware">
       <title>Nodes-Hardware</title>
 
-      <para>The HPCC can run as a single node system or a multi node
+      <para>An HPCC System can run as a single node system or a multi node
       system.</para>
 
       <para>These hardware recommendations are intended for a multi-node
@@ -304,6 +259,8 @@
             <para>(Note: If you configure more than 1 slave per node, memory
             is shared. For example, if you want 2 slaves per node with each
             having 4 GB of memory, the server would need 8 GB total.)</para>
+
+            <para> </para>
           </listitem>
 
           <listitem>
@@ -323,7 +280,7 @@
 
         <para><itemizedlist mark="square" spacing="compact">
             <listitem>
-              <para>Nehalem Core i7 CPU</para>
+              <para>Dual Core i7 CPU (or better)</para>
             </listitem>
 
             <listitem>
@@ -388,41 +345,12 @@
       <sect2 id="Operating-System-Requirements">
         <title>Operating System Requirements</title>
 
-        <para>Binary packages are available for the following:</para>
+        <para>Binary installation packages are available for many Linux
+        Operating systems. HPCC System platform requirements are readily
+        available on the HPCC Portal.</para>
 
-        <para><itemizedlist mark="square" spacing="compact">
-            <listitem>
-              <para>64-bit CentOS 5</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit CentOS 6</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit CentOS 7</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit RedHat Enterprise 5</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit RedHat Enterprise 6</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit Ubuntu 12.04 (LTS)</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit Ubuntu 13.10</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit Ubuntu 14.04 (LTS)</para>
-            </listitem>
-          </itemizedlist></para>
+        <para><ulink
+        url="http://hpccsystems.com/permlink/requirements">http://hpccsystems.com/permlink/requirements</ulink></para>
       </sect2>
 
       <sect2 id="configuration-manager">
