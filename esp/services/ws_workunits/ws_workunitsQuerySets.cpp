@@ -2509,9 +2509,15 @@ bool CWsWorkunitsEx::resetQueryStats(IEspContext& context, const char* target, I
         Owned<IPropertyIterator> it = queryIds->getIterator();
         ForEach(*it)
         {
-            const char *querySetId = it->getPropKey();
-            if (querySetId && *querySetId)
-                control.appendf("<Query id='%s'/>", querySetId);
+            const char *queryId = it->getPropKey();
+            if (queryId && *queryId)
+            {
+                appendXMLOpenTag(control, "Query", NULL, false);
+                appendXMLAttr(control, "id", queryId);
+                if (target && *target)
+                    appendXMLAttr(control, "target", target);
+                control.append("/>");
+            }
         }
         if (!control.length())
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "CWsWorkunitsEx::resetQueryStats: Query ID not specified");
