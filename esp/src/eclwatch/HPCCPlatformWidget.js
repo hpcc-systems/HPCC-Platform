@@ -411,7 +411,9 @@ define([
         _onMonitoring: function (evt) {
             this.stackContainer.selectChild(this.operationsPage);
             this.operationsPage.ensureWidget().then(function (operationsPage) {
-                operationsPage.widget.TabContainer.selectChild(operationsPage.widget._Monitoring);
+                operationsPage.widget._Topology.ensureWidget().then(function (topologyPage) {  //  This is needed otherwise topology will steal focus the first time it is delay loaded
+                    operationsPage.selectChild(operationsPage.widget._Monitoring);
+                });
             });
         },
 

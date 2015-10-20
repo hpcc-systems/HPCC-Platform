@@ -381,7 +381,7 @@ public:
             if (length / size > UINT_MAX)
                 throw MakeStringException(ROXIE_FILE_ERROR, "Maximum row count %u exceeded", UINT_MAX);
             unsigned oldMax = maxPtrs;
-            maxPtrs += length / size;
+            maxPtrs += (unsigned)(length / size);
             if (oldMax > maxPtrs) // Check if it wrapped
                 throw MakeStringException(ROXIE_FILE_ERROR, "Maximum row count %u exceeded", UINT_MAX);
         }

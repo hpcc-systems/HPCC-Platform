@@ -76,7 +76,7 @@
       built-in functions in this document are always shown in ALL CAPS to make
       them stand out for easy identification.</para>
 
-      <sect3>
+      <sect3 id="CT_ECL_ExampleCode">
         <title>Example Code</title>
 
         <para>All example code in this document appears in the following
@@ -92,7 +92,7 @@
         purpose in examples.</para>
       </sect3>
 
-      <sect3>
+      <sect3 id="CT_ECL_Actions">
         <title>Actions</title>
 
         <para>In step-by-step sections, there will be explicit actions to

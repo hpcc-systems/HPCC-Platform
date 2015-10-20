@@ -279,7 +279,7 @@ depending on where they wind up.-->
           provides access to even more advanced graphing options.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="ECLWatch_Queries_LogicalFiles">
           <title>Logical Files Tab</title>
 
           <para>The Published queries details page provides a link to the

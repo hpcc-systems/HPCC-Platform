@@ -1316,11 +1316,11 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
     MemoryBuffer filterBuf;
     const char* clusterReq = req.getClusterName();
     addWUQSQueryFilter(filters, filterCount, filterBuf, req.getQuerySetName(), WUQSFQuerySet);
-    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getQueryID(), (WUQuerySortField) (WUQSFId | WUQSFwild));
-    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getQueryName(), (WUQuerySortField) (WUQSFname | WUQSFwild));
-    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getWUID(), WUQSFwuid);
+    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getQueryID(), (WUQuerySortField) (WUQSFId | WUQSFwild | WUSFnocase));
+    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getQueryName(), (WUQuerySortField) (WUQSFname | WUQSFwild | WUSFnocase));
+    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getWUID(), (WUQuerySortField) (WUQSFwuid | WUSFnocase));
     addWUQSQueryFilter(filters, filterCount, filterBuf, req.getLibraryName(), (WUQuerySortField) (WUQSFLibrary | WUQSFnocase));
-    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getPublishedBy(), (WUQuerySortField) (WUQSFPublishedBy | WUQSFwild));
+    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getPublishedBy(), (WUQuerySortField) (WUQSFPublishedBy | WUQSFwild | WUSFnocase));
     if (!req.getMemoryLimitLow_isNull())
         addWUQSQueryFilterInt64(filters, filterCount, filterBuf, req.getMemoryLimitLow(), (WUQuerySortField) (WUQSFmemoryLimit | WUQSFnumeric));
     if (!req.getMemoryLimitHigh_isNull())
@@ -2509,9 +2509,15 @@ bool CWsWorkunitsEx::resetQueryStats(IEspContext& context, const char* target, I
         Owned<IPropertyIterator> it = queryIds->getIterator();
         ForEach(*it)
         {
-            const char *querySetId = it->getPropKey();
-            if (querySetId && *querySetId)
-                control.appendf("<Query id='%s'/>", querySetId);
+            const char *queryId = it->getPropKey();
+            if (queryId && *queryId)
+            {
+                appendXMLOpenTag(control, "Query", NULL, false);
+                appendXMLAttr(control, "id", queryId);
+                if (target && *target)
+                    appendXMLAttr(control, "target", target);
+                control.append("/>");
+            }
         }
         if (!control.length())
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "CWsWorkunitsEx::resetQueryStats: Query ID not specified");

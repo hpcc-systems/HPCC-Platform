@@ -60,10 +60,10 @@
     </mediaobject>
   </bookinfo>
 
-  <chapter>
+  <chapter id="ECLWatch_Intro">
     <title>Introducing ECL Watch</title>
 
-    <sect1 role="nobrk">
+    <sect1 id="ECLWatch_Introduction" role="nobrk">
       <title>Introduction</title>
 
       <para>ECL Watch is a service that runs on the Enterprise Services
@@ -80,7 +80,7 @@
     </sect1>
   </chapter>
 
-  <chapter>
+  <chapter id="ECLWatch_Home_Chapter">
     <title>ECL Watch Home</title>
 
     <para>Click on the <emphasis role="bold">ECL Watch home</emphasis> link in
@@ -99,7 +99,7 @@
         </mediaobject>
       </figure></para>
 
-    <sect1 role="nobrk">
+    <sect1 id="ECLWatch_Activity" role="nobrk">
       <title>Activity</title>
 
       <para>The Activity page displays activity on all clusters in the
@@ -179,7 +179,7 @@
           </figure></para>
       </sect2>
 
-      <sect2>
+      <sect2 id="ECLWatch_GlobalSearch">
         <title>Global Search</title>
 
         <para>On the navigation bar at the top of the ECL Watch page, about
@@ -197,7 +197,7 @@
         the search box. The search box supports wild cards.</para>
       </sect2>
 
-      <sect2 id="AutoRefresh">
+      <sect2 id="ECLWatch_AutoRefresh">
         <title>Auto Refresh</title>
 
         <para><figure>
@@ -212,16 +212,16 @@
         active ECL or DFU workunits either running or in the queue on your
         cluster. To refresh the list, press the <emphasis
         role="bold">Refresh</emphasis> button. Auto Refresh shows the list in
-        real-time, but this feature is disabled by default. </para>
+        real-time, but this feature is disabled by default.</para>
 
-        <para>To enable Auto Refresh, toggle the Auto Refresh button. </para>
+        <para>To enable Auto Refresh, toggle the Auto Refresh button.</para>
 
         <para>In an environment with a large number of active users, Auto
         Refresh could impact performance of your ESP server.</para>
       </sect2>
     </sect1>
 
-    <sect1>
+    <sect1 id="ECLWatch_EventScheduler">
       <title>ECL Event Scheduler</title>
 
       <para>The Event Scheduler page provides an interface to the ECL
@@ -269,7 +269,7 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="ECLWatch_ECLWorkunits">
     <title>ECL Workunits</title>
 
     <para>ECL Watch provides information about ECL jobs and workunits. Links
@@ -288,7 +288,7 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="ECLWatch_FilesChapter">
     <title>Files</title>
 
     <para>This chapter contains sections dealing with HPCC Platform Files,
@@ -389,7 +389,7 @@
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
-    <sect1>
+    <sect1 id="ECLWatch_Xref">
       <title>XRef</title>
 
       <para>Under the <emphasis role="bold">Files</emphasis> Icon on the
@@ -505,7 +505,7 @@
         </listitem>
       </itemizedlist>
 
-      <sect2>
+      <sect2 id="ECLWatch_WorkingWithXref">
         <title>Working with XREF results:</title>
 
         <para>After XRef completes you will see a list of available reports.
@@ -555,7 +555,7 @@
     </sect1>
   </chapter>
 
-  <chapter>
+  <chapter id="ECLWatch_Queries">
     <title>Queries</title>
 
     <para>The link for the Published Queries (icon) header provides more
@@ -593,7 +593,7 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="ECLWatch_OperationsLink">
     <title>Operations</title>
 
     <para>The Operations link provides access to several components useful for
@@ -617,7 +617,7 @@
     Groups, Permissions, and Resources. These links allow you to perform some
     system administration tasks through ECL watch.</para>
 
-    <sect1>
+    <sect1 id="ECLWatch_Operations_Topology">
       <title>Topology</title>
 
       <para>The Topology page provides a visual tree display with information
@@ -686,7 +686,7 @@
         selected component.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="ECLWatch_Operations_TopologyMachines">
         <title>Machines</title>
 
         <para>Press the <emphasis role="bold">Machines</emphasis> Action
@@ -710,7 +710,7 @@
       </sect2>
     </sect1>
 
-    <sect1>
+    <sect1 id="ECLWatch_Operations_DiskUsage">
       <title>Disk Usage</title>
 
       <para>When you click on the Operations link, it opens the Disk Usage
@@ -729,7 +729,7 @@
       role="bold">Filter</emphasis> action button.</para>
     </sect1>
 
-    <sect1>
+    <sect1 id="ECLWatch_Operations_TargetClusters">
       <title>Operations: Target Clusters</title>
 
       <para>The Target Clusters link from the navigation sub-menu bar, on the
@@ -775,7 +775,7 @@
   <chapter id="User_Permissions_Chapter">
     <title>Users Permissions</title>
 
-    <sect1 role="nobrk">
+    <sect1 id="ECLWatch_Operations_UserAdministrations" role="nobrk">
       <title>User Administration</title>
 
       <para>There are User Administration features available through ECL
@@ -867,7 +867,7 @@
           </figure></para>
       </sect2>
 
-      <sect2>
+      <sect2 id="ECLWatch_Monitoring_InstallingGanglia">
         <title>Installing Ganglia in ECL Watch</title>
 
         <para>In order to use Ganglia in ECL Watch, you need to have Ganglia
@@ -902,7 +902,7 @@
     during your session. Click on the advanced menu to display a list of
     features.</para>
 
-    <sect1>
+    <sect1 id="ECLWatch_AdvancedMenuAccess">
       <title>Access the Advanced menu</title>
 
       <para>You access the advanced menu items from the advanced menu link at
@@ -943,7 +943,7 @@
       graph controls installed on your server.</para>
     </sect1>
 
-    <sect1 role="nobrk">
+    <sect1 id="ECLWatch_AdvancedMenuUserDetails" role="nobrk">
       <title>User Details</title>
 
       <para>The LOGGED IN AS link shows information about the current user on
@@ -987,7 +987,7 @@
           </listitem>
         </orderedlist></para>
 
-      <sect2 role="nobrk">
+      <sect2 id="ECLWatch_AdvancedMenuChangePassword" role="nobrk">
         <title>Change Password</title>
 
         <para>If authentication is enabled on your HPCC system, you can change
@@ -1022,7 +1022,7 @@
           </orderedlist></para>
       </sect2>
 
-      <sect2>
+      <sect2 id="ECLWatch_AdvancedMenuPermissionGroups">
         <title>Permission groups</title>
 
         <para>The second tab on the User Details window labelled Member Of,
@@ -1033,7 +1033,7 @@
         settings.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="ECLWatch_AdvancedMenuUserPermissions">
         <title>User Permissions tab</title>
 
         <para>The third tab on the User Details window labelled <emphasis

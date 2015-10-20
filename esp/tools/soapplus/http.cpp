@@ -23,7 +23,9 @@
 #ifdef _WIN32
 #include "winsock.h"
 #define ERRNO() WSAGetLastError()
+#ifndef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
+#endif
 #else
 #define ERRNO() (errno)
 #define strnicmp strncasecmp
@@ -60,14 +62,14 @@ void HttpStat::printStat(FILE* ofile)
     {
         fprintf(ofile, "%s", sepstr);
         fprintf(ofile, "Number of Threads:                %d\n", threads);
-        fprintf(ofile, "Total hits:                       %Ld\n", numrequests);
+        fprintf(ofile, "Total hits:                       %" I64F "d\n", numrequests);
         fprintf(ofile, "Run length(millisecond):          %d\n", duration);
         if(duration > 0)
             fprintf(ofile, "Hits per second:                  %3.1f\n", numrequests/(duration*0.001));
-        fprintf(ofile, "Total data sent:                  %Ld\n", totalreqlen);
-        fprintf(ofile, "Total data received:              %Ld\n", totalresplen);
+        fprintf(ofile, "Total data sent:                  %" I64F "d\n", totalreqlen);
+        fprintf(ofile, "Total data received:              %" I64F "d\n", totalresplen);
         __int64 totallen = totalreqlen + totalresplen;
-        fprintf(ofile, "Total data transferred:           %Ld\n", totallen);
+        fprintf(ofile, "Total data transferred:           %" I64F "d\n", totallen);
         if(duration > 0)
             fprintf(ofile, "Data transferred per second:      %5.1f\n", totallen/(duration*0.001));
         if(numrequests > 0)

@@ -314,8 +314,11 @@ struct MCASTREQ
 #define T_SOCKET SOCKET
 #define T_FD_SET fd_set
 #define XFD_SETSIZE FD_SETSIZE
+//Following are defined in more modern headers
+#ifndef ETIMEDOUT
 #define ETIMEDOUT WSAETIMEDOUT
 #define ECONNREFUSED WSAECONNREFUSED
+#endif
 #define XFD_ZERO(s) FD_ZERO(s)
 #define SEND_FLAGS 0
 #define BADSOCKERR(err) ((err==WSAEBADF)||(err==WSAENOTSOCK))
@@ -518,8 +521,8 @@ bool win_socket_library::initdone = false;
 static win_socket_library ws32_lib;
 
 #define ERRNO() WSAGetLastError()
+#ifndef EADDRINUSE
 #define EADDRINUSE WSAEADDRINUSE
-#define EINTRCALL WSAEINTR
 #define ECONNRESET WSAECONNRESET
 #define ECONNABORTED WSAECONNABORTED
 #define ENOTCONN WSAENOTCONN
@@ -527,7 +530,8 @@ static win_socket_library ws32_lib;
 #define EINPROGRESS WSAEINPROGRESS
 #define ENETUNREACH WSAENETUNREACH
 #define ENOTSOCK WSAENOTSOCK
-
+#endif
+#define EINTRCALL WSAEINTR
 
 struct j_sockaddr_in6 {
     short   sin6_family;        /* AF_INET6 */
@@ -4667,7 +4671,12 @@ public:
                             }
 # endif
                             if (epevents[j].data.fd >= 0) {
-                                assertex(epfdtbl[epevents[j].data.fd] >= 0);
+                                // assertex(epfdtbl[epevents[j].data.fd] >= 0);
+                                if (epfdtbl[epevents[j].data.fd] < 0)
+                                {
+                                    WARNLOG("epoll event for invalid fd: index = %d, fd = %d, eventmask = %u", j, epevents[j].data.fd, epevents[j].events);
+                                    continue;
+                                }
                                 SelectItem *epsi = items.getArray(epfdtbl[epevents[j].data.fd]);
                                 if (!epsi->del) {
                                     unsigned int ep_mode = 0;
