@@ -562,13 +562,13 @@
         </informaltable></para>
     </sect1>
 
-    <sect1 id="Examples">
+    <sect1 id="ECLCompiler_Examples">
       <title>Examples</title>
 
       <para>The following example demonstrates what you can do once the ECL
       Compiler is installed and operational.</para>
 
-      <sect2>
+      <sect2 id="ECLCompiler_RunningABasicECLProg_CLI">
         <title>Running a basic ECL program using the command line
         compiler</title>
 

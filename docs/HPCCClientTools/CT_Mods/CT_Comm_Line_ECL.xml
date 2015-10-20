@@ -174,7 +174,7 @@
         file in the same directory as the executable, or any
         combination.</para>
 
-        <sect3 role="brk">
+        <sect3 id="CT_CLI_eclplus.ini" role="brk">
           <title>eclplus.ini</title>
 
           <para>All the options can be put directly on the command line, or
@@ -213,7 +213,7 @@ password=password</programlisting>
             </informaltable></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_RunningQueriesBatchMode">
           <title>Running queries in batch mode</title>
 
           <para>Batch mode queries are executed using the
@@ -265,7 +265,7 @@ Richard Taylor
 Richard Chapman</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_WorkunitManipulation">
           <title>Workunit manipulation</title>
 
           <para>A workunit is a data structure that is passed among eclplus,
@@ -274,7 +274,7 @@ Richard Chapman</programlisting>
           the workunit.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_ListAllWorkunits">
           <title>List all work units</title>
 
           <para>To list all work units:</para>
@@ -301,7 +301,7 @@ W20090226-100958-85552898 yma datasetquery.txt completed</programlisting>
           <programlisting>eclplus jobname=myquery1 @datasetquery.txt</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_ViewResultofWorkunit">
           <title>View the result of a certain workunit</title>
 
           <para>You can look at specific workunit results, like this:</para>
@@ -317,7 +317,7 @@ Richard Taylor
 Richard Chapman</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_DumpWorkunit">
           <title>Dump a workunit</title>
 
           <para>If you want to get all the details describing a workunit, use
@@ -328,8 +328,8 @@ Richard Chapman</programlisting>
           <para>See the Workunit Dump section below for the result.</para>
         </sect3>
 
-        <sect3>
-          <title>Return graph data for a workunit:</title>
+        <sect3 id="CT_CLI_SeeTheThorGraph">
+          <title>See the thor graph of a workunit:</title>
 
           <para>This action returns the XML data for one or more workunit
           graphs.</para>
@@ -339,7 +339,7 @@ Richard Chapman</programlisting>
           <para>Graph name must be supplied in the graph= parameter.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_AbortWorkunit">
           <title>Aborting a workunit</title>
 
           <para>If a query is taking an usually long time and you doubt
@@ -351,7 +351,7 @@ Richard Chapman</programlisting>
           abort to abort it.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_Timeout">
           <title>Timeout</title>
 
           <para>Before you run a query, if you know the query is going to take
@@ -373,7 +373,7 @@ Richard Chapman</programlisting>
           monitor its status.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_OutputFormat">
           <title>Output format</title>
 
           <para>By default, the result displays on the screen. You can direct
@@ -389,7 +389,7 @@ Richard Chapman</programlisting>
           <para>Also, you may specify the following output formats:</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_CSV">
           <title>csv</title>
 
           <programlisting>eclplus @datasetquery.txt format=csv
@@ -399,7 +399,7 @@ Richard Chapman</programlisting>
 "Richard ","Chapman "</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_CSVH">
           <title>csvh</title>
 
           <programlisting>eclplus @datasetquery.txt format=csvh
@@ -410,7 +410,7 @@ Richard Chapman</programlisting>
 "Richard ","Chapman "</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_RAW">
           <title>raw</title>
 
           <programlisting>eclplus @datasetquery.txt format=raw
@@ -419,7 +419,7 @@ Richard    Taylor
 Richard    Chapman</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_RUNECL">
           <title>runecl</title>
 
           <programlisting>eclplus @datasetquery.txt format=runecl
@@ -435,14 +435,14 @@ firstname -&gt; Richard
 lastname -&gt; Chapman</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_Bin-ary-">
           <title>bin(ary)</title>
 
           <programlisting>eclplus @datasetquery.txt format=bin
 Yanrui Ma Richard Taylor Richard Chapman</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_CLI_WorkUnitDump">
           <title>Workunit Dump</title>
 
           <para>A Workunit dump is an XML representation of every piece of

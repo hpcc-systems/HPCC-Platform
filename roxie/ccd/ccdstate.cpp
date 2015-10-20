@@ -1328,24 +1328,21 @@ public:
         reply.appendf(" <PackageSet id=\"%s\" querySet=\"%s\"/>\n", queryPackageId(), querySet.get());
     }
 
-    void resetStats(const char *queryId, const IRoxieContextLogger &logctx)
+    bool resetStats(const char *queryId, const IRoxieContextLogger &logctx)
     {
         CriticalBlock b(updateCrit);
         if (queryId)
         {
             Owned<IQueryFactory> query = serverManager->getQuery(queryId, NULL, logctx);
-            if (query)
-            {
-                const char *id = query->queryQueryName();
-                serverManager->resetQueryTimings(id, logctx);
-                for (unsigned channel = 0; channel < numChannels; channel++)
-                    if (slaveManagers->item(channel))
-                    {
-                        slaveManagers->item(channel)->resetQueryTimings(id, logctx);
-                    }
-            }
-            else
-                throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", queryId);
+            if (!query)
+                return false;
+            const char *id = query->queryQueryName();
+            serverManager->resetQueryTimings(id, logctx);
+            for (unsigned channel = 0; channel < numChannels; channel++)
+                if (slaveManagers->item(channel))
+                {
+                    slaveManagers->item(channel)->resetQueryTimings(id, logctx);
+                }
         }
         else
         {
@@ -1354,6 +1351,7 @@ public:
                 if (slaveManagers->item(channel))
                     slaveManagers->item(channel)->resetAllQueryTimings();
         }
+        return true;
     }
 
     void getStats(const char *queryId, const char *action, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
@@ -1392,6 +1390,10 @@ public:
     {
         CriticalBlock b2(updateCrit);
         serverManager->getAllQueryInfo(reply, full, slaveManagers, logctx);
+    }
+    const char *queryQuerySetName()
+    {
+        return querySet;
     }
 protected:
 
@@ -1662,12 +1664,23 @@ public:
         }
     }
 
-    void resetStats(const char *id, const IRoxieContextLogger &logctx) const
+    void resetStats(const char *target, const char *id, const IRoxieContextLogger &logctx) const
     {
+        bool matched = false;
         ForEachItemIn(idx, allQueryPackages)
         {
-            allQueryPackages.item(idx).resetStats(id, logctx);
+            CRoxieQueryPackageManager &queryPackage = allQueryPackages.item(idx);
+            if (target && *target && !strieq(queryPackage.queryQuerySetName(), target))
+                continue;
+            if (allQueryPackages.item(idx).resetStats(id, logctx))
+            {
+                if (target && *target)
+                    return;
+                matched = true;
+            }
         }
+        if (!matched && id && *id)
+            throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", id);
     }
 
 private:
@@ -2526,14 +2539,15 @@ private:
                     {
                         IPropertyTree &query = queries->query();
                         const char *id = query.queryProp("@id");
+                        const char *target = query.queryProp("@target");
                         if (!id)
                             badFormat();
-                        allQueryPackages->resetStats(id, logctx);
+                        allQueryPackages->resetStats(target, id, logctx);
                         queries->next();
                     }
                 }
                 else
-                    allQueryPackages->resetStats(NULL, logctx);
+                    allQueryPackages->resetStats(NULL, NULL, logctx);
             }
             else if (stricmp(queryName, "control:resetremotedalicache")==0)
             {

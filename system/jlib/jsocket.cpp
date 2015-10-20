@@ -4671,7 +4671,12 @@ public:
                             }
 # endif
                             if (epevents[j].data.fd >= 0) {
-                                assertex(epfdtbl[epevents[j].data.fd] >= 0);
+                                // assertex(epfdtbl[epevents[j].data.fd] >= 0);
+                                if (epfdtbl[epevents[j].data.fd] < 0)
+                                {
+                                    WARNLOG("epoll event for invalid fd: index = %d, fd = %d, eventmask = %u", j, epevents[j].data.fd, epevents[j].events);
+                                    continue;
+                                }
                                 SelectItem *epsi = items.getArray(epfdtbl[epevents[j].data.fd]);
                                 if (!epsi->del) {
                                     unsigned int ep_mode = 0;

@@ -132,7 +132,7 @@
         <para></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_xml" role="brk">
         <title>esdl xml</title>
 
         <para><emphasis role="bold">esdl xml [options] filename.ecm
@@ -188,7 +188,7 @@
 </programlisting>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_ecl" role="brk">
         <title>esdl ecl</title>
 
         <para><emphasis role="bold">esdl ecl [options] filename.ecm
@@ -244,7 +244,7 @@
 </programlisting>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_xsd" role="brk">
         <title>esdl xsd</title>
 
         <para><emphasis role="bold">esdl xsd [options] filename.ecm
@@ -298,7 +298,7 @@
 </programlisting>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_wsdl" role="brk">
         <title>esdl wsdl</title>
 
         <para><emphasis role="bold">esdl wsdl [options] filename.ecm
@@ -352,7 +352,7 @@
 </programlisting>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_publish" role="brk">
         <title>esdl publish</title>
 
         <para><emphasis role="bold">esdl publish &lt;servicename&gt;
@@ -442,7 +442,7 @@
 </programlisting>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_list-definitions" role="brk">
         <title>esdl list-definitions</title>
 
         <para><emphasis role="bold">esdl list-definitions
@@ -511,7 +511,7 @@
         <para></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_delete" role="brk">
         <title>esdl delete</title>
 
         <para><emphasis role="bold">esdl delete
@@ -596,7 +596,7 @@
         <para><emphasis role="bold"></emphasis></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_bind-service" role="brk">
         <title>esdl bind-service</title>
 
         <para><emphasis role="bold">esdl bind-service</emphasis></para>
@@ -717,17 +717,17 @@
         inline or using a configuration file XML in the following
         syntax:</para>
 
-        <programlisting>&lt;Methods&gt;
+        <programlisting format="linespecific">&lt;Methods&gt;
   &lt;Method name="myMthd1" url="http://&lt;RoxieIP&gt;:9876/somepath?someparam=value" user="me" password="mypw"/&gt;
   &lt;Method name="myMthd2" url="http://&lt;RoxieIP&gt;:9876/somepath?someparam=value" user="me" password="mypw"/&gt;
 &lt;/Methods&gt;</programlisting>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+        <programlisting format="linespecific">esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_list-bindings" role="brk">
         <title>esdl list-bindings</title>
 
         <para><emphasis role="bold">esdl list-bindings
@@ -795,7 +795,7 @@
         <programlisting>esdl list-bindings -s nnn.nnn.nnn.nnn -p 8010</programlisting>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_unbind-service" role="brk">
         <title>esdl unbind-service</title>
 
         <para><emphasis role="bold">esdl unbind-service
@@ -884,7 +884,7 @@
         <programlisting>esdl unbind-service myesp 8003 </programlisting>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esd_bind-method" role="brk">
         <title>esdl bind-method</title>
 
         <para><emphasis role="bold">esdl bind-method
@@ -1016,7 +1016,7 @@
         <programlisting>esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="CT_ESDL_CLI_esdl_get-binding" role="brk">
         <title>esdl get-binding</title>
 
         <para><emphasis role="bold">esdl get-binding &lt;ESDLBindingId&gt;

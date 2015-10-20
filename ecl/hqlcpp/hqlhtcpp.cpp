@@ -9293,7 +9293,10 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     LinkedHqlExpr resourced = expr;
     // Second attempt to spot compound disk reads - this time of spill files for thor.
     resourced.setown(optimizeCompoundSource(resourced, csfFlags));
+
+    //MORE: This call (enabled by -fparanoid) isn't correct when this is processing a child query
     checkNormalized(resourced);
+
     //insert projects after compound created...
     if (options.optimizeResourcedProjects)
     {

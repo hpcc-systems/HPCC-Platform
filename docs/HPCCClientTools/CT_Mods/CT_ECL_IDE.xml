@@ -252,7 +252,7 @@
       <sect2 id="Using_the_Preferences_Window">
         <title>Using the Preferences Window</title>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_ServerTab">
           <title>Server Tab</title>
 
           <para>The <emphasis role="bold">Server tab</emphasis> has two modes
@@ -307,7 +307,7 @@
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_EditorTab">
           <title>Editor tab</title>
 
           <para>The <emphasis role="bold">Editor tab</emphasis> allows you to
@@ -434,7 +434,7 @@
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_ColorsTab">
           <title>Colors tab</title>
 
           <para>The <emphasis role="bold">Colors tab</emphasis> allows you to
@@ -503,7 +503,7 @@
           <para></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_ResultsTab">
           <title>Results tab</title>
 
           <para>The <emphasis role="bold">Results tab</emphasis> allows you to
@@ -544,7 +544,7 @@
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_CompilerTab">
           <title>Compiler tab</title>
 
           <para>The <emphasis role="bold">Compliler tab</emphasis> allows you
@@ -644,7 +644,7 @@
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_OtherTab">
           <title>Other tab</title>
 
           <para>The <emphasis role="bold">Other tab</emphasis> allows you to
@@ -794,7 +794,7 @@
 
         <para><graphic fileref="../../images/CT06.jpg" /></para>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_UsingTheRibbon">
           <title>Using the Ribbon</title>
 
           <para>The Ribbon makes the commands that you need use to complete a
@@ -853,7 +853,7 @@
           the option or command you want.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_QuickAccessToolbar">
           <title>The Quick Access Toolbar</title>
 
           <para>Quick Access toolbar provides shortcut buttons for commonly
@@ -883,7 +883,7 @@
           <para></para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="CT_ECLIDE_WorkingWithToolBoxes" role="brk">
           <title>Working with Toolboxes</title>
 
           <para>Toolboxes can be docked, pinned, unpinned, grouped, or hidden.
@@ -891,7 +891,7 @@
           right (a pre-configured options on the View ribbon tab).</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_GroupingDockingAutoHide">
           <title>Grouping, Docking, and AutoHide</title>
 
           <para>Once grouped, the toolboxes open and close as a group until
@@ -919,7 +919,7 @@
           <para></para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="CT_ECLIDE_RepositoryToolbox" role="brk">
           <title>Repository Toolbox</title>
 
           <para>This toolbox displays the ECL Folders for the current
@@ -952,7 +952,7 @@
           the preferences window.<!--  --></para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="CT_ECLIDE_FindRepoToolbox" role="brk">
           <title>Find (Repository) Toolbox</title>
 
           <para>This toolbox allows you to search the active Repository.
@@ -1066,7 +1066,7 @@
           <para></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_WorkUnitsToolbox">
           <title>WorkunitsToolbox</title>
 
           <para>This toolbox displays Workunits for the environment to which
@@ -1075,7 +1075,7 @@
           Workunits within it.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_ActiveWorkunits">
           <title>Active Workunits</title>
 
           <para>This toolbox displays active Workunits for the environment to
@@ -1086,7 +1086,7 @@
           role="bold">Preferences</emphasis> window.</para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="CT_ECLIDE_FindWorkunitsToolbox" role="brk">
           <title>Find (Workunits) Toolbox</title>
 
           <para>This toolbox allows you to search online Workunits in the
@@ -1160,7 +1160,7 @@
           <para></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_DataSetsToobox">
           <title>Datasets Toolbox</title>
 
           <para>This toolbox displays Logical files for the environment to
@@ -1173,7 +1173,7 @@
           <para></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_FindDatasetsToolbox">
           <title>Find (Datasets) Toolbox</title>
 
           <para>This toolbox allows you to search for Logical files in the
@@ -1231,7 +1231,7 @@
             </informaltable></para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="CT_ECLIDE_SyntaxErrorsToolbox" role="brk">
           <title>Syntax Errors Toolbox</title>
 
           <para>The Syntax Errors toolbox displays syntax errors and warnings
@@ -1250,7 +1250,7 @@
           window.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_ErrorLogToolbox">
           <title>Error Log Toolbox</title>
 
           <para>The Error Log toolbox displays errors and warnings from the
@@ -1290,7 +1290,7 @@
       <sect2 id="Orb_Menu">
         <title><emphasis>Orb Menu</emphasis></title>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_OrbMenu">
           <title>Orb Menu</title>
 
           <para><graphic fileref="../../images/CT02.jpg" /></para>
@@ -1400,7 +1400,7 @@
 
         <para></para>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_RibbonCurrentTab">
           <title>Current Tab</title>
 
           <para>The <emphasis role="bold">Current Tab</emphasis> contains the
@@ -1437,7 +1437,7 @@
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_ClipboardTab">
           <title>Clipboard Tab</title>
 
           <para>The <emphasis role="bold">Clipboard Tab</emphasis> contains
@@ -1480,7 +1480,7 @@
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_TheEditorTab">
           <title>Editor Tab</title>
 
           <para><emphasis role="bold">The </emphasis><emphasis
@@ -1659,7 +1659,7 @@
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_SearchTab">
           <title>Search Tab</title>
 
           <para>The <emphasis role="bold">SearchTab</emphasis> contains the
@@ -1715,7 +1715,7 @@
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_SyntaxTab">
           <title>Syntax Tab</title>
 
           <para>The <emphasis role="bold">SyntaxTab</emphasis> contains the
@@ -1773,7 +1773,7 @@
           <para><emphasis role="bold"> </emphasis></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_ECLTab">
           <title>ECL Tab</title>
 
           <para>The <emphasis role="bold">ECL Tab</emphasis> contains the
@@ -1840,7 +1840,7 @@
           <para><emphasis role="bold"> </emphasis></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_BrowserTab">
           <title>Browser Tab</title>
 
           <para>The <emphasis role="bold">Browser </emphasis>tab is shown only
@@ -1910,7 +1910,7 @@
           <para><emphasis role="bold"> </emphasis></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_WindowTab">
           <title>Window Tab</title>
 
           <para>The <emphasis role="bold">Window </emphasis>Tab contains
@@ -2011,7 +2011,7 @@
             </informaltable></para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="CT_ECLIDE_WorkSpaceTab" role="brk">
           <title>Workspace(s) Tab</title>
 
           <graphic fileref="../../images/CT82.jpg" />
@@ -2030,7 +2030,7 @@
           you to use.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_ViewTab">
           <title>View Tab</title>
 
           <para><graphic fileref="../../images/CT47.jpg" /></para>
@@ -2041,7 +2041,7 @@
           locations.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_HelpMenu">
           <title>Help Menu</title>
 
           <para>The <emphasis role="bold">Help </emphasis>menu contains the
@@ -2076,10 +2076,10 @@
         </sect3>
       </sect2>
 
-      <sect2 id="Pop-Up_Menus">
+      <sect2 id="CT_ECLIDE_Pop-Up_Menus">
         <title><emphasis>Pop-up Menus</emphasis></title>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_WorkUnitPopUpMenu_">
           <title>Workunit Pop-up Menu</title>
 
           <para>Right-click on any Workunit for a Pop-up menu
@@ -2213,7 +2213,7 @@
           <para><emphasis role="bold"> </emphasis></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_RepositoryPopUpMenu">
           <title>Repository Pop-up Menu</title>
 
           <para>Right-click in the <emphasis role="bold">Repository Window
@@ -2352,7 +2352,7 @@
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_ResultsPopUpMenu">
           <title>Results Pop-up Menu</title>
 
           <para>Right-click on Results Pop-up menu containing:</para>
@@ -2574,7 +2574,7 @@
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_UsingDrillDown">
           <title>Using Drilldown</title>
 
           <para>There are three different versions of drilldown: Drilldown,
@@ -2679,7 +2679,7 @@ ENDMACRO;
         <para>There is also a right-click pop-up menu with the all the options
         found on the <emphasis role="bold">Edit</emphasis> menu.</para>
 
-        <sect3 role="brk">
+        <sect3 id="CT_ECLIDE_AdvancedBuilderWindowOptions" role="brk">
           <title>Advanced Builder Window Options</title>
 
           <para>Press the <emphasis role="bold">More</emphasis> button to
@@ -2834,19 +2834,19 @@ ENDMACRO;
         <title><emphasis>ECL Watch View </emphasis></title>
 
         <para>A workunit’s Workunit Details page view is displayed in the ECL
-        Watch Tab. </para>
+        Watch Tab.</para>
 
         <para>The Workunit Details page provides more information about a
-        workunit. </para>
+        workunit.</para>
 
         <para>You can see specific information about the workunit by selecting
-        the various Workunit Detail tabs. </para>
+        the various Workunit Detail tabs.</para>
 
         <para><graphic fileref="../../images/ECLIDE_WuDetails.jpg"
         scalefit="1" /></para>
 
         <para>You can also perform actions on the workunit using the Workunit
-        Action buttons. </para>
+        Action buttons.</para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -2860,8 +2860,8 @@ ENDMACRO;
 
                 <entry>You can copy a Workunit's ECL Watch URL by rt-clicking
                 on the <emphasis role="bold">Open in New Page</emphasis> icon
-                and selecting <emphasis role="bold">Copy Shortcut</emphasis>.
-                </entry>
+                and selecting <emphasis role="bold">Copy
+                Shortcut</emphasis>.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -3151,7 +3151,7 @@ ENDMACRO;
         <para>The Home and View menu options are identical to those on the
         main the ECL IDE menu.</para>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_DeBug_BasicMenu">
           <title>Basic Menu</title>
 
           <para><emphasis role="bold">The </emphasis><emphasis
@@ -3384,7 +3384,7 @@ ENDMACRO;
           </informaltable>
         </sect3>
 
-        <sect3>
+        <sect3 id="CT_ECLIDE_DeBug_AdvancedMenu">
           <title>Advanced Menu</title>
 
           <para>The Advanced ribbon bar contains the following
