@@ -85,8 +85,8 @@ start_slaves()
     ln -s -f $deploydir/thorslave_lcr ${slavename}
 
     # sync to current master thorgroup
-    log "rsync -e ssh -o StrictHostKeyChecking=no ${master}:${instancedir}/thorgroup ${instancedir}/thorgroup.slave"
-    rsync -e "ssh -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
+    log "rsync -e ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no ${master}:${instancedir}/thorgroup ${instancedir}/thorgroup.slave"
+    rsync -e "ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
 
     let "slavenum = 1";
     for slave in $(cat $instancedir/thorgroup.slave); do
