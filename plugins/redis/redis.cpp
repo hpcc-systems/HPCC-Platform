@@ -114,7 +114,8 @@ public :
         if (context)
             redisFree(context);
     }
-    static Connection * createConnection(ICodeContext * ctx, Connection * & _cachedConnection, const char * options, int database, const char * password, unsigned _timeout, bool sub = false);
+    static Connection * createConnection(ICodeContext * ctx, Connection * & _cachedConnection, const char * options, int _database, const char * password, unsigned _timeout, bool sub = false);
+    static Connection * createConnection(ICodeContext * ctx, Connection * & _cachedConnection, const char * options, const char * _ip, int _port, unsigned _serverIpPortPasswordHash, int _database, const char * password, unsigned _timeout, bool sub = false);
 
     //set
     template <class type> void set(ICodeContext * ctx, const char * key, type value, unsigned expire);
@@ -143,7 +144,7 @@ public :
 
 protected :
     virtual void selectDB(ICodeContext * ctx, int _database);
-    virtual void reset();
+    virtual void reset(ICodeContext * ctx, const char * password, unsigned _timeout);
 
     void redisSetTimeout();
     void redisConnect();
@@ -163,6 +164,7 @@ protected :
     void * redisCommand(redisContext * context, const char * format, ...);
     static unsigned hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password);
     bool isSameConnection(ICodeContext * ctx, const char * _options, const char * password) const;
+    inline bool isSameConnection(ICodeContext * ctx, unsigned _serverIpPortPasswordHash) const;
 
     //-------------------------------LOCKING------------------------------------------------
     void handleLockOnSet(ICodeContext * ctx, const char * key, const char * value, size_t size, unsigned expire);
@@ -186,10 +188,12 @@ class SubConnection : public Connection
 public :
     SubConnection(ICodeContext * ctx, const char * _options, int database, const char * password, unsigned _timeout) :
         Connection(ctx, _options, 0, password, _timeout) { };
+    SubConnection(ICodeContext * ctx, const char * _options, const char * _ip, int _port, unsigned _serverIpPortPasswordHash, int _database, const char * password, unsigned _timeout) :
+        Connection(ctx, _options, _ip, _port, _serverIpPortPasswordHash, _database, password, _timeout) { };
 
 protected :
     virtual void selectDB(ICodeContext * ctx, int _database) { };
-    virtual void reset();
+    virtual void reset(ICodeContext * ctx, const char * password, unsigned _timeout);
 };
 
 static void releaseContext()
@@ -300,7 +304,7 @@ void Connection::redisSetTimeout()
 {
     unsigned _timeLeft = timeLeft();
     if (_timeLeft == 0)
-        return;
+        return;  //NOTE: looks incorrect however, timeLeft() only returns 0 if timeout = 0, failing otherwise - when timeout > 0 and all time expired (timeLeft = 0).
     struct timeval to = { _timeLeft/1000, (_timeLeft%1000)*1000 };
     assertex(context);
     if (::redisSetTimeout(context, to) != REDIS_OK)
@@ -312,6 +316,10 @@ void Connection::redisSetTimeout()
 bool Connection::isSameConnection(ICodeContext * ctx, const char * _options, const char * password) const
 {
     return (hashServerIpPortPassword(ctx, _options, password) == serverIpPortPasswordHash);
+}
+bool Connection::isSameConnection(ICodeContext * ctx, unsigned _serverIpPortPasswordHash) const
+{
+    return (_serverIpPortPasswordHash == serverIpPortPasswordHash);
 }
 unsigned Connection::hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password)
 {
@@ -352,16 +360,23 @@ void Connection::parseOptions(ICodeContext * ctx, const char * _options)
         }
     }
 }
-void Connection::reset()
+void Connection::reset(ICodeContext * ctx, const char * password, unsigned _timeout)
 {
-    if (context)
-        context->err = REDIS_OK;
+    timeout.reset(_timeout);
+    if (context && context->err != REDIS_OK)
+    {
+        redisFree(context);
+        context = NULL;
+        database = 0;
+        connect(ctx, 0, password);
+    }
 }
-void SubConnection::reset()
+void SubConnection::reset(ICodeContext * ctx, const char * password, unsigned _timeout)
 {
+    Connection::reset(ctx, password, _timeout);
     OwnedReply reply = Reply::createReply(redisCommand(context, "UNSUBSCRIBE"));
     assertOnErrorWithCmdMsg(reply->query(), "UNSUBSCRIBE all channels");
-    Connection::reset();
+    Connection::reset(ctx, password, timeLeft());
 }
 void Connection::readReply(Reply * reply)
 {
@@ -400,8 +415,7 @@ Connection * Connection::createConnection(ICodeContext * ctx,  Connection * & _c
     if (_cachedConnection->isSameConnection(ctx, options, password))
     {
         //MORE: should perhaps check that the connection has not expired (think hiredis REDIS_KEEPALIVE_INTERVAL is defaulted to 15s).
-        _cachedConnection->reset();//reset the context err to allow reuse when an error previously occurred.
-        _cachedConnection->timeout.reset(_timeout);
+        _cachedConnection->reset(ctx, password, _timeout);
         _cachedConnection->selectDB(ctx, _database);
         return LINK(_cachedConnection);
     }
@@ -414,6 +428,40 @@ Connection * Connection::createConnection(ICodeContext * ctx,  Connection * & _c
         _cachedConnection = new Connection(ctx, options, _database, password, _timeout);
     return LINK(_cachedConnection);
 }
+Connection * Connection::createConnection(ICodeContext * ctx, Connection * & _cachedConnection, const char * options, const char * _ip, int _port, unsigned _serverIpPortPasswordHash, int _database, const char * password, unsigned _timeout, bool sub)
+{
+    if (!_cachedConnection)
+    {
+        if (sub)
+            _cachedConnection = new SubConnection(ctx, options, _ip, _port, _serverIpPortPasswordHash, _database, password, _timeout);
+        else
+            _cachedConnection = new Connection(ctx, options, _ip, _port, _serverIpPortPasswordHash, _database, password, _timeout);
+
+        if (!threadHooked)
+        {
+            threadHookChain = addThreadTermFunc(releaseContext);
+            threadHooked = true;
+        }
+        return LINK(_cachedConnection);
+    }
+
+    if (_cachedConnection->isSameConnection(ctx, _serverIpPortPasswordHash))
+    {
+        //MORE: should perhaps check that the connection has not expired (think hiredis REDIS_KEEPALIVE_INTERVAL is defaulted to 15s).
+        _cachedConnection->reset(ctx, password, _timeout);
+        _cachedConnection->selectDB(ctx, _database);
+        return LINK(_cachedConnection);
+    }
+
+    _cachedConnection->Release();
+    _cachedConnection = NULL;
+    if (sub)
+        _cachedConnection = new SubConnection(ctx, options, _ip, _port, _serverIpPortPasswordHash, _database, password, _timeout);
+    else
+        _cachedConnection = new Connection(ctx, options, _ip, _port, _serverIpPortPasswordHash, _database, password, _timeout);
+    return LINK(_cachedConnection);
+}
+
 void Connection::selectDB(ICodeContext * ctx, int _database)
 {
     if (database == _database)
@@ -882,7 +930,7 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
 
     //SUB before GET
     //Requires separate connection from GET so that the replies are not mangled. This could be averted
-    Owned<Connection> subConnection = new Connection(ctx, options.str(), ip.str(), port, serverIpPortPasswordHash, database, password, timeLeft());
+    Owned<Connection> subConnection = createConnection(ctx, cachedSubConnection, options.str(), ip.str(), port, serverIpPortPasswordHash, 0, password, timeLeft(), true);
     OwnedReply subReply = Reply::createReply(redisCommand(subConnection->context, "SUBSCRIBE %b", channel.str(), (size_t)channel.length()));
     //Defer checking of reply/connection errors until actually needed.
 
