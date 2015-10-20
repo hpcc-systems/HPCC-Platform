@@ -62,7 +62,7 @@
       built-in functions in this document are always shown in ALL CAPS to make
       them stand out for easy identification.</para>
 
-      <sect3>
+      <sect3 id="CT_Conventions_ExampleCode">
         <title>Example Code</title>
 
         <para>All example code in this document appears in the following
@@ -78,7 +78,7 @@
         purpose in examples.</para>
       </sect3>
 
-      <sect3>
+      <sect3 id="CT_Convetions_Actions">
         <title>Actions</title>
 
         <para>In step-by-step sections, there will be explicit actions to
@@ -100,7 +100,7 @@
       </sect3>
     </sect2>
 
-    <sect2 id="Installation" role="brk">
+    <sect2 id="ClientTools_Installation" role="brk">
       <title>Installation</title>
 
       <para>The installation program installs all client tools, including the

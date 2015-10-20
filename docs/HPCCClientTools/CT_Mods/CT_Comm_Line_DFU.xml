@@ -128,7 +128,7 @@
             </tgroup>
           </informaltable></para>
 
-        <sect3>
+        <sect3 id="CLI_DFU_GeneralOptions">
           <title>General Options:</title>
 
           <para>The following <emphasis>options </emphasis>are common to every
@@ -281,7 +281,7 @@
 
         <?hard-pagebreak ?>
 
-        <sect3>
+        <sect3 id="CLI_DFU_dfuplus.ini">
           <title>dfuplus.ini</title>
 
           <para>Any <emphasis>options</emphasis> can be specified in a file
@@ -320,7 +320,7 @@ replicate=1</programlisting>
             </informaltable></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_SprayOperations">
           <title>Spray Operations:</title>
 
           <para>The <emphasis role="bold">spray</emphasis>
@@ -568,7 +568,7 @@ DATA image; //first 4 bytes contain the length of the image data
 END;</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_DeSprayOperations">
           <title>Despray Operations:</title>
 
           <para>The <emphasis role="bold">despray</emphasis>
@@ -701,7 +701,7 @@ dfuplus action=dspray srcname=le::imagedb
 </programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_CopyOps">
           <title>Copy Operations:</title>
 
           <para>The <emphasis role="bold">copy</emphasis>
@@ -789,7 +789,7 @@ dfuplus action=dspray srcname=le::imagedb
           dstname=srcname=RTTEMP::COPY::timezones.txt dstcluster=thor</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_RemoveOps">
           <title>Remove Operations:</title>
 
           <para>The <emphasis role="bold">remove</emphasis> operation deletes
@@ -820,7 +820,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_renameOps">
           <title>Rename Operations:</title>
 
           <para>The <emphasis role="bold">rename</emphasis> operation renames
@@ -856,7 +856,7 @@ dfuplus action=dspray srcname=le::imagedb
           <programlisting>dfuplus action=rename srcname=RTTEMP::timezones.txt dstname=RTTEMP::NewTimezones.txt</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_ListOperations">
           <title>List Operations:</title>
 
           <para>The <emphasis role="bold">list</emphasis> operation produces a
@@ -887,7 +887,7 @@ dfuplus action=dspray srcname=le::imagedb
           <programlisting>dfuplus action=list name=*</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_AddOperations">
           <title>Add Operations:</title>
 
           <para>The <emphasis role="bold">add</emphasis> operation adds a new
@@ -977,7 +977,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_AddSuperOperations">
           <title>Addsuper Operations:</title>
 
           <para>The <emphasis role="bold">addsuper</emphasis> operation adds
@@ -1027,7 +1027,7 @@ dfuplus action=dspray srcname=le::imagedb
           <programlisting>dfuplus action=addsuper superfile=mysuper subfiles=file1,file2</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_RemoveSuperOperations">
           <title>Removesuper Operations:</title>
 
           <para>The <emphasis role="bold">removesuper</emphasis> operation
@@ -1079,7 +1079,7 @@ dfuplus action=dspray srcname=le::imagedb
           <programlisting>dfuplus action=removesuper superfile=mysuper subfiles=file1,file2</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_ListSuperOperations">
           <title>Listsuper Operations:</title>
 
           <para>The <emphasis role="bold">listsuper</emphasis> operation lists
@@ -1113,7 +1113,7 @@ dfuplus action=dspray srcname=le::imagedb
           <programlisting>dfuplus action=listsuper superfile=mysuper</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_StatusOperations">
           <title>Status Operations:</title>
 
           <para>The <emphasis role="bold">status</emphasis> operation returns
@@ -1144,7 +1144,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_AbortOperations">
           <title>Abort Operations:</title>
 
           <para>The <emphasis role="bold">abort</emphasis> operation aborts
@@ -1177,7 +1177,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_ResubmitOperations">
           <title>Resubmit Operations:</title>
 
           <para>The <emphasis role="bold">resubmit</emphasis> operation
@@ -1211,7 +1211,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_SaveXMLOperations">
           <title>Savexml Operations:</title>
 
           <para>The <emphasis role="bold">savexml</emphasis> operation saves
@@ -1283,7 +1283,7 @@ dfuplus action=dspray srcname=le::imagedb
     &lt;/File&gt;</programlisting>
         </sect3>
 
-        <sect3>
+        <sect3 id="CLI_DFU_MonitorOperations">
           <title>Monitor Operations:</title>
 
           <para>The <emphasis role="bold">monitor</emphasis> operation

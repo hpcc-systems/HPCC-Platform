@@ -159,7 +159,7 @@
       role="bold">PushEvent</emphasis> button. This is the same as triggering
       an event using NOTIFY.</para>
 
-      <sect2>
+      <sect2 id="ECLSched_WorkunitList">
         <title>Scheduler Workunit List</title>
 
         <para>You can search scheduled workunits by cluster or event name. To
@@ -184,7 +184,7 @@
         link for the workunit.</para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="ECLSched_PushingEvents" role="brk">
         <title>Pushing Events</title>
 
         <para>The Event Scheduler allow you to trigger or "push" an event to

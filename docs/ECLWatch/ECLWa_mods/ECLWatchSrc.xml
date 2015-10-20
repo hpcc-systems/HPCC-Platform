@@ -293,7 +293,7 @@
           </varlistentry>
         </variablelist>
 
-        <sect3>
+        <sect3 id="ECLWatch_SortingColumns">
           <title>Sorting Columns</title>
 
           <para>You can sort a column by clicking on the column heading. Click
@@ -416,7 +416,7 @@
 
         <!-- added WU Details stuff here -->
 
-        <sect3 role="brk">
+        <sect3 id="ECLWatch_PublishActionButton" role="brk">
           <title>Publish Action Button</title>
 
           <para>Click on the Publish action button to publish a query. <figure>
@@ -530,7 +530,7 @@
           personally identifiable information (PII).</para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="ECLWatch_ECLWorkunitsOutputsTab" role="brk">
           <title>Outputs tab</title>
 
           <para>Click on the Outputs tab to see all results.<figure>
@@ -578,7 +578,7 @@
           </itemizedlist>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="ECLWatch_ECLWorkunitsVisualizations" role="brk">
           <title>Visualizations</title>
 
           <para>You can see visual representations of select workunits.
@@ -604,7 +604,7 @@
           menu, to change the parameters.</para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="ECLWatch_ECLWorkunitsInputsTab" role="brk">
           <title>Inputs tab</title>
 
           <para>Click on the <emphasis role="bold">Inputs</emphasis> tab to
@@ -627,8 +627,8 @@
           how many times a file was used in the workunit.</para>
         </sect3>
 
-        <sect3 role="brk">
-          <title>Timers tab</title>
+        <sect3 id="ECLWatch_ECLWorkunitsTimersTab" role="brk">
+          <title id="ECLWatch_ECLWorkunits_TimersTab">Timers tab</title>
 
           <para>Click on the <emphasis role="bold">Timers</emphasis> tab to
           see the workunit timings. <figure>
@@ -648,7 +648,7 @@
           the lighter the color indicates that portion took less time.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="ECLWatch_ECLWorkunitsGraphsTab">
           <title>Graphs tab</title>
 
           <para>Click on the <emphasis role="bold">Graphs</emphasis> tab to
@@ -667,7 +667,7 @@
           the graph.</para>
         </sect3>
 
-        <sect3 role="brk">
+        <sect3 id="ECLWatch_ECLWorkunitsTimersTab" role="brk">
           <title>Timers tab</title>
 
           <para>Click on the <emphasis role="bold">Timers</emphasis> tab to
@@ -690,7 +690,7 @@
           <para><emphasis role="bold">Usage:</emphasis> how many times a file
           was used in the work unit.</para>
 
-          <sect4>
+          <sect4 id="ECLWatch_ECLWorkunitsStatsTab">
             <title>Stats</title>
 
             <para>On the workunit Timers tab is another tab for Stats. The
@@ -712,7 +712,7 @@
           </sect4>
         </sect3>
 
-        <sect3>
+        <sect3 id="ECLWatch_ECLWorkunitsWorkflowsTab">
           <title>Workflows tab</title>
 
           <para>The workflows tab only exists if you have an attribute
@@ -726,7 +726,7 @@
           remain to occur.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="ECLWatch_ECLWorkunitsQueriesTab">
           <title>Queries tab</title>
 
           <para>Queries will only appear in the work unit details if the work
@@ -737,7 +737,7 @@
           <para></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="ECLWatch_ECLWorkunitsHelpersTab">
           <title>Helpers tab</title>
 
           <para>The Helpers tab display several helpful elements. Which show
@@ -750,14 +750,14 @@
           portion of the log that pertains to that workunit.</para>
         </sect3>
 
-        <sect3 id="WUDetails_ECL_Playground_TAB">
+        <sect3 id="WUDetails_ECL__TAB">
           <title>ECL Tab</title>
 
           <para>Shows the ECL code for that workunit. It is the same thing as
           the Helpers ECL link.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="ECLWatch_ECLWorkunitsXMLTab">
           <title>XML tab</title>
 
           <para>The workunits XML record as stored in Dali.</para>
@@ -1008,7 +1008,7 @@
             </listitem>
           </itemizedlist></para>
 
-        <sect3>
+        <sect3 id="ECLWatch_DFUWorkunits_XMLTab">
           <title>XML Tab</title>
 
           <para>The XML Tab on the workunit details page allows you to see the
@@ -1023,7 +1023,7 @@
             </figure></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="ECLWatch_DFUWorkunits_SourceTab">
           <title>Source Tab</title>
 
           <para>The Source Tab on the workunit details page allows you to view
@@ -1038,7 +1038,7 @@
             </figure></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="ECLWatch_DFUWorkunits_TargetTab">
           <title>Target Tab</title>
 
           <para>The Target Tab on the workunit details page allows you to view
@@ -1211,7 +1211,7 @@
         <para>You can press the <emphasis role="bold">Open</emphasis> button
         to open a tab with the details for each selected file.</para>
 
-        <sect3>
+        <sect3 id="ECLWatch_Files_RemoteCopy">
           <title>Remote Copy</title>
 
           <para>Press the <emphasis role="bold">Remote Copy</emphasis> button
@@ -1449,7 +1449,7 @@
           </listitem>
         </itemizedlist>
 
-        <sect3>
+        <sect3 id="ECLWatch_LogicalFiles_SuperFiles">
           <title>Superfiles</title>
 
           <para>A superfile is a managed list of sub-files (Logical Files)
