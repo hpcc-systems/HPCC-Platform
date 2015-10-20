@@ -2687,7 +2687,7 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
 
 CJobChannel::~CJobChannel()
 {
-    thorAllocator->queryRowManager()->reportMemoryUsage(false);
+    queryRowManager().reportMemoryUsage(false);
     PROGLOG("CJobBase resetting memory manager");
     thorAllocator.clear();
     wait();
@@ -2724,12 +2724,12 @@ mptag_t CJobChannel::deserializeMPTag(MemoryBuffer &mb)
     return tag;
 }
 
-IEngineRowAllocator *CJobChannel::getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+IEngineRowAllocator *CJobChannel::getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags) const
 {
     return thorAllocator->getRowAllocator(meta, activityId, flags);
 }
 
-roxiemem::IRowManager *CJobChannel::queryRowManager() const
+roxiemem::IRowManager &CJobChannel::queryRowManager() const
 {
     return thorAllocator->queryRowManager();
 }
@@ -3048,7 +3048,7 @@ IEngineRowAllocator * CActivityBase::queryRowAllocator()
 {
     if (CABallocatorlock.lock()) {
         if (!rowAllocator)
-            rowAllocator.setown(queryJobChannel().getRowAllocator(queryRowMetaData(),queryActivityId()));
+            rowAllocator.setown(getRowAllocator(queryRowMetaData()));
         CABallocatorlock.unlock();
     }
     return rowAllocator;
@@ -3058,7 +3058,7 @@ IOutputRowSerializer * CActivityBase::queryRowSerializer()
 {
     if (CABserializerlock.lock()) {
         if (!rowSerializer)
-            rowSerializer.setown(queryRowMetaData()->createDiskSerializer(queryCodeContext(),queryActivityId()));
+            rowSerializer.setown(queryRowMetaData()->createDiskSerializer(queryCodeContext(),queryId()));
         CABserializerlock.unlock();
     }
     return rowSerializer;
@@ -3068,7 +3068,7 @@ IOutputRowDeserializer * CActivityBase::queryRowDeserializer()
 {
     if (CABdeserializerlock.lock()) {
         if (!rowDeserializer)
-            rowDeserializer.setown(queryRowMetaData()->createDiskDeserializer(queryCodeContext(),queryActivityId()));
+            rowDeserializer.setown(queryRowMetaData()->createDiskDeserializer(queryCodeContext(),queryId()));
         CABdeserializerlock.unlock();
     }
     return rowDeserializer;
@@ -3078,6 +3078,11 @@ IRowInterfaces *CActivityBase::getRowInterfaces()
 {
     // create an independent instance, to avoid circular link dependency problems
     return createRowInterfaces(queryRowMetaData(), container.queryId(), queryCodeContext());
+}
+
+IEngineRowAllocator *CActivityBase::getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags) const
+{
+    return queryJobChannel().getRowAllocator(meta, queryId(), flags);
 }
 
 bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)

@@ -604,8 +604,8 @@ public:
     CMergeJoinSlaveBaseActivity(CGraphElementBase *container, CMergeJoinProcessor &_processor) : CThorNarySlaveActivity(container), CThorDataLink(this), CThorSteppable(this), processor(_processor)
     {
         helper = (IHThorNWayMergeJoinArg *)queryHelper();
-        inputAllocator.setown(queryJobChannel().getRowAllocator(helper->queryInputMeta(), queryActivityId()));
-        outputAllocator.setown(queryJobChannel().getRowAllocator(helper->queryOutputMeta(), queryActivityId()));
+        inputAllocator.setown(getRowAllocator(helper->queryInputMeta()));
+        outputAllocator.setown(getRowAllocator(helper->queryOutputMeta()));
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {

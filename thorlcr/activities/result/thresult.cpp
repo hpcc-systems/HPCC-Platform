@@ -65,7 +65,7 @@ public:
                 if (results)
                     throw MakeThorException(TE_UnexpectedMultipleSlaveResults, "Received greater than one result from slaves");
                 IHThorRemoteResultArg *helper = (IHThorRemoteResultArg *)queryHelper();
-                Owned<IRowInterfaces> resultRowIf = createRowInterfaces(helper->queryOutputMeta(), queryActivityId(), queryCodeContext());
+                Owned<IRowInterfaces> resultRowIf = createRowInterfaces(helper->queryOutputMeta(), queryId(), queryCodeContext());
                 CThorStreamDeserializerSource mds(sz, mb.readDirect(sz));
                 RtlDynamicRowBuilder rowBuilder(resultRowIf->queryRowAllocator());
                 size32_t sz = resultRowIf->queryRowDeserializer()->deserialize(rowBuilder, mds);

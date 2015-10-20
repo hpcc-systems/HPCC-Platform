@@ -74,7 +74,7 @@ public:
             if (sz)
             {
                 IHThorThroughAggregateArg *helper = (IHThorThroughAggregateArg *)queryHelper();
-                Owned<IRowInterfaces> aggRowIf = createRowInterfaces(helper->queryAggregateRecordSize(), queryActivityId(), queryCodeContext());
+                Owned<IRowInterfaces> aggRowIf = createRowInterfaces(helper->queryAggregateRecordSize(), queryId(), queryCodeContext());
                 CThorStreamDeserializerSource mds(sz, msg.readDirect(sz));
                 RtlDynamicRowBuilder rowBuilder(aggRowIf->queryRowAllocator());
                 size32_t sz = aggRowIf->queryRowDeserializer()->deserialize(rowBuilder, mds);

@@ -177,7 +177,7 @@ protected:
             return false;
 
         StringBuffer tempName;
-        VStringBuffer tempPrefix("streamspill_%d", activity.queryActivityId());
+        VStringBuffer tempPrefix("streamspill_%d", activity.queryId());
         GetTempName(tempName, tempPrefix.str(), true);
         spillFile.setown(createIFile(tempName.str()));
 
@@ -191,7 +191,7 @@ protected:
         if (!mmRegistered)
         {
             mmRegistered = true;
-            activity.queryJobChannel().queryRowManager()->addRowBuffer(this);
+            activity.queryRowManager().addRowBuffer(this);
         }
     }
     inline void clearSpillingCallback()
@@ -199,7 +199,7 @@ protected:
         if (mmRegistered)
         {
             mmRegistered = false;
-            activity.queryJobChannel().queryRowManager()->removeRowBuffer(this);
+            activity.queryRowManager().removeRowBuffer(this);
         }
     }
 public:
@@ -359,8 +359,7 @@ public:
         granularity = 500; // JCSMORE - rows
 
         // a small amount of rows to read from swappable rows
-        roxiemem::IRowManager *rowManager = activity.queryJobChannel().queryRowManager();
-        readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId(), inRows.queryDefaultMaxSpillCost()));
+        readRows = static_cast<const void * *>(activity.queryRowManager().allocate(granularity * sizeof(void*), activity.queryContainer().queryId(), inRows.queryDefaultMaxSpillCost()));
         addSpillingCallback();
     }
     ~CSpillableStream()
@@ -614,7 +613,7 @@ CThorExpandingRowArray::CThorExpandingRowArray(CActivityBase &_activity, IRowInt
     rows = NULL;
     maxRows = 0;
     numRows = 0;
-    rowManager = activity.queryJobChannel().queryRowManager();
+    rowManager = &activity.queryRowManager();
     throwOnOom = false;
     setup(_rowIf, _allowNulls, _stableSort, _throwOnOom);
     setDefaultMaxSpillCost(roxiemem::SpillAllCost);
@@ -1044,25 +1043,25 @@ offset_t CThorExpandingRowArray::serializedSize()
 
 memsize_t CThorExpandingRowArray::getMemUsage()
 {
-    roxiemem::IRowManager *rM = activity.queryJobChannel().queryRowManager();
+    roxiemem::IRowManager &rM = activity.queryRowManager();
     IOutputMetaData *meta = rowIf->queryRowMetaData();
     IOutputMetaData *diskMeta = meta->querySerializedDiskMeta(); // GH->JCS - really I want a internalMeta here.
     rowidx_t c = ordinality();
     memsize_t total = 0;
     if (diskMeta->isFixedSize())
-        total = c * rM->getExpectedFootprint(diskMeta->getFixedSize(), 0);
+        total = c * rM.getExpectedFootprint(diskMeta->getFixedSize(), 0);
     else
     {
         CSizingSerializer ssz;
         for (rowidx_t i=0; i<c; i++)
         {
             serializer->serialize(ssz, (const byte *)rows[i]);
-            total += rM->getExpectedFootprint(ssz.size(), 0);
+            total += rM.getExpectedFootprint(ssz.size(), 0);
             ssz.reset();
         }
     }
     // NB: worst case, when expanding (see resize method)
-    memsize_t sz = rM->getExpectedFootprint(maxRows * sizeof(void *), 0);
+    memsize_t sz = rM.getExpectedFootprint(maxRows * sizeof(void *), 0);
     memsize_t szE = sz / 100 * 125; // don't care if sz v. small
     if (stableSort_none == stableSort)
         total += sz + szE;
@@ -1503,7 +1502,7 @@ protected:
             ActPrintLog(&activity, "Sort took: %f", ((float)timer.elapsedMs())/1000);
             tempPrefix.append("srt");
         }
-        tempPrefix.appendf("spill_%d", activity.queryActivityId());
+        tempPrefix.appendf("spill_%d", activity.queryId());
         GetTempName(tempName, tempPrefix.str(), true);
         Owned<IFile> iFile = createIFile(tempName.str());
         VStringBuffer spillPrefixStr("RowCollector(%d)", spillPriority);
@@ -1663,7 +1662,7 @@ protected:
     {
         if (mmRegistered)
         {
-            activity.queryJobChannel().queryRowManager()->removeRowBuffer(this);
+            activity.queryRowManager().removeRowBuffer(this);
             mmRegistered = false;
         }
     }
@@ -1671,7 +1670,7 @@ protected:
     {
         if (!mmRegistered && spillingEnabled())
         {
-            activity.queryJobChannel().queryRowManager()->addRowBuffer(this);
+            activity.queryRowManager().addRowBuffer(this);
             mmRegistered = true;
         }
     }
@@ -1746,7 +1745,7 @@ public:
         if (mmRegistered && !spillingEnabled())
         {
             mmRegistered = false;
-            activity.queryJobChannel().queryRowManager()->removeRowBuffer(this);
+            activity.queryRowManager().removeRowBuffer(this);
         }
         spillableRows.setup(rowIf, false, stableSort);
     }
@@ -2126,17 +2125,17 @@ public:
         return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
 // IThorAllocator
-    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags) const
     {
         return allocatorMetaCache->ensure(meta, activityId, flags);
     }
-    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
+    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId) const
     {
         return allocatorMetaCache->ensure(meta, activityId, defaultFlags);
     }
-    virtual roxiemem::IRowManager *queryRowManager() const
+    virtual roxiemem::IRowManager &queryRowManager() const
     {
-        return rowManager;
+        return *rowManager;
     }
     virtual roxiemem::RoxieHeapFlags queryFlags() const { return defaultFlags; }
     virtual bool queryCrc() const { return false; }

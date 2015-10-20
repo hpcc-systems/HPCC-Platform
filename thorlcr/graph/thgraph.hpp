@@ -810,7 +810,6 @@ public:
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
     void addSubGraph(IPropertyTree &xgmml);
 
-    roxiemem::IRowManager *queryRowManager() const;
     bool queryUseCheckpoints() const;
     bool queryPausing() const { return pausing; }
     bool queryResumed() const { return resumed; }
@@ -945,13 +944,13 @@ public:
 
     ICodeContext &queryCodeContext() const;
     IThorResult *getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId);
-    IThorAllocator *queryThorAllocator() const { return thorAllocator; }
+    IThorAllocator &queryThorAllocator() const { return *thorAllocator; }
     ICommunicator &queryJobComm() const { return *jobComm; }
     IMPServer &queryMPServer() const { return *mpServer; }
     const rank_t &queryMyRank() const { return myrank; }
     mptag_t deserializeMPTag(MemoryBuffer &mb);
-    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
-    roxiemem::IRowManager *queryRowManager() const;
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
+    roxiemem::IRowManager &queryRowManager() const;
 
     virtual void abort(IException *e);
     virtual IBarrier *createBarrier(mptag_t tag) { UNIMPLEMENTED; return NULL; }
@@ -989,14 +988,16 @@ public:
     IMPLEMENT_IINTERFACE;
     CActivityBase(CGraphElementBase *container);
     ~CActivityBase();
+    inline activity_id queryId() const { return container.queryId(); }
     CGraphElementBase &queryContainer() const { return container; }
     CJobBase &queryJob() const { return container.queryJob(); }
     CJobChannel &queryJobChannel() const { return container.queryJobChannel(); }
     inline IMPServer &queryMPServer() const { return queryJobChannel().queryMPServer(); }
+    inline roxiemem::IRowManager &queryRowManager() const { return queryJobChannel().queryRowManager(); }
     CGraphBase &queryGraph() const { return container.queryOwner(); }
     CActivityBase &queryChannelActivity(unsigned channel) const
     {
-        return queryJob().queryChannelActivity(channel, queryGraph().queryGraphId(), container.queryId());
+        return queryJob().queryChannelActivity(channel, queryGraph().queryGraphId(), queryId());
     }
     inline const mptag_t queryMpTag() const { return mpTag; }
     inline bool queryAbortSoon() const { return abortSoon; }
@@ -1010,6 +1011,7 @@ public:
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
     unsigned queryMaxCores() const { return maxCores; }
     IRowInterfaces *getRowInterfaces();
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
 
     bool appendRowXml(StringBuffer & target, IOutputMetaData & meta, const void * row) const;
     void logRow(const char * prefix, IOutputMetaData & meta, const void * row);
@@ -1040,7 +1042,7 @@ public:
     virtual IOutputRowSerializer * queryRowSerializer(); 
     virtual IOutputRowDeserializer * queryRowDeserializer(); 
     virtual IOutputMetaData *queryRowMetaData() { return baseHelper->queryOutputMeta(); }
-    virtual unsigned queryActivityId() { return (unsigned)container.queryId(); }
+    virtual unsigned queryActivityId() { return (unsigned)queryId(); }
     virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
 
     StringBuffer &getOpt(const char *prop, StringBuffer &out) const;

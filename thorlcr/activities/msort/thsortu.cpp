@@ -1683,7 +1683,7 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
             PROGLOG("CMultiCoreJoinHelper::cWorker started");
 
             Owned<IRowInterfaces> rowIf = parent->activity.getRowInterfaces();
-            Owned<IEngineRowAllocator> allocator = parent->activity.queryJobChannel().getRowAllocator(rowIf->queryRowMetaData(), parent->activity.queryActivityId(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
+            Owned<IEngineRowAllocator> allocator = parent->activity.getRowAllocator(rowIf->queryRowMetaData(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
 
             IRowWriter *rowWriter = rowStream->queryWriter();
             loop
@@ -1882,7 +1882,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
         int run()
         {
             Owned<IRowInterfaces> rowIf = parent->activity.getRowInterfaces();
-            Owned<IEngineRowAllocator> allocator = parent->activity.queryJobChannel().getRowAllocator(rowIf->queryRowMetaData(), parent->activity.queryActivityId(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
+            Owned<IEngineRowAllocator> allocator = parent->activity.getRowAllocator(rowIf->queryRowMetaData(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
 
             Owned<IRowWriter> rowWriter = parent->multiWriter->getWriter();
             PROGLOG("CMulticoreUnorderedJoinHelper::cWorker started");
