@@ -7,7 +7,7 @@
   <para>The following sections will help you to Certify that the Thor, hThor,
   and Roxie components of your system are all working correctly.</para>
 
-  <sect1 role="nobrk">
+  <sect1 id="Cert_BuildDataOnThor" role="nobrk">
     <title>Build Data on Thor</title>
 
     <para><orderedlist>
@@ -231,7 +231,7 @@
 
     <para></para>
 
-    <sect2>
+    <sect2 id="Cert_Thor">
       <title id="Certify_DR">Certify Thor</title>
 
       <orderedlist>
@@ -523,7 +523,7 @@
     </sect2>
   </sect1>
 
-  <sect1>
+  <sect1 id="Cert_VerifyIndexBuild">
     <title>Verify the Index Build</title>
 
     <orderedlist>
@@ -556,12 +556,12 @@
       <listitem>
         <para>Check the box next to <emphasis
         role="bold">certification::full_test_distributed_index</emphasis> ,
-        then press the <emphasis role="bold">Open</emphasis> action button.
-        </para>
+        then press the <emphasis role="bold">Open</emphasis> action
+        button.</para>
       </listitem>
 
       <listitem>
-        <para>Select the Contents tab. </para>
+        <para>Select the Contents tab.</para>
 
         <para><emphasis role="bold"></emphasis></para>
       </listitem>
@@ -583,7 +583,7 @@
 
     <para>This section certifies Thor access to indexed data.</para>
 
-    <sect2>
+    <sect2 id="CertifyThorAccess">
       <title>Certify Thor Access</title>
 
       <orderedlist>
@@ -658,7 +658,7 @@
       </orderedlist>
     </sect2>
 
-    <sect2>
+    <sect2 id="CertifyThor_ExpectedResult">
       <title>EXPECTED RESULT:</title>
 
       <para>The first 100 records from the query display, looking similar to
@@ -678,7 +678,7 @@
     </sect2>
   </sect1>
 
-  <sect1>
+  <sect1 id="Cert_CompilePublishRoxieQuery">
     <title>Compile and Publish a Roxie Query</title>
 
     <orderedlist>
