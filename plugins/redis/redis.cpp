@@ -749,8 +749,8 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
     //Requires separate connection from GET so that the replies are not mangled. This could be averted
     Owned<Connection> subConnection = new Connection(ctx, options.str(), ip.str(), port, serverIpPortPasswordHash, database, password, timeout);
     OwnedReply reply = Reply::createReply(redisCommand(subConnection->context, "SUBSCRIBE %b", channel.str(), (size_t)channel.length()));
-    assertOnCommandErrorWithKey(reply->query(), "GET", key);
-    if (reply->query()->type == REDIS_REPLY_ARRAY && strcmp("subscribe", reply->query()->element[0]->str) != 0 )
+    subConnection->assertOnCommandErrorWithKey(reply->query(), "GET", key);
+    if (reply->query()->type != REDIS_REPLY_ARRAY || strcmp("subscribe", reply->query()->element[0]->str) != 0 )
     {
         VStringBuffer msg("Redis Plugin: ERROR - GET '%s' on database %" I64F "u failed : failed to register SUB", key, database);
         rtlFail(0, msg.str());
@@ -803,7 +803,7 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
         reply->setClear(nakedReply);
         if (err != REDIS_OK)
             rtlFail(0, "RedisPlugin: ERROR - GET timed out.");
-        assertOnCommandErrorWithKey(nakedReply, "GET", key);
+        subConnection->assertOnCommandErrorWithKey(nakedReply, "GET", key);
         if (nakedReply->type == REDIS_REPLY_ARRAY && strcmp("message", nakedReply->element[0]->str) == 0)
         {
             //We are about to return a value, to conform with other Get<type> functions, fail if the key did not exist.
