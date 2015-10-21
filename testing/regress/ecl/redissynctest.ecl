@@ -18,7 +18,7 @@
 //class=embedded
 //class=3rdparty
 
-//nothor
+//nohthor
 
 IMPORT redis FROM lib_redis;
 IMPORT Std;
@@ -160,52 +160,34 @@ SEQUENTIAL(
     OUTPUT(SUM(NOFOLD(s1 + s2), a))//answer = (x+x/2)*N, in this case 300.
     );
 
-//Test some exceptions
-myRedis4 := RedisServer(server);
-STRING noauth := 'Redis Plugin: ERROR - authentication for 127.0.0.1:6379 failed : NOAUTH Authentication required.';
-STRING opNotPerm :=  'Redis Plugin: ERROR - authentication for 127.0.0.1:6379 failed : ERR operation not permitted';
-ds1 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis4.GetString('authTest' + (string)COUNTER)));
-SEQUENTIAL(
-    myRedis.FlushDB();
-    OUTPUT(CATCH(ds1, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = noauth OR FAILMESSAGE = opNotPerm, 'Auth Failed', 'Unexpected Error - ' + FAILMESSAGE)))));
-    );
-
-ds2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetString('authTest' + (string)COUNTER)));
-SEQUENTIAL(
-    myRedis.FlushDB();
-    OUTPUT(CATCH(ds2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
-    );
-
-myRedis5 := RedisServer('--SERVER=127.0.0.1:9999');
-ds3 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis5.GetString('connectTest' + (string)COUNTER)));
-SEQUENTIAL(
-    myRedis.FlushDB();
-    OUTPUT(CATCH(ds3, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
-    );
-
-ds4 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := redis.GetString('option' + (string)COUNTER, 'blahblahblah')));
-SEQUENTIAL(
-    OUTPUT(CATCH(ds4, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
-    );
-
-ds5 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetString('maxDB' + (string)COUNTER, 16)));
-SEQUENTIAL(
-    OUTPUT(CATCH(ds5, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
-    );
-
 //Test Publish and Subscribe
 //SUM(NOFOLD(s1 + s2), a) uses two threads - this test relies on this fact to work!
+INTEGER N2 := 1000;
+subDS := DATASET(N2, TRANSFORM({ integer a }, SELF.a := (INTEGER)myRedis.Subscribe('PubSubTest' + (STRING)COUNTER)));
+
 INTEGER pub(STRING channel) := FUNCTION
         sl := Std.System.Debug.Sleep(2);
         value :=  myRedis.Publish(channel, '1');
      RETURN WHEN(value, sl, BEFORE);
 END;
-
-INTEGER N2 := 1000;
-myRedis.FlushDB();
-subDS := DATASET(N2, TRANSFORM({ integer a }, SELF.a := (INTEGER)myRedis.Subscribe('PubSubTest' + (STRING)COUNTER)));
 pubDS := DATASET(N2, TRANSFORM({ integer a }, SELF.a := pub('PubSubTest' + (STRING)COUNTER)));
-OUTPUT(SUM(NOFOLD(subDS + pubDS), a));//answer = N*2 = 2000
+
+INTEGER pub2(STRING channel) := FUNCTION
+        sl := SEQUENTIAL(
+            Std.System.Debug.Sleep(2),
+            myRedis.Publish(channel, '3')//This pub is the one read by the sub.
+            );
+        value :=  myRedis.Publish(channel, '10000');//This pub isn't read by the sub, however the returned subscription count is present in the sum
+     RETURN WHEN(value, sl, BEFORE);
+END;
+pubDS2 := DATASET(N2, TRANSFORM({ integer a }, SELF.a := pub2('PubSubTest' + (STRING)COUNTER)));
+
+value := SUM(NOFOLD(subDS + pubDS2), a);
+SEQUENTIAL(
+    OUTPUT(SUM(NOFOLD(subDS + pubDS), a));//answer = N*2 = 2000
+    OUTPUT( IF (value > N2*4, (STRING)value, 'OK'));//ideally result = N*3, less than this => not all subs had pubs (but this would cause a timeout).
+    );
+    // N*3 > result < N*4 => all subs received a pub, however, there were result-N*3 subs still open for the second pub. result > N*4 => gremlins.
 
 myRedis.FlushDB();
 myRedis2.FlushDB();
