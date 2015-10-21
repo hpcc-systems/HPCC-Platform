@@ -103,3 +103,6 @@
 <Dataset name='Result 35'>
  <Row><value>Redis Plugin: ERROR - SELECT 16 on database 0 for 127.0.0.1:6379 failed : ERR invalid DB index</value></Row>
 </Dataset>
+<Dataset name='Result 36'>
+ <Row><Result_36>2000</Result_36></Row>
+</Dataset>

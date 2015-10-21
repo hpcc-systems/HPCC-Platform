@@ -193,5 +193,19 @@ SEQUENTIAL(
     OUTPUT(CATCH(ds5, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
     );
 
+//Test Publish and Subscribe
+//SUM(NOFOLD(s1 + s2), a) uses two threads - this test relies on this fact to work!
+INTEGER pub(STRING channel) := FUNCTION
+        sl := Std.System.Debug.Sleep(2);
+        value :=  myRedis.Publish(channel, '1');
+     RETURN WHEN(value, sl, BEFORE);
+END;
+
+INTEGER N2 := 1000;
+myRedis.FlushDB();
+subDS := DATASET(N2, TRANSFORM({ integer a }, SELF.a := (INTEGER)myRedis.Subscribe('PubSubTest' + (STRING)COUNTER)));
+pubDS := DATASET(N2, TRANSFORM({ integer a }, SELF.a := pub('PubSubTest' + (STRING)COUNTER)));
+OUTPUT(SUM(NOFOLD(subDS + pubDS), a));//answer = N*2 = 2000
+
 myRedis.FlushDB();
 myRedis2.FlushDB();
