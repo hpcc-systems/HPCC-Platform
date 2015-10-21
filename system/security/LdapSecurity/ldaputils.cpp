@@ -71,7 +71,6 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
         int rc = LDAP_INIT(&ld, uri.str());
         if(rc != LDAP_SUCCESS)
         {
-            DBGLOG("ldap_initialize error %s", ldap_err2string(rc));
             throw MakeStringException(-1, "ldap_initialize error %s", ldap_err2string(rc));
         }
         int reqcert = LDAP_OPT_X_TLS_NEVER;
@@ -81,14 +80,22 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
     else
     {
         // Initialize an LDAP session
-        StringBuffer uri;
-        uri.appendf("ldap://%s:%d", host, port);
-        DBGLOG("connecting to %s", uri.str());
+        DBGLOG("connecting to ldap://%s:%d", host, port);
+#ifdef _WIN32
+        ld = LDAP_INIT(host, port);
+        if(NULL == ld)
+        {
+            throw MakeStringException(-1, "ldap_init(%s,%d) error %s", host, port, ldap_err2string(LdapGetLastError()));
+        }
+#else
+        StringBuffer uri("ldap://");
+        uri.appendf("%s:%d", host, port);
         int rc = LDAP_INIT(&ld, uri.str());
         if(rc != LDAP_SUCCESS)
         {
-            throw MakeStringException(-1, "ldap_initialize(%s) error %s", uri.str(), ldap_err2string(rc));
+            throw MakeStringException(-1, "ldap_initialize(%s,%d) error %s", host, port, ldap_err2string(rc));
         }
+#endif
     }
     return ld;
 }
