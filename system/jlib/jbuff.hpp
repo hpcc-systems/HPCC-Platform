@@ -31,21 +31,21 @@ class jlib_decl MemoryAttr
 {
 public:
     inline MemoryAttr() { len = 0; ptr = NULL; }
-    MemoryAttr(size32_t _len);                      
-    MemoryAttr(size32_t _len, const void * _ptr);
+    MemoryAttr(size_t _len);
+    MemoryAttr(size_t _len, const void * _ptr);
     MemoryAttr(const MemoryAttr & src);
     inline ~MemoryAttr() { free(ptr); }
 
-    void *              allocate(size32_t _len);
+    void *              allocate(size_t _len);
     void                clear();
     void *              detach();
-    void *              ensure(size32_t _len);
-    void *              reallocate(size32_t _len);
+    void *              ensure(size_t _len);
+    void *              reallocate(size_t _len);
     inline const void * get() const         { return ptr; }
-    inline size32_t     length() const      { return len; }
+    inline size_t       length() const      { return len; }
     inline void *       mem() const         { return ptr; }
-    void                set(size32_t _len, const void * _ptr);
-    void                setOwn(size32_t _len, void * _ptr);
+    void                set(size_t _len, const void * _ptr);
+    void                setOwn(size_t _len, void * _ptr);
     
     static int          compare(const MemoryAttr & m1, const MemoryAttr & m2);
 
@@ -53,7 +53,7 @@ public:
 
 private:
     void * ptr;
-    size32_t len;
+    size_t len;
 };
 
 
@@ -302,7 +302,7 @@ public:
      IMPLEMENT_IINTERFACE;
 
      virtual const char * str() const;
-     virtual void set(const char *val) { attr.set((size32_t)strlen(val), val); }
+     virtual void set(const char *val) { attr.set(strlen(val), val); }
      virtual void clear() { attr.clear(); } // clearing when appending does nothing
      virtual void setLen(const char *val, unsigned length) { attr.set(length, val); }
      virtual unsigned length() const { return attr.length(); };

@@ -435,8 +435,10 @@ void MemoryValue::pushDecimalValue()
 
 void MemoryValue::serialize(MemoryBuffer &tgt)
 {
-    tgt.append(val.length());
-    tgt.append(val.length(), val.get());
+    size32_t serialLen = (size32_t)val.length();
+    assertex(serialLen == val.length());
+    tgt.append(serialLen);
+    tgt.append(serialLen, val.get());
 }
 
 void MemoryValue::deserialize(MemoryBuffer &src)

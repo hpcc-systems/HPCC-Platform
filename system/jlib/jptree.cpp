@@ -838,11 +838,13 @@ const void *CPTValue::queryValue() const
 
 void CPTValue::serialize(MemoryBuffer &tgt)
 {
-    tgt.append(length());
-    if (length())
+    //Retain backward compatibility for the serialization format.
+    size32_t serialLen = (size32_t)length();
+    tgt.append(serialLen);
+    if (serialLen)
     {
         tgt.append(compressed);
-        tgt.append(length(), get());
+        tgt.append(serialLen, get());
     }
 }
 
