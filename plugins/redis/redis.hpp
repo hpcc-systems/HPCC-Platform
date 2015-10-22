@@ -61,6 +61,9 @@ namespace RedisPlugin {
     ECL_REDIS_API void             ECL_REDIS_CALL SyncRGetUChar (ICodeContext * _ctx, size32_t & returnLength, UChar * & returnValue, const char * key, const char * options, int database, const char * pswd, unsigned timeout);
     ECL_REDIS_API void             ECL_REDIS_CALL SyncRGetData  (ICodeContext * _ctx,size32_t & returnLength, void * & returnValue, const char * key, const char * options, int database, const char * pswd, unsigned timeout);
 
+    ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL SyncRPub(ICodeContext * _ctx, const char * keyOrChannel, size32_t messageLength, const char * message, const char * options, int database, const char * pswd, unsigned timeout, bool lockedKey);
+    ECL_REDIS_API void ECL_REDIS_CALL SyncRSub(ICodeContext * _ctx, size32_t & messageLength, char * & message, const char * keyOrChannel, const char * options, int database, const char * pswd, unsigned timeout, bool lockedKey);
+
     //--------------------------------AUXILLARIES---------------------------
     ECL_REDIS_API bool             ECL_REDIS_CALL RExist  (ICodeContext * _ctx, const char * key, const char * options, int database, const char * pswd, unsigned timeout);
     ECL_REDIS_API void             ECL_REDIS_CALL RClear  (ICodeContext * _ctx, const char * options, int database, const char * pswd, unsigned timeout);
