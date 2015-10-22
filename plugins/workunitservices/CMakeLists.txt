@@ -44,6 +44,7 @@ include_directories (
          ./../../system/jhtree 
          ./../../system/jlib 
          ./../../dali/sasha 
+         ./../../roxie/roxiemem
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWORKUNITSERVICES_EXPORTS )

@@ -20,6 +20,10 @@
 #include "jlog.hpp"
 #include "jset.hpp"
 #include <new>
+#ifdef _USE_TBB
+#include "tbb/task.h"
+#include "tbb/task_scheduler_init.h"
+#endif
 
 #ifndef _WIN32
 #include <sys/mman.h>
@@ -40,6 +44,12 @@
 namespace roxiemem {
 
 #define NOTIFY_UNUSED_PAGES_ON_FREE     // avoid linux swapping 'freed' pages to disk
+
+//The following constants should probably be tuned depending on the architecture - see Tuning Test at the end of the file.
+#define PARALLEL_ASYNC_RELEASE_GRANULARITY      1000        // default
+#define DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY       2048        // default
+#define RELEASE_THRESHOLD_SCALING                       64     // rather high, may reduce if memory manager restructured
+#define DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD         (DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY * RELEASE_THRESHOLD_SCALING)
 
 unsigned memTraceLevel = 1;
 memsize_t memTraceSizeLimit = 0;
@@ -1023,12 +1033,10 @@ void HeapletBase::releaseRowset(unsigned count, byte * * rowset)
     if (rowset)
     {
         //MORE: There is a small window of simultaneous releases that could lead to the children being leaked
+        //This should really implemented as a destructor, possibly of a special activity number
         if (!isShared(rowset))
-        {
-            byte * * finger = rowset;
-            while (count--)
-                release(*finger++);
-        }
+            ReleaseRoxieRowArray(count, (const void * *)rowset);
+
         release(rowset);
     }
 }
@@ -1098,6 +1106,138 @@ bool HeapletBase::hasDestructor(const void *ptr)
     else
         return false;
 }
+
+//================================================================================
+
+#ifdef _USE_CPPUNIT
+static size_t parallelSyncReleaseGranularity = DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY;
+static size_t parallelSyncReleaseThreshold = DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD;
+
+//Only used by the tuning unit tests, should possibly use a different flag to fix them as constant
+static void setParallelSyncReleaseGranularity(size_t granularity, unsigned scaling)
+{
+    parallelSyncReleaseGranularity = granularity;
+    parallelSyncReleaseThreshold = granularity * scaling;
+}
+#else
+const static size_t parallelSyncReleaseGranularity = DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY;
+const static size_t parallelSyncReleaseThreshold = DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD;
+#endif
+
+
+inline void inlineReleaseRoxieRowArray(size_t count, const void * * rows)
+{
+    for (size_t i = 0; i < count; i++)
+        ReleaseRoxieRow(rows[i]);
+}
+
+#ifdef PARALLEL_SYNC_RELEASE
+class sync_releaser_task : public tbb::task
+{
+public:
+    sync_releaser_task(size_t _num, const void * * _rows) : num(_num), rows(_rows) {}
+
+    virtual task * execute()
+    {
+        inlineReleaseRoxieRowArray(num, rows);
+        return NULL;
+    }
+
+public:
+    size_t num;
+    const void * * rows;
+};
+
+void ParallelReleaseRoxieRowArray(size_t count, const void * * rows)
+{
+    //Two different implementations of the same code.  The task list is simpler and the recommended approach, but
+    //appears to be slower - possibly because work doesn't start until all tasks created.  Needs more testing to verify.
+#if 1
+    tbb::task * completed_task = new (tbb::task::allocate_root()) tbb::empty_task();
+    unsigned numTasks = (unsigned)((count + parallelSyncReleaseGranularity -1) / parallelSyncReleaseGranularity);
+    completed_task->set_ref_count(1+numTasks);
+
+    //Arrange the blocks that are freed from the array so that if the rows are allocated in order, adjacent blocks
+    //are not released at the same time, therefore reducing contention.
+    const unsigned stride = 8;
+    for (unsigned j= 0; j < stride; j++)
+    {
+        size_t i = j * parallelSyncReleaseGranularity;
+        for (; i < count; i += parallelSyncReleaseGranularity * stride)
+        {
+            size_t remain = count - i;
+            size_t blockRows = (remain > parallelSyncReleaseGranularity) ? parallelSyncReleaseGranularity : remain;
+            tbb::task * next = new (completed_task->allocate_child()) sync_releaser_task(blockRows, rows + i);
+            next->spawn(*next); // static member in tbb 3.0
+        }
+    }
+
+    completed_task->wait_for_all();
+    completed_task->destroy(*completed_task);       // static member in tbb 3.0
+#else
+    //Arrange the blocks that are freed from the array so that if they are allocated in order adjacent blocks
+    //are not released at the same time.
+    tbb::task_list tasks;
+    const unsigned stride = 8;
+    for (unsigned j= 0; j < stride; j++)
+    {
+        size_t i = j * parallelSyncReleaseGranularity;
+        for (; i < count; i += parallelSyncReleaseGranularity * stride)
+        {
+            size_t remain = count - i;
+            size_t blockRows = (remain > parallelSyncReleaseGranularity) ? parallelSyncReleaseGranularity : remain;
+            tasks.push_back(* new (tbb::task::allocate_root()) sync_releaser_task(blockRows, rows + i));
+        }
+    }
+
+    tbb::task::spawn_root_and_wait(tasks);
+#endif
+
+}
+#endif
+
+
+void ReleaseRoxieRowArray(size_t count, const void * * rows)
+{
+#ifdef PARALLEL_SYNC_RELEASE
+    if (count >= parallelSyncReleaseThreshold)
+    {
+        ParallelReleaseRoxieRowArray(count, rows);
+        return;
+    }
+#endif
+
+    inlineReleaseRoxieRowArray(count, rows);
+}
+
+//Not implemented as ReleaseRoxieRowArray(to - from, rows + from) to avoid "from > to" wrapping issues
+void roxiemem_decl ReleaseRoxieRowRange(const void * * rows, size_t from, size_t to)
+{
+#ifdef PARALLEL_SYNC_RELEASE
+    if ((from < to) && ((to - from) >= parallelSyncReleaseThreshold))
+    {
+        ParallelReleaseRoxieRowArray(to-from, rows+from);
+        return;
+    }
+#endif
+    for (size_t i = from; i < to; i++)
+        ReleaseRoxieRow(rows[i]);
+}
+
+
+void ReleaseRoxieRows(ConstPointerArray &rows)
+{
+    ReleaseRoxieRowArray(rows.ordinality(), rows.getArray());
+    rows.kill();
+}
+
+void ReleaseRoxieRows(ConstPointerArray & rows, size_t first)
+{
+    ReleaseRoxieRowRange(rows.getArray(), first, rows.ordinality());
+    rows.kill();
+}
+
+//================================================================================
 
 class CHeap;
 static void noteEmptyPage(CHeap * heap);
@@ -3254,6 +3394,41 @@ void initAllocSizeMappings(const unsigned * sizes)
     numDirectBuckets = bucket+1;
 }
 
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CHeapBlockedRowReleaser : public CBlockedRowReleaser
+{
+public:
+    CHeapBlockedRowReleaser(unsigned _max) : CBlockedRowReleaser(_max, new const void * [_max])
+    {
+    }
+    ~CHeapBlockedRowReleaser()
+    {
+        releaseAllRows();
+        delete [] rows;
+    }
+};
+
+#ifdef PARALLEL_ASYNC_RELEASE
+class releaser_task : public tbb::task
+{
+public:
+    releaser_task(IBlockedRowReleaser * _releaser) : releaser(_releaser) {}
+
+    virtual task * execute()
+    {
+        releaser->releaseRows();
+        releaser.clear();
+        return NULL;
+    }
+
+public:
+    Owned<IBlockedRowReleaser> releaser;
+};
+
+#endif
+
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -3288,17 +3463,24 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     const IRowAllocatorCache *allocatorCache;
     unsigned __int64 cyclesChecked;       // When we last checked timelimit
     unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
+    unsigned releaseGranularity;
     bool ignoreLeaks;
     bool outputOOMReports;
     bool trackMemoryByActivity;
     bool minimizeFootprint;
     bool minimizeFootprintCritical;
+    Semaphore releaserSem;
+
+#ifdef PARALLEL_ASYNC_RELEASE
+    tbb::task * blocks_released;
+#endif
 
     inline unsigned getActivityId(unsigned rawId) const
     {
         return getRealActivityId(rawId, allocatorCache);
     }
 
+    unsigned maxReleasers;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -3347,11 +3529,40 @@ public:
             cyclesChecked = 0;
             cyclesCheckInterval = 0;
         }
+
+        maxReleasers = 0;
+
+        const char * granularity = getenv("RELEASE_GRANULARITY");
+        releaseGranularity = granularity ? atoi(granularity) : PARALLEL_ASYNC_RELEASE_GRANULARITY;
+        if (releaseGranularity == 0)
+            releaseGranularity = PARALLEL_ASYNC_RELEASE_GRANULARITY;
+
+        const char * threads = getenv("RELEASE_THREADS");
+#ifdef PARALLEL_ASYNC_RELEASE
+        unsigned numReleaseTasks = threads ? atoi(threads) : 0;
+        if (numReleaseTasks == 0)
+            numReleaseTasks = tbb::task_scheduler_init::default_num_threads();
+        blocks_released = new (tbb::task::allocate_root()) tbb::empty_task();
+        blocks_released->set_ref_count(1);
+        releaserSem.reinit(numReleaseTasks);
+#endif
     }
 
     ~CChunkingRowManager()
     {
         callbacks.stopReleaseBufferThread();
+
+        //if (maxReleasers)
+        //    printf("%d releasers ", maxReleasers);
+
+#ifdef PARALLEL_ASYNC_RELEASE
+        //Ensure all parallel block releases are completed before the row manager is destroyed
+        //MORE: Investigate how to abort a set of tasks
+        blocks_released->wait_for_all();
+        blocks_released->destroy(*blocks_released);     // static member in tbb 3.0
+#endif
+
+        killRowReleasers();
 
         if (memTraceLevel >= 2)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p", 
@@ -3416,6 +3627,10 @@ public:
         trackMemoryByActivity = val;
     }
 
+    virtual void setReleaseGranularity(unsigned val)
+    {
+        releaseGranularity = val;
+    }
     virtual unsigned allocated()
     {
         unsigned total = 0;
@@ -3923,6 +4138,67 @@ public:
         return callbacks.releaseBuffers(maxSpillCost, critical, false, 0);
     }
 
+    class CRowManagerRowReleaser : public CHeapBlockedRowReleaser
+    {
+        friend class CChunkingRowManager;
+    public:
+        CRowManagerRowReleaser(CChunkingRowManager * _rowManager, unsigned _max)
+        : CHeapBlockedRowReleaser(_max), rowManager(_rowManager)
+        {
+        }
+
+        virtual void releaseRows()
+        {
+            releaseAllRows();
+            rowManager->recycleReleaser(this);
+        }
+
+    protected:
+        Owned<CRowManagerRowReleaser> next;
+        CChunkingRowManager * rowManager;
+    };
+
+    virtual CBlockedRowReleaser * createBlockedRowReleaser()
+    {
+        {
+            NonReentrantSpinBlock block(releaseSpin);
+            if (freeList)
+            {
+                CRowManagerRowReleaser * ret = freeList.getClear();
+                freeList.setown(ret->next.getClear());
+                return ret;
+            }
+            maxReleasers++;
+        }
+
+        return new CRowManagerRowReleaser(this, releaseGranularity);
+    }
+
+    virtual void releaseBlocked(IBlockedRowReleaser * ownedRows)
+    {
+#ifdef PARALLEL_ASYNC_RELEASE
+        tbb::task * next = new (blocks_released->allocate_additional_child_of(*blocks_released)) releaser_task(ownedRows);  // allocate_additional_child_of is static member in tbb 3.0
+        releaserSem.wait();
+        next->spawn(*next); // static member in tbb 3.0
+#else
+        ownedRows->releaseRows();
+        ownedRows->Release();
+#endif
+    }
+
+
+    void recycleReleaser(CRowManagerRowReleaser * releaser)
+    {
+        {
+            NonReentrantSpinBlock block(releaseSpin);
+            releaser->next.setown(freeList.getClear());
+            freeList.set(releaser);
+        }
+#ifdef PARALLEL_ASYNC_RELEASE
+        releaserSem.signal();
+#endif
+    }
+
 protected:
     CRoxieFixedRowHeapBase * doCreateFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags, unsigned maxSpillCost)
     {
@@ -4127,6 +4403,20 @@ protected:
         size32_t heapSize = ROUNDEDSIZE(rounded);
         return heapSize;
     }
+
+    void killRowReleasers()
+    {
+        while (freeList)
+        {
+            Owned<CRowManagerRowReleaser> head = freeList.getClear();
+            freeList.setown(head->next.getClear());
+        }
+    }
+
+
+protected:
+    Owned<CRowManagerRowReleaser> freeList;
+    NonReentrantSpinLock releaseSpin;
 };
 
 
@@ -4935,8 +5225,7 @@ public:
         if (numCommitted == 0)
             return false;
         const void * * committed = rows.getBlock(numCommitted);
-        for (unsigned i=0; i < numCommitted; i++)
-            ReleaseRoxieRow(committed[i]);
+        ReleaseRoxieRowArray(numCommitted, committed);
         rows.noteSpilled(numCommitted);
         return true;
     }
@@ -4973,18 +5262,17 @@ public:
 
     void addRow(const void * row)
     {
-        rows.append((void *)row);
+        rows.append(row);
     }
 
     void kill()
     {
-        ForEachItemIn(i, rows)
-            ReleaseRoxieRow(rows.item(i));
+        ReleaseRoxieRowArray(rows.ordinality(), rows.getArray());
         rows.kill();
     }
 
 protected:
-    PointerArray rows;
+    ConstPointerArray rows;
     unsigned cost;
 };
 
@@ -6797,10 +7085,255 @@ protected:
     }
 };
 
+
+//#define RUN_SINGLE_TEST
+
+static const memsize_t tuningMemorySize = I64C(0x100000000);
+static const unsigned tuningAllocSize = 64;
+static const memsize_t numTuningRows = tuningMemorySize / (tuningAllocSize * 2);
+static const memsize_t numTuningIters = 5;
+static const size_t minGranularity = 256;
+static const size_t maxGranularity = 0x2000;
+static const size_t defaultGranularity = DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY;
+
+static int compareTiming(const void * pLeft, const void * pRight)
+{
+    const unsigned * left = (const unsigned *)pLeft;
+    const unsigned * right = (const unsigned *)pRight;
+    return (*left < *right) ? -1 : (*left > *right) ? +1 : 0;
+}
+
+
+class RoxieMemTuningTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( RoxieMemTuningTests );
+    CPPUNIT_TEST(testSetup);
+#ifdef RUN_SINGLE_TEST
+    CPPUNIT_TEST(testOne);
+#else
+    CPPUNIT_TEST(testSyncOrderRelease);
+    CPPUNIT_TEST(testSyncShuffleRelease);
+    CPPUNIT_TEST(testASyncOrderRelease);
+    CPPUNIT_TEST(testASyncShuffleRelease);
+#endif
+    CPPUNIT_TEST(testCleanup);
+    CPPUNIT_TEST_SUITE_END();
+    const IContextLogger &logctx;
+
+public:
+    RoxieMemTuningTests() : logctx(queryDummyContextLogger())
+    {
+    }
+
+    ~RoxieMemTuningTests()
+    {
+    }
+
+protected:
+    void testSetup()
+    {
+        setTotalMemoryLimit(true, true, true, tuningMemorySize, 0, NULL, NULL);
+    }
+
+    void testCleanup()
+    {
+        releaseRoxieHeap();
+    }
+
+    void testOne()
+    {
+        unsigned sequential = 0;
+        unsigned numTestRows = 0x10000;
+//        sequential = testSync(numTestRows, numTuningRows+1, true, 0);
+        testSync(numTestRows, DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY, true, sequential);
+    }
+
+    void testSyncOrderRelease()
+    {
+        testSyncRows(false);
+        testSyncRelease(numTuningRows / 0x100, false);
+        testSyncRelease(numTuningRows / 0x10, false);
+        testSyncRelease(numTuningRows, false);
+    }
+    void testSyncShuffleRelease()
+    {
+        testSyncRows(true);
+        testSyncRelease(numTuningRows / 256, true);
+        testSyncRelease(numTuningRows / 16, true);
+        testSyncRelease(numTuningRows, true);
+    }
+    void testASyncOrderRelease()
+    {
+        testASyncRows(false);
+        testASyncRelease(numTuningRows / 256, false);
+        testASyncRelease(numTuningRows / 16, false);
+        testASyncRelease(numTuningRows, false);
+    }
+    void testASyncShuffleRelease()
+    {
+        testASyncRows(true);
+        testASyncRelease(numTuningRows / 256, true);
+        testASyncRelease(numTuningRows / 16, true);
+        testASyncRelease(numTuningRows, true);
+    }
+
+    void testSyncRelease(size_t numRows, bool shuffle)
+    {
+        size_t granularity = minGranularity;
+
+        //First timing is not done in parallel
+        unsigned sequential = testSync(numRows, numTuningRows, shuffle, 0);
+        while ((granularity < maxGranularity) && (granularity * 2< numRows))
+        {
+            testSync(numRows, granularity, shuffle, sequential);
+            testSync(numRows, granularity+granularity/2, shuffle, sequential);
+            granularity <<= 1;
+        }
+    }
+
+    void testSyncRows(bool shuffle)
+    {
+        unsigned numRows = numTuningRows;
+        while (numRows >= defaultGranularity)
+        {
+            unsigned sequential = testSync(numRows, numRows+1, shuffle, 0);
+            testSync(numRows, defaultGranularity, shuffle, sequential);
+            numRows = numRows / 2;
+        }
+    }
+
+    unsigned testSync(size_t numRows, size_t granularity, bool shuffle, unsigned sequential)
+    {
+        setParallelSyncReleaseGranularity(granularity, 2);
+        unsigned times[numTuningIters];
+        for (unsigned iter=0; iter < numTuningIters; iter++)
+            times[iter] = testSingleSync(numRows, granularity, shuffle);
+
+        unsigned median = reportSummary("Sync", numRows, granularity, shuffle, sequential, times);
+        return median;
+    }
+
+    unsigned reportSummary(const char * type, size_t numRows, size_t granularity, bool shuffle, unsigned sequential, unsigned * times)
+    {
+        //Calculate the median
+        qsort(times, numTuningIters, sizeof(*times), compareTiming);
+        //Give an estimate of the range - exclude the min and max values
+        unsigned low = 0;
+        unsigned high = 0;
+        unsigned median = times[numTuningIters/2];
+        if (numTuningIters >= 5)
+        {
+            high = (times[numTuningIters-2] - median);
+            low = median - times[1];
+        }
+        double percent = sequential ? ((double)median * 100) / sequential : 100.0;
+        const char * compare = (sequential ? ((median < sequential) ? "<" : ">") : " ");
+        printf("%s %s %s (%u) took %u(-%u..+%u) us {%.2f%%} for %" I64F "u rows\n", type, shuffle ? "Shuffle" : "Ordered", compare, (unsigned)granularity, median, low, high, percent, (unsigned __int64)numRows);
+        return median;
+    }
+
+    unsigned testSingleSync(size_t numRows, size_t granularity, bool shuffle)
+    {
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        ConstPointerArray rows;
+        createRows(rowManager, numRows, rows, shuffle);
+        cycle_t start = get_cycles_now();
+        ReleaseRoxieRowArray(rows.ordinality(), rows.getArray());
+        unsigned microsecs = cycle_to_microsec(get_cycles_now() - start);
+        return microsecs;
+    }
+
+
+    void testASyncRelease(size_t numRows, bool shuffle)
+    {
+        size_t granularity = minGranularity;
+
+        //First timing is not done in parallel
+        unsigned sequential = testASync(numRows, numTuningRows, shuffle, 0);
+        while ((granularity < maxGranularity) && (granularity * 2< numRows))
+        {
+            testASync(numRows, granularity, shuffle, sequential);
+            testASync(numRows, granularity+granularity/2, shuffle, sequential);
+            granularity <<= 1;
+        }
+    }
+
+    void testASyncRows(bool shuffle)
+    {
+        unsigned numRows = numTuningRows;
+        while (numRows >= defaultGranularity)
+        {
+            unsigned sequential = testASync(numRows, numRows+1, shuffle, 0);
+            testASync(numRows, defaultGranularity, shuffle, sequential);
+            numRows = numRows / 2;
+        }
+    }
+
+    unsigned testASync(size_t numRows, size_t granularity, bool shuffle, unsigned sequential)
+    {
+        unsigned times[numTuningIters];
+        for (unsigned iter=0; iter < numTuningIters; iter++)
+            times[iter] = testSingleASync(numRows, granularity, shuffle);
+
+        unsigned median = reportSummary("ASync", numRows, granularity, shuffle, sequential, times);
+        return median;
+    }
+
+    unsigned testSingleASync(size_t numRows, size_t granularity, bool shuffle)
+    {
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        ((CChunkingRowManager *)rowManager.get())->setReleaseGranularity(granularity);
+
+        ConstPointerArray rows;
+        createRows(rowManager, numRows, rows, shuffle);
+        cycle_t start = get_cycles_now();
+        {
+            Owned<roxiemem::CBlockedRowReleaser> releaser = rowManager->createBlockedRowReleaser();
+            for (size_t i = 0; i < numRows; i++)
+            {
+                releaser->appendRow(rows[i]);
+                if (releaser->isFull())
+                    releaser.setown(getNextRowReleaser(rowManager, releaser.getClear()));
+            }
+            rowManager->releaseBlocked(releaser.getClear());
+            rowManager.clear();
+        }
+        unsigned microsecs = cycle_to_microsec(get_cycles_now() - start);
+        return microsecs;
+    }
+
+    void createRows(IRowManager * rowManager, size_t numRows, ConstPointerArray & target, bool shuffle)
+    {
+        Owned<IFixedRowHeap> heap = rowManager->createFixedRowHeap(tuningAllocSize, 0, RHFpacked, 0);
+        target.ensure(numTuningRows);
+        for (size_t i = 0; i < numRows; i++)
+            target.append(heap->allocate());
+
+        if (shuffle)
+        {
+            Owned<IRandomNumberGenerator> random = createRandomNumberGenerator();
+            random->seed(123456789);
+            unsigned i = target.ordinality();
+            while (i > 1)
+            {
+                unsigned j = random->next() % i;
+                i--;
+                target.swap(i, j);
+            }
+        }
+    }
+
+};
+
+
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTests, "RoxieMemTests" );
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemStressTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemStressTests, "RoxieMemStressTests" );
+
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTuningTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTuningTests, "RoxieMemTuningTests" );
+
 #ifdef __64BIT__
 //CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemHugeTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemHugeTests, "RoxieMemHugeTests" );

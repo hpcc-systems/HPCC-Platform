@@ -17,11 +17,21 @@
 
 #ifndef _ROXIEMEM_INCL
 #define _ROXIEMEM_INCL
+#include "platform.h"
 #include "jlib.hpp"
 #include "jlog.hpp"
 #include "jdebug.hpp"
 #include "jstats.h"
 #include "errorlist.h"
+
+#if defined(_USE_TBB)
+//Release blocks of rows in parallel - always likely to improve performance
+#define PARALLEL_SYNC_RELEASE
+//The following needs more investigation for power8
+#if !defined(_ARCH_PPC64EL_)
+#define PARALLEL_ASYNC_RELEASE
+#endif
+#endif
 
 #ifdef _WIN32
  #ifdef ROXIEMEM_EXPORTS
@@ -299,12 +309,11 @@ public:
 #define RoxieRowAllocatorId(row) roxiemem::HeapletBase::getAllocatorId(row)
 #define RoxieRowIsShared(row)  roxiemem::HeapletBase::isShared(row)
 
-inline void ReleaseRoxieRows(ConstPointerArray &data)
-{
-    ForEachItemIn(idx, data)
-        ReleaseRoxieRow(data.item(idx));
-    data.kill();
-}
+void roxiemem_decl ReleaseRoxieRowArray(size_t count, const void * * rows);
+void roxiemem_decl ReleaseRoxieRowRange(const void * * rows, size_t from, size_t to);
+
+void roxiemem_decl ReleaseRoxieRows(ConstPointerArray &rows);
+void roxiemem_decl ReleaseRoxieRows(ConstPointerArray & rows, size_t first);
 
 
 class OwnedRoxieRow;
@@ -417,6 +426,46 @@ interface IVariableRowHeap : extends IInterface
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize) = 0;
 };
 
+interface IBlockedRowReleaser : public IInterface
+{
+public:
+    virtual void releaseRows() = 0;
+};
+
+class CBlockedRowReleaser : public CInterfaceOf<IBlockedRowReleaser>
+{
+public:
+    CBlockedRowReleaser(unsigned _max, const void * * _rows) : num(0), max(_max), rows(_rows) {}
+    virtual ~CBlockedRowReleaser() {};
+
+    inline void appendRow(const void * row)
+    {
+        dbgassertex(num < max);
+        rows[num++] = row;
+    }
+    inline bool isFull() const
+    {
+        return (num >= max);
+    }
+    virtual void releaseRows()
+    {
+        releaseAllRows();
+    }
+protected:
+    void releaseAllRows()
+    {
+        for (unsigned i = 0; i < num; i++)
+            ReleaseRoxieRow(rows[i]);
+        num = 0;
+    }
+
+protected:
+    unsigned num;
+    unsigned max;
+    const void * * rows;
+};
+
+
 enum RoxieHeapFlags
 {
     RHFnone             = 0x0000,
@@ -487,6 +536,9 @@ interface IRowManager : extends IInterface
     virtual void setMinimizeFootprint(bool value, bool critical) = 0;
     //If set, and changes to the callback list always triggers the callbacks to be called.
     virtual void setReleaseWhenModifyCallback(bool value, bool critical) = 0;
+
+    virtual CBlockedRowReleaser * createBlockedRowReleaser() = 0;
+    virtual void releaseBlocked(IBlockedRowReleaser * ownedRows) = 0;    // should rows be owned?? probably...
 };
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);
@@ -541,6 +593,12 @@ extern roxiemem_decl memsize_t memTraceSizeLimit;
 extern roxiemem_decl StringBuffer &memstats(StringBuffer &stats);
 extern roxiemem_decl void memstats(unsigned &totalpg, unsigned &freepg, unsigned &maxblk);
 extern roxiemem_decl IPerfMonHook *createRoxieMemStatsPerfMonHook(IPerfMonHook *chain=NULL); // for passing to jdebug startPerformanceMonitor
+
+inline CBlockedRowReleaser * getNextRowReleaser(IRowManager * rowManager, IBlockedRowReleaser * ownedPrev)
+{
+    rowManager->releaseBlocked(ownedPrev);
+    return rowManager->createBlockedRowReleaser();
+}
 
 } // namespace roxiemem
 #endif

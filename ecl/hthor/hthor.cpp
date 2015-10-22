@@ -26,6 +26,7 @@
 #include "jisem.hpp"
 #include "roxiedebug.hpp"
 #include "roxierow.hpp"
+#include "roxiemem.hpp"
 #include "eclhelper.hpp"
 #include "workunit.hpp"
 #include "jfile.hpp"
@@ -3206,6 +3207,8 @@ const void * CHThorAggregateActivity::nextInGroup()
         return NULL;
     }
     
+    roxiemem::IRowManager * rowManager = agent.queryRowManager();
+    Owned<roxiemem::CBlockedRowReleaser> releaser = rowManager->createBlockedRowReleaser();
     RtlDynamicRowBuilder rowBuilder(rowAllocator);
     helper.clearAggregate(rowBuilder);
     
@@ -3224,7 +3227,9 @@ const void * CHThorAggregateActivity::nextInGroup()
                     break;
 
                 helper.processNext(rowBuilder, next);
-                ReleaseRoxieRow(next);
+                releaser->appendRow(next);
+                if (releaser->isFull())
+                    releaser.setown(getNextRowReleaser(rowManager, releaser.getClear()));
             }
         }
     }
@@ -7085,8 +7090,7 @@ CHThorTopNActivity::CHThorTopNActivity(IAgentContext & _agent, unsigned _activit
 
 CHThorTopNActivity::~CHThorTopNActivity()
 {
-    while(curIndex < sortedCount)
-        ReleaseRoxieRow(sorted[curIndex++]);
+    roxiemem::ReleaseRoxieRowRange(sorted, curIndex, sortedCount);
     free(sorted);
 }
 
@@ -7105,10 +7109,10 @@ void CHThorTopNActivity::ready()
 void CHThorTopNActivity::done()
 {
     CHThorSimpleActivityBase::done();
-    while(curIndex < sortedCount)
-        ReleaseRoxieRow(sorted[curIndex++]);
+    roxiemem::ReleaseRoxieRowRange(sorted, curIndex, sortedCount);
     free(sorted);
     sorted = NULL;
+    curIndex = 0;
 }
 
 const void * CHThorTopNActivity::nextInGroup()
