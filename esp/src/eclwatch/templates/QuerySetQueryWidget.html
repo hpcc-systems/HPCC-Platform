@@ -33,15 +33,16 @@
                             <option value="0">${i18n.NotActive}</option>
                         </select>
                     </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Options" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Options}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}OptionsForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="hpcc.TableContainer">
-			                        <select id="${id}CheckAllNodes" title="${i18n.Status}:" name="CheckAllNodes" colspan="2" data-dojo-type="dijit.form.Select">
+                                    <select id="${id}CheckAllNodes" title="${i18n.Status}:" name="CheckAllNodes" colspan="2" data-dojo-type="dijit.form.Select">
                                         <option value="0" selected="selected">${i18n.CheckSingleNode}</option>
-			                            <option value="1">${i18n.CheckAllNodes}</option>
-			                        </select>
+                                        <option value="1">${i18n.CheckAllNodes}</option>
+                                    </select>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
                                     <button type="submit" data-dojo-attach-event="onClick:_onSetOptions" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
