@@ -1108,13 +1108,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 #endif
     querySo.setown(createDllEntry(_querySo, false, NULL));
     tmpHandler.setown(createTempHandler(true));
-    if (globals->getPropBool("@processPerSlave", true))
-        channelMemorySize = globalMemorySize;
-    else
-    {
-        unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-        channelMemorySize = globalMemorySize/slavesPerNode;
-    }
+    channelMemorySize = globalMemorySize / globals->getPropInt("@channelsPerSlave", 1);
 }
 
 void CJobSlave::addChannel(IMPServer *mpServer)

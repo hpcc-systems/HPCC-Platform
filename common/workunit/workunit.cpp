@@ -4336,7 +4336,9 @@ public:
                 unsigned nodes = thor.getCount("ThorSlaveProcess");
                 if (!nodes)
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: Thor cluster can not have 0 slave processes");
-                unsigned ts = nodes * thor.getPropInt("@slavesPerNode", 1);
+                unsigned slavesPerNode = thor.getPropInt("@slavesPerNode", 1);
+                unsigned channelsPerSlave = thor.getPropInt("@channelsPerSlave", 1);
+                unsigned ts = nodes * slavesPerNode * channelsPerSlave;
                 if (clusterWidth && (ts!=clusterWidth)) 
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: mismatched thor sizes in cluster");
                 clusterWidth = ts;

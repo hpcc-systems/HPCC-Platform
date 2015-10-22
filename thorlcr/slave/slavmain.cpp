@@ -100,8 +100,7 @@ class CJobListener : public CSimpleInterface
     OwningStringSuperHashTableOf<CJobSlave> jobs;
     CFifoFileCache querySoCache; // used to mirror master cache
     IArrayOf<IMPServer> mpServers;
-    bool processPerSlave;
-    unsigned slavesPerNode;
+    unsigned channelsPerSlave;
 
     class CThreadExceptionCatcher : implements IExceptionHandler
     {
@@ -162,27 +161,19 @@ public:
     CJobListener() : excptHandler(*this)
     {
         stopped = true;
-        processPerSlave = globals->getPropBool("@processPerSlave", true);
-        slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+        channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
         mpServers.append(* getMPServer());
-        if (!processPerSlave)
+        for (unsigned sc=1; sc<channelsPerSlave; sc++)
         {
-            unsigned port = getMachinePortBase();
-            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
-            for (unsigned sc=1; sc<slavesPerNode; sc++)
-            {
-                port += localThorPortInc;
-                mpServers.append(*startNewMPServer(port));
-            }
+            unsigned port = getMachinePortBase() + (sc * localThorPortInc);
+            mpServers.append(*startNewMPServer(port));
         }
     }
     ~CJobListener()
     {
-        if (!processPerSlave)
-        {
-            for (unsigned sc=1; sc<slavesPerNode; sc++)
-                mpServers.item(sc).stop();
-        }
+        for (unsigned sc=1; sc<channelsPerSlave; sc++)
+            mpServers.item(sc).stop();
         mpServers.kill();
         stop();
     }
@@ -192,7 +183,7 @@ public:
     }
     virtual void main()
     {
-        if (!processPerSlave)
+        if (channelsPerSlave>1)
         {
             class CVerifyThread : public CInterface, implements IThreaded
             {
@@ -219,7 +210,7 @@ public:
                 }
             };
             CIArrayOf<CInterface> verifyThreads;
-            for (unsigned c=0; c<slavesPerNode; c++)
+            for (unsigned c=0; c<channelsPerSlave; c++)
                 verifyThreads.append(*new CVerifyThread(*this, c));
         }
 
@@ -347,7 +338,7 @@ public:
 
                         Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, soPath.str(), mptag, slaveMsgTag);
                         job->setXGMML(deps);
-                        for (unsigned sc=0; sc<mpServers.ordinality(); sc++)
+                        for (unsigned sc=0; sc<channelsPerSlave; sc++)
                             job->addChannel(&mpServers.item(sc));
                         jobs.replace(*job.getLink());
                         job->startJob();

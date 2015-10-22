@@ -276,6 +276,9 @@ public:
 };
 
 
+#define DEFAULT_THORMASTERPORT 20000
+#define DEFAULT_THORSLAVEPORT 20100
+#define DEFAULT_SLAVEPORTINC 200
 #define DEFAULT_QUERYSO_LIMIT 10
 
 class graph_decl CFifoFileCache : public CSimpleInterface
@@ -428,7 +431,7 @@ extern graph_decl const LogMsgJobInfo thorJob;
 
 extern graph_decl StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *queryName, unsigned version);
 
-extern graph_decl void setClusterGroup(INode *masterNode, IGroup *group, unsigned slavesPerProcess=0, unsigned portBase=0, unsigned portInc=0);
+extern graph_decl void setClusterGroup(INode *masterNode, IGroup *group, unsigned slavesPerNode, unsigned channelsPerSlave, unsigned portBase, unsigned portInc);
 extern graph_decl bool clusterInitialized();
 extern graph_decl INode &queryMasterNode();
 extern graph_decl IGroup &queryRawGroup();
