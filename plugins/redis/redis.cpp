@@ -146,7 +146,7 @@ protected :
     void parseOptions(ICodeContext * ctx, const char * _options);
     void connect(ICodeContext * ctx, int _database, const char * password);
     void selectDB(ICodeContext * ctx, int _database);
-    void resetContextErr();
+    void reset(ICodeContext * ctx, const char * password, unsigned _timeout);
     void readReply(Reply * reply);
     void readReplyAndAssert(Reply * reply, const char * msg);
     void readReplyAndAssertWithCmdMsg(Reply * reply, const char * msg, const char * key = NULL);
@@ -334,10 +334,16 @@ void Connection::parseOptions(ICodeContext * ctx, const char * _options)
         }
     }
 }
-void Connection::resetContextErr()
+void Connection::reset(ICodeContext * ctx, const char * password, unsigned _timeout)
 {
-    if (context)
-        context->err = REDIS_OK;
+    timeout.reset(_timeout);
+    if (context && context->err != REDIS_OK)
+    {
+        redisFree(context);
+        context = NULL;
+        database = 0;
+        connect(ctx, 0, password);
+    }
 }
 void Connection::readReply(Reply * reply)
 {
@@ -373,8 +379,7 @@ Connection * Connection::createConnection(ICodeContext * ctx,  Connection * & _c
     if (_cachedConnection->isSameConnection(ctx, options, password))
     {
         //MORE: should perhaps check that the connection has not expired (think hiredis REDIS_KEEPALIVE_INTERVAL is defaulted to 15s).
-        _cachedConnection->resetContextErr();//reset the context err to allow reuse when an error previously occurred.
-        _cachedConnection->timeout.reset(_timeout);
+        _cachedConnection->reset(ctx, password, _timeout);
         _cachedConnection->selectDB(ctx, _database);
         return LINK(_cachedConnection);
     }
