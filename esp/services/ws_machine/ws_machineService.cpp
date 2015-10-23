@@ -1232,8 +1232,13 @@ int Cws_machineEx::invokeProgram(const char *command_line, StringBuffer& respons
         DBGLOG("command_line=<%s>", command_line);
     }
 #ifndef NO_CONNECTION_DEBUG
+#ifdef _WINDOWS
+    if( (fp = _popen( command_line, "r" )) == NULL )
+        return -1;
+#else
     if( (fp = popen( command_line, "r" )) == NULL )
         return -1;
+#endif
 #else
     if( (fp = fopen( "c:\\temp\\preflight_result.txt", "r" )) == NULL )
         return -1;
@@ -1252,7 +1257,11 @@ int Cws_machineEx::invokeProgram(const char *command_line, StringBuffer& respons
     }
     // Close pipe and print return value of CHKDSK.
 #ifndef NO_CONNECTION_DEBUG
+#ifdef _WINDOWS
+    return _pclose( fp );
+#else
     return pclose( fp );
+#endif
 #else
     return fclose( fp );
 #endif

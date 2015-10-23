@@ -331,7 +331,7 @@ static CComponentStatusFactory *csFactory = NULL;
 
 static CriticalSection getComponentStatusSect;
 
-extern COMPONENTSTATUS_API IComponentStatusFactory* getComponentStatusFactory()
+IComponentStatusFactory* getComponentStatusFactory()
 {
     CriticalBlock block(getComponentStatusSect);
 
