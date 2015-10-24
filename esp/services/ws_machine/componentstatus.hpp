@@ -104,4 +104,4 @@ public:
     virtual void updateComponentStatus(const char* reporter, IArrayOf<IConstComponentStatus>& statusList);
 };
 
-extern "C" COMPONENTSTATUS_API IComponentStatusFactory* getComponentStatusFactory();
+COMPONENTSTATUS_API IComponentStatusFactory* getComponentStatusFactory();
