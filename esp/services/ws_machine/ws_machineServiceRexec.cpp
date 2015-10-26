@@ -124,7 +124,7 @@ public:
             else
             {
                 IFRunSSH * connection = createFRunSSH();
-                connection->init(m_sCommand.str(),NULL,userId.str(),password.str(),5,0);
+                connection->init(m_sCommand.str(),NULL,NULL,NULL,5,0);
                 connection->exec(m_sAddress.str(),NULL,true);
             }
         }
