@@ -228,7 +228,7 @@ while [[ 1 ]]; do
             fi
             log "Stopping thorslave(s) for restart"
             kill_slaves
-            if [[ 0 != $autoSwapNode ]]; then
+            if [[ "false" != "$autoSwapNode" ]]; then
                 log "Running autoswap $THORNAME :: ($thorpid)"
                 swapnode auto $DALISERVER $component
                 errcode=$?
