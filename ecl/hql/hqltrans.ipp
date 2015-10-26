@@ -991,6 +991,7 @@ public:
     inline bool foundAmbiguity() const { return introducesAmbiguity; }
 
     void setRootMapping(IHqlExpression * oldSel, IHqlExpression * newSel, IHqlExpression * record, bool isSelector);
+    void setActiveSelectorMapping(IHqlExpression * oldRecord, IHqlExpression * newRecord);
 
 protected:
     void setNestedMapping(IHqlExpression * oldSel, IHqlExpression * newSel, IHqlSimpleScope * oldScope, IHqlExpression * newRecord, bool isSelector);
