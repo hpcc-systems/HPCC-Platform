@@ -2474,12 +2474,10 @@ void CJobBase::init()
     pausing = false;
     resumed = false;
 
-    bool crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", false));
-    bool usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", true));
-    unsigned memorySpillAt = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
-    thorAllocator.setown(createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, *logctx, crcChecking, usePackedAllocator));
+    crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", false));
+    usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", true));
+    memorySpillAt = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
 
-    unsigned defaultMemMB = globalMemorySize*3/4;
     PROGLOG("Global memory size = %d MB, memory spill at = %d%%", globalMemorySize, memorySpillAt);
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
@@ -2498,10 +2496,6 @@ void CJobBase::beforeDispose()
 
 CJobBase::~CJobBase()
 {
-    thorAllocator->queryRowManager()->reportMemoryUsage(false);
-    PROGLOG("CJobBase resetting memory manager");
-    thorAllocator.clear();
-
     ::Release(userDesc);
     ::Release(pluginMap);
 
@@ -2672,14 +2666,9 @@ __int64 CJobBase::getOptInt64(const char *opt, __int64 dft)
     return getWorkUnitValueInt(opt, globals->getPropInt64(gOpt, dft));
 }
 
-IEngineRowAllocator *CJobBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+IThorAllocator *CJobBase::createThorAllocator()
 {
-    return thorAllocator->getRowAllocator(meta, activityId, flags);
-}
-
-roxiemem::IRowManager *CJobBase::queryRowManager() const
-{
-    return thorAllocator->queryRowManager();
+    return ::createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, *logctx, crcChecking, usePackedAllocator);
 }
 
 /// CJobChannel
@@ -2689,6 +2678,7 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
 {
     aborted = false;
     codeCtx = NULL;
+    thorAllocator.setown(job.createThorAllocator());
     timeReporter = createStdTimeReporter();
     jobComm.setown(mpServer->createCommunicator(&job.queryJobGroup()));
     myrank = job.queryJobGroup().rank(queryMyNode());
@@ -2697,6 +2687,9 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
 
 CJobChannel::~CJobChannel()
 {
+    queryRowManager().reportMemoryUsage(false);
+    PROGLOG("CJobBase resetting memory manager");
+    thorAllocator.clear();
     wait();
     clean();
     ::Release(codeCtx);
@@ -2730,6 +2723,17 @@ mptag_t CJobChannel::deserializeMPTag(MemoryBuffer &mb)
     }
     return tag;
 }
+
+IEngineRowAllocator *CJobChannel::getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags) const
+{
+    return thorAllocator->getRowAllocator(meta, activityId, flags);
+}
+
+roxiemem::IRowManager &CJobChannel::queryRowManager() const
+{
+    return thorAllocator->queryRowManager();
+}
+
 
 static void noteDependency(CGraphElementBase *targetActivity, CGraphElementBase *sourceActivity, CGraphBase *targetGraph, CGraphBase *sourceGraph, unsigned controlId)
 {
@@ -3044,7 +3048,7 @@ IEngineRowAllocator * CActivityBase::queryRowAllocator()
 {
     if (CABallocatorlock.lock()) {
         if (!rowAllocator)
-            rowAllocator.setown(queryJob().getRowAllocator(queryRowMetaData(),queryActivityId()));
+            rowAllocator.setown(getRowAllocator(queryRowMetaData()));
         CABallocatorlock.unlock();
     }
     return rowAllocator;
@@ -3054,7 +3058,7 @@ IOutputRowSerializer * CActivityBase::queryRowSerializer()
 {
     if (CABserializerlock.lock()) {
         if (!rowSerializer)
-            rowSerializer.setown(queryRowMetaData()->createDiskSerializer(queryCodeContext(),queryActivityId()));
+            rowSerializer.setown(queryRowMetaData()->createDiskSerializer(queryCodeContext(),queryId()));
         CABserializerlock.unlock();
     }
     return rowSerializer;
@@ -3064,7 +3068,7 @@ IOutputRowDeserializer * CActivityBase::queryRowDeserializer()
 {
     if (CABdeserializerlock.lock()) {
         if (!rowDeserializer)
-            rowDeserializer.setown(queryRowMetaData()->createDiskDeserializer(queryCodeContext(),queryActivityId()));
+            rowDeserializer.setown(queryRowMetaData()->createDiskDeserializer(queryCodeContext(),queryId()));
         CABdeserializerlock.unlock();
     }
     return rowDeserializer;
@@ -3074,6 +3078,11 @@ IRowInterfaces *CActivityBase::getRowInterfaces()
 {
     // create an independent instance, to avoid circular link dependency problems
     return createRowInterfaces(queryRowMetaData(), container.queryId(), queryCodeContext());
+}
+
+IEngineRowAllocator *CActivityBase::getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags) const
+{
+    return queryJobChannel().getRowAllocator(meta, queryId(), flags);
 }
 
 bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)

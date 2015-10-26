@@ -139,7 +139,7 @@ public:
     {
         appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorProcessArg *> (queryHelper());
-        rightrowif.setown(createRowInterfaces(helper->queryRightRecordSize(),queryActivityId(),queryCodeContext()));
+        rightrowif.setown(createRowInterfaces(helper->queryRightRecordSize(),queryId(),queryCodeContext()));
         rightAllocator.set(rightrowif->queryRowAllocator());
     }
     void start()

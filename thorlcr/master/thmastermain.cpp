@@ -648,6 +648,14 @@ int main( int argc, char *argv[]  )
             }
             if (0 == mmemSize)
                 mmemSize = gmemSize;
+            if (!processPerSlave)
+            {
+                /* Preserving previous semantics, if globalMemorySize defined, it defined how much per slave.
+                 * So if N virtual slaves, the total memory needs to be globalMemorySize * slavesPerNode
+                 * The slave process will give each slave channel row manager a split of the total
+                 */
+                globals->setPropInt("@globalMemorySize", gmemSize * slavesPerNode);
+            }
         }
         bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
         gmemAllowHugePages = globals->getPropBool("@heapMasterUseHugePages", gmemAllowHugePages);

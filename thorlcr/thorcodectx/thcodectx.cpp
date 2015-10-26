@@ -110,17 +110,17 @@ char *CThorCodeContextBase::getExpandLogicalName(const char * logicalName)
 
 IEngineRowAllocator * CThorCodeContextBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
 { 
-    return jobChannel.queryJob().getRowAllocator(meta, activityId);
+    return jobChannel.getRowAllocator(meta, activityId);
 }
 
 const char * CThorCodeContextBase::cloneVString(const char * str) const
 {
-    return jobChannel.queryJob().queryRowManager()->cloneVString(str);
+    return jobChannel.queryRowManager().cloneVString(str);
 }
 
 const char * CThorCodeContextBase::cloneVString(size32_t len, const char * str) const
 {
-    return jobChannel.queryJob().queryRowManager()->cloneVString(len, str);
+    return jobChannel.queryRowManager().cloneVString(len, str);
 }
 
 IEclGraphResults *CThorCodeContextBase::resolveLocalQuery(__int64 gid)

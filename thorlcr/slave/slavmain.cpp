@@ -178,8 +178,11 @@ public:
     }
     ~CJobListener()
     {
-        for (unsigned sc=1; sc<slavesPerNode; sc++)
-            mpServers.item(sc).stop();
+        if (!processPerSlave)
+        {
+            for (unsigned sc=1; sc<slavesPerNode; sc++)
+                mpServers.item(sc).stop();
+        }
         mpServers.kill();
         stop();
     }

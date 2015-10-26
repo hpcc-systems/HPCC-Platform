@@ -445,7 +445,7 @@ public:
     {
         if (container.queryLocalOrGrouped())
             return;
-        Owned<IRowInterfaces> rowIf = createRowInterfaces(helper->queryOutputMeta(), queryActivityId(), queryCodeContext());                
+        Owned<IRowInterfaces> rowIf = createRowInterfaces(helper->queryOutputMeta(), queryId(), queryCodeContext());                
         OwnedConstThorRow result = getAggregate(*this, container.queryJob().querySlaves(), *rowIf, *helper, mpTag);
         if (!result)
             return;

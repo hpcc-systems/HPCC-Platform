@@ -737,7 +737,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                     unsigned endRequestsCount = owner.container.queryJob().querySlaves();
                     Owned<IBitSet> endRequests = createThreadSafeBitSet(); // NB: verification only
 
-                    Owned<IRowInterfaces> fetchDiskRowIf = createRowInterfaces(owner.helper->queryDiskRecordSize(),owner.queryActivityId(),owner.queryCodeContext());
+                    Owned<IRowInterfaces> fetchDiskRowIf = createRowInterfaces(owner.helper->queryDiskRecordSize(),owner.queryId(),owner.queryCodeContext());
                     while (!aborted)
                     {
                         CMessageBuffer replyMb;
@@ -1832,7 +1832,7 @@ public:
         node = queryJobChannel().queryMyRank()-1;
         onFailTransform = (0 != (joinFlags & JFonfail)) && (0 == (joinFlags & JFmatchAbortLimitSkips));
 
-        joinFieldsAllocator.setown(queryJob().getRowAllocator(helper->queryJoinFieldsRecordSize(), queryActivityId()));
+        joinFieldsAllocator.setown(getRowAllocator(helper->queryJoinFieldsRecordSize()));
         if (onFailTransform || (joinFlags & JFleftouter))
         {
             RtlDynamicRowBuilder rr(joinFieldsAllocator);
@@ -1970,16 +1970,16 @@ public:
                 Owned<IOutputMetaData> fetchInputMeta;
                 if (0 != helper->queryFetchInputRecordSize()->getMinRecordSize())
                 {
-                    fetchInputAllocator.setown(queryJob().getRowAllocator(helper->queryFetchInputRecordSize(), queryActivityId()));
+                    fetchInputAllocator.setown(getRowAllocator(helper->queryFetchInputRecordSize()));
                     fetchInputMeta.setown(createOutputMetaDataWithChildRow(fetchInputAllocator, FETCHKEY_HEADER_SIZE));
                 }
                 else
                     fetchInputMeta.setown(createFixedSizeMetaData(FETCHKEY_HEADER_SIZE));
-                fetchInputMetaRowIf.setown(createRowInterfaces(fetchInputMeta,queryActivityId(),queryCodeContext()));
+                fetchInputMetaRowIf.setown(createRowInterfaces(fetchInputMeta,queryId(),queryCodeContext()));
                 fetchInputMetaAllocator.set(fetchInputMetaRowIf->queryRowAllocator());
 
                 Owned<IOutputMetaData> fetchOutputMeta = createOutputMetaDataWithChildRow(joinFieldsAllocator, FETCHKEY_HEADER_SIZE);
-                fetchOutputRowIf.setown(createRowInterfaces(fetchOutputMeta,queryActivityId(),queryCodeContext()));
+                fetchOutputRowIf.setown(createRowInterfaces(fetchOutputMeta,queryId(),queryCodeContext()));
 
                 fetchHandler = new CKeyedFetchHandler(*this);
 
@@ -2004,15 +2004,15 @@ public:
         if (needsDiskRead)
         {
             Owned<IOutputMetaData> meta = createFixedSizeMetaData(KEYLOOKUP_HEADER_SIZE);
-            keyLookupAllocator.setown(queryJob().getRowAllocator(meta, queryActivityId()));
+            keyLookupAllocator.setown(getRowAllocator(meta));
         }
         else
         {
             Owned<IOutputMetaData> meta = createOutputMetaDataWithChildRow(joinFieldsAllocator, KEYLOOKUP_HEADER_SIZE);
-            keyLookupAllocator.setown(queryJob().getRowAllocator(meta, queryActivityId()));
+            keyLookupAllocator.setown(getRowAllocator(meta));
         }
 
-        indexInputAllocator.setown(queryJob().getRowAllocator(helper->queryIndexReadInputRecordSize(), queryActivityId()));
+        indexInputAllocator.setown(getRowAllocator(helper->queryIndexReadInputRecordSize()));
 
         ////////////////////
 
