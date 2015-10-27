@@ -59,7 +59,7 @@ int jlib_decl numtostr(char *dst, unsigned __int64 _value);
 extern jlib_decl HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError);
 extern jlib_decl void FreeSharedObject(HINSTANCE h);
 
-class jlib_decl SharedObject
+class jlib_decl SharedObject : public CInterfaceOf<IInterface>
 {
 public:
     SharedObject()      { h = 0; bRefCounted = false; }
@@ -70,10 +70,24 @@ public:
     bool loaded()       { return h != 0; }
     void unload();
     HINSTANCE getInstanceHandle() const { return h; }
+    void *getEntry(const char * name) const;
+
 public:
     HINSTANCE       h;
     bool bRefCounted;
 };
+
+// Interface for dynamically-loadable plugins
+
+interface IPluggableFactory : extends IInterface
+{
+    virtual bool initializeStore() = 0;
+};
+
+typedef IPluggableFactory * (* IPluggableFactoryFactory)(const SharedObject *dll, const IPropertyTree *);
+
+extern jlib_decl IPluggableFactory *loadPlugin(const IPropertyTree* pluginInfo);
+
 
 //---------------------------------------------------------------------------
 

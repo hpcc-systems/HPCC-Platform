@@ -479,11 +479,35 @@ bool SharedObject::loadCurrentExecutable()
     return true;
 }
 
+void *SharedObject::getEntry(const char * name) const
+{
+    return GetSharedProcedure(getInstanceHandle(), name);
+}
 
 void SharedObject::unload()
 {
     if (h && bRefCounted) FreeSharedObject(h);
     h = 0;
+}
+
+//-----------------------------------------------------------------------
+
+IPluggableFactory *loadPlugin(const IPropertyTree *pluginInfo)
+{
+    const char *pluginName = pluginInfo->queryProp("@name");
+    const char *entrypoint = pluginInfo->queryProp("@entrypoint");
+    if (!pluginName || !entrypoint)
+        throw makeStringException(0, "Plugin information missing plugin name or entrypoint");
+    Owned<SharedObject> pluginDll = new SharedObject;
+    if (!pluginDll->load(pluginName, false, true))
+        throw makeStringExceptionV(0, "Failed to load plugin %s", pluginName);
+    IPluggableFactoryFactory pf = (IPluggableFactoryFactory) pluginDll->getEntry(entrypoint);
+    if (!pf)
+        throw makeStringExceptionV(0, "Function %s not found in plugin %s", entrypoint,  pluginName);
+    IPluggableFactory *factory =  pf(pluginDll, pluginInfo);
+    if (!factory)
+        throw makeStringExceptionV(0, "Factory function %s returned NULL in plugin %s", entrypoint, pluginName);
+    return factory;
 }
 
 //-----------------------------------------------------------------------

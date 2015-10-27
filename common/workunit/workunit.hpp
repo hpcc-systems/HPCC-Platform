@@ -1249,7 +1249,7 @@ enum WUQuerySortField
 typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 
 
-interface IWorkUnitFactory : extends IInterface
+interface IWorkUnitFactory : extends IPluggableFactory
 {
     virtual IWorkUnit *createWorkUnit(const char *app, const char *scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual bool deleteWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;

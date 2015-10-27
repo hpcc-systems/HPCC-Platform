@@ -231,6 +231,27 @@ void disconnectLogMsgListenerFromDali()
         disconnectLogMsgListenerFromChild(&servers.queryNode(idx));
 }
 
+IPropertyTree *findDaliProcess(IPropertyTree *env, const SocketEndpoint &dali)
+{
+    Owned<IPropertyTreeIterator> dalis = env->getElements("Software/DaliServerProcess");
+    ForEach(*dalis)
+    {
+        IPropertyTree *cur = &dalis->query();
+        Owned<IPropertyTreeIterator> instances = cur->getElements("Instance");
+        ForEach(*instances)
+        {
+            IPropertyTree *inst = &instances->query();
+            const char *ps = inst->queryProp("@port");
+            unsigned port = ps?atoi(ps):0;
+            if (!port)
+                port = DALI_SERVER_PORT;
+            SocketEndpoint daliep(inst->queryProp("@netAddress"),port);
+            if (dali.equals(daliep))
+                return cur;;
+        }
+    }
+    return NULL;
+}
 
 bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp)
 {
@@ -241,11 +262,11 @@ bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp
     }
     SocketEndpoint daliep;
     loop {
-        const char *ps = dalis->get().queryProp("@port");
+        const char *ps = dalis->query().queryProp("@port");
         unsigned port = ps?atoi(ps):0;
         if (!port)
             port = DALI_SERVER_PORT;
-        daliep.set(dalis->get().queryProp("@netAddress"),port);
+        daliep.set(dalis->query().queryProp("@netAddress"),port);
         if (daliIp && *daliIp) {
             SocketEndpoint testep;
             testep.set(daliIp,DALI_SERVER_PORT);
