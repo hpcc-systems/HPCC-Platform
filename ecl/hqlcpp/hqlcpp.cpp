@@ -11677,11 +11677,19 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
     }
 
     funcctx.addQuotedCompound(proto);
+    funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+                      "#pragma GCC diagnostic error \"-Wall\"\n"
+                      "#pragma GCC diagnostic error \"-Wextra\"\n"
+                      "#endif\n");
     if (location)
         funcctx.addLine(locationFilename, startLine);
     funcctx.addQuoted(body);
     if (location)
         funcctx.addLine();
+    funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+                      "#pragma GCC diagnostic ignored \"-Wall\"\n
+                      "#pragma GCC diagnostic ignored \"-Wextra\"\n"
+                      "#endif\n");
 }
 
 void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpression * funcdef, const char *proto)
