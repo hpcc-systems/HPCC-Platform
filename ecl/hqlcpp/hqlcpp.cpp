@@ -11687,7 +11687,7 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
     if (location)
         funcctx.addLine();
     funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
-                      "#pragma GCC diagnostic ignored \"-Wall\"\n
+                      "#pragma GCC diagnostic ignored \"-Wall\"\n"
                       "#pragma GCC diagnostic ignored \"-Wextra\"\n"
                       "#endif\n");
 }
