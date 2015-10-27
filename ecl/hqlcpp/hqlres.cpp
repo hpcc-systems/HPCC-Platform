@@ -492,7 +492,7 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         ForEachItemIn(idx, resources)
         {
             ResourceItem&s = (ResourceItem&)resources.item(idx);
-            unsigned len = s.data.length();
+            unsigned len = (unsigned)s.data.length();
             unsigned id = s.id;
             StringBuffer baseName;
             baseName.append(s.type).append("_").append(id);

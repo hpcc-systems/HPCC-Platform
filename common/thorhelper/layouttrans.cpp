@@ -728,7 +728,7 @@ CacheKey::CacheKey(size32_t _s1, void const * _d1, size32_t _s2, void const * _d
 }
 
 CacheValue::CacheValue(size32_t s1, void const * d1, size32_t s2, void const * d2, IRecordLayoutTranslator * _trans)
-    : b1(s1, d1), b2(s2, d2), key(b1.length(), b1.get(), b2.length(), b2.get()), trans(_trans)
+    : b1(s1, d1), b2(s2, d2), key((size32_t)b1.length(), b1.get(), (size32_t)b2.length(), b2.get()), trans(_trans)
 {
 }
 

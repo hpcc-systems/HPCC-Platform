@@ -1754,26 +1754,27 @@ inline const char *getAesErrorText(int err)
     return (err<0 && abs(err)<8) ? aesErrorText[abs(err)] : "unknown";
 }
 
-inline Rijndael::KeyLength getAesKeyType(unsigned char keylen)
+inline Rijndael::KeyLength getAesKeyType(size_t keylen)
 {
     if (keylen==16)
         return Rijndael::Key16Bytes;
     if (keylen==24)
         return Rijndael::Key24Bytes;
     if (keylen < 32)
-        throw MakeStringException(-1,"AES Encryption error: %d is not a valid key length", keylen);
+        throw MakeStringException(-1,"AES Encryption error: %d is not a valid key length", (unsigned)keylen);
 
     return Rijndael::Key32Bytes;
 }
 
 
-MemoryBuffer &aesEncrypt(const void *key, unsigned keylen, const void *input, unsigned inlen, MemoryBuffer &output)
+MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
     Rijndael rin;
     Rijndael::KeyLength keyType = getAesKeyType(keylen);
     
     rin.init(Rijndael::CBC, Rijndael::Encrypt, (const UINT8 *)key, keyType);
-    int len = rin.padEncrypt((const UINT8 *)input, inlen, (UINT8 *) output.clear().reserveTruncate(inlen + 16));
+    size32_t truncInLen = (size32_t)inlen; //MORE: Modify the padEncrypt function
+    int len = rin.padEncrypt((const UINT8 *)input, truncInLen, (UINT8 *) output.clear().reserveTruncate(truncInLen + 16));
 
     if(len >= 0)
         output.setLength(len);
@@ -1784,13 +1785,14 @@ MemoryBuffer &aesEncrypt(const void *key, unsigned keylen, const void *input, un
 }
 
 
-MemoryBuffer &aesDecrypt(const void *key, unsigned keylen, const void *input, unsigned inlen, MemoryBuffer &output)
+MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
     Rijndael rin;
     Rijndael::KeyLength keyType = getAesKeyType(keylen);
     
     rin.init(Rijndael::CBC, Rijndael::Decrypt, (const UINT8 *)key, keyType);
-    int len = rin.padDecrypt((const UINT8 *)input, inlen, (UINT8 *) output.clear().reserveTruncate(inlen));
+    size32_t truncInLen = (size32_t)inlen;
+    int len = rin.padDecrypt((const UINT8 *)input, truncInLen, (UINT8 *) output.clear().reserveTruncate(truncInLen));
 
     if(len >= 0)
         output.setLength(len);

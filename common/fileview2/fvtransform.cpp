@@ -137,7 +137,7 @@ void ViewFieldTransformer::transform(MemoryAttr & utfTarget, const MemoryAttr & 
     unsigned lenTarget;
     char * target;
     const char * source = static_cast<const char *>(utfSrc.get());
-    unsigned lenSource = rtlUtf8Length(utfSrc.length(), source);
+    unsigned lenSource = rtlUtf8Length((size32_t)utfSrc.length(), source);
 
     transform(lenTarget, target, lenSource, source);
 
@@ -520,7 +520,7 @@ void ViewJoinColumn::addFilter(IFilteredResultSet * resultSet, const MemoryAttr 
         translateValue(tempValue, value, setTransforms);
         source = &tempValue;
     }
-    resultSet->addFilter(whichColumn, source->length(), (const char *)source->get());
+    resultSet->addFilter(whichColumn, (size32_t)source->length(), (const char *)source->get());
 }
 
 void ViewJoinColumn::clearFilter(IFilteredResultSet * resultSet)

@@ -177,9 +177,9 @@ interface IDataVal
 {
     virtual const void * data() const = 0;
     virtual void clear() = 0;
-    virtual void setLen(const void * val, unsigned length) = 0;
-    virtual unsigned length() const = 0;
-    virtual void * reserve(unsigned length) = 0;
+    virtual void setLen(const void * val, size_t length) = 0;
+    virtual size_t length() const = 0;
+    virtual void * reserve(size_t length) = 0;
 };
 
 

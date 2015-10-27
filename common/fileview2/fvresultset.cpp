@@ -713,7 +713,7 @@ IResultSetCursor * CResultSetBase::createCursor()
 IResultSetCursor * CResultSetBase::createCursor(IDataVal & savedCursor)
 {
     MemoryBuffer buffer;
-    buffer.append(savedCursor.length(), savedCursor.data());
+    buffer.append((size32_t)savedCursor.length(), savedCursor.data());
 
     byte version;
     unsigned column;
@@ -2584,14 +2584,14 @@ bool CColumnFilter::optimizeFilter(IFvDataSource * dataSource)
     ForEachItemIn(i, values)
     {
         MemoryAttr & cur = values.item(i);
-        if (!dataSource->addFilter(whichColumn, subLen, cur.length(), cur.get()))
+        if (!dataSource->addFilter(whichColumn, subLen, (size32_t)cur.length(), cur.get()))
             optimized = false;
     }
     return optimized;
 }
 
 
-bool CColumnFilter::matches(const byte * rowValue, unsigned valueSize, const byte * value)
+bool CColumnFilter::matches(const byte * rowValue, size32_t valueSize, const byte * value)
 {
     unsigned size = type->getSize();
     unsigned len;
@@ -2656,7 +2656,7 @@ bool CColumnFilter::isValid(const byte * rowValue, const unsigned * offsets)
     ForEachItemIn(i, values)
     {
         MemoryAttr & cur = values.item(i);
-        if (matches(columnValue, cur.length(), (const byte *)cur.get()))
+        if (matches(columnValue, (size32_t)cur.length(), (const byte *)cur.get()))
             return true;
     }
 
@@ -2807,7 +2807,7 @@ CFetchFilteredResultSet::CFetchFilteredResultSet(IExtendedNewResultSet * _parent
     ForEachItemIn(i, _filter.values)
     {
         const MemoryAttrItem & value = _filter.values.item(i);
-        unsigned __int64 offset = rtlStrToUInt8(value.length(), static_cast<const char *>(value.get()));
+        unsigned __int64 offset = rtlStrToUInt8((size32_t)value.length(), static_cast<const char *>(value.get()));
         validOffsets.append(offset);
     }
 }
@@ -2882,7 +2882,7 @@ INewResultSet * CFilteredResultSetBuilder::create()
             ForEachItemIn(j, cur.values)
             {
                 MemoryAttrItem & curValue = cur.values.item(j);
-                next->addValue(curValue.length(), reinterpret_cast<const char *>(curValue.get()));
+                next->addValue((size32_t)curValue.length(), reinterpret_cast<const char *>(curValue.get()));
             }
 
             if (!cloned || !next->optimizeFilter(dataSource))
@@ -2928,7 +2928,7 @@ void CFilteredResultSetBuilder::addNaturalFilter(unsigned columnIndex, unsigned 
         MemoryAttr source(len, value);
         MemoryAttr translated;
         translateValue(translated, source, column.setTransforms);
-        addFilter(columnIndex, translated.length(), static_cast<const char *>(translated.get()));
+        addFilter(columnIndex, (size32_t)translated.length(), static_cast<const char *>(translated.get()));
     }
     else
         addFilter(columnIndex, len, value);

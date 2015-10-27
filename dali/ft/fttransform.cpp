@@ -674,7 +674,7 @@ void TransferServer::transferChunk(unsigned chunkIndex)
     if (startOutOffset != curPartition.outputOffset+curProgress.outputLength)
         throwError4(DFTERR_OutputOffsetMismatch, out->tell(), curPartition.outputOffset+curProgress.outputLength, "start", chunkIndex);
     
-    unsigned fixedTextLength = curPartition.fixedText.length();
+    size32_t fixedTextLength = (size32_t)curPartition.fixedText.length();
     if (fixedTextLength || curPartition.inputName.isNull())
     {
         out->write(fixedTextLength, curPartition.fixedText.get());
