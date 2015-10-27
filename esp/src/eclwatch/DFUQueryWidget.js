@@ -502,7 +502,7 @@ define([
                     Description: { label: this.i18n.Description, width: 153 },
                     NodeGroup: { label: this.i18n.Cluster, width: 108 },
                     RecordCount: { label: this.i18n.Records, width: 72},
-                    Totalsize: { label: this.i18n.Size, width: 72},
+                    IntSize: { label: this.i18n.Size, width: 72},
                     Parts: { label: this.i18n.Parts, width: 45},
                     Modified: { label: this.i18n.ModifiedUTCGMT, width: 155}
                 }
