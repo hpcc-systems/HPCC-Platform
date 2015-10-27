@@ -2900,6 +2900,7 @@ ecl bundle depends mybundle --version=2</programlisting>
         <para>Examples:</para>
 
         <programlisting>ecl bundle info mybundle
+ecl bundle info https://github.com/hpcc-systems/ecl-bundles.git
 ecl bundle info mybundle --version=2</programlisting>
 
         <para></para>
@@ -2924,8 +2925,8 @@ ecl bundle info mybundle --version=2</programlisting>
                 <row>
                   <entry>&lt;bundleName&gt;</entry>
 
-                  <entry>A bundle filename, a bundle folder, or a bundle
-                  name.</entry>
+                  <entry>A bundle filename, a bundle folder, a bundle name, or
+                  a URL.</entry>
                 </row>
 
                 <row>
@@ -2942,6 +2943,12 @@ ecl bundle info mybundle --version=2</programlisting>
               </tbody>
             </tgroup>
           </informaltable></para>
+
+        <para>If a URL ends in .git, it is assumed to be a git repository
+        (fetched using git clone) otherwise it is assumed to be the URL of a
+        file that can be retrieved. In either case, it is fetched to a
+        temporary local location, processed as a local file/directory and then
+        removed.</para>
       </sect2>
 
       <sect2 id="CT_CLI_SyntaxECLBundleInstall" role="brk">
@@ -2953,6 +2960,7 @@ ecl bundle info mybundle --version=2</programlisting>
         <para>Examples:</para>
 
         <programlisting>ecl bundle install mybundle
+ecl bundle install https://github.com/hpcc-systems/ecl-bundles.git
 ecl bundle install mybundle --dryrun
 ecl bundle install mybundle --update
 ecl bundle install mybundle --keepprior</programlisting>
@@ -2979,7 +2987,8 @@ ecl bundle install mybundle --keepprior</programlisting>
                 <row>
                   <entry>&lt;bundleName&gt;</entry>
 
-                  <entry>A bundle filename or a bundle folder.</entry>
+                  <entry>The name or URL of a bundle file, folder, or
+                  installed bundle.</entry>
                 </row>
 
                 <row>
@@ -3015,6 +3024,12 @@ ecl bundle install mybundle --keepprior</programlisting>
               </tbody>
             </tgroup>
           </informaltable></para>
+
+        <para>If a URL ends in .git, it is assumed to be a git repository
+        (fetched using git clone) otherwise it is assumed to be the URL of a
+        file that can be retrieved. In either case, it is fetched to a
+        temporary local location, processed as a local file/directory and then
+        removed.</para>
       </sect2>
 
       <sect2 id="CT_CLI_SyntaxECLBundleUninstall" role="brk">
