@@ -3894,6 +3894,12 @@ unsigned CHThorGroupSortActivity::getSpillCost() const
     return 10;
 }
 
+
+unsigned CHThorGroupSortActivity::getActivityId() const
+{
+    return activityId;
+}
+
 bool CHThorGroupSortActivity::freeBufferedRows(bool critical)
 {
     roxiemem::RoxieOutputRowArrayLock block(sorter->getRowArray());

@@ -2678,6 +2678,10 @@ class CBucketHandler : public CSimpleInterface, implements IInterface, implement
         {
             return SPILL_PRIORITY_HASHDEDUP_BUCKET_POSTSPILL;
         }
+        virtual unsigned getActivityId() const
+        {
+            return owner.getActivityId();
+        }
         virtual bool freeBufferedRows(bool critical)
         {
             if (NotFound == owner.nextSpilledBucketFlush)
@@ -2755,6 +2759,7 @@ public:
     {
         return SPILL_PRIORITY_HASHDEDUP;
     }
+    virtual unsigned getActivityId() const;
     virtual bool freeBufferedRows(bool critical)
     {
         return spillBucket(critical);
@@ -3259,6 +3264,8 @@ CBucketHandler::CBucketHandler(HashDedupSlaveActivityBase &_owner, IRowInterface
     nextToSpill = NotFound;
     peakKeyCount = RCIDXMAX;
     nextSpilledBucketFlush = NotFound;
+    numBuckets = 0;
+    buckets = NULL;
 }
 
 CBucketHandler::~CBucketHandler()
@@ -3354,6 +3361,11 @@ unsigned CBucketHandler::getBucketEstimate(rowcount_t totalRows) const
     else if (retBuckets > HASHDEDUP_BUCKETS_MAX)
         retBuckets = HASHDEDUP_BUCKETS_MAX;
     return retBuckets;
+}
+
+unsigned CBucketHandler::getActivityId() const
+{
+    return owner.queryActivityId();
 }
 
 void CBucketHandler::init(unsigned _numBuckets, IRowStream *keyStream)
