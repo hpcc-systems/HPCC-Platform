@@ -379,7 +379,7 @@ Connection * Connection::createConnection(ICodeContext * ctx,  Connection * & _c
     if (_cachedConnection->isSameConnection(ctx, options, password))
     {
         //MORE: should perhaps check that the connection has not expired (think hiredis REDIS_KEEPALIVE_INTERVAL is defaulted to 15s).
-        cachedConnection->updateTimeout(_timeout);
+        _cachedConnection->reset(ctx, password, _timeout);
         _cachedConnection->selectDB(ctx, _database);
         return LINK(_cachedConnection);
     }
