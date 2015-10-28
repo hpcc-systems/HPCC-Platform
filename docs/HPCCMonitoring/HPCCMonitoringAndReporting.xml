@@ -149,7 +149,6 @@
         </listitem>
       </itemizedlist></para>
 
-    <!--***NOTE: At some point this next bit will need to get moved into the next chapter/section***-->
   </chapter>
 
   <chapter id="Ganglya_Overview">
@@ -188,8 +187,8 @@
       <para><ulink
       url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink></para>
 
-      <sect2>
-        <title>Requirements</title>
+      <sect2 id="Ganglia_Requirements">
+        <title>The Viewer</title>
 
         <para>In order to use Ganglia with Roxie you must have the following
         packages installed on every node you wish to monitor.</para>
@@ -420,7 +419,7 @@
         </variablelist></para>
     </sect1>
 
-    <sect1>
+    <sect1 id="GangliaInECLWatch">
       <title>Ganglia in ECL Watch</title>
 
       <para>With the Ganglia for HPCC Plug-in installed. You can view the
@@ -444,7 +443,7 @@
       <para>Select the Custom Monitoring tab, and press the Metrics button.
       Use the drop menus to display the various graphing utilities.</para>
 
-      <sect2>
+      <sect2 id="UsingGangliaInECLWatch">
         <title>Installing Ganglia in ECL Watch</title>
 
         <para>In order to get the Ganglia in ECL Watch, You need to have
@@ -480,7 +479,7 @@
         directories are exposed to the plug-in.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="ConfiguringGangliaGraphsInECLWatch">
         <title>Configuring Ganglia graphs in ECL Watch</title>
 
         <para>The configuration of Ganglia in ECL Watch is maintained in the
@@ -498,7 +497,7 @@
     </sect1>
   </chapter>
 
-  <chapter>
+  <chapter id="HPCC_Nagios_Chapter">
     <title>Nagios</title>
 
     <para>The HPCC Reporting component leverages Nagios, an open source,
@@ -653,7 +652,7 @@
                     xmlns:xi="http://www.w3.org/2001/XInclude" />
       </sect2>
 
-      <sect2>
+      <sect2 id="TheNagiosInterface">
         <title>Nagios Interface</title>
 
         <para>There are a number of Nagios configurations available. To get a
@@ -709,7 +708,7 @@
           </mediaobject>
         </figure>
 
-        <sect3>
+        <sect3 id="NagiosServices">
           <title>Nagios Services</title>
 
           <para>Click on the <emphasis role="bold">Services</emphasis> link
@@ -741,7 +740,7 @@
       </sect2>
     </sect1>
 
-    <sect1>
+    <sect1 id="NagiosInstallation">
       <title>Installation of Nagios</title>
 
       <para>The HPCC Nagios package provides tools and utilities for
@@ -773,7 +772,7 @@
         system.</para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="HPCC_InstallNagios" role="brk">
         <title>Install Nagios</title>
 
         <para>To Install Nagios for HPCC, you must have HPCC System platform
@@ -843,7 +842,7 @@
             </listitem>
           </orderedlist></para>
 
-        <sect3>
+        <sect3 id="NagiosOptions">
           <title>Nagios Options</title>
 
           <para>You may need to override some of the default values, depending
@@ -1409,7 +1408,7 @@
           of Nagios as appropriate for your environment.</para>
         </sect3>
 
-        <sect3>
+        <sect3 id="HPCC_NagiosHelp">
           <title>Help</title>
 
           <para>For help with HPCC Nagios enter:</para>

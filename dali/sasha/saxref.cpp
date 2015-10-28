@@ -1492,13 +1492,17 @@ public:
             if (abort)
                 return;
             CDfsLogicalFileName lfn;
-            lfn.set(lostfiles.item(i0));
+            if (!lfn.setValidate(lostfiles.item(i0))) {
+                error(lostfiles.item(i0), "Invalid filename detected");
+                continue;
+            }
             Owned<IDistributedFile> file;
             try {
                 file.setown(queryDistributedFileDirectory().lookup(lfn,UNKNOWN_USER));
             }
             catch (IException *e) {
                 EXCLOG(e,"CNewXRefManager::listLost");
+                e->Release();
             }
             if (!file) {
                 error(lfn.get(),"could not lookup possible lost file");

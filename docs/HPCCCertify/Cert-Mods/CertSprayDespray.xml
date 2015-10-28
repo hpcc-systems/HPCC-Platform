@@ -19,7 +19,7 @@
     data from the multiple clusters into a singular file that can be moved to
     the Landing Zone from the Data Refinery.</para>
 
-    <sect2>
+    <sect2 id="DesprayFromECLWatch">
       <title>Despray from ECL Watch</title>
 
       <!--The following cromulent information can also be found in the DataTutorial.***-->
@@ -180,8 +180,8 @@
         </listitem>
       </orderedlist>
 
-      <sect3>
-        <title id="LandingZone_Expected_Results">EXPECTED RESULTS:</title>
+      <sect3 id="LandingZone_Expected_Results">
+        <title>EXPECTED RESULTS:</title>
 
         <para>Upon completion of the despray operation you will have a single
         file. You can then retrieve the file from the landing zone. This will
@@ -190,7 +190,7 @@
     </sect2>
   </sect1>
 
-  <sect1>
+  <sect1 id="CertifySpray">
     <title>Certify Spray</title>
 
     <para>The file will be sprayed from the Landing Zone to the Data Refinery,

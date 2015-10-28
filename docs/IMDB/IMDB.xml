@@ -455,7 +455,7 @@ Blankline</programlisting></para>
             <?dbfo keep-together="always"?>
 
             <para>Make sure the <emphasis role="bold">Overwrite</emphasis> box
-            is checked. </para>
+            is checked.</para>
 
             <para>If available, make sure the <emphasis
             role="bold">Replicate</emphasis> box is checked. (The Replicate
@@ -571,7 +571,7 @@ END;
           </listitem>
         </itemizedlist>
 
-        <sect3 role="brk">
+        <sect3 id="Examine_The_Data" role="brk">
           <title>Examine the Data</title>
 
           <para>In this section, we will look at the data and determine if
