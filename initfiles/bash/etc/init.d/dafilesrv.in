@@ -72,7 +72,6 @@ component=""
 runSetupOnly=0
 source ${configgen_path}/hpcc_setenv
 
-is_root
 which_service
 get_commondirs
 
