@@ -517,9 +517,7 @@ static void waitSlaves(const char *dir,unsigned num,StringAttr *slaves)
 
 int main(int argc, const char *argv[])
 {
-#ifndef _WIN32
     InitModuleObjects();
-#endif
     int retValue = 0;
 
     bool compress = false;

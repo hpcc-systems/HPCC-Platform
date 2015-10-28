@@ -341,12 +341,12 @@ public:
             memset(encryptedKey, 0, encryptedKeyLen);
             free(encryptedKey);
         }
-        fetchDiskRowIf.setown(createRowInterfaces(fetchContext->queryDiskRecordSize(),queryActivityId(),queryCodeContext()));
+        fetchDiskRowIf.setown(createRowInterfaces(fetchContext->queryDiskRecordSize(),queryId(),queryCodeContext()));
         if (fetchBaseHelper->extractAllJoinFields())
         {
             IOutputMetaData *keyRowMeta = QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData);
             assertex(keyRowMeta);
-            keyRowAllocator.setown(queryJob().getRowAllocator(keyRowMeta, queryActivityId()));
+            keyRowAllocator.setown(getRowAllocator(keyRowMeta));
         }
         appendOutputLinked(this);
     }
@@ -420,7 +420,7 @@ public:
                 keyIn = new CKeyFieldExtract(this, *in, *fetchBaseHelper, *fetchContext);
                 keyInMeta.set(QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData));
             }
-            keyInIf.setown(createRowInterfaces(keyInMeta,queryActivityId(),queryCodeContext()));
+            keyInIf.setown(createRowInterfaces(keyInMeta,queryId(),queryCodeContext()));
         }
         else
         {
@@ -449,11 +449,11 @@ public:
                 }
             };
             Owned<IOutputMetaData> fmeta = createFixedSizeMetaData(sizeof(offset_t)); // should be provided by Gavin?
-            keyInIf.setown(createRowInterfaces(fmeta,queryActivityId(),queryCodeContext()));
+            keyInIf.setown(createRowInterfaces(fmeta,queryId(),queryCodeContext()));
             keyIn = new CKeyFPosExtract(keyInIf, this, *in, *fetchBaseHelper, *fetchContext);
         }
 
-        Owned<IRowInterfaces> rowIf = createRowInterfaces(queryRowMetaData(), queryActivityId(), queryCodeContext());
+        Owned<IRowInterfaces> rowIf = createRowInterfaces(queryRowMetaData(), queryId(), queryCodeContext());
         fetchStream = createFetchStream(*this, keyInIf, rowIf, abortSoon, parts, offsetCount, offsetMapSz, offsetMapBytes.toByteArray(), this, mptag, eexp);
         fetchStreamOut = fetchStream->queryOutput();
         fetchStream->start(keyIn);

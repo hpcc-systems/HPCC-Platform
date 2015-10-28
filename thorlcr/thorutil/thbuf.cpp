@@ -1742,8 +1742,7 @@ public:
         if (readGranularity > limit)
             readGranularity = limit; // readGranularity must be <= limit;
         numWriters = 0;
-        roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
-        readRows = static_cast<const void * *>(rowManager->allocate(readGranularity * sizeof(void*), activity.queryContainer().queryId()));
+        readRows = static_cast<const void * *>(activity.queryRowManager().allocate(readGranularity * sizeof(void*), activity.queryContainer().queryId()));
         eos = eow = readerBlocked = false;
         rowPos = rowsToRead = 0;
         writersComplete = writersBlocked = 0;

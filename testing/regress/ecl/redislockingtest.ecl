@@ -18,7 +18,7 @@
 //class=embedded
 //class=3rdparty
 
-//nothor
+//nohthor
 
 IMPORT * FROM lib_redis;
 IMPORT Std;
@@ -126,21 +126,6 @@ SEQUENTIAL(
     myRedis.FlushDB(),
     );
 
-//Test exception for checking expected channels
-ds1 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetOrLockString('channelTest' + (string)COUNTER)));
-SEQUENTIAL(
-    myRedis.FlushDB();
-    myRedis.SetString('channelTest1', 'redis_ecl_lock_blah_blah_blah');
-    OUTPUT(CATCH(ds1, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
-    );
-
-ds2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetOrLockString('channelTest' + (string)(1+COUNTER))));
-SEQUENTIAL(
-    myRedis.FlushDB();
-    myRedis.SetString('channelTest2', 'redis_ecl_lock_channelTest2_0');
-    OUTPUT(CATCH(ds2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
-    );
-
 SEQUENTIAL(
     myRedis.FlushDB(1);
     myRedis.SetAndPublishString('testDatabaseExpire1', 'databaseThenExpire', 1, 10000);
@@ -181,24 +166,6 @@ SEQUENTIAL(
 
     myRedis.FlushDB();
     myRedis.FlushDB(1);
-    );
-
-//Test timeout
-myRedisNoTO := redisServerWithoutTimeout(server, password);
-dsTO := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedisNoTO.GetOrLockString('timeoutTest' + (string)COUNTER,,,1000)));
-SEQUENTIAL(
-    myRedis.FlushDB();
-    myRedis.GetOrLockString('timeoutTest1');
-    OUTPUT(CATCH(dsTO, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
-    );
-
-STRING pluginTO := 'Redis Plugin: ERROR - function timed out internally.';
-STRING redisTO := 'Redis Plugin: ERROR - GetOrLock<type> \'timeoutTest2\' on database 0 for 127.0.0.1:6379 failed : Resource temporarily unavailable';
-dsTO2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := redis.GetOrLockString('timeoutTest' + (string)(1+COUNTER), server, /*database*/, password, 1/*ms*/)));
-SEQUENTIAL(
-    myRedis.FlushDB();
-    myRedis.GetOrLockString('timeoutTest2');
-    OUTPUT(CATCH(dsTO2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = pluginTO OR FAILMESSAGE = redisTO, 'Timed Out', 'Unexpected Error - ' + FAILMESSAGE)))));
     );
 
 myRedis.FlushDB();

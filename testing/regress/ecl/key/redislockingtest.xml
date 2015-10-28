@@ -71,10 +71,10 @@
  <Row><Result_24>false</Result_24></Row>
 </Dataset>
 <Dataset name='Result 25'>
- <Row><value>Redis Plugin: ERROR - GetOrLock&lt;type&gt; &apos;channelTest1&apos; on database 0 for 127.0.0.1:6379 failed : key locked with a channel (&apos;redis_ecl_lock_blah_blah_blah&apos;) different to that subscribed to (redis_ecl_lock_channelTest1_0).</value></Row>
+ <Row><Result_25>databaseThenExpire</Result_25></Row>
 </Dataset>
 <Dataset name='Result 26'>
- <Row><value>Redis Plugin: ERROR - GetOrLock&lt;type&gt; &apos;channelTest2&apos; on database 0 for 127.0.0.1:6379 failed : Resource temporarily unavailable</value></Row>
+ <Row><Result_26>databaseThenExpire</Result_26></Row>
 </Dataset>
 <Dataset name='Result 27'>
  <Row><Result_27>databaseThenExpire</Result_27></Row>
@@ -98,10 +98,10 @@
  <Row><Result_33>databaseThenExpire</Result_33></Row>
 </Dataset>
 <Dataset name='Result 34'>
- <Row><Result_34>databaseThenExpire</Result_34></Row>
+ <Row><Result_34>Good boy Einnie!</Result_34></Row>
 </Dataset>
 <Dataset name='Result 35'>
- <Row><Result_35>databaseThenExpire</Result_35></Row>
+ <Row><Result_35>Good boy Einnie!</Result_35></Row>
 </Dataset>
 <Dataset name='Result 36'>
  <Row><Result_36>Good boy Einnie!</Result_36></Row>
@@ -110,32 +110,14 @@
  <Row><Result_37>Good boy Einnie!</Result_37></Row>
 </Dataset>
 <Dataset name='Result 38'>
- <Row><Result_38>Good boy Einnie!</Result_38></Row>
+ <Row><Result_38>supercalifragilisticexpialidocious</Result_38></Row>
 </Dataset>
 <Dataset name='Result 39'>
- <Row><Result_39>Good boy Einnie!</Result_39></Row>
+ <Row><Result_39>supercalifragilisticexpialidocious</Result_39></Row>
 </Dataset>
 <Dataset name='Result 40'>
  <Row><Result_40>supercalifragilisticexpialidocious</Result_40></Row>
 </Dataset>
 <Dataset name='Result 41'>
  <Row><Result_41>supercalifragilisticexpialidocious</Result_41></Row>
-</Dataset>
-<Dataset name='Result 42'>
- <Row><Result_42>supercalifragilisticexpialidocious</Result_42></Row>
-</Dataset>
-<Dataset name='Result 43'>
- <Row><Result_43>supercalifragilisticexpialidocious</Result_43></Row>
-</Dataset>
-<Dataset name='Result 44'>
- <Row><Result_44></Result_44></Row>
-</Dataset>
-<Dataset name='Result 45'>
- <Row><value>Redis Plugin: ERROR - GetOrLock&lt;type&gt; &apos;timeoutTest1&apos; on database 0 for 127.0.0.1:6379 failed : Resource temporarily unavailable</value></Row>
-</Dataset>
-<Dataset name='Result 46'>
- <Row><Result_46></Result_46></Row>
-</Dataset>
-<Dataset name='Result 47'>
- <Row><value>Timed Out</value></Row>
 </Dataset>

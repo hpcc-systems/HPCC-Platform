@@ -53,36 +53,36 @@ Here is a list of the core plugin **functions**.
 
 ###Set
 ```
-SetUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, INTEGER database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, INTEGER database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, INTEGER database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetBoolean( CONST VARSTRING key, BOOLEAN value,       CONST VARSTRING options, INTEGER database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetReal(    CONST VARSTRING key, REAL value,          CONST VARSTRING options, INTEGER database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetInteger( CONST VARSTRING key, INTEGER value,       CONST VARSTRING options, INTEGER database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetUnsigned(CONST VARSTRING key, UNSIGNED value,      CONST VARSTRING options, INTEGER database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetData(    CONST VARSTRING key, CONST DATA value,    CONST VARSTRING options, INTEGER database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+SetUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+SetString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+SetUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+SetBoolean( CONST VARSTRING key, BOOLEAN value,       CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+SetReal(    CONST VARSTRING key, REAL value,          CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+SetInteger( CONST VARSTRING key, INTEGER value,       CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+SetUnsigned(CONST VARSTRING key, UNSIGNED value,      CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+SetData(    CONST VARSTRING key, CONST DATA value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
 ```
 
 ###Get
 ```
-INTEGER8   GetInteger(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-UNSIGNED8 GetUnsigned(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-STRING      GetString(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-UNICODE    GetUnicode(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-UTF8          GetUtf8(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-BOOLEAN    GetBoolean(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-REAL          GetReal(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-DATA          GetData(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+INTEGER8   GetInteger(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+UNSIGNED8 GetUnsigned(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+STRING      GetString(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+UNICODE    GetUnicode(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+UTF8          GetUtf8(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+BOOLEAN    GetBoolean(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+REAL          GetReal(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+DATA          GetData(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
 ```
 
 ###Utility
 ```
-BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-FlushDB(CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-Delete(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-Persist(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-Expire(CONST VARSTRING key, CONST VARSTRING options, INTEGER database = 0, UNSIGNED4 expire, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-INTEGER DBSize(CONST VARSTRING options, INTEGER database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+FlushDB(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+Delete(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+Persist(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+Expire(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+INTEGER DBSize(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
 ```
 
 ###PUB-SUB
@@ -148,7 +148,7 @@ myRedis := redisServer('--SERVER=127.0.0.1:6379');
 
 STRING poppins := 'supercalifragilisticexpialidocious'; //Value to externally compute/retrieve from 3rd party vendor.
 
-myFunc(STRING key, INTEGER database) := FUNCTION  //Function for computing/retrieving a value.
+myFunc(STRING key, INTEGER4 database) := FUNCTION  //Function for computing/retrieving a value.
   return myRedis.GetString(key, database);
 END;
 
@@ -211,4 +211,4 @@ A few notes to point out here:
 | SetAndPublish (value length < 29) | 4       | 8       | new connection   |
 | Unlock              | 5       | 9       | new connection   |
 | Publish             | 1       | 4       | new connection   |
-| Subscribe           | 2       | 5       | new connection   |
+| Subscribe           | 5       | 5       | new connection always needed   |

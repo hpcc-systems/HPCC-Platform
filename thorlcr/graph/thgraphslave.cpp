@@ -1108,6 +1108,13 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 #endif
     querySo.setown(createDllEntry(_querySo, false, NULL));
     tmpHandler.setown(createTempHandler(true));
+    if (globals->getPropBool("@processPerSlave", true))
+        channelMemorySize = globalMemorySize;
+    else
+    {
+        unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+        channelMemorySize = globalMemorySize/slavesPerNode;
+    }
 }
 
 void CJobSlave::addChannel(IMPServer *mpServer)
@@ -1169,6 +1176,10 @@ mptag_t CJobSlave::deserializeMPTag(MemoryBuffer &mb)
     return tag;
 }
 
+IThorAllocator *CJobSlave::createThorAllocator()
+{
+    return ::createThorAllocator(((memsize_t)channelMemorySize)*0x100000, memorySpillAt, *logctx, crcChecking, usePackedAllocator);
+}
 
 // IGraphCallback
 CJobSlaveChannel::CJobSlaveChannel(CJobBase &_job, IMPServer *mpServer, unsigned channel) : CJobChannel(_job, mpServer, channel)

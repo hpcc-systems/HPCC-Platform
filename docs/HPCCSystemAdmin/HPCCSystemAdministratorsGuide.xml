@@ -1415,7 +1415,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         in a traditional shared storage high availability fail over
         model.</para>
 
-        <sect3>
+        <sect3 id="Thor_HA_Downside">
           <title>The Downside</title>
 
           <para>Costs twice as much initially because you essentially have to
@@ -1556,7 +1556,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         run faster and benefit from huge page support. Huge pages of the
         appropriate type and size need to be allocated from the operating
         system. Almost all current Linux systems are set up with Transparent
-        Huge Pages (THP) available by default. </para>
+        Huge Pages (THP) available by default.</para>
 
         <para>Thor, Roxie, and ECL Agent clusters all have options in the
         configuration to enable huge page support. The Transparent Huge Pages
@@ -1568,7 +1568,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         /sys/kernel/mm/transparent_hugepage/enabled to see what your OS
         setting is. With THP you do not have to explicitly set a size. If your
         system is not configured to use THP, then you may want to implement
-        Huge Pages. </para>
+        Huge Pages.</para>
 
         <sect3 id="SysAdm_BestPrac_SetUpHuge_Pgs">
           <title>Setting up Huge Pages</title>
@@ -1578,10 +1578,10 @@ lock=/var/lock/HPCCSystems</programlisting>
           administrator can allocate persistent huge pages (for the
           appropriate OS) on the kernel boot command line by specifying the
           "hugepages=N" parameter at boot. With huge pages you also need to
-          explicitly allocate the size. </para>
+          explicitly allocate the size.</para>
 
           <para>In HPCC, there are three places in the configuration manager
-          to set the attributes to use Huge Pages. </para>
+          to set the attributes to use Huge Pages.</para>
 
           <para>There are attributes in each component, in the ECL Agent
           attributes, in Roxie attributes, and in Thor attributes. In each

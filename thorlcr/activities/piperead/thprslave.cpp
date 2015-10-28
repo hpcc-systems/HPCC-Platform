@@ -238,7 +238,7 @@ public:
         IRowInterfaces *_inrowif;
         if (needTransform)
         {
-            inrowif.setown(createRowInterfaces(helper->queryDiskRecordSize(),queryActivityId(),queryCodeContext()));
+            inrowif.setown(createRowInterfaces(helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
             _inrowif = inrowif;
         }
         else

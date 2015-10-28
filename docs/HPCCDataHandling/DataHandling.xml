@@ -17,7 +17,7 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> </para>
+      email to <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Please include <emphasis role="bold">Documentation
       Feedback</emphasis> in the subject line and reference the document name,
@@ -25,13 +25,13 @@
       message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. </para>
+      of Reed Elsevier Properties Inc., used under license.</para>
 
       <para>HPCC Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. </para>
+      registered trademarks of their respective companies.</para>
 
       <para>All names and example data used in this manual are fictitious. Any
       similarity to actual persons, living or dead, is purely
@@ -141,13 +141,13 @@
 
     <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                 xpointer="Data_Handling_Using_ECL-Watch"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />  
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="HPCC_DataBackups">
     <title><emphasis>HPCC Data Backups</emphasis></title>
 
-    <sect1 id="Introduction2" role="nobrk">
+    <sect1 id="Introduction2DataBackup" role="nobrk">
       <title>Introduction</title>
 
       <para>This section covers critical system data that requires regular
@@ -182,7 +182,7 @@
       </itemizedlist>
     </sect1>
 
-    <sect1>
+    <sect1 id="DaliData">
       <title>Dali data</title>
 
       <para>The Dali Server data is typically mirrored to its backup node.
@@ -193,7 +193,7 @@
       no need for a manual backup procedure.</para>
     </sect1>
 
-    <sect1>
+    <sect1 id="EnvironmentConfigurationFiles">
       <title>Environment Configuration files</title>
 
       <para>There is only one active environment file, but you may have many
@@ -207,7 +207,7 @@
       /etc/HPCCSystems/source/backup/ folder.</para>
     </sect1>
 
-    <sect1>
+    <sect1 id="DH_ThorDataFiles">
       <title>Thor data files</title>
 
       <para>Thor clusters are normally configured to automatically replicate
@@ -223,7 +223,7 @@
       <para>A Thor data backup should be performed on a regularly scheduled
       basis and on-demand after a node swap.</para>
 
-      <sect2>
+      <sect2 id="Thor_ManualBackup">
         <title>Manual backup</title>
 
         <para>To run a backup manually, follow these steps:</para>
@@ -259,7 +259,7 @@
         </orderedlist>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="Thor_ScheduledBackup" role="brk">
         <title>Scheduled backup</title>
 
         <para>The easiest way to schedule the backup process is to create a
@@ -323,7 +323,7 @@
       <para>This provides multiple redundant copies of data files.</para>
     </sect1>
 
-    <sect1>
+    <sect1 id="DHan_AttributeRepositories">
       <title>Attribute Repositories</title>
 
       <para>Attribute repositories are stored on ECL developer's local hard
@@ -332,7 +332,7 @@
       some form of source version control, too.</para>
     </sect1>
 
-    <sect1>
+    <sect1 id="DHan_LandingZoneFiles">
       <title>Landing Zone files</title>
 
       <para>Landing Zones contain raw data for input. They can also contain

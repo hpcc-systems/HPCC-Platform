@@ -392,7 +392,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       suggested configuration guides that can be helpful when planning your
       system.</para>
 
-      <sect2 role="nobrk">
+      <sect2 id="SysAdmin_MinSuggestedHW" role="nobrk">
         <title>Minimum Suggested Hardware</title>
 
         <para>HPCC was designed to run on common commodity hardware, and could
@@ -592,7 +592,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <para>The following section provides some sample sizing for heavy
         processing with approximately the amount of data indicated.</para>
 
-        <sect3>
+        <sect3 id="SysAdm_BestPrac_750GB">
           <title>750 GB of Raw Data</title>
 
           <para>Thor = 3 (slaves) + 2 (management) = 5 Nodes</para>

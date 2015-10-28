@@ -634,9 +634,7 @@ void usage(int exitCode)
 
 int main(int argc, char **argv) 
 {
-#ifndef _WIN32
     InitModuleObjects();
-#endif
     StringAttr outputName("result.txt");
 
     bool fromFile = false;

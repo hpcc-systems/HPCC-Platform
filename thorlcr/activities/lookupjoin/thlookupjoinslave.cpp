@@ -582,7 +582,7 @@ public:
         else
         {
             size32_t bitSetMemSz = getBitSetMemoryRequirement(rowCount);
-            void *pBitSetMem = activity.queryJob().queryRowManager()->allocate(bitSetMemSz, activity.queryContainer().queryId(), SPILL_PRIORITY_LOW);
+            void *pBitSetMem = activity.queryRowManager().allocate(bitSetMemSz, activity.queryContainer().queryId(), SPILL_PRIORITY_LOW);
             if (!pBitSetMem)
                 return false;
 
@@ -1391,6 +1391,7 @@ protected:
     using PARENT::helper;
     using PARENT::clearHT;
     using PARENT::rhs;
+    using PARENT::queryRowManager;
 
     IHash *leftHash, *rightHash;
     ICompare *compareRight, *compareLeftRight;
@@ -1645,7 +1646,7 @@ protected:
                  * Need to remove spill callback and broadcast one last message to know.
                  */
 
-                queryJob().queryRowManager()->removeRowBuffer(this);
+                queryRowManager().removeRowBuffer(this);
 
                 ActPrintLog("Broadcasting final split status");
                 broadcaster.reset();
@@ -2053,7 +2054,7 @@ public:
                 overflowWriteCount = 0;
                 overflowWriteFile.clear();
                 overflowWriteStream.clear();
-                queryJob().queryRowManager()->addRowBuffer(this);
+                queryRowManager().addRowBuffer(this);
             }
         }
         else
@@ -2221,7 +2222,7 @@ public:
         memsize_t sz = (memsize_t)_sz;
         if (sz != _sz) // treat as OOM exception for handling purposes.
             throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Unsigned overflow, trying to allocate hash table of size: %" I64F "d ", _sz);
-        void *ht = activity->queryJob().queryRowManager()->allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
+        void *ht = activity->queryRowManager().allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
         memset(ht, 0, sz);
         htMemory.setown(ht);
         htSize = size;
