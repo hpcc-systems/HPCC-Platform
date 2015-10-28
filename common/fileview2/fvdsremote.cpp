@@ -589,13 +589,13 @@ extern FILEVIEW_API void stopRemoteDataSourceServer()
 IConstWUResult * resolveResult(const char * wuid, unsigned sequence, const char * name)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
     return getWorkUnitResult(wu, name, sequence);
 }
 
 IConstWUResult * secResolveResult(ISecManager &secmgr, ISecUser &secuser, const char * wuid, unsigned sequence, const char * name)
 {
-    Owned<IWorkUnitFactory> factory = getSecWorkUnitFactory(secmgr, secuser);
-    Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false);
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, &secmgr, &secuser);
     return (wu) ? getWorkUnitResult(wu, name, sequence) : NULL;
 }

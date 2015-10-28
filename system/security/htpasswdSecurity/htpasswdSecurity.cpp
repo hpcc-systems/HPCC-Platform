@@ -42,6 +42,8 @@ public:
 		return SMT_HTPasswd;
 	}
 
+	inline virtual const char* querySecMgrTypeName() { return "htpasswd"; }
+
 	IAuthMap * createAuthMap(IPropertyTree * authconfig)
 	{
 		CAuthMap* authmap = new CAuthMap(this);

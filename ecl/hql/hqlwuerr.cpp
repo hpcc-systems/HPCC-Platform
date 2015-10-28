@@ -19,9 +19,9 @@
 
 static void formatError(StringBuffer & out, int errNo, const char *msg, IIdAtom * modulename, IIdAtom * attributename, int lineno, int column)
 {
-    out.append(modulename->str());
+    out.append(str(modulename));
     if (attributename)
-        out.append('.').append(attributename->str());
+        out.append('.').append(str(attributename));
     
     if(lineno && column)
         out.append('(').append(lineno).append(',').append(column).append(')');

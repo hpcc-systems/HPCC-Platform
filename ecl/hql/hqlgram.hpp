@@ -359,7 +359,10 @@ typedef CIArrayOf<HqlExprArrayItem> HqlExprArrayArray;
 class HqlGramCtx : public CInterface
 {
 public:
-    HqlGramCtx(HqlLookupContext & _lookupCtx) : lookupCtx(_lookupCtx) {}
+    HqlGramCtx(HqlLookupContext & _lookupCtx, bool _inSignedModule)
+      : lookupCtx(_lookupCtx), inSignedModule(_inSignedModule)
+    {
+    }
     bool hasAnyActiveParameters();
 public:
     CIArrayOf<ActiveScopeInfo> defineScopes;
@@ -368,6 +371,7 @@ public:
     Linked<ISourcePath> sourcePath;
     HqlLookupContext lookupCtx;
     HqlExprArray imports;
+    bool inSignedModule;
 };
 
 typedef const IAtom * const * AtomList;
@@ -470,6 +474,7 @@ public:
     void checkAggregateRecords(IHqlExpression * expr, IHqlExpression * record, attribute & errpos);
     void checkExportedModule(const attribute & errpos, IHqlExpression * scopeExpr);
     bool checkCompatibleSymbol(const attribute & errpos, IHqlExpression * prevValue, IHqlExpression * newValue);
+    bool checkAllowed(const attribute & errpos, const char *category, const char *description);
     IHqlExpression * createAveList(const attribute & errpos, IHqlExpression * list);
     IHqlExpression * createIff(attribute & condAttr, attribute & leftAttr, attribute & rightAttr);
     IHqlExpression * createListFromExpressionList(attribute & attr);
@@ -809,7 +814,7 @@ protected:
 
     IHqlScope * queryTemplateContext();
     bool insideTemplateFunction() { return queryTemplateContext() != NULL; }
-    inline const char * querySourcePathText()   { return sourcePath->str(); } // safe if null
+    inline const char * querySourcePathText()   { return str(sourcePath); } // safe if null
 
     bool areSymbolsCompatible(IHqlExpression * expr, bool isParametered, HqlExprArray & parameters, IHqlExpression * prevValue);
     IHqlExpression * extractBranchMatch(const attribute & errpos, IHqlExpression & curSym, HqlExprArray & values);
@@ -847,6 +852,7 @@ protected:
     bool parseConstantText;
     bool expandingMacroPosition;
     unsigned m_maxErrorsAllowed;
+    bool inSignedModule;
 
     IErrorArray pendingWarnings;
     Linked<ISourcePath> sourcePath;
@@ -1047,7 +1053,7 @@ class HqlLex
         StringBuffer &getTokenText(StringBuffer &);
         HqlLex* getParentLex() { return parentLex; }
         void setParentLex(HqlLex* pLex) { parentLex = pLex; }
-        const char* getMacroName() { return (macroExpr) ? macroExpr->queryName()->str() : "<param>"; }
+        const char* getMacroName() { return (macroExpr) ? str(macroExpr->queryName()) : "<param>"; }
         IPropertyTree * getClearJavadoc();
 
         void loadXML(const YYSTYPE & errpos, const char * value, const char * child = NULL);
@@ -1168,6 +1174,7 @@ class HqlLex
         void doSkipUntilEnd(YYSTYPE & returnToken, const char * forwhat);
 
         void processEncrypted();
+        void checkSignature();
 
         void declareUniqueName(const char* name, const char * pattern);
         void checkNextLoop(const YYSTYPE & errpos, bool first,int startLine,int startCol);
@@ -1204,6 +1211,7 @@ private:
         int loopTimes;
 
         bool inComment;
+        bool inSignature;
         bool inCpp;
         bool encrypted;
         StringBuffer javaDocComment;

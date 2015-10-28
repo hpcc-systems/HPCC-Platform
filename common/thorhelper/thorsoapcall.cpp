@@ -937,6 +937,7 @@ public:
         return error.getLink();
     }
     inline IEngineRowAllocator * queryOutputAllocator() const { return outputAllocator; }
+#ifdef USE_OPENSSL
     ISecureSocket *createSecureSocket(ISocket *sock)
     {
         {
@@ -951,6 +952,7 @@ public:
         }
         return secureContext->createSecureSocket(sock);
     }
+#endif
     bool isTimeLimitExceeded(unsigned *_remainingMS)
     {
         if (timeLimitMS != WAIT_FOREVER)
@@ -1772,6 +1774,7 @@ public:
                     socket.setown(blacklist->connect(connUrl.port, connUrl.host, master->logctx, (unsigned)master->maxRetries, master->timeoutMS, master->roxieAbortMonitor));
                     if (stricmp(url.method, "https") == 0)
                     {
+#ifdef USE_OPENSSL
                         Owned<ISecureSocket> ssock = master->createSecureSocket(socket.getClear());
                         if (ssock) 
                         {
@@ -1787,6 +1790,13 @@ public:
                             }
                             socket.setown(ssock.getLink());
                         }
+#else
+                        StringBuffer err;
+                        err.append("Failure to establish secure connection to ");
+                        connUrl.getUrlString(err);
+                        err.append(": OpenSSL disabled in build");
+                        throw MakeStringExceptionDirect(0, err.str());
+#endif
                     }
                     break;
                 }

@@ -20,6 +20,21 @@
 
 EspInclude(common);
 
+ESPenum ECLWUActions : string
+{
+    Abort("Abort"),
+    Delete("Delete"),
+    EventDeschedule("Deschedule"),
+    EventReschedule("Reschedule"),
+    Pause("Pause"),
+    PauseNow("PauseNow"),
+    Protect("Protect"),
+    Unprotect("Unprotect"),
+    Restore("Restore"),
+    Resume("Resume"),
+    SetToFailed("SetToFailed"),
+};
+
 ESPStruct [nil_remove] ECLException
 {
     string Source;
@@ -334,7 +349,7 @@ ESPresponse [exceptions_inline] WUDeployWorkunitResponse
 ESPrequest [nil_remove] WUQueryRequest
 {
     string Wuid;
-    [min_ver("1.01")] string Type;  //archieved or non-archieved
+    [min_ver("1.01")] string Type;  //archived or non-archived
     string Cluster;
     [min_ver("1.08")] string RoxieCluster;
     string Owner;
@@ -346,9 +361,10 @@ ESPrequest [nil_remove] WUQueryRequest
     string LogicalFile;
     string LogicalFileSearchType("");
 
-    string ApplicationName;
-    string ApplicationKey;
-    string ApplicationData;
+    [depr_ver("1.55")] string ApplicationName;
+    [depr_ver("1.55")] string ApplicationKey;
+    [depr_ver("1.55")] string ApplicationData;
+    [min_ver("1.55")] ESParray<ESPstruct ApplicationValue> ApplicationValues;
 
     string After;
     string Before;
@@ -366,7 +382,7 @@ ESPrequest [nil_remove] WUQueryRequest
 
 ESPresponse [nil_remove, exceptions_inline] WUQueryResponse
 {
-    [min_ver("1.01")] string Type("");  //archieved or non-archieved
+    [min_ver("1.01")] string Type("");  //archived or non-archived
     string Cluster;
     [min_ver("1.08")] string RoxieCluster;
     string Owner;
@@ -452,7 +468,7 @@ ESPresponse [exceptions_inline] WUDeleteResponse
 ESPrequest [nil_remove] WUActionRequest
 {
     ESParray<string> Wuids;
-    string ActionType;
+    ESPenum ECLWUActions ActionType;
 
     string Cluster;
     string Owner;
@@ -861,6 +877,17 @@ ESPresponse [exceptions_inline] WUGraphTimingResponse
     ESPstruct ECLWorkunit Workunit;
 };
 
+ESPrequest WUGetGraphNameAndTypesRequest
+{
+    string Wuid;
+    string Type;
+};
+
+ESPresponse [encode(0), exceptions_inline] WUGetGraphNameAndTypesResponse
+{
+    ESParray<ESPstruct NameAndType, GraphNameAndType> GraphNameAndTypes;
+};
+
 ESPrequest WUProcessGraphRequest
 {
     string Wuid;
@@ -904,7 +931,7 @@ ESPrequest WUExportRequest
     string State;
     string StartDate;
     string EndDate;
-    string ECL;
+    [max_ver("1.55")] string ECL;
     string Jobname;
 };
 ESPresponse [exceptions_inline] WUExportResponse
@@ -1609,6 +1636,54 @@ ESPresponse [exceptions_inline] WUGetStatsResponse
     ESParray<ESPstruct WUStatisticItem> Statistics;
 };
 
+ESPStruct [nil_remove] WUArchiveFile
+{
+    string Name;
+    string Key;
+    string SourcePath;
+    string Path;        //nested (parent) module names for this <Attribute>
+};
+
+ESPStruct [nil_remove] WUArchiveModule
+{
+    string Name;
+    string FullName;
+    unsigned Flags;
+    string Key;
+    string Plugin;
+    string SourcePath;
+    string Version;
+    string Path;        //nested (parent) module names for this <Module>
+    ESParray<ESPstruct WUArchiveModule, ArchiveModule> ArchiveModules;
+    ESParray<ESPstruct WUArchiveFile, File> Files;
+};
+
+ESPrequest [nil_remove] WUListArchiveFilesRequest
+{
+    string WUID;
+};
+
+ESPresponse [exceptions_inline, nil_remove] WUListArchiveFilesResponse
+{
+    ESParray<ESPstruct WUArchiveModule, ArchiveModule> ArchiveModules;
+    ESParray<ESPstruct WUArchiveFile, File> Files;
+    string Message;
+};
+
+ESPrequest [nil_remove] WUGetArchiveFileRequest
+{
+    string WUID;
+    string ModuleName; //<Module @name> or
+    string FileName;   //<Attribute @name>
+    string Path;       //(nested) parent module name(s) for the <Module @name> or <Attribute @name>
+};
+
+ESPresponse [exceptions_inline, nil_remove] WUGetArchiveFileResponse
+{
+    string File;    //ECL text
+    string Message;
+};
+
 ESPservice [
     version("1.56"), default_client_version("1.56"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
@@ -1659,6 +1734,7 @@ ESPservice [
     //ESPmethod WUAction(WUActionRequest, WUActionResponse); 
     ESPmethod WUFile(WULogFileRequest, WULogFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse); 
+    ESPmethod WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
     ESPmethod WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
     ESPmethod WUQueryGetGraph(WUQueryGetGraphRequest, WUQueryGetGraphResponse);
     ESPmethod WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
@@ -1686,6 +1762,8 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
     ESPmethod WUCheckFeatures(WUCheckFeaturesRequest, WUCheckFeaturesResponse);
     ESPmethod WUGetStats(WUGetStatsRequest, WUGetStatsResponse);
+    ESPmethod WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
+    ESPmethod WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
 };
 
 

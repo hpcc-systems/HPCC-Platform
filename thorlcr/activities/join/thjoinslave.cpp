@@ -52,8 +52,8 @@ class JoinSlaveActivity : public CSlaveActivity, public CThorDataLink, implement
     ICompare *rightCompare;
     ISortKeySerializer *leftKeySerializer;
     ISortKeySerializer *rightKeySerializer;
-    ICompare *collate;
-    ICompare *collateupper; // if non-null then between join
+    ICompare *primarySecondaryCompare;
+    ICompare *primarySecondaryUpperCompare; // if non-null then between join
 
     Owned<IRowStream> leftStream, rightStream;
     Semaphore secondaryStartSem;
@@ -122,6 +122,16 @@ class JoinSlaveActivity : public CSlaveActivity, public CThorDataLink, implement
 
     };  
 
+    struct CompareReverse : public ICompare
+    {
+        CompareReverse() { compare = NULL; }
+        ICompare *compare;
+        int docompare(const void *a,const void *b) const
+        {
+            return -compare->docompare(b,a);
+        }
+    } compareReverse, compareReverseUpper;
+
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -149,14 +159,15 @@ public:
 
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        if (!islocal) {
-            mpTagRPC = container.queryJob().deserializeMPTag(data);
-            mptag_t barrierTag = container.queryJob().deserializeMPTag(data);
-            barrier.setown(container.queryJob().createBarrier(barrierTag));
+        if (!islocal)
+        {
+            mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
+            mptag_t barrierTag = container.queryJobChannel().deserializeMPTag(data);
+            barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
             portbase = allocPort(NUMSLAVEPORTS);
             ActPrintLog("SortJoinSlaveActivity::init portbase = %d, mpTagRPC=%d",portbase,(int)mpTagRPC);
             server.setLocalHost(portbase); 
-            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&container.queryJob().queryJobComm(),mpTagRPC));
+            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
             server.serialize(slaveData);
         }
         appendOutputLinked(this);
@@ -184,14 +195,6 @@ public:
         rightCompare = helper->queryCompareRight();
         leftKeySerializer = helper->querySerializeLeft();
         rightKeySerializer = helper->querySerializeRight();
-        if (helper->getJoinFlags()&JFslidingmatch) {
-            collate = helper->queryCompareLeftRightLower();
-            collateupper = helper->queryCompareLeftRightUpper();
-        }
-        else {
-            collate = helper->queryCompareLeftRight();
-            collateupper = NULL;
-        }
     }
     virtual void onInputStarted(IException *except)
     {
@@ -370,7 +373,7 @@ public:
     {
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
         if (!islocal && TAG_NULL != mpTagRPC)
-            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&container.queryJob().queryJobComm(),mpTagRPC));
+            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
     }
     void kill()
     {
@@ -443,19 +446,11 @@ public:
     }
     bool doglobaljoin()
     {
+        rightpartition = (container.getKind()==TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
+
         Linked<IRowInterfaces> primaryRowIf, secondaryRowIf;
         ICompare *primaryCompare, *secondaryCompare;
-        ISortKeySerializer *primaryKeySerializer, *secondaryKeySerializer;
-        ICompare *primaryCollate, *primaryCollateUpper;
-        struct cCollateReverse: public ICompare
-        {
-            ICompare *collate;
-            cCollateReverse(ICompare *_collate) : collate(_collate) { }
-            int docompare(const void *a,const void *b) const
-            {
-                return -collate->docompare(b,a);
-            }
-        } collateRev(collate), collateRevUpper(collateupper);
+        ISortKeySerializer *primaryKeySerializer;
 
         Owned<IRowStream> secondaryStream, primaryStream;
         if (rightpartition)
@@ -463,21 +458,53 @@ public:
             primaryCompare = rightCompare;
             primaryKeySerializer = rightKeySerializer;
             secondaryCompare = leftCompare;
-            secondaryKeySerializer = leftKeySerializer;
-            primaryCollate = &collateRev;
-            primaryCollateUpper = collateupper?&collateRevUpper:NULL;
         }
         else
         {
             primaryCompare = leftCompare;
             primaryKeySerializer = leftKeySerializer;
             secondaryCompare = rightCompare;
-            secondaryKeySerializer = rightKeySerializer;
-            primaryCollate = collate;
-            primaryCollateUpper = collateupper;
         }
         primaryRowIf.set(queryRowInterfaces(primaryInput));
         secondaryRowIf.set(queryRowInterfaces(secondaryInput));
+
+        primarySecondaryCompare = NULL;
+        if (helper->getJoinFlags()&JFslidingmatch)
+        {
+            if (primaryKeySerializer) // JCSMORE shouldn't be generated
+                primaryKeySerializer = NULL;
+            primarySecondaryCompare = helper->queryCompareLeftRightLower();
+            primarySecondaryUpperCompare = helper->queryCompareLeftRightUpper();
+            if (rightpartition)
+            {
+                compareReverse.compare = primarySecondaryCompare;
+                compareReverseUpper.compare = primarySecondaryUpperCompare;
+                primarySecondaryCompare = &compareReverse;
+                primarySecondaryUpperCompare = &compareReverseUpper;
+            }
+        }
+        else
+        {
+            primarySecondaryUpperCompare = NULL;
+            if (rightpartition)
+            {
+                if (rightKeySerializer)
+                    primarySecondaryCompare = helper->queryCompareRightKeyLeftRow();
+                else
+                {
+                    compareReverse.compare = helper->queryCompareLeftRight();
+                    primarySecondaryCompare = &compareReverse;
+                }
+            }
+            else
+            {
+                if (leftKeySerializer)
+                    primarySecondaryCompare = helper->queryCompareLeftKeyRightRow();
+                else
+                    primarySecondaryCompare = helper->queryCompareLeftRight();
+            }
+        }
+        dbgassertex(primarySecondaryCompare);
 
         OwnedConstThorRow partitionRow;
         rowcount_t totalrows;
@@ -489,7 +516,7 @@ public:
         }
         else
         {
-            sorter->Gather(primaryRowIf,primaryInput,primaryCompare,NULL,NULL,primaryKeySerializer,NULL,false,isUnstable(),abortSoon,NULL);
+            sorter->Gather(primaryRowIf, primaryInput, primaryCompare, NULL, NULL, primaryKeySerializer, NULL, false, isUnstable(), abortSoon, NULL);
             stopPartitionInput();
             if (abortSoon)
             {
@@ -513,7 +540,8 @@ public:
             ActPrintLog("JOIN barrier.2 raised");
             sorter->stopMerge();
         }
-        sorter->Gather(secondaryRowIf,secondaryInput,secondaryCompare,primaryCollate,primaryCollateUpper,primaryKeySerializer,partitionRow,noSortOtherSide(),isUnstable(),abortSoon,primaryRowIf); // primaryKeySerializer *is* correct
+        // NB: on secondary sort, the primaryKeySerializer is used
+        sorter->Gather(secondaryRowIf, secondaryInput, secondaryCompare, primarySecondaryCompare, primarySecondaryUpperCompare, primaryKeySerializer, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, primaryRowIf); // primaryKeySerializer *is* correct
         partitionRow.clear();
         stopOtherInput();
         if (abortSoon)
@@ -576,8 +604,8 @@ public:
     CMergeJoinSlaveBaseActivity(CGraphElementBase *container, CMergeJoinProcessor &_processor) : CThorNarySlaveActivity(container), CThorDataLink(this), CThorSteppable(this), processor(_processor)
     {
         helper = (IHThorNWayMergeJoinArg *)queryHelper();
-        inputAllocator.setown(queryJob().getRowAllocator(helper->queryInputMeta(), queryActivityId()));
-        outputAllocator.setown(queryJob().getRowAllocator(helper->queryOutputMeta(), queryActivityId()));
+        inputAllocator.setown(getRowAllocator(helper->queryInputMeta()));
+        outputAllocator.setown(getRowAllocator(helper->queryOutputMeta()));
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {

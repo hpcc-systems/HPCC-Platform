@@ -98,6 +98,7 @@ public:
     unsigned priority;
     unsigned timeLimit;
     unsigned warnTimeLimit;
+    unsigned traceLimit;
 
     memsize_t memoryLimit;
 
@@ -107,6 +108,7 @@ public:
     int concatPreload;
     int fetchPreload;
     int prefetchProjectPreload;
+    int bindCores;
 
     bool checkingHeap;
     bool disableLocalOptimizations;
@@ -115,6 +117,7 @@ public:
     bool stripWhitespaceFromStoredDataset;
     bool timeActivities;
     bool allSortsMaySpill;
+    bool traceEnabled;
 
 private:
     static const char *findProp(const IPropertyTree *ctx, const char *name1, const char *name2);

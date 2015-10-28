@@ -296,15 +296,15 @@ public:
                     if (reqName.endsWith(requestArrayString))
                     {
                         isRequestArray = true;
-                        queryName.set(reqName.toCharArray(), reqName.length() - requestArrayString.length());
+                        queryName.set(reqName.str(), reqName.length() - requestArrayString.length());
                     }
                     else if (reqName.endsWith(requestString))
                     {
                         isRequest = true;
-                        queryName.set(reqName.toCharArray(), reqName.length() - requestString.length());
+                        queryName.set(reqName.str(), reqName.length() - requestString.length());
                     }
                     else
-                        queryName.set(reqName.toCharArray());
+                        queryName.set(reqName.str());
 
                     queryXML->renameProp("/", queryName.get());  // reset the name of the tree
                 }
@@ -511,11 +511,9 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     resolveFilesLocally = false;
     writeResultsToStdout = false;
 
-    wuRead->getUser(StringAttrAdaptor(userid));
+    userid.set(wuRead->queryUser());
     useProductionLibraries = wuRead->getDebugValueBool("useProductionLibraries", false);
-    SCMStringBuffer clusterName;
-    wuRead->getClusterName(clusterName);
-    clusterNames.append(clusterName.str());
+    clusterNames.append(wuRead->queryClusterName());
     clusterWidth = -1;
     abortmonitor = new cAbortMonitor(*this);
     abortmonitor->start();
@@ -549,8 +547,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
             destTree->addPropTree("Graph", graphTree.getClear());
         }
         debugContext.setown(new CHThorDebugContext(queryDummyContextLogger(), destTree.getClear(), this ));
-        SCMStringBuffer jobName;
-        debugContext->debugInitialize(wuid, wu->getJobName(jobName).str(), true);
+        debugContext->debugInitialize(wuid, wu->queryJobName(), true);
     }
     Owned<IWorkUnit> w = updateWorkUnit();
     if (_queryXML)
@@ -613,7 +610,7 @@ const char *EclAgent::queryTempfilePath()
         recursiveCreateDirectory(dir.str());
         agentTempDir.set(dir.str());
     }
-    return agentTempDir.sget();
+    return agentTempDir.str();
 }
 
 StringBuffer & EclAgent::getTempfileBase(StringBuffer & buff)
@@ -701,12 +698,6 @@ void EclAgent::abort()
         activeGraph->abort();
 }
 
-IWUResult *EclAgent::updateResult(const char *name, unsigned sequence)
-{
-    WorkunitUpdate w = updateWorkUnit();
-    return updateWorkUnitResult(w, name, sequence);
-}
-
 IConstWUResult *EclAgent::getResult(const char *name, unsigned sequence)
 {
     IConstWorkUnit *w = queryWorkUnit();
@@ -728,7 +719,7 @@ IConstWUResult *EclAgent::getExternalResult(const char * wuid, const char *name,
 {
     LOG(MCsetresult, unknownJob, "EclAgent::getExternalResult(wuid:'%s',name='%s',sequence:%d)", nullText(wuid), nullText(name), sequence);
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid);
     if (externalWU)
     {
         externalWU->remoteCheckAccess(queryUserDescriptor(), false);
@@ -776,7 +767,8 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
 void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, unsigned size)
 {
     LOG(MCsetresult, unknownJob, "setResultInt(%s,%d,%" I64F "d)", nullText(name), sequence, val);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultInt(val);
@@ -799,7 +791,8 @@ void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, u
 void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __int64 val, unsigned size)
 {
     LOG(MCsetresult, unknownJob, "setResultUInt(%s,%d,%" I64F "u)", nullText(name), sequence, val);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultUInt(val);
@@ -823,7 +816,8 @@ void EclAgent::setResultReal(const char *name, unsigned sequence, double val)
 {
     // Still a bit of a mess - variables vs results
     LOG(MCsetresult, unknownJob, "setResultReal(%s,%d,%6f)", nullText(name), sequence, val);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultReal(val);  
@@ -1123,7 +1117,8 @@ void EclAgent::setResultData(const char * stepname, unsigned sequence, int len, 
 void EclAgent::doSetResultString(type_t type, const char *name, unsigned sequence, int len, const char *val)
 {
     LOG(MCsetresult, unknownJob, "setResultString(%s,%d,'%.*s')", nullText(name), sequence, len, val);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultString(val, len);   
@@ -1147,7 +1142,8 @@ void EclAgent::doSetResultString(type_t type, const char *name, unsigned sequenc
 void EclAgent::setResultRaw(const char * name, unsigned sequence, int len, const void *val)
 {
     LOG(MCsetresult, unknownJob, "setResultRaw(%s,%d,(%d bytes))", nullText(name), sequence, len);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultRow(len, val);
@@ -1170,7 +1166,8 @@ void EclAgent::setResultRaw(const char * name, unsigned sequence, int len, const
 void EclAgent::setResultSet(const char * name, unsigned sequence, bool isAll, size32_t len, const void *val, ISetToXmlTransformer *xform)
 {
     LOG(MCsetresult, unknownJob, "setResultSet(%s,%d)", nullText(name), sequence);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultIsAll(isAll);
@@ -1230,7 +1227,8 @@ void EclAgent::setResultUnicode(const char * name, unsigned sequence, int len, U
 {
     LOG(MCsetresult, unknownJob, "setResultUnicode(%s,%d)", nullText(name), sequence);
 
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultUnicode((char const *)val, len);
@@ -1257,7 +1255,8 @@ void EclAgent::setResultBool(const char *name, unsigned sequence, bool val)
 {
     LOG(MCsetresult, unknownJob, "setResultBool(%s,%d,%s)", nullText(name), sequence, val ? "true" : "false");
 
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultBool(val);
@@ -1280,7 +1279,8 @@ void EclAgent::setResultBool(const char *name, unsigned sequence, bool val)
 void EclAgent::setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val)
 {
     LOG(MCsetresult, unknownJob, "setResultDecimal(%s,%d)", nullText(name), sequence);
-    Owned<IWUResult> r = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
     if (r)
     {
         r->setResultDecimal(val, len);
@@ -1308,7 +1308,8 @@ void EclAgent::setResultDecimal(const char *name, unsigned sequence, int len, in
 void EclAgent::setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend)
 {
     LOG(MCsetresult, unknownJob, "setResultDataset(%s,%d)", nullText(name), sequence);
-    Owned<IWUResult> result = updateResult(name, sequence);
+    WorkunitUpdate w = updateWorkUnit();
+    Owned<IWUResult> result = updateWorkUnitResult(w, name, sequence);
     if (!result)
         fail(0, "Unexpected parameters to setResultDataset");
 
@@ -1572,15 +1573,14 @@ char *EclAgent::getEnv(const char *name, const char *defaultValue) const
 
 void EclAgent::selectCluster(const char *newCluster)
 {
-    SCMStringBuffer oldCluster;
-    queryWorkUnit()->getClusterName(oldCluster);
+    const char *oldCluster = queryWorkUnit()->queryClusterName();
     if (getClusterType(clusterType)==HThorCluster)
     {
         // If the current cluster is an hthor cluster, it's an error to change it...
-        if (!streq(oldCluster.str(), newCluster))
+        if (!streq(oldCluster, newCluster))
             throw MakeStringException(-1, "Error - cannot switch cluster in hthor jobs");
     }
-    clusterNames.append(oldCluster.str());
+    clusterNames.append(oldCluster);
     WorkunitUpdate wu = updateWorkUnit();
     wu->setClusterName(newCluster);
     clusterWidth = -1;
@@ -1698,8 +1698,7 @@ EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsign
 
 IConstWorkUnit * EclAgent::resolveLibrary(const char * libraryName, unsigned expectedInterfaceHash)
 {
-    StringAttr cluster;
-    queryWorkUnit()->getClusterName(StringAttrAdaptor(cluster));
+    StringAttr cluster = queryWorkUnit()->queryClusterName();
     Owned<IPropertyTree> queryRegistry = getQueryRegistry(cluster, false);
     Owned<IPropertyTree> resolved = queryRegistry ? resolveQueryAlias(queryRegistry, libraryName) : NULL;
     if (!resolved)
@@ -1708,7 +1707,7 @@ IConstWorkUnit * EclAgent::resolveLibrary(const char * libraryName, unsigned exp
     const char * libraryWuid = resolved->queryProp("@wuid");
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> wu = factory->openWorkUnit(libraryWuid, false);
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(libraryWuid);
     if (!wu)
         throw MakeStringException(0, "Could not open workunit %s implementing library %s", libraryWuid, libraryName);
 
@@ -1848,7 +1847,7 @@ void EclAgent::doProcess()
             if (isRemoteWorkunit)
             {
                 w->setAgentSession(myProcessSession());
-                w->clearGraphProgress();
+                w->clearGraphProgress();  // Should Roxie do this too??
             }
             if (debugContext)   
             {
@@ -1958,10 +1957,7 @@ void EclAgent::doProcess()
                 catch(IException * e)
                 {
                     int code = e->errorCode();
-                    SCMStringBuffer wuid;
-                    queryWorkUnit()->getWuid(wuid);
-                    StringBuffer msg;
-                    msg.append("Failed to deschedule workunit ").append(wuid.str()).append(": ");
+                    VStringBuffer msg("Failed to deschedule workunit %s: ", w->queryWuid());
                     e->errorMessage(msg);
                     logException(SeverityWarning, code, msg.str(), false);
                     e->Release();
@@ -1978,6 +1974,12 @@ void EclAgent::doProcess()
                 w->deleteTemporaries();
         }
 
+        if (globals->getPropBool("DUMPFINALWU", false))
+        {
+            StringBuffer xml;
+            exportWorkUnitToXML(wuRead, xml, true, false, true);
+            fprintf(stdout, "%s", xml.str());
+        }
         wuRead.clear(); // have a write lock still, but don't want to leave dangling unlocked wuRead after releasing write lock
                         // or else something can delete whilst still referenced (e.g. on complete signal)
         w.clear();
@@ -2005,7 +2007,7 @@ void EclAgent::doProcess()
             // a final attempt to commit the original error (only) to the workunit
             // since unlockWorkUnit( which commits ) can error due to the nature of the transaction.
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid.get(), false);
+            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid.get());
             Owned<IWorkUnit> w = &wu->lock();
             StringBuffer m("System error ");
             m.append(e->errorCode()).append(": ");
@@ -2793,23 +2795,17 @@ const char *EclAgent::queryWuid()
 
 char * EclAgent::getJobName()
 {
-    SCMStringBuffer out;
-    queryWorkUnit()->getJobName(out);
-    return out.s.detach();
+    return strdup(queryWorkUnit()->queryJobName());
 }
 
 char * EclAgent::getJobOwner()
 {
-    SCMStringBuffer out;
-    queryWorkUnit()->getUser(out);
-    return out.s.detach();
+    return strdup(queryWorkUnit()->queryUser());
 }
 
 char * EclAgent::getClusterName()
 {
-    SCMStringBuffer out;
-    queryWorkUnit()->getClusterName(out);
-    return out.s.detach();
+    return strdup(queryWorkUnit()->queryClusterName());
 }
 
 char * EclAgent::getGroupName()
@@ -3144,7 +3140,7 @@ void printStart(int argc, const char *argv[])
             cmd.append(' ');
         cmd.append('"').append(argv[argno]).append('"');
     }
-    PrintLog("Starting %s", cmd.toCharArray());
+    PrintLog("Starting %s", cmd.str());
 }
 
 //--------------------------------------------------------------
@@ -3308,7 +3304,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         throw MakeStringException(0, "Invalid xml: %s", msg.str());
     }
 
-    SCMStringBuffer wuid;
+    StringBuffer wuid;
     StringBuffer daliServers;
     if (!globals->getProp("DALISERVERS", daliServers) && !globals->getProp("-DALISERVERS", daliServers))
         daliServers.append(agentTopology->queryProp("@daliServers"));
@@ -3329,8 +3325,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         if (wuXML)
         {
             //Create workunit from XML
-            standAloneWorkUnit.setown(createLocalWorkUnit());
-            standAloneWorkUnit->loadXML(wuXML->str());
+            standAloneWorkUnit.setown(createLocalWorkUnit(wuXML->str()));
             wuXML->kill();  // free up text as soon as possible.
         }
 
@@ -3372,7 +3367,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 Owned<IWorkUnit> daliWu = factory->createWorkUnit("eclagent", "eclagent");
                 IExtendedWUInterface * extendedWu = queryExtendedWU(daliWu);
                 extendedWu->copyWorkUnit(standAloneWorkUnit, true);
-                daliWu->getWuid(wuid);
+                wuid.set(daliWu->queryWuid());
                 globals->setProp("WUID", wuid.str());
 
                 standAloneUDesc.setown(createUserDescriptor());
@@ -3443,7 +3438,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 #ifdef _DEBUG
                 factory->setTracingLevel(10);
 #endif
-                w = factory->openWorkUnit(wuid.str(), false);
+                w = factory->openWorkUnit(wuid.str());
             }
             else
                 w = standAloneWorkUnit.getClear();

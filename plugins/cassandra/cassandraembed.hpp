@@ -98,6 +98,10 @@ public:
     {
         return *session;
     }
+    inline const CassCluster *queryCluster() const
+    {
+        return cluster;
+    }
     inline const char *queryKeySpace() const
     {
         return keyspace;
@@ -210,6 +214,13 @@ public:
     inline CassandraStatement(const char *simple) : statement(cass_statement_new(simple, 0))
     {
     }
+    inline CassandraStatement(const CassandraPrepared *_prepared) : statement(cass_prepared_bind(*_prepared))
+    {
+        const char *queryString = _prepared->queryQueryString(); // Only set when tracing..
+        if (queryString)
+            query.set(queryString);
+        _prepared->Release();
+    }
     inline ~CassandraStatement()
     {
         if (statement)
@@ -217,6 +228,8 @@ public:
     }
     operator CassStatement *() const
     {
+        if (query.length())
+            DBGLOG("Executing %s", query.str());
         return statement;
     }
     inline CassStatement *getClear()
@@ -225,8 +238,84 @@ public:
         statement = NULL;
         return ret;
     }
+    void bindBool(unsigned idx, cass_bool_t value)
+    {
+        if (query.length())
+            traceBind(idx, "%s", value ? "true" : "false");
+        check(cass_statement_bind_bool(statement, idx, value));
+    }
+    void bindInt32(unsigned idx, __int32 value)
+    {
+        if (query.length())
+            traceBind(idx, "%d", value);
+        check(cass_statement_bind_int32(statement, idx, value));
+    }
+    void bindInt64(unsigned idx, __int64 value)
+    {
+        if (query.length())
+            traceBind(idx, "%" I64F "d", value);
+        check(cass_statement_bind_int64(statement, idx, value));
+    }
+    void bindString(unsigned idx, const char *value)
+    {
+        if (query.length())
+        {
+            unsigned l = strlen(value);
+            if (l > 100)
+                l = 100;
+            traceBind(idx, "'%.*s'", l, value);
+        }
+        check(cass_statement_bind_string(statement, idx, value));
+    }
+    void bindString_n(unsigned idx, const char *value, unsigned len)
+    {
+        if (strlen(value)<len)
+        {
+            if (query.length())
+                traceBind(idx, "'%s'", value);
+            check(cass_statement_bind_string(statement, idx, value));
+        }
+        else
+        {
+            if (query.length())
+                traceBind(idx, "'%.*s'", len>100?100:len, value);
+            check(cass_statement_bind_string_n(statement, idx, value, len));
+        }
+    }
+    void bindBytes(unsigned idx, const cass_byte_t *value, unsigned len)
+    {
+        if (query.length())
+            traceBind(idx, "(bytes)");
+        check(cass_statement_bind_bytes(statement, idx, value, len));
+    }
+    void bindCollection(unsigned idx, const CassCollection *value)
+    {
+        if (query.length())
+            traceBind(idx, "(collection)");
+        check(cass_statement_bind_collection(statement, idx, value));
+    }
 private:
+    void traceBind(unsigned idx, const char *format, ...)
+    {
+        assert(query.length());
+        StringBuffer bound;
+        va_list args;
+        va_start(args, format);
+        bound.valist_appendf(format, args);
+        va_end(args);
+        const char *pos = query;
+        do
+        {
+            pos = strchr(pos, '?');
+            assert(pos);
+            if (!pos)
+                return;
+            pos++;
+        } while (idx--);
+        query.insert(pos-query, bound);
+    }
     CassandraStatement(const CassandraStatement &);
+    StringBuffer query;
     CassStatement *statement;
 };
 

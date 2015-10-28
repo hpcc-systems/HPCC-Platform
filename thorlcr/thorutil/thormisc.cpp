@@ -54,10 +54,13 @@ namespace thormisc {  // Make sure we can't clash with generated versions or ver
 
 #define SDS_LOCK_TIMEOUT 30000
 
+static INode *masterNode;
+static IGroup *rawGroup;
+static IGroup *nodeGroup;
 static IGroup *clusterGroup;
 static IGroup *slaveGroup;
 static IGroup *dfsGroup;
-static ICommunicator *clusterComm;
+static ICommunicator *nodeComm;
 
 
 mptag_t masterSlaveMpTag;
@@ -66,21 +69,27 @@ static IMPtagAllocator *ClusterMPAllocator = NULL;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    masterNode = NULL;
     globals = NULL;
+    rawGroup = NULL;
+    nodeGroup = NULL;
     clusterGroup = NULL;
     slaveGroup = NULL;
     dfsGroup = NULL;
-    clusterComm = NULL;
+    nodeComm = NULL;
     ClusterMPAllocator = createMPtagRangeAllocator(MPTAG_THORGLOBAL_BASE,MPTAG_THORGLOBAL_COUNT);
     return true;
 }
 
 MODULE_EXIT()
 {
+    ::Release(masterNode);
+    ::Release(rawGroup);
+    ::Release(nodeGroup);
     ::Release(clusterGroup);
     ::Release(slaveGroup);
     ::Release(dfsGroup);
-    ::Release(clusterComm);
+    ::Release(nodeComm);
     ::Release(ClusterMPAllocator);
 }
 
@@ -314,7 +323,7 @@ CThorException *_ThorWrapException(IException *e, const char *format, va_list ar
     eStr.appendf("%d, ", e->errorCode());
     e->errorMessage(eStr).append(" : ");
     eStr.limited_valist_appendf(2048, format, args);
-    CThorException *te = new CThorException(e->errorAudience(), e->errorCode(), eStr.toCharArray());
+    CThorException *te = new CThorException(e->errorAudience(), e->errorCode(), eStr.str());
     return te;
 }
 
@@ -551,7 +560,7 @@ void SetLogName(const char *prefix, const char *logdir, const char *thorname, bo
 #endif
     logname.append(".log");
     StringBuffer lf;
-    openLogFile(lf, logname.toCharArray());
+    openLogFile(lf, logname.str());
     PrintLog("Opened log file %s", lf.str());
     PrintLog("Build %s", BUILD_TAG);
 }
@@ -592,7 +601,7 @@ public:
         tempPrefix.set(_tempPrefix);
         StringBuffer base(name);
         addPathSepChar(base);
-        tempdir.set(base.toCharArray());
+        tempdir.set(base.str());
         recursiveCreateDirectory(tempdir);
 #ifdef _WIN32
         altallowed = false;
@@ -717,7 +726,7 @@ void loadCmdProp(IPropertyTree *tree, const char *cmdProp)
         prop.clip();
         val.clip();
         if (prop.length())
-            tree->setProp(prop.toCharArray(), val.toCharArray());
+            tree->setProp(prop.str(), val.str());
     }
 }
 
@@ -768,30 +777,70 @@ StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *query
     return compoundName.append('V').append(version).append('_').append(queryName);
 }
 
-void setClusterGroup(IGroup *group)
+void setClusterGroup(INode *_masterNode, IGroup *_rawGroup, unsigned slavesPerProcess, unsigned portBase, unsigned portInc)
 {
-    ::Release(clusterComm);
+    ::Release(masterNode);
+    ::Release(rawGroup);
+    ::Release(nodeGroup);
     ::Release(clusterGroup);
     ::Release(slaveGroup);
     ::Release(dfsGroup);
-    clusterGroup = LINK(group);
-    // slaveGroup contains endpoints with mp ports of slaves
-    slaveGroup = clusterGroup->remove(0);
+    ::Release(nodeComm);
+    masterNode = LINK(_masterNode);
+    rawGroup = LINK(_rawGroup);
+    IArrayOf<INode> nodes;
+    if (slavesPerProcess) // if 0, then processPerSlave is enabled and slavesPerProcess/portBase/portInc not provided
+    {
+        nodes.append(*LINK(masterNode));
+        for (unsigned s=0; s<slavesPerProcess; s++)
+        {
+            for (unsigned n=0; n<rawGroup->ordinality(); n++)
+            {
+                SocketEndpoint ep = rawGroup->queryNode(n).endpoint();
+                ep.port = portBase + (s * portInc);
+                nodes.append(*createINode(ep));
+            }
+        }
+        clusterGroup = createIGroup(nodes.ordinality(), nodes.getArray());
+        // slaveGroup contains endpoints with mp ports of slaves
+        slaveGroup = clusterGroup->remove(0);
+        nodes.kill();
+
+        nodes.append(*LINK(masterNode));
+        unsigned n=0;
+        for (n=0; n<rawGroup->ordinality(); n++)
+        {
+            SocketEndpoint ep = rawGroup->queryNode(n).endpoint();
+            ep.port = portBase;
+            nodes.append(*createINode(ep));
+        }
+        nodeGroup = createIGroup(nodes.ordinality(), nodes.getArray());
+        nodes.kill();
+    }
+    else
+    {
+        slaveGroup = LINK(rawGroup);
+        clusterGroup = rawGroup->add(masterNode, 0);
+        nodeGroup = LINK(clusterGroup);
+    }
     // dfsGroup will match named group in dfs
     Owned<INodeIterator> nodeIter = slaveGroup->getIterator();
-    IArrayOf<INode> nodes;
     ForEach(*nodeIter)
         nodes.append(*createINodeIP(nodeIter->query().endpoint(),0));
     dfsGroup = createIGroup(nodes.ordinality(), nodes.getArray());
-    clusterComm = createCommunicator(clusterGroup);
+
+    nodeComm = createCommunicator(nodeGroup);
 }
-bool clusterInitialized() { return NULL != clusterComm; }
-ICommunicator &queryClusterComm() { return *clusterComm; }
+bool clusterInitialized() { return NULL != nodeComm; }
+INode &queryMasterNode() { return *masterNode; }
+ICommunicator &queryNodeComm() { return *nodeComm; }
+IGroup &queryRawGroup() { return *rawGroup; }
+IGroup &queryNodeGroup() { return *nodeGroup; }
 IGroup &queryClusterGroup() { return *clusterGroup; }
 IGroup &querySlaveGroup() { return *slaveGroup; }
 IGroup &queryDfsGroup() { return *dfsGroup; }
 unsigned queryClusterWidth() { return clusterGroup->ordinality()-1; }
-unsigned queryClusterNode() { return clusterGroup->rank(queryMyNode()); };
+unsigned queryNodeClusterWidth() { return nodeGroup->ordinality()-1; }
 
 
 mptag_t allocateClusterMPTag()
@@ -1042,8 +1091,8 @@ public:
     {
         bufferStream.setown(createMemoryBufferSerialStream(mb));
         memDeserializer.setStream(bufferStream);
-        myNode = comm.queryGroup().rank(queryMyNode());
-        replyTag = createReplyTag();
+        myNode = comm.queryGroup().rank(activity.queryMPServer().queryMyNode());
+        replyTag = activity.queryMPServer().createReplyTag();
         msg.setReplyTag(replyTag);
         eos = false;
     }
@@ -1150,7 +1199,7 @@ public:
                     activity->queryRowSerializer()->serialize(mbs,(const byte *)row.get());
                 } while (mb.length() < fetchBuffSize); // NB: allows at least 1
                 if (!comm.reply(mb, LONGTIMEOUT))
-                    throw MakeStringException(0, "CRowStreamFromNode: Failed to send data back to node: %d", activity->queryContainer().queryJob().queryMyRank());
+                    throw MakeStringException(0, "CRowStreamFromNode: Failed to send data back to node: %d", activity->queryContainer().queryJobChannel().queryMyRank());
                 mb.clear();
             }
         }

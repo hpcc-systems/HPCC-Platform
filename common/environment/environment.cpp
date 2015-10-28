@@ -564,9 +564,9 @@ public:
 
 //==========================================================================================
 
-struct mapEnums { EnvMachineOS val; const char *str; };
+struct mapOsEnums { EnvMachineOS val; const char *str; };
 
-static EnvMachineOS getEnum(IPropertyTree *p, const char *propname, mapEnums *map) 
+static EnvMachineOS getEnum(IPropertyTree *p, const char *propname, mapOsEnums *map)
 {
     const char *v = p->queryProp(propname);
     if (v && *v)
@@ -585,7 +585,7 @@ static EnvMachineOS getEnum(IPropertyTree *p, const char *propname, mapEnums *ma
 
 struct mapStateEnums { EnvMachineState val; const char *str; };
 
-static EnvMachineState getEnum(IPropertyTree *p, const char *propname, mapStateEnums *map) 
+static EnvMachineState getEnum(IPropertyTree *p, const char *propname, mapStateEnums *map)
 {
     const char *v = p->queryProp(propname);
     if (v && *v)
@@ -602,7 +602,7 @@ static EnvMachineState getEnum(IPropertyTree *p, const char *propname, mapStateE
 }
 
 
-mapEnums OperatingSystems[] = {
+mapOsEnums OperatingSystems[] = {
     { MachineOsW2K, "W2K" },
     { MachineOsSolaris, "solaris" },
     { MachineOsLinux, "linux" },

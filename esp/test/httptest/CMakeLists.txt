@@ -44,7 +44,11 @@ HPCC_ADD_EXECUTABLE ( httptest ${SRCS} )
 
 target_link_libraries ( httptest 
          jlib
-         securesocket 
     )
 
+IF (USE_OPENSSL)
+    target_link_libraries ( httptest
+    	securesocket
+    )
+ENDIF()
 

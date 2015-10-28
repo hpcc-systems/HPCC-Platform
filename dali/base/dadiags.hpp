@@ -25,7 +25,6 @@
 extern da_decl StringBuffer & getDaliDiagnosticValue(const char *name,StringBuffer &ret);
 extern da_decl MemoryBuffer & getDaliDiagnosticValue(MemoryBuffer &m);
 
-
 // for server use
 interface IDaliServer;
 extern da_decl IDaliServer *createDaliDiagnosticsServer(); // called for coven members

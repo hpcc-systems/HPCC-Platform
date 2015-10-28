@@ -30,6 +30,76 @@
 #include "fvrelate.hpp"
 #include "dadfs.hpp"
 
+class CThorNodeGroup: public CInterface
+{
+    unsigned timeCached;
+    StringAttr groupName;
+    unsigned keyhash;
+    unsigned nodeCount;
+    bool replicateOutputs;
+
+public:
+    IMPLEMENT_IINTERFACE;
+    CThorNodeGroup(const char* _groupName, unsigned _nodeCount, bool _replicateOutputs)
+        : groupName(_groupName), nodeCount(_nodeCount), replicateOutputs(_replicateOutputs)
+    {
+        keyhash = hashnc((const byte *)groupName.get(),groupName.length(),0);
+        timeCached = msTick();
+    }
+
+    inline unsigned queryHash() const { return keyhash; }
+    inline const char *queryGroupName() const { return groupName.get(); }
+
+    inline unsigned queryNodeCount() const { return nodeCount; };
+    inline bool queryReplicateOutputs() const { return replicateOutputs; };
+    inline bool queryCanReplicate() const { return replicateOutputs && (nodeCount > 1); };
+    inline bool checkTimeout(unsigned timeout) const { return msTick()-timeCached >= timeout; }
+};
+
+class CThorNodeGroupCache: public SuperHashTableOf<CThorNodeGroup, const char>
+{
+    CriticalSection sect;
+    CThorNodeGroup* readNodeGroup(const char* _groupName);
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    ~CThorNodeGroupCache() { releaseAll(); }
+
+    inline void onAdd(void *e)
+    {
+        // not used
+    }
+
+    inline void onRemove(void *e)
+    {
+        CThorNodeGroup *g = (CThorNodeGroup *)e;
+        g->Release();
+    }
+
+    inline unsigned getHashFromElement(const void *e) const
+    {
+        return ((CThorNodeGroup *) e)->queryHash();
+    }
+
+    inline unsigned getHashFromFindParam(const void *fp) const
+    {
+        return hashnc((const unsigned char *)fp, strlen((const char *)fp), 0);
+    }
+
+    inline const void * getFindParam(const void *e) const
+    {
+        return ((CThorNodeGroup *) e)->queryGroupName();
+    }
+
+    inline bool matchesFindParam(const void * e, const void *fp, unsigned) const
+    {
+        return (strieq(((CThorNodeGroup *) e)->queryGroupName(), (const char *)fp));
+    }
+
+    CThorNodeGroup *lookup(const char* groupName, unsigned timeOutMinutes);
+};
+
 class CWsDfuSoapBindingEx : public CWsDfuSoapBinding
 {
 public:
@@ -46,6 +116,8 @@ class CWsDfuEx : public CWsDfu
 private:
     Owned<IXslProcessor> m_xsl;
     Mutex m_superfilemutex;
+    unsigned nodeGroupCacheTimeout;
+    Owned<CThorNodeGroupCache> thorNodeGroupCache;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -78,6 +150,7 @@ private:
     bool addDFUQueryFilter(DFUQResultField *filters, unsigned short &count, MemoryBuffer &buff, const char* value, DFUQResultField name);
     void appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, StringBuffer& filterBuf);
     void appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, const char *valueHigh, StringBuffer& filterBuf);
+    void setFileIterateFilter(unsigned maxFiles, StringBuffer &filterBuf);
     void setFileTypeFilter(const char* fileType, StringBuffer& filterBuf);
     void setFileNameFilter(const char* fname, const char* prefix, StringBuffer &buff);
     void setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filterBuf);
@@ -108,10 +181,8 @@ private:
     void getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuffer& returnStr);
     void xsltTransformer(const char* xsltPath,StringBuffer& source,StringBuffer& returnStr);
-    bool onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName, const char* ClusterName, const char* ActionType, StringBuffer& returnStr);
     bool checkFileContent(IEspContext &context, IUserDescriptor* udesc, const char * logicalName, const char * cluster);
     void getRoxieClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port);
-    //bool getRoxieQueriesForFile(const char* logicalName, const char* cluster, StringArray& roxieQueries);
     bool checkRoxieQueryFilesOnDelete(IEspDFUArrayActionRequest &req, StringArray& roxieQueries);
     bool DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
 

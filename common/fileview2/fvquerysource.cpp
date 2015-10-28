@@ -69,17 +69,13 @@ bool QueryDataSource::createBrowseWU()
     returnedRecord.set(browseWUcode->queryChild(0)->queryRecord());
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> parent = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> parent = factory->openWorkUnit(wuid);
 
-    SCMStringBuffer user;
-    StringAttrAdaptor acluster(cluster);
-    parent->getClusterName(acluster);
-    parent->getUser(user);
-
-    Owned<IWorkUnit> workunit = factory->createWorkUnit("fileViewer", user.str());
-    workunit->setUser(user.str());
-    workunit->setClusterName(cluster);
-    StringAttrAdaptor bwa(browseWuid); workunit->getWuid(bwa);
+    const char *user = parent->queryUser();
+    Owned<IWorkUnit> workunit = factory->createWorkUnit("fileViewer", user);
+    workunit->setUser(user);
+    workunit->setClusterName(parent->queryClusterName());
+    browseWuid.set(workunit->queryWuid());
 
     workunit->setDebugValueInt("importImplicitModules", false, true);
     workunit->setDebugValueInt("importAllModules", false, true);
@@ -156,7 +152,7 @@ bool QueryDataSource::loadBlock(__int64 startRow, offset_t startOffset)
 
     //Now extract the results...
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> wu = factory->openWorkUnit(browseWuid, false);
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(browseWuid);
     Owned<IConstWUResult> dataResult = wu->getResultBySequence(0);
     MemoryBuffer2IDataVal xxx(temp); dataResult->getResultRaw(xxx, NULL, NULL);
 

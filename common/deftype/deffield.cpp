@@ -284,7 +284,7 @@ static void addElementToPTree(IPropertyTree * root, IDefRecordElement * elem)
     case DEKfield:
         {
             branchName.set("Field");
-            branch->setProp("@name", elem->queryName()->str());
+            branch->setProp("@name", str(elem->queryName()));
             branch->setPropInt("@maxSize", elem->getMaxSize());
             StringBuffer type;
             elem->queryType()->getDescriptiveType(type);

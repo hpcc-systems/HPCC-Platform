@@ -469,6 +469,77 @@ bool Cws_accessEx::onUsers(IEspContext &context, IEspUserRequest &req, IEspUserR
     return true;
 }
 
+bool Cws_accessEx::onUserQuery(IEspContext &context, IEspUserQueryRequest &req, IEspUserQueryResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(!secmgr)
+        {
+            resp.setNoSecMngr(true);
+            return true;
+        }
+        checkUser(context);
+
+        __int64 pageStartFrom = 0;
+        unsigned pageSize = 100;
+        if (!req.getPageSize_isNull())
+            pageSize = req.getPageSize();
+        if (!req.getPageStartFrom_isNull())
+            pageStartFrom = req.getPageStartFrom();
+
+        UserField sortOrder[2] = {UFName, UFterm};
+        CUserSortBy sortBy = req.getSortBy();
+        switch (sortBy)
+        {
+        case CUserSortBy_FullName:
+            sortOrder[0] = UFFullName;
+            break;
+        case CUserSortBy_PasswordExpiration:
+            sortOrder[0] = UFPasswordExpiration;
+            break;
+        default:
+            break;
+        }
+        sortOrder[0] = (UserField) (sortOrder[0] | UFnocase);
+        bool descending = req.getDescending();
+        if (descending)
+            sortOrder[0] = (UserField) (sortOrder[0] | UFreverse);
+
+        unsigned total;
+        __int64 cacheHint;
+        IArrayOf<IEspUserInfo> espUsers;
+        Owned<ISecItemIterator> it = secmgr->getUsersSorted(req.getName(), sortOrder, (const __int64) pageStartFrom, (const unsigned) pageSize, &total, &cacheHint);
+        ForEach(*it)
+        {
+            IPropertyTree& usr = it->query();
+            const char* userName = usr.queryProp(getUserFieldNames(UFName));
+            if (!userName || !*userName)
+                continue;
+
+            Owned<IEspUserInfo> userInfo = createUserInfo();
+            userInfo->setUsername(userName);
+            const char* fullName = usr.queryProp(getUserFieldNames(UFFullName));
+            if (fullName && *fullName)
+                userInfo->setFullname(fullName);
+            const char* passwordExpiration = usr.queryProp(getUserFieldNames(UFPasswordExpiration));
+            if (passwordExpiration && *passwordExpiration)
+                userInfo->setPasswordexpiration(passwordExpiration);
+
+            espUsers.append(*userInfo.getClear());
+        }
+
+        resp.setUsers(espUsers);
+        resp.setTotalUsers(total);
+        resp.setCacheHint(cacheHint);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 bool Cws_accessEx::onUserEdit(IEspContext &context, IEspUserEditRequest &req, IEspUserEditResponse &resp)
 {
     try
@@ -532,7 +603,9 @@ bool Cws_accessEx::onUserGroupEditInput(IEspContext &context, IEspUserGroupEditI
         }
 
         StringArray groupnames;
-        ldapsecmgr->getAllGroups(groupnames);
+        StringArray managedBy;
+        StringArray descriptions;
+        ldapsecmgr->getAllGroups(groupnames, managedBy, descriptions);
         IArrayOf<IEspGroupInfo> groups;
         for(i = 0; i < groupnames.length(); i++)
         {
@@ -543,6 +616,8 @@ bool Cws_accessEx::onUserGroupEditInput(IEspContext &context, IEspUserGroupEditI
             {
                 Owned<IEspGroupInfo> onegrp = createGroupInfo();
                 onegrp->setName(grpname);
+                onegrp->setGroupDesc(descriptions.item(i));
+                onegrp->setGroupOwner(managedBy.item(i));
                 groups.append(*onegrp.getLink());
             }
         }
@@ -632,11 +707,13 @@ bool Cws_accessEx::onGroups(IEspContext &context, IEspGroupRequest &req, IEspGro
         checkUser(context);
 
         StringArray groupnames;
+        StringArray groupManagedBy;
+        StringArray groupDescriptions;
         ISecManager* secmgr = context.querySecManager();
         if(secmgr == NULL)
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
-        secmgr->getAllGroups(groupnames);
+        secmgr->getAllGroups(groupnames, groupManagedBy, groupDescriptions);
         ///groupnames.append("Administrators");
         ///groupnames.append("Full_Access_TestingOnly");
         //groupnames.kill();
@@ -651,6 +728,8 @@ bool Cws_accessEx::onGroups(IEspContext &context, IEspGroupRequest &req, IEspGro
                     continue;
                 Owned<IEspGroupInfo> onegrp = createGroupInfo();
                 onegrp->setName(grpname);
+                onegrp->setGroupDesc(groupDescriptions.item(i));
+                onegrp->setGroupOwner(groupManagedBy.item(i));
                 groups.append(*onegrp.getLink());
             }
 
@@ -664,6 +743,75 @@ bool Cws_accessEx::onGroups(IEspContext &context, IEspGroupRequest &req, IEspGro
 
     resp.setGroups(groups);
 */
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onGroupQuery(IEspContext &context, IEspGroupQueryRequest &req, IEspGroupQueryResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(!secmgr)
+        {
+            resp.setNoSecMngr(true);
+            return true;
+        }
+
+        checkUser(context);
+
+        __int64 pageStartFrom = 0;
+        unsigned pageSize = 100;
+        if (!req.getPageSize_isNull())
+            pageSize = req.getPageSize();
+        if (!req.getPageStartFrom_isNull())
+            pageStartFrom = req.getPageStartFrom();
+
+        GroupField sortOrder[2] = {GFName, GFterm};
+        CGroupSortBy sortBy = req.getSortBy();
+        switch (sortBy)
+        {
+        case CGroupSortBy_ManagedBy:
+            sortOrder[0] = GFManagedBy;
+            break;
+        default:
+            break;
+        }
+        sortOrder[0] = (GroupField) (sortOrder[0] | UFnocase);
+        bool descending = req.getDescending();
+        if (descending)
+            sortOrder[0] = (GroupField) (sortOrder[0] | UFreverse);
+
+        unsigned total;
+        __int64 cacheHint;
+        IArrayOf<IEspGroupInfo> groups;
+        Owned<ISecItemIterator> it = secmgr->getGroupsSorted(sortOrder, (const __int64) pageStartFrom, (const unsigned) pageSize, &total, &cacheHint);
+        ForEach(*it)
+        {
+            IPropertyTree& g = it->query();
+            const char* groupName = g.queryProp(getGroupFieldNames(GFName));
+            if (!groupName || !*groupName)
+                continue;
+
+            Owned<IEspGroupInfo> groupInfo = createGroupInfo();
+            groupInfo->setName(groupName);
+            const char* managedBy = g.queryProp(getGroupFieldNames(GFManagedBy));
+            if (managedBy && *managedBy)
+                groupInfo->setGroupOwner(managedBy);
+            const char* desc = g.queryProp(getGroupFieldNames(GFDesc));
+            if (desc && *desc)
+                groupInfo->setGroupDesc(desc);
+            groups.append(*groupInfo.getClear());
+        }
+
+        resp.setGroups(groups);
+        resp.setTotalGroups(total);
+        resp.setCacheHint(cacheHint);
     }
     catch(IException* e)
     {
@@ -727,7 +875,8 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
             cred.setPassword(pass1);
         try
         {
-            secmgr->addUser(*user.get());
+            if (user.get())
+                secmgr->addUser(*user.get());
         }
         catch(IException* e)
         {
@@ -820,9 +969,18 @@ bool Cws_accessEx::onGroupAdd(IEspContext &context, IEspGroupAddRequest &req, IE
 
         resp.setGroupname(groupname);
 
+        double version = context.getClientVersion();
+        const char * groupDesc = NULL;
+        const char * groupOwner = NULL;
+        if (version >= 1.09)
+        {
+            groupDesc = req.getGroupDesc();
+            groupOwner = req.getGroupOwner();
+        }
+
         try
         {
-            secmgr->addGroup(groupname);
+            secmgr->addGroup(groupname, groupOwner, groupDesc);
         }
         catch(IException* e)
         {
@@ -1124,6 +1282,78 @@ bool Cws_accessEx::onGroupEdit(IEspContext &context, IEspGroupEditRequest &req, 
             users.append(*oneusr.getLink());
         }
         resp.setUsers(users);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onGroupMemberQuery(IEspContext &context, IEspGroupMemberQueryRequest &req, IEspGroupMemberQueryResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(!secmgr)
+        {
+            resp.setNoSecMngr(true);
+            return true;
+        }
+
+        checkUser(context);
+
+        __int64 pageStartFrom = 0;
+        unsigned pageSize = 100;
+        if (!req.getPageSize_isNull())
+            pageSize = req.getPageSize();
+        if (!req.getPageStartFrom_isNull())
+            pageStartFrom = req.getPageStartFrom();
+
+        UserField sortOrder[2] = {UFName, UFterm};
+        CUserSortBy sortBy = req.getSortBy();
+        switch (sortBy)
+        {
+        case CUserSortBy_FullName:
+            sortOrder[0] = UFFullName;
+            break;
+        case CUserSortBy_PasswordExpiration:
+            sortOrder[0] = UFPasswordExpiration;
+            break;
+        default:
+            break;
+        }
+        sortOrder[0] = (UserField) (sortOrder[0] | UFnocase);
+        bool descending = req.getDescending();
+        if (descending)
+            sortOrder[0] = (UserField) (sortOrder[0] | UFreverse);
+
+        unsigned total;
+        __int64 cacheHint;
+        IArrayOf<IEspUserInfo> users;
+        Owned<ISecItemIterator> it = secmgr->getGroupMembersSorted(req.getGroupName(), sortOrder, (const __int64) pageStartFrom, (const unsigned) pageSize, &total, &cacheHint);
+        ForEach(*it)
+        {
+            IPropertyTree& usr = it->query();
+            const char* userName = usr.queryProp(getUserFieldNames(UFName));
+            if (!userName || !*userName)
+                continue;
+
+            Owned<IEspUserInfo> userInfo = createUserInfo();
+            userInfo->setUsername(userName);
+            const char* fullName = usr.queryProp(getUserFieldNames(UFFullName));
+            if (fullName && *fullName)
+                userInfo->setFullname(fullName);
+            const char* passwordExpiration = usr.queryProp(getUserFieldNames(UFPasswordExpiration));
+            if (passwordExpiration && *passwordExpiration)
+                userInfo->setPasswordexpiration(passwordExpiration);
+            users.append(*userInfo.getLink());
+        }
+
+        resp.setUsers(users);
+        resp.setTotalUsers(total);
+        resp.setCacheHint(cacheHint);
     }
     catch(IException* e)
     {
@@ -1495,6 +1725,113 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
             resp.updateScopeScansStatus().setRetmsg(retMsg.str());
         }
         resp.setResources(rarray);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onResourceQuery(IEspContext &context, IEspResourceQueryRequest &req, IEspResourceQueryResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(!secmgr)
+        {
+            resp.setNoSecMngr(true);
+            return true;
+        }
+
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Read);
+
+        const char* rtypeStr = req.getRtype();
+        if (!rtypeStr || !*rtypeStr)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Rtype not specified");
+
+        StringBuffer baseDN;
+        const char* basednStr = req.getBasedn();
+        if (!basednStr || !*basednStr)
+        {
+            basednStr = getBaseDN(context, rtypeStr, baseDN);
+            if (!basednStr || !*basednStr)
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "BaseDN not found");
+        }
+
+        SecResourceType rtype = str2type(rtypeStr);
+        const char* moduleTemplate = NULL;
+        ForEachItemIn(x, m_basedns)
+        {
+            IEspDnStruct* curbasedn = &(m_basedns.item(x));
+            if(strieq(curbasedn->getBasedn(), basednStr))
+            {
+                moduleTemplate = curbasedn->getTemplatename();
+                break;
+            }
+        }
+
+        StringBuffer nameReq = req.getName();
+        const char* prefix = req.getPrefix();
+        if (!nameReq.length() && req.getRtitle() && !stricmp(req.getRtitle(), "CodeGenerator Permission"))
+            nameReq.set(prefix);
+
+        __int64 pageStartFrom = 0;
+        unsigned pageSize = 100;
+        if (!req.getPageSize_isNull())
+            pageSize = req.getPageSize();
+        if (!req.getPageStartFrom_isNull())
+            pageStartFrom = req.getPageStartFrom();
+
+        ResourceField sortOrder[2] = {(ResourceField) (RFName | RFnocase), RFterm};
+        bool descending = req.getDescending();
+        if (descending)
+            sortOrder[0] = (ResourceField) (sortOrder[0] | RFreverse);
+
+        unsigned total;
+        __int64 cacheHint;
+        IArrayOf<IEspResource> rarray;
+        Owned<ISecItemIterator> it = secmgr->getResourcesSorted(rtype, basednStr, nameReq.str(),
+            RF_RT_FILE_SCOPE_FILE | RF_RT_MODULE_NO_REPOSITORY, sortOrder,
+            (const __int64) pageStartFrom, (const unsigned) pageSize, &total, &cacheHint);
+        ForEach(*it)
+        {
+            IPropertyTree& r = it->query();
+            const char* rname = r.queryProp(getResourceFieldNames(RFName));
+            if(!rname || !*rname)
+                continue;
+
+            if(prefix && *prefix)
+                rname += strlen(prefix); //Remove the prefix from the name
+
+            bool isSpecial = false;
+            if(rtype == RT_MODULE)
+            {
+                if(strieq(rname, "repository"))
+                    isSpecial = true;
+                else
+                {
+                    if(moduleTemplate != NULL && stricmp(rname, moduleTemplate) == 0)
+                        isSpecial = true;
+
+                    rname = rname + 11; //Remove "repository." from the name
+                }
+            }
+
+            Owned<IEspResource> oneresource = createResource();
+            oneresource->setName(rname);
+            oneresource->setIsSpecial(isSpecial);
+            const char* desc = r.queryProp(getResourceFieldNames(RFDesc));
+            if (desc && *desc)
+                oneresource->setDescription(desc);
+
+            rarray.append(*oneresource.getClear());
+        }
+
+        resp.setResources(rarray);
+        resp.setTotalResources(total);
+        resp.setCacheHint(cacheHint);
     }
     catch(IException* e)
     {
@@ -1931,7 +2268,9 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
             groups.append(*onegrp.getLink());
         }
         StringArray grpnames;
-        secmgr->getAllGroups(grpnames);
+        StringArray managedBy;
+        StringArray descriptions;
+        secmgr->getAllGroups(grpnames, managedBy, descriptions);
         for(unsigned i = 0; i < grpnames.length(); i++)
         {
             const char* grpname = grpnames.item(i);
@@ -1939,6 +2278,8 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
                 continue;
             Owned<IEspGroupInfo> onegrp = createGroupInfo();
             onegrp->setName(grpname);
+            onegrp->setGroupDesc(descriptions.item(i));
+            onegrp->setGroupOwner(managedBy.item(i));
             groups.append(*onegrp.getLink());
         }
 
@@ -2342,7 +2683,9 @@ bool Cws_accessEx::permissionAddInputOnResource(IEspContext &context, IEspPermis
         groups.append(*onegrp.getLink());
     }
     StringArray grpnames;
-    secmgr->getAllGroups(grpnames);
+    StringArray managedBy;
+    StringArray descriptions;
+    secmgr->getAllGroups(grpnames, managedBy, descriptions);
     for(unsigned i = 0; i < grpnames.length(); i++)
     {
         const char* grpname = grpnames.item(i);
@@ -2350,6 +2693,8 @@ bool Cws_accessEx::permissionAddInputOnResource(IEspContext &context, IEspPermis
             continue;
         Owned<IEspGroupInfo> onegrp = createGroupInfo();
         onegrp->setName(grpname);
+        onegrp->setGroupDesc(descriptions.item(i));
+        onegrp->setGroupOwner(managedBy.item(i));
         groups.append(*onegrp.getLink());
     }
 
@@ -3414,7 +3759,9 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
 
         //Get all groups for input form
         StringArray groupnames;
-        secmgr->getAllGroups(groupnames);
+        StringArray managedBy;
+        StringArray descriptions;
+        secmgr->getAllGroups(groupnames, managedBy, descriptions);
         ///groupnames.append("Authenticated Users");
         ///groupnames.append("Administrators");
         if (groupnames.length() > 0)
@@ -3427,6 +3774,8 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                     continue;
                 Owned<IEspGroupInfo> onegrp = createGroupInfo();
                 onegrp->setName(grpname);
+                onegrp->setGroupDesc(descriptions.item(i));
+                onegrp->setGroupOwner(managedBy.item(i));
                 groups.append(*onegrp.getLink());
             }
 

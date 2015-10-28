@@ -41,7 +41,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, public CThorDataLink, imp
         else
         {
             CMessageBuffer msg;
-            if (!receiveMsg(msg, container.queryJob().queryMyRank()-1, mpTag))
+            if (!receiveMsg(msg, queryJobChannel().queryMyRank()-1, mpTag))
                 return;
             msg.read(N);
             msg.read(seenNth);
@@ -58,7 +58,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, public CThorDataLink, imp
         CMessageBuffer msg;
         msg.append(N);
         msg.append(seenNth); // used by last node to trigger fail if not seen
-        container.queryJob().queryJobComm().send(msg, container.queryJob().queryMyRank()+1, mpTag);
+        queryJobChannel().queryJobComm().send(msg, queryJobChannel().queryMyRank()+1, mpTag);
     }
 
 public:
@@ -77,7 +77,7 @@ public:
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {
         if (!container.queryLocalOrGrouped())
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
         appendOutputLinked(this);
         helper = static_cast <IHThorSelectNArg *> (queryHelper());
     }

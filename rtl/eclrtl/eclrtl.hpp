@@ -815,6 +815,14 @@ interface IEmbedFunctionContext : extends IInterface
     virtual void bindFloatParam(const char *name, float val) = 0;
     virtual void bindSignedSizeParam(const char *name, int size, __int64 val) = 0;
     virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val) = 0;
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)=0;
+    virtual void paramWriterCommit(IInterface *writer)=0;
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)=0;
+};
+
+interface IEmbedServiceContext : extends IInterface
+{
+    virtual IEmbedFunctionContext *createFunctionContext(const char *function) = 0;
 };
 
 enum EmbedFlags { EFembed = 1, EFimport = 2, EFnoreturn = 4, EFnoparams = 8 }; // For createFunctionContext flags
@@ -824,7 +832,10 @@ interface IEmbedContext : extends IInterface
 {
     virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) = 0; // legacy
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options) = 0;
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) = 0;
     // MORE - add syntax checked here!
 };
+
+typedef IEmbedContext * (* GetEmbedContextFunction)();
 
 #endif

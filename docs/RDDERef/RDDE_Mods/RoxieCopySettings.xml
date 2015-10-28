@@ -96,11 +96,12 @@
     </informaltable></para>
 
   <para>When <emphasis role="bold">copyResources</emphasis> is enabled, data
-  files are copied from source locations to slave nodes. Index files are also
-  copied, with an extra file part that is a “key-of-keys” or a metakey.</para>
+  files are copied from source locations to Roxie agent nodes. Index files are
+  also copied, with an extra file part that is a “key-of-keys” or a
+  metakey.</para>
 
-  <para>A copy of the metakey is always stored on each Farmer and in most
-  cases is loaded into memory at startup to increase performance.</para>
+  <para>A copy of the metakey is always stored on each Roxie server and in
+  most cases is loaded into memory at startup to increase performance.</para>
 
   <sect3>
     <title><emphasis role="bold">Command Line support</emphasis></title>

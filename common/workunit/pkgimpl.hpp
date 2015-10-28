@@ -410,7 +410,7 @@ public:
             throw MakeStringException(PACKAGE_QUERY_NOT_FOUND, "Query %s not found", queryname);
         Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, true, false);
         Owned<IWorkUnitFactory> wufactory = getWorkUnitFactory(NULL, NULL);
-        Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(query->queryProp("@wuid"), false);
+        Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(query->queryProp("@wuid"));
 
         const IHpccPackage *pkg = matchPackage(query->queryProp("@id"));
         filelist->addFilesFromQuery(cw, pkg);
@@ -446,7 +446,7 @@ public:
         MapStringTo<bool> referencedPackages;
         Owned<IPropertyTree> qs = getQueryRegistry(querySet, true);
         if (!qs)
-            throw MakeStringException(PACKAGE_TARGET_NOT_FOUND, "Target %s not found", querySet.sget());
+            throw MakeStringException(PACKAGE_TARGET_NOT_FOUND, "Target %s not found", querySet.str());
         HashIterator it(packages);
         ForEach (it)
         {
@@ -482,7 +482,7 @@ public:
                     tempQuerySet->addPropTree("Query", queryEntry.getClear());
                 else
                 {
-                    VStringBuffer msg("Query %s not found in %s queryset", queriesToCheck.item(i), querySet.sget());
+                    VStringBuffer msg("Query %s not found in %s queryset", queriesToCheck.item(i), querySet.str());
                     err.append(msg);
                 }
             }
@@ -503,7 +503,7 @@ public:
             if (queryid && *queryid)
             {
                 Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, true, false);
-                Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(queries->query().queryProp("@wuid"), false);
+                Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(queries->query().queryProp("@wuid"));
 
                 StringArray libnames, unresolvedLibs;
                 gatherLibraryNames(libnames, unresolvedLibs, *wufactory, *cw, qs);

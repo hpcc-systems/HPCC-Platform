@@ -70,14 +70,14 @@ public:
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        mpTagRPC = container.queryJob().deserializeMPTag(data);
-        mptag_t barrierTag = container.queryJob().deserializeMPTag(data);
-        barrier.setown(container.queryJob().createBarrier(barrierTag));
+        mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
+        mptag_t barrierTag = container.queryJobChannel().deserializeMPTag(data);
+        barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
         portbase = allocPort(NUMSLAVEPORTS);
         ActPrintLog("MSortSlaveActivity::init portbase = %d, mpTagRPC = %d",portbase,(int)mpTagRPC);
         server.setLocalHost(portbase); 
         helper = (IHThorSortArg *)queryHelper();
-        sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&container.queryJob().queryJobComm(),mpTagRPC));
+        sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
         appendOutputLinked(this);
         server.serialize(slaveData);
     }
@@ -106,7 +106,7 @@ public:
             dataLinkStart();
             
             Linked<IRowInterfaces> rowif = queryRowInterfaces(input);
-            Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryActivityId(),queryCodeContext());
+            Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryId(),queryCodeContext());
             sorter->Gather(
                 rowif,
                 input,
@@ -166,7 +166,7 @@ public:
     void reset()
     {
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
-        sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&container.queryJob().queryJobComm(),mpTagRPC));
+        sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
     }
     void kill()
     {

@@ -19,6 +19,7 @@
 #define __ACI_IPP_
 #include "ldapconnection.hpp"
 #include "permissions.hpp"
+#include "ldaputils.hpp"
 
 class AciProcessor : public CInterface, implements IPermissionProcessor
 {
@@ -41,9 +42,9 @@ public:
     }
 
     virtual bool getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>& sdlist, IArrayOf<ISecResource>& resources);
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, ISecResource* resource, SecPermissionType ptype);
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, const char* name, SecPermissionType ptype);
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, ISecResource* resource, MemoryBuffer& initial_sd);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd);
     virtual bool retrieveUserInfo(ISecUser& user);
 
     virtual void getCachedSid(const char* name, MemoryBuffer& sid);
@@ -65,8 +66,8 @@ public:
     }
 
     virtual StringBuffer& sec2aci(int secperm, StringBuffer& aciperm);
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, const char* name, SecPermissionType ptype);
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, ISecResource* resource, MemoryBuffer& initial_sd);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd);
 };
 
 class COpenLdapAciProcessor : public AciProcessor
@@ -78,8 +79,8 @@ public:
     }
     
     virtual StringBuffer& sec2aci(int secperm, StringBuffer& aciperm);
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, const char* name, SecPermissionType ptype);
-    virtual CSecurityDescriptor* createDefaultSD(ISecUser& user, ISecResource* resource, MemoryBuffer& initial_sd);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd);
 };
 
 #endif

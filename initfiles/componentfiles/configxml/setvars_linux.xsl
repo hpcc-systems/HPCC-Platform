@@ -95,6 +95,9 @@ export DALISERVER=<xsl:call-template name="getDaliServers">
 <xsl:if test="string(@localThor) != ''">
 export localthor=<xsl:value-of select="@localThor"/>
 </xsl:if>
+<xsl:if test="string(@processPerSlave) != ''">
+export processperslave=<xsl:value-of select="@processPerSlave"/>
+</xsl:if>
 <xsl:if test="string(Storage/@breakoutLimit) != ''">
 export breakoutlimit=<xsl:value-of select="Storage/@breakoutLimit"/>
 </xsl:if>

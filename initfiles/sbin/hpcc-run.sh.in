@@ -76,7 +76,7 @@ doOneIP(){
 
     if ping -c 1 -w 5 -n $_ip > /dev/null 2>&1; then
         #echo "$_ip: Host is alive."
-        local CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$_ip exit > /dev/null 2>&1; echo $?`"
+        local CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $user@$_ip exit > /dev/null 2>&1; echo $?`"
         if [[ "$CAN_SSH" -eq 255 ]]; then
             echo "$_ip: Cannot SSH to host."
             return 1
@@ -86,11 +86,11 @@ doOneIP(){
             echo "$_ip: Running $CMD"
             local CMD="$CMD | tee ${hpccStatusFile}"
 
-            ssh -i $home/$user/.ssh/id_rsa $user@$_ip $CMD;
+            ssh -i $home/$user/.ssh/id_rsa -o LogLevel=QUIET $user@$_ip $CMD;
             scp -i $home/$user/.ssh/id_rsa $user@${_ip}:${hpccStatusFile} ${reportDir}/$_ip > /dev/null 2>&1
 
             local CMD="rm -rf  $hpccStatusFile"
-            ssh -i $home/$user/.ssh/id_rsa $user@$_ip $CMD
+            ssh -i $home/$user/.ssh/id_rsa -o LogLevel=QUIET $user@$_ip $CMD
             rc=${PIPESTATUS[0]}
             echo
             return $rc
@@ -113,7 +113,7 @@ createScript(){
 IP=\$1
 if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
     echo "\$IP: Host is alive."
-    CAN_SSH="\`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?\`"
+    CAN_SSH="\`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?\`"
     if [[ "\$CAN_SSH" -eq 255 ]]; then
         echo "\$IP: Cannot SSH to host."
         exit 1
@@ -121,13 +121,13 @@ if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
         CMD="sudo /etc/init.d/$_action $_args"
         echo "\$IP: Running \$CMD"
         CMD="\$CMD | tee $hpccStatusFile"
-        ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD;
+        ssh -i $home/$user/.ssh/id_rsa -o LogLevel=QUIET $user@\$IP \$CMD;
         rc=\${PIPESTATUS[0]}
 
         scp -i $home/$user/.ssh/id_rsa $user@\${IP}:${hpccStatusFile} ${reportDir}/\$IP
 
         CMD="rm -rf  $hpccStatusFile"
-        ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD
+        ssh -i $home/$user/.ssh/id_rsa -o LogLevel=QUIET $user@\$IP \$CMD
         exit \$rc
     fi
 else
@@ -177,8 +177,8 @@ doStop() {
     echo "$action stop in the cluster ..."
     init stop
     scriptFile=/tmp/${action}_stop_$$
-    createScript $scriptFile $action $args stop
     if [[ -n "${comp}" ]]; then
+        createScript $scriptFile $action $args stop
         OPTIONS="${DEFAULT_OPTIONS} -h $IPsFile"
         runScript $IPsFile
         report "${action} stop"
@@ -186,6 +186,7 @@ doStop() {
         if [[ -e $IPsExcludeDIP ]]; then
             local numIPs=$(wc -l $IPsExcludeDIP | awk '{ print $1 }')
             if [[ $numIPs -gt 0 ]]; then
+                createScript $scriptFile $action $args stop
                 OPTIONS="${DEFAULT_OPTIONS} -h $IPsExcludeDIP"
                 runScript $IPsExcludeDIP
                 report "${action} stop" $DIP
@@ -258,9 +259,11 @@ report() {
     if [[ "$RUN_CLUSTER_DISPLAY_OUTPUT" = "FALSE" ]]; then
         ls ${reportDir} | while read _host; do
             [[ "$_host" = "$hostToSkip" ]] && continue
-            echo "$_host $_title :"
-            cat ${reportDir}/$_host | grep -v "ervice dafilesrv" | grep -v -e "^[[:space:]]*$"
-            echo
+            local _message=$(cat ${reportDir}/$_host | grep -v "ervice dafilesrv" | grep -v -e "^[[:space:]]*$")
+            if [[ -n "$_message" ]]; then
+                echo "$_host $_title :"
+                echo -e "$_message\n"
+            fi
         done
     fi
 }

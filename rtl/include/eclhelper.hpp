@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      158
-#define MIN_ACTIVITY_INTERFACE_VERSION  157             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      159
+#define MIN_ACTIVITY_INTERFACE_VERSION  159             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -922,6 +922,8 @@ enum ThorActivityKind
     TAKlastdenormalizegroup,
     TAKjsonwrite,
     TAKjsonread,
+    TAKtrace,
+    TAKquantile,
 
     TAKlast
 };
@@ -1060,8 +1062,10 @@ enum ActivityInterfaceEnum
     TAIsubsortextra_1,
     TAIdictionaryworkunitwritearg_1,
     TAIdictionaryresultwritearg_1,
+    TAItracearg_1,
+    TAIquantilearg_1,
 
-//Should remain as last of all meaningful tags, but before aliases
+    //Should remain as last of all meaningful tags, but before aliases
     TAImax,
 
 //Only aliases follow - for interfaces implemented via typedefs
@@ -1078,6 +1082,8 @@ struct ISortKeySerializer
     virtual size32_t keyToRecord(ARowBuilder & rowBuilder, const void * _key, size32_t & recordSize) = 0;       // both return size of key!
     virtual size32_t recordToKey(ARowBuilder & rowBuilder, const void * _record, size32_t & recordSize) = 0;        // record size in 3rd parameter
     virtual IOutputMetaData * queryRecordSize() = 0;
+    virtual ICompare * queryCompareKey() = 0;
+    virtual ICompare * queryCompareKeyRow() = 0;
 };
 
 
@@ -1319,6 +1325,32 @@ struct IHThorSelectNArg : public IHThorArg
     virtual size32_t createDefault(ARowBuilder & rowBuilder) = 0;
 };
 
+enum
+{
+    TQFfirst            = 0x0001,       // default flags is zero
+    TQFlast             = 0x0002,
+    TQFsorted           = 0x0004,
+    TQFlocalsorted      = 0x0008,
+    TQFhasscore         = 0x0010,
+    TQFhasrange         = 0x0020,
+    TQFhasskew          = 0x0040,
+    TQFdedup            = 0x0080,
+    TQFunstable         = 0x0100,
+    TQFvariabledivisions= 0x0200,       // num divisions is not a constant
+    TQFneedtransform    = 0x0400,       // if not set the records are returned as-is
+};
+
+struct IHThorQuantileArg : public IHThorArg
+{
+    virtual unsigned getFlags() = 0;
+    virtual unsigned __int64 getNumDivisions() = 0;
+    virtual double getSkew() = 0;
+    virtual ICompare * queryCompare() = 0;
+    virtual size32_t createDefault(ARowBuilder & rowBuilder) = 0;
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, unsigned __int64 _counter) = 0;
+    virtual unsigned __int64 getScore(const void * _left) = 0;
+    virtual void getRange(bool & isAll, size32_t & tlen, void * & tgt) = 0;
+};
 
 struct IHThorCombineArg : public IHThorArg
 {
@@ -1575,6 +1607,7 @@ enum
     TAFstable           = 0x0002,
     TAFunstable         = 0x0004,
     TAFspill            = 0x0008,
+    TAFparallel         = 0x0010,
 };
 
 struct IHThorSortArg : public IHThorArg
@@ -1704,6 +1737,8 @@ struct IHThorJoinBaseArg : public IHThorAnyJoinBaseArg
     virtual ICompare * queryPrefixCompare() = 0;
 
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
+    virtual ICompare * queryCompareLeftKeyRightRow()=0;                         // compare serialized left key with right row
+    virtual ICompare * queryCompareRightKeyLeftRow()=0;                         // as above if partition right selected
 };
 
 struct IHThorFetchContext : public IInterface
@@ -2773,6 +2808,17 @@ struct IHThorDictionaryResultWriteArg : public IHThorArg
     virtual bool usedOutsideGraph() = 0;
     virtual IHThorHashLookupInfo * queryHashLookupInfo() = 0;
 };
+
+struct IHThorTraceArg : public IHThorArg
+{
+    virtual bool isValid(const void * _left) = 0;
+    virtual bool canMatchAny() = 0;
+    virtual unsigned getKeepLimit() = 0;
+    virtual unsigned getSample() = 0;
+    virtual unsigned getSkip() = 0;
+    virtual const char *getName() = 0;
+};
+
 
 //------------------------- Other stuff -------------------------
 

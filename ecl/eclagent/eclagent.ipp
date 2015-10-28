@@ -390,7 +390,6 @@ private:
     bool expandLogicalName(StringBuffer & fullname, const char * logicalName);
     IRemoteConnection *getPersistReadLock(const char * logicalName);
     void doSimpleResult(type_t type, int size, char * buffer, int sequence);
-    IWUResult *updateResult(const char *name, unsigned sequence);
     IConstWUResult *getResult(const char *name, unsigned sequence);
     IConstWUResult *getResultForGet(const char *name, unsigned sequence);
     IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence);
@@ -1063,7 +1062,8 @@ public:
     void createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, bool enableProbe);
     void execute(const byte * parentExtract);
     void executeLibrary(const byte * parentExtract, IHThorGraphResults * results);
-    IConstWUGraphProgress * getGraphProgress();
+    IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned subgraph);
+
     EclSubGraph * idToGraph(unsigned id);
     EclGraphElement * idToActivity(unsigned id);
     const char *queryGraphName() { return graphName; }

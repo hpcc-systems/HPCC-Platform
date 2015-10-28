@@ -417,8 +417,14 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
             throw MakeStringException(-1, "You can't use rowpath option with csv/delimited format");
 
         const char* separator = globals->queryProp("separator");
-        if(separator && *separator)
+        if(separator)
+        {
+            // Pass separator definition string from command line if defined
+            // even it is empty to override default value
             req->setSourceCsvSeparate(separator);
+            if (*separator == '\0')
+                req->setNoSourceCsvSeparator(true);
+        }
         const char* terminator = globals->queryProp("terminator");
         if(terminator && *terminator)
             req->setSourceCsvTerminate(terminator);
@@ -1142,7 +1148,7 @@ int CDfuPlusHelper::list()
                 StringBuffer output;
                 output.append(onefile->getName());
                 output.append("\n");
-                fputs(output.toCharArray(),f);
+                fputs(output.str(),f);
             }
         }
     }
@@ -1565,13 +1571,9 @@ int CDfuPlusHelper::updatejobname(const char* wuid, const char* jobname)
 
 void CDfuPlusHelper::exc(const IMultiException& excep,const char *title)
 {
-    if(&excep!=NULL) {
-        StringBuffer errmsg;
-        excep.errorMessage(errmsg);
-        error("%s\n",errmsg.str());
-    }
-    else
-        throw MakeStringException(-1, "unknown error %s",title);
+    StringBuffer errmsg;
+    excep.errorMessage(errmsg);
+    error("%s\n",errmsg.str());
 }
 
 void CDfuPlusHelper::info(const char *fmt, ...) 

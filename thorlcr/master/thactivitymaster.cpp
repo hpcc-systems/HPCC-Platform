@@ -151,6 +151,7 @@ public:
             case TAKsoap_datasetaction:
             case TAKhttp_rowdataset:
             case TAKdistributed:
+            case TAKtrace:
                 ret = new CMasterActivity(this);
                 break;
             case TAKskipcatch:
@@ -405,7 +406,7 @@ void updateActivityResult(IConstWorkUnit &workunit, unsigned helperFlags, unsign
 {
     Owned<IWorkUnit> wu = &workunit.lock();
     Owned<IWUResult> r;
-    r.setown(wu->updateResultBySequence(sequence));
+    r.setown(updateWorkUnitResult(wu, logicalFilename, sequence));
     r->setResultTotalRowCount(recordCount); 
     r->setResultStatus(ResultStatusCalculated);
     if (TDWresult & helperFlags)

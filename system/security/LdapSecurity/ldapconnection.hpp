@@ -40,6 +40,46 @@
 #endif
 
 #ifdef _WIN32
+    #ifndef LDAPSECURITY_EXPORTS
+        #define LDAPSECURITY_API __declspec(dllimport)
+    #else
+        #define LDAPSECURITY_API __declspec(dllexport)
+    #endif//LDAPSECURITY_EXPORTS
+#else
+    #define LDAPSECURITY_API
+#endif //_WIN32
+
+#ifdef _WIN32
+/*from Winldap.h
+WINLDAPAPI ULONG LDAPAPI ldap_compare_ext_s(
+        LDAP *ld,
+        const PCHAR dn,
+        const PCHAR Attr,
+        const PCHAR Value,            // either value or Data is not null, not both
+        struct berval   *Data,
+        PLDAPControlA   *ServerControls,
+        PLDAPControlA   *ClientControls
+        );
+*/
+    #define LDAP_COMPARE_EXT_S(ld,dn,attr,bval,data,svrctrls,clientctrls) ldap_compare_ext_s(ld,(const PCHAR)dn,(const PCHAR)attr,(const PCHAR)bval,(struct berval *)data,svrctrls,clientctrls)
+    #define LDAP_UNBIND(ld)     ldap_unbind(ld)
+    #define LDAP_INIT(host,port) ldap_init((PCHAR)host, (ULONG)port);
+#else
+/* from openLDAP ldap.h
+ldap_compare_ext_s LDAP_P((
+    LDAP            *ld,
+    LDAP_CONST char *dn,
+    LDAP_CONST char *attr,
+    struct berval   *bvalue,
+    LDAPControl    **serverctrls,
+    LDAPControl    **clientctrls ));
+*/
+    #define LDAP_COMPARE_EXT_S(ld,dn,attr,bval,svrctrls,clientctrls,msgnum) ldap_compare_ext_s(ld,(const char*)dn,(const char*)attr,(struct berval *)bval,svrctrls,clientctrls)
+    #define LDAP_UNBIND(ld)     ldap_unbind_ext(ld,0,0)
+    #define LDAP_INIT(ld,uri)   ldap_initialize(ld, uri);
+#endif
+
+#ifdef _WIN32
     typedef struct l_timeval TIMEVAL;
 #else
     typedef struct timeval TIMEVAL;
@@ -62,7 +102,50 @@ enum ACT_TYPE
     USER_ACT = 0,
     GROUP_ACT = 1
 };
-    
+
+enum UserField
+{
+    UFUserID = 0,
+    UFName = 1,
+    UFFullName = 2,
+    UFPasswordExpiration = 3,
+    UFterm = 4,
+    UFreverse = 256,
+    UFnocase = 512,
+    UFnumeric = 1024
+};
+
+enum GroupField
+{
+    GFName = 0,
+    GFManagedBy = 1,
+    GFDesc = 2,
+    GFterm = 3,
+    GFreverse = 256,
+    GFnocase = 512,
+    GFnumeric = 1024
+};
+
+#define RF_NONE                     0x00
+#define RF_RT_FILE_SCOPE_FILE       0x01
+#define RF_RT_MODULE_NO_REPOSITORY  0x02
+
+enum ResourceField
+{
+    RFName = 0,
+    RFDesc = 1,
+    RFterm = 2,
+    RFreverse = 256,
+    RFnocase = 512,
+    RFnumeric = 1024
+};
+
+extern LDAPSECURITY_API  const char* getUserFieldNames(UserField feild);
+extern LDAPSECURITY_API  const char* getGroupFieldNames(GroupField feild);
+extern LDAPSECURITY_API  const char* getResourceFieldNames(ResourceField feild);
+
+typedef IIteratorOf<IPropertyTree> ISecItemIterator;
+
 interface IPermissionProcessor;
 
 interface ILdapConnection : extends IInterface
@@ -162,7 +245,16 @@ interface ILdapClient : extends IInterface
     virtual void setPermissionProcessor(IPermissionProcessor* pp) = 0;
     virtual bool retrieveUsers(IUserArray& users) = 0;
     virtual bool retrieveUsers(const char* searchstr, IUserArray& users) = 0;
-    virtual void getAllGroups(StringArray & groups) = 0;
+    virtual IPropertyTreeIterator* getUserIterator(const char* userName) = 0;
+    virtual ISecItemIterator* getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+        unsigned *total, __int64 *cachehint) = 0;
+    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions) = 0;
+    virtual IPropertyTreeIterator* getGroupIterator() = 0;
+    virtual ISecItemIterator* getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+        unsigned *total, __int64 *cachehint) = 0;
+    virtual IPropertyTreeIterator* getGroupMemberIterator(const char* groupName) = 0;
+    virtual ISecItemIterator* getGroupMembersSorted(const char* groupName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+        unsigned *total, __int64 *cachehint) = 0;
     virtual void setResourceBasedn(const char* rbasedn, SecResourceType rtype = RT_DEFAULT) = 0;
     virtual ILdapConfig* getLdapConfig() = 0;
     virtual bool userInGroup(const char* userdn, const char* groupdn) = 0;
@@ -171,11 +263,15 @@ interface ILdapClient : extends IInterface
     virtual bool updateUserPassword(const char* username, const char* newPassword) = 0;
     virtual bool getResources(SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources) = 0;
     virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char* prefix, const char* searchstr, IArrayOf<ISecResource>& resources) = 0;
+    virtual IPropertyTreeIterator* getResourceIterator(SecResourceType rtype, const char * basedn, const char* prefix,
+        const char* resourceName, unsigned extraNameFilter) = 0;
+    virtual ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char * basedn, const char* resourceName, unsigned extraNameFilter,
+        ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned *total, __int64 *cachehint) = 0;
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions) = 0;
     virtual bool changePermission(CPermissionAction& action) = 0;
     virtual void changeUserGroup(const char* action, const char* username, const char* groupname) = 0;
     virtual bool deleteUser(ISecUser* user) = 0;
-    virtual void addGroup(const char* groupname) = 0;
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc) = 0;
     virtual void deleteGroup(const char* groupname) = 0;
     virtual void getGroupMembers(const char* groupname, StringArray & users) = 0;
     virtual void deleteResource(SecResourceType rtype, const char* name, const char* basedn) = 0;
@@ -196,296 +292,51 @@ interface ILdapClient : extends IInterface
 ILdapClient* createLdapClient(IPropertyTree* cfg);
 
 #ifdef _WIN32
-bool verifyServerCert(LDAP* ld, PCCERT_CONTEXT pServerCert);
+extern LDAPSECURITY_API bool verifyServerCert(LDAP* ld, PCCERT_CONTEXT pServerCert);
 #endif
 
-class LdapUtils
+
+//--------------------------------------------
+// This helper class ensures memory allocated by
+// calls to ldap_get_values_len gets freed
+//--------------------------------------------
+class CLDAPGetValuesLenWrapper
 {
+private:
+    struct berval** bvalues;
+    unsigned numValues;
 public:
-    static LDAP* LdapInit(const char* protocol, const char* host, int port, int secure_port)
+    CLDAPGetValuesLenWrapper()
     {
-        LDAP* ld = NULL;
-        if(stricmp(protocol, "ldaps") == 0)
-        {
+        bvalues = NULL;
+        numValues = 0;
+    }
+    CLDAPGetValuesLenWrapper(LDAP *ld, LDAPMessage *msg, const char * attr)
+    {
+        bvalues = NULL;
+        retrieveBValues(ld,msg,attr);
+    }
+
+    ~CLDAPGetValuesLenWrapper()
+    {
+        if (bvalues)
+            ldap_value_free_len(bvalues);
+    }
+    inline bool hasValues()         { return bvalues != NULL  && *bvalues != NULL; }
+    inline berval **queryBValues()  { return bvalues; }
+    inline const char * queryCharValue(unsigned which){ return which < numValues ? (*(bvalues[which])).bv_val : NULL; }
+
+    //Delayed call to ldap_get_values_len
+    void retrieveBValues(LDAP *ld, LDAPMessage *msg, const char * attr)
+    {
+        if (bvalues)
+            ldap_value_free_len(bvalues);
 #ifdef _WIN32
-            ld = ldap_sslinit((char*)host, secure_port, 1);
-            if (ld == NULL )
-                throw MakeStringException(-1, "ldap_sslinit error" );
-
-            int rc = 0;
-            unsigned long version = LDAP_VERSION3;
-            long lv = 0;
-            
-            rc = ldap_set_option(ld,
-                    LDAP_OPT_PROTOCOL_VERSION,
-                    (void*)&version);
-            if (rc != LDAP_SUCCESS)
-                throw MakeStringException(-1, "ldap_set_option error - %s", ldap_err2string(rc));
-
-            rc = ldap_get_option(ld,LDAP_OPT_SSL,(void*)&lv);
-            if (rc != LDAP_SUCCESS)
-                throw MakeStringException(-1, "ldap_get_option error - %s", ldap_err2string(rc));
-
-            // If SSL is not enabled, enable it.
-            if ((void*)lv != LDAP_OPT_ON)
-            {
-                rc = ldap_set_option(ld, LDAP_OPT_SSL, LDAP_OPT_ON);
-                if (rc != LDAP_SUCCESS)
-                    throw MakeStringException(-1, "ldap_set_option error - %s", ldap_err2string(rc));
-            }
-            
-            ldap_set_option(ld, LDAP_OPT_SERVER_CERTIFICATE, verifyServerCert);
+        bvalues = ldap_get_values_len(ld, msg, (const PCHAR)attr);
 #else
-            // Initialize an LDAP session for TLS/SSL
-            #ifndef HAVE_TLS
-                //throw MakeStringException(-1, "openldap client library libldap not compiled with TLS support");
-            #endif
-            StringBuffer uri("ldaps://");
-            uri.appendf("%s:%d", host, secure_port);
-            DBGLOG("connecting to %s", uri.str());
-            int rc = ldap_initialize(&ld, uri.str());
-            if(rc != LDAP_SUCCESS)
-            {
-                DBGLOG("ldap_initialize error %s", ldap_err2string(rc));
-                throw MakeStringException(-1, "ldap_initialize error %s", ldap_err2string(rc));
-            }
-            int reqcert = LDAP_OPT_X_TLS_NEVER;
-            ldap_set_option(NULL, LDAP_OPT_X_TLS_REQUIRE_CERT, &reqcert);
+        bvalues = ldap_get_values_len(ld, msg, attr);
 #endif
-        }
-        else
-        {
-            // Initialize an LDAP session
-            if ((ld = ldap_init( (char*)host, port )) == NULL)
-            {
-                throw MakeStringException(-1, "ldap_init error");
-            }
-        }
-        return ld;
-    }
-
-    static int LdapSimpleBind(LDAP* ld, char* userdn, char* password)
-    {
-#ifndef _WIN32
-        TIMEVAL timeout = {LDAPTIMEOUT, 0};
-        ldap_set_option(ld, LDAP_OPT_TIMEOUT, &timeout);
-        ldap_set_option(ld, LDAP_OPT_NETWORK_TIMEOUT, &timeout);
-#endif
-        return ldap_simple_bind_s(ld, userdn, password);
-        /*
-        //TODO: bugs need to be fixed: (1) in ldap_result, is "1" actually meant for LDAP_MESSAGE_ONE? (2) should call ldap_msgfree on result
-        int final_rc  = LDAP_SUCCESS;
-        int msgid = ldap_simple_bind(ld, userdn, password); 
-        if(msgid < 0)
-        {
-#ifndef _WIN32
-            final_rc = ldap_get_lderrno(ld, NULL, NULL);
-#else
-            final_rc = LDAP_OTHER;
-#endif
-        }
-        else
-        {
-            LDAPMessage* result = NULL;
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};   
-            int rc = ldap_result(ld, msgid, 1, &timeOut, &result); 
-            if(rc < 0)
-            {
-#ifndef _WIN32
-                final_rc = ldap_get_lderrno(ld, NULL, NULL);
-#else
-                final_rc = LDAP_OTHER;
-#endif
-            }
-            else if(rc == 0)
-            {
-                final_rc = LDAP_TIMEOUT;
-            }
-            else
-            {
-                final_rc = ldap_result2error(ld, result, 1);
-            }
-        }
-        return final_rc;
-        */
-    }
-
-    // userdn is required for ldap_simple_bind_s, not really necessary for ldap_bind_s.
-    static int LdapBind(LDAP* ld, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method="kerboros")
-    {
-        bool binddone = false;
-        int rc = LDAP_SUCCESS;
-        // By default, use kerberos authentication
-        if((method == NULL) || (strlen(method) == 0) || (stricmp(method, "kerberos") == 0))
-        {
-#ifdef _WIN32
-            if(server_type == ACTIVE_DIRECTORY)
-            {
-                if(username != NULL)
-                {
-                    SEC_WINNT_AUTH_IDENTITY secIdent;
-                    secIdent.User = (unsigned char*)username;
-                    secIdent.UserLength = strlen(username);
-                    secIdent.Password = (unsigned char*)password;
-                    secIdent.PasswordLength = strlen(password);
-                    // Somehow, setting the domain makes it slower
-                    secIdent.Domain = (unsigned char*)domain;
-                    secIdent.DomainLength = strlen(domain);
-                    secIdent.Flags = SEC_WINNT_AUTH_IDENTITY_ANSI;
-                    int rc = ldap_bind_s(ld, (char*)userdn, (char*)&secIdent, LDAP_AUTH_NEGOTIATE);
-                    if(rc != LDAP_SUCCESS)
-                    {
-                        DBGLOG("ldap_bind_s for user %s failed with %d - %s.", username, rc, ldap_err2string(rc));
-                        return rc;
-                    }
-                }
-                else
-                {
-                    int rc = ldap_bind_s(ld, NULL, NULL, LDAP_AUTH_NEGOTIATE);
-                    if(rc != LDAP_SUCCESS)
-                    {
-                        DBGLOG("User Authentication Failed - ldap_bind_s for current user failed with %d - %s.", rc, ldap_err2string(rc));
-                        return rc;
-                    }
-                }
-                binddone = true;
-            }
-#endif
-        }
-
-        if(!binddone)
-        {
-            if(userdn == NULL)
-            {
-                DBGLOG("userdn can't be NULL in order to bind to ldap server.");
-                return LDAP_INVALID_CREDENTIALS;
-            }
-            int rc = LdapSimpleBind(ld, (char*)userdn, (char*)password);
-            if (rc != LDAP_SUCCESS && server_type == OPEN_LDAP && strchr(userdn,','))
-            {   //Fedora389 is happier without the domain component specified
-                StringBuffer cn(userdn);
-                cn.replace(',',(char)NULL);
-                if (cn.length())//disallow call if no cn
-                    rc = LdapSimpleBind(ld, (char*)cn.str(), (char*)password);
-            }
-            if (rc != LDAP_SUCCESS )
-            {
-                // For Active Directory, try binding with NT format username
-                if(server_type == ACTIVE_DIRECTORY)
-                {
-                    StringBuffer logonname;
-                    logonname.append(domain).append("\\").append(username);
-                    rc = LdapSimpleBind(ld, (char*)logonname.str(), (char*)password);
-                    if(rc != LDAP_SUCCESS)
-                    {
-#ifdef LDAP_OPT_DIAGNOSTIC_MESSAGE
-                        char *msg=NULL;
-                        ldap_get_option(ld, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
-                        DBGLOG("LDAP bind error for user %s with %d - %s. %s", logonname.str(), rc, ldap_err2string(rc), msg&&*msg?msg:"");
-                        ldap_memfree(msg);
-#else
-                        DBGLOG("LDAP bind error for user %s with 0x%" I64F "x - %s", username, (unsigned __int64) rc, ldap_err2string(rc));
-#endif
-                        return rc;
-                    }
-                }
-                else
-                {
-                    DBGLOG("LDAP bind error for user %s with 0x%" I64F "x - %s", username, (unsigned __int64) rc, ldap_err2string(rc));
-                    return rc;
-                }
-            }
-        }
-        
-        return rc;
-    }
-
-    static void bin2str(MemoryBuffer& from, StringBuffer& to)
-    {
-        const char* frombuf = from.toByteArray();
-        char tmp[3];
-        for(unsigned i = 0; i < from.length(); i++)
-        {
-            unsigned char c = frombuf[i];
-            sprintf(tmp, "%02X", c);
-            tmp[2] = 0;
-            to.append("\\").append(tmp);
-        }
-    }
-
-    static int getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname);
-
-    static void normalizeDn(const char* dn, const char* basedn, StringBuffer& dnbuf)
-    {
-        dnbuf.clear();
-        cleanupDn(dn, dnbuf);
-        if(!containsBasedn(dnbuf.str()))
-            dnbuf.append(",").append(basedn);
-    }
-
-    static bool containsBasedn(const char* str)
-    {
-        if(str == NULL || str[0] == '\0')
-            return false;
-        else
-            return (strstr(str, "dc=") != NULL);
-    }
-
-    static void cleanupDn(const char* dn, StringBuffer& dnbuf)
-    {
-        if(dn == NULL || dn[0] == '\0')
-            return;
-        dnbuf.append(dn);
-        dnbuf.toLowerCase();
-    }
-    
-    static bool getDcName(const char* domain, StringBuffer& dc)
-    {
-        bool ret = false;
-#ifdef _WIN32
-        PDOMAIN_CONTROLLER_INFO psInfo = NULL;
-        DWORD dwErr = DsGetDcName(NULL, domain, NULL, NULL, DS_FORCE_REDISCOVERY | DS_DIRECTORY_SERVICE_REQUIRED, &psInfo);
-        if( dwErr == NO_ERROR)
-        {
-            const char* dcname = psInfo->DomainControllerName;
-            if(dcname != NULL)
-            {
-                while(*dcname == '\\')
-                    dcname++;
-
-                dc.append(dcname);
-                ret = true;
-            }
-            NetApiBufferFree(psInfo);
-        }
-        else
-        {
-            DBGLOG("Error getting domain controller, error = %d", dwErr);
-            ret = false;
-        }
-#endif
-        return ret;
-    }
-
-    static void getName(const char* dn, StringBuffer& name)
-    {
-        const char* bptr = dn;
-        while(*bptr != '\0' && *bptr != '=')
-            bptr++;
-        
-        if(*bptr == '\0')
-        {
-            name.append(dn);
-            return;
-        }
-        else
-            bptr++;
-
-        const char* colon = strstr(bptr, ",");
-        if(colon == NULL)
-            name.append(bptr);
-        else
-            name.append(colon - bptr, bptr);
+        for (numValues = 0; bvalues && bvalues[numValues]; numValues++);
     }
 };
 

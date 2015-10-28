@@ -683,12 +683,8 @@ So if you have a new test case and it works well on all clusters (or some of the
 9. Configuration setting in ecl-test.json file:
 -------------------------------------------------------------
 
-        "IpAddress":{
-            "hthor":"127.0.0.1",
-            "thor":"127.0.0.1",
-            "roxie": "127.0.0.1"
-        },
         "roxieTestSocket": ":9876",                     - Roxie test socket address (not used)
+        "espIp": "127.0.0.1",                           - ESP server IP
         "espSocket": ":8010",                           - ESP service address
         "username": "regress",                          - Regression Suite dedicated username and pasword
         "password": "regress",

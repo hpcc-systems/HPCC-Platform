@@ -22,7 +22,7 @@ COUNTER=1
 for slave in $(cat slaves); do
     echo sshing slave $COUNTER - $slave:
     echo ssh $THORUSER@$slave $1
-    ssh $THORUSER@$slave $1
+    ssh -o LogLevel=QUIET $THORUSER@$slave $1
     let COUNTER=COUNTER+1
 done
 

@@ -168,7 +168,7 @@ IHqlExpression * RegexIdAllocator::createKey(IHqlExpression * expr, IAtom * name
         return NULL;
     IHqlExpression * body = expr->queryBody();
     if (name)
-        return createSymbol(createIdAtom(name->str()), LINK(body), ob_private);
+        return createSymbol(createIdAtom(str(name)), LINK(body), ob_private);
     return LINK(body);
 }
 

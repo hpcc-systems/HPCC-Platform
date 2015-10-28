@@ -629,7 +629,7 @@ void LRProduction::serialize(MemoryBuffer & out)
     if (transformClonesFirstSymbol)
         numSymbolsMask |= NSFclonesFirstSymbol;
     out.append(ruleId).append(numSymbolsMask).append(penalty);
-    ::serialize(out, ruleName->str());
+    ::serialize(out, str(ruleName));
     feature.serialize(out);
     validator.serialize(out);
 }

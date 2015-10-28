@@ -271,7 +271,8 @@ public:
         batchSplit = 1;
         batchLog = NULL;
         cclogFilename.append("cc.").append((unsigned)GetCurrentProcessId()).append(".log");
-        defaultAllowed = true;
+        defaultAllowed[false] = true;  // May want to change that?
+        defaultAllowed[true] = true;
     }
 
     bool printKeywordsToXml();
@@ -282,7 +283,7 @@ public:
     void processBatchedFile(IFile & file, bool multiThreaded);
 
     virtual void noteCluster(const char *clusterName);
-    virtual bool allowAccess(const char * category);
+    virtual bool allowAccess(const char * category, bool isSigned);
 
 protected:
     void addFilenameDependency(StringBuffer & target, EclCompileInstance & instance, const char * filename);
@@ -354,8 +355,9 @@ protected:
     StringArray libraryPaths;
 
     StringArray allowedPermissions;
+    StringArray allowSignedPermissions;
     StringArray deniedPermissions;
-    bool defaultAllowed;
+    bool defaultAllowed[2];
 
     ClusterType optTargetClusterType;
     CompilerType optTargetCompiler;
@@ -686,7 +688,7 @@ void EclCC::reportCompileErrors(IErrorReceiver & errorProcessor, const char * pr
         absCCLogName = "log file";
 
     failText.appendf("Compile/Link failed for %s (see '%s' for details)",processName,absCCLogName.str());
-    errorProcessor.reportError(ERR_INTERNALEXCEPTION, failText.toCharArray(), processName, 0, 0, 0);
+    errorProcessor.reportError(ERR_INTERNALEXCEPTION, failText.str(), processName, 0, 0, 0);
     try
     {
         StringBuffer s;
@@ -751,7 +753,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
             bool optSaveCpp = optSaveTemps || optNoCompile || wu->getDebugValueBool("saveCppTempFiles", false) || wu->getDebugValueBool("saveCpp", false);
             //New scope - testing things are linked correctly
             {
-                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.toCharArray(), NULL, wu, templateDir, optTargetClusterType, this, false, false);
+                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.str(), NULL, wu, templateDir, optTargetClusterType, this, false, false);
 
                 setWorkunitHash(wu, instance.query);
                 if (!optShared)
@@ -834,7 +836,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 e->errorMessage(exceptionText);
                 if (errCode == 0)
                     errCode = ERR_INTERNALEXCEPTION;
-                errorProcessor.reportError(errCode, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
+                errorProcessor.reportError(ERR_INTERNALEXCEPTION, exceptionText.str(), queryFullName, 1, 0, 0);
             }
         }
 
@@ -1089,9 +1091,12 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     bool withinRepository = (queryAttributePath && *queryAttributePath);
     bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false);
+    if (syntaxChecking || instance.archive)
+        severityMapper->addMapping("security", "ignore");
+
     size32_t prevErrs = errorProcessor.errCount();
     cycle_t startCycles = get_cycles_now();
-    const char * sourcePathname = queryContents ? queryContents->querySourcePath()->str() : NULL;
+    const char * sourcePathname = queryContents ? str(queryContents->querySourcePath()) : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
 
     //The following is only here to provide information about the source file being compiled when reporting leaks
@@ -1100,7 +1105,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
-        HqlParseContext parseCtx(instance.dataServer, instance.archive);
+        HqlParseContext parseCtx(instance.dataServer, this, instance.archive);
         if (!instance.archive)
             parseCtx.globalDependTree.setown(createPTree(ipt_none)); //to locate associated manifests, keep separate from user specified MetaOptions
         if (optGenerateMeta || optIncludeMeta)
@@ -1218,7 +1223,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         {
             StringBuffer s;
             e->errorMessage(s);
-            errorProcessor.reportError(3, s.toCharArray(), defaultErrorPathname, 1, 0, 0);
+            errorProcessor.reportError(3, s.str(), defaultErrorPathname, 1, 0, 0);
             e->Release();
         }
     }
@@ -1447,7 +1452,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
 
-    instance.wu.setown(createLocalWorkUnit());
+    instance.wu.setown(createLocalWorkUnit(NULL));
     if (optSaveQueryText)
     {
         Owned<IWUQuery> q = instance.wu->updateQuery();
@@ -1456,7 +1461,7 @@ void EclCC::processFile(EclCompileInstance & instance)
 
     //On a system with userECL not allowed, all compilations must be from checked-in code that has been
     //deployed to the eclcc machine via other means (typically via a version-control system)
-    if (!allowAccess("userECL") && (!optQueryRepositoryReference || queryText->length()))
+    if (!allowAccess("userECL", false) && (!optQueryRepositoryReference || queryText->length()))
     {
         instance.queryErrorProcessor().reportError(HQLERR_UserCodeNotAllowed, HQLERR_UserCodeNotAllowed_Text, NULL, 1, 0, 0);
     }
@@ -1667,7 +1672,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 {
     const char * outputFilename = instance.outputFilename;
 
-    instance.wu.setown(createLocalWorkUnit());
+    instance.wu.setown(createLocalWorkUnit(NULL));
     if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
 
@@ -1859,19 +1864,24 @@ bool EclCompileInstance::reportErrorSummary()
 void EclCC::noteCluster(const char *clusterName)
 {
 }
-bool EclCC::allowAccess(const char * category)
+bool EclCC::allowAccess(const char * category, bool isSigned)
 {
     ForEachItemIn(idx1, deniedPermissions)
     {
         if (stricmp(deniedPermissions.item(idx1), category)==0)
             return false;
     }
-    ForEachItemIn(idx2, allowedPermissions)
+    ForEachItemIn(idx2, allowSignedPermissions)
     {
-        if (stricmp(allowedPermissions.item(idx2), category)==0)
+        if (stricmp(allowSignedPermissions.item(idx2), category)==0)
+            return isSigned;
+    }
+    ForEachItemIn(idx3, allowedPermissions)
+    {
+        if (stricmp(allowedPermissions.item(idx3), category)==0)
             return true;
     }
-    return defaultAllowed;
+    return defaultAllowed[isSigned];
 }
 
 //=========================================================================================
@@ -1898,6 +1908,13 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             allowedPermissions.append(tempArg);
         }
+        else if (iter.matchOption(tempArg, "--allowsigned"))
+        {
+            if (stricmp(tempArg, "all")==0)
+                defaultAllowed[true] = true;
+            else
+                allowSignedPermissions.append(tempArg);
+        }
         else if (iter.matchFlag(optBatchMode, "-b"))
         {
         }
@@ -1920,7 +1937,10 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(tempArg, "--deny"))
         {
             if (stricmp(tempArg, "all")==0)
-                defaultAllowed = false;
+            {
+                defaultAllowed[false] = false;
+                defaultAllowed[true] = false;
+            }
             else
                 deniedPermissions.append(tempArg);
         }

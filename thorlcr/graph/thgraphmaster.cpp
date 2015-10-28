@@ -112,7 +112,7 @@ void CSlaveMessageHandler::stop()
     if (!stopped)
     {
         stopped = true;
-        job.queryJobComm().cancel(0, mptag);
+        job.queryJobChannel(0).queryJobComm().cancel(0, mptag);
         threaded.join();
     }
 }
@@ -125,18 +125,19 @@ void CSlaveMessageHandler::main()
         {
             rank_t sender;
             CMessageBuffer msg;
-            if (stopped || !job.queryJobComm().recv(msg, RANK_ALL, mptag, &sender))
+            if (stopped || !job.queryJobChannel(0).queryJobComm().recv(msg, RANK_ALL, mptag, &sender))
                 break;
-            unsigned slave = ((unsigned)sender)-1;
             SlaveMsgTypes msgType;
             msg.read((int &)msgType);
             switch (msgType)
             {
                 case smt_errorMsg:
                 {
+                    unsigned slave;
+                    msg.read(slave);
                     Owned<IThorException> e = deserializeThorException(msg);
-                    e->setSlave(sender);
-                    Owned<CGraphBase> graph = job.getGraph(e->queryGraphId());
+                    e->setSlave(slave+1);
+                    Owned<CGraphBase> graph = job.queryJobChannel(0).getGraph(e->queryGraphId());
                     if (graph)
                     {
                         activity_id id = e->queryActivityId();
@@ -157,7 +158,7 @@ void CSlaveMessageHandler::main()
                     if (msg.getReplyTag() <= TAG_REPLY_BASE)
                     {
                         msg.clear();
-                        job.queryJobComm().reply(msg);
+                        job.queryJobChannel(0).queryJobComm().reply(msg);
                     }
                     break;
                 }
@@ -170,20 +171,20 @@ void CSlaveMessageHandler::main()
                     msg.read(gid);
                     msg.read(id);
                     msg.clear();
-                    Owned<CGraphBase> graph = job.getGraph(gid);
+                    Owned<CGraphBase> graph = job.queryJobChannel(0).getGraph(gid);
                     if (graph)
                     {
                         CMasterGraphElement *e = (CMasterGraphElement *)graph->queryElement(id);
                         e->queryActivity()->getInitializationData(slave, msg);
                     }
-                    job.queryJobComm().reply(msg);
+                    job.queryJobChannel(0).queryJobComm().reply(msg);
                     break;
                 }
                 case smt_initGraphReq:
                 {
                     graph_id gid;
                     msg.read(gid);
-                    Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(gid);
+                    Owned<CMasterGraph> graph = (CMasterGraph *)job.queryJobChannel(0).getGraph(gid);
                     assertex(graph);
                     {
                         CriticalBlock b(graph->queryCreateLock());
@@ -197,14 +198,16 @@ void CSlaveMessageHandler::main()
                     }
                     msg.clear();
                     graph->serializeCreateContexts(msg);
-                    job.queryJobComm().reply(msg);
+                    job.queryJobChannel(0).queryJobComm().reply(msg);
                     break;
                 }
                 case smt_initActDataReq:
                 {
                     graph_id gid;
                     msg.read(gid);
-                    Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(gid);
+                    unsigned slave;
+                    msg.read(slave);
+                    Owned<CMasterGraph> graph = (CMasterGraph *)job.queryJobChannel(0).getGraph(gid);
                     assertex(graph);
                     CGraphElementArray toSerialize;
                     CriticalBlock b(graph->queryCreateLock());
@@ -236,22 +239,22 @@ void CSlaveMessageHandler::main()
                     }
                     msg.clear();
                     CMessageBuffer replyMsg;
-                    mptag_t replyTag = createReplyTag();
+                    mptag_t replyTag = job.queryJobChannel(0).queryMPServer().createReplyTag();
                     msg.append(replyTag); // second reply
                     replyMsg.setReplyTag(replyTag);
                     CGraphElementArrayIterator iter(toSerialize);
-                    graph->serializeActivityInitData(((unsigned)sender)-1, msg, iter);
-                    job.queryJobComm().reply(msg);
-                    if (!job.queryJobComm().recv(msg, sender, replyTag, NULL, MEDIUMTIMEOUT))
+                    graph->serializeActivityInitData(slave, msg, iter);
+                    job.queryJobChannel(0).queryJobComm().reply(msg);
+                    if (!job.queryJobChannel(0).queryJobComm().recv(msg, slave+1, replyTag, NULL, MEDIUMTIMEOUT))
                         throwUnexpected();
                     bool error;
                     msg.read(error);
                     if (error)
                     {
                         Owned<IThorException> e = deserializeThorException(msg);
-                        e->setSlave(sender);
+                        e->setSlave(slave);
                         StringBuffer tmpStr("Slave ");
-                        job.queryJobGroup().queryNode(sender).endpoint().getUrlStr(tmpStr);
+                        job.queryJobGroup().queryNode(slave).endpoint().getUrlStr(tmpStr);
                         GraphPrintLog(graph, e, "%s", tmpStr.append(": slave initialization error").str());
                         throw e.getClear();
                     }
@@ -259,7 +262,7 @@ void CSlaveMessageHandler::main()
                 }
                 case smt_getPhysicalName:
                 {
-                    LOG(MCdebugProgress, unknownJob, "getPhysicalName called from slave %d", sender-1);
+                    LOG(MCdebugProgress, unknownJob, "getPhysicalName called from node %d", sender-1);
                     StringAttr logicalName;
                     unsigned partNo;
                     bool create;
@@ -273,12 +276,12 @@ void CSlaveMessageHandler::main()
                     else
                         queryThorFileManager().getPhysicalName(job, logicalName, partNo, phys);
                     msg.append(phys);
-                    job.queryJobComm().reply(msg);
+                    job.queryJobChannel(0).queryJobComm().reply(msg);
                     break;
                 }
                 case smt_getFileOffset:
                 {
-                    LOG(MCdebugProgress, unknownJob, "getFileOffset called from slave %d", sender-1);
+                    LOG(MCdebugProgress, unknownJob, "getFileOffset called from node %d", sender-1);
                     StringAttr logicalName;
                     unsigned partNo;
                     msg.read(logicalName);
@@ -286,17 +289,17 @@ void CSlaveMessageHandler::main()
                     msg.clear();
                     offset_t offset = queryThorFileManager().getFileOffset(job, logicalName, partNo);
                     msg.append(offset);
-                    job.queryJobComm().reply(msg);
+                    job.queryJobChannel(0).queryJobComm().reply(msg);
                     break;
                 }
                 case smt_actMsg:
                 {
-                    LOG(MCdebugProgress, unknownJob, "smt_actMsg called from slave %d", sender-1);
+                    LOG(MCdebugProgress, unknownJob, "smt_actMsg called from node %d", sender-1);
                     graph_id gid;
                     msg.read(gid);
                     activity_id id;
                     msg.read(id);
-                    Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(gid);
+                    Owned<CMasterGraph> graph = (CMasterGraph *)job.queryJobChannel(0).getGraph(gid);
                     assertex(graph);
                     CMasterGraphElement *container = (CMasterGraphElement *)graph->queryElement(id);
                     assertex(container);
@@ -307,17 +310,20 @@ void CSlaveMessageHandler::main()
                 }
                 case smt_getresult:
                 {
-                    LOG(MCdebugProgress, unknownJob, "smt_getresult called from slave %d", sender-1);
+                    unsigned slave;
+                    msg.read(slave);
+                    LOG(MCdebugProgress, unknownJob, "smt_getresult called from slave %d", slave);
                     graph_id gid;
                     msg.read(gid);
                     activity_id ownerId;
                     msg.read(ownerId);
                     unsigned resultId;
                     msg.read(resultId);
-                    mptag_t replyTag = job.deserializeMPTag(msg);
-                    Owned<IThorResult> result = job.getOwnedResult(gid, ownerId, resultId);
+                    CJobChannel &jobChannel = job.queryJobChannel(0);
+                    mptag_t replyTag = jobChannel.deserializeMPTag(msg);
+                    Owned<IThorResult> result = jobChannel.getOwnedResult(gid, ownerId, resultId);
                     Owned<IRowStream> resultStream = result->getRowStream();
-                    sendInChunks(job.queryJobComm(), sender, replyTag, resultStream, result->queryRowInterfaces());
+                    sendInChunks(job.queryJobChannel(0).queryJobComm(), slave+1, replyTag, resultStream, result->queryRowInterfaces());
                     break;
                 }
             }
@@ -353,7 +359,7 @@ CMasterActivity::~CMasterActivity()
     if (asyncStart)
         threaded.join();
     notedWarnings->Release();
-    container.queryJob().freeMPTag(mpTag);
+    queryJob().freeMPTag(mpTag);
     delete [] data;
 }
 
@@ -800,18 +806,6 @@ class CThorCodeContextMaster : public CThorCodeContextBase
     Linked<IConstWorkUnit> workunit;
     Owned<IDistributedFileTransaction> superfiletransaction;
 
-    virtual IWorkUnit *updateWorkUnit() const
-    {
-        StringAttr wuid;
-        workunit->getWuid(StringAttrAdaptor(wuid));
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        return factory->updateWorkUnit(wuid);
-    }
-    IWUResult *updateResult(const char *name, unsigned sequence)
-    {
-        Owned<IWorkUnit> w = updateWorkUnit();
-        return updateWorkUnitResult(w, name, sequence);
-    }
     IConstWUResult * getResult(const char * name, unsigned sequence)
     {
         return getWorkUnitResult(workunit, name, sequence);
@@ -830,14 +824,15 @@ class CThorCodeContextMaster : public CThorCodeContextBase
         catch (CATCHALL)    { StringBuffer s; throw MakeStringException(TE_FailedToRetrieveWorkunitValue, "value %s in workunit contains an invalid " KINDTEXT " value", getResultText(s, STEPNAME, SEQUENCE)); }
 
 public:
-    CThorCodeContextMaster(CJobBase &job, IConstWorkUnit &_workunit, ILoadedDllEntry &querySo, IUserDescriptor &userDesc) : CThorCodeContextBase(job, querySo, userDesc), workunit(&_workunit)
+    CThorCodeContextMaster(CJobChannel &jobChannel, IConstWorkUnit &_workunit, ILoadedDllEntry &querySo, IUserDescriptor &userDesc) : CThorCodeContextBase(jobChannel, querySo, userDesc), workunit(&_workunit)
     {
     }
 
 // ICodeContext
     virtual void setResultBool(const char *name, unsigned sequence, bool result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultBool(result);   
@@ -848,7 +843,8 @@ public:
     }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void *result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultData(result, len);  
@@ -859,7 +855,8 @@ public:
     }
     virtual void setResultDecimal(const char * name, unsigned sequence, int len, int precision, bool isSigned, const void *val)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultDecimal(val, len);
@@ -870,7 +867,8 @@ public:
     }
     virtual void setResultInt(const char *name, unsigned sequence, __int64 result, unsigned size)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultInt(result);
@@ -881,7 +879,8 @@ public:
     }
     virtual void setResultRaw(const char *name, unsigned sequence, int len, const void *result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultRaw(len, result, ResultFormatRaw);  
@@ -892,7 +891,8 @@ public:
     }
     virtual void setResultReal(const char *name, unsigned sequence, double result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultReal(result);   
@@ -903,7 +903,8 @@ public:
     }
     virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void *result, ISetToXmlTransformer *)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultIsAll(isAll);
@@ -915,7 +916,8 @@ public:
     }
     virtual void setResultString(const char *name, unsigned sequence, int len, const char *result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultString(result, len);    
@@ -926,7 +928,8 @@ public:
     }
     virtual void setResultUnicode(const char * name, unsigned sequence, int len, UChar const * result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultUnicode(result, len);
@@ -937,7 +940,8 @@ public:
     }
     virtual void setResultVarString(const char * name, unsigned sequence, const char *result)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultString(result, strlen(result)); 
@@ -948,7 +952,8 @@ public:
     }
     virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 result, unsigned size)
     {
-        Owned<IWUResult> r = updateResult(name, sequence);
+        WorkunitUpdate w(&workunit->lock());
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
             r->setResultUInt(result);
@@ -1173,13 +1178,13 @@ public:
             rtlFailOnAssert();      // minimal implementation
     }
     virtual unsigned __int64 getFileOffset(const char *logicalName) { assertex(false); return 0; }
-    virtual unsigned getNodes() { return job.queryJobGroup().ordinality()-1; }
+    virtual unsigned getNodes() { return jobChannel.queryJob().querySlaves(); }
     virtual unsigned getNodeNum() { throw MakeThorException(0, "Unsupported. getNodeNum() called in master"); return (unsigned)-1; }
     virtual char *getFilePart(const char *logicalName, bool create=false) { assertex(false); return NULL; }
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash)
     {
         unsigned checkSum = 0;
-        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(job, name, false, true, false); // NB: do not update accessed
+        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(jobChannel.queryJob(), name, false, true, false); // NB: do not update accessed
         if (iDfsFile.get())
         {
             if (iDfsFile->getFileCheckSum(checkSum))
@@ -1202,15 +1207,11 @@ public:
     }
     virtual char *getJobName()
     {
-        SCMStringBuffer out;
-        workunit->getJobName(out);
-        return out.s.detach();
+        return strdup(workunit->queryJobName());
     }
     virtual char *getClusterName()
     {
-        SCMStringBuffer out;
-        workunit->getClusterName(out);
-        return out.s.detach();
+        return strdup(workunit->queryClusterName());
     }
     virtual char *getGroupName()
     {
@@ -1223,7 +1224,7 @@ public:
     virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence)
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid, false);
+        Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid);
         externalWU->remoteCheckAccess(userDesc, false);
         return getWorkUnitResult(externalWU, name, sequence);
     }
@@ -1257,13 +1258,11 @@ void loadPlugin(SafePluginMap *pluginMap, const char *_path, const char *name)
 CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const char *_querySo, bool _sendSo, const SocketEndpoint &_agentEp)
     : CJobBase(graphName), workunit(&_workunit), sendSo(_sendSo), agentEp(_agentEp)
 {
-    SCMStringBuffer _token, _wuid, _user, _scope;
-    workunit->getWuid(_wuid);
-    workunit->getUser(_user);
+    SCMStringBuffer _token, _scope;
     workunit->getScope(_scope);
     workunit->getSecurityToken(_token);
-    wuid.append(_wuid.str());
-    user.append(_user.str());
+    wuid.set(workunit->queryWuid());
+    user.set(workunit->queryUser());
     token.append(_token.str());
     scope.append(_scope.str());
     globalMemorySize = globals->getPropInt("@masterMemorySize", globals->getPropInt("@globalMemorySize")); // in MB
@@ -1287,7 +1286,8 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const c
         loadPlugin(pluginMap, pluginsDir.str(), name.str());
     }
     querySo.setown(createDllEntry(_querySo, false, NULL));
-    codeCtx = new CThorCodeContextMaster(*this, *workunit, *querySo, *userDesc); 
+    Owned<IMPServer> mpServer = getMPServer();
+    addChannel(mpServer);
     mpJobTag = allocateMPTag();
     slavemptag = allocateMPTag();
     slaveMsgHandler = new CSlaveMessageHandler(*this, slavemptag);
@@ -1296,13 +1296,18 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const c
 
 CJobMaster::~CJobMaster()
 {
-    clean();
     if (slaveMsgHandler)
         delete slaveMsgHandler;
     freeMPTag(mpJobTag);
     freeMPTag(slavemptag);
     tmpHandler.clear();
 }
+
+void CJobMaster::addChannel(IMPServer *mpServer)
+{
+    jobChannels.append(*new CJobMasterChannel(*this, mpServer, jobChannels.ordinality()));
+}
+
 
 static IException *createBCastException(unsigned slave, const char *errorMsg)
 {
@@ -1317,33 +1322,57 @@ static IException *createBCastException(unsigned slave, const char *errorMsg)
     return e.getClear();
 }
 
-void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, CReplyCancelHandler *msgHandler, bool sendOnly)
+mptag_t CJobMaster::allocateMPTag()
 {
-    mptag_t replyTag = createReplyTag();
-    msg.setReplyTag(replyTag);
+    mptag_t tag = allocateClusterMPTag();
+    queryJobChannel(0).queryJobComm().flush(tag);
+    PROGLOG("allocateMPTag: tag = %d", (int)tag);
+    return tag;
+}
+
+void CJobMaster::freeMPTag(mptag_t tag)
+{
+    if (TAG_NULL != tag)
+    {
+        freeClusterMPTag(tag);
+        PROGLOG("freeMPTag: tag = %d", (int)tag);
+        queryJobChannel(0).queryJobComm().flush(tag);
+    }
+}
+
+void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, CReplyCancelHandler *msgHandler, bool sendOnly)
+{
+    unsigned groupSizeExcludingMaster = comm.queryGroup().ordinality() - 1;
+
+    mptag_t replyTag = TAG_NULL;
+    if (!sendOnly)
+    {
+        replyTag = queryJobChannel(0).queryMPServer().createReplyTag();
+        msg.setReplyTag(replyTag);
+    }
     if (globals->getPropBool("@broadcastSendAsync", true)) // only here in case of problems/debugging.
     {
         class CSendAsyncfor : public CAsyncFor
         {
-            CJobMaster &job;
             CMessageBuffer &msg;
             mptag_t mptag;
             unsigned timeout;
             StringAttr errorMsg;
+            ICommunicator &comm;
         public:
-            CSendAsyncfor(CJobMaster &_job, CMessageBuffer &_msg, mptag_t _mptag, unsigned _timeout, const char *_errorMsg)
-                : job(_job), msg(_msg), mptag(_mptag), timeout(_timeout), errorMsg(_errorMsg)
+            CSendAsyncfor(ICommunicator &_comm, CMessageBuffer &_msg, mptag_t _mptag, unsigned _timeout, const char *_errorMsg)
+                : comm(_comm), msg(_msg), mptag(_mptag), timeout(_timeout), errorMsg(_errorMsg)
             {
             }
             void Do(unsigned i)
             {
-                if (!job.queryJobComm().send(msg, i+1, mptag, timeout))
+                if (!comm.send(msg, i+1, mptag, timeout))
                     throw createBCastException(i+1, errorMsg);
             }
-        } afor(*this, msg, mptag, timeout, errorMsg);
+        } afor(comm, msg, mptag, timeout, errorMsg);
         try
         {
-            afor.For(querySlaves(), querySlaves());
+            afor.For(groupSizeExcludingMaster, groupSizeExcludingMaster);
         }
         catch (IException *e)
         {
@@ -1352,7 +1381,7 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
             throw;
         }
     }
-    else if (!queryJobComm().send(msg, RANK_ALL_OTHER, mptag, timeout))
+    else if (!comm.send(msg, RANK_ALL_OTHER, mptag, timeout))
     {
         Owned<IException> e = createBCastException(0, errorMsg);
         EXCLOG(e, NULL);
@@ -1366,8 +1395,8 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
     {
         rank_t sender;
         CMessageBuffer msg;
-        bool r = msgHandler ? msgHandler->recv(queryJobComm(), msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT)
-                            : queryJobComm().recv(msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT);
+        bool r = msgHandler ? msgHandler->recv(comm, msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT)
+                            : comm.recv(msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT);
         if (!r)
         {
             StringBuffer tmpStr;
@@ -1399,14 +1428,9 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
         }
         ++respondents;
         bitSet->set((unsigned)sender-1);
-        if (respondents == querySlaveGroup().ordinality())
+        if (respondents == groupSizeExcludingMaster)
             break;
     }
-}
-
-CGraphBase *CJobMaster::createGraph()
-{
-    return new CMasterGraph(*this);
 }
 
 void CJobMaster::initNodeDUCache()
@@ -1509,7 +1533,7 @@ void CJobMaster::sendQuery()
     compressToBuffer(msg, tmp.length(), tmp.toByteArray());
 
     CTimeMon queryToSlavesTimer;
-    broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "sendQuery");
+    broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "sendQuery");
     PROGLOG("Serialization of query init info (%d bytes) to slaves took %d ms", msg.length(), queryToSlavesTimer.elapsed());
     queryJobManager().addCachedSo(soName);
     querySent = true;
@@ -1521,7 +1545,7 @@ void CJobMaster::jobDone()
     CMessageBuffer msg;
     msg.append(QueryDone);
     msg.append(queryKey());
-    broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "jobDone");
+    broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "jobDone");
 }
 
 void CJobMaster::saveSpills()
@@ -1541,8 +1565,7 @@ void CJobMaster::saveSpills()
     {
         CFileUsageEntry &entry = iter->query();
         StringAttr tmpName = entry.queryName();
-        Owned<IConstWUGraphProgress> graphProgress = getGraphProgress();
-        if (WUGraphComplete == graphProgress->queryNodeState(entry.queryGraphId()))
+        if (WUGraphComplete == workunit->queryNodeState(queryGraphName(), entry.queryGraphId()))
         {
             IArrayOf<IGroup> groups;
             StringArray clusters;
@@ -1577,98 +1600,67 @@ void CJobMaster::saveSpills()
 
 bool CJobMaster::go()
 {
-    class CWorkunitAbortHandler : public CInterface, implements IThreaded
+    class CWorkunitPauseHandler : public CInterface, implements IWorkUnitSubscriber
     {
         CJobMaster &job;
         IConstWorkUnit &wu;
-        CThreaded threaded;
-        bool running;
-        Semaphore sem;
-    public:
-        CWorkunitAbortHandler(CJobMaster &_job, IConstWorkUnit &_wu)
-            : job(_job), wu(_wu), threaded("WorkunitAbortHandler")
-        {
-            running = true;
-            wu.subscribe(SubscribeOptionAbort);
-            threaded.init(this);
-        }
-        ~CWorkunitAbortHandler()
-        {
-            stop();
-            threaded.join();
-        }
-        virtual void main()
-        {
-            while (running)
-            {
-                if (sem.wait(5000))
-                    break; // signalled aborted
-                if (wu.aborting())
-                {
-                    LOG(MCwarning, thorJob, "ABORT detected from user");
-                    Owned <IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort");
-                    job.fireException(e);
-                    break;
-                }
-            }
-        }
-        void stop() { running = false; sem.signal(); }
-    } wuAbortHandler(*this, *workunit);
-    class CWorkunitPauseHandler : public CInterface, implements ISDSSubscription
-    {
-        CJobMaster &job;
-        IConstWorkUnit &wu;
-        SubscriptionId subId;
-        bool subscribed;
+        Owned<IWorkUnitWatcher> watcher;
         CriticalSection crit;
     public:
         IMPLEMENT_IINTERFACE;
 
         CWorkunitPauseHandler(CJobMaster &_job, IConstWorkUnit &_wu) : job(_job), wu(_wu)
         {
-            StringBuffer xpath("/WorkUnits/");
-            SCMStringBuffer istr;
-            wu.getWuid(istr);
-            xpath.append(istr.str()).append("/Action");
-            subId = querySDS().subscribe(xpath.str(), *this, false, true);
-            subscribed = true;
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+            watcher.setown(factory->getWatcher(this, (WUSubscribeOptions) (SubscribeOptionAction | SubscribeOptionAbort), wu.queryWuid()));
         }
         ~CWorkunitPauseHandler() { stop(); }
         void stop()
         {
             CriticalBlock b(crit);
-            if (subscribed)
+            if (watcher)
             {
-                subscribed = false;
-                querySDS().unsubscribe(subId);
+                watcher->unsubscribe();
+                watcher.clear();
             }
         }
-        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+        void notify(WUSubscribeOptions flags)
         {
             CriticalBlock b(crit);
-            if (!subscribed) return;
-            job.markWuDirty();
-            bool abort = false;
-            bool pause = false;
-            if (valueLen && valueLen==strlen("pause") && (0 == strncmp("pause", (const char *)valueData, valueLen)))
+            if (!watcher)
+                return;
+            if (flags & SubscribeOptionAbort)
             {
-                // pause after current subgraph
-                pause = true;
+                if (wu.aborting())
+                {
+                    LOG(MCwarning, thorJob, "ABORT detected from user");
+                    Owned <IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort");
+                    job.fireException(e);
+                }
             }
-            else if (valueLen && valueLen==strlen("pausenow") && (0 == strncmp("pausenow", (const char *)valueData, valueLen)))
+            if (flags & SubscribeOptionAction)
             {
-                // abort current subgraph
-                abort = true;
-                pause = true;
-            }
-            else
-            {
-                abort = pause = false;
-            }
-            if (pause)
-            {
-                PROGLOG("Pausing job%s", abort?" [now]":"");
-                job.pause(abort);
+                job.markWuDirty();
+                bool abort = false;
+                bool pause = false;
+                wu.forceReload();
+                WUAction action = wu.getAction();
+                if (action==WUActionPause)
+                {
+                    // pause after current subgraph
+                    pause = true;
+                }
+                else if (action==WUActionPauseNow)
+                {
+                    // abort current subgraph
+                    abort = true;
+                    pause = true;
+                }
+                if (pause)
+                {
+                    PROGLOG("Pausing job%s", abort?" [now]":"");
+                    job.pause(abort);
+                }
             }
         }
     } workunitPauseHandler(*this, *workunit);
@@ -1700,27 +1692,22 @@ bool CJobMaster::go()
     if (WUActionPause == workunit->getAction() || WUActionPauseNow == workunit->getAction())
         throw MakeStringException(0, "Job paused at start, exiting");
 
-    Owned<IConstWUGraphProgress> graphProgress = getGraphProgress();
     bool allDone = true;
     unsigned concurrentSubGraphs = (unsigned)getWorkUnitValueInt("concurrentSubGraphs", globals->getPropInt("@concurrentSubGraphs", 1));
     try
     {
         startJob();
-        Owned<IWUGraphProgress> progress = graphProgress->update();
-        progress->setGraphState(WUGraphRunning);
-        progress.clear();
-        
-        Owned<IThorGraphIterator> iter = getSubGraphs();
+        workunit->setGraphState(queryGraphName(), WUGraphRunning);
+        Owned<IThorGraphIterator> iter = queryJobChannel(0).getSubGraphs();
         CICopyArrayOf<CMasterGraph> toRun;
         ForEach(*iter)
         {
             CMasterGraph &graph = (CMasterGraph &)iter->query();
-            if ((queryResumed() || queryUseCheckpoints()) && WUGraphComplete == graphProgress->queryNodeState(graph.queryGraphId()))
+            if ((queryResumed() || queryUseCheckpoints()) && WUGraphComplete == workunit->queryNodeState(queryGraphName(), graph.queryGraphId()))
                 graph.setCompleteEx();
             else
                 toRun.append(graph);
         }
-        graphProgress.clear();
         ForEachItemInRev(g, toRun)
         {
             if (aborted) break;
@@ -1729,7 +1716,7 @@ bool CJobMaster::go()
                 graph.execute(0, NULL, true, concurrentSubGraphs>1);
             if (queryPausing()) break;
         }
-        graphExecutor->wait();
+        queryJobChannel(0).wait();
         workunitPauseHandler.stop();
         ForEachItemIn(tr, toRun)
         {
@@ -1743,11 +1730,7 @@ bool CJobMaster::go()
     }
     catch (IException *e) { fireException(e); e->Release(); }
     catch (CATCHALL) { Owned<IException> e = MakeThorException(0, "Unknown exception running sub graphs"); fireException(e); }
-    graphProgress.setown(getGraphProgress());
-    Owned<IWUGraphProgress> progress = graphProgress->update();
-    progress->setGraphState(aborted?WUGraphFailed:(allDone?WUGraphComplete:(pausing?WUGraphPaused:WUGraphComplete)));
-    progress.clear();
-    graphProgress.clear();
+    workunit->setGraphState(queryGraphName(), aborted?WUGraphFailed:(allDone?WUGraphComplete:(pausing?WUGraphPaused:WUGraphComplete)));
 
     if (queryPausing())
         saveSpills();
@@ -1856,11 +1839,6 @@ StringBuffer &CJobMaster::getWorkUnitValue(const char *prop, StringBuffer &str) 
     return str.append(scmStr.str());
 }
 
-IBarrier *CJobMaster::createBarrier(mptag_t tag)
-{
-    return new CBarrierMaster(*jobComm, tag);
-}
-
 IGraphTempHandler *CJobMaster::createTempHandler(bool errorOnMissing)
 {
     return new CMasterGraphTempHandler(*this, errorOnMissing);
@@ -1903,6 +1881,24 @@ bool CJobMaster::fireException(IException *e)
     return true;
 }
 
+// CJobMasterChannel
+
+CJobMasterChannel::CJobMasterChannel(CJobBase &job, IMPServer *mpServer, unsigned channel) : CJobChannel(job, mpServer, channel)
+{
+    codeCtx = new CThorCodeContextMaster(*this, job.queryWorkUnit(), job.queryDllEntry(), *job.queryUserDescriptor());
+}
+
+CGraphBase *CJobMasterChannel::createGraph()
+{
+    return new CMasterGraph(*this);
+}
+
+IBarrier *CJobMasterChannel::createBarrier(mptag_t tag)
+{
+    return new CBarrierMaster(*jobComm, tag);
+}
+
+
 ///////////////////
 
 class CCollatedResult : public CSimpleInterface, implements IThorResult
@@ -1922,7 +1918,7 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
         CriticalBlock b(crit);
         if (result)
             return;
-        mptag_t replyTag = createReplyTag();
+        mptag_t replyTag = graph.queryMPServer().createReplyTag();
         CMessageBuffer msg;
         msg.append(GraphGetResult);
         msg.append(activity.queryJob().queryKey());
@@ -1930,7 +1926,7 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
         msg.append(ownerId);
         msg.append(id);
         msg.append(replyTag);
-        ((CJobMaster &)graph.queryJob()).broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
+        ((CJobMaster &)graph.queryJob()).broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
 
         unsigned numSlaves = graph.queryJob().querySlaves();
         for (unsigned n=0; n<numSlaves; n++)
@@ -2060,25 +2056,26 @@ public:
 // CMasterGraph impl.
 //
 
-CMasterGraph::CMasterGraph(CJobMaster &_job) : CGraphBase(_job), jobM(_job)
+CMasterGraph::CMasterGraph(CJobChannel &jobChannel) : CGraphBase(jobChannel)
 {
-    mpTag = job.allocateMPTag();
-    startBarrierTag = job.allocateMPTag();
-    waitBarrierTag = job.allocateMPTag();
-    startBarrier = job.createBarrier(startBarrierTag);
-    waitBarrier = job.createBarrier(waitBarrierTag);
+    jobM = (CJobMaster *)&jobChannel.queryJob();
+    mpTag = queryJob().allocateMPTag();
+    startBarrierTag = queryJob().allocateMPTag();
+    waitBarrierTag = queryJob().allocateMPTag();
+    startBarrier = jobChannel.createBarrier(startBarrierTag);
+    waitBarrier = jobChannel.createBarrier(waitBarrierTag);
 }
 
 
 CMasterGraph::~CMasterGraph()
 {
-    job.freeMPTag(mpTag);
-    job.freeMPTag(startBarrierTag);
-    job.freeMPTag(waitBarrierTag);
+    queryJob().freeMPTag(mpTag);
+    queryJob().freeMPTag(startBarrierTag);
+    queryJob().freeMPTag(waitBarrierTag);
     if (TAG_NULL != doneBarrierTag)
-        job.freeMPTag(doneBarrierTag);
+        queryJob().freeMPTag(doneBarrierTag);
     if (TAG_NULL != executeReplyTag)
-        job.freeMPTag(executeReplyTag);
+        queryJob().freeMPTag(executeReplyTag);
 }
 
 void CMasterGraph::init()
@@ -2086,8 +2083,8 @@ void CMasterGraph::init()
     CGraphBase::init();
     if (queryOwner() && isGlobal())
     {
-        doneBarrierTag = job.allocateMPTag();
-        doneBarrier = job.createBarrier(doneBarrierTag);
+        doneBarrierTag = queryJob().allocateMPTag();
+        doneBarrier = jobChannel.createBarrier(doneBarrierTag);
     }
 }
 
@@ -2122,7 +2119,7 @@ bool CMasterGraph::fireException(IException *e)
             if (owner)
                 owner->fireException(e);
             else
-                job.fireException(e);
+                queryJobChannel().fireException(e);
         }
     }
     return true;
@@ -2156,7 +2153,7 @@ void CMasterGraph::abort(IException *e)
             msg.append(GraphAbort);
             msg.append(job.queryKey());
             msg.append(queryGraphId());
-            jobM.broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "abort");
+            jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "abort");
         }
         catch (IException *e)
         {
@@ -2248,7 +2245,7 @@ void CMasterGraph::create(size32_t parentExtractSz, const byte *parentExtract)
     {
         if (!queryOwner()) // owning graph sends query+child graphs
         {
-            jobM.sendQuery(); // if not previously sent
+            jobM->sendQuery(); // if not previously sent
             if (globals->getPropBool("@watchdogProgressEnabled"))
                 queryJobManager().queryDeMonServer()->startGraph(this);
             sendGraph(); // sends child graphs at same time
@@ -2277,7 +2274,7 @@ void CMasterGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                     msg.append((unsigned)0);
                 try
                 {
-                    jobM.broadcastToSlaves(msg, mpTag, LONGTIMEOUT, "serializeCreateContexts", &bcastMsgHandler);
+                    jobM->broadcast(queryJobChannel().queryJobComm(), msg, mpTag, LONGTIMEOUT, "serializeCreateContexts", &bcastMsgHandler);
                 }
                 catch (IException *e)
                 {
@@ -2304,7 +2301,7 @@ void CMasterGraph::start()
 void CMasterGraph::sendActivityInitData()
 {
     CMessageBuffer msg;
-    mptag_t replyTag = createReplyTag();
+    mptag_t replyTag = queryJobChannel().queryMPServer().createReplyTag();
     msg.setReplyTag(replyTag);
     unsigned pos = msg.length();
     unsigned w=0;
@@ -2335,7 +2332,7 @@ void CMasterGraph::sendActivityInitData()
                 GraphPrintLog(e);
                 throw;
             }
-            if (!job.queryJobComm().send(msg, w+1, mpTag, LONGTIMEOUT))
+            if (!queryJobChannel().queryJobComm().send(msg, w+1, mpTag, LONGTIMEOUT))
             {
                 StringBuffer epStr;
                 throw MakeStringException(0, "Timeout sending to slave %s", job.querySlaveGroup().queryNode(w).endpoint().getUrlStr(epStr).str());
@@ -2353,7 +2350,7 @@ void CMasterGraph::sendActivityInitData()
         {
             rank_t sender;
             msg.clear();
-            if (!activityInitMsgHandler.recv(queryJob().queryJobComm(), msg, w+1, replyTag, &sender, LONGTIMEOUT))
+            if (!activityInitMsgHandler.recv(queryJobChannel().queryJobComm(), msg, w+1, replyTag, &sender, LONGTIMEOUT))
                 throw MakeGraphException(this, 0, "Timeout receiving from slaves after graph sent");
 
             bool error;
@@ -2407,8 +2404,7 @@ void CMasterGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentE
     {
         if (!queryOwner())
         {
-            Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)job).getGraphProgress();
-            if (WUGraphComplete == graphProgress->queryNodeState(graphId))
+            if (WUGraphComplete == job.queryWorkUnit().queryNodeState(job.queryGraphName(), graphId))
                 setCompleteEx();
         }
     }
@@ -2424,7 +2420,7 @@ void CMasterGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentE
         for (; s<queryJob().querySlaves(); s++)
         {
             CMessageBuffer msg;
-            if (!executeReplyMsgHandler.recv(queryJob().queryJobComm(), msg, RANK_ALL, executeReplyTag, &sender))
+            if (!executeReplyMsgHandler.recv(queryJobChannel().queryJobComm(), msg, RANK_ALL, executeReplyTag, &sender))
                 break;
             bool error;
             msg.read(error);
@@ -2452,14 +2448,14 @@ void CMasterGraph::sendGraph()
     msg.append(job.queryKey());
     node->serialize(msg); // everything
     if (TAG_NULL == executeReplyTag)
-        executeReplyTag = queryJob().allocateMPTag();
+        executeReplyTag = jobM->allocateMPTag();
     serializeMPtag(msg, executeReplyTag);
     serializeCreateContexts(msg);
     serializeGraphInit(msg);
     // slave graph data
     try
     {
-        jobM.broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "sendGraph", &bcastMsgHandler);
+        jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "sendGraph", &bcastMsgHandler);
     }
     catch (IException *e)
     {
@@ -2485,7 +2481,7 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
         serializeStartContexts(msg);
         try
         {
-            jobM.broadcastToSlaves(msg, mpTag, LONGTIMEOUT, "startCtx", NULL, true);
+            jobM->broadcast(queryJobChannel().queryJobComm(), msg, mpTag, LONGTIMEOUT, "startCtx", NULL, true);
         }
         catch (IException *e)
         {
@@ -2508,12 +2504,7 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
             return false;
     }
     if (!queryOwner())
-    {
-        Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)job).getGraphProgress();
-        Owned<IWUGraphProgress> progress = graphProgress->update();
-        progress->setNodeState(graphId, WUGraphRunning);
-        progress.clear();
-    }
+        job.queryWorkUnit().setNodeState(job.queryGraphName(), graphId, WUGraphRunning);
     return true;
 }
 
@@ -2545,19 +2536,18 @@ void CMasterGraph::getFinalProgress()
     unsigned maxNode = (unsigned)-1, minNode = (unsigned)-1;
 
     CMessageBuffer msg;
-    mptag_t replyTag = createReplyTag();
+    mptag_t replyTag = queryJobChannel().queryMPServer().createReplyTag();
     msg.setReplyTag(replyTag);
     msg.append((unsigned)GraphEnd);
     msg.append(job.queryKey());
     msg.append(queryGraphId());
-    if (!job.queryJobComm().send(msg, RANK_ALL_OTHER, masterSlaveMpTag, LONGTIMEOUT))
-        throw MakeGraphException(this, 0, "Timeout sending to slaves");
+    jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "graphEnd", NULL, true);
 
-    unsigned n=queryJob().querySlaves();
+    unsigned n=queryJob().queryNodes();
     while (n--)
     {
         rank_t sender;
-        if (!job.queryJobComm().recv(msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT))
+        if (!queryNodeComm().recv(msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT))
         {
             GraphPrintLog("Timeout receiving final progress from slaves, %d slaves did not respond", n+1);
             return;
@@ -2573,44 +2563,49 @@ void CMasterGraph::getFinalProgress()
         if (0 == msg.remaining())
             continue;
 
-        handleSlaveDone(sender-1, msg);
-
-        if (!queryOwner())
+        bool processPerSlave = globals->getPropBool("@processPerSlave", true);
+        unsigned slavesPerProcess = processPerSlave ? 1 : globals->getPropInt("@slavesPerNode", 1); // JCSMORE - should move somewhere common
+        for (unsigned sc=0; sc<slavesPerProcess; sc++)
         {
-            if (globals->getPropBool("@watchdogProgressEnabled"))
+            unsigned slave;
+            msg.read(slave);
+            handleSlaveDone(slave, msg);
+            if (!queryOwner())
             {
-                try
+                if (globals->getPropBool("@watchdogProgressEnabled"))
                 {
-                    size32_t progressLen;
-                    msg.read(progressLen);
-                    MemoryBuffer progressData;
-                    progressData.setBuffer(progressLen, (void *)msg.readDirect(progressLen));
-                    const SocketEndpoint &ep = queryClusterGroup().queryNode(sender).endpoint();
-                    queryJobManager().queryDeMonServer()->takeHeartBeat(ep, progressData);
-                }
-                catch (IException *e)
-                {
-                    GraphPrintLog(e, "Failure whilst deserializing stats/progress");
-                    e->Release();
+                    try
+                    {
+                        size32_t progressLen;
+                        msg.read(progressLen);
+                        MemoryBuffer progressData;
+                        progressData.setBuffer(progressLen, (void *)msg.readDirect(progressLen));
+                        queryJobManager().queryDeMonServer()->takeHeartBeat(progressData);
+                    }
+                    catch (IException *e)
+                    {
+                        GraphPrintLog(e, "Failure whilst deserializing stats/progress");
+                        e->Release();
+                    }
                 }
             }
+            offset_t nodeDiskUsage;
+            msg.read(nodeDiskUsage);
+            jobM->setNodeDiskUsage(n, nodeDiskUsage);
+            if (nodeDiskUsage > maxNodeDiskUsage)
+            {
+                maxNodeDiskUsage = nodeDiskUsage;
+                maxNode = n;
+            }
+            if ((unsigned)-1 == minNode || nodeDiskUsage < minNodeDiskUsage)
+            {
+                minNodeDiskUsage = nodeDiskUsage;
+                minNode = n;
+            }
+            totalDiskUsage += nodeDiskUsage;
+            Owned<ITimeReporter> slaveReport = createStdTimeReporter(msg);
+            queryJobChannel().queryTimeReporter().merge(*slaveReport);
         }
-        offset_t nodeDiskUsage;
-        msg.read(nodeDiskUsage);
-        jobM.setNodeDiskUsage(n, nodeDiskUsage);
-        if (nodeDiskUsage > maxNodeDiskUsage)
-        {
-            maxNodeDiskUsage = nodeDiskUsage;
-            maxNode = n;
-        }
-        if ((unsigned)-1 == minNode || nodeDiskUsage < minNodeDiskUsage)
-        {
-            minNodeDiskUsage = nodeDiskUsage;
-            minNode = n;
-        }
-        totalDiskUsage += nodeDiskUsage;
-        Owned<ITimeReporter> slaveReport = createStdTimeReporter(msg);
-        queryJob().queryTimeReporter().merge(*slaveReport);
     }
     if (totalDiskUsage)
     {
@@ -2635,7 +2630,7 @@ void CMasterGraph::done()
     }
     if (!queryOwner())
     {
-        if (queryJob().queryTimeReporter().numSections())
+        if (queryJobChannel().queryTimeReporter().numSections())
         {
             if (globals->getPropBool("@reportTimingsToWorkunit", true))
             {
@@ -2661,10 +2656,10 @@ void CMasterGraph::done()
 
                     }
                 } wureport(*this);
-                queryJob().queryTimeReporter().report(wureport);
+                queryJobChannel().queryTimeReporter().report(wureport);
             }
             else
-                queryJob().queryTimeReporter().printTimings();
+                queryJobChannel().queryTimeReporter().printTimings();
         }
     }
 }
@@ -2674,10 +2669,7 @@ void CMasterGraph::setComplete(bool tf)
     CGraphBase::setComplete(tf);
     if (tf && !queryOwner())
     {
-        Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)job).getGraphProgress();
-        Owned<IWUGraphProgress> progress = graphProgress->update();
-        progress->setNodeState(graphId, graphDone?WUGraphComplete:WUGraphFailed);
-        progress.clear();
+        job.queryWorkUnit().setNodeState(job.queryGraphName(), graphId, graphDone?WUGraphComplete:WUGraphFailed);
     }
 }
 
@@ -2739,7 +2731,7 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     {
         graph_id subId;
         mb.read(subId);
-        Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(subId);
+        Owned<CMasterGraph> graph = (CMasterGraph *)job.queryJobChannel(0).getGraph(subId);
         if (NULL == graph.get())
             return false;
         if (!graph->deserializeStats(node, mb))
@@ -2897,18 +2889,13 @@ void ProgressInfo::getStats(IStatisticGatherer & stats)
 
 CJobMaster *createThorGraph(const char *graphName, IPropertyTree *xgmml, IConstWorkUnit &workunit, const char *querySo, bool sendSo, const SocketEndpoint &agentEp)
 {
-    Owned<CJobMaster> masterJob = new CJobMaster(workunit, graphName, querySo, sendSo, agentEp);
-    masterJob->setXGMML(xgmml);
+    Owned<CJobMaster> jobMaster = new CJobMaster(workunit, graphName, querySo, sendSo, agentEp);
+    jobMaster->setXGMML(xgmml);
     Owned<IPropertyTreeIterator> iter = xgmml->getElements("node");
     ForEach(*iter)
-    {
-        IPropertyTree &node = iter->query();
-        Owned<CGraphBase> subGraph = masterJob->createGraph();
-        subGraph->createFromXGMML(&node, NULL, NULL, NULL);
-        masterJob->addSubGraph(*LINK(subGraph));
-    }
-    masterJob->addDependencies(xgmml);
-    return LINK(masterJob);
+        jobMaster->addSubGraph(iter->query());
+    jobMaster->addDependencies(xgmml);
+    return LINK(jobMaster);
 }
 
 static IJobManager *jobManager = NULL;

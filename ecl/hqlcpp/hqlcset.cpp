@@ -835,6 +835,13 @@ IHqlExpression * InlineLinkedDictionaryCursor::getFirstSearchValue(IHqlExpressio
     return matched;
 }
 
+BoundRow * InlineLinkedDictionaryCursor::buildIterateLoop(BuildCtx & ctx, bool needToBreak)
+{
+    BoundRow * row = doBuildIterateLoop(ctx, needToBreak, true);
+    row->setConditional(true);
+    return row;
+}
+
 BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpression * mapExpr)
 {
     Owned<BoundRow> tempRow = translator.declareLinkedRow(ctx, mapExpr, false);

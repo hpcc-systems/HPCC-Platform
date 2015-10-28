@@ -605,8 +605,7 @@ public:
             StringBuffer wuXML;
             if (getEmbeddedWorkUnitXML(source, wuXML))
             {
-                Owned<ILocalWorkUnit> localWU = createLocalWorkUnit();
-                localWU->loadXML(wuXML);
+                Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
                 queryExtendedWU(w)->copyWorkUnit(localWU, true);
             }
             else
@@ -614,7 +613,7 @@ public:
         }
         w->commit();
         w.clear();
-        return wuFactory->openWorkUnit(wuid, false);
+        return wuFactory->openWorkUnit(wuid);
     }
 
     virtual void noteWorkunitRunning(const char *wuid, bool running)

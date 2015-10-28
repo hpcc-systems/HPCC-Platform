@@ -257,6 +257,7 @@ CActivityBase *createChildThroughNormalizeSlave(CGraphElementBase *container);
 CActivityBase *createWhenSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryWorkunitWriteSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryResultWriteSlave(CGraphElementBase *container);
+CActivityBase *createTraceSlave(CGraphElementBase *container);
 
 
 class CGenericSlaveGraphElement : public CSlaveGraphElement
@@ -364,6 +365,9 @@ public:
                 break;
             case TAKsorted:
                 ret = createSortedSlave(this);
+                break;
+            case TAKtrace:
+                ret = createTraceSlave(this);
                 break;
             case TAKdedup:
                 if (queryGrouped())
@@ -774,7 +778,7 @@ activityslaves_decl IEngineRowAllocator * queryRowAllocator(IThorDataLink *link)
 activityslaves_decl IOutputRowSerializer * queryRowSerializer(IThorDataLink *link) { CActivityBase *base = link?link->queryFromActivity():NULL; return base?base->queryRowSerializer():NULL; }
 activityslaves_decl IOutputRowDeserializer * queryRowDeserializer(IThorDataLink *link) { CActivityBase *base = link?link->queryFromActivity():NULL; return base?base->queryRowDeserializer():NULL; }
 activityslaves_decl IOutputMetaData *queryRowMetaData(IThorDataLink *link) { CActivityBase *base = link?link->queryFromActivity():NULL; return base?base->queryRowMetaData():NULL; }
-activityslaves_decl unsigned queryActivityId(IThorDataLink *link) { CActivityBase *base = link?link->queryFromActivity():NULL; return base?base->queryActivityId():0; }
+activityslaves_decl unsigned queryActivityId(IThorDataLink *link) { CActivityBase *base = link?link->queryFromActivity():NULL; return base?base->queryId():0; }
 activityslaves_decl ICodeContext *queryCodeContext(IThorDataLink *link) { CActivityBase *base = link?link->queryFromActivity():NULL; return base?base->queryCodeContext():NULL; }
 
 

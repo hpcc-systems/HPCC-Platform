@@ -95,6 +95,8 @@ bool SecHandler::authorizeSecFeature(const char * pszFeatureUrl, const char* Use
     if(pSecondaryUser.get()== NULL)
     {
         pSecondaryUser.setown(m_secmgr->createUser(UserID));
+        if (!pSecondaryUser)
+            return false;
         pSecondaryUser->setRealm(CompanyID);
         bool bSecondaryAccessAllowed = m_secmgr->initUser(*pSecondaryUser.get());
         if(bSecondaryAccessAllowed==false)
@@ -234,7 +236,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
     }
     if(auth_ok)
     {
-        for(i = 0; i < plist->count(); i++)
+        for(i = 0; i < (unsigned)plist->count(); i++)
         {
             ISecResource* resource = plist->queryResource(i);
             if(resource != NULL)

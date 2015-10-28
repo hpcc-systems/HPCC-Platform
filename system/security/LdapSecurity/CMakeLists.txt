@@ -33,6 +33,7 @@ set (    SRCS
          ldapconnection.cpp 
          ldapsecurity.cpp 
          permissions.cpp 
+         ldaputils.cpp
     )
 
 include_directories ( 

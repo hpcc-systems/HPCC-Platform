@@ -264,7 +264,7 @@ class CBroadcaster : public CSimpleInterface
     }
     void broadcastToOthers(CSendItem *sendItem)
     {
-        mptag_t rt = createReplyTag();
+        mptag_t rt = activity.queryMPServer().createReplyTag();
         unsigned origin = sendItem->queryOrigin();
         unsigned psuedoNode = (myNode<origin) ? slaves-origin+myNode : myNode-origin;
         CMessageBuffer replyMsg;
@@ -359,10 +359,10 @@ class CBroadcaster : public CSimpleInterface
         }
     }
 public:
-    CBroadcaster(CActivityBase &_activity) : activity(_activity), receiver(*this), sender(*this), comm(_activity.queryJob().queryJobComm())
+    CBroadcaster(CActivityBase &_activity) : activity(_activity), receiver(*this), sender(*this), comm(_activity.queryJobChannel().queryJobComm())
     {
         allDone = allDoneWaiting = allRequestStop = stopping = stopRecv = false;
-        myNode = activity.queryJob().queryMyRank();
+        myNode = activity.queryJobChannel().queryMyRank();
         slaves = activity.queryJob().querySlaves();
         slavesDone.setown(createThreadSafeBitSet());
         slavesStopping.setown(createThreadSafeBitSet());
@@ -582,7 +582,7 @@ public:
         else
         {
             size32_t bitSetMemSz = getBitSetMemoryRequirement(rowCount);
-            void *pBitSetMem = activity.queryJob().queryRowManager()->allocate(bitSetMemSz, activity.queryContainer().queryId(), SPILL_PRIORITY_LOW);
+            void *pBitSetMem = activity.queryRowManager().allocate(bitSetMemSz, activity.queryContainer().queryId(), SPILL_PRIORITY_LOW);
             if (!pBitSetMem)
                 return false;
 
@@ -924,7 +924,7 @@ protected:
         MemoryBuffer mb;
         try
         {
-            CThorSpillableRowArray &localRhsRows = *rhsNodeRows.item(queryJob().queryMyRank()-1);
+            CThorSpillableRowArray &localRhsRows = *rhsNodeRows.item(queryJobChannel().queryMyRank()-1);
             CMemoryRowSerializer mbser(mb);
             while (!abortSoon)
             {
@@ -1129,7 +1129,7 @@ public:
         gotRHS = false;
         nextRhsRow = 0;
         rhsNext = NULL;
-        myNode = queryJob().queryMyRank();
+        myNode = queryJobChannel().queryMyRank();
         numNodes = queryJob().querySlaves();
         needGlobal = !container.queryLocal() && (container.queryJob().querySlaves() > 1);
 
@@ -1173,7 +1173,7 @@ public:
         ActPrintLog("Join type is %s", getJoinTypeStr(str).str());
 
         if (!container.queryLocal())
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
 
         unsigned slaves = container.queryJob().querySlaves();
         rhsNodeRows.ensure(slaves);
@@ -1349,6 +1349,7 @@ class CLookupJoinActivityBase : public CInMemJoinBase<HTHELPER, IHThorHashJoinAr
     typedef CInMemJoinBase<HTHELPER, IHThorHashJoinArg> PARENT;
 protected:
     using PARENT::container;
+    using PARENT::queryJobChannel;
     using PARENT::myNode;
     using PARENT::numNodes;
     using PARENT::ActPrintLog;
@@ -1390,6 +1391,7 @@ protected:
     using PARENT::helper;
     using PARENT::clearHT;
     using PARENT::rhs;
+    using PARENT::queryRowManager;
 
     IHash *leftHash, *rightHash;
     ICompare *compareRight, *compareLeftRight;
@@ -1401,7 +1403,7 @@ protected:
 
     // Handling failover to a) hashed local lookupjoin b) hash distributed standard join
     bool smart;
-    bool rhsCollated;
+    bool rhsCollated, rhsCompacted;
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
     ICompare *compareLeft;
     UnsignedArray flushedRowMarkers;
@@ -1468,6 +1470,7 @@ protected:
             // This only needs to be done once, no rows will be added after collated
             clearedRows += clearNonLocalRows(rhs, 0);
             rhs.compact();
+            rhsCompacted = true;
         }
         else
         {
@@ -1565,7 +1568,7 @@ protected:
                     if (marker.init(rhsRows))
                     {
                         // NB: If this ensure returns false, it will have called the MM callbacks and have setup isLocalLookup() already
-                        success = rhs.ensure(rhsRows, SPILL_PRIORITY_LOW); // NB: Could OOM, handled by exception handler
+                        success = rhs.resize(rhsRows, SPILL_PRIORITY_LOW); // NB: Could OOM, handled by exception handler
                     }
                 }
                 catch (IException *e)
@@ -1619,6 +1622,12 @@ protected:
                     uniqueKeys = marker.calculate(rhs, compareRight, !rhsAlreadySorted);
                     rhsCollated = true;
                     ActPrintLog("Collated all RHS rows");
+
+                    if (stable && !rhsAlreadySorted)
+                    {
+                        ActPrintLog("Clearing rhs stable ptr table");
+                        rhs.setup(NULL, false, stableSort_none); // don't need stable ptr table anymore
+                    }
                 }
             }
             if (!isLocalLookup()) // check again after processing above
@@ -1637,7 +1646,7 @@ protected:
                  * Need to remove spill callback and broadcast one last message to know.
                  */
 
-                queryJob().queryRowManager()->removeRowBuffer(this);
+                queryRowManager().removeRowBuffer(this);
 
                 ActPrintLog("Broadcasting final split status");
                 broadcaster.reset();
@@ -1710,7 +1719,12 @@ protected:
             Owned<IRowStream> rightStream;
             if (needGlobal)
             {
-                if (!rhsCollated) // NB: If spilt after rhsCollated, callback will have cleared and compacted, rows will still be sorted
+                if (rhsCollated)
+                {
+                    if (rhsCompacted) // compacted whilst spillable, couldn't reallocate row pointer at that stage, can now.
+                        rhs.resize(rhs.ordinality(), SPILL_PRIORITY_LOW);
+                }
+                else // NB: If spilt after rhsCollated, callback will have cleared and compacted, rows will still be sorted
                 {
                     /* NB: If cleared before rhsCollated, then need to clear non-locals that were added after spill
                      * There should not be many, as broadcast starts to stop as soon as a slave notifies it is spilling
@@ -1725,7 +1739,8 @@ protected:
                         CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
                         clearNonLocalRows(rows, flushedRowMarkers.item(a));
 
-                        rows.compact(); // JCS->GH - really we want to resize rhsNodeRows now to free up as much space as possible (see HPCC-12511)
+                        ActPrintLog("Compacting rhsNodeRows[%d], has %" RIPF "d rows", a, rows.numCommitted());
+                        rows.compact();
 
                         rowidx_t c = rows.numCommitted();
                         if (c > largestRowCount)
@@ -1934,7 +1949,7 @@ public:
     }
     CLookupJoinActivityBase(CGraphElementBase *_container) : PARENT(_container)
     {
-        rhsCollated = false;
+        rhsCollated = rhsCompacted = false;
         broadcast2MpTag = broadcast3MpTag = lhsDistributeTag = rhsDistributeTag = TAG_NULL;
         setLocalLookup(false);
         setStandardJoin(false);
@@ -2015,12 +2030,12 @@ public:
 
         if (!container.queryLocal())
         {
-            broadcast2MpTag = container.queryJob().deserializeMPTag(data);
-            broadcast3MpTag = container.queryJob().deserializeMPTag(data);
-            lhsDistributeTag = container.queryJob().deserializeMPTag(data);
-            rhsDistributeTag = container.queryJob().deserializeMPTag(data);
-            rhsDistributor.setown(createHashDistributor(this, queryJob().queryJobComm(), rhsDistributeTag, false, NULL, "RHS"));
-            lhsDistributor.setown(createHashDistributor(this, queryJob().queryJobComm(), lhsDistributeTag, false, NULL, "LHS"));
+            broadcast2MpTag = container.queryJobChannel().deserializeMPTag(data);
+            broadcast3MpTag = container.queryJobChannel().deserializeMPTag(data);
+            lhsDistributeTag = container.queryJobChannel().deserializeMPTag(data);
+            rhsDistributeTag = container.queryJobChannel().deserializeMPTag(data);
+            rhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), rhsDistributeTag, false, NULL, "RHS"));
+            lhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), lhsDistributeTag, false, NULL, "LHS"));
         }
     }
     virtual void start()
@@ -2031,7 +2046,7 @@ public:
         {
             setLocalLookup(false);
             setStandardJoin(false);
-            rhsCollated = false;
+            rhsCollated = rhsCompacted = false;
             flushedRowMarkers.kill();
 
             if (needGlobal)
@@ -2039,7 +2054,7 @@ public:
                 overflowWriteCount = 0;
                 overflowWriteFile.clear();
                 overflowWriteStream.clear();
-                queryJob().queryRowManager()->addRowBuffer(this);
+                queryRowManager().addRowBuffer(this);
             }
         }
         else
@@ -2207,7 +2222,7 @@ public:
         memsize_t sz = (memsize_t)_sz;
         if (sz != _sz) // treat as OOM exception for handling purposes.
             throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Unsigned overflow, trying to allocate hash table of size: %" I64F "d ", _sz);
-        void *ht = activity->queryJob().queryRowManager()->allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
+        void *ht = activity->queryRowManager().allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
         memset(ht, 0, sz);
         htMemory.setown(ht);
         htSize = size;
@@ -2506,7 +2521,7 @@ protected:
                 return;
 
             rhsTableLen = getGlobalRHSTotal();
-            rhs.ensure(rhsTableLen);
+            rhs.resize(rhsTableLen);
             ForEachItemIn(a, rhsNodeRows)
             {
                 CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
@@ -2527,7 +2542,7 @@ protected:
                 rhsTotalCount = rightMeta.totalRowsMax;
                 if (rhsTotalCount > RIMAX)
                     throw MakeActivityException(this, 0, "Too many rows on RHS for ALL join: %" RCPF "d", rhsTotalCount);
-                rhs.ensure((rowidx_t)rhsTotalCount);
+                rhs.resize((rowidx_t)rhsTotalCount);
             }
             while (!abortSoon)
             {

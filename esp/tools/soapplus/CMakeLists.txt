@@ -50,8 +50,12 @@ install ( TARGETS soapplus RUNTIME DESTINATION ${EXEC_DIR} COMPONENT Runtime)
 target_link_libraries ( soapplus 
          jlib
          xmllib 
+    )
+IF (USE_OPENSSL)
+    target_link_libraries ( soapplus 
          securesocket 
     )
+ENDIF()
 
 FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/EspMethods.txt

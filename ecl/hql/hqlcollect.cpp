@@ -114,7 +114,7 @@ CEclSource * CEclCollection::find(IIdAtom * name)
     ForEachItemIn(i, contents)
     {
         IEclSource & cur = contents.item(i);
-        if (cur.queryEclId()->lower() == name->lower())
+        if (lower(cur.queryEclId()) == lower(name))
             return &static_cast<CEclSource &>(cur);
     }
     return NULL;
@@ -236,7 +236,7 @@ static IIdAtom * deriveEclName(const char * filename)
     else
         id = createIdAtom(tailname);
 
-    if (!isCIdentifier(id->str()))
+    if (!isCIdentifier(str(id)))
         return NULL;
     return id;
 }
@@ -333,9 +333,9 @@ IProperties * FileSystemFile::getProperties()
     case ESTplugin:
         {
             properties.setown(createProperties());
-            properties->setProp(flagsAtom->str(), extraFlags);
-            properties->setProp(versionAtom->str(), version.get());
-            properties->setProp(pluginAtom->str(), file->queryFilename());
+            properties->setProp(str(flagsAtom), extraFlags);
+            properties->setProp(str(versionAtom), version.get());
+            properties->setProp(str(pluginAtom), file->queryFilename());
             break;
         }
     case ESTmodule:
@@ -344,7 +344,7 @@ IProperties * FileSystemFile::getProperties()
             if (extraFlags)
             {
                 properties.setown(createProperties());
-                properties->setProp(flagsAtom->str(), extraFlags);
+                properties->setProp(str(flagsAtom), extraFlags);
             }
             break;
         }
@@ -642,7 +642,7 @@ void CXmlEclElement::getFullName(StringBuffer & target)
         if (target.length() != prev)
             target.append('.');
     }
-    target.append(eclId->str());
+    target.append(str(eclId));
 }
 
 IFileContents * CXmlEclElement::queryFileContents()
@@ -681,9 +681,9 @@ IProperties * CXmlEclElement::getProperties()
     case ESTplugin:
         {
             properties.setown(createProperties());
-            properties->setProp(flagsAtom->str(), extraFlags);
-            properties->setProp(versionAtom->str(), elemTree->queryProp("@version"));
-            properties->setProp(pluginAtom->str(), elemTree->queryProp("@fullname"));
+            properties->setProp(str(flagsAtom), extraFlags);
+            properties->setProp(str(versionAtom), elemTree->queryProp("@version"));
+            properties->setProp(str(pluginAtom), elemTree->queryProp("@fullname"));
             break;
         }
     default:
@@ -691,7 +691,7 @@ IProperties * CXmlEclElement::getProperties()
             if (extraFlags)
             {
                 properties.setown(createProperties());
-                properties->setProp(flagsAtom->str(), extraFlags);
+                properties->setProp(str(flagsAtom), extraFlags);
             }
             break;
         }
@@ -717,7 +717,7 @@ CXmlEclElement * CXmlEclElement::select(IIdAtom * _name, EclSourceType _type, IP
     else if (_tree)
     {
         //Some old archives seeem to contain duplicate definitions.  Clean then up then delete this code
-        DBGLOG("Source Seems to have duplicate definition of %s", _name->str());
+        DBGLOG("Source Seems to have duplicate definition of %s", str(_name));
         //throwUnexpected();
     }
 
@@ -795,7 +795,7 @@ IEclSourceCollection * createSingleDefinitionEclCollection(const char * moduleNa
     module->setProp("@name", moduleName);
     IPropertyTree * attr = module->addPropTree("Attribute", createPTree("Attribute"));
     attr->setProp("@name", attrName);
-    const char * filename = contents->querySourcePath()->str();
+    const char * filename = str(contents->querySourcePath());
     if (filename)
         attr->setProp("@sourcePath", filename);
 

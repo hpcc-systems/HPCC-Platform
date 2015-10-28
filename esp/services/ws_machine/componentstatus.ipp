@@ -23,24 +23,13 @@
 #include "jiface.hpp"
 
 class StringBuffer;
-class IPropertyTree;
-class IPropertyTreeIterator;
+interface IPropertyTree;
+interface IPropertyTreeIterator;
 
-class IEspStatusReport;
-class IEspComponentStatus;
-class IConstComponentStatus;
+interface IEspStatusReport;
+interface IEspComponentStatus;
+interface IConstComponentStatus;
 template<class IEspComponentStatus> class IArrayOf;
-
-
-#ifdef WIN32
-    #ifdef SMCLIB_EXPORTS
-        #define COMPONENTSTATUS_API __declspec(dllexport)
-    #else
-        #define COMPONENTSTATUS_API __declspec(dllimport)
-    #endif
-#else
-    #define COMPONENTSTATUS_API
-#endif
 
 class IESPComponentStatusInfo : public IInterface
 {

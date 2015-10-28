@@ -728,6 +728,7 @@ struct HqlCppOptions
     bool                checkAmbiguousRollupCondition;
     bool                paranoidCheckSelects;
     bool                matchExistingDistributionForJoin;
+    bool                createImplicitKeyedDistributeForJoin;
     bool                expandHashJoin;
     bool                traceIR;
     bool                preserveCaseExternalParameter;
@@ -789,6 +790,7 @@ class AliasExpansionInfo;
 class HashCodeCreator;
 class ParentExtract;
 class ConstantRowArray;
+class SerializeKeyInfo;
 
 enum PEtype {
     PETnone,
@@ -1117,8 +1119,6 @@ public:
     void getRecordECL(IHqlExpression * record, StringBuffer & eclText);
     void ensureHasAddress(BuildCtx & ctx, CHqlBoundExpr & tgt);
     void normalizeBoundExpr(BuildCtx & ctx, CHqlBoundExpr & bound);
-    bool allowEmbeddedCpp();
-    void checkPipeAllowed();
 
     IWorkUnit * wu()           { return code->workunit; }
     void useInclude(const char * name)                      { code->useInclude(name); }
@@ -1249,7 +1249,7 @@ public:
     void createInlineDictionaryRows(HqlExprArray & args, ConstantRowArray & boundRows, IHqlExpression * keyRecord, IHqlExpression * nullRow);
     bool buildConstantRows(ConstantRowArray & boundRows, IHqlExpression * transforms);
     void doBuildDatasetLimit(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
-    bool doBuildDatasetInlineTable(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
+    bool doBuildConstantDatasetInlineTable(IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
     bool doBuildDictionaryInlineTable(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
     void doBuildDatasetNull(IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
 
@@ -1461,7 +1461,6 @@ public:
     ABoundActivity * doBuildActivityLinkedRawChildDataset(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityLoop(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityMerge(BuildCtx & ctx, IHqlExpression * expr);
-    ABoundActivity * doBuildActivityMetaActivity(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityNonEmpty(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityNWayMerge(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityNWayMergeJoin(BuildCtx & ctx, IHqlExpression * expr);
@@ -1478,6 +1477,8 @@ public:
     ABoundActivity * doBuildActivityPrefetchProject(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityProject(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityProcess(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityPullActivity(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityQuantile(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityRegroup(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityRemote(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityReturnResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
@@ -1507,6 +1508,7 @@ public:
     ABoundActivity * doBuildActivityTable(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityFirstN(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityTempTable(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityTraceActivity(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityUngroup(BuildCtx & ctx, IHqlExpression * expr, ABoundActivity * boundDataset);
     ABoundActivity * doBuildActivityWorkunitRead(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityXmlParse(BuildCtx & ctx, IHqlExpression * expr);
@@ -1815,9 +1817,11 @@ protected:
 
     void doFilterAssignment(BuildCtx & ctx, TransformBuilder * builder, HqlExprArray & assigns, IHqlExpression * expr);
     void doFilterAssignments(BuildCtx & ctx, TransformBuilder * builder, HqlExprArray & assigns, IHqlExpression * expr);
+    bool extractSerializeKey(SerializeKeyInfo & info, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal);
     void generateSerializeAssigns(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * selector, IHqlExpression * selfSelect, IHqlExpression * leftSelect, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, bool needToClear, node_operator serializeOp, IAtom * serialForm);
     void generateSerializeFunction(BuildCtx & ctx, const char * funcName, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, node_operator serializeOp, IAtom * serialForm);
-    void generateSerializeKey(BuildCtx & ctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal, bool generateCompares, bool canReuseLeft);             //NB: sorts are ats.xyz
+    void generateSerializeKey(BuildCtx & nestedctx, node_operator side, SerializeKeyInfo & keyInfo, const DatasetReference & dataset, bool generateCompares);
+    void generateSerializeKey(BuildCtx & ctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal, bool generateCompares);             //NB: sorts are ats.xyz
     void generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator index, const DatasetReference & dataset, const HqlExprArray & sorts, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal);
     void addSchemaField(IHqlExpression *field, MemoryBuffer &schema, IHqlExpression *selector);
     void addSchemaFields(IHqlExpression * record, MemoryBuffer &schema, IHqlExpression *selector);
@@ -1936,9 +1940,6 @@ protected:
     Linked<IErrorReceiver> errorProcessor;
     HqlCppOptions       options;
     HqlCppDerived       derived;
-    bool                checkedEmbeddedCpp;
-    bool                cachedAllowEmbeddedCpp;
-    bool                checkedPipeAllowed;
     unsigned            activitiesThisCpp;
     unsigned            curCppFile;
     Linked<ICodegenContextCallback> ctxCallback;

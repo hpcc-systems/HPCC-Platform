@@ -462,14 +462,14 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="masterport" type="xs:nonNegativeInteger" use="optional">
+      <xs:attribute name="masterport" type="xs:nonNegativeInteger" default="20000">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Base port to use for master</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="slaveport" type="xs:nonNegativeInteger" use="optional">
+      <xs:attribute name="slaveport" type="xs:nonNegativeInteger" default="20100" use="optional">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Base port to use for slaves</tooltip>
@@ -483,13 +483,6 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="localThorPortBase" type="xs:nonNegativeInteger" use="optional" default="13500">
-        <xs:annotation>
-          <xs:appinfo>
-            <tooltip>Base port for local thor slaves (when localThor set)</tooltip>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:attribute>
       <xs:attribute name="slavesPerNode" type="xs:nonNegativeInteger" use="optional" default="1">
         <xs:annotation>
           <xs:appinfo>
@@ -497,7 +490,14 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" use="optional" default="2000">
+      <xs:attribute name="processPerSlave" type="xs:boolean" use="optional" default="true">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Makes each slave run in it's own process</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" use="optional" default="200">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Port increment between slaves on same node</tooltip>

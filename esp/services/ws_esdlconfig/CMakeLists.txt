@@ -35,6 +35,7 @@ set (    SRCS
 include_directories (
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/common/environment
+         ${HPCC_SOURCE_DIR}/common/dllserver
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/system/security/shared
@@ -42,6 +43,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/LdapSecurity
          ${HPCC_SOURCE_DIR}/system/mp
          ${HPCC_SOURCE_DIR}/system/xmllib
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/esp/platform
          ${HPCC_SOURCE_DIR}/esp/clients
          ${HPCC_SOURCE_DIR}/esp/bindings
@@ -61,4 +63,5 @@ target_link_libraries ( ws_esdlconfig
          jlib
          esphttp
          environment
+         dllserver
     )

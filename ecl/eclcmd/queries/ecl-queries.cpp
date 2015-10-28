@@ -114,7 +114,7 @@ public:
             StringAttr temp;
             if (iter.matchOption(temp, ECLOPT_SHOW))
             {
-                for (const char *ch = temp.sget(); *ch; ch++)
+                for (const char *ch = temp.str(); *ch; ch++)
                 {
                     switch (*ch)
                     {
@@ -518,7 +518,7 @@ public:
         if (resp->getExceptions().ordinality())
             outputMultiExceptions(resp->getExceptions());
         if (resp->getQueryId() && *resp->getQueryId())
-            fprintf(stdout, "%s/%s\n\n", optTargetQuerySet.sget(), resp->getQueryId());
+            fprintf(stdout, "%s/%s\n\n", optTargetQuerySet.str(), resp->getQueryId());
         return 0;
     }
     virtual void usage()

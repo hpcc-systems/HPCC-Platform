@@ -26,6 +26,7 @@
 #include "jsem.hpp"
 
 extern jlib_decl void ThreadYield();
+extern jlib_decl void spinUntilReady(atomic_t &value);
 
 
 #ifdef _DEBUG
@@ -410,8 +411,8 @@ public:
             nesting++;
             return;
         }
-        while (!atomic_cas(&value,1,0)) 
-            ThreadYield(); 
+        while (unlikely(!atomic_acquire(&value)))
+            spinUntilReady(value);
         owner.tid = self;
     }
     inline void leave()
@@ -421,10 +422,7 @@ public:
         if (nesting == 0)
         {
             owner.tid = 0;
-            //Ensure that no code that precedes the setting of value gets moved after it
-            //(unlikely since code is conditional and owner.tid is also volatile)
-            compiler_memory_barrier();
-            atomic_set(&value, 0);
+            atomic_release(&value);
         }
         else
             nesting--;
@@ -473,17 +471,15 @@ public:
     { 
         ThreadId self = GetCurrentThreadId(); 
         assertex(self!=owner.tid); // check for reentrancy
-        while (!atomic_cas(&value,1,0))
-            ThreadYield();
+        while (unlikely(!atomic_acquire(&value)))
+            spinUntilReady(value);
         owner.tid = self;
     }
     inline void leave()
     { 
         assertex(GetCurrentThreadId()==owner.tid); // check for spurious leave
         owner.tid = 0;
-        //Ensure that no code that precedes the leave() gets moved after value is cleared
-        compiler_memory_barrier();
-        atomic_set(&value, 0); 
+        atomic_release(&value);
     }
 };
 
@@ -500,14 +496,12 @@ public:
     }
     inline void enter()       
     { 
-        while (!atomic_cas(&value,1,0))
-            ThreadYield();
+        while (unlikely(!atomic_acquire(&value)))
+            spinUntilReady(value);
     }
     inline void leave()
     { 
-        //Ensure that no code that precedes the leave() gets moved after value is cleared
-        compiler_memory_barrier();
-        atomic_set(&value, 0); 
+        atomic_release(&value);
     }
 };
 #endif

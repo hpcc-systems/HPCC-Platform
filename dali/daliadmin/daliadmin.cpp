@@ -82,6 +82,7 @@ void usage(const char *exe)
   printf("  dfspart <logicalname> <part>   -- get meta information for part num\n");
   printf("  dfscsv <logicalnamemask>       -- get csv info. for files matching mask\n");
   printf("  dfsgroup <logicalgroupname> [filename] -- get IPs for logical group (aka cluster). Written to optional filename if provided\n");
+  printf("  clusternodes <clustername> [filename] -- get IPs for cluster group. Written to optional filename if provided\n");
   printf("  dfsmap <logicalname>           -- get part files (primary and replicates)\n");
   printf("  dfsexists <logicalname>        -- sets return value to 0 if file exists\n");
   printf("  dfsparents <logicalname>       -- list superfiles containing file\n");
@@ -115,7 +116,7 @@ void usage(const char *exe)
   printf("  daliping [ <num> ]              -- time dali server connect\n");
   printf("  getxref <destxmlfile>           -- get all XREF information\n");
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
-  printf("  unlock <xpath or logicalfile>   --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
+  printf("  unlock <xpath or logicalfile> <[path|file]> --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
   printf("  validatestore [fix=<true|false>]\n"
          "                [verbose=<true|false>]\n"
          "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
@@ -634,7 +635,7 @@ void dfscsv(const char *dali,IUserDescriptor *udesc)
 
 //=============================================================================
 
-static void dfsgroup(const char *name, const char *outputFilename)
+static void dfsgroup(const char *name, const char *outputFilename, bool cluster)
 {
     Owned<IFileIOStream> io;
     if (outputFilename)
@@ -643,7 +644,22 @@ static void dfsgroup(const char *name, const char *outputFilename)
         OwnedIFileIO iFileIO = iFile->open(IFOcreate);
         io.setown(createIOStream(iFileIO));
     }
-    Owned<IGroup> group = queryNamedGroupStore().lookup(name);
+    Owned<IGroup> group;
+    if (cluster)
+    {
+        group.setown(getClusterGroup(name, "ThorCluster", false));
+        Owned<INodeIterator> iter = group->getIterator();
+        IArrayOf<INode> nodes;
+        ForEach(*iter)
+        {
+            SocketEndpoint ep = iter->query().endpoint();
+            ep.port = 0;
+            nodes.append(*createINode(ep));
+        }
+        group.setown(createIGroup(nodes.ordinality(), nodes.getArray()));
+    }
+    else
+        group.setown(queryNamedGroupStore().lookup(name));
     if (!group)
     {
         ERRLOG("cannot find group %s",name);
@@ -2078,7 +2094,7 @@ struct CTreeItem : public CInterface
     {
         if (parent)
             parent->getXPath(xpath);
-        xpath.append('/').append(tail->toCharArray());
+        xpath.append('/').append(tail->str());
         if ((index!=0)||tail->IsShared())
             xpath.append('[').append(index+1).append(']');
     }
@@ -2131,7 +2147,7 @@ class CXMLSizesParser : public CInterface
         virtual void beginNode(const char *tag, offset_t startOffset)
         {
             String *tail = levtail;
-            if (levtail&&(0 == strcmp(tag, levtail->toCharArray())))
+            if (levtail&&(0 == strcmp(tag, levtail->str())))
                 tail->Link();
             else
                 tail = new String(tag);
@@ -2271,144 +2287,71 @@ static bool begins(const char *&ln,const char *pat)
     return false;
 }
 
-static void dodalilocks(const char *pattern,const char *obj,Int64Array *conn,bool filesonly)
+static void dalilocks(const char *ipPattern, bool files)
 {
-    StringBuffer buf;
-    getDaliDiagnosticValue("locks",buf);
-    for (int pass=(filesonly?1:0);pass<2;pass++) {
-        bool headerdone = false;
-        StringBuffer line;
-        StringBuffer curfile;
-        StringBuffer curxpath;
-        StringBuffer ips;
-        StringBuffer times;
-        StringBuffer sessid;
-        StringBuffer connid;
-        const char *s = buf.str();
-        loop {
-            line.clear();
-            while (*s&&(*s!='\n')) 
-                line.append(*(s++));
-            if (line.length()) {
-                const char *ln = line.str();
-                if (begins(ln,"Locks on path: ")) {
-                    curfile.clear();
-                    curxpath.clear();
-                    const char *x = ln;
-                    while (*x)
-                        curxpath.append(*(x++));
-                    if (begins(ln,"/Files")) {
-                        while (*ln&&(begins(ln,"/Scope[@name=\"")||begins(ln,"/File[@name=\"")||begins(ln,"/SuperFile[@name=\""))) {
-                            if (curfile.length())
-                                curfile.append("::");
-                            while (*ln&&(*ln!='"'))
-                                curfile.append(*(ln++));
-                            if (*ln=='"')
-                                ln++;
-                            if (*ln==']')
-                                ln++;
-                        }
-                    }
-                }
-                else if (isdigit(*ln)) {
-                    if (obj) 
-                        if (!curxpath.length()||!WildMatch(curxpath.str(),obj)) 
-                            if (!curfile.length()||!WildMatch(curfile.str(),obj)) 
-                                continue;
-                    if ((curfile.length()!=0)==(pass==1)) {
-                        ips.clear();
-                        while (*ln&&(*ln!=':'))
-                            ips.append(*(ln++));
-                        if (!pattern||WildMatch(ips.str(),pattern)) {
-                            ips.append(*ln++);
-                            while (isdigit(*ln))
-                                ips.append(*ln++);
-                            while (*ln!='|')    
-                                ln++;
-                            ln++; // sessid start
-                            sessid.clear();
-                            while (*ln!='|') {
-                                sessid.append(*ln);
-                                ln++;
-                            }
-                            sessid.clip();
-                            ln++; // connectid start
-                            connid.clear();
-                            while (*ln!='|') {
-                                connid.append(*ln);
-                                ln++;
-                            }
-                            connid.clip();
-                            ln++; // mode start
-                            unsigned mode = 0;
-                            while (isdigit(*ln))
-                                mode = mode*10+(*(ln++)-'0');
-                            while (*ln!='|')
-                                ln++;
-                            ln++; // duration start
-                            times.clear();
-                            while (*ln&&(*ln!='('))
-                                times.append(*(ln++));
-                            ln++;
-                            unsigned duration = 0;
-                            while (isdigit(*ln))
-                                duration = duration*10+(*(ln++)-'0');
-                            if (conn) {
-                                bool err;
-                                __int64 c = (__int64)hextoll(connid.str(),err);
-                                if (!err) {
-                                    bool found = false;
-                                    ForEachItemIn(i,*conn) 
-                                        if (c==conn->item(i))
-                                            found = true;
-                                    if (!found)
-                                        conn->append(c);
-                                }
-                            }
-                            else {
-                                if (!headerdone) {
-                                    OUTLOG( "\nServer IP         , session   ,mode, time              ,duration ,%s",pass?"File":"XPath");
-                                    OUTLOG(   "==================,===========,===,====================,=========,=====");
-                                    headerdone = true;
-                                }
-                                OUTLOG("%s, %s, %d, %s, %d, %s",ips.str(),sessid.str(),mode,times.str(),duration,pass?curfile.str():curxpath.str());
-                            }
-                        }
-                    }
-                }
-            }
-            if (!*s)
-                break;
-            s++;
+    Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks(ipPattern, files ? "/Files/*" : NULL);
+    bool headers = true;
+    CDfsLogicalFileName dlfn;
+    for (unsigned l=0; l<lockInfoCollection->queryLocks(); l++)
+    {
+        ILockInfo &lockInfo = lockInfoCollection->queryLock(l);
+        if (files)
+        {
+            if (!dlfn.setFromXPath(lockInfo.queryXPath()))
+                continue;
         }
+        if (0 == lockInfo.queryConnections())
+            continue;
+        StringBuffer lockFormat;
+        lockInfo.toString(lockFormat, 1, headers, files ? dlfn.get() : NULL);
+        headers = false;
+        PROGLOG("%s", lockFormat.str());
     }
-}
-
-static void dalilocks(const char *pattern,bool fileonly)
-{
-    dodalilocks(pattern,NULL,NULL,fileonly);
+    if (headers) // if still true, no locks matched
+    {
+        printf("No lock(s) found\n");
+        return;
+    }
 }
 
 //=============================================================================
 
-static void unlock(const char *pattern)
+static void unlock(const char *pattern, bool files)
 {
-    Int64Array conn;
-    dodalilocks(NULL,pattern,&conn,false);
-    ForEachItemIn(i,conn) {
-        MemoryBuffer mb;
-        __int64 connectionId = conn.item(i);
-        bool success;
-        bool disconnect = false;        // TBD?
-        mb.append("unlock").append(connectionId).append(disconnect);
-        getDaliDiagnosticValue(mb);
-        mb.read(success);
-        StringBuffer connectionInfo;
-        if (!success)
-            PROGLOG("Lock %" I64F "x not found",connectionId);
-        else {
-            mb.read(connectionInfo);
-            PROGLOG("Lock %" I64F "x successfully removed: %s", connectionId, connectionInfo.str());
+    Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks(NULL, files ? "/Files/*" : pattern);
+    for (unsigned l=0; l<lockInfoCollection->queryLocks(); l++)
+    {
+        ILockInfo &lockInfo = lockInfoCollection->queryLock(l);
+        bool match = false;
+        if (files)
+        {
+            CDfsLogicalFileName dlfn;
+            dlfn.setAllowWild(true);
+            if (dlfn.setFromXPath(lockInfo.queryXPath()))
+                match = WildMatch(dlfn.get(), pattern);
+        }
+        else
+            match = WildMatch(lockInfo.queryXPath(), pattern);
+        if (match)
+        {
+            for (unsigned c=0; c<lockInfo.queryConnections(); c++)
+            {
+                ConnectionId connectionId = lockInfo.queryLockData(c).connectionId;
+                bool disconnect = false;        // TBD?
+                MemoryBuffer mb;
+                mb.append("unlock").append(connectionId).append(disconnect);
+                getDaliDiagnosticValue(mb);
+                bool success;
+                mb.read(success);
+                if (!success)
+                    PROGLOG("Lock %" I64F "x not found",connectionId);
+                else
+                {
+                    StringBuffer connectionInfo;
+                    mb.read(connectionInfo);
+                    PROGLOG("Lock %" I64F "x successfully removed: %s", connectionId, connectionInfo.str());
+                }
+            }
         }
     }
 }
@@ -2416,14 +2359,14 @@ static void unlock(const char *pattern)
 static void dumpWorkunit(const char *wuid, bool includeProgress)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
     exportWorkUnitToXMLFile(workunit, "stdout:", 0, true, includeProgress, true);
 }
 
 static void dumpProgress(const char *wuid, const char * graph)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
     if (!workunit)
         return;
     Owned<IConstWUGraphProgress> progress = workunit->getGraphProgress(graph);
@@ -2443,7 +2386,7 @@ static const char * checkDash(const char * s)
 static void dumpStats(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
     if (!workunit)
         return;
 
@@ -2510,14 +2453,16 @@ static void wuidCompress(const char *match, const char *type, bool compress)
         WARNLOG("Currently, only type=='graph' supported.");
         return;
     }
+    Owned<IRemoteConnection> conn = querySDS().connect("/WorkUnits", myProcessSession(), 0, daliConnectTimeoutMs);
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnitIterator> iter = factory->getWorkUnitsByXPath(match);
+    Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(match?match:"*", iptiter_remote);
     ForEach(*iter)
     {
-        IConstWorkUnit &wuid = iter->query();
+        const char *wuid = iter->query().queryName();
+        IConstWorkUnit &wu = *factory->openWorkUnit(wuid);
 
         StringArray graphNames;
-        Owned<IConstWUGraphIterator> graphIter = &wuid.getGraphs(GraphTypeAny);
+        Owned<IConstWUGraphIterator> graphIter = &wu.getGraphs(GraphTypeAny);
         ForEach(*graphIter)
         {
             SCMStringBuffer graphName;
@@ -2527,24 +2472,6 @@ static void wuidCompress(const char *match, const char *type, bool compress)
             {
                 graph.getName(graphName);
                 graphNames.append(graphName.s.str());
-            }
-        }
-
-        if (graphNames.ordinality())
-        {
-            SCMStringBuffer wuidName;
-            wuid.getWuid(wuidName);
-            StringAttr msg;
-            msg.set(compress?"Compressing":"Uncompressing");
-            PROGLOG("%s graphs for workunit: %s", msg.get(), wuidName.s.str());
-            Owned<IWorkUnit> wWuid = &wuid.lock();
-            ForEachItemIn(n, graphNames)
-            {
-                Owned<IWUGraph> wGraph = wWuid->updateGraph(graphNames.item(n));
-                PROGLOG("%s graph: %s", msg.get(), graphNames.item(n));
-                // get/set - will convert to/from new format (binary compress blob)
-                Owned<IPropertyTree> xgmml = wGraph->getXGMMLTree(false);
-                wGraph->setXGMMLTree(xgmml.getClear(), compress);
             }
         }
     }
@@ -2577,6 +2504,11 @@ static void validateStore(bool fix, bool deleteFiles, bool verbose)
 
     PROGLOG("Gathering associated files");
     conn.setown(querySDS().connect("/GeneratedDlls", myProcessSession(), fix?RTM_LOCK_WRITE:RTM_LOCK_READ, 10000));
+    if (!conn)
+    {
+        PROGLOG("No generated DLLs associated with any workunit.\nExit. Took %d ms", ts.elapsed());
+        return;
+    }
     IPropertyTree *root = conn->queryRoot()->queryBranch(NULL); // force all to download
 
     Owned<IPropertyTreeIterator> gdIter = root->getElements("*");
@@ -2874,7 +2806,11 @@ int main(int argc, char* argv[])
                     }
                     else if (stricmp(cmd,"dfsgroup")==0) {
                         CHECKPARAMS(1,2);
-                        dfsgroup(params.item(1),(np>1)?params.item(2):NULL);
+                        dfsgroup(params.item(1),(np>1)?params.item(2):NULL, false);
+                    }
+                    else if (stricmp(cmd,"clusternodes")==0) {
+                        CHECKPARAMS(1,2);
+                        dfsgroup(params.item(1),(np>1)?params.item(2):NULL, true);
                     }
                     else if (stricmp(cmd,"dfsmap")==0) {
                         CHECKPARAMS(1,1);
@@ -2994,8 +2930,14 @@ int main(int argc, char* argv[])
                         dalilocks(np>0?params.item(1):NULL,filesonly);
                     }
                     else if (stricmp(cmd,"unlock")==0) {
-                        CHECKPARAMS(1,1);
-                        unlock(params.item(1));
+                        CHECKPARAMS(2,2);
+                        const char *fileOrPath = params.item(2);
+                        if (0 == stricmp("file", fileOrPath))
+                            unlock(params.item(1), true);
+                        else if (0 == stricmp("path", fileOrPath))
+                            unlock(params.item(1), false);
+                        else
+                            throw MakeStringException(0, "unknown type [ %s ], must be 'file' or 'path'", fileOrPath);
                     }
                     else if (stricmp(cmd,"validateStore")==0) {
                         CHECKPARAMS(0,2);

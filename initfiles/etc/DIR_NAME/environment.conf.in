@@ -24,7 +24,10 @@ allow_pgcache_flush=true
 mpStart=7101
 mpEnd=7500
 mpSoMaxConn=128
+mpTraceLevel=0
 #enable SSL for dafilesrv remote file access
 #dfsUseSSL=false
 #dfsSSLCertFile=/certfilepath/certfile
 #dfsSSLPrivateKeyFile=/keyfilepath/keyfile
+jvmoptions=-XX:-UsePerfData
+#JNI_PATH=/absolute/path/to/alternative/libjvm.so

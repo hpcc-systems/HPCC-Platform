@@ -21,6 +21,7 @@
 #include "build-config.h"
 #include "jutil.hpp"
 #include "jhash.ipp"
+#include "portlist.h"
 
 #define STANDARD_INDIR COMPONENTFILES_DIR"/configxml"
 #define STANDARD_OUTDIR RUNTIME_DIR
@@ -658,7 +659,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
           {
             IPropertyTree* pInst = &itInst->query();
             String instName(pInst->queryName());
-            if (!strcmp(instName.toCharArray(), "ThorMasterProcess") || instName.startsWith("RoxieServerProcess"))
+            if (!strcmp(instName.str(), "ThorMasterProcess") || instName.startsWith("RoxieServerProcess"))
             {
               out.appendf("%s=%s;%s%c%s;%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"),"master");
             }
@@ -692,7 +693,17 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
               continue;
 
             netAddr.clear().append(pInst->queryProp("@netAddress"));
-            port.clear().append(pInst->queryProp("@port"));
+            port.clear();
+
+            if (strcmp(pInst->queryName(), XML_TAG_THORMASTERPROCESS) == 0)
+            {
+                if (pInst->queryProp(XML_ATTR_MASTERPORT) == NULL || (pInst->queryProp(XML_ATTR_MASTERPORT))[0] == 0)
+                    port.append(THOR_BASE_PORT);
+                else
+                    port.append(pInst->queryProp(XML_ATTR_MASTERPORT));
+            }
+	    else
+		port.append(pInst->queryProp("@port"));
             
             if (multiInstances)
               processName.clear().append(pInst->queryName());

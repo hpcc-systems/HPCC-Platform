@@ -593,8 +593,15 @@ int main(int argc, char *argv[])
     if (logFile.length())
         lf->setCompleteFilespec(logFile.str());
     lf->setCreateAliasFile(false);
-    lf->beginLogging();
-    PROGLOG("Logging to %s",lf->queryLogFileSpec());
+    try 
+    {
+        lf->beginLogging();
+        PROGLOG("Logging to %s",lf->queryLogFileSpec());
+    } catch (IException *e)
+    {
+        e->errorMessage(fatalError);
+        e->Release();
+    }
     queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler()); // only want fprintf(stderr)
 
     if (!fatalError.length())

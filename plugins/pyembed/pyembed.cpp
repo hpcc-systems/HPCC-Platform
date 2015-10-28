@@ -351,7 +351,7 @@ public:
             const RtlFieldInfo *field = *fields;
             if (names.length())
                 names.append(',');
-            names.append(field->name->str());
+            names.append(str(field->name));
             fields++;
         }
         OwnedPyObject pnames = PyString_FromString(names.str());
@@ -514,7 +514,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("pyembed: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", field->name->str());
+        msg.appendf(" for field %s", str(field->name));
     rtlFail(0, msg.str());
 }
 
@@ -902,7 +902,7 @@ protected:
             elem.setown(pushback.getClear());
         else if (field && named) // If it's named tuple, expect to always resolve fields by name, not position
         {
-            elem.setown(PyObject_GetAttrString(parent, field->name->str()));
+            elem.setown(PyObject_GetAttrString(parent, str(field->name)));
         }
         else if (iter)
             elem.setown(PyIter_Next(iter));
@@ -1492,6 +1492,17 @@ public:
     ~Python27EmbedScriptContext()
     {
     }
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+    {
+        return NULL;
+    }
+    virtual void paramWriterCommit(IInterface *writer)
+    {
+    }
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+    {
+    }
+
 
     virtual void importFunction(size32_t lenChars, const char *text)
     {
@@ -1534,6 +1545,17 @@ public:
     ~Python27EmbedImportContext()
     {
     }
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+    {
+        return NULL;
+    }
+    virtual void paramWriterCommit(IInterface *writer)
+    {
+    }
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+    {
+    }
+
 
     virtual void importFunction(size32_t lenChars, const char *utf)
     {
@@ -1575,6 +1597,10 @@ public:
             return new Python27EmbedImportContext(threadContext, options);
         else
             return new Python27EmbedScriptContext(threadContext, options);
+    }
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    {
+        throwUnexpected();
     }
 };
 

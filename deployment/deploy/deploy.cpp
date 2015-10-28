@@ -17,6 +17,7 @@
 #include "deploy.hpp"
 #include "environment.hpp"
 #include "jptree.hpp"
+#include "jarray.hpp"
 #include "jexcept.hpp"
 #include "jencrypt.hpp"
 #include "xslprocessor.hpp"
@@ -1117,6 +1118,21 @@ bool matchDeployAddress(const char *searchIP, const char *envIP)
 IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName, 
                             const char* compType, const char* ipAddr, bool listall)
 {
+  Owned<IPropertyTreeIterator> pClusterIter = pEnvRoot->getElements("Software/Topology/*");
+  StringArray pTopologyComponents;
+ 
+  ForEach(*pClusterIter)
+  {
+    IPropertyTree * pCluster = &pClusterIter->query();
+    IPropertyTreeIterator* pClusterProcessIter = pCluster->getElements("*");
+    ForEach(*pClusterProcessIter)
+    {
+      IPropertyTree * pClusterProcess = &pClusterProcessIter->query();
+      if (!strcmp(pClusterProcess->queryName(),"RoxieCluster") || !strcmp(pClusterProcess->queryName(),"ThorCluster"))
+        pTopologyComponents.appendUniq(pClusterProcess->queryProp("@process"));
+    }
+  }
+
   Owned<IPropertyTree> pSelComps(createPTree("SelectedComponents"));
   Owned<IPropertyTreeIterator> iter = pEnvRoot->getElements("Software/*");
   const char* instanceNodeNames[] = { "Instance", "RoxieServerProcess" };
@@ -1126,14 +1142,20 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
   {
     IPropertyTree* pComponent = &iter->query();
     const char* type = pComponent->queryName();
-    if (stricmp(type, "Topology")!=0 && stricmp(type, "Directories")!=0 && 
-        ((!compName && !compType) || (compName && !strcmp(pComponent->queryProp("@name"), compName)) ||
-        (!compName && compType && !strcmp(pComponent->queryProp("@buildSet"), compType))))
+    if (stricmp(type, "Topology")!=0 && stricmp(type, "Directories")!=0 &&
+        pComponent->queryProp("@buildSet") && pComponent->queryProp("@name") &&
+        ((!compName && !compType) ||
+         (compName && !strcmp(pComponent->queryProp("@name"), compName)) ||
+         (!compName && compType && !strcmp(pComponent->queryProp("@buildSet"), compType))))
     {
       const char* name    = pComponent->queryProp("@name");
       const char* build   = pComponent->queryProp("@build");
       const char* buildSet= pComponent->queryProp("@buildSet");
+      const char* masterPort = pComponent->queryProp("@masterport");
       const char* logDir = NULL;
+
+      if ((!strcmp(buildSet,"thor") || !strcmp(buildSet,"roxie")) && !pTopologyComponents.contains(name))
+        continue;
 
       if (listall)
         for (int i = 0; i < sizeof(logDirNames)/sizeof(char*); i++)
@@ -1191,6 +1213,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
                 pInstance->addProp("@name", pInst->queryProp("@name"));
                 pInstance->addProp("@computer", computer);
                 pInstance->addProp("@netAddress", netAddr);
+                pInstance->addProp("@masterport", masterPort);
               }
             }
           }

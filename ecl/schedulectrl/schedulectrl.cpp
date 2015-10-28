@@ -31,8 +31,8 @@ void scheduleWorkUnit(char const * wuid)
 
 void scheduleWorkUnit(char const * wuid, ISecManager & secmgr, ISecUser & secuser)
 {
-    Owned<IWorkUnitFactory> factory = getSecWorkUnitFactory(secmgr, secuser);
-    Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid, &secmgr, &secuser);
     if(wu)
         wu->schedule();
 }
@@ -47,8 +47,8 @@ void descheduleWorkUnit(char const * wuid)
 
 void descheduleWorkUnit(char const * wuid, ISecManager & secmgr, ISecUser & secuser)
 {
-    Owned<IWorkUnitFactory> factory = getSecWorkUnitFactory(secmgr, secuser);
-    Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid, &secmgr, &secuser);
     if(wu)
         wu->deschedule();
 
@@ -62,8 +62,8 @@ void descheduleAllWorkUnits()
 
 void descheduleAllWorkUnits(ISecManager & secmgr, ISecUser & secuser)
 {
-    Owned<IWorkUnitFactory> factory = getSecWorkUnitFactory(secmgr, secuser);
-    factory->descheduleAllWorkUnits();
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    factory->descheduleAllWorkUnits(&secmgr, &secuser);
 }
 
 void descheduleNonexistentWorkUnit(char const * wuid)

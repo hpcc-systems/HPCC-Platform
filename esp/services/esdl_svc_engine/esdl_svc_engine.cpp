@@ -39,38 +39,6 @@ CEsdlSvcEngineSoapBindingEx::CEsdlSvcEngineSoapBindingEx(IPropertyTree* cfg, con
 {
 }
 
-void CEsdlSvcEngineSoapBindingEx::handleSoapRequestException(IException *e, const char *source)
-{
-    WsErrorType  errorType = WSERR_NOERR;
-
-    const int    errorcode = e->errorCode();
-    StringBuffer errorMessage;
-    e->errorMessage(errorMessage);
-
-    ESPLOG(LogMax,"EsdlBindingImpl:HandleSoapRequest response error code: %d /nmerror message: %s",  errorcode, errorMessage.str());
-
-    IWsException *wsex = dynamic_cast<IWsException *> (e);
-
-    switch (errorcode){
-    case ERR_ESDL_BINDING_AUTHERROR: case ERR_ESDL_BINDING_BADACCOUNT: case ERR_ESDL_BINDING_BADABI:
-    case ERR_ESDL_BINDING_BADBRAND:  case ERR_ESDL_BINDING_BADBROKER:  case ERR_ESDL_BINDING_TESTCASE:
-        errorType = WSERR_CLIENT ;
-        break;
-    case 2:
-        e->Release();
-        wsex = makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_CLIENT, source, errorMessage.str());
-        break;
-    default:
-        errorType = WSERR_SERVER;
-        break;
-    }
-
-    if ( wsex )
-        throw wsex;
-    else
-        throw makeWsException( *e, errorType, source );
-}
-
 IPropertyTree *CEsdlSvcEngine::createTargetContext(IEspContext &context, IPropertyTree *tgtcfg, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *req_pt)
 {
     const char *querytype = tgtcfg->queryProp("@querytype");

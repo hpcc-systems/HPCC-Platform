@@ -280,7 +280,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 eclccCmd.appendf(" -I%s", value);
             else if (stricmp(optName, "libraryPath") == 0)
                 eclccCmd.appendf(" -L%s", value);
-            else if (stricmp(optName, "-allow")==0)
+            else if (strnicmp(optName, "-allow", 6)==0)
             {
                 if (isLocal)
                     throw MakeStringException(0, "eclcc-allow option can not be set per-workunit");  // for security reasons
@@ -395,13 +395,12 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 if (!getWorkunitXMLFromFile(realdllfilename, wuXML))
                     throw makeStringException(999, "Failed to extract workunit from query dll");
 
-                Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
-                embeddedWU->loadXML(wuXML);
+                Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(wuXML);
                 queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, true);
                 workunit->setIsClone(false);
-                SCMStringBuffer jobname;
-                if (embeddedWU->getJobName(jobname).length()) //let ECL win naming job during initial compile
-                    workunit->setJobName(jobname.str());
+                const char *jobname = embeddedWU->queryJobName();
+                if (jobname && *jobname) //let ECL win naming job during initial compile
+                    workunit->setJobName(jobname);
                 if (!workunit->getDebugValueBool("obfuscateOutput", false))
                 {
                     Owned<IWUQuery> query = workunit->updateQuery();
@@ -473,8 +472,7 @@ public:
         serverstatus.queryProperties()->setProp("WorkUnit",wuid.get());
         serverstatus.commitProperties();
         workunit->setAgentSession(myProcessSession());
-        SCMStringBuffer clusterName;
-        workunit->getClusterName(clusterName);
+        StringAttr clusterName(workunit->queryClusterName());
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (!clusterInfo)
         {
@@ -501,20 +499,19 @@ public:
         if (ok)
         {
             workunit->setState(WUStateCompiled);
-            SCMStringBuffer newClusterName;
-            workunit->getClusterName(newClusterName);   // Workunit can change the cluster name via #workunit, so reload it
-            if (strcmp(newClusterName.str(), clusterName.str()) != 0)
+            const char *newClusterName = workunit->queryClusterName();   // Workunit can change the cluster name via #workunit, so reload it
+            if (strcmp(newClusterName, clusterName.str()) != 0)
             {
-                clusterInfo.setown(getTargetClusterInfo(clusterName.str()));
+                clusterInfo.setown(getTargetClusterInfo(newClusterName));
                 if (!clusterInfo)
                 {
-                    VStringBuffer errStr("Cluster %s by #workunit not recognized", clusterName.str());
+                    VStringBuffer errStr("Cluster %s by #workunit not recognized", newClusterName);
                     failCompilation(errStr);
                     return;
                 }
                 if (platform != clusterInfo->getPlatform())
                 {
-                    VStringBuffer errStr("Cluster %s specified by #workunit is wrong type for this queue", clusterName.str());
+                    VStringBuffer errStr("Cluster %s specified by #workunit is wrong type for this queue", newClusterName);
                     failCompilation(errStr);
                     return;
                 }

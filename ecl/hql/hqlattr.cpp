@@ -347,6 +347,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_soapcall_ds:
     case no_newsoapcall:
     case no_newsoapcall_ds:
+    case no_quantile:
     case no_nonempty:
     case no_filtergroup:
     case no_limit:
@@ -629,7 +630,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
     case no_unused80: case no_unused83:
-    case no_unused101: case no_unused102:
+    case no_unused102:
     case no_is_null:
     case no_position:
     case no_current_time:
@@ -1286,7 +1287,7 @@ ITypeInfo * getSerializedForm(ITypeInfo * type, IAtom * variation)
         {
             //MORE: If (variant == internalAtom) consider using a format that prefixes the dataset with a count instead of a size
             OwnedITypeInfo noOutOfLineType = removeModifier(type, typemod_outofline);
-            OwnedITypeInfo noLinkCountType = removeProperty(noOutOfLineType, _linkCounted_Atom);
+            OwnedITypeInfo noLinkCountType = removeAttribute(noOutOfLineType, _linkCounted_Atom);
             ITypeInfo * childType = noLinkCountType->queryChildType();
             OwnedITypeInfo newChild = getSerializedForm(childType, variation);
             return replaceChildType(noLinkCountType, newChild);
@@ -1294,7 +1295,7 @@ ITypeInfo * getSerializedForm(ITypeInfo * type, IAtom * variation)
     case type_dictionary:
         {
             OwnedITypeInfo noOutOfLineType = removeModifier(type, typemod_outofline);
-            OwnedITypeInfo noLinkCountType = removeProperty(noOutOfLineType, _linkCounted_Atom);
+            OwnedITypeInfo noLinkCountType = removeAttribute(noOutOfLineType, _linkCounted_Atom);
             ITypeInfo * childType = noLinkCountType->queryChildType();
             OwnedITypeInfo newChild = getSerializedForm(childType, variation);
             if (variation == internalAtom)
@@ -1399,7 +1400,7 @@ IHqlExpression * HqlUnadornedNormalizer::createTransformed(IHqlExpression * expr
             IIdAtom * id = expr->queryId();
             //Fields names compare case-insignificantly therefore the field name is converted to lower case so that
             //equivalent fields are mapped to the same normalized expression.
-            IIdAtom * newid = createIdAtom(id->lower()->str());
+            IIdAtom * newid = createIdAtom(str(lower(id)));
             if ((type != newType) || (id != newid))
                 return createField(newid, newType.getClear(), children);
 
@@ -2813,6 +2814,27 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
                 info.limitMin(choosenLimit);
         }
         break;
+    case no_quantile:
+        {
+            __int64 parts = getIntValue(expr->queryChild(1), 0);
+            if ((parts > 0) && !isGrouped(expr) && !isLocalActivity(expr))
+            {
+                if (expr->hasAttribute(firstAtom))
+                    parts++;
+                if (expr->hasAttribute(lastAtom))
+                    parts++;
+
+                IHqlExpression * transform = queryNewColumnProvider(expr);
+                if (transformContainsSkip(transform) || expr->hasAttribute(dedupAtom))
+                    info.setRange(0,parts-1);
+                else
+                    info.setN(parts-1);
+            }
+            else
+                info.setUnknown(RCMfew);
+        }
+        break;
+
     case no_topn:
         {
             retrieveRowInformation(info, ds);
@@ -3131,7 +3153,7 @@ ITypeInfo * cloneEssentialFieldModifiers(ITypeInfo * donor, ITypeInfo * rawtype)
     return type.getClear();
 }
 
-ITypeInfo * removeProperty(ITypeInfo * t, IAtom * search)
+ITypeInfo * removeAttribute(ITypeInfo * t, IAtom * search)
 {
     typemod_t curModifier = t->queryModifier();
     if (curModifier == typemod_none)
@@ -3145,7 +3167,7 @@ ITypeInfo * removeProperty(ITypeInfo * t, IAtom * search)
             return LINK(base);
     }
 
-    OwnedITypeInfo newBase = removeProperty(base, search);
+    OwnedITypeInfo newBase = removeAttribute(base, search);
     if (newBase == base)
         return LINK(t);
     return makeModifier(newBase.getClear(), curModifier, LINK(t->queryModifierExtra()));
@@ -3701,7 +3723,7 @@ ITypeInfo * setLinkCountedAttr(ITypeInfo * _type, bool setValue)
     {
         if (setValue)
             return LINK(type);
-        return removeProperty(type, _linkCounted_Atom);
+        return removeAttribute(type, _linkCounted_Atom);
     }
     else
     {
@@ -3735,7 +3757,7 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
     {
         if (setValue)
             return LINK(type);
-        return removeProperty(type, streamedAtom);
+        return removeAttribute(type, streamedAtom);
     }
     else
     {

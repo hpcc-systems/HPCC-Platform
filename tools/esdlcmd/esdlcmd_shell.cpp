@@ -37,7 +37,7 @@ int EsdlCMDShell::callExternal(ArgvIterator &iter)
 {
     const char *argv[100];
     StringBuffer cmdstr("esdl-");
-    cmdstr.append(cmd.sget());
+    cmdstr.append(cmd.str());
     int i=0;
     argv[i++]=cmdstr.str();
     if (optHelp)
@@ -62,11 +62,11 @@ int EsdlCMDShell::callExternal(ArgvIterator &iter)
         switch(errno)
         {
         case ENOENT:
-            fprintf(stderr, "esdl '%s' command not found\n", cmd.sget());
+            fprintf(stderr, "esdl '%s' command not found\n", cmd.str());
             usage();
             return 1;
         default:
-            fprintf(stderr, "esdl '%s' command error %d\n", cmd.sget(), errno);
+            fprintf(stderr, "esdl '%s' command error %d\n", cmd.str(), errno);
             return 1;
         }
     }
@@ -82,7 +82,7 @@ int EsdlCMDShell::processCMD(ArgvIterator &iter)
         {
             if (runExternals)
                 return callExternal(iter);
-            fprintf(stderr, "esdl '%s' command not found\n", cmd.sget());
+            fprintf(stderr, "esdl '%s' command not found\n", cmd.str());
         }
         usage();
         return 1;
@@ -164,7 +164,7 @@ bool EsdlCMDShell::parseCommandLineOptions(ArgvIterator &iter)
         if (iter.matchOption(tempArg, "-brk"))
         {
 #if defined(_WIN32) && defined(_DEBUG)
-            unsigned id = atoi(tempArg.sget());
+            unsigned id = atoi(tempArg.str());
             if (id == 0)
                 DebugBreak();
             else

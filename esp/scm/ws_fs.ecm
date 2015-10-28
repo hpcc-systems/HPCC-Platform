@@ -15,6 +15,14 @@
     limitations under the License.
 ############################################################################## */
 
+ESPenum DFUWUActions : string
+{
+    Delete("Delete"),
+    Protect("Protect"),
+    Unprotect("Unprotect"),
+    Restore("Restore"),
+    SetToFailed("SetToFailed"),
+};
 
 ESPStruct [nil_remove] DFUWorkunit
 {
@@ -245,7 +253,7 @@ DeleteDFUWorkunitsResponse
 ESPrequest DFUWorkunitsActionRequest
 {
     ESParray<string> wuids;
-    string Type;
+    ESPenum DFUWUActions Type;
 };
 
 ESPresponse [exceptions_inline] DFUWorkunitsActionResponse

@@ -42,8 +42,8 @@ public:
     {
         if (global)
         {
-            mptag_t barrierTag = activity->queryContainer().queryJob().deserializeMPTag(data);
-            barrier.setown(activity->queryContainer().queryJob().createBarrier(barrierTag));
+            mptag_t barrierTag = activity->queryContainer().queryJobChannel().deserializeMPTag(data);
+            barrier.setown(activity->queryContainer().queryJobChannel().createBarrier(barrierTag));
         }
     }
     void preStart(size32_t parentExtractSz, const byte *parentExtract)

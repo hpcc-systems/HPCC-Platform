@@ -93,7 +93,7 @@ bool AbortHelper::doit(FILE * fp)
         Owned<IClientWUInfoRequest> inforeq = wuclient->createWUInfoRequest();
         inforeq->setWuid(wuid);
         Owned<IClientWUInfoResponse> inforesp = wuclient->WUInfo(inforeq);
-        if(!inforesp || &inforesp->getWorkunit() == NULL)
+        if(!inforesp)
         {
             printf("Workunit %s not found\n", wuid);
             return false;

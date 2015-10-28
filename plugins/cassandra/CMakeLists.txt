@@ -72,7 +72,10 @@ if (USE_CASSANDRA)
     add_dependencies( cassandra libuv )
     SET (CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
 
-    set(SRCS cassandraembed.cpp)
+    set ( SRCS
+      cassandraembed.cpp
+      cassandrawu.cpp
+    )
 
     include_directories (
          ./../../system/include
@@ -81,7 +84,12 @@ if (USE_CASSANDRA)
          ./../../rtl/include
          ./../../rtl/nbcd
          ./../../common/deftype
+         ./../../common/workunit
          ./../../system/jlib
+         ./../../system/security/shared 
+         ./../../system/mp
+    
+         ./../../dali/base 
 
          ./cpp-driver/include
        )
@@ -89,10 +97,12 @@ if (USE_CASSANDRA)
     ADD_DEFINITIONS( -D_USRDLL -DCASSANDRAEMBED_EXPORTS)
 
     HPCC_ADD_LIBRARY( cassandraembed SHARED ${SRCS} )
-    if (${CMAKE_VERSION} VERSION_LESS "2.8.9")
-      message("WARNING: Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-    elseif(NOT APPLE)
-      set_target_properties( cassandraembed PROPERTIES NO_SONAME 1 )
+    if ( NOT FORCE_WORKUNITS_TO_CASSANDRA )
+      if (${CMAKE_VERSION} VERSION_LESS "2.8.9")
+        message("WARNING: Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
+      elseif(NOT APPLE)
+        set_target_properties( cassandraembed PROPERTIES NO_SONAME 1 )
+      endif()
     endif()
 
     install ( TARGETS cassandraembed DESTINATION plugins COMPONENT Runtime )
@@ -110,6 +120,8 @@ if (USE_CASSANDRA)
         cassandra
         eclrtl
         roxiemem
+        dalibase
+        workunit
         jlib
         )
   endif()

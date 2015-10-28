@@ -56,8 +56,7 @@ int main(int argc, char **argv)
                 StringBuffer xml;
                 if (getWorkunitXMLFromFile(argv[i], xml))
                 {
-                    Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
-                    wu->loadXML(xml);
+                    Owned<ILocalWorkUnit> wu = createLocalWorkUnit(xml);
                     exportWorkUnitToXML(wu, xml.clear(), true, false, true);
                     printf("%s\n", xml.str());
                 }

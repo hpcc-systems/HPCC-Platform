@@ -71,15 +71,51 @@ static const char* FEATURE_URL="DfuAccess";
 
 #define REMOVE_FILE_SDS_CONNECT_TIMEOUT (1000*15)  // 15 seconds
 
+const unsigned NODE_GROUP_CACHE_DEFAULT_TIMEOUT = 30*60*1000; //30 minutes
+
 const int DESCRIPTION_DISPLAY_LENGTH = 12;
 const unsigned MAX_VIEWKEYFILE_ROWS = 1000;
 const unsigned MAX_KEY_ROWS = 20;
 
 short days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
+CThorNodeGroup* CThorNodeGroupCache::readNodeGroup(const char* _groupName)
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
+
+    Owned<IPropertyTree> root = &env->getPTree();
+    Owned<IPropertyTreeIterator> it= root->getElements("Software/ThorCluster");
+    ForEach(*it)
+    {
+        IPropertyTree& cluster = it->query();
+        StringBuffer groupName;
+        getClusterGroupName(cluster, groupName);
+        if (groupName.length() && strieq(groupName.str(), _groupName))
+            return new CThorNodeGroup(_groupName, cluster.getCount("ThorSlaveProcess"), cluster.getPropBool("@replicateOutputs", false));
+    }
+
+    return NULL;
+}
+
+CThorNodeGroup* CThorNodeGroupCache::lookup(const char* groupName, unsigned timeout)
+{
+    CriticalBlock block(sect);
+    CThorNodeGroup* item=SuperHashTableOf<CThorNodeGroup, const char>::find(groupName);
+    if (item && !item->checkTimeout(timeout))
+        return LINK(item);
+
+    Owned<CThorNodeGroup> e = readNodeGroup(groupName);
+    if (e)
+        replace(*e.getLink()); //if not exists, will be added.
+
+    return e.getClear();
+}
+
 void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
-
     StringBuffer xpath;
     
     DBGLOG("Initializing %s service [process = %s]", service, process);
@@ -110,6 +146,14 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
     m_disableUppercaseTranslation = false;
     if (streq(disableUppercaseTranslation.str(), "true"))
         m_disableUppercaseTranslation = true;
+
+    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/NodeGroupCacheMinutes", process, service);
+    int timeout = cfg->getPropInt(xpath.str(), -1);
+    if (timeout > -1)
+        nodeGroupCacheTimeout = (unsigned) timeout*60*1000;
+    else
+        nodeGroupCacheTimeout = NODE_GROUP_CACHE_DEFAULT_TIMEOUT;
+    thorNodeGroupCache.setown(new CThorNodeGroupCache());
 
     if (!daliClientActive())
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
@@ -1283,7 +1327,6 @@ void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &s
         if(!fn || !*fn)
             continue;
 
-        DeleteActionResult ar;
         if (DeleteActionFailure==doDeleteFile(fn, userdesc, superFiles, failedFiles, returnStr, actionResults, superFilesOnly, removeFromSuperfiles, deleteRecursively))
             failedFiles.appendUniq(fn);
     }
@@ -1331,6 +1374,10 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to update Logical Files. Permission denied.");
 
+        CDFUArrayActions action = req.getType();
+        if (action == DFUArrayActions_Undefined)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Action not defined.");
+
         double version = context.getClientVersion();
         if (version > 1.03)
         {
@@ -1344,31 +1391,10 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
             }
         }
 
-        if (strcmp(req.getType(), Action_Delete) == 0)
-        {
-            /*StringArray roxieQueries;
-            checkRoxieQueryFilesOnDelete(req, roxieQueries);
-            if (roxieQueries.length() > 0)
-            {
-                returnStr.append("<Message><Value>Cannot delete the files because of the following roxie queries: ");
-                for(int i = 0; i < roxieQueries.length();i++)
-                {
-                    const char* query = roxieQueries.item(i);
-                    if(!query || !*query)
-                        continue;
-
-                    if (i==0)
-                        returnStr.append(query);
-                    else
-                        returnStr.appendf(",%s", query);
-                }
-                returnStr.append("</Value></Message>");
-                resp.setDFUArrayActionResult(returnStr.str());
-                return true;
-            }*/
+        if (action == CDFUArrayActions_Delete)
             return  DFUDeleteFiles(context, req, resp);
-        }
 
+        //the code below is only for legacy ECLWatch. Other application should use AddtoSuperfile.
         StringBuffer username;
         context.getUserID(username);
 
@@ -1380,7 +1406,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
             userdesc->set(username.str(), passwd);
         }
 
-        StringBuffer returnStr;
+        StringBuffer errorStr, subfiles;
         for(unsigned i = 0; i < req.getLogicalFiles().length();i++)
         {
             const char* file = req.getLogicalFiles().item(i);
@@ -1401,79 +1427,50 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
             strncpy(curfile, file, len);
             curfile[len] = 0;
             
-            DBGLOG("CWsDfuEx::onDFUArrayAction User=%s Action=%s File=%s",username.str(),req.getType(), file);
             try
             {
-                onDFUAction(userdesc.get(), curfile, cluster, req.getType(), returnStr);
+                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(curfile, userdesc.get(), true);
+                if (df)
+                {
+                    if (subfiles.length() > 0)
+                        subfiles.append(",");
+                    subfiles.append(curfile);
+                }
+                else
+                    errorStr.appendf("<Message><Value>%s not found</Value></Message>", curfile);
             }
             catch(IException* e)
             {
                 StringBuffer emsg;
                 e->errorMessage(emsg);
-                if((e->errorCode() == DFSERR_CreateAccessDenied) && (req.getType() != NULL))
-                {
-                    if (strcmp(req.getType(), Action_AddtoSuperfile) == 0)
-                    {
-                        emsg.replaceString("Create ", "AddtoSuperfile ");               
-                    }
-                }
+                if (e->errorCode() == DFSERR_CreateAccessDenied)
+                    emsg.replaceString("Create ", "AddtoSuperfile ");
 
-                returnStr.appendf("<Message><Value>%s</Value></Message>", emsg.str());
+                errorStr.appendf("<Message><Value>%s for %s</Value></Message>", emsg.str(), curfile);
                 e->Release();
             }
             catch(...)
             {
-                returnStr.appendf("<Message><Value>Unknown exception onDFUArrayAction %s</Value></Message>", curfile);
+                errorStr.appendf("<Message><Value>Unknown exception for %s</Value></Message>", curfile);
             }
             delete [] curfile;
         }
 
-        if (strcmp(Action_AddtoSuperfile ,req.getType()) == 0)
+        if (errorStr.length())
         {
-            returnStr.replaceString("#", "%23");
-            if (version < 1.18)
-                resp.setRedirectUrl(StringBuffer("/WsDFU/AddtoSuperfile?Subfiles=").append(returnStr.str()));
-            else
-            {
-                resp.setRedirectTo(returnStr.str());
-            }
+            resp.setDFUArrayActionResult(errorStr.str());
+            return false;
         }
+
+        if (version < 1.18)
+            resp.setRedirectUrl(StringBuffer("/WsDFU/AddtoSuperfile?Subfiles=").append(subfiles.str()));
         else
-        {
-            resp.setDFUArrayActionResult(returnStr.str());
-        }
+            resp.setRedirectTo(subfiles.str());
     }
     catch(IException* e)
     {   
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
-    return true;
-}
-
-bool CWsDfuEx::onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName, const char* ClusterName, const char* ActionType, StringBuffer& returnStr)
-{
-    //No 'try/catch' is needed for this method since it will be called internally.
-    if (strcmp(Action_Delete ,ActionType) == 0)
-    {
-        LogicFileWrapper Logicfile;
-        if (!Logicfile.doDeleteFile(LogicalFileName,ClusterName, returnStr, udesc))
-            return false;
-    }
-    else if (strcmp(Action_AddtoSuperfile ,ActionType) == 0)
-    {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(LogicalFileName, udesc, true);
-        if (df)
-        {
-            if (returnStr.length() > 0)
-                returnStr.appendf(",%s", LogicalFileName);
-            else
-                returnStr.appendf("%s", LogicalFileName);
-            return false;
-        }
-    }
-    else
-        DBGLOG("Unknown Action type:%s\n",ActionType);
-    
     return true;
 }
 
@@ -1507,7 +1504,7 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
 
         //set the file
         MemoryBuffer buff;
-        buff.setBuffer(returnStr.length(), (void*)returnStr.toCharArray());
+        buff.setBuffer(returnStr.length(), (void*)returnStr.str());
         resp.setDefFile(buff);
 
         //set the type
@@ -1583,21 +1580,18 @@ bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, co
 
     if (!cluster || !stricmp(cluster, ""))
     {
-        char *eclCluster = NULL;
+        StringAttr eclCluster;
         const char* wuid = df->queryAttributes().queryProp("@workunit");
         if (wuid && *wuid)
         {
             try
             {
-                Owned<IWorkUnitFactory> factory = (context.querySecManager() ? getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser()) : getWorkUnitFactory());
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 if (factory)
                 {
-                    IConstWorkUnit* wu = factory->openWorkUnit(wuid, false);
+                    IConstWorkUnit* wu = factory->openWorkUnit(wuid, context.querySecManager(), context.queryUser());
                     if (wu)
-                    {   
-                        SCMStringBuffer cluster;
-                        eclCluster = (char *)wu->getClusterName(cluster).str();
-                    }
+                        eclCluster.set(wu->queryClusterName());
                 }
             }
             catch(...)
@@ -1606,7 +1600,7 @@ bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, co
             }
         }
 
-        if (!eclCluster || !stricmp(eclCluster, ""))
+        if (!eclCluster.length())
             return false;
     }
 
@@ -1666,7 +1660,7 @@ bool FindInStringArray(StringArray& clusters, const char *cluster)
     return bFound;
 }
 
-static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser* user, IUserDescriptor* udesc, ISecManager* secmgr, int& permission)
+static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser & user, IUserDescriptor* udesc, ISecManager* secmgr, int& permission)
 {
     if (dlfn.isMulti())
     {
@@ -1689,7 +1683,8 @@ static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser* user, IUserDe
         {
             StringBuffer scopes;
             dlfn.getScopes(scopes);
-            permissionTemp = secmgr->authorizeFileScope(*user, scopes.str());
+
+            permissionTemp = secmgr->authorizeFileScope(user, scopes.str());
         }
 
         //Descrease the permission whenever a component has a lower permission.
@@ -1731,9 +1726,9 @@ bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udes
     CDfsLogicalFileName dlfn;
     dlfn.set(logicalName);
 
-    //Start from the SecAccess_Full. Descrease the permission whenever a component has a lower permission.
+    //Start from the SecAccess_Full. Decrease the permission whenever a component has a lower permission.
     permission = SecAccess_Full;
-    getFilePermission(dlfn, user, udesc, secmgr, permission);
+    getFilePermission(dlfn, *user, udesc, secmgr, permission);
 
     return true;
 }
@@ -1797,6 +1792,9 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
             if (clusterInfo) //Should be valid. But, check it just in case.
             {
                 partsOnCluster->setReplicate(clusterInfo->queryPartDiskMapping().isReplicated());
+                Owned<CThorNodeGroup> nodeGroup = thorNodeGroupCache->lookup(clusterName, nodeGroupCacheTimeout);
+                if (nodeGroup)
+                    partsOnCluster->setCanReplicate(nodeGroup->queryCanReplicate());
                 const char* defaultDir = fdesc->queryDefaultDir();
                 if (defaultDir && *defaultDir)
                 {
@@ -3140,6 +3138,12 @@ void CWsDfuEx::setFileNameFilter(const char* fname, const char* prefix, StringBu
     filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(fileNameFilter.str()).append(DFUQFilterSeparator);
 }
 
+void CWsDfuEx::setFileIterateFilter(unsigned maxFiles, StringBuffer &filterBuf)
+{
+    filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFMaxFiles).append(DFUQFilterSeparator)
+        .append(maxFiles).append(DFUQFilterSeparator);
+}
+
 void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filterBuf)
 {
     setFileNameFilter(req.getLogicalName(), req.getPrefix(), filterBuf);
@@ -3148,6 +3152,8 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFattrowner), DFUQFTwildcardMatch, req.getOwner(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFkind), DFUQFTwildcardMatch, req.getContentType(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getNodeGroup(), ",", filterBuf);
+    if (!req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner())
+        filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
 
     __int64 sizeFrom = req.getFileSizeFrom();
     __int64 sizeTo = req.getFileSizeTo();
@@ -3289,6 +3295,15 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
             lFile->setParts(file.queryProp(getDFUQResultFieldName(DFUQRFnumparts)));
         }
         lFile->setBrowseData(numSubFiles > 1 ? false : true); ////Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
+
+        if (version >= 1.30)
+        {
+            bool persistent = file.getPropBool(getDFUQResultFieldName(DFUQRFpersistent), false);
+            if (persistent)
+                lFile->setPersistent(true);
+            if (file.hasProp(getDFUQResultFieldName(DFUQRFsuperowners)))
+                lFile->setSuperOwners(file.queryProp(getDFUQResultFieldName(DFUQRFsuperowners)));
+        }
 
         __int64 size = file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),0);
         if (size > 0)
@@ -3496,13 +3511,22 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
         pageSize = firstN;
     }
 
+    unsigned maxFiles = 0;
+    if(!req.getMaxNumberOfFiles_isNull())
+        maxFiles = req.getMaxNumberOfFiles();
+    if (maxFiles == 0)
+        maxFiles = ITERATE_FILTEREDFILES_LIMIT;
+    if (maxFiles != ITERATE_FILTEREDFILES_LIMIT)
+        setFileIterateFilter(maxFiles, filterBuf);
+
     __int64 cacheHint = 0;
     if (!req.getCacheHint_isNull())
         cacheHint = req.getCacheHint();
 
+    bool allMatchingFilesReceived = true;
     unsigned totalFiles = 0;
     Owned<IDFAttributesIterator> it = queryDistributedFileDirectory().getLogicalFilesSorted(udesc, sortOrder, filterBuf.str(),
-        localFilters, localFilterBuf.bufferBase(), pageStart, pageSize, &cacheHint, &totalFiles);
+        localFilters, localFilterBuf.bufferBase(), pageStart, pageSize, &cacheHint, &totalFiles, &allMatchingFilesReceived);
     if(!it)
         throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
 
@@ -3510,8 +3534,14 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
     ForEach(*it)
         addToLogicalFileList(it->query(), NULL, version, logicalFiles);
 
-    if (version >= 1.24)
-        resp.setCacheHint(cacheHint);
+    if (!allMatchingFilesReceived)
+    {
+        VStringBuffer warning("The returned results (%d files) represent a subset of the total number of matches. Using a correct filter may reduce the number of matches.",
+            maxFiles);
+        resp.setWarning(warning.str());
+        resp.setIsSubsetOfFiles(!allMatchingFilesReceived);
+    }
+    resp.setCacheHint(cacheHint);
     resp.setDFULogicalFiles(logicalFiles);
     setDFUQueryResponse(context, totalFiles, sortBy, descending, pageStart, pageSize, req, resp); //This call may be removed after 5.0
 
@@ -4343,59 +4373,97 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
         unsigned keyedColumnCount;
         StringBuffer XmlSchema, XmlXPathSchema;
         IArrayOf<IEspDFUDataColumn> dataColumns;
-        const IResultSetMetaData& meta;
+        const IResultSetMetaData& metaRoot;
+        bool readRootLevelColumns;
+        IEspContext &context;
 
-        bool readColumnLabel(const int columnID, IEspDFUDataColumn* out)
+        bool readColumnLabel(const IResultSetMetaData* meta, unsigned columnID, IEspDFUDataColumn* out)
         {
             SCMStringBuffer columnLabel;
             bool isNaturalColumn = true;
-            if (meta.hasSetTranslation(columnID))
-                meta.getNaturalColumnLabel(columnLabel, columnID);
+            if (meta->hasSetTranslation(columnID))
+                meta->getNaturalColumnLabel(columnLabel, columnID);
             if (columnLabel.length() < 1)
             {
-                meta.getColumnLabel(columnLabel, columnID);
+                meta->getColumnLabel(columnLabel, columnID);
                 isNaturalColumn = false;
             }
             out->setColumnLabel(columnLabel.str());
             out->setIsNaturalColumn(isNaturalColumn);
             return isNaturalColumn;
         }
-        void readColumnEclType(const int columnID, IEspDFUDataColumn* out)
+        void readColumn(const IResultSetMetaData* meta, unsigned& columnID, const bool isKeyed,
+            IArrayOf<IEspDFUDataColumn>& dataColumns)
         {
-            SCMStringBuffer s;
-            out->setColumnEclType(meta.getColumnEclType(s, columnID).str());
-        }
-        void readColumnRawSize(const int columnID, IEspDFUDataColumn* out)
-        {
-            DisplayType columnType = meta.getColumnDisplayType(columnID);
-            if ((columnType == TypeUnicode) || columnType == TypeString)
-                out->setColumnRawSize(meta.getColumnRawSize(columnID));
-        }
-        void readColumn(const int columnID, const bool isKeyed, IArrayOf<IEspDFUDataColumn>& dataColumns)
-        {
+            double version = context.getClientVersion();
             Owned<IEspDFUDataColumn> dataItem = createDFUDataColumn();
             dataItem->setColumnID(columnID+1);
             dataItem->setIsKeyedColumn(isKeyed);
 
-            if (readColumnLabel(columnID, dataItem))
+            SCMStringBuffer s;
+            dataItem->setColumnEclType(meta->getColumnEclType(s, columnID).str());
+
+            DisplayType columnType = meta->getColumnDisplayType(columnID);
+            if ((columnType == TypeUnicode) || columnType == TypeString)
+                dataItem->setColumnRawSize(meta->getColumnRawSize(columnID));
+
+            if (readColumnLabel(meta, columnID, dataItem))
                 dataItem->setColumnType("Others");
+            else if (columnType == TypeBeginRecord)
+                dataItem->setColumnType("Record");
             else
-                dataItem->setColumnType(columnTypes[meta.getColumnDisplayType(columnID)]);
-            readColumnRawSize(columnID, dataItem);
-            readColumnEclType(columnID, dataItem);
+                dataItem->setColumnType(columnTypes[columnType]);
+
+            if ((version >= 1.31) && ((columnType == TypeSet) || (columnType == TypeDataset) || (columnType == TypeBeginRecord)))
+                checkAndReadNestedColumn(meta, columnID, columnType, dataItem);
+
             dataColumns.append(*dataItem.getClear());
+        }
+        void readColumns(const IResultSetMetaData* meta, IArrayOf<IEspDFUDataColumn>& dataColumnArray)
+        {
+            if (!meta)
+                return;
+
+            if (readRootLevelColumns)
+            {
+                readRootLevelColumns = false;
+                totalColumnCount = (unsigned)meta->getColumnCount();
+                keyedColumnCount = meta->getNumKeyedColumns();
+                unsigned i = 0;
+                for (; i < keyedColumnCount; i++)
+                    readColumn(meta, i, true, dataColumnArray);
+                for (i = keyedColumnCount; i < totalColumnCount; i++)
+                    readColumn(meta, i, false, dataColumnArray);
+            }
+            else
+            {
+                unsigned columnCount = (unsigned)meta->getColumnCount();
+                for (unsigned i = 0; i < columnCount; i++)
+                    readColumn(meta, i, false, dataColumnArray);
+            }
+        }
+        void checkAndReadNestedColumn(const IResultSetMetaData* meta, unsigned& columnID,
+            DisplayType columnType, IEspDFUDataColumn* dataItem)
+        {
+            IArrayOf<IEspDFUDataColumn> curDataColumnArray;
+            if (columnType == TypeBeginRecord)
+            {
+                columnID++;
+                do
+                {
+                    readColumn(meta, columnID, false, curDataColumnArray);
+                } while (meta->getColumnDisplayType(++columnID) != TypeEndRecord);
+            }
+            else
+                readColumns(meta->getChildMeta(columnID), curDataColumnArray);
+            dataItem->setDataColumns(curDataColumnArray);
         }
 
     public:
-        CDFUFileMetaDataReader(const IResultSetMetaData& _meta) : meta(_meta)
+        CDFUFileMetaDataReader(IEspContext& _context, const IResultSetMetaData& _meta)
+            : context(_context), metaRoot(_meta), readRootLevelColumns(true)
         {
-            totalColumnCount = (unsigned)meta.getColumnCount();
-            keyedColumnCount = meta.getNumKeyedColumns();
-            unsigned i = 0;
-            for (; i < keyedColumnCount; i++)
-                readColumn(i, true, dataColumns);
-            for (i = keyedColumnCount; i < totalColumnCount; i++)
-                readColumn(i, false, dataColumns);
+            readColumns(&metaRoot, dataColumns);
         };
         inline unsigned getTotalColumnCount() { return totalColumnCount; }
         inline unsigned getKeyedColumnCount() { return keyedColumnCount; }
@@ -4403,13 +4471,13 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
         inline StringBuffer& getXmlSchema(StringBuffer& s, const bool addHeader)
         {
             StringBufferAdaptor schema(s);
-            meta.getXmlSchema(schema, addHeader);
+            metaRoot.getXmlSchema(schema, addHeader);
             return s;
         }
         inline StringBuffer& getXmlXPathSchema(StringBuffer& s, const bool addHeader)
         {
             StringBufferAdaptor XPathSchema(s);
-            meta.getXmlXPathSchema(XPathSchema, addHeader);
+            metaRoot.getXmlXPathSchema(XPathSchema, addHeader);
             return s;
         }
     };
@@ -4445,7 +4513,7 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "CWsDfuEx::onDFUGetFileMetaData: Failed to access FileResultSet for %s.", fileName);
 
         Owned<IResultSetCursor> cursor = result->createCursor();
-        CDFUFileMetaDataReader dataReader(cursor->queryResultSet()->getMetaData());
+        CDFUFileMetaDataReader dataReader(context, cursor->queryResultSet()->getMetaData());
         resp.setTotalColumnCount(dataReader.getTotalColumnCount());
         resp.setKeyedColumnCount(dataReader.getKeyedColumnCount());
         resp.setDataColumns(dataReader.getDataColumns());
@@ -5617,10 +5685,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
         {
             CWUWrapper wu(wuid, context);
             if (wu)
-            {
-                SCMStringBuffer cluster0;
-                cluster.append(wu->getClusterName(cluster0).str());
-            }
+                cluster.append(wu->queryClusterName());
         }
     }
     catch (IException *e)
@@ -5644,7 +5709,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
         udesc->set(secUser->getName(), secUser->credentials().getPassword());
     }
 
-    if (cluster && *cluster)
+    if (cluster.length())
     {
         web.setown(createViewFileWeb(*resultSetFactory, cluster, udesc.getLink()));
     }

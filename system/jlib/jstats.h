@@ -595,6 +595,8 @@ extern jlib_decl const char * queryStatisticsComponentName();
 extern jlib_decl void setStatisticsComponentName(StatisticCreatorType processType, const char * processName, bool appendIP);
 
 extern jlib_decl void verifyStatisticFunctions();
+extern jlib_decl void formatTimeCollatable(StringBuffer & out, unsigned __int64 value, bool nano);
+extern jlib_decl unsigned __int64 extractTimeCollatable(const char *s, bool nano);
 
 //This interface is primarily here to reduce the dependency between the different components.
 interface IStatisticTarget

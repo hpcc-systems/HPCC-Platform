@@ -382,7 +382,7 @@ public:
                 if (canMatchAny(childType))
                     sawMatch = true;
             }
-            if (stricmp(fields[0]->name->getAtomNamePtr(), searchFieldName)==0)
+            if (stricmp(str(fields[0]->name), searchFieldName)==0)
                 sawMatch = true;
             fields++;
         }

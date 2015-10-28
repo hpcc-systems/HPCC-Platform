@@ -3300,9 +3300,6 @@ inline const char *getSeverityTagname(ErrorSeverity severity, unsigned flags)
 
 extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const char *password, const IConstWorkUnit *cw, IXmlWriter &writer, unsigned flags, ErrorSeverity minSeverity, const char *rootTag)
 {
-    SCMStringBuffer wuid;
-    cw->getWuid(wuid);
-
     if (rootTag && *rootTag && !(flags & WorkUnitXML_NoRoot))
         writer.outputBeginNested(rootTag, true);
 
@@ -3348,7 +3345,7 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
                 {
                     SCMStringBuffer name;
                     ds.getResultName(name);
-                    Owned<INewResultSet> nr = factory->createNewResultSet(&ds, wuid.str());
+                    Owned<INewResultSet> nr = factory->createNewResultSet(&ds, cw->queryWuid());
                     const IProperties *xmlns = ds.queryResultXmlns();
                     writeResultXml(writer, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL, xmlns);
                 }
@@ -3369,9 +3366,6 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
 
 extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, unsigned flags, ErrorSeverity minSeverity)
 {
-    SCMStringBuffer wuid;
-    cw->getWuid(wuid);
-
     Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty);
     writeFullWorkUnitResults(username, password, cw, *writer, flags, minSeverity, "Result");
 
@@ -3385,9 +3379,6 @@ extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, 
 
 extern FILEVIEW_API IStringVal& getFullWorkUnitResultsJSON(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, unsigned flags, ErrorSeverity minSeverity)
 {
-    SCMStringBuffer wuid;
-    cw->getWuid(wuid);
-
     Owned<CommonJsonWriter> writer = new CommonJsonWriter(0);
     writer->outputBeginRoot();
     writeFullWorkUnitResults(username, password, cw, *writer, flags, minSeverity, "Results");

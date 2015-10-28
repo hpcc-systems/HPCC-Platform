@@ -212,10 +212,10 @@ public:
         StringBuffer tmp;
         switch (error) {
         case MPERR_ok:                          str.append("OK"); break;
-        case MPERR_connection_failed:           str.appendf("MP connect failed (%s)",endpoint.getUrlStr(tmp).toCharArray()); break;
+        case MPERR_connection_failed:           str.appendf("MP connect failed (%s)",endpoint.getUrlStr(tmp).str()); break;
         case MPERR_process_not_in_group:        str.appendf("Current process not in Communicator group"); break;
-        case MPERR_protocol_version_mismatch:   str.appendf("Protocol version mismatch (%s)",endpoint.getUrlStr(tmp).toCharArray()); break;
-        case MPERR_link_closed:                 str.appendf("MP link closed (%s)",endpoint.getUrlStr(tmp).toCharArray()); break;
+        case MPERR_protocol_version_mismatch:   str.appendf("Protocol version mismatch (%s)",endpoint.getUrlStr(tmp).str()); break;
+        case MPERR_link_closed:                 str.appendf("MP link closed (%s)",endpoint.getUrlStr(tmp).str()); break;
         }
         return str;
     }
@@ -426,6 +426,7 @@ class CMPConnectThread: public Thread
     ISocket *listensock;
     CMPServer *parent;
     int mpSoMaxConn;
+    unsigned mpTraceLevel;
     void checkSelfDestruct(void *p,size32_t sz);
 public:
     CMPConnectThread(CMPServer *_parent, unsigned port);
@@ -454,13 +455,17 @@ class ForwardPacketHandler;
 class UserPacketHandler;
 class CMPNotifyClosedThread;
 
-static class CMPServer: private SuperHashTableOf<CMPChannel,SocketEndpoint>
+typedef SuperHashTableOf<CMPChannel,SocketEndpoint> CMPChannelHT;
+static class CMPServer: private CMPChannelHT, implements IMPServer
 {
-    unsigned short              port;
+    byte RTsalt;
     ISocketSelectHandler        *selecthandler;
     CMPConnectThread            *connectthread;
     CBufferQueue                receiveq;
     CMPNotifyClosedThread       *notifyclosedthread;
+    CriticalSection sect;
+protected:
+    unsigned short              port;
 public:
     static CriticalSection  serversect;
     static int                      servernest;
@@ -475,16 +480,18 @@ public:
     BroadcastPacketHandler      *broadcastpackethandler;    // TAG_SYS_BCAST
     UserPacketHandler           *userpackethandler;         // default
 
+    IMPLEMENT_IINTERFACE_USING(CMPChannelHT);
 
     CMPServer(unsigned _port);
     ~CMPServer();
     void start();
-    void stop();
+    virtual void stop();
     unsigned short getPort() { return port; }
     void setPort(unsigned short _port) { port = _port; }
     CMPChannel *lookup(const SocketEndpoint &remoteep);
     ISocketSelectHandler &querySelectHandler() { return *selecthandler; };
     CBufferQueue &getReceiveQ() { return receiveq; }
+    void checkTagOK(mptag_t tag);
     bool recv(CMessageBuffer &mbuf, const SocketEndpoint *ep, mptag_t tag, CTimeMon &tm);
     void flush(mptag_t tag);
     unsigned probe(const SocketEndpoint *ep, mptag_t tag, CTimeMon &tm, SocketEndpoint &sender);
@@ -508,46 +515,44 @@ protected:
 
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(CMPChannel,SocketEndpoint);
 
+    CriticalSection replyTagSect;
+    int rettag;
+    INode *myNode;
 
+public:
+    virtual mptag_t createReplyTag()
+    {
+        // these are short-lived so a simple increment will do (I think this is OK!)
+        mptag_t ret;
+        {
+            CriticalBlock block(replyTagSect);
+            if (RTsalt==0xff) {
+                RTsalt = (byte)(getRandom()%16);
+                rettag = (int)TAG_REPLY_BASE-RTsalt;
+            }
+            if (rettag>(int)TAG_REPLY_BASE) {           // wrapped
+                rettag = (int)TAG_REPLY_BASE-RTsalt;
+            }
+            ret = (mptag_t)rettag;
+            rettag -= 16;
+        }
+        flush(ret);
+        return ret;
+    }
+    virtual ICommunicator *createCommunicator(IGroup *group, bool outer);
+    virtual INode *queryMyNode()
+    {
+        return myNode;
+    }
 } *MPserver=NULL;
 int CMPServer::servernest=0;
 bool CMPServer::serverpaused=false;
 CriticalSection CMPServer::serversect;
 
-byte RTsalt=0xff;
-
 mptag_t createReplyTag()
 {
-    // these are short-lived so a simple increment will do (I think this is OK!)
-    mptag_t ret;
-    {
-        static CriticalSection sect;
-        CriticalBlock block(sect);
-        static int rettag=(int)TAG_REPLY_BASE;  // NB negative
-        if (RTsalt==0xff) {
-            RTsalt = (byte)(getRandom()%16);
-            rettag = (int)TAG_REPLY_BASE-RTsalt;
-        }
-        if (rettag>(int)TAG_REPLY_BASE) {           // wrapped
-            rettag = (int)TAG_REPLY_BASE-RTsalt;
-        }
-        ret = (mptag_t)rettag;
-        rettag -= 16;
-    }
-    if (MPserver)
-        MPserver->flush(ret);
-    return ret;
-}
-
-void checkTagOK(mptag_t tag)
-{
-    if ((int)tag<=(int)TAG_REPLY_BASE) {
-        int dif = (int)TAG_REPLY_BASE-(int)tag;
-        if (dif%16!=RTsalt) {
-            ERRLOG("**Invalid MP tag used");
-            PrintStackReport();
-        }
-    }
+    assertex(MPserver);
+    return MPserver->createReplyTag();
 }
 
 //===========================================================================
@@ -656,7 +661,9 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
         }
         catch (IJSOCK_Exception *e)
         {
-            if (JSOCKERR_timeout_expired != e->errorCode())
+            if (JSOCKERR_graceful_close == e->errorCode())
+                return;
+            else if (JSOCKERR_timeout_expired != e->errorCode())
                 throw;
             unsigned elapsedMs = readTmsTimer.elapsedMs();
             if (elapsedMs >= timeoutMs)
@@ -729,7 +736,7 @@ protected: friend class CMPPacketReader;
             try {
                 StringBuffer str;
 #ifdef _TRACE
-                LOG(MCdebugInfo(100), unknownJob, "MP: connecting to %s",remoteep.getUrlStr(str).toCharArray());
+                LOG(MCdebugInfo(100), unknownJob, "MP: connecting to %s",remoteep.getUrlStr(str).str());
 #endif
                 if (((int)tm.timeout)<0)
                     remaining = CONNECT_TIMEOUT;
@@ -883,7 +890,7 @@ protected: friend class CMPPacketReader;
                         newsock->Release();
                         newsock = NULL;
 #ifdef _TRACE
-                        LOG(MCdebugInfo(100), unknownJob, "MP: connected to %s",str.toCharArray());
+                        LOG(MCdebugInfo(100), unknownJob, "MP: connected to %s",str.str());
 #endif
                         lastxfer = msTick();
                         closed = false;
@@ -912,7 +919,7 @@ protected: friend class CMPPacketReader;
 #ifdef _TRACE
                 StringBuffer str;
                 str.clear();
-                LOG(MCdebugInfo(100), unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).toCharArray(),retrycount+1);
+                LOG(MCdebugInfo(100), unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).str(),retrycount+1);
 #endif
             }
 
@@ -1801,12 +1808,14 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
 {
     parent = _parent;
     mpSoMaxConn = 0;
+    mpTraceLevel = 0;
     Owned<IPropertyTree> env = getHPCCEnvironment();
     if (env)
     {
         mpSoMaxConn = env->getPropInt("EnvSettings/mpSoMaxConn", 0);
         if (!mpSoMaxConn)
             mpSoMaxConn = env->getPropInt("EnvSettings/ports/mpSoMaxConn", 0);
+        mpTraceLevel = env->getPropInt("EnvSettings/mpTraceLevel", 0);
     }
     if (mpSoMaxConn)
     {
@@ -1937,14 +1946,28 @@ int CMPConnectThread::run()
                 SocketEndpoint hostep;
                 SocketEndpointV4 id[2];
                 traceSlowReadTms("MP: initial accept packet from", sock, &id[0], sizeof(id), sizeof(id), rd, CONFIRM_TIMEOUT, CONFIRM_TIMEOUT_INTERVAL);
-                if (rd != sizeof(id))
+                if (0 == rd)
                 {
-                    StringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from ");
+                    if (mpTraceLevel > 1)
+                    {
+                        // cannot get peer addresss as socket state is now ss_shutdown (unless we want to allow this in getPeerEndpoint())
+                        StringBuffer errMsg("MP Connect Thread: connect with no msg received, assumed port monitor check");
+                        PROGLOG("%s", errMsg.str());
+                    }
+                    sock->close();
+                    sock->Release();
+                    continue;
+                }
+                else if (rd != sizeof(id))
+                {
+                    // not sure how to get here as this is not one of the possible outcomes of above: rd == 0 or rd == sizeof(id) or an exception
                     SocketEndpoint ep;
                     sock->getPeerEndpoint(ep);
+                    StringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from ");
                     ep.getUrlStr(errMsg);
                     FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                     sock->close();
+                    sock->Release();
                     continue;
                 }
                 id[0].get(_remoteep);
@@ -1957,13 +1980,27 @@ int CMPConnectThread::run()
 
                 if (_remoteep.isNull() || hostep.isNull())
                 {
-                    // JCSMORE, I think _remoteep really must/should match a IP of this local host
-                    StringBuffer errMsg("MP Connect Thread: invalid remote and/or host ep serialized from ");
                     SocketEndpoint ep;
                     sock->getPeerEndpoint(ep);
-                    ep.getUrlStr(errMsg);
-                    FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
+                    StringBuffer errMsg;
+                    SocketEndpointV4 zeroTest[2];
+                    memset(zeroTest, 0x0, sizeof(zeroTest));
+                    if (memcmp(id, zeroTest, sizeof(id)))
+                    {
+                        // JCSMORE, I think _remoteep really must/should match a IP of this local host
+                        errMsg.append("MP Connect Thread: invalid remote and/or host ep serialized from ");
+                        ep.getUrlStr(errMsg);
+                        FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
+                    }
+                    else if (mpTraceLevel > 1)
+                    {
+                        // all zeros msg received
+                        errMsg.append("MP Connect Thread: connect with empty msg received, assumed port monitor check from ");
+                        ep.getUrlStr(errMsg);
+                        PROGLOG("%s", errMsg.str());
+                    }
                     sock->close();
+                    sock->Release();
                     continue;
                 }
 #ifdef _FULLTRACE       
@@ -1984,7 +2021,7 @@ int CMPConnectThread::run()
 #ifdef _TRACE
                     StringBuffer str1;
                     StringBuffer str2;
-                    LOG(MCdebugInfo(100), unknownJob, "MP Connect Thread: connected to %s",_remoteep.getUrlStr(str1).toCharArray());
+                    LOG(MCdebugInfo(100), unknownJob, "MP Connect Thread: connected to %s",_remoteep.getUrlStr(str1).str());
 #endif
                 }
 #ifdef _FULLTRACE       
@@ -2060,7 +2097,7 @@ public:
 CMPChannel *CMPServer::lookup(const SocketEndpoint &endpoint)
 {
     // there is an assumption here that no removes will be done within this loop
-    CriticalBlock block(serversect);
+    CriticalBlock block(sect);
     SocketEndpoint ep = endpoint;
     CMPChannel *e=find(ep);
     // Check for freed channels
@@ -2091,6 +2128,7 @@ CMPChannel *CMPServer::lookup(const SocketEndpoint &endpoint)
 
 CMPServer::CMPServer(unsigned _port)
 {
+    RTsalt=0xff;
     port = 0;   // connectthread tells me what port it actually connected on
     checkclosed = false;
     connectthread = new CMPConnectThread(this, _port);
@@ -2103,8 +2141,11 @@ CMPServer::CMPServer(unsigned _port)
     userpackethandler = new UserPacketHandler(this);        // default
     notifyclosedthread = new CMPNotifyClosedThread(this);
     notifyclosedthread->start();
-    initMyNode(port); // NB port set by connectthread constructor
     selecthandler->start();
+    rettag = (int)TAG_REPLY_BASE; // NB negative
+
+    SocketEndpoint ep(port); // NB port set by connectthread constructor
+    myNode = createINode(ep);
 }
 
 CMPServer::~CMPServer()
@@ -2127,6 +2168,18 @@ CMPServer::~CMPServer()
     delete multipackethandler;
     delete broadcastpackethandler;
     delete userpackethandler;
+    ::Release(myNode);
+}
+
+void CMPServer::checkTagOK(mptag_t tag)
+{
+    if ((int)tag<=(int)TAG_REPLY_BASE) {
+        int dif = (int)TAG_REPLY_BASE-(int)tag;
+        if (dif%16!=RTsalt) {
+            ERRLOG("**Invalid MP tag used");
+            PrintStackReport();
+        }
+    }
 }
 
 
@@ -2341,7 +2394,7 @@ bool CMPServer::matchesFindParam(const void * et, const void *fp, unsigned) cons
 
 bool CMPServer::nextChannel(CMPChannel *&cur)
 {
-    CriticalBlock block(serversect);
+    CriticalBlock block(sect);
     cur = (CMPChannel *)SuperHashTableOf<CMPChannel,SocketEndpoint>::next(cur);
     return cur!=NULL;
 }
@@ -2381,7 +2434,7 @@ public:
         }
 
         CTimeMon tm(timeout);
-        Linked<CMPChannel> channel = parent->lookup(dst->endpoint());
+        Owned<CMPChannel> channel = parent->lookup(dst->endpoint());
         unsigned remaining;
         if (tm.timedout(&remaining))
             return false;
@@ -2395,7 +2448,7 @@ public:
     {
         CriticalBlock block(verifysect);
         CTimeMon tm(timeout);
-        Linked<CMPChannel> channel = parent->lookup(node->endpoint());
+        Owned<CMPChannel> channel = parent->lookup(node->endpoint());
         unsigned remaining;
         if (tm.timedout(&remaining))
             return false;
@@ -2427,7 +2480,7 @@ public:
     {
         CriticalBlock block(verifysect);
         CTimeMon tm(timeout);
-        rank_t myrank = group->rank();
+        rank_t myrank = group->rank(parent->queryMyNode());
         {
             ForEachNodeInGroup(rank,*group) {
                 bool doverify;
@@ -2438,7 +2491,7 @@ public:
                 else
                     doverify = (myrank<rank);
                 if (doverify) {
-                    Linked<CMPChannel> channel = parent->lookup(group->queryNode(rank).endpoint());
+                    Owned<CMPChannel> channel = parent->lookup(group->queryNode(rank).endpoint());
                     unsigned remaining;
                     if (tm.timedout(&remaining)) {
                         return false;
@@ -2453,7 +2506,7 @@ public:
             ForEachNodeInGroup(rank,*group) {
                 bool doverify = ((rank&1)==(myrank&1))?(myrank<rank):(myrank>rank);
                 if (doverify) {
-                    Linked<CMPChannel> channel = parent->lookup(group->queryNode(rank).endpoint());
+                    Owned<CMPChannel> channel = parent->lookup(group->queryNode(rank).endpoint());
                     while (!channel->verifyConnection(tm,false)) {
                         unsigned remaining;
                         if (tm.timedout(&remaining))
@@ -2524,7 +2577,7 @@ public:
     bool sendRecv(CMessageBuffer &mbuff, INode *dst, mptag_t dsttag,  unsigned timeout=MP_WAIT_FOREVER)
     {
         assertex(dst);
-        mptag_t replytag = createReplyTag();
+        mptag_t replytag = parent->createReplyTag();
         CTimeMon tm(timeout);
         mbuff.setReplyTag(replytag);
         unsigned remaining;
@@ -2551,7 +2604,7 @@ public:
     void disconnect(INode *node)
     {
         CriticalBlock block(verifysect);
-        Linked<CMPChannel> channel = parent->lookup(node->endpoint());
+        Owned<CMPChannel> channel = parent->lookup(node->endpoint());
         channel->closeSocket();
         parent->removeChannel(channel);
     }
@@ -2574,6 +2627,7 @@ class CCommunicator: public CInterface, public ICommunicator
     IGroup *group;
     CMPServer *parent;
     bool outer;
+    rank_t myrank;
 
     const SocketEndpoint &queryEndpoint(rank_t rank)
     {
@@ -2594,11 +2648,10 @@ public:
         // send does not corrupt mbuf
         if (dstrank==RANK_NULL)
             return false;
-        rank_t myrank = group->rank();
         if (dstrank==myrank) {
             CMessageBuffer *msg = mbuf.clone();
             // change sender
-            msg->init(queryMyNode()->endpoint(),tag,mbuf.getReplyTag());
+            msg->init(parent->queryMyNode()->endpoint(),tag,mbuf.getReplyTag());
             parent->getReceiveQ().enqueue(msg);
         }
         else {
@@ -2628,7 +2681,7 @@ public:
                 endrank = dstrank;
             for (;dstrank<=endrank;dstrank++) {
                 if (dstrank!=myrank) {
-                    Linked<CMPChannel> channel = getChannel(dstrank);
+                    Owned<CMPChannel> channel = getChannel(dstrank);
                     unsigned remaining;
                     if (tm.timedout(&remaining))
                         return false;
@@ -2654,7 +2707,6 @@ public:
          * process i sends to process (i + 2^k) % p and receives from process (i - 2^k + p) % p.
          */
 
-        int myrank = group->rank();
         int numranks = group->ordinality();
         CMessageBuffer mb;
         rank_t r;
@@ -2697,7 +2749,7 @@ public:
         assertex(rank!=RANK_RANDOM);
         assertex(rank!=RANK_ALL);
         CTimeMon tm(timeout);
-        Linked<CMPChannel> channel = getChannel(rank);
+        Owned<CMPChannel> channel = getChannel(rank);
         unsigned remaining;
         if (tm.timedout(&remaining))
             return false;
@@ -2708,7 +2760,6 @@ public:
     {
         CriticalBlock block(verifysect);
         CTimeMon tm(timeout);
-        rank_t myrank = group->rank();
         {
             ForEachNodeInGroup(rank,*group) {
                 bool doverify;
@@ -2719,7 +2770,7 @@ public:
                 else
                     doverify = (myrank<rank);
                 if (doverify) {
-                    Linked<CMPChannel> channel = getChannel(rank);
+                    Owned<CMPChannel> channel = getChannel(rank);
                     unsigned remaining;
                     if (tm.timedout(&remaining)) {
                         return false;
@@ -2733,7 +2784,7 @@ public:
             ForEachNodeInGroup(rank,*group) {
                 bool doverify = ((rank&1)==(myrank&1))?(myrank<rank):(myrank>rank);
                 if (doverify) {
-                    Linked<CMPChannel> channel = getChannel(rank);
+                    Owned<CMPChannel> channel = getChannel(rank);
                     while (!channel->verifyConnection(tm,false)) {
                         unsigned remaining;
                         if (tm.timedout(&remaining))
@@ -2817,14 +2868,14 @@ public:
             if (group->ordinality()>1) {
                 do {
                     sendrank = getRandom()%group->ordinality();
-                } while (sendrank==group->rank());
+                } while (sendrank==myrank);
             }
             else {
-                assertex(group->rank()!=0);
+                assertex(myrank!=0);
                 sendrank = 0;
             }
         }
-        mptag_t replytag = createReplyTag();
+        mptag_t replytag = parent->createReplyTag();
         CTimeMon tm(timeout);
         mbuff.setReplyTag(replytag);
         unsigned remaining;
@@ -2849,7 +2900,7 @@ public:
         }
             
         CTimeMon tm(timeout);
-        Linked<CMPChannel> channel = parent->lookup(mbuf.getSender());
+        Owned<CMPChannel> channel = parent->lookup(mbuf.getSender());
         unsigned remaining;
         if (tm.timedout(&remaining)) {
             return false;
@@ -2880,6 +2931,7 @@ public:
         outer = _outer;
         parent = _parent;
         group = LINK(_group); 
+        myrank = group->rank(parent->queryMyNode());
     }
     ~CCommunicator()
     {
@@ -2889,13 +2941,42 @@ public:
 };
 
 
+// Additional CMPServer methods
+
+ICommunicator *CMPServer::createCommunicator(IGroup *group, bool outer)
+{
+    return new CCommunicator(this,group,outer);
+}
+
+///////////////////////////////////
+
+
+class CGlobalMPServer : public CMPServer
+{
+public:
+    CGlobalMPServer(unsigned _port) : CMPServer(_port)
+    {
+        initMyNode(port); // NB port set by connectthread constructor in base
+    }
+};
+
+
 ICommunicator *createCommunicator(IGroup *group,bool outer)
 {
     assertex(MPserver!=NULL);
-    return new CCommunicator(MPserver,group,outer);
+    return MPserver->createCommunicator(group, outer);
 }
 
+
 static IInterCommunicator *worldcomm=NULL;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    ::Release(worldcomm);
+}
 
 IInterCommunicator &queryWorldCommunicator()
 {
@@ -2904,6 +2985,15 @@ IInterCommunicator &queryWorldCommunicator()
     if (!worldcomm)
         worldcomm = new CInterCommunicator(MPserver);
     return *worldcomm;
+}
+
+
+IMPServer *startNewMPServer(unsigned port)
+{
+    assertex(sizeof(PacketHeader)==32);
+    CMPServer *mpServer = new CMPServer(port);
+    mpServer->start();
+    return mpServer;
 }
 
 void startMPServer(unsigned port, bool paused)
@@ -2915,7 +3005,7 @@ void startMPServer(unsigned port, bool paused)
         if (!CMPServer::serverpaused)
         {
             delete MPserver;
-            MPserver = new CMPServer(port);
+            MPserver = new CGlobalMPServer(port);
         }
         if (paused)
         {
@@ -2929,6 +3019,12 @@ void startMPServer(unsigned port, bool paused)
     CMPServer::servernest++;
 }
 
+IMPServer *getMPServer()
+{
+    CriticalBlock block(CMPServer::serversect);
+    assertex(MPserver);
+    return LINK(MPserver);
+}
 
 void stopMPServer()
 {

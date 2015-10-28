@@ -359,15 +359,19 @@ void FileFormat::save(IPropertyTree * props)
     {
     case FFTfixed:
         props->setPropInt(FPrecordSize, recordSize);
+        props->setProp(FPkind, FFTtext[type]);
         break;
     case FFTblocked:
         props->setProp(FPformat, "blocked");
+        props->setProp(FPkind, FFTtext[type]);
         break;
     case FFTvariable:
         props->setProp(FPformat, "variable");
+        props->setProp(FPkind, FFTtext[type]);
         break;
     case FFTvariablebigendian:
         props->setProp(FPformat, "variablebigendian");
+        props->setProp(FPkind, FFTtext[FFTvariable]);
         break;
     case FFTcsv:
     case FFTutf:
@@ -383,6 +387,8 @@ void FileFormat::save(IPropertyTree * props)
         if (rowTag)         props->setProp(FProwTag, rowTag);
         if (markup != FMTunknown)
             props->setProp(FPkind, (markup==FMTjson) ? "json" : "xml");
+        else
+            props->setProp(FPkind, FFTtext[FFTcsv]);
         if (headerLength!=(unsigned)-1)
             props->setPropInt(FPheaderLength, headerLength);
         if (footerLength!=(unsigned)-1)
@@ -391,6 +397,7 @@ void FileFormat::save(IPropertyTree * props)
     case FFTrecfmvb:
     case FFTrecfmv:
         props->setProp(FPformat, FFTtext[type]);
+        props->setProp(FPkind, FFTtext[FFTrecfmv]);
         break;
     default:
         PROGLOG("unknown type %d",(int)type);

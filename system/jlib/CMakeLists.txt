@@ -35,7 +35,6 @@ set (    SRCS
          jargv.cpp 
          jarray.cpp 
          javahash.cpp 
-         jbroadcast.cpp 
          jbsocket.cpp 
          jbuff.cpp 
          jcomp.cpp 
@@ -71,7 +70,7 @@ set (    SRCS
          jstats.cpp 
          jstream.cpp 
          jstring.cpp 
-         jsuperhash.cpp 
+         jsuperhash.cpp
          jthread.cpp 
          jtime.cpp 
          junicode.cpp 
@@ -86,8 +85,6 @@ set (    INCLUDES
         jatomic.hpp
         javahash.hpp
         javahash.tpp
-        jbroadcast.hpp
-        jbroadcast.ipp
         jbuff.hpp
         jcomp.hpp
         jcomp.ipp
@@ -152,8 +149,9 @@ set (    INCLUDES
         jvmem.hpp
         )
 
-set_source_files_properties (jmalloc.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
-
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+    set_source_files_properties (jmalloc.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
+endif ()
 
 include_directories ( 
          ../../system/win32 
@@ -162,6 +160,7 @@ include_directories (
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ${TBB_INCLUDE_DIR}
     )
 
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=1 -D_USRDLL -DJLIB_EXPORTS )
@@ -171,6 +170,10 @@ install ( TARGETS jlib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB
 target_link_libraries ( jlib
         lzma
        )
+
+if ( ${USE_TBB} )
+   target_link_libraries ( jlib ${TBB_LIBRARIES})
+endif()
 
 if ( ${HAVE_LIBDL} )
 target_link_libraries ( jlib dl)

@@ -154,7 +154,7 @@ public:
             return false;
         if (!m_cacheId.length())
             return false;
-        return (entry->m_cacheId.length()) && (streq(m_cacheId.sget(), entry->m_cacheId.sget()));
+        return (entry->m_cacheId.length()) && (streq(m_cacheId.str(), entry->m_cacheId.str()));
     }
 
     bool equal(CXslEntry* entry, bool matched)

@@ -150,8 +150,6 @@ public:
                 ForEach(*iter)
                 {
                     IPropertyTree &attr = iter->query();
-                    if (!&attr)
-                        continue;
                     const char *name = attr.queryProp("@name");
                     if (!name||!*name)
                         continue;
@@ -578,6 +576,40 @@ void CDfsLogicalFileName::setForeign(const SocketEndpoint &daliep,bool checkloca
     str.append(get(true));
     set(str);
 }
+
+static bool begins(const char *&ln,const char *pat)
+{
+    size32_t sz = strlen(pat);
+    if (memicmp(ln,pat,sz)==0) {
+        ln += sz;
+        return true;
+    }
+    return false;
+}
+
+bool CDfsLogicalFileName::setFromXPath(const char *xpath)
+{
+    StringBuffer lName;
+    const char *s = xpath;
+    if (!begins(s, "/Files"))
+        return false;
+
+    while (*s && (begins(s, "/Scope[@name=\"") || begins(s, "/File[@name=\"") || begins(s, "/SuperFile[@name=\"")))
+    {
+        if (lName.length())
+            lName.append("::");
+        while (*s && (*s != '"'))
+            lName.append(*(s++));
+        if (*s == '"')
+            s++;
+        if (*s == ']')
+            s++;
+    }
+    if (0 == lName.length())
+        return false;
+    return setValidate(lName);
+}
+
 
 void CDfsLogicalFileName::clearForeign()
 {
@@ -1963,6 +1995,7 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
                                      __int64 *hint,
                                      IArrayOf<IPropertyTree> &results,
                                      unsigned *total,
+                                     bool *allMatchingElementsReceived,
                                      bool checkConn)
 {
     if ((pagesize==0) || !elementsPager)
@@ -2036,6 +2069,8 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
             results.append(item);
         }
     }
+    if (allMatchingElementsReceived)
+        *allMatchingElementsReceived = elementsPager->allMatchingElementsReceived();
     IRemoteConnection *ret = NULL;
     if (elem->conn)
         ret = elem->conn.getLink();
@@ -2303,8 +2338,6 @@ IClusterFileScanIterator *getClusterFileScanIterator(
     StringBuffer gname;
     ForEach(*iter) {
         IPropertyTree &attr = iter->query();
-        if (!&attr)
-            continue;
         const char *name = attr.queryProp("@name");
         if (!name||!*name)
             continue;
@@ -3079,5 +3112,180 @@ bool traceAllTransactions(bool on)
     bool ret = transactionLoggingOn;
     transactionLoggingOn = on;
     return ret;
+}
+
+class CLockInfo : public CSimpleInterfaceOf<ILockInfo>
+{
+    StringAttr xpath;
+    SafePointerArrayOf<CLockMetaData> ldInfo;
+public:
+    CLockInfo(MemoryBuffer &mb)
+    {
+        mb.read(xpath);
+        unsigned count;
+        mb.read(count);
+        if (count)
+        {
+            ldInfo.ensure(count);
+            for (unsigned c=0; c<count; c++)
+                ldInfo.append(new CLockMetaData(mb));
+        }
+    }
+    CLockInfo(const char *_xpath, const ConnectionInfoMap &map) : xpath(_xpath)
+    {
+        HashIterator iter(map);
+        ForEach(iter)
+        {
+            IMapping &imap = iter.query();
+            LockData *lD = map.mapToValue(&imap);
+            ConnectionId connId = * ((ConnectionId *) imap.getKey());
+            ldInfo.append(new CLockMetaData(*lD, connId));
+        }
+    }
+// ILockInfo impl.
+    virtual const char *queryXPath() const { return xpath; }
+    virtual unsigned queryConnections() const { return ldInfo.ordinality(); }
+    virtual CLockMetaData &queryLockData(unsigned lock) const
+    {
+        return *ldInfo.item(lock);
+    }
+    virtual void prune(const char *ipPattern)
+    {
+        StringBuffer ipStr;
+        ForEachItemInRev(c, ldInfo)
+        {
+            CLockMetaData &lD = *ldInfo.item(c);
+            SocketEndpoint ep(lD.queryEp());
+            ep.getIpText(ipStr.clear());
+            if (!WildMatch(ipStr, ipPattern))
+                ldInfo.zap(&lD);
+        }
+    }
+    virtual void serialize(MemoryBuffer &mb) const
+    {
+        mb.append(xpath);
+        mb.append(ldInfo.ordinality());
+        ForEachItemIn(c, ldInfo)
+            ldInfo.item(c)->serialize(mb);
+    }
+    virtual StringBuffer &toString(StringBuffer &out, unsigned format, bool header, const char *altText) const
+    {
+        if (ldInfo.ordinality())
+        {
+            unsigned msNow = msTick();
+            CDateTime time;
+            time.setNow();
+            time_t timeSimple = time.getSimple();
+
+            if (header)
+            {
+                switch (format)
+                {
+                    case 0: // internal
+                    {
+                        out.append("Locks on path: ").append(altText ? altText : xpath.get()).newline();
+                        out.append("Endpoint            |SessionId       |ConnectionId    |mode    |time(duration)]").newline();
+                        break;
+                    }
+                    case 1: // daliadmin
+                    {
+                        out.appendf("Server IP           |Session         |Mode    |Time                |Duration    |Lock").newline();
+                        out.appendf("====================|================|========|====================|============|======").newline();
+                        break;
+                    }
+                    default:
+                        throwUnexpected();
+                }
+            }
+
+            CDateTime timeLocked;
+            StringBuffer timeStr;
+            unsigned c = 0;
+            loop
+            {
+                CLockMetaData &lD = *ldInfo.item(c);
+                unsigned lockedFor = msNow-lD.timeLockObtained;
+                time_t tt = timeSimple - (lockedFor/1000);
+                timeLocked.set(tt);
+                timeLocked.getString(timeStr.clear());
+
+                switch (format)
+                {
+                    case 0: // internal
+                        out.appendf("%-20s|%-16" I64F "x|%-16" I64F "x|%-8x|%s(%d ms)", lD.queryEp(), lD.sessId, lD.connectionId, lD.mode, timeStr.str(), lockedFor);
+                        break;
+                    case 1: // daliadmin
+                        out.appendf("%-20s|%-16" I64F "x|%-8x|%-20s|%-12d|%s", lD.queryEp(), lD.sessId, lD.mode, timeStr.str(), lockedFor, altText ? altText : xpath.get());
+                        break;
+                    default:
+                        throwUnexpected();
+                }
+                ++c;
+                if (c>=ldInfo.ordinality())
+                    break;
+                out.newline();
+            }
+
+        }
+        return out;
+    }
+};
+
+ILockInfo *createLockInfo(const char *xpath, const ConnectionInfoMap &map)
+{
+    return new CLockInfo(xpath, map);
+}
+
+ILockInfo *deserializeLockInfo(MemoryBuffer &mb)
+{
+    return new CLockInfo(mb);
+}
+
+class CLockInfoCollection : public CSimpleInterfaceOf<ILockInfoCollection>
+{
+    CLockInfoArray locks;
+public:
+    CLockInfoCollection() { }
+    CLockInfoCollection(MemoryBuffer &mb)
+    {
+        unsigned lockCount;
+        mb.read(lockCount);
+        for (unsigned l=0; l<lockCount; l++)
+        {
+            Owned<ILockInfo> lockInfo = deserializeLockInfo(mb);
+            locks.append(* lockInfo.getClear());
+        }
+    }
+// ILockInfoCollection impl.
+    virtual unsigned queryLocks() const { return locks.ordinality(); }
+    virtual ILockInfo &queryLock(unsigned lock) const { return locks.item(lock); }
+    virtual void serialize(MemoryBuffer &mb) const
+    {
+        mb.append(locks.ordinality());
+        ForEachItemIn(l, locks)
+            locks.item(l).serialize(mb);
+    }
+    virtual StringBuffer &toString(StringBuffer &out) const
+    {
+        if (0 == locks.ordinality())
+            out.append("No current locks").newline();
+        else
+        {
+            ForEachItemIn(l, locks)
+                locks.item(l).toString(out, 0, true).newline();
+        }
+        return out;
+    }
+    virtual void add(ILockInfo &lock) { locks.append(lock); }
+};
+
+ILockInfoCollection *createLockInfoCollection()
+{
+    return new CLockInfoCollection();
+}
+
+ILockInfoCollection *deserializeLockInfoCollection(MemoryBuffer &mb)
+{
+    return new CLockInfoCollection(mb);
 }
 

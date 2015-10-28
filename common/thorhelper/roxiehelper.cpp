@@ -19,6 +19,8 @@
 #include "thorherror.h"
 #include "roxiehelper.hpp"
 #include "roxielmj.hpp"
+#include "roxierow.hpp"
+#include "roxierowbuff.hpp"
 
 #include "jmisc.hpp"
 #include "jfile.hpp"
@@ -411,7 +413,1020 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
     }
     return group.ordinality()>0;
 }
+
+//=========================================================================================
+
+// default implementations - can be overridden for efficiency...
+bool ISimpleInputBase::nextGroup(ConstPointerArray & group)
+{
+    // MORE - this should be replaced with a version that reads to a builder
+    const void * next;
+    while ((next = nextInGroup()) != NULL)
+        group.append(next);
+    if (group.ordinality())
+        return true;
+    return false;
+}
+
+void ISimpleInputBase::readAll(RtlLinkedDatasetBuilder &builder)
+{
+    loop
+    {
+        const void *nextrec = nextInGroup();
+        if (!nextrec)
+        {
+            nextrec = nextInGroup();
+            if (!nextrec)
+                break;
+            builder.appendEOG();
+        }
+        builder.appendOwn(nextrec);
+    }
+}
+
+
+//=========================================================================================
+
+// Ability to read an input stream and group and/or sort it on-the-fly
+
+using roxiemem::OwnedConstRoxieRow;
+
+class InputReaderBase  : public CInterfaceOf<IGroupedInput>
+{
+protected:
+    IInputBase *input;
+public:
+    InputReaderBase(IInputBase *_input)
+    : input(_input)
+    {
+    }
+
+    virtual IOutputMetaData * queryOutputMeta() const
+    {
+        return input->queryOutputMeta();
+    }
+};
+
+class GroupedInputReader : public InputReaderBase
+{
+protected:
+    bool firstRead;
+    bool eof;
+    bool endGroupPending;
+    OwnedConstRoxieRow next;
+    const ICompare *compare;
+public:
+    GroupedInputReader(IInputBase *_input, const ICompare *_compare)
+    : InputReaderBase(_input), compare(_compare)
+    {
+        firstRead = false;
+        eof = false;
+        endGroupPending = false;
+    }
+
+    virtual const void *nextInGroup()
+    {
+        if (!firstRead)
+        {
+            firstRead = true;
+            next.setown(input->nextInGroup());
+        }
+
+        if (eof || endGroupPending)
+        {
+            endGroupPending = false;
+            return NULL;
+        }
+
+        OwnedConstRoxieRow prev(next.getClear());
+        next.setown(input->nextUngrouped());  // skip incoming grouping if present
+
+        if (next)
+        {
+            dbgassertex(prev);  // If this fails, you have an initial empty group. That is not legal.
+            if (compare && compare->docompare(prev, next) != 0)
+                endGroupPending = true;
+        }
+        else
+            eof = true;
+        return prev.getClear();
+    }
+};
+
+class DegroupedInputReader : public InputReaderBase
+{
+public:
+    DegroupedInputReader(IInputBase *_input) : InputReaderBase(_input)
+    {
+    }
+    virtual const void *nextInGroup()
+    {
+        return input->nextUngrouped();
+    }
+};
+
+class SortedInputReader : public InputReaderBase
+{
+protected:
+    DegroupedInputReader degroupedInput;
+    Owned<ISortAlgorithm> sorter;
+    bool firstRead;
+public:
+    SortedInputReader(IInputBase *_input, ISortAlgorithm *_sorter)
+      : InputReaderBase(_input), degroupedInput(_input), sorter(_sorter), firstRead(false)
+    {
+        sorter->reset();
+    }
+
+    virtual const void *nextInGroup()
+    {
+        if (!firstRead)
+        {
+            firstRead = true;
+            sorter->prepare(&degroupedInput);
+        }
+        return sorter->next();
+    }
+};
+
+class SortedGroupedInputReader : public SortedInputReader
+{
+protected:
+    bool eof;
+    bool endGroupPending;
+    OwnedConstRoxieRow next;
+    const ICompare *compare;
+public:
+    SortedGroupedInputReader(IInputBase *_input, const ICompare *_compare, ISortAlgorithm *_sorter)
+      : SortedInputReader(_input, _sorter), compare(_compare), eof(false), endGroupPending(false)
+    {
+    }
+
+    virtual const void *nextInGroup()
+    {
+        if (!firstRead)
+        {
+            firstRead = true;
+            sorter->prepare(&degroupedInput);
+            next.setown(sorter->next());
+        }
+
+        if (eof || endGroupPending)
+        {
+            endGroupPending = false;
+            return NULL;
+        }
+
+        OwnedConstRoxieRow prev(next.getClear());
+        next.setown(sorter->next());
+
+        if (next)
+        {
+            dbgassertex(prev);  // If this fails, you have an initial empty group. That is not legal.
+            if (compare->docompare(prev, next) != 0) // MORE - could assert >=0, as input is supposed to be sorted
+                 endGroupPending = true;
+        }
+        else
+            eof = true;
+        return prev.getClear();
+    }
+};
+
+extern IGroupedInput *createGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare)
+{
+    dbgassertex(_input && _groupCompare);
+    return new GroupedInputReader(_input, _groupCompare);
+}
+
+extern IGroupedInput *createDegroupedInputReader(IInputBase *_input)
+{
+    dbgassertex(_input);
+    return new DegroupedInputReader(_input);
+}
+
+extern IGroupedInput *createSortedInputReader(IInputBase *_input, ISortAlgorithm *_sorter)
+{
+    dbgassertex(_input && _sorter);
+    return new SortedInputReader(_input, _sorter);
+}
+
+extern IGroupedInput *createSortedGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter)
+{
+    dbgassertex(_input && _groupCompare && _sorter);
+    return new SortedGroupedInputReader(_input, _groupCompare, _sorter);
+}
+
 //========================================================================================= 
+
+class CSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
+{
+public:
+    virtual void getSortedGroup(ConstPointerArray & result)
+    {
+        loop
+        {
+            const void * row = next();
+            if (!row)
+                return;
+            result.append(row);
+        }
+    }
+};
+
+class CInplaceSortAlgorithm : public CSortAlgorithm
+{
+protected:
+    unsigned curIndex;
+    ConstPointerArray sorted;
+    ICompare *compare;
+
+public:
+    CInplaceSortAlgorithm(ICompare *_compare) : compare(_compare)
+    {
+        curIndex = 0;
+    }
+
+    virtual const void *next()
+    {
+        if (sorted.isItem(curIndex))
+            return sorted.item(curIndex++);
+        return NULL;
+    }
+
+    virtual void reset()
+    {
+        while (sorted.isItem(curIndex))
+            ReleaseRoxieRow(sorted.item(curIndex++));
+        curIndex = 0;
+        sorted.kill();
+    }
+    virtual void getSortedGroup(ConstPointerArray & result)
+    {
+        sorted.swapWith(result);
+        curIndex = 0;
+    }
+};
+
+class CQuickSortAlgorithm : public CInplaceSortAlgorithm
+{
+public:
+    CQuickSortAlgorithm(ICompare *_compare) : CInplaceSortAlgorithm(_compare) {}
+
+    virtual void prepare(IInputBase *input)
+    {
+        curIndex = 0;
+        if (input->nextGroup(sorted))
+            qsortvec(const_cast<void * *>(sorted.getArray()), sorted.ordinality(), *compare);
+    }
+};
+
+class CStableInplaceSortAlgorithm : public CInplaceSortAlgorithm
+{
+public:
+    CStableInplaceSortAlgorithm(ICompare *_compare) : CInplaceSortAlgorithm(_compare) {}
+
+    virtual void sortRows(void * * rows, size_t numRows, void * * temp) = 0;
+
+    virtual void prepare(IInputBase *input)
+    {
+        curIndex = 0;
+        if (input->nextGroup(sorted))
+        {
+            unsigned numRows = sorted.ordinality();
+            void **rows = const_cast<void * *>(sorted.getArray());
+            MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
+            void **temp = (void **) tempAttr.bufferBase();
+            sortRows(rows, numRows, temp);
+        }
+    }
+};
+
+class CStableQuickSortAlgorithm : public CStableInplaceSortAlgorithm
+{
+public:
+    CStableQuickSortAlgorithm(ICompare *_compare) : CStableInplaceSortAlgorithm(_compare) {}
+
+    virtual void sortRows(void * * rows, size_t numRows, void * * temp)
+    {
+        qsortvecstableinplace(rows, numRows, *compare, temp);
+    }
+};
+
+class CMergeSortAlgorithm : public CStableInplaceSortAlgorithm
+{
+public:
+    CMergeSortAlgorithm(ICompare *_compare) : CStableInplaceSortAlgorithm(_compare) {}
+
+    virtual void sortRows(void * * rows, size_t numRows, void * * temp)
+    {
+        msortvecstableinplace(rows, numRows, *compare, temp);
+    }
+};
+
+class CParallelMergeSortAlgorithm : public CStableInplaceSortAlgorithm
+{
+public:
+    CParallelMergeSortAlgorithm(ICompare *_compare) : CStableInplaceSortAlgorithm(_compare) {}
+
+    virtual void sortRows(void * * rows, size_t numRows, void * * temp)
+    {
+        parmsortvecstableinplace(rows, numRows, *compare, temp);
+    }
+};
+
+#define INSERTION_SORT_BLOCKSIZE 1024
+
+class SortedBlock : public CInterface, implements IInterface
+{
+    unsigned sequence;
+    const void **rows;
+    unsigned length;
+    unsigned pos;
+
+    SortedBlock(const SortedBlock &);
+public:
+    IMPLEMENT_IINTERFACE;
+
+    SortedBlock(unsigned _sequence, roxiemem::IRowManager *rowManager, unsigned activityId) : sequence(_sequence)
+    {
+        rows = (const void **) rowManager->allocate(INSERTION_SORT_BLOCKSIZE * sizeof(void *), activityId);
+        length = 0;
+        pos = 0;
+    }
+
+    ~SortedBlock()
+    {
+        while (pos < length)
+            ReleaseRoxieRow(rows[pos++]);
+        ReleaseRoxieRow(rows);
+    }
+
+    int compareTo(SortedBlock *r, ICompare *compare)
+    {
+        int rc = compare->docompare(rows[pos], r->rows[r->pos]);
+        if (!rc)
+            rc = sequence - r->sequence;
+        return rc;
+    }
+
+    const void *next()
+    {
+        if (pos < length)
+            return rows[pos++];
+        else
+            return NULL;
+    }
+
+    inline bool eof()
+    {
+        return pos==length;
+    }
+
+    bool insert(const void *next, ICompare *_compare )
+    {
+        unsigned b = length;
+        if (b == INSERTION_SORT_BLOCKSIZE)
+            return false;
+        else if (b < 7)
+        {
+            while (b)
+            {
+                if (_compare->docompare(next, rows[b-1]) >= 0)
+                    break;
+                b--;
+            }
+            if (b != length)
+                memmove(&rows[b+1], &rows[b], (length - b) * sizeof(void *));
+            rows[b] = next;
+            length++;
+            return true;
+        }
+        else
+        {
+            unsigned int a = 0;
+            while ((int)a<b)
+            {
+                int i = (a+b)/2;
+                int rc = _compare->docompare(next, rows[i]);
+                if (rc>=0)
+                    a = i+1;
+                else
+                    b = i;
+            }
+            if (a != length)
+                memmove(&rows[a+1], &rows[a], (length - a) * sizeof(void *));
+            rows[a] = next;
+            length++;
+            return true;
+        }
+    }
+};
+
+class CInsertionSortAlgorithm : public CSortAlgorithm
+{
+    SortedBlock *curBlock;
+    unsigned blockNo;
+    IArrayOf<SortedBlock> blocks;
+    unsigned activityId;
+    roxiemem::IRowManager *rowManager;
+    ICompare *compare;
+
+    void newBlock()
+    {
+        blocks.append(*curBlock);
+        curBlock = new SortedBlock(blockNo++, rowManager, activityId);
+    }
+
+    inline static int doCompare(SortedBlock &l, SortedBlock &r, ICompare *compare)
+    {
+        return l.compareTo(&r, compare);
+    }
+
+    void makeHeap()
+    {
+        /* Permute blocks to establish the heap property
+           For each element p, the children are p*2+1 and p*2+2 (provided these are in range)
+           The children of p must both be greater than or equal to p
+           The parent of a child c is given by p = (c-1)/2
+        */
+        unsigned i;
+        unsigned n = blocks.length();
+        SortedBlock **s = blocks.getArray();
+        for (i=1; i<n; i++)
+        {
+            SortedBlock * r = s[i];
+            int c = i; /* child */
+            while (c > 0)
+            {
+                int p = (c-1)/2; /* parent */
+                if ( doCompare( blocks.item(c), blocks.item(p), compare ) >= 0 )
+                    break;
+                s[c] = s[p];
+                s[p] = r;
+                c = p;
+            }
+        }
+    }
+
+    void remakeHeap()
+    {
+        /* The row associated with block[0] will have changed
+           This code restores the heap property
+        */
+        unsigned p = 0; /* parent */
+        unsigned n = blocks.length();
+        SortedBlock **s = blocks.getArray();
+        while (1)
+        {
+            unsigned c = p*2 + 1; /* child */
+            if ( c >= n )
+                break;
+            /* Select smaller child */
+            if ( c+1 < n && doCompare( blocks.item(c+1), blocks.item(c), compare ) < 0 ) c += 1;
+            /* If child is greater or equal than parent then we are done */
+            if ( doCompare( blocks.item(c), blocks.item(p), compare ) >= 0 )
+                break;
+            /* Swap parent and child */
+            SortedBlock *r = s[c];
+            s[c] = s[p];
+            s[p] = r;
+            /* child becomes parent */
+            p = c;
+        }
+    }
+
+public:
+    CInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId)
+        : compare(_compare)
+    {
+        rowManager = _rowManager;
+        activityId = _activityId;
+        curBlock = NULL;
+        blockNo = 0;
+    }
+
+    virtual void reset()
+    {
+        blocks.kill();
+        delete curBlock;
+        curBlock = NULL;
+        blockNo = 0;
+    }
+
+    virtual void prepare(IInputBase *input)
+    {
+        blockNo = 0;
+        curBlock = new SortedBlock(blockNo++, rowManager, activityId);
+        loop
+        {
+            const void *next = input->nextInGroup();
+            if (!next)
+                break;
+            if (!curBlock->insert(next, compare))
+            {
+                newBlock();
+                curBlock->insert(next, compare);
+            }
+        }
+        if (blockNo > 1)
+        {
+            blocks.append(*curBlock);
+            curBlock = NULL;
+            makeHeap();
+        }
+    }
+
+    virtual const void * next()
+    {
+        const void *ret;
+        if (blockNo==1) // single block case..
+        {
+            ret = curBlock->next();
+        }
+        else if (blocks.length())
+        {
+            SortedBlock &top = blocks.item(0);
+            ret = top.next();
+            if (top.eof())
+                blocks.replace(blocks.popGet(), 0);
+            remakeHeap();
+        }
+        else
+            ret = NULL;
+        return ret;
+    }
+};
+
+class CHeapSortAlgorithm : public CSortAlgorithm
+{
+    unsigned curIndex;
+    ConstPointerArray sorted;
+    bool inputAlreadySorted;
+    IntArray sequences;
+    bool eof;
+    ICompare *compare;
+
+#ifdef _CHECK_HEAPSORT
+    void checkHeap() const
+    {
+        unsigned n = sorted.ordinality();
+        if (n)
+        {
+            ICompare *_compare = compare;
+            void **s = sorted.getArray();
+            int *sq = sequences.getArray();
+            unsigned p;
+#if 0
+            CTXLOG("------------------------%d entries-----------------", n);
+            for (p = 0; p < n; p++)
+            {
+                CTXLOG("HEAP %d: %d %.10s", p, sq[p], s[p] ? s[p] : "..");
+            }
+#endif
+            for (p = 0; p < n; p++)
+            {
+                unsigned c = p*2+1;
+                if (c<n)
+                    assertex(!s[c] || (docompare(p, c, _compare, s, sq) <= 0));
+                c++;
+                if (c<n)
+                    assertex(!s[c] || (docompare(p, c, _compare, s, sq) <= 0));
+            }
+        }
+    }
+#else
+    inline void checkHeap() const {}
+#endif
+
+    const void *removeHeap()
+    {
+        unsigned n = sorted.ordinality();
+        if (n)
+        {
+            const void *ret = sorted.item(0);
+            if (n > 1 && ret)
+            {
+                ICompare *_compare = compare;
+                const void **s = sorted.getArray();
+                int *sq = sequences.getArray();
+                unsigned v = 0; // vacancy
+                loop
+                {
+                    unsigned c = 2*v + 1;
+                    if (c < n)
+                    {
+                        unsigned f = c; // favourite to fill it
+                        c++;
+                        if (c < n && s[c] && (!s[f] || (docompare(f, c, _compare, s, sq) > 0))) // is the smaller of the children
+                            f = c;
+                        sq[v] = sq[f];
+                        if ((s[v] = s[f]) != NULL)
+                            v = f;
+                        else
+                            break;
+                    }
+                    else
+                    {
+                        s[v] = NULL;
+                        break;
+                    }
+                }
+            }
+            checkHeap();
+            return ret;
+        }
+        else
+            return NULL;
+    }
+
+    static inline int docompare(unsigned l, unsigned r, ICompare *_compare, const void **s, int *sq)
+    {
+        int rc = _compare->docompare(s[l], s[r]);
+        if (!rc)
+            rc = sq[l] - sq[r];
+        return rc;
+    }
+
+    void insertHeap(const void *next)
+    {
+        // Upside-down heap sort
+        // Maintain a heap where every parent is lower than each of its children
+        // Root (at node 0) is lowest record seen, nodes 2n+1, 2n+2 are the children
+        // To insert a row, add it at end then keep swapping with parent as long as parent is greater
+        // To remove a row, take row 0, then recreate heap by replacing it with smaller of two children and so on down the tree
+        // Nice features:
+        // 1. Deterministic
+        // 2. Sort time can be overlapped with upstream/downstream processes - there is no delay between receiving last record from input and deliveriing first to output
+        // 3. Already sorted case can be spotted at zero cost while reading.
+        // 4. If you don't read all the results, you don't have to complete the sort
+        // BUT it is NOT stable, so we have to use a parallel array of sequence numbers
+
+        unsigned n = sorted.ordinality();
+        sorted.append(next);
+        sequences.append(n);
+        if (!n)
+            return;
+        ICompare *_compare = compare;
+        const void **s = sorted.getArray();
+        if (inputAlreadySorted)
+        {
+            if (_compare->docompare(next, s[n-1]) >= 0)
+                return;
+            else
+            {
+                // MORE - could delay creating sequences until now...
+                inputAlreadySorted = false;
+            }
+        }
+        int *sq = sequences.getArray();
+        unsigned q = n;
+        while (n)
+        {
+            unsigned parent = (n-1) / 2;
+            const void *p = s[parent];
+            if (_compare->docompare(p, next) <= 0)
+                break;
+            s[n] = p;
+            sq[n] = sq[parent];
+            s[parent] = next;
+            sq[parent] = q;
+            n = parent;
+        }
+    }
+
+public:
+    CHeapSortAlgorithm(ICompare *_compare) : compare(_compare)
+    {
+        inputAlreadySorted = true;
+        curIndex = 0;
+        eof = false;
+    }
+
+    virtual void reset()
+    {
+        eof = false;
+        if (inputAlreadySorted)
+        {
+            while (sorted.isItem(curIndex))
+                ReleaseRoxieRow(sorted.item(curIndex++));
+            sorted.kill();
+        }
+        else
+        {
+            roxiemem::ReleaseRoxieRows(sorted);
+        }
+        inputAlreadySorted = true;
+        sequences.kill();
+    }
+
+    virtual void prepare(IInputBase *input)
+    {
+        inputAlreadySorted = true;
+        curIndex = 0;
+        eof = false;
+        assertex(sorted.ordinality()==0);
+        const void *next = input->nextInGroup();
+        if (!next)
+        {
+            eof = true;
+            return;
+        }
+        loop
+        {
+            insertHeap(next);
+            next = input->nextInGroup();
+            if (!next)
+                break;
+        }
+        checkHeap();
+    }
+
+    virtual const void * next()
+    {
+        if (inputAlreadySorted)
+        {
+            if (sorted.isItem(curIndex))
+            {
+                return sorted.item(curIndex++);
+            }
+            else
+                return NULL;
+        }
+        else
+            return removeHeap();
+    }
+};
+
+class CSpillingSortAlgorithm : public CSortAlgorithm, implements roxiemem::IBufferedRowCallback
+{
+    enum {
+        InitialSortElements = 0,
+        //The number of rows that can be added without entering a critical section, and therefore also the number
+        //of rows that might not get freed when memory gets tight.
+        CommitStep=32
+    };
+    roxiemem::DynamicRoxieOutputRowArray rowsToSort;
+    roxiemem::RoxieSimpleInputRowArray sorted;
+    ICompare *compare;
+    roxiemem::IRowManager &rowManager;
+    Owned<IDiskMerger> diskMerger;
+    Owned<IRowStream> diskReader;
+    IOutputMetaData *rowMeta;
+    StringAttr tempDirectory;
+    ICodeContext *ctx;
+    unsigned activityId;
+    bool stable;
+
+public:
+    CSpillingSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable)
+        : rowsToSort(&_rowManager, InitialSortElements, CommitStep, _activityId),
+          rowManager(_rowManager), compare(_compare), rowMeta(_rowMeta), ctx(_ctx), tempDirectory(_tempDirectory), activityId(_activityId), stable(_stable)
+    {
+        rowManager.addRowBuffer(this);
+    }
+    ~CSpillingSortAlgorithm()
+    {
+        rowManager.removeRowBuffer(this);
+        diskReader.clear();
+    }
+
+    virtual void sortRows(void * * rows, size_t numRows, ICompare & compare, void * * stableTemp) = 0;
+
+    virtual void prepare(IInputBase *input)
+    {
+        loop
+        {
+            const void * next = input->nextInGroup();
+            if (!next)
+                break;
+            if (!rowsToSort.append(next))
+            {
+                {
+                    roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+                    //We should have been called back to free any committed rows, but occasionally it may not (e.g., if
+                    //the problem is global memory is exhausted) - in which case force a spill here (but add any pending
+                    //rows first).
+                    if (rowsToSort.numCommitted() != 0)
+                    {
+                        rowsToSort.flush();
+                        spillRows();
+                    }
+                    //Ensure new rows are written to the head of the array.  It needs to be a separate call because
+                    //spillRows() cannot shift active row pointer since it can be called from any thread
+                    rowsToSort.flush();
+                }
+
+                if (!rowsToSort.append(next))
+                {
+                    ReleaseRoxieRow(next);
+                    throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Insufficient memory to append sort row");
+                }
+            }
+        }
+        rowsToSort.flush();
+
+        roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+        if (diskMerger)
+        {
+            spillRows();
+            rowsToSort.kill();
+            diskReader.setown(diskMerger->merge(compare));
+        }
+        else
+        {
+            sortCommitted();
+            sorted.transferFrom(rowsToSort);
+        }
+    }
+
+    virtual const void *next()
+    {
+        if(diskReader)
+            return diskReader->nextRow();
+        return sorted.dequeue();
+    }
+
+    virtual void reset()
+    {
+        //MORE: This could transfer any row pointer from sorted back to rowsToSort. It would trade
+        //fewer heap allocations with not freeing up the memory from large group sorts.
+        rowsToSort.clearRows();
+        sorted.kill();
+        //Disk reader must be cleared before the merger - or the files may still be locked.
+        diskReader.clear();
+        diskMerger.clear();
+    }
+
+//interface roxiemem::IBufferedRowCallback
+    virtual unsigned getSpillCost() const
+    {
+        //Spill global sorts before grouped sorts
+        if (rowMeta->isGrouped())
+            return 20;
+        return 10;
+    }
+    virtual bool freeBufferedRows(bool critical)
+    {
+        roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+        return spillRows();
+    }
+
+protected:
+    void sortCommitted()
+    {
+        unsigned numRows = rowsToSort.numCommitted();
+        if (numRows)
+        {
+            void ** rows = const_cast<void * *>(rowsToSort.getBlock(numRows));
+            //MORE: Should this be parallel?  Should that be dependent on whether it is grouped?  Should be a hint.
+            if (stable)
+            {
+                MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
+                void **temp = (void **) tempAttr.bufferBase();
+                sortRows(rows, numRows, *compare, temp);
+            }
+            else
+                sortRows(rows, numRows, *compare, NULL);
+        }
+    }
+    bool spillRows()
+    {
+        unsigned numRows = rowsToSort.numCommitted();
+        if (numRows == 0)
+            return false;
+
+        sortCommitted();
+        const void * * rows = rowsToSort.getBlock(numRows);
+
+        Owned<IRowWriter> out = queryMerger()->createWriteBlock();
+        for (unsigned i= 0; i < numRows; i++)
+        {
+            out->putRow(rows[i]);
+        }
+        rowsToSort.noteSpilled(numRows);
+        return true;
+    }
+
+    IDiskMerger * queryMerger()
+    {
+        if (!diskMerger)
+        {
+            unsigned __int64 seq = (memsize_t)this ^ get_cycles_now();
+            StringBuffer spillBasename;
+            spillBasename.append(tempDirectory).append(PATHSEPCHAR).appendf("spill_sort_%" I64F "u", seq);
+            Owned<IRowLinkCounter> linker = new RoxieRowLinkCounter();
+            Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(rowMeta, activityId, ctx);
+            diskMerger.setown(createDiskMerger(rowInterfaces, linker, spillBasename));
+        }
+        return diskMerger;
+    }
+};
+
+
+class CSpillingQuickSortAlgorithm : public CSpillingSortAlgorithm
+{
+public:
+    CSpillingQuickSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable)
+        : CSpillingSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, _stable)
+    {
+    }
+
+    virtual void sortRows(void * * rows, size_t numRows, ICompare & compare, void * * stableTemp)
+    {
+        if (stableTemp)
+            qsortvecstableinplace(rows, numRows, compare, stableTemp);
+        else
+            qsortvec(rows, numRows, compare);
+    }
+};
+
+
+class CSpillingMergeSortAlgorithm : public CSpillingSortAlgorithm
+{
+public:
+    CSpillingMergeSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _parallel)
+        : CSpillingSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, true)
+    {
+        parallel = _parallel;
+    }
+
+    virtual void sortRows(void * * rows, size_t numRows, ICompare & compare, void * * stableTemp)
+    {
+        if (parallel)
+            parmsortvecstableinplace(rows, numRows, compare, stableTemp);
+        else
+            msortvecstableinplace(rows, numRows, compare, stableTemp);
+    }
+protected:
+    bool parallel;
+};
+
+
+extern ISortAlgorithm *createQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CQuickSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createStableQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CStableQuickSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId)
+{
+    return new CInsertionSortAlgorithm(_compare, _rowManager, _activityId);
+}
+
+extern ISortAlgorithm *createHeapSortAlgorithm(ICompare *_compare)
+{
+    return new CHeapSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createMergeSortAlgorithm(ICompare *_compare)
+{
+    return new CMergeSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createParallelMergeSortAlgorithm(ICompare *_compare)
+{
+    return new CParallelMergeSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createSpillingQuickSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable)
+{
+    return new CSpillingQuickSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, _stable);
+}
+
+extern ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm _algorithm, ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId)
+{
+    switch (_algorithm)
+    {
+    case heapSortAlgorithm:
+        return createHeapSortAlgorithm(_compare);
+    case insertionSortAlgorithm:
+        return createInsertionSortAlgorithm(_compare, &_rowManager, _activityId);
+    case quickSortAlgorithm:
+        return createQuickSortAlgorithm(_compare);
+    case stableQuickSortAlgorithm:
+        return createStableQuickSortAlgorithm(_compare);
+    case spillingQuickSortAlgorithm:
+    case stableSpillingQuickSortAlgorithm:
+        return createSpillingQuickSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, _algorithm==stableSpillingQuickSortAlgorithm);
+    case mergeSortAlgorithm:
+        return new CMergeSortAlgorithm(_compare);
+    case parallelMergeSortAlgorithm:
+        return new CParallelMergeSortAlgorithm(_compare);
+    case spillingMergeSortAlgorithm:
+        return new CSpillingMergeSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, false);
+    case spillingParallelMergeSortAlgorithm:
+        return new CSpillingMergeSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, true);
+    default:
+        break;
+    }
+    throwUnexpected();
+}
+
+//===================================================
 
 CSafeSocket::CSafeSocket(ISocket *_sock)
 {
@@ -1175,7 +2190,7 @@ void FlushingStringBuffer::startDataset(const char *elementName, const char *res
                 s.append('<').append(elementName);
                 if (isSoap && (resultName || (sequence != (unsigned) -1)))
                 {
-                    s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.sget()).append(":result:");
+                    s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append(":result:");
                     if (resultName && *resultName)
                         s.appendLower(strlen(resultName), resultName).append('\'');
                     else
@@ -1225,7 +2240,7 @@ void FlushingStringBuffer::startScalar(const char *resultName, unsigned sequence
             s.append("<Dataset");
             if (isSoap && (resultName || (sequence != (unsigned) -1)))
             {
-                s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.sget()).append(":result:");
+                s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append(":result:");
                 if (resultName && *resultName)
                     s.appendLower(strlen(resultName), resultName).append('\'');
                 else

@@ -169,7 +169,9 @@ interface IEspContainer : extends IInterface
     virtual void setLogLevel(LogLevel level) = 0;
     virtual LogLevel getLogLevel() = 0;
     virtual bool getLogRequests() = 0;
+    virtual void setLogRequests(bool logReq) = 0;
     virtual bool getLogResponses() = 0;
+    virtual void setLogResponses(bool logResp) = 0;
     virtual void log(LogLevel level, const char*,...) __attribute__((format(printf, 3, 4))) = 0;
     virtual unsigned getSlowProcessingTime() = 0;
     virtual void setFrameTitle(const char* title) = 0;

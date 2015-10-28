@@ -96,7 +96,6 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
     const char *priority = cmd->queryPriority();
     const char *fileread = cmd->queryFileRead();
     const char *filewritten = cmd->queryFileWritten();
-    const char *roxiecluster = cmd->queryRoxieCluster();
     const char *eclcontains = cmd->queryEclContains();
     const char *cmdname = cmd->queryDfuCmdName();
     unsigned start = cmd->getStart(); 
@@ -189,9 +188,8 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                                 bool haspriority = priority&&*priority;
                                 bool hasfileread = fileread&&*fileread;
                                 bool hasfilewritten = filewritten&&*filewritten;
-                                bool hasroxiecluster = roxiecluster&&*roxiecluster;
                                 bool haseclcontains = eclcontains&&*eclcontains;
-                                if ((cmd->getAction()==SCA_GET)||haswusoutput||hasowner||hasstate||hascluster||hasjobname||hascommand||(hasoutput&&inrange)||haspriority||hasfileread||hasfilewritten||hasroxiecluster||haseclcontains) {
+                                if ((cmd->getAction()==SCA_GET)||haswusoutput||hasowner||hasstate||hascluster||hasjobname||hascommand||(hasoutput&&inrange)||haspriority||hasfileread||hasfilewritten||haseclcontains) {
                                     try {
                                         t.setown(createPTree(di2->query()));
                                         if (!t)
@@ -211,8 +209,6 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                                         if (hasfileread&&!t->hasProp(tmppath.clear().appendf("FilesRead/File[@name=~?\"%s\"]",fileread).str()))
                                             continue;
                                         if (hasfilewritten&&!t->hasProp(tmppath.clear().appendf("Files/File[@name=~?\"%s\"]",filewritten).str()))
-                                            continue;
-                                        if (hasroxiecluster&&!t->hasProp(tmppath.clear().appendf("RoxieQueryInfo[@roxieClusterName=~?\"%s\"]",roxiecluster).str()))
                                             continue;
                                         if (haseclcontains&&!t->hasProp(tmppath.clear().appendf("Query[Text=~?\"*%s*\"]",eclcontains).str()))
                                             continue;
@@ -605,9 +601,9 @@ static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, Stri
         res.append("BACKUP: ");
     res.append(wuid).append(" ");
     if (wufactory) {
-        Owned<IConstWorkUnit> wu;
+        Owned<IWorkUnit> wu;
         try {
-            wu.setown(wufactory->openWorkUnit(wuid, true));
+            wu.setown(wufactory->updateWorkUnit(wuid));
         }
         catch (IException *e) { // probably locked
             e->errorMessage(res);
@@ -669,22 +665,25 @@ static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, Stri
 
 static bool doRestoreWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, StringBuffer &res)
 {
-    CriticalBlock block(archivingSect);
-    res.append("RESTORE: ").append(wuid).append(" ");
-    StringBuffer ldspath("Archive/WorkUnits");
-    splitWUIDpath(wuid,ldspath);
-    StringBuffer path;
-    getLdsPath(ldspath.str(),path);
-    try {
-        if (restoreWorkUnit(path.str(),wuid)) {
-            res.append("OK");
-            return true;
+    if (wuid && *wuid)
+    {
+        CriticalBlock block(archivingSect);
+        res.append("RESTORE: ").append(wuid).append(" ");
+        StringBuffer ldspath("Archive/WorkUnits");
+        splitWUIDpath(wuid,ldspath);
+        StringBuffer base;
+        getLdsPath(ldspath.str(), base);
+        try {
+            if (wufactory->restoreWorkUnit(base, wuid)) {
+                res.append("OK");
+                return true;
+            }
         }
-    }
-    catch (IException *e) {
-        e->errorMessage(res);
-        res.append(' ');
-        e->Release();
+        catch (IException *e) {
+            e->errorMessage(res);
+            res.append(' ');
+            e->Release();
+        }
     }
     res.append("FAILED");
     return false;
@@ -779,7 +778,7 @@ class CWorkUnitArchiver: public CBranchArchiver
                     e.setPropBool("@archiveError", false);
 #ifdef _DEBUG
                 if (iserr)
-                    PROGLOG("ARCHIVE: Err(%s) date %s",wuid.sget(),dts.str()); 
+                    PROGLOG("ARCHIVE: Err(%s) date %s",wuid.str(),dts.str());
 #endif
             }
             getWorkUnitCreateTime(wuid,time);
@@ -802,7 +801,7 @@ class CWorkUnitArchiver: public CBranchArchiver
                 time.getDateString(s1);
                 StringBuffer s2;
                 ct.getDateString(s2);
-                PROGLOG("ARCHIVE: %s recent date %s %s",wuid.sget(),s1.str(),s2.str());
+                PROGLOG("ARCHIVE: %s recent date %s %s",wuid.str(),s1.str(),s2.str());
             }
 #endif
         }

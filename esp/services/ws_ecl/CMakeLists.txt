@@ -77,7 +77,11 @@ target_link_libraries ( ws_ecl
          jhtree 
          hql 
          fileview2 
-         securesocket 
          xmllib 
     )
 
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_ecl
+    	securesocket
+    )
+ENDIF()

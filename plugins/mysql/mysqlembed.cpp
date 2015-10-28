@@ -231,10 +231,15 @@ public:
     {
         return columns;
     }
-    inline MYSQL_BIND &queryColumn(int colIdx) const
+    inline MYSQL_BIND &queryColumn(int colIdx, const char *name) const
     {
         if (colIdx >= columns)
-            fail("Column index out of range");
+        {
+            VStringBuffer error("No matching bound column for parameter %d", colIdx);
+            if (name)
+                error.appendf(" (%s)", name);
+            fail(error);
+        }
         return bindinfo[colIdx];
     }
     inline MYSQL_BIND *queryBindings() const
@@ -327,7 +332,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("mysql: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", field->name->str());
+        msg.appendf(" for field %s", field->name->queryStr());
     rtlFail(0, msg.str());
 }
 
@@ -691,9 +696,9 @@ protected:
             colIdx++;
         else
             fail("Too many fields in ECL output row");
-        const MYSQL_BIND &column = resultInfo.queryColumn(colIdx);
+        const MYSQL_BIND &column = resultInfo.queryColumn(colIdx,field->name->queryStr());
         if (*column.error)
-            failx("Error fetching column %s", field->name->str());
+            failx("Error fetching column %s", field->name->queryStr());
         return column;
     }
     const MySQLBindingArray &resultInfo;
@@ -846,7 +851,7 @@ public:
 protected:
     MYSQL_BIND &createBindBuffer(enum_field_types sqlType, unsigned size)
     {
-        MYSQL_BIND &bindInfo = bindings.queryColumn(thisParam++);
+        MYSQL_BIND &bindInfo = bindings.queryColumn(thisParam++, NULL);
         mysqlembed::createBindBuffer(bindInfo, sqlType, size);
         return bindInfo;
     }
@@ -1180,6 +1185,17 @@ public:
     {
         UNSUPPORTED("SET parameters");  // MySQL does support sets, so MIGHT be possible...
     }
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+    {
+        return NULL;
+    }
+    virtual void paramWriterCommit(IInterface *writer)
+    {
+    }
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+    {
+    }
+
 
     virtual void importFunction(size32_t lenChars, const char *text)
     {
@@ -1198,7 +1214,7 @@ public:
     virtual void callFunction()
     {
         if (nextParam != stmtInfo->queryInputBindings().numColumns())
-            fail("Not enough parameters");
+            failx("Not enough parameters supplied (%d parameters supplied, but statement has %d bound columns)", nextParam, stmtInfo->queryInputBindings().numColumns());
         if (!stmtInfo->hasResult())
             lazyExecute();
     }
@@ -1217,7 +1233,7 @@ protected:
         lazyExecute(); // MORE this seems wrong to me  - or at least needs to check not already executed
         if (!stmtInfo->next())
             typeError("scalar", NULL);
-        return stmtInfo->queryResultBindings().queryColumn(0);
+        return stmtInfo->queryResultBindings().queryColumn(0, NULL);
     }
     void checkSingleRow()
     {
@@ -1227,7 +1243,7 @@ protected:
     inline MYSQL_BIND &findParameter(const char *name, enum_field_types sqlType, unsigned size)
     {
         // Everything is positional in MySQL
-        MYSQL_BIND &bindInfo = stmtInfo->queryInputBindings().queryColumn(nextParam++);
+        MYSQL_BIND &bindInfo = stmtInfo->queryInputBindings().queryColumn(nextParam++, name);
         createBindBuffer(bindInfo, sqlType, size);
         return bindInfo;
     }
@@ -1250,6 +1266,10 @@ public:
             UNSUPPORTED("IMPORT");
         else
             return new MySQLEmbedFunctionContext(options);
+    }
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    {
+        throwUnexpected();
     }
 };
 

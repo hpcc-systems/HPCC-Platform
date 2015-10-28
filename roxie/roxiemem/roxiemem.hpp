@@ -98,6 +98,19 @@ interface ILargeMemCallback: extends IInterface
     virtual void give(memsize_t largeMemory)=0;   // called when the memory allocated falls back below the limit
 };
 
+//This class allows pointers to allocated heap rows to be stored in less memory by taking minimal alignment and
+//the size of the  heap into account.
+//It should not be used for pointers within allocated blocks, since the alignment may not be correct.
+class HeapPointerCompressor
+{
+public:
+    HeapPointerCompressor();
+    void compress(void * target, const void * ptr) const;
+    void * decompress(const void * source) const;
+    size32_t getSize() const { return compressedSize; }
+protected:
+    size32_t compressedSize;
+};
 
 class HeapCompactState;
 struct roxiemem_decl HeapletBase
@@ -286,6 +299,14 @@ public:
 #define RoxieRowAllocatorId(row) roxiemem::HeapletBase::getAllocatorId(row)
 #define RoxieRowIsShared(row)  roxiemem::HeapletBase::isShared(row)
 
+inline void ReleaseRoxieRows(ConstPointerArray &data)
+{
+    ForEachItemIn(idx, data)
+        ReleaseRoxieRow(data.item(idx));
+    data.kill();
+}
+
+
 class OwnedRoxieRow;
 class OwnedConstRoxieRow
 {
@@ -372,7 +393,7 @@ public:
     inline const char * getLink() const { LinkRoxieRow(ptr); return ptr; }
     inline const char * set(const char * _ptr) { const char * temp = ptr; if (_ptr) LinkRoxieRow(_ptr); ptr = _ptr; ReleaseRoxieRow(temp); return ptr; }
     inline const char * setown(const char * _ptr) { const char * temp = ptr; ptr = _ptr; ReleaseRoxieRow(temp); return ptr; }
-
+    inline void clear() { const char * temp = ptr; ptr = NULL; ReleaseRoxieRow(temp);  }
 private:
     /* Disable use of some constructs that often cause memory leaks by creating private members */
     void operator = (const void * _ptr)              {  }

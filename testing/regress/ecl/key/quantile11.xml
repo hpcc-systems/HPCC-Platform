@@ -1,0 +1,15 @@
+<Dataset name='Result 1'>
+ <Row><id>25</id></Row>
+ <Row><id>50</id></Row>
+ <Row><id>75</id></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><id>25</id></Row>
+ <Row><id>49</id></Row>
+ <Row><id>74</id></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><id>25</id></Row>
+ <Row><id>50</id></Row>
+ <Row><id>76</id></Row>
+</Dataset>

@@ -75,10 +75,13 @@ target_link_libraries ( WsDeploy
          dllserver 
          eclrtl 
          hql 
-         securesocket 
          deploy
          deployutils
          configutils
     )
 
-
+IF (USE_OPENSSL)
+    target_link_libraries ( WsDeploy
+    	securesocket
+    )
+ENDIF()

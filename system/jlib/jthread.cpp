@@ -1969,7 +1969,7 @@ public:
             forkthread->join(50); // give a chance to fail
         }
         if (retcode==START_FAILURE) {   
-            ERRLOG("%s: PIPE process '%s' failed to start", title.get()?title.get():"CLinuxPipeProcess", prog.get());
+            DBGLOG("%s: PIPE process '%s' failed to start", title.get()?title.get():"CLinuxPipeProcess", prog.get());
             forkthread.clear();
             return false;
         }

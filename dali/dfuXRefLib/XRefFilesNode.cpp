@@ -71,7 +71,7 @@ void CXRefFilesNode::Deserialize(IPropertyTree& inTree)
     CleanTree(inTree);
     StringBuffer datastr;
     toXML(&inTree,datastr);
-    m_baseTree.setPropBin("data",datastr.length(),(void*)datastr.toCharArray());
+    m_baseTree.setPropBin("data",datastr.length(),(void*)datastr.str());
 }
 
 IPropertyTree* CXRefFilesNode::FindNode(const char* NodeName)
@@ -312,7 +312,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
         return false;
     }
 
-    if (queryDistributedFileDirectory().exists(logicalName.toCharArray(),udesc))
+    if (queryDistributedFileDirectory().exists(logicalName.str(),udesc))
     {
         ERRLOG("Logical File %s already Exists. Can not reattach to Dali",logicalName.str());
         errstr.appendf("Logical File %s already Exists. Can not reattach to Dali",logicalName.str());
@@ -364,7 +364,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
     }
 
     Owned<IDistributedFile> dFile = queryDistributedFileDirectory().createNew(fileDesc);
-    dFile->attach(logicalName.toCharArray(),udesc);
+    dFile->attach(logicalName.str(),udesc);
 
     if (!RemoveTreeNode(Partmask)) {                   
         ERRLOG("Removing XRef Branch %s",Partmask);

@@ -81,6 +81,7 @@ IFS="${OIFS}"
 PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path *= *" | sed -e 's/^path *= *//'`
 
 export PID=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^pid *= *" | sed -e 's/^pid *= *//'`
+export LD_PRELOAD=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^JNI_PATH *= *" | sed -e 's/^JNI_PATH *= *//'`:$LD_PRELOAD
 
 NEW_PATH="${PATH_PREFIX}/bin"
 for D in ${PATH//:/ } ; do

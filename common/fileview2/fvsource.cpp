@@ -1065,7 +1065,7 @@ void FVDataSource::loadDll(const char * wuid)
 {
     //MORE: This code should be commoned up and available in the work unit code or something...
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
 
     //Plugins should already be loaded when they were registered with the ViewTransformerRegistry
     //Something like the following code could be used to check the plugin version...

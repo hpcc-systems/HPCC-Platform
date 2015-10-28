@@ -26,7 +26,7 @@ extern HQL_API IHqlExpression * queryAttribute(ITypeInfo * type, IAtom * search)
 extern HQL_API IHqlExpression * queryAttributeChild(ITypeInfo * type, IAtom * search, unsigned idx);
 extern HQL_API void cloneFieldModifier(Owned<ITypeInfo> & type, ITypeInfo * donorType, IAtom * attr);
 extern HQL_API ITypeInfo * cloneEssentialFieldModifiers(ITypeInfo * donor, ITypeInfo * rawtype);
-extern HQL_API ITypeInfo * removeProperty(ITypeInfo * type, IAtom * search);
+extern HQL_API ITypeInfo * removeAttribute(ITypeInfo * type, IAtom * search);
 
 extern HQL_API size32_t getMinRecordSize(IHqlExpression * record);
 extern HQL_API size32_t getExpectedRecordSize(IHqlExpression * record);

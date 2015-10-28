@@ -659,7 +659,7 @@ bool TranslatedDiskDataSource::createHelperWU()
     query->setQueryText(eclText.str());
     query->setQueryName(jobName.str());
 
-    StringAttrAdaptor xxx(helperWuid); workunit->getWuid(xxx);
+    helperWuid.set(workunit->queryWuid());
     return true;
 }
 
@@ -670,7 +670,7 @@ bool TranslatedDiskDataSource::init()
         return false;
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> wu = factory->openWorkUnit(helperWuid, false);
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(helperWuid);
     Owned<IConstWUResult> dataResult = wu->getResultBySequence(0);
     directSource.setown(new WorkunitDiskDataSource(logicalName, dataResult, helperWuid, username.get(), password.get()));
     return directSource->init();
@@ -729,7 +729,7 @@ bool IndirectDiskDataSource::createBrowseWU()
     query->setQueryText(eclText.str());
     query->setQueryName(jobName.str());
 
-    StringAttrAdaptor xxx(browseWuid); workunit->getWuid(xxx);
+    browseWuid.set(workunit->queryWuid());
     return true;
 }
 
@@ -789,7 +789,7 @@ bool IndirectDiskDataSource::loadBlock(__int64 startRow, offset_t startOffset)
 
     //Now extract the results...
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> wu = factory->openWorkUnit(browseWuid, false);
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(browseWuid);
     Owned<IConstWUResult> dataResult = wu->getResultBySequence(0);
     MemoryBuffer2IDataVal xxx(temp); dataResult->getResultRaw(xxx, NULL, NULL);
 

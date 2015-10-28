@@ -1959,9 +1959,9 @@ IAuthenticatedUser *createAuthenticatedUser() { UNIMPLEMENTED; }
 
 extern jlib_decl void serializeAtom(MemoryBuffer & target, IAtom * name)
 {
-    StringBuffer lower(name->str());
+    StringBuffer lower(str(name));
     lower.toLowerCase();
-    serialize(target, lower.toCharArray());
+    serialize(target, lower.str());
 }
 
 extern jlib_decl IAtom * deserializeAtom(MemoryBuffer & source)
@@ -2544,7 +2544,7 @@ const char * queryCurrentProcessPath()
     }
     if (processPath.isEmpty())
         return NULL;
-    return processPath.sget();
+    return processPath.str();
 }
 
 inline bool isOctChar(char c) 
@@ -2674,6 +2674,19 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
     dir.append(PATHSEPCHAR).append(component);
     recursiveCreateDirectory(dir.str());
     return target.set(dir);
+}
+
+jlib_decl const char *getEnumText(int value, const mapEnums *map)
+{
+    const char *defval = map->str;
+    while (map->str)
+    {
+        if (value==map->val)
+            return map->str;
+        map++;
+    }
+    assertex(!"Unexpected value in getEnumText");
+    return defval;
 }
 
 //#define TESTURL

@@ -203,7 +203,7 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         if (global)
-            mpTag = container.queryJob().deserializeMPTag(data); // only used for global acts
+            mpTag = container.queryJobChannel().deserializeMPTag(data); // only used for global acts
     }
     inline void checkFirstRow()
     {
@@ -213,7 +213,7 @@ public:
             if (global && !firstNode())
             {
                 CMessageBuffer msg;
-                if (!receiveMsg(msg, container.queryJob().queryMyRank()-1, mpTag)) // from previous node
+                if (!receiveMsg(msg, queryJobChannel().queryMyRank()-1, mpTag)) // from previous node
                     return;
                 msg.read(numKept);
                 size32_t rowLen;
@@ -264,13 +264,13 @@ public:
         }
         else if (rollup)
             sizeMark.restart(); // write (0 size) for keptTransformed row
-        container.queryJob().queryJobComm().send(msg, container.queryJob().queryMyRank()+1, mpTag); // to next node
+        queryJobChannel().queryJobComm().send(msg, queryJobChannel().queryMyRank()+1, mpTag); // to next node
         return true;
     }
     virtual void abort()
     {
         if (global)
-            cancelReceiveMsg(container.queryJob().queryMyRank(), mpTag);
+            cancelReceiveMsg(queryJobChannel().queryMyRank(), mpTag);
     }
 };
 

@@ -135,6 +135,7 @@ extern HQL_API IAtom * definitionAtom;
 extern HQL_API IAtom * deprecatedAtom;
 extern HQL_API IAtom * descAtom;
 extern HQL_API IAtom * diskAtom;
+extern HQL_API IAtom * _disallowed_Atom;
 extern HQL_API IAtom * distributedAtom;
 extern HQL_API IAtom * _distributed_Atom;
 extern HQL_API IAtom * _dot_Atom;
@@ -180,7 +181,7 @@ extern HQL_API IAtom * fixedAtom;
 extern HQL_API IAtom * flagAtom;
 extern HQL_API IAtom * flagsAtom;
 extern HQL_API IAtom * flatAtom;
-extern HQL_API IAtom * _folded_Atom;
+extern HQL_API IAtom * foldAtom;
 extern HQL_API IAtom * formatAtom;
 extern HQL_API IAtom * forwardAtom;
 extern HQL_API IAtom * fullonlyAtom;
@@ -280,6 +281,7 @@ extern HQL_API IAtom * newSetAtom;
 extern HQL_API IAtom * _nlpParse_Atom;
 extern HQL_API IAtom * noBoundCheckAtom;
 extern HQL_API IAtom * noCaseAtom;
+extern HQL_API IAtom * nofoldAtom;
 extern HQL_API IAtom * _noHoist_Atom;
 extern HQL_API IAtom * noLocalAtom;
 extern HQL_API IAtom * _nonEmpty_Atom;
@@ -366,6 +368,7 @@ extern HQL_API IAtom * scanAtom;
 extern HQL_API IAtom * scanAllAtom;
 extern HQL_API IAtom * scopeAtom;
 extern HQL_API IAtom * scopeCheckingAtom;
+extern HQL_API IAtom * scoreAtom;
 extern HQL_API IAtom * sectionAtom;
 extern HQL_API IAtom * _selectorSequence_Atom;
 extern HQL_API IAtom * selfAtom;
@@ -390,6 +393,7 @@ extern HQL_API IAtom * soapActionAtom;
 extern HQL_API IAtom * httpHeaderAtom;
 extern HQL_API IAtom * prototypeAtom;
 extern HQL_API IAtom * proxyAddressAtom;
+extern HQL_API IAtom * sampleAtom;
 extern HQL_API IAtom * sort_AllAtom;
 extern HQL_API IAtom * sort_KeyedAtom;
 extern HQL_API IAtom * sortedAtom;
@@ -417,6 +421,7 @@ extern HQL_API IAtom * timestampAtom;
 extern HQL_API IAtom * tinyAtom;
 extern HQL_API IAtom * tomitaAtom;
 extern HQL_API IAtom * topAtom;
+extern HQL_API IAtom * traceAtom;
 extern HQL_API IAtom * trimAtom;
 extern HQL_API IAtom * trueAtom;
 extern HQL_API IAtom * typeAtom;
@@ -448,7 +453,7 @@ extern HQL_API IAtom * xmlnsAtom;
 extern HQL_API IAtom * _xmlParse_Atom;
 extern HQL_API IAtom * xpathAtom;
 
-inline bool isInternalAttributeName(IAtom * name) { return (name->str()[0] == '$'); }
+inline bool isInternalAttributeName(IAtom * name) { return (name->queryStr()[0] == '$'); }
 
 /*
  * This is part of an experiment to make identifiers in the language case sensitive - at least optionally, possibly only for syntax checking.

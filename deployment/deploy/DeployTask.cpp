@@ -189,24 +189,24 @@ public:
 
   const char* getSSHUser() const
   {
-    return m_sshUser.sget();
+    return m_sshUser.str();
   }
   
   const char* getSSHKeyFile() const
   {
-    return m_sshKeyFile.sget();
+    return m_sshKeyFile.str();
   }
 
   const char* getSSHKeyPassphrase() const
   {
-    return m_sshKeyPassphrase.sget();
+    return m_sshKeyPassphrase.str();
   }
 
   bool checkSSHFileExists(const char* filename) const
   {
     bool flag = false;
     Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Ensure Path", m_processType, m_compName, 
-      m_instanceName, filename, NULL, m_sshUser.sget(), m_sshKeyFile.sget(), m_sshKeyPassphrase.sget(),
+      m_instanceName, filename, NULL, m_sshUser.str(), m_sshKeyFile.str(), m_sshKeyPassphrase.str(),
       true, m_machineOS);
 
     try
@@ -409,8 +409,8 @@ public:
              if (flag)
              {
                Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Copy File", 
-                 m_processType, m_compName, m_instanceName, sb.str(), target, m_sshUser.sget(), 
-                 m_sshKeyFile.sget(), m_sshKeyPassphrase.sget(), true, m_machineOS);
+                 m_processType, m_compName, m_instanceName, sb.str(), target, m_sshUser.str(),
+                 m_sshKeyFile.str(), m_sshKeyPassphrase.str(), true, m_machineOS);
 
                try
                {
@@ -644,7 +644,7 @@ public:
            
            stripNetAddr(target, destpath, ip);
            cmdline.appendf("pscp -p -noagent -q %s -i %s -l %s %s \"%s\" %s:%s", flag?"-r":"",
-             m_sshKeyFile.sget(), m_sshUser.sget(), passphr.str(), source, ip.str(), destpath.str());
+             m_sshKeyFile.str(), m_sshUser.str(), passphr.str(), source, ip.str(), destpath.str());
            retcode = pipeSSHCmd(cmdline.str(), outbuf, errbuf);
 
            if (retcode)
@@ -653,7 +653,7 @@ public:
              String err(errbuf.str());
              int index = err.indexOf('\n');
              String* perr = err.substring(0, index > 0? index : err.length());
-             m_errorString.clear().appendf("%s", perr->toCharArray());
+             m_errorString.clear().appendf("%s", perr->str());
              delete perr;
 
              bCopyRC = false;
@@ -666,7 +666,7 @@ public:
                copyProgress.onProgress(pSrcFile->size(), pSrcFile->size());
 
              Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Chmod", m_processType, m_compName, m_instanceName, 
-               destpath.str(), NULL, m_sshUser.sget(), m_sshKeyFile.sget(), m_sshKeyPassphrase.sget(), true, m_machineOS);
+               destpath.str(), NULL, m_sshUser.str(), m_sshKeyFile.str(), m_sshKeyPassphrase.str(), true, m_machineOS);
 
              try
              {
@@ -1052,7 +1052,7 @@ public:
           stripNetAddr(target, destpath, ip);
           StringBuffer passphr;
           getKeyPassphrase(passphr);
-          cmdline.appendf("plink -i %s -l %s %s %s md5sum %s", m_sshKeyFile.sget(), m_sshUser.sget(), passphr.str(), ip.str(), destpath.str());
+          cmdline.appendf("plink -i %s -l %s %s %s md5sum %s", m_sshKeyFile.str(), m_sshUser.str(), passphr.str(), ip.str(), destpath.str());
           retcode = pipeSSHCmd(cmdline, outbuf, errbuf);
           m_processed = true;
 
@@ -1074,7 +1074,7 @@ public:
             String err(errbuf.str());
             int index = err.indexOf('\n');
             String* perr = err.substring(0, index > 0? index : err.length());
-            m_errorString.clear().appendf("%s", perr->toCharArray());
+            m_errorString.clear().appendf("%s", perr->str());
             delete perr;
             return false;
           }
@@ -1172,8 +1172,8 @@ public:
                             stripNetAddr(path, destpath, ip);
                             StringBuffer passphr;
                             getKeyPassphrase(passphr);
-                            cmdline.appendf("plink -i %s -l %s %s %s %s %s", m_sshKeyFile.sget(),
-                              m_sshUser.sget(), passphr.str(), ip.str(), "mkdir -p", destpath.str());
+                            cmdline.appendf("plink -i %s -l %s %s %s %s %s", m_sshKeyFile.str(),
+                              m_sshUser.str(), passphr.str(), ip.str(), "mkdir -p", destpath.str());
                             retcode = pipeSSHCmd(cmdline.str(), outbuf, errbuf);
 
                             if (retcode && retcode != 1)
@@ -1558,7 +1558,7 @@ public:
 
                         unsigned int len = outputStr.length();
                         outputStr.ensureCapacity(len+sz);
-                        if (sz == pFileIO->read(0, sz, (void*)(outputStr.toCharArray() + len)))
+                        if (sz == pFileIO->read(0, sz, (void*)(outputStr.str() + len)))
                             outputStr.setLength(sz+len);
                     }
                 }
@@ -1589,7 +1589,7 @@ public:
      StringBuffer cmdline;
      StringBuffer passphr;
      getKeyPassphrase(passphr);
-     cmdline.appendf("plink -i %s -l %s %s %s %s", m_sshKeyFile.sget(), m_sshUser.sget(), passphr.str(), ip, cmd);
+     cmdline.appendf("plink -i %s -l %s %s %s %s", m_sshKeyFile.str(), m_sshUser.str(), passphr.str(), ip, cmd);
      retcode = pipeSSHCmd(cmdline.str(), output, errmsg);
      m_processed = true;
 
@@ -1599,7 +1599,7 @@ public:
        String err(errmsg.str());
        int index = err.indexOf('\n');
        String* perr = err.substring(0, index > 0? index : err.length());
-       m_errorString.clear().appendf("%s", perr->toCharArray());
+       m_errorString.clear().appendf("%s", perr->str());
        delete perr;
        return false;
      }
@@ -1976,7 +1976,7 @@ private:
     else
     {
       StringBuffer sb;
-      decrypt(sb, m_sshKeyPassphrase.sget());
+      decrypt(sb, m_sshKeyPassphrase.str());
       passphr.append(sb.str());
     }
   }

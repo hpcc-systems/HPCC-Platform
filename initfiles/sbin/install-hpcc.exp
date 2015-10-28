@@ -37,14 +37,14 @@ proc print_usage {} {
 proc sshcmd { cmd params_string } {
   global password user
   if {[string length $password] == 0 } {
-     set cmd2 "$cmd -o BatchMode=yes -o StrictHostKeyChecking=no"
+     set cmd2 "$cmd -o LogLevel=QUIET -o BatchMode=yes -o StrictHostKeyChecking=no"
      if {[string compare $::env(USER) $user] == 0} {
         return "$cmd2 $params_string"
      } else {
         return "su $user -c \"$cmd2  [regsub -all "\"" $params_string \\\"]\""
      }
   } else {
-     return "$cmd $params_string"
+     return "$cmd -o LogLevel=QUIET $params_string"
   }
 }
 

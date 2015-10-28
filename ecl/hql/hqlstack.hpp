@@ -38,6 +38,12 @@
 #elif defined (_ARCH_X86_)
  #define ALIGNMENT 4
  #define REGSIZE 4
+#elif defined (_ARCH_PPC64EL_)
+ #define ALIGNMENT 8
+ #define REGSIZE 8
+ #define MAXFPREGS 8
+ #define REGPARAMS 6
+ #define EVEN_STACK_ALIGNMENT
 #elif defined (_ARCH_ARM64_)
  #define ALIGNMENT 8
  #define ALIGN_USES_ELEMENTSIZE

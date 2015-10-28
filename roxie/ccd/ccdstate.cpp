@@ -722,7 +722,9 @@ public:
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         // filename by now may be a local filename, or a dali one
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, false, !resolveLocally(), true);
+        bool onlyLocal = fileNameServiceDali.isEmpty();
+        bool onlyDFS = !resolveLocally() && !onlyLocal;
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, onlyLocal, onlyDFS, true);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
@@ -2574,7 +2576,13 @@ private:
             break;
 
         case 'S':
-            if (stricmp(queryName, "control:setCopyResources")==0)
+            if (stricmp(queryName, "control:setAffinity")==0)
+            {
+                __uint64 affinity = control->getPropBool("@val", true);
+                topology->setPropInt64("@affinity", affinity);
+                updateAffinity(affinity);
+            }
+            else if (stricmp(queryName, "control:setCopyResources")==0)
             {
                 copyResources = control->getPropBool("@val", true);
                 topology->setPropBool("@copyResources", copyResources);

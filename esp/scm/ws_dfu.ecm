@@ -18,6 +18,12 @@
 #include "xslprocessor.hpp" 
 //  ===========================================================================
 
+ESPenum DFUArrayActions : string
+{
+    Delete("Delete"),
+    AddToSuperfile("Add To Superfile"),
+};
+
 ESPStruct SpaceItem
 {
     string Name;
@@ -57,6 +63,8 @@ ESPStruct DFULogicalFile
     [min_ver("1.22")] bool IsCompressed;
     [min_ver("1.24")] string ContentType;
     [min_ver("1.22")] int64 CompressedFileSize;
+    [min_ver("1.30")] string SuperOwners;
+    [min_ver("1.30")] bool Persistent;
 };
 
 ESPStruct DFUPart
@@ -80,6 +88,7 @@ ESPStruct [nil_remove] DFUFilePartsOnCluster
     [min_ver("1.31")] string BaseDir;
     [min_ver("1.31")] string ReplicateDir;
     [min_ver("1.31")] bool Replicate;
+    [min_ver("1.32")] bool CanReplicate;
     ESParray<ESPstruct DFUPart> DFUFileParts;
 };
 
@@ -173,6 +182,8 @@ ESPrequest [nil_remove] DFUQueryRequest
 
     bool OneLevelDirFileReturn(false);
     [min_ver("1.24")] int64 CacheHint;
+    [min_ver("1.30")] int MaxNumberOfFiles;
+    [min_ver("1.30")] bool IncludeSuperOwner;
 };
 
 ESPresponse 
@@ -211,6 +222,8 @@ DFUQueryResponse
     string ParametersForPaging;
     string Filters;
     [min_ver("1.24")] int64 CacheHint;
+    [min_ver("1.30")] bool IsSubsetOfFiles;
+    [min_ver("1.30")] string Warning;
 };
 
 ESPrequest 
@@ -237,7 +250,7 @@ ESPrequest
 ]
 DFUArrayActionRequest
 {
-    DFUActionType Type;
+    ESPenum DFUArrayActions Type;
     bool NoDelete;
     [min_ver("1.04")] string BackToPage;
     ESParray<string> LogicalFiles;
@@ -438,6 +451,7 @@ ESPStruct [nil_remove] DFUDataColumn
     [min_ver("1.29")] int ColumnRawSize;
     [min_ver("1.29")] bool IsNaturalColumn;
     [min_ver("1.29")] bool IsKeyedColumn;
+    [min_ver("1.31")] ESParray<ESPstruct DFUDataColumn> DataColumns;
 };
 
 ESPrequest DFUGetDataColumnsRequest
@@ -685,7 +699,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 
 //  ===========================================================================
 ESPservice [
-    version("1.31"),
+    version("1.32"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

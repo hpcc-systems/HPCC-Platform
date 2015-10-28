@@ -1,11 +1,7 @@
 {
     "Regress":{
-        "IpAddress":{
-            "hthor": "127.0.0.1",
-            "thor" : "127.0.0.1",
-            "roxie": "127.0.0.1"
-        },
         "roxieTestSocket": ":9876",
+        "espIp" : "127.0.0.1",
         "espSocket": ":8010",
         "username": "regress",
         "password": "regress",
@@ -31,7 +27,9 @@
             "all"
         ],
         "Params":[
-            "PassTest.ecl:bla='A value'"
+            "PassTest.ecl:bla='A value'",
+            "httpcall_multiheader.ecl:TargetIP=.",
+            "soapcall_multihttpheader.ecl:TargetIP=."
         ]
     }
 }

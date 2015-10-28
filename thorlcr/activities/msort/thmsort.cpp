@@ -65,7 +65,7 @@ public:
     {
         mpTagRPC = container.queryJob().allocateMPTag();
         barrierMpTag = container.queryJob().allocateMPTag();
-        barrier.setown(container.queryJob().createBarrier(barrierMpTag));
+        barrier.setown(container.queryJobChannel().createBarrier(barrierMpTag));
     }
     ~CMSortActivityMaster()
     {
@@ -119,7 +119,7 @@ protected:
         {
             SocketEndpoint ep;
             ep.deserialize(queryInitializationData(s)); // this is a bit of a Kludge until we get proper MP Thor
-            imaster->AddSlave(&container.queryJob().queryJobComm(), s+1, ep,mpTagRPC);
+            imaster->AddSlave(&queryJobChannel().queryJobComm(), s+1, ep,mpTagRPC);
         }
     }
     virtual void process()
@@ -155,11 +155,11 @@ protected:
                 skewThreshold = container.queryJob().getWorkUnitValueInt("defaultSkewThreshold", 0);
         }
 
-        Owned<IRowInterfaces> rowif = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryActivityId(),queryCodeContext());
-        Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryActivityId(),queryCodeContext());
+        Owned<IRowInterfaces> rowif = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryId(),queryCodeContext());
+        Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryId(),queryCodeContext());
         try
         {
-            imaster->SortSetup(rowif,helper->queryCompare(),helper->querySerialize(),cosortfilenames.length()!=0,true,cosortfilenames.toCharArray(),auxrowif);
+            imaster->SortSetup(rowif,helper->queryCompare(),helper->querySerialize(),cosortfilenames.length()!=0,true,cosortfilenames.str(),auxrowif);
             if (barrier->wait(false)) // local sort complete
             {
                 size32_t maxdeviance = getOptUInt(THOROPT_SORT_MAX_DEVIANCE, 10*1024*1024);

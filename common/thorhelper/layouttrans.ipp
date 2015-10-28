@@ -54,12 +54,12 @@ public:
         : type(_type), diskRecord(_diskRecord), diskFieldNum(_diskFieldNum), activityRecord(_activityRecord), activityFieldNum(_activityFieldNum), diskFieldKeyed(_diskFieldKeyed), activityFieldKeyed(_activityFieldKeyed) {}
     List & queryChildMappings() { return childMappings; }
     Type queryType() const { return type; }
-    char const * queryDiskFieldName() const { return diskRecord->queryChild(diskFieldNum)->queryName()->str(); }
+    char const * queryDiskFieldName() const { return str(diskRecord->queryChild(diskFieldNum)->queryName()); }
     unsigned queryDiskFieldNum() const { return diskFieldNum; }
     size32_t queryDiskFieldSize() const { return diskRecord->queryChild(diskFieldNum)->queryType()->getSize(); }
     bool isDiskFieldFpos() const { return ((type != ChildDataset) && !diskFieldKeyed && (diskFieldNum == diskRecord->numChildren()-1) && diskRecord->queryChild(diskFieldNum)->queryType()->isInteger()); }
     bool isDiskFieldSet() const { return (diskRecord->queryChild(diskFieldNum)->queryType()->getTypeCode() == type_set); }
-    char const * queryActivityFieldName() const { return activityRecord->queryChild(activityFieldNum)->queryName()->str(); }
+    char const * queryActivityFieldName() const { return str(activityRecord->queryChild(activityFieldNum)->queryName()); }
     unsigned queryActivityFieldNum() const { return activityFieldNum; }
     size32_t queryActivityFieldSize() const { return activityRecord->queryChild(activityFieldNum)->queryType()->getSize(); }
     bool isActivityFieldFpos() const { return ((type == Simple) && !activityFieldKeyed && (activityFieldNum == activityRecord->numChildren()-1) && activityRecord->queryChild(activityFieldNum)->queryType()->isInteger()); }

@@ -211,6 +211,16 @@ bool UsedFieldSet::contains(IAtom * name) const
     return false;
 }
 
+IHqlExpression * UsedFieldSet::findByName(IAtom * name) const
+{
+    ForEachItemIn(i, fields)
+    {
+        if (fields.item(i).queryName() == name)
+            return &fields.item(i);
+    }
+    return NULL;
+}
+
 //Calculate left - right
 void UsedFieldSet::createDifference(const UsedFieldSet & left, const UsedFieldSet & right)
 {
@@ -272,7 +282,12 @@ NestedField * UsedFieldSet::findNestedByName(IHqlExpression * field) const
 IHqlExpression * UsedFieldSet::createFilteredAssign(IHqlExpression * field, IHqlExpression * value, IHqlExpression * newSelf, const UsedFieldSet * exceptions) const
 {
     if (!contains(*field))
+    {
+        IHqlExpression * match = findByName(field->queryName());
+        if (match)
+            return createFilteredAssign(match, value, newSelf, exceptions);
         return NULL;
+    }
 
     OwnedHqlExpr newValue = LINK(value);
     OwnedHqlExpr newField;
@@ -539,7 +554,8 @@ void UsedFieldSet::gatherTransformValuesUsed(HqlExprArray * selfSelects, HqlExpr
                 IHqlExpression * transformValue = queryTransformAssignValue(transform, &cur);
                 //If no transform value is found then we almost certainly have an invalid query (e.g, LEFT inside a
                 //global).  Don't add the value - you'll definitely get a later follow on error
-                assertex(transformValue);
+                if (!transformValue)
+                    throwError1(HQLERR_NoMappingForField, str(cur.queryId()));
                 values->append(*LINK(transformValue));
             }
         }
@@ -1990,6 +2006,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_createrow:
     case no_rollupgroup:
     case no_projectrow:
+    case no_quantile:
         return CreateRecordActivity;
     case no_inlinetable:
     case no_dataset_from_transform:

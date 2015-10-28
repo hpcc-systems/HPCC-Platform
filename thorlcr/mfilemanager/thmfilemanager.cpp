@@ -174,7 +174,7 @@ public:
     }
     StringBuffer &mangleLFN(CJobBase &job, const char *lfn, StringBuffer &out)
     {
-        out.append(lfn).append("__").append(job.queryCodeContext().getWuid());
+        out.append(lfn).append("__").append(job.queryWuid());
         return out;
     }
     StringBuffer &addScope(CJobBase &job, const char *logicalname, StringBuffer &ret, bool temporary=false, bool paused=false)
@@ -331,10 +331,9 @@ public:
             }
         }
 
-        SCMStringBuffer wuidStr, jobStr, userStr;
-        job.queryWorkUnit().getWuid(wuidStr);
-        job.queryWorkUnit().getJobName(jobStr);
-        job.queryWorkUnit().getUser(userStr);
+        StringAttr wuidStr(job.queryWorkUnit().queryWuid());
+        StringAttr userStr(job.queryWorkUnit().queryUser());
+        StringAttr jobStr(job.queryWorkUnit().queryJobName());
         if (overwriteok && (!temporary || job.queryUseCheckpoints()))
         {
             if (!temporary)

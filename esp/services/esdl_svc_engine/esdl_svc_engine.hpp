@@ -62,7 +62,6 @@ public:
     }
 
     virtual const char *queryServiceType(){return  m_pESDLService->getServiceType();}
-    virtual void handleSoapRequestException(IException *e, const char *source);
 };
 
 #endif //_ESPWIZ_Esdl_SVC_Engine_HPP__

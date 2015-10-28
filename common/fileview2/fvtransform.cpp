@@ -298,7 +298,7 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     dataServer.setown(createNewSourceFileEclRepository(errorReporter, name, ESFallowplugins, 0));
 
     HqlScopeArray scopes;
-    HqlParseContext parseCtx(dataServer, NULL);
+    HqlParseContext parseCtx(dataServer, NULL, NULL);
     HqlLookupContext ctx(parseCtx, errorReporter);
     getRootScopes(scopes, dataServer, ctx);
 
@@ -320,7 +320,7 @@ void ViewTransformerRegistry::addPlugins(const char * name)
         }
         catch (IException * e)
         {
-            const char * name = scope->queryName()->str();
+            const char * name = str(scope->queryName());
             VStringBuffer msg("Error loading plugin %s", name);
             EXCLOG(e, msg.str());
         }
@@ -351,11 +351,11 @@ void * ViewTransformerRegistry::resolveExternal(IHqlExpression * funcdef)
 
     ensureFileExtension(lib, SharedObjectExtension);
 
-    Owned<ILoadedDllEntry> match = loadedPlugins->getPluginDll(lib.toCharArray(), NULL, false); // MORE - shouldn't it check the version????
+    Owned<ILoadedDllEntry> match = loadedPlugins->getPluginDll(lib.str(), NULL, false); // MORE - shouldn't it check the version????
     if (!match)
         return NULL;
 
-    return GetSharedProcedure(match->getInstance(), entry.toCharArray());
+    return GetSharedProcedure(match->getInstance(), entry.str());
 }
 
 
@@ -409,7 +409,7 @@ ViewFieldTransformer * ViewTransformerRegistry::createTransformer(IHqlExpression
 void ViewTransformerRegistry::addServiceDefinition(IHqlExpression * service)
 {
     Owned<ViewServiceEntry> entry = new ViewServiceEntry;
-    entry->name.set(service->queryName()->str());
+    entry->name.set(str(service->queryName()));
 
     HqlExprArray symbols;
     service->queryScope()->getSymbols(symbols);

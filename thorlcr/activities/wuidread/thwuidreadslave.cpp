@@ -41,7 +41,7 @@ public:
     CWuidReadSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorDataLink(this)
     {
-        replyTag = createReplyTag();
+        replyTag = queryMPServer().createReplyTag();
         replyStream.setown(createMemoryBufferSerialStream(masterReplyMsg));
         rowSource.setStream(replyStream);
     }
@@ -65,7 +65,7 @@ public:
             reqMsg.append(container.queryOwner().queryGraphId());
             reqMsg.append(container.queryId());
 
-            if (!container.queryJob().queryJobComm().sendRecv(reqMsg, 0, container.queryJob().querySlaveMpTag(), LONGTIMEOUT))
+            if (!queryJobChannel().queryJobComm().sendRecv(reqMsg, 0, container.queryJob().querySlaveMpTag(), LONGTIMEOUT))
                 throwUnexpected();
 
             masterReplyMsg.swapWith(reqMsg);

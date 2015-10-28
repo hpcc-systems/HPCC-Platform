@@ -41,12 +41,14 @@ public:
     StringBuffer(unsigned len, const char *value);
     StringBuffer(const StringBuffer & value);
     StringBuffer(bool useInternal);
+    StringBuffer(char value);
     ~StringBuffer();
 
     inline size32_t length() const                      { return curLen; }
+    inline bool     isEmpty() const                     { return (curLen == 0); }
     void            setLength(unsigned len);
     inline void     ensureCapacity(unsigned max)        { if (maxLen <= curLen + max) _realloc(curLen + max); }
-    
+
     StringBuffer &  append(char value);
     StringBuffer &  append(unsigned char value);
     StringBuffer &  append(const char * value);
@@ -90,25 +92,24 @@ public:
     StringBuffer &  insert(int offset, const IStringVal * value);
     StringBuffer &  reverse();
     void            setCharAt(unsigned offset, char value);
-    
+
     //Non-standard functions:
     MemoryBuffer &  deserialize(MemoryBuffer & in);
     MemoryBuffer &  serialize(MemoryBuffer & out) const;
     StringBuffer &  loadFile(const char *fname, bool binaryMode=false);
     StringBuffer &  loadFile(IFile* f);
-    
+
     StringBuffer &  append(const StringBuffer & value);
     StringBuffer &  newline();
     StringBuffer &  pad(unsigned count);
     StringBuffer &  padTo(unsigned count);
-    inline const char * str() const { return toCharArray(); }
     char *          detach();
     StringBuffer &  clip();
     StringBuffer &  trim();
     StringBuffer &  trimLeft();
     inline StringBuffer &  trimRight() {  return clip(); }
     StringBuffer &  remove(unsigned start, unsigned len);
-    const char *    toCharArray() const;
+    const char *   str() const;
     StringBuffer &  toLowerCase();
     StringBuffer &  toUpperCase();
     StringBuffer &  replace(char oldChar, char newChar);
@@ -123,11 +124,11 @@ public:
     inline StringBuffer& set(const char* value) { return clear().append(value); }
     inline operator const char* () const { return str(); }
     inline StringBuffer& operator=(const char* value)
-    { 
+    {
         return clear().append(value);
     }
     inline StringBuffer& operator=(const StringBuffer& value)
-    { 
+    {
         return clear().append(value.str());
     }
 
@@ -227,7 +228,7 @@ public:
     bool    startsWith(const char* value) const;
     String *  substring(int beginIndex) const;
     String *  substring(int beginIndex, int endIndex) const;
-    const char *toCharArray() const;
+    const char *str() const;
     String *  toLowerCase() const;
     String *  toString();               // Links this
     String *  toUpperCase() const;
@@ -253,11 +254,10 @@ public:
     inline operator const char * () const       { return text; }
     inline void clear()                         { setown(NULL); }
     inline char * detach()                      { char * ret = text; text = NULL; return ret; }
-    inline const char * get(void) const         { return text; }
+    inline const char * get() const             { return text; }
     inline size32_t     length() const          { return text ? (size32_t)strlen(text) : 0; }
     inline bool isEmpty() const                 { return !text||!*text; } // faster than (length==0)
-    inline const char * str(void) const         { return text ? text : ""; } // safe form (doesn't return NULL)
-    inline const char * sget(void) const        { return text ? text : ""; } // safe form of get (doesn't return NULL)
+    inline const char * str() const             { return text ? text : ""; } // safe form (doesn't return NULL)
 
     void         set(const char * _text);
     void         setown(const char * _text);
@@ -558,6 +558,7 @@ extern jlib_decl bool endsWithIgnoreCase(const char* src, const char* dst);
 inline bool strieq(const char* s, const char* t) { return stricmp(s,t)==0; }
 inline bool streq(const char* s, const char* t) { return strcmp(s,t)==0; }
 inline bool strsame(const char* s, const char* t) { return (s == t) || (s && t && strcmp(s,t)==0); }  // also allow nulls
+inline bool isEmptyString(const char *text) { return !text||!*text; }
 
 extern jlib_decl char *j_strtok_r(char *str, const char *delim, char **saveptr);
 extern jlib_decl int j_memicmp (const void *s1, const void *s2, size32_t len); 

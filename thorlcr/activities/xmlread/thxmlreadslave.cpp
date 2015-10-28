@@ -132,7 +132,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 if (PTreeRead_syntax != e->errorCode())
                     throw;
                 Owned<IException> _e = e;
-                offset_t localFPos = makeLocalFposOffset(activity.queryContainer().queryJob().queryMyRank()-1, e->queryOffset());
+                offset_t localFPos = makeLocalFposOffset(activity.queryContainer().queryJobChannel().queryMyRank()-1, e->queryOffset());
                 StringBuffer context;
                 context.append("Logical filename = ").append(activity.logicalFilename).newline();
                 context.append("Local fileposition = ");

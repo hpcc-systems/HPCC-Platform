@@ -316,14 +316,14 @@ void CDeploymentEngine::startInstance(IPropertyTree& node, const char* fileName/
         if (!computer || !*computer)
             return;
 
-        const char* dir = hostDir.sget();
+        const char* dir = hostDir.str();
         StringBuffer destpath, destip;
         stripNetAddr(dir, destpath, destip);
 
         StringBuffer cmd, output, err, destdir;
         destdir.append(destpath.length() - 1, destpath.str());
         cmd.clear().appendf("%s%s %s", destpath.str(), fileName, destdir.str());
-        task.set(createDeployTask(*m_pCallback, "Start Instance", m_process.queryName(), m_name.get(), m_curInstance, fileName, dir, m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os));
+        task.set(createDeployTask(*m_pCallback, "Start Instance", m_process.queryName(), m_name.get(), m_curInstance, fileName, dir, m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined, os));
         m_pCallback->printStatus(task);
         bool flag = task->execSSHCmd(destip.str(), cmd, output, err);
     }
@@ -341,7 +341,7 @@ void CDeploymentEngine::startInstance(IPropertyTree& node, const char* fileName/
         connectToHost(node);
         task.set(createDeployTask(*m_pCallback, "Start Instance", m_process.queryName(),
                                              m_name.get(), m_curInstance, NULL, startCmd.str(),
-                                             m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os));
+                                             m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined, os));
         m_pCallback->printStatus(task);
         task->createProcess(true, user, pwd);
     }
@@ -420,13 +420,13 @@ void CDeploymentEngine::stopInstance(IPropertyTree& node, const char* fileName/*
         if (!computer || !*computer)
             return;
 
-        const char* dir = hostDir.sget();
+        const char* dir = hostDir.str();
         StringBuffer destpath, destip;
         stripNetAddr(dir, destpath, destip);
         StringBuffer cmd, output, err, destdir;
         destdir.append(destpath.length() - 1, destpath.str());
         cmd.clear().appendf("%s%s %s", destpath.str(), fileName, destdir.str());
-        task.set(createDeployTask(*m_pCallback, "Stop Instance", m_process.queryName(), m_name.get(), m_curInstance, fileName, dir, m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os));
+        task.set(createDeployTask(*m_pCallback, "Stop Instance", m_process.queryName(), m_name.get(), m_curInstance, fileName, dir, m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined, os));
         m_pCallback->printStatus(task);
         bool flag = task->execSSHCmd(destip.str(), cmd, output, err);
     }
@@ -444,8 +444,8 @@ void CDeploymentEngine::stopInstance(IPropertyTree& node, const char* fileName/*
         // Spawn stop process
         connectToHost(node);
         task.set(createDeployTask(*m_pCallback, "Stop Instance", m_process.queryName(), m_name.get(),
-                         m_curInstance, NULL, stopCmd.str(), m_curSSHUser.sget(),
-                         m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os));
+                         m_curInstance, NULL, stopCmd.str(), m_curSSHUser.str(),
+                         m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined, os));
         m_pCallback->printStatus(task);
         task->createProcess(true, user, pwd);
     }
@@ -721,8 +721,8 @@ void CDeploymentEngine::deleteFile(const char* target, const char* instanceName,
 {
     checkAbort();
     Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Delete File", m_process.queryName(),
-                                             m_name.get(), instanceName, NULL, target, m_curSSHUser.sget(), m_curSSHKeyFile.sget(),
-                                             m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os);
+                                             m_name.get(), instanceName, NULL, target, m_curSSHUser.str(), m_curSSHKeyFile.str(),
+                                             m_curSSHKeyPassphrase.str(), m_useSSHIfDefined, os);
     task->deleteFile();
 
     //only display status info for successful attempts since some temp files may be attempted to be
@@ -756,12 +756,12 @@ void CDeploymentEngine::backupDirs()
                     "Backing up directory %s", hostDir.get());
 
                 StringBuffer bkPath;
-                getBackupDirName(hostDir.sget(), bkPath);
+                getBackupDirName(hostDir.str(), bkPath);
                 if (bkPath.length() == 0)
                     return;
 
                 StringBuffer fromPath, toPath, err, fromip, toip;
-                stripNetAddr(hostDir.sget(), fromPath, fromip);
+                stripNetAddr(hostDir.str(), fromPath, fromip);
                 stripNetAddr(bkPath.str(), toPath, toip);
 
                 StringBuffer cmd, output;
@@ -769,7 +769,7 @@ void CDeploymentEngine::backupDirs()
                 tmp.appendf("%d", msTick());
                 cmd.clear().appendf("cp -r %s %s", fromPath.str(), toPath.str());
                 Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Backup Directory", m_process.queryName(), m_name.get(),
-                    m_curInstance, fromPath.str(), toPath.str(), m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(),
+                    m_curInstance, fromPath.str(), toPath.str(), m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(),
                     m_useSSHIfDefined, os);
                 m_pCallback->printStatus(task);
                 bool flag = task->execSSHCmd(fromip.str(), cmd, output, err);
@@ -851,8 +851,8 @@ void CDeploymentEngine::xslTransform(const char *xslFilePath, const char *output
     s_xsltDepEngine = this; //this is used in external function to get back to deployment engine instance
 
     Owned<IDeployTask> task = createDeployTask(*m_pCallback, "XSL Transform", m_process.queryName(),
-        m_name.get(), instanceName, xslFilePath, outputFilePath, m_curSSHUser.sget(), m_curSSHKeyFile.sget(),
-        m_curSSHKeyPassphrase.sget(), useSSH ? m_useSSHIfDefined : useSSH, os, processName);
+        m_name.get(), instanceName, xslFilePath, outputFilePath, m_curSSHUser.str(), m_curSSHKeyFile.str(),
+        m_curSSHKeyPassphrase.str(), useSSH ? m_useSSHIfDefined : useSSH, os, processName);
     m_pCallback->printStatus(task);
 
     if (os == MachineOsLinux)
@@ -925,8 +925,8 @@ void CDeploymentEngine::compareFiles(const char *newFile, const char *oldFile, E
 {
    Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Compare File",
                                               m_process.queryName(), m_name.get(),
-                                              m_curInstance, newFile, oldFile, m_curSSHUser.sget(),
-                                              m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os);
+                                              m_curInstance, newFile, oldFile, m_curSSHUser.str(),
+                                              m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined, os);
    m_pCallback->printStatus(task);
    task->compareFile(DTC_CRC | DTC_SIZE);
    task->setFileSpec(DT_SOURCE, newFile);
@@ -952,7 +952,7 @@ void CDeploymentEngine::writeFile(const char* filename, const char* str, EnvMach
     else
         ensurePath(filename);
     Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Create File", m_process.queryName(), m_name.get(),
-        m_curInstance, NULL, filename, m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(),
+        m_curInstance, NULL, filename, m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(),
         useSSH?m_useSSHIfDefined:useSSH, os);
     m_pCallback->printStatus(task);
     if (useSSH?m_useSSHIfDefined:useSSH)
@@ -966,7 +966,7 @@ void CDeploymentEngine::writeFile(const char* filename, const char* str, EnvMach
             String errmsg(err.str());
             int index = errmsg.indexOf('\n');
             String* perr = errmsg.substring(0, index > 0? index : errmsg.length());
-            output.clear().appendf("%s", perr->toCharArray());
+            output.clear().appendf("%s", perr->str());
             delete perr;
             throw MakeStringException(-1, "%s", output.str());
         }
@@ -1322,7 +1322,7 @@ void CDeploymentEngine::ensurePath(const char* filespec) const
         if ((m_curInstance && m_curSSHUser.length() && m_curSSHKeyFile.length()) || !pIFile->exists() || !pIFile->isDirectory())
         {
             Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Create Directory", m_process.queryName(), m_name.get(),
-                m_curInstance, NULL, dir.str(), m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(),
+                m_curInstance, NULL, dir.str(), m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(),
                 m_useSSHIfDefined, os);
             m_pCallback->printStatus(task);
             task->createDirectory();
@@ -1374,7 +1374,7 @@ void CDeploymentEngine::renameDir(const char* from, const char* to, EnvMachineOS
 
     // Save rename task
     Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Rename", m_process.queryName(), m_name.get(),
-        m_curInstance, oldPath, newPath, m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os);
+        m_curInstance, oldPath, newPath, m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined, os);
 
   m_renameDirList.append(*task.getLink());
 }
@@ -1396,7 +1396,7 @@ void CDeploymentEngine::backupDir(const char* from)
 
     // Copy directory
     Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Backup Directory", m_process.queryName(), m_name.get(),
-        m_curInstance, fromPath, toPath.str(),  m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined);
+        m_curInstance, fromPath, toPath.str(),  m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined);
     m_pCallback->printStatus(task);
     task->copyDirectory();
     m_pCallback->printStatus(task);
@@ -1517,7 +1517,7 @@ void CDeploymentEngine::copyInstallFiles(const char* instanceName, int instanceI
                       sbdst.setLength(strrchr(sbdst.str(), PATHSEPCHAR) - sbdst.str() + 1);
 
                     Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Copy Directory", m_process.queryName(), m_name.get(),
-                      m_curInstance, sbsrc.str(), sbdst.str(), m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os);
+                      m_curInstance, sbsrc.str(), sbdst.str(), m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined, os);
                     task->setFlags(m_deployFlags & DCFLAGS_ALL);
                     m_threadPool->start(task);
                     recCopyDone = true;
@@ -1665,7 +1665,7 @@ bool CDeploymentEngine::processInstallFile(IPropertyTree& processNode, const cha
                     if (!stricmp(method+4, "_block_until_done")) //copy_block_until_done
                     {
                         Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Copy File", m_process.queryName(), m_name.get(),
-                            m_curInstance, source, dest, m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os);
+                            m_curInstance, source, dest, m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined, os);
                         task->setFlags(m_deployFlags & DCFLAGS_ALL);
 
                         task->copyFile( m_deployFlags & (DCFLAGS_ALL | DTC_DEL_WRONG_CASE));
@@ -1677,7 +1677,7 @@ bool CDeploymentEngine::processInstallFile(IPropertyTree& processNode, const cha
                     else
                     {
                         Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Copy File", m_process.queryName(), m_name.get(),
-                            m_curInstance, source, dest, m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined, os);
+                            m_curInstance, source, dest, m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined, os);
                         task->setFlags(m_deployFlags & DCFLAGS_ALL);
 
                         m_threadPool->start(task);//start a thread for this task
@@ -1813,8 +1813,10 @@ void CDeploymentEngine::setXsl(IXslProcessor* processor, IXslTransform* transfor
    m_externalFunction.setown(m_transform->createExternalFunction("addDeploymentFile", addDeploymentFile));
    m_transform->setExternalFunction(SEISINT_NAMESPACE, m_externalFunction.get(), true);
 
+#ifdef USE_OPENSSL
    m_externalFunction2.setown(m_transform->createExternalFunction("siteCertificate", siteCertificateFunction));
    m_transform->setExternalFunction(SEISINT_NAMESPACE, m_externalFunction2.get(), true);
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -2355,6 +2357,7 @@ void CDeploymentEngine::addDeploymentFile(StringBuffer &ret, const char *in, IXs
 //  siteCertificate
 //---------------------------------------------------------------------------
 /*static*/
+#ifdef USE_OPENSSL
 void CDeploymentEngine::siteCertificateFunction(StringBuffer &ret, const char *in, IXslTransform*)
 {
     //input is of the format <processType>+<process name>+<instance name>+<output path>
@@ -2382,7 +2385,7 @@ void CDeploymentEngine::siteCertificateFunction(StringBuffer &ret, const char *i
 
     s_xsltDepEngine->siteCertificate( *pProcess, instanceName, outputFile );
 }
-
+#endif
 
 //---------------------------------------------------------------------------
 //  processCustomMethod
@@ -2399,9 +2402,15 @@ void CDeploymentEngine::processCustomMethod(const char* method, const char *sour
         throw MakeStringException(0, "Process '%s': invalid method '%s' specified for file '%s'",
         m_name.get(), method, fileName);
 
+#ifdef USE_OPENSSL
     siteCertificate(m_process, instanceName, outputFile);
+#else
+    throw MakeStringException(0, "Process '%s' file '%s' method '%s': requires OpenSSL (disabled in build)",
+        m_name.get(), fileName, method);
+#endif
 }
 
+#ifdef USE_OPENSSL
 //---------------------------------------------------------------------------
 //  processCustomMethod
 //---------------------------------------------------------------------------
@@ -2616,7 +2625,7 @@ void CDeploymentEngine::siteCertificate(IPropertyTree& process, const char *inst
         s_dynamicFileList.push_back(LinkedFilePtr(pInstallFile2.get()));
     }
 }
-
+#endif
 
 bool CDeploymentEngine::fireException(IException *e)
 {
@@ -2664,7 +2673,7 @@ bool CDeploymentEngine::checkSSHFileExists(const char* dir) const
     tmp.appendf("%d", msTick());
     cmd.clear().appendf("[ -e %s ] && echo %s", destpath.str(), tmp.str());
     Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Ensure Path", m_process.queryName(), m_name.get(),
-      m_curInstance, NULL, NULL, m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined);
+      m_curInstance, NULL, NULL, m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(), m_useSSHIfDefined);
     task->execSSHCmd(destip.str(), cmd, output, err);
     flag = strstr(output.str(), tmp.str()) == output.str();
     checkAbort(task);

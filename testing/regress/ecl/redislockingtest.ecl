@@ -15,9 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
+//class=embedded
+//class=3rdparty
 
-IMPORT redisServer FROM lib_redis;
+//nohthor
+
+IMPORT * FROM lib_redis;
 IMPORT Std;
 
 STRING server := '--SERVER=127.0.0.1:6379';
@@ -121,21 +124,6 @@ SEQUENTIAL(
     myRedis.Unlock('testlock'),
     myRedis.Exists('testlock'),
     myRedis.FlushDB(),
-    );
-
-//Test exception for checking expected channels
-ds1 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetOrLockString('channelTest' + (string)COUNTER)));
-SEQUENTIAL(
-    myRedis.FlushDB();
-    myRedis.SetString('channelTest1', 'redis_ecl_lock_blah_blah_blah');
-    OUTPUT(CATCH(ds1, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
-    );
-
-ds2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetOrLockString('channelTest' + (string)(1+COUNTER))));
-SEQUENTIAL(
-    myRedis.FlushDB();
-    myRedis.SetString('channelTest2', 'redis_ecl_lock_channelTest2_0');
-    OUTPUT(CATCH(ds2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
     );
 
 SEQUENTIAL(

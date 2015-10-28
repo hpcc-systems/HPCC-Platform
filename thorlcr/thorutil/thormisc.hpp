@@ -69,6 +69,8 @@
 #define THOROPT_LKJOIN_HASHJOINFAILOVER "lkjoin_hashjoinfailover" // Force SMART to failover to hash join (for testing only)                     (default = false)
 #define THOROPT_MAX_KERNLOG           "max_kern_level"          // Max kernel logging level, to push to workunit, -1 to disable                  (default = 3)
 #define THOROPT_COMP_FORCELZW         "forceLZW"                // Forces file compression to use LZW                                            (default = false)
+#define THOROPT_TRACE_ENABLED         "traceEnabled"            // Output from TRACE activity enabled                                            (default = false)
+#define THOROPT_TRACE_LIMIT           "traceLimit"              // Number of rows from TRACE activity                                            (default = 10)
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 
@@ -426,14 +428,17 @@ extern graph_decl const LogMsgJobInfo thorJob;
 
 extern graph_decl StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *queryName, unsigned version);
 
-extern graph_decl void setClusterGroup(IGroup *group);
+extern graph_decl void setClusterGroup(INode *masterNode, IGroup *group, unsigned slavesPerProcess=0, unsigned portBase=0, unsigned portInc=0);
 extern graph_decl bool clusterInitialized();
-extern graph_decl ICommunicator &queryClusterComm();
+extern graph_decl INode &queryMasterNode();
+extern graph_decl IGroup &queryRawGroup();
+extern graph_decl IGroup &queryNodeGroup();
+extern graph_decl ICommunicator &queryNodeComm();
 extern graph_decl IGroup &queryClusterGroup();
 extern graph_decl IGroup &querySlaveGroup();
 extern graph_decl IGroup &queryDfsGroup();
 extern graph_decl unsigned queryClusterWidth();
-extern graph_decl unsigned queryClusterNode();
+extern graph_decl unsigned queryNodeClusterWidth();
 
 extern graph_decl mptag_t allocateClusterMPTag();     // should probably move into so used by master only
 extern graph_decl void freeClusterMPTag(mptag_t tag); // ""

@@ -163,6 +163,7 @@
 #define XML_ATTR_LOGSQL                "@logSQL"
 #define XML_ATTR_MANUFACTURER          "@manufacturer"
 #define XML_ATTR_MASK                  "@mask"
+#define XML_ATTR_MASTERPORT            "@masterport"
 #define XML_ATTR_MAXOCCURS             "@maxOccurs"
 #define XML_ATTR_MEMORY                "@memory"
 #define XML_ATTR_MINIMALLOGGING        "@minimalLogging"

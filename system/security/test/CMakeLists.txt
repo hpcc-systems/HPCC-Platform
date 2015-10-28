@@ -16,4 +16,6 @@
 IF (USE_OPENLDAP)
 add_subdirectory (ldapsecuritytest)
 ENDIF(USE_OPENLDAP)
+IF (USE_OPENSSL)
 add_subdirectory (myssl)
+ENDIF(USE_OPENSSL)

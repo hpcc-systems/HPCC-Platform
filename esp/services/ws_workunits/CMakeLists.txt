@@ -106,9 +106,13 @@ target_link_libraries ( ws_workunits
          hql
          jhtree
          fileview2
-         securesocket
     )
 
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_workunits
+    	securesocket
+    )
+ENDIF()
 IF (USE_ZLIB)
   target_link_libraries ( ws_workunits
       ${ZLIB_LIBRARIES}

@@ -65,7 +65,7 @@ public:
         : name(_name)
     {}
 
-    inline bool matches(IIdAtom * search) const { return name == search->lower(); }
+    inline bool matches(IIdAtom * search) const { return name == lower(search); }
     inline IAtom * queryName() const { return name; }
     
     virtual ViewFieldTransformer * bind(const HqlExprArray & args);

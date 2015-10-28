@@ -190,6 +190,7 @@ public:
 static CriticalSection              secureContextCrit;
 static Owned<ISecureSocketContext>  secureContext;
 
+#ifdef USE_OPENSSL
 static ISecureSocket *createSecureSocket(ISocket *sock,SecureSocketType type)
 {
     {
@@ -208,6 +209,7 @@ static ISecureSocket *createSecureSocket(ISocket *sock,SecureSocketType type)
     return secureContext->createSecureSocket(sock);
 #endif
 }
+#endif
 
 void clientSetRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime)
 {
@@ -219,7 +221,7 @@ void clientSetRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime)
 struct sRFTM        
 {
     CTimeMon *timemon;
-    sRFTM() {  timemon = maxReceiveTime?new CTimeMon(maxReceiveTime):NULL; }
+    sRFTM(unsigned limit) {  timemon = limit ? new CTimeMon(limit) : NULL; }
     ~sRFTM() { delete timemon; }
 };
 
@@ -534,7 +536,7 @@ static void flush(ISocket *socket)
 inline void receiveBuffer(ISocket * socket, MemoryBuffer & tgt, unsigned numtries=1, size32_t maxsz=0x7fffffff)
     // maxsz is a guess at a resonable upper max to catch where protocol error
 {
-    sRFTM tm;
+    sRFTM tm(maxReceiveTime);
     size32_t gotLength = receiveBufferSize(socket, numtries,tm.timemon);
     if (gotLength) {
         size32_t origlen = tgt.length();
@@ -853,7 +855,7 @@ class CRemoteBase: public CInterface
     bool                    useSSL;
     void connectSocket(SocketEndpoint &ep)
     {
-        sRFTM tm;
+        sRFTM tm(maxConnectTime);
         // called in CConnectionTable::crit
         unsigned retries = 3;
         if (ep.equals(lastfailep)) {
@@ -884,11 +886,15 @@ class CRemoteBase: public CInterface
                     socket.setown(ISocket::connect(ep));
                 if (useSSL)
                 {
+#ifdef USE_OPENSSL
                     Owned<ISecureSocket> ssock = createSecureSocket(socket.getClear(), ClientSocket);
                     int status = ssock->secure_connect();
                     if (status < 0)
                         throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
                     socket.setown(ssock.getLink());
+#else
+                    throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
+#endif
                 }
             }
             catch (IJSOCK_Exception *e) {
@@ -5011,11 +5017,15 @@ public:
                     sock.setown(acceptsock->accept(true));
                     if (useSSL)
                     {
+#ifdef USE_OPENSSL
                         Owned<ISecureSocket> ssock = createSecureSocket(sock.getClear(), ServerSocket);
                         int status = ssock->secure_accept();
                         if (status < 0)
                             throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
                         sock.setown(ssock.getLink());
+#else
+                        throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
+#endif
                     }
                     if (!sock||stopping)
                         break;

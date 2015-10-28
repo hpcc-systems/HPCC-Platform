@@ -44,7 +44,7 @@ public:
     }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {
-        mpTag = container.queryJob().deserializeMPTag(data);
+        mpTag = container.queryJobChannel().deserializeMPTag(data);
         appendOutputLinked(this);
         helper = static_cast <IHThorChooseSetsArg *> (queryHelper());
     }
@@ -122,7 +122,7 @@ class ChooseSetsActivity : public BaseChooseSetsActivity
     void getTallies() // NB: not called on first node.
     {
         CMessageBuffer msg;
-        if (!receiveMsg(msg, container.queryJob().queryMyRank()-1, mpTag))
+        if (!receiveMsg(msg, queryJobChannel().queryMyRank()-1, mpTag))
             return;
         memcpy(tallies, msg.readDirect(numSets*sizeof(unsigned)), numSets*sizeof(unsigned));
 #if THOR_TRACE_LEVEL >= 5
@@ -144,7 +144,7 @@ class ChooseSetsActivity : public BaseChooseSetsActivity
 #endif
         CMessageBuffer msg;
         msg.append(numSets * sizeof(unsigned), tallies); 
-        container.queryJob().queryJobComm().send(msg, container.queryJob().queryMyRank()+1, mpTag);
+        queryJobChannel().queryJobComm().send(msg, queryJobChannel().queryMyRank()+1, mpTag);
     }
 
 public:
@@ -295,7 +295,7 @@ public:
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {
         if (!container.queryLocalOrGrouped())
-            mpTag = container.queryJob().deserializeMPTag(data);
+            mpTag = container.queryJobChannel().deserializeMPTag(data);
         appendOutputLinked(this);
         helper = static_cast <IHThorChooseSetsExArg *> (queryHelper());
     }
@@ -365,7 +365,7 @@ public:
             return;
         CMessageBuffer msg;
         msg.append(numSets*sizeof(rowcount_t), counts);
-        container.queryJob().queryJobComm().send(msg, 0, mpTag);
+        queryJobChannel().queryJobComm().send(msg, 0, mpTag);
     }
 };
 

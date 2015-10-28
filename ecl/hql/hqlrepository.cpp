@@ -283,7 +283,7 @@ static void getFullName(StringBuffer & fullName, IHqlScope * scope, IIdAtom * at
     fullName.append(scope->queryFullName());
     if (fullName.length())
         fullName.append(".");
-    fullName.append(attrName->str());
+    fullName.append(str(attrName));
 }
 
 
@@ -305,7 +305,7 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
             Owned<IProperties> props = source->getProperties();
             if (props)
             {
-                unsigned flags = props->getPropInt(flagsAtom->str(), 0);
+                unsigned flags = props->getPropInt(str(flagsAtom), 0);
                 if (flags & ob_sandbox)
                     symbolFlags |= ob_sandbox;
             }

@@ -113,7 +113,7 @@ StringBuffer& CLocalDataLogger::writeData(const StringBuffer& dataToCache,const 
         try{
             Owned<IFileIO> io = file->open(IFOwrite);
             size32_t filesize = dataToCache.length();
-            void* filedata = (void*)dataToCache.toCharArray();
+            void* filedata = (void*)dataToCache.str();
             io->write(0,filesize ,filedata );
             if(m_UrlRoot.length()==0)
                 returnPath.appendf("/Cache?Name=%s.HTML",tokenName.str());

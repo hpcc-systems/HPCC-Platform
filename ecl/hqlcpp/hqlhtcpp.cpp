@@ -393,7 +393,7 @@ public:
                 //MORE: For the moment disable any expressions that are only used conditionally.
                 //Often including conditions improves the code, but sometimes the duplicate evaluation of the
                 //guard conditions in the parent and the child causes excessive code generation.
-                //And forcing it into an alias doesn't help becuase that isn't currently executed in the parent.
+                //And forcing it into an alias doesn't help because that isn't currently executed in the parent.
                 //Uncomment: if (moveTo->guards->guardContainsCandidate(expr))
                 {
                     invalid = true;
@@ -704,8 +704,7 @@ protected:
 
                 if (worthHoisting)
                 {
-                    //MORE: Remove || true to evaluate the subquery at the latest time.
-                    bool createSubQueryBeforeAll = forceRoot || true;
+                    bool createSubQueryBeforeAll = forceRoot;
                     spotter.transformAll(pending, createSubQueryBeforeAll);
                     translator.traceExpressions("spotted child", pending);
                 }
@@ -1848,7 +1847,7 @@ void ActivityInstance::addLocationAttribute(IHqlExpression * location)
     ISourcePath * sourcePath = location->querySourcePath();
     unsigned column = location->getStartColumn();
     StringBuffer s;
-    s.append(sourcePath->str()).append("(").append(line);
+    s.append(str(sourcePath)).append("(").append(line);
     if (column)
         s.append(",").append(column);
     s.append(")");
@@ -1875,7 +1874,7 @@ void ActivityInstance::addNameAttribute(IHqlExpression * symbol)
             return;
     }
     names.append(*symbol);
-    addAttribute("name", name->str());
+    addAttribute("name", str(name));
 }
 
 void ActivityInstance::removeAttribute(const char * name)
@@ -3618,7 +3617,7 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
             if (createConstantField(target, targetField, defaultValue))
                 appendStringAsQuotedCPP(defaultInitializer, target.length(), target.toByteArray(), false);
             else
-                throwError1(HQLERR_CouldNotGenerateDefault, field->queryName()->str());
+                throwError1(HQLERR_CouldNotGenerateDefault, str(field->queryName()));
         }
 
         StringBuffer definition;
@@ -5660,9 +5659,7 @@ bool HqlCppTranslator::prepareToGenerate(HqlQueryContext & query, WorkflowArray 
 
         if (!isEmbeddedLibrary)
         {
-            SCMStringBuffer libraryName;
-            wu()->getJobName(libraryName);
-            wu()->setLibraryInformation(libraryName.str(), outputLibrary->getInterfaceHash(), getLibraryCRC(query.expr));
+            wu()->setLibraryInformation(wu()->queryJobName(), outputLibrary->getInterfaceHash(), getLibraryCRC(query.expr));
         }
     }
     else
@@ -5885,8 +5882,7 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         ForEachItemIn(i2, graphs)
         {
             GeneratedGraphInfo & cur = graphs.item(i2);
-            Owned<IWUGraph> wug = wu()->createGraph(cur.name, GraphTypeActivities, cur.xgmml.getClear());
-            wug->setLabel(cur.label);
+            wu()->createGraph(cur.name, cur.label, GraphTypeActivities, cur.xgmml.getClear());
         }
 
         code->processIncludes();
@@ -6492,7 +6488,11 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                                 canAccessResultDirectly = extract->areGraphResultsAccessible(graphId);
                         }
                         else if (getTargetClusterType() == HThorCluster)
-                            canAccessResultDirectly = true;
+                        {
+                            //Only create the activity for results from parent graphs, not from siblings
+                            if (matchActiveGraph(ctx, graphId))
+                                canAccessResultDirectly = true;
+                        }
                     }
                     if (canAccessResultDirectly)
                         result = doBuildActivityGetGraphResult(ctx, expr);
@@ -6538,6 +6538,9 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_case:
             case no_map:
                 result = doBuildActivityCase(ctx, expr, isRoot);
+                break;
+            case no_quantile:
+                result = doBuildActivityQuantile(ctx, expr);
                 break;
             case no_chooseds:
             case no_choose:
@@ -6706,7 +6709,12 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityAggregate(ctx, expr);
                 break;
             case no_metaactivity:
-                result = doBuildActivityMetaActivity(ctx, expr);
+                if (expr->hasAttribute(pullAtom))
+                    result = doBuildActivityPullActivity(ctx, expr);
+                else if (expr->hasAttribute(traceAtom))
+                    result = doBuildActivityTraceActivity(ctx, expr);
+                else
+                    throwUnexpected();
                 break;
             case no_choosen:
                 result = doBuildActivityFirstN(ctx, expr);
@@ -8057,12 +8065,12 @@ void HqlCppTranslator::doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget 
                 {
                     StringBuffer typeName;
                     getFriendlyTypeStr(leftType, typeName);
-                    throwError2(HQLERR_UnsupportedRowDiffType, typeName.str(), expr->queryId()->str());
+                    throwError2(HQLERR_UnsupportedRowDiffType, typeName.str(), str(expr->queryId()));
                 }
             }
 
             StringBuffer fullName;
-            fullName.append(selectorText).append(id->str());
+            fullName.append(selectorText).append(str(id));
 
             ITypeInfo * rightType = right->queryType()->queryPromotedType();
             if (!leftType->assignableFrom(rightType))
@@ -8296,7 +8304,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityMerge(BuildCtx & ctx, IHqlExpr
         DatasetReference dsRef(dataset, no_activetable, NULL);
         buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
         if (!instance->isLocal)
-            generateSerializeKey(instance->nestedctx, no_none, dsRef, sorts, !instance->isChildActivity(), true, false);
+            generateSerializeKey(instance->nestedctx, no_none, dsRef, sorts, !instance->isChildActivity(), true);
     }
     else
         throwError(HQLERR_InputMergeNotSorted);
@@ -8859,7 +8867,7 @@ void HqlCppTranslator::doBuildStmtAssert(BuildCtx & ctx, IHqlExpression * expr)
 
     if (location.sourcePath)
     {
-        const char * filename = location.sourcePath->str();
+        const char * filename = str(location.sourcePath);
         if (options.reportAssertFilenameTail)
             filename = pathTail(filename);
         args.append(*createConstant(filename));
@@ -10392,8 +10400,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     else if (filename->getOperator()==no_pipe)
         pipe = filename->queryChild(0);
 
-    if (pipe)
-        checkPipeAllowed();
+    if (pipe && expr->hasAttribute(_disallowed_Atom))
+        throwError(HQLERR_PipeNotAllowed);
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     ThorActivityKind kind = TAKdiskwrite;
@@ -10584,7 +10592,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         if (expr->hasAttribute(resultAtom))
             result->setResultRowLimit(-1);
 
-        buildFormatCrcFunction(instance->classctx, "getFormatCrc", dataset, NULL, 0);
+        //Remove virtual attributes from the record, so the crc will be compatible with the disk read record
+        OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(dataset->queryRecord());
+        buildFormatCrcFunction(instance->classctx, "getFormatCrc", noVirtualRecord, NULL, 0);
 
         bool grouped = isGrouped(dataset);
         bool ignoreGrouped = !expr->hasAttribute(groupedAtom);
@@ -10635,7 +10645,7 @@ void HqlCppTranslator::addSchemaField(IHqlExpression *field, MemoryBuffer &schem
     StringBuffer schemaName;
     if (name)
     {
-        schemaName.append(name->str());
+        schemaName.append(str(name));
     }
     else
     {
@@ -10776,9 +10786,6 @@ IWUResult * HqlCppTranslator::createDatasetResultSchema(IHqlExpression * sequenc
     MetaInstance meta(*this, serialRecord, false);
     buildMetaInfo(meta);
     result->setResultRecordSizeEntry(meta.metaFactoryName);
-
-    if (targetRoxie() && (sequence >= 0) && !isFile)
-        result->setResultFormat(ResultFormatXml);
 
     if (createTransformer)
     {
@@ -11328,8 +11335,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDictionaryWorkunitWrite(BuildC
 
 ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IHqlExpression * expr)
 {
-    checkPipeAllowed();
-
+    if (expr->hasAttribute(_disallowed_Atom))
+        throwError(HQLERR_PipeNotAllowed);
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * pipe = expr->queryChild(1);
     IHqlExpression * output = expr->queryAttribute(outputAtom);
@@ -11483,7 +11490,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
     compareName.append("compare").append(sideText);
 
     assertex(dataset.querySide() == no_activetable);
-    bool noNeedToSort = isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true);
+    bool noNeedToSort = isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true, true);
     if (userPreventsSort(noSortAttr, side))
         noNeedToSort = true;
 
@@ -11606,95 +11613,122 @@ void HqlCppTranslator::generateSerializeFunction(BuildCtx & ctx, const char * fu
     buildReturnRecordSize(r2kctx, serialize ? tgtCursor : srcCursor);
 }
 
-void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal, bool generateCompares, bool canReuseLeft)
+class SerializeKeyInfo
 {
-    //check if there are any ifblocks, and if so don't allow it.  Even more accurate would be no join fields used in ifblocks
-    IHqlExpression * record = dataset.queryDataset()->queryRecord();
-    bool canSerialize = targetThor() && isGlobal && !recordContainsIfBlock(record);
-    const char * sideText = (side == no_none) ? "" : (side == no_left) ? "Left" : "Right";
-    StringBuffer s, s2;
-
+public:
     HqlExprArray keyFields;
     HqlExprArray keySelects;
-    HqlExprArray datasetSelects;
     HqlExprArray keyCompares;
-    if (canSerialize)
-    {
-        ForEachItemIn(idx, sorts)
-        {
-            //MORE: Nested - this won't serialize the key if sorting by a field in a nested record
-            //      If this is a problem we will need to create new fields for each value.
-            IHqlExpression & cur = sorts.item(idx);
-            IHqlExpression * value = &cur;
-            if (value->getOperator() == no_negate)
-                value=value->queryChild(0);
-            if ((value->getOperator() == no_select) && (value->queryChild(0)->queryNormalizedSelector() == dataset.querySelector()))
-            {
-                if (value->queryType()->getTypeCode() == type_alien)
-                {
-                    //MORE: Really should check if a self contained alien data type.
-                    canSerialize = false;
-                    break;
-                }
+    HqlExprArray allKeyCompares;
+    HqlExprArray datasetSelects;
+    HqlExprArray filteredSorts;
+    OwnedHqlExpr keyRecord;
+    OwnedHqlExpr keyDataset;
+};
 
-                OwnedHqlExpr serializedField = getSerializedForm(value->queryChild(1), diskAtom); // Could be internal, but may require serialized compare
-                OwnedHqlExpr mappedSelect = dataset.mapScalar(value,queryActiveTableSelector());
-                keyFields.append(*LINK(serializedField));
-                keySelects.append(*createSelectExpr(LINK(mappedSelect->queryChild(0)), LINK(serializedField)));
-                datasetSelects.append(*LINK(value));
-                keyCompares.append(*dataset.mapScalar(&cur,queryActiveTableSelector()));
-            }
-            else if (!value->isConstant())
+bool HqlCppTranslator::extractSerializeKey(SerializeKeyInfo & info, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal)
+{
+    if (!targetThor() || !isGlobal)
+        return false;
+
+    //check if there are any ifblocks, and if so don't allow it.  Even more accurate would be no join fields used in ifblocks
+    //This test could be removed if keyToRecord() wasn't generated anymore
+    IHqlExpression * record = dataset.queryDataset()->queryRecord();
+    if (recordContainsIfBlock(record))
+        return false;
+
+    ForEachItemIn(idx, sorts)
+    {
+        //MORE: Nested - this won't serialize the key if sorting by a field in a nested record
+        //      If this is a problem we will need to create new fields for each value.
+        IHqlExpression & cur = sorts.item(idx);
+        IHqlExpression * value = &cur;
+        if (value->getOperator() == no_negate)
+            value=value->queryChild(0);
+        //It isn't possible to sensibly compare serialized dictionaries at the moment.
+        if (value->isDictionary())
+            return false;
+
+        if ((value->getOperator() == no_select) && (value->queryChild(0)->queryNormalizedSelector() == dataset.querySelector()))
+        {
+            if (value->queryType()->getTypeCode() == type_alien)
             {
-                canSerialize = false;
-                break;
+                //MORE: Really should check if a self contained alien data type.
+                return false;
             }
+
+            OwnedHqlExpr serializedField = getSerializedForm(value->queryChild(1), diskAtom); // Could be internal, but may require serialized compare
+            OwnedHqlExpr mappedSelect = dataset.mapScalar(value,queryActiveTableSelector());
+            OwnedHqlExpr keyedCompare = dataset.mapScalar(&cur,queryActiveTableSelector());
+            info.keyFields.append(*LINK(serializedField));
+            info.keySelects.append(*createSelectExpr(LINK(mappedSelect->queryChild(0)), LINK(serializedField)));
+            info.datasetSelects.append(*LINK(value));
+            info.keyCompares.append(*LINK(keyedCompare));
+            info.filteredSorts.append(OLINK(cur));
+            info.allKeyCompares.append(*LINK(keyedCompare));
         }
+        else if (value->isConstant())
+            info.allKeyCompares.append(OLINK(cur));
+        else
+            return false;
     }
+
+    bool aggressive = false;
+    // When projecting is done by the serialize() function this will be worth changing to true
+    // otherwise the extra cost of the project probably isn't likely to outweigh the extra copy
+    unsigned numToSerialize = aggressive ? info.filteredSorts.ordinality() : sorts.ordinality();
 
     //The following test will need to change if we serialize when nested fields are used (see above)
-    if (sorts.ordinality() >= getFlatFieldCount(record))
-        canSerialize = false;
+    if (numToSerialize >= getFlatFieldCount(record))
+        return false;
 
-    if (canSerialize)
+    info.keyRecord.setown(createRecord(info.keyFields));
+    info.keyDataset.setown(createDataset(no_anon, LINK(info.keyRecord)));
+    return true;
+}
+
+void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator side, SerializeKeyInfo & keyInfo, const DatasetReference & dataset, bool generateCompares)
+{
+    //check if there are any ifblocks, and if so don't allow it.  Even more accurate would be no join fields used in ifblocks
+    //IHqlExpression * record = dataset.queryDataset()->queryRecord();
+    const char * sideText = (side == no_none) ? "" : (side == no_left) ? "Left" : "Right";
+    StringBuffer s;
+
+    StringBuffer memberName;
+    memberName.append("serializer").append(sideText);
+
+    BuildCtx classctx(nestedctx);
+    beginNestedClass(classctx, memberName, "ISortKeySerializer");
+
+    DatasetReference keyActiveRef(keyInfo.keyDataset, no_activetable, NULL);
+    OwnedHqlExpr keyOrder = createValueSafe(no_sortlist, makeSortListType(NULL), keyInfo.keyCompares);
+
+    generateSerializeFunction(classctx, "recordToKey", dataset, keyActiveRef, keyInfo.datasetSelects, keyInfo.keySelects, no_serialize, diskAtom);
+    generateSerializeFunction(classctx, "keyToRecord", keyActiveRef, dataset, keyInfo.keySelects, keyInfo.datasetSelects, no_deserialize, diskAtom);
+    buildMetaMember(classctx, keyInfo.keyRecord, false, "queryRecordSize");
+
+    buildCompareMember(classctx, "CompareKey", keyOrder, keyActiveRef);
+    doCompareLeftRight(classctx, "CompareKeyRow", keyActiveRef, dataset, keyInfo.keyCompares, keyInfo.filteredSorts);
+
+    endNestedClass();
+
+    s.clear().append("virtual ISortKeySerializer * querySerialize").append(sideText).append("() { return &").append(memberName).append("; }");
+    nestedctx.addQuoted(s);
+
+    if (generateCompares)
     {
-        if (canReuseLeft)
-        {
-            assertex(!generateCompares);
-            s.clear().append("virtual ISortKeySerializer * querySerialize").append(sideText).append("() { return &serializerLeft; }");
-            nestedctx.addQuoted(s);
-        }
-        else
-        {
-            StringBuffer memberName;
-            memberName.append("serializer").append(sideText);
-
-            BuildCtx classctx(nestedctx);
-            beginNestedClass(classctx, memberName, "ISortKeySerializer");
-
-            IHqlExpression * keyRecord = createRecord(keyFields);
-            Owned<IHqlExpression> keyDataset = createDataset(no_anon, keyRecord);
-
-            DatasetReference keyActiveRef(keyDataset, no_activetable, NULL);
-
-            generateSerializeFunction(classctx, "recordToKey", dataset, keyActiveRef, datasetSelects, keySelects, no_serialize, diskAtom);
-            generateSerializeFunction(classctx, "keyToRecord", keyActiveRef, dataset, keySelects, datasetSelects, no_deserialize, diskAtom);
-            buildMetaMember(classctx, keyRecord, false, "queryRecordSize");
-
-            endNestedClass();
-
-            s.clear().append("virtual ISortKeySerializer * querySerialize").append(sideText).append("() { return &serializer").append(sideText).append("; }");
-            nestedctx.addQuoted(s);
-
-            if (generateCompares)
-            {
-                OwnedHqlExpr keyOrder = createValueSafe(no_sortlist, makeSortListType(NULL), keyCompares);
-                buildCompareMember(nestedctx, "CompareKey", keyOrder, keyActiveRef);
-
-                doCompareLeftRight(nestedctx, "CompareRowKey", dataset, keyActiveRef, sorts, keyCompares);
-            }
-        }
+        buildCompareMember(nestedctx, "CompareKey", keyOrder, keyActiveRef);
+        doCompareLeftRight(nestedctx, "CompareRowKey", dataset, keyActiveRef, keyInfo.filteredSorts, keyInfo.keyCompares);
     }
+}
+
+void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal, bool generateCompares)
+{
+    SerializeKeyInfo keyInfo;
+    if (!extractSerializeKey(keyInfo, dataset, sorts, isGlobal))
+        return;
+
+    generateSerializeKey(nestedctx, side, keyInfo, dataset, generateCompares);
 }
 
 IHqlExpression * HqlCppTranslator::createFailMessage(const char * prefix, IHqlExpression * limit, IHqlExpression * filename, unique_id_t id)
@@ -11839,9 +11873,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (expr->hasAttribute(allAtom))
         isAllJoin = true;
 
-    bool isLookupJoin = expr->hasAttribute(lookupAtom);
     bool isSmartJoin = expr->hasAttribute(smartAtom);
-    bool isHashJoin = targetThor() && expr->hasAttribute(hashAtom);
+    bool isLookupJoin = expr->hasAttribute(lookupAtom) && !isSmartJoin;
+    bool isHashJoin = targetThor() && expr->hasAttribute(hashAtom) && !isSmartJoin;
     bool isLocalJoin = !isHashJoin && expr->hasAttribute(localAtom);
     bool joinToSelf = (op == no_selfjoin);
     bool allowAllToLookupConvert = !options.noAllToLookupConversion;
@@ -11881,8 +11915,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
 
 
     bool slidingAllowed = options.slidingJoins && canBeSlidingJoin(expr);
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, slidingAllowed);
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(slidingAllowed);
 
     if (atmostAttr && joinInfo.hasHardRightNonEquality())
     {
@@ -12071,8 +12105,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
-    StringBuffer s,temp;
-
+    bool partitionRight = expr->hasAttribute(partitionRightAtom) && (kind != TAKselfjoin) && !joinInfo.isSlidingJoin();
     DatasetReference lhsDsRef(dataset1, no_activetable, NULL);
     DatasetReference rhsDsRef(dataset2, no_activetable, NULL);
 
@@ -12091,9 +12124,37 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             generateSortCompare(instance->nestedctx, instance->classctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), noSortAttr, false, isLightweight, isLocalSort);
         generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, joinInfo.queryRightSort(), noSortAttr, canReuseLeftCompare, isLightweight, isLocalSort);
 
-        bool isGlobal = !isLocalJoin && !instance->isChildActivity();
-        generateSerializeKey(instance->nestedctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), isGlobal, false, false);
-        generateSerializeKey(instance->nestedctx, no_right, rhsDsRef, joinInfo.queryRightSort(), isGlobal, false, canReuseLeftCompare);
+        //Only joins that partition need the serialization functions
+        if (!isHashJoin && !isLookupJoin && !joinInfo.isSlidingJoin())
+        {
+            bool isGlobal = !isLocalJoin && !instance->isChildActivity();
+            BuildCtx nestedctx(instance->nestedctx);
+            SerializeKeyInfo keyInfo;
+            if (!partitionRight)
+            {
+                if (extractSerializeKey(keyInfo, lhsDsRef, joinInfo.queryLeftSort(), isGlobal))
+                {
+                    generateSerializeKey(nestedctx, no_left, keyInfo, lhsDsRef, false);
+                    DatasetReference keyActiveRef(keyInfo.keyDataset, no_activetable, NULL);
+                    HqlExprArray keyRequired;
+                    appendArray(keyRequired, keyInfo.allKeyCompares);
+                    keyRequired.trunc(joinInfo.numRequiredEqualities());
+                    doCompareLeftRight(nestedctx, "CompareLeftKeyRightRow", keyActiveRef, rhsDsRef, keyRequired, joinInfo.queryRightReq());
+                }
+            }
+            else
+            {
+                if (extractSerializeKey(keyInfo, rhsDsRef, joinInfo.queryRightSort(), isGlobal))
+                {
+                    generateSerializeKey(nestedctx, no_right, keyInfo, rhsDsRef, false);
+                    DatasetReference keyActiveRef(keyInfo.keyDataset, no_activetable, NULL);
+                    HqlExprArray keyRequired;
+                    appendArray(keyRequired, keyInfo.allKeyCompares);
+                    keyRequired.trunc(joinInfo.numRequiredEqualities());
+                    doCompareLeftRight(nestedctx, "CompareRightKeyLeftRow", keyActiveRef, lhsDsRef, keyRequired, joinInfo.queryLeftReq());
+                }
+            }
+        }
     }
 
     StringBuffer flags;
@@ -12103,7 +12164,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (expr->hasAttribute(firstAtom)) flags.append("|JFfirst");
     if (expr->hasAttribute(firstLeftAtom)) flags.append("|JFfirstleft");
     if (expr->hasAttribute(firstRightAtom)) flags.append("|JFfirstright");
-    if (expr->hasAttribute(partitionRightAtom)) flags.append("|JFpartitionright");
+    if (partitionRight) flags.append("|JFpartitionright");
     if (expr->hasAttribute(parallelAtom)) flags.append("|JFparallel");
     if (expr->hasAttribute(sequentialAtom)) flags.append("|JFsequential");
     if (transformContainsSkip(transform))
@@ -12112,7 +12173,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         flags.append("|JFmatchAbortLimitSkips");
     if (rowlimit && rowlimit->hasAttribute(countAtom))
         flags.append("|JFcountmatchabortlimit");
-    if (joinInfo.slidingMatches.ordinality()) flags.append("|JFslidingmatch");
+    if (joinInfo.isSlidingJoin()) flags.append("|JFslidingmatch");
     if (joinInfo.extraMatch) flags.append("|JFmatchrequired");
     if (isLookupJoin && isManyLookup) flags.append("|JFmanylookup");
     if (expr->hasAttribute(onFailAtom))
@@ -12124,14 +12185,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (joinInfo.hasOptionalEqualities())
         flags.append("|JFlimitedprefixjoin");
 
-    if (isAlreadySorted(dataset1, joinInfo.queryLeftSort(), true, true) || userPreventsSort(noSortAttr, no_left))
+    if (isAlreadySorted(dataset1, joinInfo.queryLeftSort(), true, true, false) || userPreventsSort(noSortAttr, no_left))
         flags.append("|JFleftSortedLocally");
-    if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true) || userPreventsSort(noSortAttr, no_right))
+    if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true, false) || userPreventsSort(noSortAttr, no_right))
         flags.append("|JFrightSortedLocally");
     if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
     if (isSmartJoin || expr->hasAttribute(unstableAtom))
         flags.append("|JFunstable");
-    if (joinInfo.neverMatchSelf(dataset1, dataset2, selSeq))
+    if (joinInfo.neverMatchSelf())
         flags.append("|JFnevermatchself");
 
     if (flags.length())
@@ -12208,7 +12269,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         buildClearRecordMember(instance->createctx, "Right", dataset2);
     buildJoinMatchFunction(instance->startctx, "match", dataset1, dataset2, joinInfo.extraMatch, selSeq);
 
-    if (joinInfo.slidingMatches.ordinality())
+    if (joinInfo.isSlidingJoin())
     {
         buildSlidingMatchFunction(instance->nestedctx, joinInfo.queryLeftSort(), joinInfo.queryRightSort(), joinInfo.slidingMatches, "CompareLeftRightLower", 1, lhsDsRef, rhsDsRef);
         buildSlidingMatchFunction(instance->nestedctx, joinInfo.queryLeftSort(), joinInfo.queryRightSort(), joinInfo.slidingMatches, "CompareLeftRightUpper", 2, lhsDsRef, rhsDsRef);
@@ -12284,7 +12345,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
                 if (isUnicodeType(lhsType))
                 {
                     func = prefixDiffUnicodeId;
-                    args.append(*createConstant(lhsType->queryLocale()->str()));
+                    args.append(*createConstant(str(lhsType->queryLocale())));
                 }
                 args.append(*getSizetConstant(origin));
                 OwnedHqlExpr diff = bindFunctionCall(func, args);
@@ -12315,6 +12376,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         buildCompareMemberLR(instance->nestedctx, "PrefixCompare", compare, dataset1, dataset2, selSeq);
     }
 
+//    buildCompareMemberLR(instance->nestedctx, "CompareLeftKeyRightRow", compare, dataset1, dataset2, selSeq);
 
     buildInstanceSuffix(instance);
 
@@ -14117,7 +14179,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribute(BuildCtx & ctx, IHq
         DatasetReference dsRef(dataset);
         buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
         if (!instance->isLocal)
-            generateSerializeKey(instance->nestedctx, no_none, dsRef, sorts, true, true, false);
+            generateSerializeKey(instance->nestedctx, no_none, dsRef, sorts, true, true);
 
         buildInstanceSuffix(instance);
 
@@ -15678,7 +15740,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySectionInput(BuildCtx & ctx, I
 
 //---------------------------------------------------------------------------
 
-ABoundActivity * HqlCppTranslator::doBuildActivityMetaActivity(BuildCtx & ctx, IHqlExpression * expr)
+ABoundActivity * HqlCppTranslator::doBuildActivityPullActivity(BuildCtx & ctx, IHqlExpression * expr)
 {
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, expr->queryChild(0));
     if (targetHThor())
@@ -15693,6 +15755,53 @@ ABoundActivity * HqlCppTranslator::doBuildActivityMetaActivity(BuildCtx & ctx, I
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
 
+    return instance->getBoundActivity();
+}
+
+ABoundActivity * HqlCppTranslator::doBuildActivityTraceActivity(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
+    assertex(expr->hasAttribute(traceAtom));
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtrace, expr, "Trace");
+
+    buildActivityFramework(instance);
+    buildInstancePrefix(instance);
+
+    IHqlExpression *keepLimit = queryAttributeChild(expr, keepAtom, 0);
+    if (keepLimit)
+        doBuildUnsignedFunction(instance->startctx, "getKeepLimit", keepLimit);
+
+    IHqlExpression *skip = queryAttributeChild(expr, skipAtom, 0);
+    if (skip)
+        doBuildUnsignedFunction(instance->startctx, "getSkip", skip);
+
+    IHqlExpression *sample = queryAttributeChild(expr, sampleAtom, 0);
+    if (sample)
+        doBuildUnsignedFunction(instance->startctx, "getSample", sample);
+
+    IHqlExpression *named = queryAttributeChild(expr, namedAtom, 0);
+    if (named)
+        doBuildVarStringFunction(instance->startctx, "getName", named);
+
+    HqlExprAttr invariant;
+    OwnedHqlExpr cond = extractFilterConditions(invariant, expr, dataset, options.spotCSE, queryOptions().spotCseInIfDatasetConditions);
+
+    //Base class returns true, so only generate if no non-invariant conditions
+    if (cond)
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual bool isValid(const void * _self)");
+        funcctx.addQuotedLiteral("unsigned char * self = (unsigned char *) _self;");
+
+        bindTableCursor(funcctx, dataset, "self");
+        buildReturn(funcctx, cond);
+    }
+    if (invariant)
+        doBuildBoolFunction(instance->startctx, "canMatchAny", invariant);
+
+    buildInstanceSuffix(instance);
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
     return instance->getBoundActivity();
 }
 
@@ -16351,7 +16460,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
     HqlExprArray sorts;
     sortlist->unwindList(sorts, no_sortlist);
     bool tryToSerializeKey = (actKind == TAKsort) && !isGroupedActivity(expr) && !isLocalActivity(expr) && !instance->isChildActivity();
-    generateSerializeKey(instance->nestedctx, no_none, DatasetReference(dataset), sorts, tryToSerializeKey, false, false);
+    generateSerializeKey(instance->nestedctx, no_none, DatasetReference(dataset), sorts, tryToSerializeKey, false);
 
     buildSkewThresholdMembers(instance->classctx, expr);
 
@@ -16466,12 +16575,107 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
         flags.append("|TAFspill");
     if (!method || method->isConstant())
         flags.append("|TAFconstant");
+    if (expr->hasAttribute(parallelAtom))
+        flags.append("|TAFparallel");
 
     if (method)
         doBuildVarStringFunction(instance->startctx, "getAlgorithm", method);
 
     if (!streq(flags.str(), "|TAFconstant"))
         instance->classctx.addQuotedF("virtual unsigned getAlgorithmFlags() { return %s; }", flags.str()+1);
+
+    buildInstanceSuffix(instance);
+
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
+    return instance->getBoundActivity();
+}
+
+ABoundActivity * HqlCppTranslator::doBuildActivityQuantile(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
+
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKquantile, expr, "Quantile");
+    buildActivityFramework(instance);
+    buildInstancePrefix(instance);
+
+    IHqlExpression * number = expr->queryChild(1);
+    IHqlExpression * sortlist = expr->queryChild(2);
+    IHqlExpression * transform = expr->queryChild(3);
+    IHqlExpression * score = queryAttributeChild(expr, scoreAtom, 0);
+    IHqlExpression * skew = queryAttributeChild(expr, skewAtom, 0);
+    IHqlExpression * dedupAttr = expr->queryAttribute(dedupAtom);
+    IHqlExpression * range = queryAttributeChild(expr, rangeAtom, 0);
+
+    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
+
+    buildCompareClass(instance->nestedctx, "compare", sortlist, DatasetReference(dataset));
+
+    doBuildUnsigned64Function(instance->startctx, "getNumDivisions", number);
+
+    if (skew)
+        doBuildFunction(instance->startctx, doubleType, "getSkew", skew);
+
+    if (range)
+    {
+        Owned<ITypeInfo> setType = makeSetType(makeIntType(8, false));
+        doBuildFunction(instance->startctx, setType, "getRange", range);
+    }
+
+    if (score)
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual unsigned __int64 getScore(const void * _self)");
+        funcctx.addQuotedLiteral("unsigned char * self = (unsigned char *) _self;");
+        bindTableCursor(funcctx, dataset, "self");
+        buildReturn(funcctx, score);
+    }
+
+    IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
+    IHqlExpression * selSeq = querySelSeq(expr);
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, unsigned __int64 counter)");
+        if (counter)
+            associateCounter(funcctx, counter, "counter");
+        buildTransformBody(funcctx, transform, dataset, NULL, instance->dataset, selSeq);
+    }
+
+    buildClearRecordMember(instance->createctx, "", dataset);
+
+    //If a dataset is sorted by all fields then it is impossible to determine if the original order
+    //was preserved - so mark the sort as potentially unstable (to reduce memory usage at runtime)
+    bool unstable = expr->hasAttribute(unstableAtom);
+    if (options.optimizeSortAllFields &&
+        allFieldsAreSorted(expr->queryRecord(), sortlist, dataset->queryNormalizedSelector(), options.optimizeSortAllFieldsStrict))
+        unstable = true;
+
+    StringBuffer flags;
+    if (expr->hasAttribute(firstAtom))
+        flags.append("|TQFfirst");
+    if (expr->hasAttribute(lastAtom))
+        flags.append("|TQFlast");
+    if (isAlreadySorted(dataset, sortlist, false, false, false))
+        flags.append("|TQFsorted|TQFlocalsorted");
+    else if (isAlreadySorted(dataset, sortlist, true, false, false))
+        flags.append("|TQFlocalsorted");
+    if (score)
+        flags.append("|TQFhasscore");
+    if (range)
+        flags.append("|TQFhasrange");
+    if (skew)
+        flags.append("|TQFhasskew");
+    if (dedupAttr)
+        flags.append("|TQFdedup");
+    if (unstable)
+        flags.append("|TQFunstable");
+    if (!number->queryValue())
+        flags.append("|TQFvariabledivisions");
+    if (!transformReturnsSide(expr, no_left, 0))
+        flags.append("|TQFneedtransform");
+
+    if (flags.length())
+        instance->classctx.addQuotedF("virtual unsigned getFlags() { return %s; }", flags.str()+1);
 
     buildInstanceSuffix(instance);
 
@@ -16894,7 +17098,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     IHqlExpression * self = selfCursor->querySelector();
 
     if (isDataset)
-        associateSkipReturnMarker(funcctx, queryBoolExpr(false), selfCursor);
+        associateSkipReturnMarker(funcctx, queryZero(), selfCursor);
 
     LinkedHqlExpr cseExpr = expr;
     if (options.spotCSE)
@@ -16920,6 +17124,26 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
         return doBuildActivityCreateRow(ctx, row, true);
     }
 
+    if (values->isConstant())
+    {
+        CHqlBoundExpr bound;
+        if (doBuildConstantDatasetInlineTable(expr, bound, FormatNatural))
+        {
+            OwnedHqlExpr constDataset = bound.getTranslatedExpr();
+
+            Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKlinkedrawiterator, expr, "LinkedRawIterator");
+            instance->graphLabel.set("Inline Dataset");
+            instance->setImplementationClass(newLibraryConstantRawIteratorArgId);
+            buildActivityFramework(instance);
+
+            buildInstancePrefix(instance);
+            instance->addConstructorParameter(constDataset);
+            buildInstanceSuffix(instance);
+
+            return instance->getBoundActivity();
+        }
+    }
+
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
 
     //-----------------
@@ -16929,52 +17153,32 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
 
     BuildCtx funcctx(instance->startctx);
     funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row)");
+    associateSkipReturnMarker(funcctx, queryZero(), NULL);
+
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
 
     unsigned maxRows = values->numChildren();
-    bool done = false;
-    if (values->isConstant())
+    if (maxRows)
     {
-        CHqlBoundExpr bound;
-        if (doBuildDatasetInlineTable(funcctx, expr, bound, FormatNatural))
+        StringBuffer s;
+        BuildCtx switchctx(funcctx);
+        switchctx.addQuotedCompound("switch (row)");
+
+        unsigned row;
+        for (row = 0; row < maxRows; row++)
         {
-            OwnedHqlExpr whichRow = createVariable("row", LINK(unsignedType));
-            BuildCtx subctx(funcctx);
-            OwnedHqlExpr test = createValue(no_ge, makeBoolType(), LINK(whichRow), getSizetConstant(maxRows));
-            subctx.addFilter(test);
-            buildReturn(subctx, queryZero());
-            OwnedHqlExpr ds = bound.getTranslatedExpr();
-            OwnedHqlExpr thisRow = createRowF(no_selectnth, LINK(ds), adjustValue(whichRow, 1), createAttribute(noBoundCheckAtom), NULL);
-            buildAssign(funcctx, self, thisRow);
-            buildReturnRecordSize(funcctx, selfCursor);
-            done = true;
+            BuildCtx casectx(switchctx);
+            casectx.addQuotedCompound(s.clear().append("case ").append(row).append(":"));
+
+            IHqlExpression * cur = values->queryChild(row);
+            OwnedHqlExpr rowValue = createRow(no_createrow, LINK(cur));
+            buildAssign(casectx, self, rowValue);
+            buildReturnRecordSize(casectx, selfCursor);
         }
     }
-
-    if (!done)
-    {
-        if (maxRows)
-        {
-            StringBuffer s;
-            BuildCtx switchctx(funcctx);
-            switchctx.addQuotedCompound("switch (row)");
-
-            unsigned row;
-            for (row = 0; row < maxRows; row++)
-            {
-                BuildCtx casectx(switchctx);
-                casectx.addQuotedCompound(s.clear().append("case ").append(row).append(":"));
-
-                IHqlExpression * cur = values->queryChild(row);
-                OwnedHqlExpr rowValue = createRow(no_createrow, LINK(cur));
-                buildAssign(casectx, self, rowValue);
-                buildReturnRecordSize(casectx, selfCursor);
-            }
-        }
-        funcctx.addReturn(queryZero());
-    }
+    funcctx.addReturn(queryZero());
 
     OwnedHqlExpr rowsExpr = getSizetConstant(maxRows);
     doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);
@@ -17944,7 +18148,7 @@ static bool expandFieldName(StringBuffer & s, IHqlExpression * e)
     {
         if (expandFieldName(s, e->queryChild(0)))
             s.append('.');
-        const char * name = e->queryChild(1)->queryName()->str();
+        const char * name = str(e->queryChild(1)->queryName());
         s.appendLower(strlen(name), name);
         return true;
     }
@@ -18129,13 +18333,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribution(BuildCtx & ctx, I
         case type_data:
         case type_qstring:
             if (type->getSize() == UNKNOWN_LENGTH)
-                throwError1(HQLERR_DistributionVariableLengthX, cur.queryChild(1)->queryId()->str());
+                throwError1(HQLERR_DistributionVariableLengthX, str(cur.queryChild(1)->queryId()));
             break;
         default:
             {
                 StringBuffer typeName;
                 getFriendlyTypeStr(type, typeName);
-                throwError2(HQLERR_DistributionUnsupportedTypeXX, cur.queryChild(1)->queryId()->str(), typeName.str());
+                throwError2(HQLERR_DistributionUnsupportedTypeXX, str(cur.queryChild(1)->queryId()), typeName.str());
             }
         }
     }

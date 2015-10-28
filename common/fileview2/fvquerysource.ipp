@@ -41,7 +41,6 @@ protected:
 
 protected:
     StringAttr browseWuid;
-    StringAttr cluster;
     StringAttr username;
     StringAttr password;
 };

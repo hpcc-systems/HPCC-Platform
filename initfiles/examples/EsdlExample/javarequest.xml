@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="urn:hpccsystems:ws:esdlexample:javaechopersoninfo@ver=0">
+ <soap:Body>
+  <JavaEchoPersonInfoRequest>
+   <Name>
+    <First>Joe</First>
+    <Last>Doe</Last>
+    <Aliases>
+      <Alias>John</Alias>
+      <Alias>James</Alias>
+      <Alias>Joseph</Alias>
+      <Alias>Jessy</Alias>
+    </Aliases>
+   </Name>
+   <Addresses>
+    <Address>
+     <Line1>105 Main St</Line1>
+     <City>Boca Raton</City>
+     <State>Florida</State>
+     <Zip>33487</Zip>
+     <type>Home</type>
+    </Address>
+    <Address>
+     <Line1>901 Main St</Line1>
+     <City>Orlando</City>
+     <State>Florida</State>
+     <Zip>77777</Zip>
+     <type>Work</type>
+    </Address>
+   </Addresses>
+  </JavaEchoPersonInfoRequest>
+ </soap:Body>
+</soap:Envelope>

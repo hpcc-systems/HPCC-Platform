@@ -34,8 +34,8 @@ HPCC_ADD_SUBDIRECTORY (wuget "CLIENTTOOLS")
 HPCC_ADD_SUBDIRECTORY (copyexp "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (genht "PLATFORM")
 
-# start-stop-daemon is linux only.
-if ( CMAKE_SYSTEM MATCHES Linux )
+# start-stop-daemon is linux and apple only.
+if ( CMAKE_SYSTEM MATCHES Linux OR APPLE)
     message ("-- Building start-stop-daemon")
     HPCC_ADD_SUBDIRECTORY (start-stop-daemon)
 endif()

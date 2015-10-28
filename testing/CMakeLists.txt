@@ -17,6 +17,8 @@ HPCC_ADD_SUBDIRECTORY (unittests)
 HPCC_ADD_SUBDIRECTORY (regress)
 install( DIRECTORY regress DESTINATION "./testing" COMPONENT Runtime
          USE_SOURCE_PERMISSIONS
-         PATTERN regress/ecl EXCLUDE
-         PATTERN regress/environment.xml.in EXCLUDE
-         PATTERN regress/CMakeLists.txt EXCLUDE )
+         FILES_MATCHING
+         PATTERN "regress/ecl-test"
+         PATTERN "regress/ecl-test.json"
+         PATTERN "regress/environment.xml"
+         PATTERN "regress/README.rst" )

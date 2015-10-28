@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-
 #include "platform.h"
 #include <string.h>
 #include <limits.h>
@@ -26,6 +25,12 @@
 #include "jfile.hpp"
 #include "jthread.hpp"
 #include "jqueue.tpp"
+#include "jset.hpp"
+
+#ifdef _USE_TBB
+#include "tbb/task.h"
+#include "tbb/task_scheduler_init.h"
+#endif
 
 #ifdef _DEBUG
 // #define PARANOID
@@ -623,6 +628,109 @@ void parqsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare
 
 //-----------------------------------------------------------------------------------------------------------------------------
 
+inline void * * mergePartitions(const ICompare & compare, void * * result, unsigned n1, void * * ret1, unsigned n2, void * * ret2)
+{
+    void * * tgt = result;
+    loop
+    {
+       if (compare.docompare(*ret1, *ret2) <= 0)
+       {
+           *tgt++ = *ret1++;
+           if (--n1 == 0)
+           {
+               //There must be at least one row in the right partition - copy any that remain
+               do
+               {
+                   *tgt++ = *ret2++;
+               } while (--n2);
+               return result;
+           }
+       }
+       else
+       {
+           *tgt++ = *ret2++;
+           if (--n2 == 0)
+           {
+               //There must be at least one row in the left partition - copy any that remain
+               do
+               {
+                   *tgt++ = *ret1++;
+               } while (--n1);
+               return result;
+           }
+       }
+    }
+}
+
+inline void * * mergePartitions(const ICompare & compare, void * * result, size_t n1, void * * ret1, size_t n2, void * * ret2, size_t n)
+{
+    void * * tgt = result;
+    while (n--)
+    {
+       if (compare.docompare(*ret1, *ret2) <= 0)
+       {
+           *tgt++ = *ret1++;
+           if (--n1 == 0)
+           {
+               while (n--)
+               {
+                   *tgt++ = *ret2++;
+               }
+               return result;
+           }
+       }
+       else
+       {
+           *tgt++ = *ret2++;
+           if (--n2 == 0)
+           {
+               while (n--)
+               {
+                   *tgt++ = *ret1++;
+               }
+               return result;
+           }
+       }
+    }
+    return result;
+}
+
+inline void * * mergePartitionsRev(const ICompare & compare, void * * result, size_t n1, void * * ret1, size_t n2, void * * ret2, size_t n)
+{
+    void * * tgt = result+n1+n2-1;
+    ret1 += (n1-1);
+    ret2 += (n2-1);
+    while (n--)
+    {
+       if (compare.docompare(*ret1, *ret2) >= 0)
+       {
+           *tgt-- = *ret1--;
+           if (--n1 == 0)
+           {
+               while (n--)
+               {
+                   *tgt-- = *ret2--;
+               }
+               return result;
+           }
+       }
+       else
+       {
+           *tgt-- = *ret2--;
+           if (--n2 == 0)
+           {
+               //There must be at least one row in the left partition - copy any that remain
+               while (n--)
+               {
+                   *tgt-- = *ret1--;
+               }
+               return result;
+           }
+       }
+    }
+    return result;
+}
+
 static void * * mergeSort(void ** rows, size32_t n, const ICompare & compare, void ** tmp, unsigned depth)
 {
     void * * result = (depth & 1) ? tmp : rows;
@@ -660,37 +768,7 @@ static void * * mergeSort(void ** rows, size32_t n, const ICompare & compare, vo
     void * * ret2 = mergeSort(rows+n1, n2, compare, tmp + n1, depth+1);
     dbgassertex(ret2 == ret1 + n1);
     dbgassertex(ret2 != result);
-    void * * tgt = result;
-
-    loop
-    {
-       if (compare.docompare(*ret1, *ret2) <= 0)
-       {
-           *tgt++ = *ret1++;
-           if (--n1 == 0)
-           {
-               //There must be at least one row in the right partition - copy any that remain
-               do
-               {
-                   *tgt++ = *ret2++;
-               } while (--n2);
-               return result;
-           }
-       }
-       else
-       {
-           *tgt++ = *ret2++;
-           if (--n2 == 0)
-           {
-               //There must be at least one row in the left partition - copy any that remain
-               do
-               {
-                   *tgt++ = *ret1++;
-               } while (--n1);
-               return result;
-           }
-       }
-    }
+    return mergePartitions(compare, result, n1, ret1, n2, ret2);
 }
 
 
@@ -700,6 +778,210 @@ void msortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, v
         return;
     mergeSort(rows, n, compare, temp, 0);
 }
+
+//=========================================================================
+
+//These constants are probably architecture and number of core dependent
+static const size_t singleThreadedMSortThreshold = 2000;
+static const size_t multiThreadedBlockThreshold = 64;       // must be at least 2!
+
+#ifdef _USE_TBB
+using tbb::task;
+class TbbParallelMergeSorter
+{
+    class SplitTask : public tbb::task
+    {
+    public:
+        SplitTask(task * _next1, task * _next2) : next1(_next1), next2(_next2)
+        {
+        }
+
+        virtual task * execute()
+        {
+            if (next1->decrement_ref_count() == 0)
+                spawn(*next1);
+            if (next2->decrement_ref_count() == 0)
+                return next2;
+            return NULL;
+        }
+    protected:
+        task * next1;
+        task * next2;
+    };
+
+    class BisectTask : public tbb::task
+    {
+    public:
+        BisectTask(TbbParallelMergeSorter & _sorter, void ** _rows, size32_t _n, void ** _temp, unsigned _depth, task * _next)
+        : sorter(_sorter), rows(_rows), n(_n), temp(_temp), depth(_depth), next(_next)
+        {
+        }
+        virtual task * execute()
+        {
+            loop
+            {
+                //On entry next is assumed to be used once by this function
+                if ((n <= multiThreadedBlockThreshold) || (depth >= sorter.singleThreadDepth))
+                {
+                    //Create a new task rather than calling sort directly, so that the successor is set up correctly
+                    //It would be possible to sort then if (next->decrement_ref_count()) return next; instead
+                    task * sort = new (next->allocate_child()) SubSortTask(sorter, rows, n, temp, depth);
+                    return sort;
+                }
+
+                void * * result = (depth & 1) ? temp : rows;
+                void * * src = (depth & 1) ? rows : temp;
+                unsigned n1 = (n+1)/2;
+                unsigned n2 = n-n1;
+                task * mergeTask;
+                if (depth < sorter.parallelMergeDepth)
+                {
+                    task * mergeFwdTask = new (allocate_additional_child_of(*next)) MergeTask(sorter.compare, result, n1, src, n2, src+n1, n1);
+                    mergeFwdTask->set_ref_count(1);
+                    task * mergeRevTask = new (next->allocate_child()) MergeRevTask(sorter.compare, result, n1, src, n2, src+n1, n2);
+                    mergeRevTask->set_ref_count(1);
+                    mergeTask = new (allocate_root()) SplitTask(mergeFwdTask, mergeRevTask);
+                }
+                else
+                {
+                    mergeTask = new (next->allocate_child()) MergeTask(sorter.compare, result, n1, src, n2, src+n1, n);
+                }
+
+                mergeTask->set_ref_count(2);
+                task * bisectRightTask = new (allocate_root()) BisectTask(sorter, rows+n1, n2, temp+n1, depth+1, mergeTask);
+                spawn(*bisectRightTask);
+
+                //recurse directly on the left side rather than creating a new task
+                n = n1;
+                depth = depth+1;
+                next = mergeTask;
+            }
+        }
+    protected:
+        TbbParallelMergeSorter & sorter;
+        void ** rows;
+        void ** temp;
+        task * next;
+        size32_t n;
+        unsigned depth;
+    };
+
+
+    class SubSortTask : public tbb::task
+    {
+    public:
+        SubSortTask(TbbParallelMergeSorter & _sorter, void ** _rows, size32_t _n, void ** _temp, unsigned _depth)
+        : sorter(_sorter), rows(_rows), n(_n), temp(_temp), depth(_depth)
+        {
+        }
+
+        virtual task * execute()
+        {
+            mergeSort(rows, n, sorter.compare, temp, depth);
+            return NULL;
+        }
+    protected:
+        TbbParallelMergeSorter & sorter;
+        void ** rows;
+        void ** temp;
+        size32_t n;
+        unsigned depth;
+    };
+
+
+    class MergeTask : public tbb::task
+    {
+    public:
+        MergeTask(const ICompare & _compare, void * * _result, size_t _n1, void * * _src1, size_t _n2, void * * _src2, size32_t _n)
+        : compare(_compare),result(_result), n1(_n1), src1(_src1), n2(_n2), src2(_src2), n(_n)
+        {
+        }
+
+        virtual task * execute()
+        {
+            mergePartitions(compare, result, n1, src1, n2, src2, n);
+            return NULL;
+        }
+
+    protected:
+        const ICompare & compare;
+        void * * result;
+        void * * src1;
+        void * * src2;
+        size_t n1;
+        size_t n2;
+        size_t n;
+    };
+
+    class MergeRevTask : public MergeTask
+    {
+    public:
+        MergeRevTask(const ICompare & _compare, void * * _result, size_t _n1, void * * _src1, size_t _n2, void * * _src2, size_t _n)
+        : MergeTask(_compare, _result, _n1, _src1, _n2, _src2, _n)
+        {
+        }
+
+        virtual task * execute()
+        {
+            mergePartitionsRev(compare, result, n2, src2, n1, src1, n);
+            return NULL;
+        }
+    };
+
+public:
+    TbbParallelMergeSorter(void * * _rows, const ICompare & _compare) : compare(_compare), baseRows(_rows)
+    {
+        //The following constants control the number of iterations to be performed in parallel.
+        //The sort is split into more parts than there are cpus so that the effect of delays from one task tend to be evened out.
+        //The following constants should possibly be tuned on each platform.  The following gave a good balance on a 2x8way xeon
+        const unsigned extraBisectDepth = 3;
+        const unsigned extraParallelMergeDepth = 3;
+
+        unsigned numCpus = tbb::task_scheduler_init::default_num_threads();
+        unsigned ln2NumCpus = (numCpus <= 1) ? 0 : getMostSignificantBit(numCpus-1);
+        assertex(numCpus <= (1U << ln2NumCpus));
+
+        //Merge in parallel once it is likely to be beneficial
+        parallelMergeDepth = ln2NumCpus+ extraParallelMergeDepth;
+        //Aim to execute in parallel until the width is 8*the maximum number of parallel task
+        singleThreadDepth = ln2NumCpus + extraBisectDepth;
+    }
+
+    void sortRoot(void ** rows, size32_t n, void ** temp)
+    {
+        task * end = new (task::allocate_root()) tbb::empty_task();
+        end->set_ref_count(1+1);
+        task * task = new (task::allocate_root()) BisectTask(*this, rows, n, temp, 0, end);
+        end->spawn(*task);
+        end->wait_for_all();
+        end->destroy(*end);
+    }
+
+public:
+    const ICompare & compare;
+    unsigned singleThreadDepth;
+    unsigned parallelMergeDepth;
+    void * * baseRows;
+};
+
+//-------------------------------------------------------------------------------------------------------------------
+void parmsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp, unsigned ncpus)
+{
+    if ((n <= singleThreadedMSortThreshold) || ncpus == 1)
+    {
+        msortvecstableinplace(rows, n, compare, temp);
+        return;
+    }
+
+    TbbParallelMergeSorter sorter(rows, compare);
+    sorter.sortRoot(rows, n, temp);
+}
+#else
+void parmsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp, unsigned ncpus)
+{
+    parqsortvecstableinplace(rows, n, compare, temp, ncpus);
+}
+#endif
 
 //=========================================================================
 
@@ -810,7 +1092,7 @@ class CRowStreamMerger
     unsigned *mergeheap;
     unsigned activeInputs; 
     count_t recno;
-    ICompare *icmp;
+    const ICompare *icmp;
     bool partdedup;
 
     IRowProvider &provider;
@@ -982,7 +1264,7 @@ class CRowStreamMerger
     }
 
 public:
-    CRowStreamMerger(IRowProvider &_provider,unsigned numstreams,ICompare *_icmp,bool _partdedup=false)
+    CRowStreamMerger(IRowProvider &_provider,unsigned numstreams, const ICompare *_icmp,bool _partdedup=false)
         : provider(_provider)
     {
         partdedup = _partdedup;
@@ -1147,5 +1429,3 @@ IRowStream *createRowStreamMerger(unsigned numstreams,IRowProvider &provider,ICo
 {
     return new CMergeRowStreams(numstreams,provider,icmp,partdedup);
 }
-
-

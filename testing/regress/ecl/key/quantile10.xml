@@ -1,0 +1,7 @@
+<Dataset name='Result 1'>
+ <Row><rid>1</rid><whichpercentile>2</whichpercentile><ids><Row><id>1.0</id></Row></ids></Row>
+ <Row><rid>2</rid><whichpercentile>13</whichpercentile><ids><Row><id>2.8</id></Row></ids></Row>
+ <Row><rid>3</rid><whichpercentile>15</whichpercentile><ids><Row><id>16.0</id></Row></ids></Row>
+ <Row><rid>4</rid><whichpercentile>3</whichpercentile><ids><Row><id>984.0</id></Row></ids></Row>
+ <Row><rid>5</rid><whichpercentile>27</whichpercentile><ids><Row><id>1.81</id></Row></ids></Row>
+</Dataset>

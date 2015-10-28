@@ -236,7 +236,7 @@ public:
             ISDSManager & sdsManager = querySDS();
 
             if(xpath) pathToRoot.append(xpath).append("/");
-            conn = sdsManager.connect(pathToRoot.toCharArray(), myProcessSession(), 0, 5000);               
+            conn = sdsManager.connect(pathToRoot.str(), myProcessSession(), 0, 5000);
         }
         catch(IException * e)
         {

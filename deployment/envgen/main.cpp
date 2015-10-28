@@ -102,6 +102,8 @@ void usage()
   puts("          can be provided.");
   puts("          \"-override DropZone,@directory,/mnt/disk1/mydropzone ");
   puts("          -override espsmc,@enableSystemUseRewrite,true\"");
+  puts("   -set_xpath_attrib_value <XPATH> <ATTRIBUTE> <VALUE>: sets or add the xpath with attribute and value.");
+  puts("          Example: \"-set_xpath_attrib_value  Software/Topology/Cluster[@name=\"thor\"]/ThorCluster @process thor123\"");
   puts("   -help: print out this usage.");
 }
 
@@ -116,6 +118,9 @@ int main(int argc, char** argv)
   bool roxieOnDemand = true;
   MapStringTo<StringBuffer> dirMap;
   StringArray overrides;
+  StringBufferArray arrXPaths;
+  StringBufferArray arrAttrib;
+  StringBufferArray arrValues;
 
   int i = 1;
   bool writeToFiles = false;
@@ -128,6 +133,13 @@ int main(int argc, char** argv)
       usage();
       releaseAtoms();
       return 0;
+    }
+    else if (stricmp(argv[i], "-set_xpath_attrib_value")== 0)
+    {
+        i++;
+        arrXPaths.append(*new StringBufferItem (argv[i++]));
+        arrAttrib.append(*new StringBufferItem (argv[i++]));
+        arrValues.append(*new StringBufferItem (argv[i++]));
     }
     else if (stricmp(argv[i], "-env") == 0)
     {
@@ -262,7 +274,7 @@ int main(int argc, char** argv)
 
     if(envXml.length())
     {
-      if (overrides.length())
+      if (overrides.length() || arrXPaths.length())
       {
         Owned<IPropertyTree> pEnvTree = createPTreeFromXMLString(envXml.str());
 
@@ -301,8 +313,29 @@ int main(int argc, char** argv)
             fprintf(stderr, "\nWarning: unable to find components of buildset '%s' for override option '%s'.\n", buildset?buildset:"", overrides.item(i));
         }
 
+        if (arrXPaths.length() > 0)
+        {
+            int nCount = 0;
+
+            while (nCount < arrXPaths.length())
+            {
+                IPropertyTree *attrTree = pEnvTree->queryPropTree(arrXPaths.item(nCount).str());
+
+                if (attrTree == NULL)
+                {
+                    attrTree = createPTree();
+                    attrTree->appendProp(arrAttrib.item(nCount).str(), arrValues.item(nCount).str());
+                    pEnvTree->setPropTree(arrXPaths.item(nCount).str(), attrTree);
+                }
+                else
+                    attrTree->setProp(arrAttrib.item(nCount).str(), arrValues.item(nCount).str());
+
+                nCount++;
+            }
+        }
         toXML(pEnvTree, envXml.clear());
       }
+
 
       StringBuffer env;
       StringBuffer thisip;

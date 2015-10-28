@@ -451,6 +451,7 @@ IIdAtom * newDegroupArgId;
 IIdAtom * newExistsAggregateArgId;
 IIdAtom * newFunnelArgId;
 IIdAtom * newGraphLoopResultWriteArgId;
+IIdAtom * newLibraryConstantRawIteratorArgId;
 IIdAtom * newLocalResultReadArgId;
 IIdAtom * newLocalResultSpillArgId;
 IIdAtom * newMemorySpillReadArgId;
@@ -1100,6 +1101,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(newExistsAggregateArg);
     MAKEID(newFunnelArg);
     MAKEID(newGraphLoopResultWriteArg);
+    MAKEID(newLibraryConstantRawIteratorArg);
     MAKEID(newLocalResultReadArg);
     MAKEID(newLocalResultSpillArg);
     MAKEID(newMemorySpillReadArg);

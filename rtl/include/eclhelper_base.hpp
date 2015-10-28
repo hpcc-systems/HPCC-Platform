@@ -1,4 +1,3 @@
-
 /*##############################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
@@ -706,6 +705,30 @@ class CThorProjectArg : public CThorArg, implements IHThorProjectArg
     }
     
     virtual bool canFilter()                                { return false; }
+};
+
+class CThorQuantileArg : public CThorArg, implements IHThorQuantileArg
+{
+    virtual void Link() const { RtlCInterface::Link(); }
+    virtual bool Release() const { return RtlCInterface::Release(); }
+    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
+
+    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
+    {
+        switch (which)
+        {
+        case TAIarg:
+        case TAIquantilearg_1:
+            return static_cast<IHThorQuantileArg *>(this);
+        }
+        return NULL;
+    }
+
+    virtual unsigned getFlags() { return 0; }
+    virtual unsigned __int64 getNumDivisions() { return 2; }
+    virtual double getSkew() { return 0; }
+    virtual unsigned __int64 getScore(const void * _left) { return 1; }
+    virtual void getRange(bool & isAll, size32_t & tlen, void * & tgt) { isAll = true; tlen = 0; tgt = NULL; }
 };
 
 class CThorPrefetchProjectArg : public CThorArg, implements IHThorPrefetchProjectArg
@@ -1788,6 +1811,8 @@ class CThorJoinArg : public CThorArg, implements IHThorJoinArg
     virtual ICompare * queryCompareLeftRightLower()     { return NULL; }
     virtual ICompare * queryCompareLeftRightUpper()     { return NULL; }
     virtual ICompare * queryPrefixCompare()             { return NULL; }
+    virtual ICompare * queryCompareLeftKeyRightRow()    { return NULL; }
+    virtual ICompare * queryCompareRightKeyLeftRow()    { return NULL; }
 
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
 
@@ -1880,6 +1905,8 @@ class CThorHashJoinArg : public CThorArg, implements IHThorHashJoinArg
     virtual ICompare * queryCompareLeft()               { return NULL; }        // not needed for lookup
     virtual ICompare * queryCompareRight()              { return NULL; }        // not needed for many lookup
     virtual ICompare * queryPrefixCompare()             { return NULL; }
+    virtual ICompare * queryCompareLeftKeyRightRow()    { return NULL; }
+    virtual ICompare * queryCompareRightKeyLeftRow()    { return NULL; }
 
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
 
@@ -2596,7 +2623,6 @@ typedef CThorSoapCallArg CThorHttpCallArg;
 typedef CThorNullArg CThorDatasetResultArg;
 typedef CThorNullArg CThorRowResultArg;
 typedef CThorNullArg CThorPullArg;
-
 
 class CThorParseArg : public CThorArg, implements IHThorParseArg
 {
@@ -3455,6 +3481,32 @@ class CThorSectionInputArg : public CThorArg, implements IHThorSectionInputArg
     virtual unsigned getFlags() { return 0; }
 };
 
+class CThorTraceArg : public CThorArg, implements IHThorTraceArg
+{
+    virtual void Link() const { RtlCInterface::Link(); }
+    virtual bool Release() const { return RtlCInterface::Release(); }
+    virtual bool isValid(const void * _left) { return true; }
+    virtual bool canMatchAny() { return true; }
+    virtual unsigned getKeepLimit() { return (unsigned) -1; }
+    virtual unsigned getSample() { return 0; }
+    virtual unsigned getSkip() { return 0; }
+    virtual const char *getName() { return NULL; }
+
+    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
+    {
+        switch (which)
+        {
+        case TAIarg:
+        case TAItracearg_1:
+            return static_cast<IHThorTraceArg *>(this);
+        default:
+            break;
+        }
+        return NULL;
+    }
+};
+
+
 class CThorWhenActionArg : public CThorArg, implements IHThorWhenActionArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
@@ -3719,6 +3771,33 @@ public:
 
 protected:
     IOutputMetaData * meta;
+};
+
+class CLibraryConstantRawIteratorArg : public CThorLinkedRawIteratorArg
+{
+public:
+    inline CLibraryConstantRawIteratorArg(unsigned _numRows, byte * * _rows, IOutputMetaData * _meta)
+        : meta(_meta), numRows(_numRows), rows(_rows)
+    {
+        cur = 0;
+    }
+
+    virtual void onStart(const byte *, MemoryBuffer * ) { cur = 0U; }
+
+    virtual byte * next()
+    {
+        if (cur < numRows)
+            return rows[cur++];
+        return NULL;
+    }
+
+    virtual IOutputMetaData * queryOutputMeta() { return meta; }
+
+protected:
+    unsigned numRows;
+    IOutputMetaData * meta;
+    byte * * rows;
+    unsigned cur;
 };
 
 class EclProcess : public RtlCInterface, implements IEclProcess

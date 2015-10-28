@@ -515,7 +515,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
 
     Owned<CCompilerThreadParam> parm;
     if (verbose)
-        PrintLog("%s", expanded.toCharArray());
+        PrintLog("%s", expanded.str());
     parm.setown(new CCompilerThreadParam(expanded, finishedCompiling, logFile));
     pool->start(parm.get());
 
@@ -682,10 +682,10 @@ bool CppCompiler::doLink()
 
     DWORD runcode = 0;
     if (verbose)
-        PrintLog("%s", expanded.toCharArray());
+        PrintLog("%s", expanded.str());
     StringBuffer logFile = StringBuffer(coreName).append("_link.log.tmp");
     logFiles.append(logFile);
-    bool ret = invoke_program(expanded.toCharArray(), runcode, true, logFile) && (runcode == 0);
+    bool ret = invoke_program(expanded.str(), runcode, true, logFile) && (runcode == 0);
     linkFailed = !ret;
     return ret;
 }

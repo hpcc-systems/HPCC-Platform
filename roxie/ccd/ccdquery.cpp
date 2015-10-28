@@ -90,8 +90,7 @@ public:
         StringBuffer wuXML;
         if (getEmbeddedWorkUnitXML(dll, wuXML))
         {
-            Owned<ILocalWorkUnit> localWU = createLocalWorkUnit();
-            localWU->loadXML(wuXML);
+            Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
             wu.setown(localWU->unlock());
         }
         CriticalBlock b(dllCacheLock);
@@ -126,12 +125,10 @@ public:
         q->getQueryDllName(dllName);
         if (dllName.length() == 0)
         {
-            SCMStringBuffer wuid;
-            wu->getWuid(wuid);
             if (wu->getCodeVersion() == 0)
-                throw makeStringExceptionV(ROXIE_MISSING_DLL, "Attempting to load workunit %s that hasn't been compiled", wuid.str());
+                throw makeStringExceptionV(ROXIE_MISSING_DLL, "Attempting to load workunit %s that hasn't been compiled", wu->queryWuid());
             else
-                throw makeStringExceptionV(ROXIE_MISSING_DLL, "Attempting to load workunit %s with no associated dll", wuid.str());
+                throw makeStringExceptionV(ROXIE_MISSING_DLL, "Attempting to load workunit %s with no associated dll", wu->queryWuid());
         }
         return getQueryDll(dllName.str(), false);
     }
@@ -291,6 +288,7 @@ QueryOptions::QueryOptions()
     concatPreload = defaultConcatPreload;
     fetchPreload = defaultFetchPreload;
     prefetchProjectPreload = defaultPrefetchProjectPreload;
+    bindCores = coresPerQuery;
 
     checkingHeap = defaultCheckingHeap;
     disableLocalOptimizations = false;  // No global default for this
@@ -298,6 +296,8 @@ QueryOptions::QueryOptions()
     skipFileFormatCrcCheck = false;
     stripWhitespaceFromStoredDataset = ((ptr_ignoreWhiteSpace & defaultXmlReadFlags) != 0);
     timeActivities = defaultTimeActivities;
+    traceEnabled = defaultTraceEnabled;
+    traceLimit = defaultTraceLimit;
     allSortsMaySpill = false; // No global default for this
 }
 
@@ -315,6 +315,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     concatPreload = other.concatPreload;
     fetchPreload = other.fetchPreload;
     prefetchProjectPreload = other.prefetchProjectPreload;
+    bindCores = other.bindCores;
 
     checkingHeap = other.checkingHeap;
     disableLocalOptimizations = other.disableLocalOptimizations;
@@ -322,6 +323,8 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     skipFileFormatCrcCheck = other.skipFileFormatCrcCheck;
     stripWhitespaceFromStoredDataset = other.stripWhitespaceFromStoredDataset;
     timeActivities = other.timeActivities;
+    traceEnabled = other.traceEnabled;
+    traceLimit = other.traceLimit;
     allSortsMaySpill = other.allSortsMaySpill;
 }
 
@@ -349,6 +352,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(concatPreload, wu, "concatPreload");
     updateFromWorkUnit(fetchPreload, wu, "fetchPreload");
     updateFromWorkUnit(prefetchProjectPreload, wu, "prefetchProjectPreload");
+    updateFromWorkUnit(bindCores, wu, "bindCores");
 
     updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
     updateFromWorkUnit(disableLocalOptimizations, wu, "disableLocalOptimizations");
@@ -356,6 +360,8 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(skipFileFormatCrcCheck, wu, "skipFileFormatCrcCheck");
     updateFromWorkUnit(stripWhitespaceFromStoredDataset, wu, "stripWhitespaceFromStoredDataset");
     updateFromWorkUnit(timeActivities, wu, "timeActivities");
+    updateFromWorkUnit(traceEnabled, wu, "traceEnabled");
+    updateFromWorkUnit(traceLimit, wu, "traceLimit");
     updateFromWorkUnit(allSortsMaySpill, wu, "allSortsMaySpill");
 }
 
@@ -393,6 +399,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(concatPreload, ctx, "@concatPreload", "_ConcatPreload");
         updateFromContext(fetchPreload, ctx, "@fetchPreload", "_FetchPreload");
         updateFromContext(prefetchProjectPreload, ctx, "@prefetchProjectPreload", "_PrefetchProjectPreload");
+        updateFromContext(bindCores, ctx, "@bindCores", "_bindCores");
 
         updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
         // Note: disableLocalOptimizations is not permitted at context level (too late)
@@ -400,6 +407,8 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(skipFileFormatCrcCheck, ctx, "_SkipFileFormatCrcCheck", "@skipFileFormatCrcCheck");
         updateFromContext(stripWhitespaceFromStoredDataset, ctx, "_StripWhitespaceFromStoredDataset", "@stripWhitespaceFromStoredDataset");
         updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
+        updateFromContext(traceEnabled, ctx, "@traceEnabled", "_TraceEnabled");
+        updateFromContext(traceLimit, ctx, "@traceLimit", "_TraceLimit");
         // Note: allSortsMaySpill is not permitted at context level (too late anyway, unless I refactored)
     }
 }
@@ -503,7 +512,7 @@ protected:
         case TAKalljoin:
         case TAKalldenormalize:
         case TAKalldenormalizegroup:
-            return createRoxieServerAllJoinActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerAllJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKapply:
             return createRoxieServerApplyActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKaggregate:
@@ -648,7 +657,7 @@ protected:
         case TAKjoinlight:
         case TAKdenormalize:
         case TAKdenormalizegroup:
-            return createRoxieServerJoinActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKkeyeddistribute:
             throwUnexpected();  // Code generator should have removed or transformed
         case TAKkeyedjoin:
@@ -696,6 +705,8 @@ protected:
             return createRoxieServerPipeWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKpull:
             return createRoxieServerPullActivityFactory(id, subgraphId, *this, helperFactory, kind);
+        case TAKtrace:
+            return createRoxieServerTraceActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKlinkedrawiterator:
             return createRoxieServerLinkedRawIteratorActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKremoteresult:
@@ -708,7 +719,7 @@ protected:
             return createRoxieServerSelectNActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKselfjoin:
         case TAKselfjoinlight:
-            return createRoxieServerSelfJoinActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerSelfJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKskiplimit:
         case TAKcreaterowlimit:
             return createRoxieServerSkipLimitActivityFactory(id, subgraphId, *this, helperFactory, kind);
@@ -740,6 +751,8 @@ protected:
             return createRoxieServerWorkUnitReadActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKxmlparse:
             return createRoxieServerXmlParseActivityFactory(id, subgraphId, *this, helperFactory, kind);
+        case TAKquantile:
+            return createRoxieServerQuantileActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKregroup:
             return createRoxieServerRegroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKcombine:
@@ -1680,8 +1693,7 @@ extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu)
     Owned<const IQueryDll> dll = createWuQueryDll(wu);
     if (!dll)
         return NULL;
-    SCMStringBuffer wuid;
-    return createServerQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), NULL, true, false); // MORE - if use a constant for id might cache better?
+    return createServerQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), NULL, true, false); // MORE - if use a constant for id might cache better?
 }
 
 //==============================================================================================================================================
@@ -1941,8 +1953,7 @@ extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned
     Owned<const IQueryDll> dll = createWuQueryDll(wu);
     if (!dll)
         return NULL;
-    SCMStringBuffer wuid;
-    return createSlaveQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
+    return createSlaveQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
 }
 
 IRecordLayoutTranslator * createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta)

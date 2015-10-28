@@ -41,7 +41,7 @@ RLTFailure * RLTFailure::appendFieldName(char const * scope, IDefRecordElement c
 {
     if(scope)
         detail.append(scope).append(scopeSeparator);
-    detail.append(field->queryName()->str());
+    detail.append(str(field->queryName()));
     return this;
 }
 
@@ -174,7 +174,7 @@ void MappingLevel::attemptMapping(IDefRecordElement const * diskRecord, unsigned
         else
         {
             Owned<FieldMapping> mapping(new FieldMapping(FieldMapping::ChildDataset, diskRecord, diskFieldNum, false, activityRecord, activityFieldNum, false));
-            MappingLevel childMappingLevel(this, diskField->queryName()->str(), mapping->queryChildMappings());
+            MappingLevel childMappingLevel(this, str(diskField->queryName()), mapping->queryChildMappings());
             childMappingLevel.calculateMappings(diskChild, 0, activityChild, 0);
             mappings.append(*mapping.getClear());
         }

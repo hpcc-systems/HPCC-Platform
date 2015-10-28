@@ -532,7 +532,7 @@ IHqlExpression * NewProjectMapper2::recursiveExpandSelect(IHqlExpression * expr,
                 dbglogExpr(&targets.item(i));
 #endif
             IHqlExpression * field = expr->queryChild(1);
-            throwError1(HQLERR_SelectedFieldXNotInDataset, field->queryName()->str());
+            throwError1(HQLERR_SelectedFieldXNotInDataset, str(field->queryName()));
         }
         IHqlExpression * expanded = &sources.item(match);
         if ((newDataset == oldParent) || !newDataset)

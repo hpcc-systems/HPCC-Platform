@@ -697,7 +697,7 @@ static void setDefinitionText(IPropertyTree * target, const char * prop, IFileCo
     target->setProp(prop, sillyTempBuffer);
 
     ISourcePath * sourcePath = contents->querySourcePath();
-    target->setProp("@sourcePath", sourcePath->str());
+    target->setProp("@sourcePath", str(sourcePath));
 }
 
 void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
@@ -707,9 +707,9 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
         const char * moduleName = scope->queryFullName();
 
         IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
-        IPropertyTree * attr = queryArchiveAttribute(module, name->str());
+        IPropertyTree * attr = queryArchiveAttribute(module, str(name));
         if (!attr)
-            attr = createArchiveAttribute(module, name->str());
+            attr = createArchiveAttribute(module, str(name));
 
         setDefinitionText(attr, "", contents);
     }
@@ -719,8 +719,8 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
     if (checkBeginMeta())
     {
         IPropertyTree * attr = metaTree->addPropTree("Source", createPTree("Source"));
-        setFullNameProp(attr, "@name", scope->queryFullName(), name->str());
-        attr->setProp("@sourcePath", sourcePath->str());
+        setFullNameProp(attr, "@name", scope->queryFullName(), str(name));
+        attr->setProp("@sourcePath", str(sourcePath));
         metaState.nesting.append(attr);
     }
 
@@ -728,8 +728,8 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
     {
         IPropertyTree * attr = globalDependTree->addPropTree("Attribute", createPTree("Attribute"));
         attr->setProp("@module", scope->queryFullName());
-        attr->setProp("@name", name->str());
-        attr->setProp("@sourcePath", sourcePath->str());
+        attr->setProp("@name", str(name));
+        attr->setProp("@sourcePath", str(sourcePath));
         //attr->setPropInt("@flags", symbol->getObType());  MORE
     }
 }
@@ -751,7 +751,7 @@ void HqlParseContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents
         ISourcePath * sourcePath = contents->querySourcePath();
 
         IPropertyTree * attr = metaTree->addPropTree("Query", createPTree("Query"));
-        attr->setProp("@sourcePath", sourcePath->str());
+        attr->setProp("@sourcePath", str(sourcePath));
         metaState.nesting.append(attr);
     }
 }
@@ -773,7 +773,7 @@ void HqlParseContext::noteBeginModule(IHqlScope * scope, IFileContents * content
         ISourcePath * sourcePath = contents->querySourcePath();
 
         IPropertyTree * attr = metaTree->addPropTree("Source", createPTree("Source"));
-        attr->setProp("@sourcePath", sourcePath->str());
+        attr->setProp("@sourcePath", str(sourcePath));
         metaState.nesting.append(attr);
     }
 }
@@ -952,13 +952,13 @@ void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpressio
             const char * moduleName = parentScope->queryFullName();
             if (moduleName)
             {
-                VStringBuffer xpath("Depend[@module=\"%s\"][@name=\"%s\"]", moduleName, expr->queryName()->str());
+                VStringBuffer xpath("Depend[@module=\"%s\"][@name=\"%s\"]", moduleName, str(expr->queryName()));
 
                 if (!curAttrTree->queryPropTree(xpath.str()))
                 {
                     IPropertyTree * depend = curAttrTree->addPropTree("Depend", createPTree());
                     depend->setProp("@module", moduleName);
-                    depend->setProp("@name", expr->queryName()->str());
+                    depend->setProp("@name", str(expr->queryName()));
                 }
             }
         }
@@ -969,7 +969,7 @@ void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpressio
 void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, IIdAtom * id)
 {
     const char * moduleName = parentScope ? parentScope->queryFullName() : "";
-    const char * nameText = id ? id->lower()->str() : "";
+    const char * nameText = id ? str(lower(id)) : "";
 
     StringBuffer xpath;
     xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(nameText).append("\"]");
@@ -1349,6 +1349,7 @@ const char *getOpString(node_operator op)
     case no_newsoapcall: return "SOAPCALL";
     case no_newsoapcall_ds: return "SOAPCALL";
     case no_soapaction_ds: return "SOAPCALL";
+    case no_quantile: return "QUANTILE";
     case no_newsoapaction_ds: return "SOAPCALL";
     case no_temprow: return "ROW"; 
     case no_projectrow: return "ROW"; 
@@ -1528,7 +1529,6 @@ const char *getOpString(node_operator op)
     case no_unused80:
     case no_unused81:
     case no_unused83:
-    case no_unused101:
     case no_unused102:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
@@ -1602,6 +1602,7 @@ bool checkConstant(node_operator op)
     case no_newsoapcall:
     case no_newsoapcall_ds:
     case no_newsoapaction_ds:
+    case no_quantile:
     case no_filepos:
     case no_file_logicalname:
     case no_failcode:
@@ -1972,7 +1973,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_subgraph:
     case no_deserialize:
     case no_serialize:
-        if (expr->queryChild(0)->isDataset())
+        if (expr->queryChild(0)->isDataset() || expr->queryChild(0)->isDictionary())
             return childdataset_dataset_noscope;
         return childdataset_none;
     case no_pipe:
@@ -2009,6 +2010,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_soapaction_ds:
     case no_newsoapcall_ds:
     case no_newsoapaction_ds:
+    case no_quantile:
         return childdataset_datasetleft;
     case no_keyeddistribute:
         return childdataset_leftright;
@@ -2216,6 +2218,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_soapaction_ds:
     case no_newsoapcall_ds:
     case no_newsoapaction_ds:
+    case no_quantile:
     case no_activerow:
     case no_newrow:
     case no_keyedlimit:
@@ -2238,9 +2241,15 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_ensureresult:
         return 1;
     case no_executewhen:
+    case no_setresult:
+    case no_sizeof:
+    case no_offsetof:
+    case no_nameof:
+    case no_blob2id:
+    case no_subgraph:
     case no_deserialize:
     case no_serialize:
-        if (dataset->queryChild(0)->isDataset())
+        if (dataset->queryChild(0)->isDataset() || dataset->queryChild(0)->isDictionary())
             return 1;
         return 0;
     case no_childdataset:
@@ -2296,15 +2305,6 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_internalselect:
     case no_purevirtual:
     case no_libraryinput:
-        return 0;
-    case no_subgraph:
-    case no_sizeof:
-    case no_offsetof:
-    case no_nameof:
-    case no_blob2id:
-    case no_setresult:
-        if (dataset->queryChild(0)->isDataset())
-            return 1;
         return 0;
     case no_select:
         if (dataset->hasAttribute(newAtom) && dataset->isDataset())
@@ -2567,6 +2567,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_soapcall_ds:
     case no_newsoapcall:
     case no_newsoapcall_ds:
+    case no_quantile:
     case no_alias:
     case no_id2blob:
     case no_embedbody:
@@ -2672,6 +2673,7 @@ unsigned queryTransformIndex(IHqlExpression * expr)
     case no_parse:
     case no_soapcall:
     case no_newxmlparse:
+    case no_quantile:
         pos = 3;
         break;
     case no_newparse:
@@ -2737,6 +2739,7 @@ IHqlExpression * queryNewColumnProvider(IHqlExpression * expr)
     case no_soapcall:
     case no_httpcall:
     case no_newxmlparse:
+    case no_quantile:
         return expr->queryChild(3);
     case no_newparse:
     case no_newsoapcall:            // 4 because input(2) gets transformed.
@@ -3327,6 +3330,41 @@ void CHqlExpression::initFlagsBeforeOperands()
         break;
     }
 }
+
+//Can be called from updateFlagsAfterOperands to help track down inconsistencies
+static bool verifyTransform(IHqlExpression * record, IHqlExpression * expr)
+{
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_assignall:
+            if (!verifyTransform(record, cur))
+                return false;
+            break;
+        case no_assign:
+            {
+                IHqlExpression * lhs = cur->queryChild(0);
+                if (lhs->getOperator() == no_select)
+                {
+                    if ((lhs->queryChild(0)->getOperator() == no_select) &&
+                        (lhs->queryChild(0)->queryChild(0)->getOperator() == no_self))
+                        return false;
+
+                    IHqlExpression * field = lhs->queryChild(1);
+                    OwnedHqlExpr match = record->querySimpleScope()->lookupSymbol(field->queryId());
+                    if (match != field)
+                        return false;
+                }
+                break;
+            }
+            break;
+        }
+    }
+    return true;
+}
+
 
 void CHqlExpression::updateFlagsAfterOperands()
 {
@@ -4055,7 +4093,7 @@ unsigned CHqlExpression::getCachedEclCRC()
             IAtom * name = queryName();
             if (name)
             {
-                const char * nameText = name->str();
+                const char * nameText = str(name);
                 if ((nameText[0] != '_') || (nameText[1] != '_'))
                     crc = hashnc((const byte *)nameText, strlen(nameText), crc);
             }
@@ -4075,7 +4113,7 @@ unsigned CHqlExpression::getCachedEclCRC()
             const IAtom * name = queryBody()->queryName();
             if (name == _uid_Atom)
                 return 0;
-            const char * nameText = name->str();
+            const char * nameText = str(name);
             crc = hashnc((const byte *)nameText, strlen(nameText), crc);
             break;
         }
@@ -5867,7 +5905,7 @@ IHqlExpression *CHqlField::clone(HqlExprArray &newkids)
 
 StringBuffer &CHqlField::toString(StringBuffer &ret)
 {
-    ret.append(id->str());
+    ret.append(str(id));
     return ret;
 }
 
@@ -6308,7 +6346,9 @@ void CHqlDataset::cacheParent()
     case no_mergejoin:
     case no_nwayjoin:
     case no_nwaymerge:
-        rootTable = this;       //?
+    case no_serialize:
+    case no_deserialize:
+        rootTable = this;
         break;
     case no_table:
         {
@@ -6556,7 +6596,7 @@ CHqlRecord::~CHqlRecord()
 /* return: linked */
 IHqlExpression *CHqlRecord::lookupSymbol(IIdAtom * fieldName)
 {
-    IHqlExpression *ret = fields.getValue(fieldName->lower());
+    IHqlExpression *ret = fields.getValue(lower(fieldName));
     ::Link(ret);
     return ret;
 }
@@ -7883,14 +7923,14 @@ void CHqlScope::defineSymbol(IHqlExpression * expr)
 
 void CHqlScope::removeSymbol(IIdAtom * _id)
 {
-    symbols.remove(_id->lower());
+    symbols.remove(lower(_id));
     //in general infoFlags needs recalculating - although currently I think this can only occur when a constant has been added
 }
 
 
 IHqlExpression *CHqlScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    OwnedHqlExpr ret = symbols.getLinkedValue(searchName->lower());
+    OwnedHqlExpr ret = symbols.getLinkedValue(lower(searchName));
 
     if (!ret)
         return NULL; 
@@ -7924,7 +7964,7 @@ void CHqlScope::getSymbols(HqlExprArray& exprs) const
         if (!cur)
         {
             IAtom * name = * static_cast<IAtom * const *>(iter.query().getKey());
-            throw MakeStringException(ERR_INTERNAL_NOEXPR, "INTERNAL: getSymbol %s has no associated expression", name ? name->str() : "");
+            throw MakeStringException(ERR_INTERNAL_NOEXPR, "INTERNAL: getSymbol %s has no associated expression", name ? str(name) : "");
         }
 
         cur->Link();
@@ -7948,11 +7988,11 @@ void CHqlScope::throwRecursiveError(IIdAtom * searchName)
     StringBuffer filename;
     if (fullName)
         filename.append(fullName).append('.');
-    filename.append(*searchName);
+    filename.append(str(searchName));
 
     StringBuffer msg("Definition of ");
-    msg.append(*searchName).append(" contains a recursive dependency");
-    throw createError(ERR_RECURSIVE_DEPENDENCY, msg.toCharArray(), filename, 0, 0, 1);
+    msg.append(str(searchName)).append(" contains a recursive dependency");
+    throw createError(ERR_RECURSIVE_DEPENDENCY, msg.str(), filename, 0, 0, 1);
 }
 
 inline bool namesMatch(const char * lName, const char * rName)
@@ -8143,14 +8183,14 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     StringBuffer filename;
     if (fullName)
         filename.append(fullName).append('.');
-    filename.append(*searchName);
+    filename.append(str(searchName));
 
     IFileContents * contents = ret->queryDefinitionText();
     if (!contents || (contents->length() == 0))
     {
         StringBuffer msg("Definition for ");
-        msg.append(*searchName).append(" contains no text");
-        throw createError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
+        msg.append(str(searchName)).append(" contains no text");
+        throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
     }
 
     OwnedHqlExpr recursionGuard = createSymbol(searchName, LINK(processingMarker), ob_exported);
@@ -8175,8 +8215,8 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
         if (newSymbol)
             resolved->removeSymbol(searchName);
         StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
-        msg.append(*searchName);
-        throw createError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
+        msg.append(str(searchName));
+        throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
     }
 
     //Preserve ob_sandbox etc. annotated on the original definition, but not on the parsed code.
@@ -8218,14 +8258,14 @@ IFileContents * CHqlRemoteScope::queryDefinitionText() const
 int CHqlRemoteScope::getPropInt(IAtom * a, int def) const
 {
     if (props)
-        return props->getPropInt(a->getAtomNamePtr(), def);
+        return props->getPropInt(str(a), def);
     else
         return def;
 }
 
 bool CHqlRemoteScope::getProp(IAtom * a, StringBuffer &ret) const
 { 
-    return (props != NULL && props->getProp(a->getAtomNamePtr(), ret));
+    return (props != NULL && props->getProp(str(a), ret));
 }
 
 
@@ -8234,14 +8274,14 @@ void CHqlRemoteScope::setProp(IAtom * a, int val)
 {
     if (!props)
         props = createProperties();
-    props->setProp(a->getAtomNamePtr(), val);
+    props->setProp(str(a), val);
 }
 
 void CHqlRemoteScope::setProp(IAtom * a, const char * val)
 {
     if (!props)
         props = createProperties();
-    props->setProp(a->getAtomNamePtr(), val);
+    props->setProp(str(a), val);
 }
 
 
@@ -8297,7 +8337,7 @@ void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ct
         if (cur && !isImport(cur) && (cur->getOperator() != no_remotescope))
         {
             IPropertyTree * attr=createPTree("Attribute", ipt_caseInsensitive);
-            attr->setProp("@name", *cur->queryName());
+            attr->setProp("@name", str(cur->queryName()));
             unsigned symbolFlags = cur->getSymbolFlags();
             if (cur->isExported())
                 symbolFlags |= ob_exported;
@@ -8526,7 +8566,7 @@ void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
             IHqlExpression & cur = scopeSymbols.item(iSym);
             IIdAtom * curName = cur.queryId();
 
-            OwnedHqlExpr prev = symbols.getLinkedValue(curName->lower());
+            OwnedHqlExpr prev = symbols.getLinkedValue(lower(curName));
             if (prev)
             {
                 //Unusual - check that this hasn't already been resolved by a call to lookupSymbol()
@@ -8717,7 +8757,7 @@ public:
             if (match == visited)
             {
                 IIdAtom * id = expr->queryId();
-                const char * idText = id ? id->str() : "";
+                const char * idText = id ? str(id) : "";
                 ECLlocation loc(searchModule->queryAttribute(_location_Atom));
                 reportError(errors, HQLERR_CycleWithModuleDefinition, loc, HQLERR_CycleWithModuleDefinition_Text, idText);
             }
@@ -8786,7 +8826,7 @@ public:
 
     virtual IHqlExpression * getVirtualReplacement(IIdAtom * name)
     {
-        OwnedHqlExpr value = symbols.getLinkedValue(name->lower());
+        OwnedHqlExpr value = symbols.getLinkedValue(lower(name));
         return transform(value);
     }
 
@@ -9115,7 +9155,7 @@ IHqlExpression *CHqlVirtualScope::lookupSymbol(IIdAtom * searchName, unsigned lo
         {
             //Select from a parameter where the item is not defined in the parameter's scope => error
             if (match->getOperator() == no_unboundselect)
-                throwError1(HQLERR_MemberXContainsVirtualRef, searchName->str());
+                throwError1(HQLERR_MemberXContainsVirtualRef, str(searchName));
 
             if (containsInternalSelect(match))
             {
@@ -9150,7 +9190,7 @@ IHqlExpression *CHqlVirtualScope::lookupSymbol(IIdAtom * searchName, unsigned lo
             //Select from a parameter where the item is not defined in the parameter's scope => error
             node_operator matchOp = match->getOperator();
             if (matchOp == no_unboundselect || matchOp == no_purevirtual)
-                throwError1(HQLERR_MemberXContainsVirtualRef, searchName->str());
+                throwError1(HQLERR_MemberXContainsVirtualRef, str(searchName));
 
             if (containsInternalSelect(match))
             {
@@ -9236,7 +9276,7 @@ void CHqlVirtualScope::resolveUnboundSymbols()
                         //Select from a parameter where the item is not defined in the parameter's scope => error
                         node_operator resolvedOp = resolved->getOperator();
                         if (resolvedOp == no_unboundselect || resolvedOp == no_purevirtual)
-                            throwError1(HQLERR_MemberXContainsVirtualRef, searchName->str());
+                            throwError1(HQLERR_MemberXContainsVirtualRef, str(searchName));
 
                         match.setown(quickFullReplaceExpression(resolved, child->queryAttribute(_virtualSeq_Atom), virtualAttr));
                         break;
@@ -9347,10 +9387,10 @@ IHqlExpression *CHqlForwardScope::lookupSymbol(IIdAtom * searchName, unsigned lo
         IHqlNamedAnnotation * oldSymbol = queryNameAnnotation(ret);
         assertex(oldSymbol);
         resolved->removeSymbol(searchName);
-        const char * filename = parentCtx->sourcePath->str();
+        const char * filename = str(parentCtx->sourcePath);
         StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
-        msg.append(*searchName);
-        throw createError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, oldSymbol->getStartLine(), oldSymbol->getStartColumn(), 1);
+        msg.append(str(searchName));
+        throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, oldSymbol->getStartLine(), oldSymbol->getStartColumn(), 1);
     }
 
     if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))
@@ -9403,7 +9443,7 @@ void addForwardDefinition(IHqlScope * scope, IIdAtom * symbolName, IIdAtom * mod
 //==============================================================================================================
 
 CHqlMultiParentScope::CHqlMultiParentScope(IIdAtom * _name, ...)
- : CHqlScope(no_privatescope, _name, _name->str())
+ : CHqlScope(no_privatescope, _name, str(_name))
 {
     va_list args;
     va_start(args, _name);
@@ -9454,7 +9494,7 @@ CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescop
         {
             IIdAtom * valueId = value->queryId();
             //debug.appendf(" %s",name->str());
-            defined.setValue(valueId->lower(),value);
+            defined.setValue(lower(valueId),value);
         }
     }
     //PrintLog(debug.str());
@@ -9537,7 +9577,7 @@ IHqlExpression *CHqlParameter::clone(HqlExprArray &newkids)
 StringBuffer &CHqlParameter::toString(StringBuffer &ret)
 {
     ret.append('%');
-    ret.append(id->str());
+    ret.append(str(id));
     ret.append('-');
     ret.append(idx);
     return ret;
@@ -9546,7 +9586,7 @@ StringBuffer &CHqlParameter::toString(StringBuffer &ret)
 //==============================================================================================================
 
 CHqlScopeParameter::CHqlScopeParameter(IIdAtom * _id, unsigned _idx, ITypeInfo *_type)
- : CHqlScope(no_param, _id, _id->str())
+ : CHqlScope(no_param, _id, str(_id))
 {
     type = _type;
     idx = _idx;
@@ -9597,7 +9637,7 @@ void CHqlScopeParameter::sethash()
 StringBuffer &CHqlScopeParameter::toString(StringBuffer &ret)
 {
     ret.append('%');
-    ret.append(id->str());
+    ret.append(str(id));
     ret.append('-');
     ret.append(idx);
     return ret;
@@ -10604,11 +10644,6 @@ extern HQL_API IHqlExpression *createExprAttribute(IAtom * name, HqlExprArray & 
 extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
 {
     return createAttribute(no_attr_link, name, value, value2, value3);
-}
-
-extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, HqlExprArray & args)
-{
-    return createAttribute(no_attr_link, name, args);
 }
 
 extern HQL_API IHqlExpression *createUnknown(node_operator op, ITypeInfo * type, IAtom * name, IInterface * extra)
@@ -11796,6 +11831,7 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
     switch (op)
     {
     case no_soapcall:
+    case no_quantile:
         {
             IHqlExpression & record = args.item(3);
             type = makeRowType(record.getType());
@@ -13060,6 +13096,7 @@ static IHqlExpression * processPseudoWorkflow(SharedHqlExpr & expr, HqlExprArray
             return LINK(workflow);
         }
     case no_attr:
+    case no_attr_expr:
         {
             IAtom * name = workflow->queryName();
             if (name == sectionAtom)
@@ -13162,8 +13199,8 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
     if (type->getTypeCode() == type_row)
         type = type->queryChildType();
 
-    f->setProp("@label", field->queryName()->getAtomNamePtr());
-    f->setProp("@name", field->queryName()->getAtomNamePtr());
+    f->setProp("@label", str(field->queryName()));
+    f->setProp("@name", str(field->queryName()));
     f->setPropInt("@position", offset++);
 
     if (defValue && !defValue->isAttribute() && defValue->getOperator()!=no_field && defValue->getOperator() != no_select)
@@ -13211,7 +13248,7 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
 
             IPropertyTree *end = createPTree("Field", ipt_caseInsensitive);
             end->setPropBool("@isEnd", true);
-            end->setProp("@name", field->queryName()->getAtomNamePtr());
+            end->setProp("@name", str(field->queryName()));
             table->addPropTree(end->queryName(), end);
         }
         else
@@ -14705,8 +14742,8 @@ bool isSelfJoin(IHqlExpression * expr)
 
     //Check this isn't going to generate a between join - if it is that takes precedence.  A bit arbitrary
     //when one is more efficient.
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, true);
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(true);
     if ((joinInfo.slidingMatches.ordinality() != 0) && (joinInfo.queryLeftReq().ordinality() == joinInfo.slidingMatches.ordinality()))
         return false;
     return true;
@@ -15642,7 +15679,7 @@ static bool getBoolAttributeValue(IHqlExpression * attr)
     if (folded->queryValue())
         return getBoolValue(folded, true);
 
-    throwError1(HQLERR_PropertyArgumentNotConstant, attr->queryName()->str());
+    throwError1(HQLERR_PropertyArgumentNotConstant, str(attr->queryName()));
 }
 
 bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft)
@@ -15867,7 +15904,7 @@ extern HQL_API IHqlExpression * createSortList(HqlExprArray & elements)
 IHqlExpression * cloneFieldMangleName(IHqlExpression * field)
 {
     StringBuffer newName;
-    newName.append(field->queryId()->str()).append("_").append(getUniqueId());
+    newName.append(str(field->queryId())).append("_").append(getUniqueId());
     HqlExprArray children;
     unwindChildren(children, field);
     return createField(createIdAtom(newName), field->getType(), children);
@@ -15944,7 +15981,7 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
 
 extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * dataServer, const char * items)
 {
-    HqlParseContext parseCtx(dataServer, NULL);
+    HqlParseContext parseCtx(dataServer, NULL, NULL);
     parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
     Owned<IErrorReceiver> errorHandler = createNullErrorReceiver();

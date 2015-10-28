@@ -277,6 +277,7 @@ static const char * eclReserved11[] = {//Activities
     "parse",
     "process",
     "project",
+    "quantile",
     "range",
     "rank",
     "ranked",

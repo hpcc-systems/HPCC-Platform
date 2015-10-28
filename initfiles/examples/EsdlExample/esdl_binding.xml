@@ -1,0 +1,5 @@
+ <Methods>
+    <Method name="JavaEchoPersonInfo" querytype="java" javamethod="EsdlExample.EsdlExampleService.JavaEchoPersonInfo"/>
+    <Method name="RoxieEchoPersonInfo" querytype="roxie" url="http://localhost:9876/roxie" queryname="RoxieEchoPersonInfo"/>
+</Methods>
+

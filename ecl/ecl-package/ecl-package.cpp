@@ -439,7 +439,7 @@ public:
     }
     virtual int processCMD()
     {
-        fprintf(stdout, "\n ... deleting package map %s now\n\n", optPackageMap.sget());
+        fprintf(stdout, "\n ... deleting package map %s now\n\n", optPackageMap.str());
 
         Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
         Owned<IClientDeletePackageRequest> request = packageProcessClient->createDeletePackageRequest();
@@ -563,7 +563,7 @@ public:
         StringBuffer pkgInfo;
         pkgInfo.loadFile(optFileName);
 
-        fprintf(stdout, "\n ... adding package map %s now\n\n", optFileName.sget());
+        fprintf(stdout, "\n ... adding package map %s now\n\n", optFileName.str());
 
         Owned<IClientAddPackageRequest> request = packageProcessClient->createAddPackageRequest();
         request->setActivate(optActivate);
@@ -715,7 +715,7 @@ public:
         {
             StringBuffer pkgInfo;
             pkgInfo.loadFile(optFileName);
-            fprintf(stdout, "\nvalidating packagemap file %s\n\n", optFileName.sget());
+            fprintf(stdout, "\nvalidating packagemap file %s\n\n", optFileName.str());
             request->setInfo(pkgInfo);
         }
 

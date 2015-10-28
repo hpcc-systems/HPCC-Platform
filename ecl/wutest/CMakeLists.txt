@@ -36,9 +36,22 @@ include_directories (
          ./../../system/jlib 
          ./../../common/environment 
          ./../../common/workunit 
+         ./../../testing/unittests 
     )
 
+if ( USE_CPPUNIT )
+  include_directories(
+         ./../../plugins/workunitservices
+         ./../../rtl/include
+         ./../../rtl/eclrtl
+    )
+endif()
+
 ADD_DEFINITIONS( -D_CONSOLE )
+if ( FORCE_WORKUNITS_TO_CASSANDRA )
+  ADD_DEFINITIONS( -DFORCE_WORKUNITS_TO_CASSANDRA )
+endif()
+
 
 HPCC_ADD_EXECUTABLE ( wutest ${SRCS} )
 target_link_libraries ( wutest 
@@ -49,8 +62,15 @@ target_link_libraries ( wutest
          dllserver 
          nbcd 
          eclrtl 
-         deftype 
+         deftype
          workunit 
+         ${CPPUNIT_LIBRARIES}
     )
+    
+if ( FORCE_WORKUNITS_TO_CASSANDRA )
+  target_link_libraries ( wutest cassandraembed )
+endif ()
 
-
+if ( USE_CPPUNIT )
+  target_link_libraries ( wutest workunitservices )
+endif()

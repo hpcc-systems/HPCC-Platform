@@ -78,7 +78,6 @@ class ECLcmd(Shell):
 
             args = args + eclfile.getStoredInputParameters()
 
-            args.append('-XTargetIP=' + server)
 
             args.append(eclfile.getArchive())
 
@@ -96,7 +95,7 @@ class ECLcmd(Shell):
             result = ""
             cnt = 0
             for i in ret:
-                logging.debug("%3d. i:'%s'", eclfile.getTaskId(),  i )
+                logging.debug("%3d. ret:'%s'", eclfile.getTaskId(),  i )
 
                 if "wuid:" in i:
                     logging.debug("------ runCmd:" + repr(i) + "------")
@@ -117,7 +116,7 @@ class ECLcmd(Shell):
             raise err
         finally:
             res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
-            logging.debug("%3d. in finally -> 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), wuid, state, data)
+            logging.debug("%3d. in finally -> 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), res['wuid'], res['state'], data)
             if wuid ==  'N/A':
                 logging.debug("%3d. in finally queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
                 wuid = res['wuid']
@@ -156,7 +155,7 @@ class ECLcmd(Shell):
                         eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
                         eclfile.diff += data
                     test = True
-                elif (res['state'] == 'failed') and ('error' in data):
+                elif (res['state'] == 'failed') and (('error' in data) or ('exception' in data.lower())):
                     eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
                     eclfile.diff += data
                     test = False

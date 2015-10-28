@@ -17,7 +17,6 @@
 #include "platform.h"
 
 #ifdef _WIN32
-#define _WIN32_WINNT 0x0500  // for CreateHardLink
 #include <errno.h>
 //#include <winsock.h>  // for TransmitFile
 #endif
@@ -26,13 +25,16 @@
 #include <sys/stat.h>
 #include <algorithm>
 
-#if defined (__linux__)
+#if defined (__linux__) || defined (__APPLE__)
 #include <time.h>
 #include <dirent.h>
 #include <utime.h>
 #include <sys/syscall.h>
-#include <sys/vfs.h>
 #include <sys/mman.h>
+#endif
+
+#if defined (__linux__)
+#include <sys/vfs.h>
 #include <sys/sendfile.h>
 #endif
 
@@ -454,8 +456,7 @@ bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime
     CloseHandle(handle);
     return true;
 
-#elif defined (__linux__)
-
+#else
     struct utimbuf am;
     if (!accessedTime||!modifiedTime) {
         struct stat info;
@@ -469,8 +470,6 @@ bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime
     if (modifiedTime)
         am.modtime  = timetFromIDateTime (modifiedTime);
     return (utime(filename, &am)==0);
-#else
-    UNIMPLEMENTED;
 #endif
 }
 
@@ -1629,7 +1628,7 @@ IFileIO * createIFileIO(unsigned len, void * buffer)
 
 IFileIO * createIFileIO(StringBuffer & buffer)
 {
-    return _createIFileIO((void *)buffer.toCharArray(), buffer.length(), true);
+    return _createIFileIO((void *)buffer.str(), buffer.length(), true);
 }
 
 IFileIO * createIFileIO(MemoryBuffer & buffer)

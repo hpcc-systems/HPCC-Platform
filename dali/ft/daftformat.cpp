@@ -666,7 +666,9 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
 
     maxElementLength = 1;
     format.set(_format);
-    addActionList(matcher, format.separate.get() ? format.separate.get() : "\\,", SEPARATOR, &maxElementLength);
+    const char * separator = format.separate.get();
+    if (separator && *separator)
+        addActionList(matcher, separator, SEPARATOR, &maxElementLength);
 
     const char * quote = format.quote.get();
     addActionList(matcher, quote ? quote : "\"", QUOTE, &maxElementLength);
@@ -728,7 +730,7 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
     }
 
     // Check discovered field name uniqueness
-    const char * fn = fieldName.toCharArray();
+    const char * fn = fieldName.str();
     if ( fields->find(fn) != NULL )
     {
         time_t t;
@@ -739,7 +741,7 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
     recordStructure.append(fieldName);
     recordStructure.append(";\n");
 
-    fields->addAtom(fieldName.toCharArray());
+    fields->addAtom(fieldName.str());
 }
 
 size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
@@ -1068,7 +1070,7 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
     }
 
     // Check discovered field name uniqueness
-    const char * fn = fieldName.toCharArray();
+    const char * fn = fieldName.str();
     if ( fields->find(fn) != NULL )
     {
         time_t t;
@@ -1079,7 +1081,7 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
     recordStructure.append(fieldName);
     recordStructure.append(";\n");
 
-    fields->addAtom(fieldName.toCharArray());
+    fields->addAtom(fieldName.str());
 }
 
 size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)

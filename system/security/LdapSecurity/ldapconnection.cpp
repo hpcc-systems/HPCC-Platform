@@ -28,6 +28,7 @@
 #include "jrespool.tpp"
 #include "mpbase.hpp"
 #include "dautils.hpp"
+#include "dasds.hpp"
 
 #undef new
 #include <map>
@@ -36,6 +37,7 @@
 #if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
  #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
+
 #ifdef _WIN32
 #include <lm.h>
 #define LdapRename ldap_rename_ext_s
@@ -55,6 +57,73 @@
 #endif
 
 #define PWD_NEVER_EXPIRES (__int64)0x8000000000000000
+
+const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration" };
+
+const char* getUserFieldNames(UserField field)
+{
+    if (field < UFterm)
+        return UserFieldNames[field];
+    return NULL;
+}
+
+const char* GroupFieldNames[] = { "@name", "@managedby", "@desc" };
+
+const char* getGroupFieldNames(GroupField field)
+{
+    if (field < GFterm)
+        return GroupFieldNames[field];
+    return NULL;
+}
+
+const char* ResourceFieldNames[] = { "@name", "@desc" };
+
+const char* getResourceFieldNames(ResourceField field)
+{
+    if (field < RFterm)
+        return ResourceFieldNames[field];
+    return NULL;
+}
+
+class CSecItemIterator: public CInterfaceOf<ISecItemIterator>
+{
+    IArrayOf<IPropertyTree> attrs;
+    unsigned index;
+public:
+    CSecItemIterator(IArrayOf<IPropertyTree>& trees)
+    {
+        ForEachItemIn(t, trees)
+            attrs.append(*LINK(&trees.item(t)));
+        index = 0;
+    }
+
+    virtual ~CSecItemIterator()
+    {
+        attrs.kill();
+    }
+
+    bool  first()
+    {
+        index = 0;
+        return (attrs.ordinality()!=0);
+    }
+
+    bool  next()
+    {
+        index++;
+        return (index<attrs.ordinality());
+    }
+
+    bool  isValid()
+    {
+        return (index<attrs.ordinality());
+    }
+
+    IPropertyTree &  query()
+    {
+        return attrs.item(index);
+    }
+};
 
 class CLoadBalancer : public CInterface, implements IInterface
 {
@@ -144,6 +213,7 @@ public:
         return (hostArray.item(curindex));
     }
 };
+
 
 inline bool LdapServerDown(int rc)
 {
@@ -596,7 +666,7 @@ public:
     {
         if(m_ld != NULL)
         {
-            ldap_unbind(m_ld);
+            LDAP_UNBIND(m_ld);
         }
     }
 
@@ -637,7 +707,7 @@ public:
         else
         {
             DBGLOG("LDAP: sysuser bind failed - %s", ldap_err2string(rc));
-            ldap_unbind(m_ld);
+            LDAP_UNBIND(m_ld);
             m_ld = NULL;
         }
 
@@ -718,7 +788,7 @@ public:
             {
                 if(m_ld != NULL)
                 {
-                    ldap_unbind(m_ld);
+                    LDAP_UNBIND(m_ld);
                     m_ld = NULL;
                     m_connected = false;
                 }
@@ -928,73 +998,6 @@ struct ltstr
     bool operator()(const char* s1, const char* s2) const { return strcmp(s1, s2) < 0; }
 };
 
-//--------------------------------------------
-// This helper class ensures memory allocate by
-// calls to ldap_get_values gets freed
-//--------------------------------------------
-class CLDAPGetValuesWrapper
-{
-private:
-    char **values;
-public:
-    CLDAPGetValuesWrapper(LDAP *ld, LDAPMessage *msg, const char * attr)
-    {
-#ifdef _WIN32
-        values = ldap_get_values(ld, msg, (const PCHAR)attr);
-#else
-        values = ldap_get_values(ld, msg, attr);
-#endif
-    }
-
-    ~CLDAPGetValuesWrapper()
-    {
-        if (values)
-            ldap_value_free(values);
-    }
-    inline bool hasValues()     { return values != NULL  && *values != (char)NULL; }
-    inline char **queryValues() { return values; }
-};
-
-//--------------------------------------------
-// This helper class ensures memory allocate by
-// calls to ldap_get_values_len gets freed
-//--------------------------------------------
-class CLDAPGetValuesLenWrapper
-{
-private:
-    struct berval** bvalues;
-public:
-    CLDAPGetValuesLenWrapper()
-    {
-        bvalues = NULL;
-    }
-    CLDAPGetValuesLenWrapper(LDAP *ld, LDAPMessage *msg, const char * attr)
-    {
-        bvalues = NULL;
-        getValues(ld,msg,attr);
-    }
-
-    ~CLDAPGetValuesLenWrapper()
-    {
-        if (bvalues)
-            ldap_value_free_len(bvalues);
-    }
-    inline bool hasValues()         { return bvalues != NULL  && *bvalues != NULL; }
-    inline berval **queryValues()   { return bvalues; }
-
-    //Delayed call to ldap_get_values_len
-    void getValues(LDAP *ld, LDAPMessage *msg, const char * attr)
-    {
-        if (bvalues)
-            ldap_value_free_len(bvalues);
-#ifdef _WIN32
-        bvalues = ldap_get_values_len(ld, msg, (const PCHAR)attr);
-#else
-        bvalues = ldap_get_values_len(ld, msg, attr);
-#endif
-    }
-};
-
 
 //--------------------------------------------
 // This helper class ensures memory allocate by calls
@@ -1046,6 +1049,212 @@ public:
     inline operator LDAPMessage *() const { return msg; }
 };
 
+//------------------------------------------------------
+// class CPagedLDAPSearch
+//
+//  Performs a "paged" LDAP search, which allows for
+//  searching when there are over 1000 matching entries. Also
+//  works when there are less than 1000, but not as efficient as
+//  simply calling ldap_search_ext_s()
+//------------------------------------------------------
+#define MAX_ENTRIES 1000
+class CPagedLDAPSearch
+{
+private:
+    LDAP *          m_pLdapConn;
+    char *          m_pszDN;
+    unsigned long   m_scope;
+    char *          m_pszFilter;
+    char * *        m_pszAttrs;
+
+    bool            m_morePages;
+    struct berval * m_pCookie;
+    LDAPMessage *   m_pPageEntry;
+    LDAPMessage *   m_pPageBlock;
+
+    //local helper class, ensures ldap Page Control memory freed
+    class CPageControlMemWrapper
+    {
+        LDAPControl *   m_pageControl;
+        LDAPControl **  m_returnedCtrls;
+    public:
+        CPageControlMemWrapper()                        { m_pageControl = NULL; m_returnedCtrls = NULL; }
+        void setPageControl(LDAPControl * _pageCtrl)    { m_pageControl = _pageCtrl; }
+        void setRetControls(LDAPControl ** _retCtrls)   { m_returnedCtrls = _retCtrls; }
+        virtual ~CPageControlMemWrapper()
+        {
+            if (m_pageControl)
+                ldap_control_free(m_pageControl);
+            if (m_returnedCtrls)
+                ldap_controls_free(m_returnedCtrls);
+        }
+    };
+
+    //---------------------------------------------------
+    // Request next page of search results
+    //---------------------------------------------------
+    bool requestNextPage()
+    {
+        if (!m_morePages)
+            return false;
+
+        CPageControlMemWrapper pageCtrlMem;
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+        try
+        {
+#ifdef LDAP_API_FEATURE_PAGED_RESULTS
+            LDAPControl * pageControl = NULL;
+            int rc = ldap_create_page_control(m_pLdapConn, MAX_ENTRIES, m_pCookie, false, &pageControl);//cookie gets set on first call to ldap_parse_page_control()
+            if (rc != LDAP_SUCCESS)
+            {
+                int err = GetLastError();
+                throw MakeStringException(-1, "ldap_create_page_control failed with 0x%x (%s)",err, ldap_err2string( err ));
+            }
+            pageCtrlMem.setPageControl(pageControl);
+            LDAPControl * svrCtrls[] = { pageControl, NULL };
+
+            if (m_pPageBlock)
+                ldap_msgfree(m_pPageBlock);
+            rc = ldap_search_ext_s(m_pLdapConn, m_pszDN, m_scope, m_pszFilter, m_pszAttrs, 0, svrCtrls, NULL, &timeOut, 0, &m_pPageBlock);
+            if (rc != LDAP_SUCCESS)
+            {
+                int err = GetLastError();
+                if (err && rc != LDAP_PARTIAL_RESULTS)//389DirectoryServer sometimes returns rc, but GetLastError returns 0. In this scenario continuing the query succeeds
+                {
+                    if (m_pCookie)
+                    {
+                        ber_bvfree(m_pCookie);
+                        m_pCookie = NULL;
+                    }
+                    throw MakeStringException(-1, "ldap_search_ext_s failed with 0x%x (%s)",err, ldap_err2string( err ));
+                }
+            }
+
+            unsigned long l_errcode;
+            LDAPControl **  returnedCtrls = NULL;
+#ifdef _WIN32
+            rc = ldap_parse_result(m_pLdapConn, m_pPageBlock, &l_errcode, NULL, NULL, NULL, &returnedCtrls, false);
+#else
+            rc = ldap_parse_result(m_pLdapConn, m_pPageBlock, (int*)&l_errcode, NULL, NULL, NULL, &returnedCtrls, false);
+#endif
+            if (m_pCookie)
+            {
+                ber_bvfree(m_pCookie);
+                m_pCookie = NULL;
+            }
+
+            if (rc != LDAP_SUCCESS)
+            {
+                int err = GetLastError();
+                throw MakeStringException(-1, "ldap_parse_result failed with 0x%x (%s)",err, ldap_err2string( err ));
+            }
+
+            pageCtrlMem.setRetControls(returnedCtrls);
+            unsigned long totCount;
+#ifdef _WIN32
+            rc = ldap_parse_page_control(m_pLdapConn, returnedCtrls, &totCount, &m_pCookie);//sets cookie for next call to ldap_create_page_control()
+#else
+            rc = ldap_parse_page_control(m_pLdapConn, returnedCtrls, (int*)&totCount, &m_pCookie);//sets cookie for next call to ldap_create_page_control()
+#endif
+            if (rc != LDAP_SUCCESS)
+            {
+                int err = GetLastError();
+                throw MakeStringException(-1, "ldap_parse_page_control failed with 0x%x (%s)",err, ldap_err2string( err ));
+            }
+
+            if (!(m_pCookie && m_pCookie->bv_val != NULL && (strlen(m_pCookie->bv_val) > 0)))
+                m_morePages = false;
+#else
+            int rc = ldap_search_ext_s(m_pLdapConn, m_pszDN, m_scope, m_pszFilter, m_pszAttrs, 0, NULL, NULL, &timeOut, 0, &m_pPageBlock);
+            m_morePages = false;
+            if (rc != LDAP_SUCCESS)
+            {
+                throw MakeStringException(-1, "ldap_search_ext_s failed with 0x%x (%s)",rc, ldap_err2string( rc ));
+            }
+#endif
+        }
+
+        catch(IException* e)
+        {
+            StringBuffer emsg;
+            e->errorMessage(emsg);
+            throw MakeStringException(-1, "LDAP Paged Search - %s", emsg.str());
+        }
+
+        catch(...)
+        {
+            throw MakeStringException(-1, "Unknown Exception calling LDAP Paged Search");
+        }
+
+        return true;
+    }
+
+public:
+
+    CPagedLDAPSearch(LDAP* _pLdapConn, char * _pszDN, unsigned long _scope, char * _pszFilter, char * _pszAttrs[])
+    {
+        m_pLdapConn =_pLdapConn;
+        m_pszDN = _pszDN;
+        m_scope = _scope;
+        m_pszFilter = _pszFilter;
+        m_pszAttrs = _pszAttrs;
+
+        m_pCookie = NULL;
+        m_morePages = true;
+        m_pPageEntry = NULL;
+        m_pPageBlock = NULL;
+    }
+
+    virtual ~CPagedLDAPSearch()
+    {
+        if (m_pPageBlock)
+            ldap_msgfree(m_pPageBlock);
+        if (m_pCookie)
+            ber_bvfree(m_pCookie);
+    }
+
+    //---------------------------------------------------
+    // Returns the count of the matching DN/filter/scope entries
+    //---------------------------------------------------
+    unsigned countEntries()
+    {
+        unsigned count = 0;
+        while (requestNextPage())
+            count += ldap_count_entries(m_pLdapConn, m_pPageBlock);
+        return count;
+    }
+
+    //---------------------------------------------------
+    // Get the first/next entry
+    // Returns NULL when no more
+    //---------------------------------------------------
+    LDAPMessage * getFirstEntry()
+    {
+        if (!requestNextPage())
+        {
+            m_morePages = false;
+            return NULL;
+        }
+        return getNextEntry();
+    }
+
+    LDAPMessage * getNextEntry()
+    {
+        if (!m_pPageEntry)
+            m_pPageEntry = LdapFirstEntry(m_pLdapConn, m_pPageBlock);
+        else
+            m_pPageEntry = LdapNextEntry(m_pLdapConn, m_pPageEntry);
+
+        if (!m_pPageEntry)
+        {
+            if (!requestNextPage())
+                return NULL;
+            m_pPageEntry = LdapFirstEntry(m_pLdapConn, m_pPageBlock);
+        }
+        return m_pPageEntry;
+    }
+};
+
 static CriticalSection  mpaCrit;
 static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _baseDN)
 {
@@ -1077,14 +1286,17 @@ static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _bas
         return 0;
     }
     maxPwdAge = 0;
-    CLDAPGetValuesWrapper vals(sys_ld, searchResult.msg, "maxPwdAge");
+    CLDAPGetValuesLenWrapper vals(sys_ld, searchResult.msg, "maxPwdAge");
     if (vals.hasValues())
     {
-        char *val = vals.queryValues()[0];
-        if (*val == '-')
-            ++val;
-        for (int x=0; val[x]; x++)
-            maxPwdAge = maxPwdAge * 10 + ( (int)val[x] - '0');
+        const char *val = vals.queryCharValue(0);
+        if (val && *val)
+        {
+            if (*val == '-')
+                ++val;
+            for (int x=0; val[x]; x++)
+                maxPwdAge = maxPwdAge * 10 + ( (int)val[x] - '0');
+        }
     }
     else
         maxPwdAge = PWD_NEVER_EXPIRES;
@@ -1132,7 +1344,7 @@ public:
             }
             try
             {
-                addGroup("Directory Administrators", m_ldapconfig->getBasedn());
+                addGroup("Directory Administrators", NULL, NULL, m_ldapconfig->getBasedn());
             }
             catch(...)
             {
@@ -1277,28 +1489,28 @@ public:
             {
                 if(stricmp(attribute, "cn") == 0)
                 {
-                    CLDAPGetValuesWrapper vals(sys_ld, entry, attribute);
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
-                        user.setFullName(vals.queryValues()[0]);
+                        user.setFullName(vals.queryCharValue(0));
                 }
                 else if((stricmp(attribute, "givenName") == 0))
                 {
-                    CLDAPGetValuesWrapper vals(sys_ld, entry, attribute);
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
-                        user.setFirstName(vals.queryValues()[0]);
+                        user.setFirstName(vals.queryCharValue(0));
                 }
                 else if((stricmp(attribute, "sn") == 0))
                 {
-                    CLDAPGetValuesWrapper vals(sys_ld, entry, attribute);
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
-                        user.setLastName(vals.queryValues()[0]);
+                        user.setLastName(vals.queryCharValue(0));
                 }
                 else if((stricmp(attribute, "userAccountControl") == 0))
                 {
                     //UF_DONT_EXPIRE_PASSWD 0x10000
-                    CLDAPGetValuesWrapper vals(sys_ld, entry, attribute);
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
-                        if (atoi((char*)vals.queryValues()[0]) & 0x10000)//this can be true at the account level, even if domain policy requires password
+                        if (atoi((char*)vals.queryCharValue(0)) & 0x10000)//this can be true at the account level, even if domain policy requires password
                             accountPwdNeverExpires = true;
                 }
                 else if((stricmp(attribute, "pwdLastSet") == 0))
@@ -1315,8 +1527,8 @@ public:
                         CDateTime expiry;
                         if (!m_domainPwdsNeverExpire && !accountPwdNeverExpires)
                         {
-                            struct berval* val = valsLen.queryValues()[0];
-                            calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
+                            char * val = (char*)valsLen.queryCharValue(0);
+                            calcPWExpiry(expiry, (unsigned)strlen(val), val);
                         }
                         else
                         {
@@ -1363,7 +1575,7 @@ public:
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     if(rc != LDAP_SUCCESS)
                         ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
-                    ldap_unbind(user_ld);
+                    LDAP_UNBIND(user_ld);
                 }
                 DBGLOG("finished LdapBind for user %s, rc=%d", username, rc);
                 if(!LdapServerDown(rc) || retries > LDAPSEC_MAX_RETRIES)
@@ -1387,7 +1599,7 @@ public:
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     if(rc != LDAP_SUCCESS)
                         ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
-                    ldap_unbind(user_ld);
+                    LDAP_UNBIND(user_ld);
                 }
             }
             if(rc != LDAP_SUCCESS)
@@ -1642,15 +1854,15 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
                     if(stricmp(attribute, "sudoHost") == 0)
-                        ldapuser->setSudoHost(vals.queryValues()[0]);
+                        ldapuser->setSudoHost(vals.queryCharValue(0));
                     else if(stricmp(attribute, "sudoCommand") == 0)
-                        ldapuser->setSudoCommand(vals.queryValues()[0]);
+                        ldapuser->setSudoCommand(vals.queryCharValue(0));
                     else if(stricmp(attribute, "sudoOption") == 0)
-                        ldapuser->setSudoOption(vals.queryValues()[0]);
+                        ldapuser->setSudoOption(vals.queryCharValue(0));
                 }
             }
             return true;
@@ -1696,30 +1908,29 @@ public:
                       attribute != NULL;
                       attribute = atts.getNext())
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
                     {
                         if(stricmp(attribute, "cn") == 0)
-                            user.setFullName(vals.queryValues()[0]);
+                            user.setFullName(vals.queryCharValue(0));
                         else if(stricmp(attribute, "givenName") == 0)
-                            user.setFirstName(vals.queryValues()[0]);
+                            user.setFirstName(vals.queryCharValue(0));
                         else if(stricmp(attribute, "sn") == 0)
-                            user.setLastName(vals.queryValues()[0]);
+                            user.setLastName(vals.queryCharValue(0));
                         else if(stricmp(attribute, "gidnumber") == 0)
-                            ((CLdapSecUser*)&user)->setGidnumber(vals.queryValues()[0]);
+                            ((CLdapSecUser*)&user)->setGidnumber(vals.queryCharValue(0));
                         else if(stricmp(attribute, "uidnumber") == 0)
-                            ((CLdapSecUser*)&user)->setUidnumber(vals.queryValues()[0]);
+                            ((CLdapSecUser*)&user)->setUidnumber(vals.queryCharValue(0));
                         else if(stricmp(attribute, "homedirectory") == 0)
-                            ((CLdapSecUser*)&user)->setHomedirectory(vals.queryValues()[0]);
+                            ((CLdapSecUser*)&user)->setHomedirectory(vals.queryCharValue(0));
                         else if(stricmp(attribute, "loginshell") == 0)
-                            ((CLdapSecUser*)&user)->setLoginshell(vals.queryValues()[0]);
+                            ((CLdapSecUser*)&user)->setLoginshell(vals.queryCharValue(0));
                         else if(stricmp(attribute, "objectClass") == 0)
                         {
                             int valind = 0;
-                            char ** values = vals.queryValues();
-                            while(values[valind])
+                            while(vals.queryCharValue(valind))
                             {
-                                if(values[valind] && stricmp(values[valind], "posixAccount") == 0)
+                                if(stricmp(vals.queryCharValue(valind), "posixAccount") == 0)
                                 {
                                     ((CLdapSecUser*)&user)->setPosixenabled(true);
                                     break;
@@ -1832,13 +2043,13 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
                     if(stricmp(attribute, "cn") == 0)
-                        ldapuser->setFullName(vals.queryValues()[0]);
+                        ldapuser->setFullName(vals.queryCharValue(0));
                     else if(stricmp(attribute, act_fieldname) == 0)
-                        ldapuser->setName(vals.queryValues()[0]);
+                        ldapuser->setName(vals.queryCharValue(0));
                 }
             }
         }
@@ -1919,21 +2130,21 @@ public:
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
                     if(stricmp(attribute, act_fieldname) == 0)
-                        act_name.clear().append(vals.queryValues()[0]);
+                        act_name.clear().append(vals.queryCharValue(0));
                     else if(stricmp(attribute, "cn") == 0)
-                        cnbuf.clear().append(vals.queryValues()[0]);
+                        cnbuf.clear().append(vals.queryCharValue(0));
                     else if(stricmp(attribute, "objectClass") == 0)
                     {
                         int i = 0;
-                        while(vals.queryValues()[i] != NULL)
+                        while(vals.queryCharValue(i) != NULL)
                         {
-                            if(stricmp(vals.queryValues()[i], "person") == 0)
+                            if(stricmp(vals.queryCharValue(i), "person") == 0)
                                 act_type = USER_ACT;
-                            if(stricmp(vals.queryValues()[i], "group") == 0)
+                            else if(stricmp(vals.queryCharValue(i), "group") == 0)
                                 act_type = GROUP_ACT;
                             i++;
                         }
@@ -1989,7 +2200,7 @@ public:
                     CLDAPGetValuesLenWrapper valsLen(ld, message, attribute);
                     if (valsLen.hasValues())
                     {
-                        struct berval* val = valsLen.queryValues()[0];
+                        struct berval* val = valsLen.queryBValues()[0];
                         if(val != NULL)
                         {
                             int len = val->bv_len;
@@ -2095,38 +2306,33 @@ public:
         }
 
         char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", NULL};
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
-        if ( rc != LDAP_SUCCESS )
-        {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
-            return false;
-        }
 
-
-        // Go through the search results by checking message types
-        for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
+        CPagedLDAPSearch pagedSrch(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
+        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
             bool accountPwdNeverExpires = false;
             Owned<ISecUser> user = new CLdapSecUser("", "");
-
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
+            // Go through the search results by checking message types
+            CLDAPGetAttributesWrapper   atts(ld, message);
             for ( attribute = atts.getFirst();
                   attribute != NULL;
                   attribute = atts.getNext())
             {
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
+                if (!vals.hasValues())
+                    continue;
                 if(stricmp(attribute, "cn") == 0)
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        user->setFullName(vals.queryValues()[0]);
+                        user->setFullName(vals.queryCharValue(0));
                 }
                 else if (stricmp(attribute, "userAccountControl") == 0)
                 {
                     //UF_DONT_EXPIRE_PASSWD 0x10000
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        if (atoi((char*)vals.queryValues()[0]) & 0x10000)//this can be true at the account level, even if domain policy requires password
+                        if (atoi((char*)vals.queryCharValue(0)) & 0x10000)//this can be true at the account level, even if domain policy requires password
                             accountPwdNeverExpires = true;
                 }
                 else if(stricmp(attribute, "pwdLastSet") == 0)
@@ -2137,7 +2343,7 @@ public:
                         CLDAPGetValuesLenWrapper valsLen(ld, message, attribute);
                         if (valsLen.hasValues())
                         {
-                            struct berval* val = valsLen.queryValues()[0];
+                            struct berval* val = valsLen.queryBValues()[0];
                             calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
                         }
                     }
@@ -2147,9 +2353,9 @@ public:
                 }
                 else if(stricmp(attribute, act_fieldname) == 0)
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        user->setName(vals.queryValues()[0]);
+                        user->setName(vals.queryCharValue(0));
                 }
                 else if(stricmp(attribute, sid_fieldname) == 0)
                 {
@@ -2158,7 +2364,7 @@ public:
                         CLDAPGetValuesLenWrapper valsLen(ld, message, attribute);
                         if (valsLen.hasValues())
                         {
-                            struct berval* val = valsLen.queryValues()[0];
+                            struct berval* val = valsLen.queryBValues()[0];
                             if(val != NULL)
                             {
                                 unsigned uid = val->bv_val[val->bv_len - 4];
@@ -2173,15 +2379,106 @@ public:
                     }
                     else
                     {
-                        CLDAPGetValuesWrapper vals(ld, message, attribute);
+                        CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                         if (vals.hasValues())
-                            ((CLdapSecUser*)user.get())->setUserID(atoi(vals.queryValues()[0]));
+                            ((CLdapSecUser*)user.get())->setUserID(atoi(vals.queryCharValue(0)));
                     }
                 }
             }
-            users.append(*LINK(user.get()));
+            if (user->getName() && *user->getName())
+                users.append(*LINK(user.get()));
         }
+
         return true;
+    }
+
+    virtual IPropertyTreeIterator* getUserIterator(const char* userName)
+    {
+        IUserArray users;
+        retrieveUsers(userName, users);
+        Owned<IPropertyTree> usersTree = createPTree("Users");
+        ForEachItemIn(i, users)
+            addUserTree(users.item(i), usersTree);
+
+        return usersTree->getElements("*");
+    }
+
+    void addUserTree(ISecUser& usr, IPropertyTree* users)
+    {
+        const char* usrName = usr.getName();
+        if(!usrName || !*usrName)
+            return;
+
+        const char* fullName = usr.getFullName();
+        StringBuffer sb;
+        switch (usr.getPasswordDaysRemaining())//-1 if expired, -2 if never expires
+        {
+        case scPasswordExpired:
+            sb.set("Expired");
+            break;
+        case scPasswordNeverExpires:
+            sb.set("Never");
+            break;
+        default:
+            CDateTime dt;
+            usr.getPasswordExpiration(dt);
+            dt.getDateString(sb);
+            break;
+        }
+
+        Owned<IPTree> userTree = createPTree("User");
+        userTree->addProp(getUserFieldNames(UFName), usrName);
+        if (fullName && *fullName)
+            userTree->addProp(getUserFieldNames(UFFullName), fullName);
+        userTree->addPropInt(getUserFieldNames(UFUserID), usr.getUserID());
+        userTree->addProp(getUserFieldNames(UFPasswordExpiration), sb.str());
+        users->addPropTree("User", userTree.getClear());
+    }
+
+    ISecItemIterator* getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint)
+    {
+        class CElementsPager : public CSimpleInterface, implements IElementsPager
+        {
+            ILdapClient* ldapClient;
+            StringAttr userName;
+            StringAttr sortOrder;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CElementsPager(ILdapClient* _ldapClient, const char* _userName, const char*_sortOrder)
+                : ldapClient(_ldapClient), userName(_userName), sortOrder(_sortOrder) { };
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
+            {
+                StringArray unknownAttributes;
+                Owned<IPropertyTreeIterator> iter = ldapClient->getUserIterator(userName.get());
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                return NULL;
+            }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, ldap always returns all of matched users.
+        };
+
+        StringBuffer so;
+        if (sortOrder)
+        {
+            for (unsigned i=0;sortOrder[i]!=UFterm;i++)
+            {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortOrder[i];
+                if (fmt&UFreverse)
+                    so.append('-');
+                if (fmt&UFnocase)
+                    so.append('?');
+                if (fmt&UFnumeric)
+                    so.append('#');
+                so.append(getUserFieldNames((UserField) (fmt&0xff)));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CElementsPager(this, userName, so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager, pageStartFrom, pageSize, NULL, "", cacheHint, results, total, NULL, false);
+        return new CSecItemIterator(results);
     }
 
     virtual bool userInGroup(const char* userdn, const char* groupdn)
@@ -2195,7 +2492,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-        int rc = ldap_compare_s(ld, (char*)groupdn, (char*)fldname, (char*)userdn);
+        int rc = LDAP_COMPARE_EXT_S(ld, (const char*)groupdn, (const char*)fldname, (const char*)userdn,0,0,0);
         if(rc == LDAP_COMPARE_TRUE)
             return true;
         else
@@ -2276,7 +2573,7 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-            rc = ldap_modify_s(ld, (char*)userdn.str(), attrs);
+            rc = ldap_modify_ext_s(ld, (char*)userdn.str(), attrs, NULL, NULL);
             if (rc == LDAP_SUCCESS && m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
             {
                 StringBuffer newrdn("cn=");
@@ -2320,7 +2617,7 @@ public:
             };
 
             char *homedir_values[] = {(char*)ldapuser->getHomedirectory(), NULL };
-            LDAPMod homedir_attr = 
+            LDAPMod homedir_attr =
             {
                 LDAP_MOD_REPLACE,
                 "homedirectory",
@@ -2344,14 +2641,14 @@ public:
             attrs[ind++] = &loginshell_attr;
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-            int compresult = ldap_compare_s(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"posixAccount");
+            int compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"posixAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
                 attrs[ind++] = &oc_attr;
-            compresult = ldap_compare_s(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"shadowAccount");
+            compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"shadowAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
                 attrs[ind++] = &oc1_attr;
             attrs[ind] = NULL;
-            rc = ldap_modify_s(ld, (char*)userdn.str(), attrs);
+            rc = ldap_modify_ext_s(ld, (char*)userdn.str(), attrs, NULL, NULL);
         }
         else if(stricmp(type, "posixdisable") == 0)
         {
@@ -2360,7 +2657,7 @@ public:
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-            int compresult = ldap_compare_s(ld, (char*)userdn.str(), (char*)"objectclass", (char*)"posixAccount");
+            int compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"posixAccount",0,0,0);
             if(compresult != LDAP_COMPARE_TRUE)
             {
                 rc = LDAP_SUCCESS;
@@ -2399,7 +2696,7 @@ public:
                 };
 
                 char *homedir_values[] = { NULL };
-                LDAPMod homedir_attr = 
+                LDAPMod homedir_attr =
                 {
                     LDAP_MOD_DELETE,
                     "homedirectory",
@@ -2407,7 +2704,7 @@ public:
                 };
 
                 char *loginshell_values[] = { NULL };
-                LDAPMod loginshell_attr = 
+                LDAPMod loginshell_attr =
                 {
                     LDAP_MOD_DELETE,
                     "loginshell",
@@ -2425,7 +2722,7 @@ public:
                 attrs[ind++] = &oc1_attr;
                 attrs[ind] = NULL;
 
-                rc = ldap_modify_s(ld, (char*)userdn.str(), attrs);
+                rc = ldap_modify_ext_s(ld, (char*)userdn.str(), attrs, NULL, NULL);
             }
         }
         else if(stricmp(type, "sudoersadd") == 0)
@@ -2433,7 +2730,7 @@ public:
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
 
             char *cn_values[] = {(char*)username, NULL };
-            LDAPMod cn_attr = 
+            LDAPMod cn_attr =
             {
                 LDAP_MOD_ADD,
                 "cn",
@@ -2449,7 +2746,7 @@ public:
             };
 
             char *user_values[] = {(char*)username, NULL };
-            LDAPMod user_attr = 
+            LDAPMod user_attr =
             {
                 LDAP_MOD_ADD,
                 "sudoUser",
@@ -2522,8 +2819,8 @@ public:
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-            
-            int rc = ldap_delete_s(ld, (char*)dn.str());
+
+            int rc = ldap_delete_ext_s(ld, (char*)dn.str(), NULL, NULL);
 
             if ( rc != LDAP_SUCCESS )
             {
@@ -2533,29 +2830,29 @@ public:
         else if(stricmp(type, "sudoersupdate") == 0)
         {
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
-            
+
             char* sudoHost = (char*)ldapuser->getSudoHost();
             char* sudoCommand = (char*)ldapuser->getSudoCommand();
             char* sudoOption = (char*)ldapuser->getSudoOption();
 
             char *host_values[] = {(sudoHost&&*sudoHost)?sudoHost:NULL, NULL };
-            LDAPMod host_attr = 
+            LDAPMod host_attr =
             {
                 LDAP_MOD_REPLACE,
                 "sudoHost",
                 host_values
             };
-            
+
             char *cmd_values[] = {(sudoCommand&&*sudoCommand)?sudoCommand:NULL, NULL };
-            LDAPMod cmd_attr = 
+            LDAPMod cmd_attr =
             {
                 LDAP_MOD_REPLACE,
                 "sudoCommand",
                 cmd_values
             };
-            
+
             char *option_values[] = {(sudoOption&&*sudoOption)?sudoOption:NULL, NULL };
-            LDAPMod option_attr = 
+            LDAPMod option_attr =
             {
                 LDAP_MOD_REPLACE,
                 "sudoOption",
@@ -2564,7 +2861,7 @@ public:
 
             LDAPMod *attrs[4];
             int ind = 0;
-            
+
             attrs[ind++] = &host_attr;
             attrs[ind++] = &cmd_attr;
             attrs[ind++] = &option_attr;
@@ -2605,10 +2902,10 @@ public:
 
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-        char        *attribute, **values = NULL;       
+        char        *attribute, **values = NULL;
         LDAPMessage *message;
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
 
         StringBuffer filter;
         filter.append("sAMAccountName=").append(username);
@@ -2634,9 +2931,9 @@ public:
             {
                 if(0 == stricmp(attribute, "distinguishedName"))
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        userdn.set(vals.queryValues()[0]);
+                        userdn.set(vals.queryCharValue(0));
                     break;
                 }
             }
@@ -2670,7 +2967,7 @@ public:
         pwdBerVal.bv_len = quotedPasswd.length() * sizeof(unsigned short);
         pwdBerVal.bv_val = (char*)pszPasswordWithQuotes;
 
-        rc = ldap_modify_s(ld, (char*)userdn.str(), modEntry);
+        rc = ldap_modify_ext_s(ld, (char*)userdn.str(), modEntry, NULL, NULL);
 
         if (rc == LDAP_SUCCESS )
             DBGLOG("User %s's password has been changed successfully", username);
@@ -2702,7 +2999,7 @@ public:
         int rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdn, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
         if(rc != LDAP_SUCCESS)
             ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
-        ldap_unbind(user_ld);
+        LDAP_UNBIND(user_ld);
 
         //Error string ""80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0."
         //is returned if pw valid but expired
@@ -2735,7 +3032,7 @@ public:
     {
         if(!username || !*username)
             return false;
-        
+
         const char* sysuser = m_ldapconfig->getSysUser();
         if(sysuser && *sysuser && strcmp(username, sysuser) == 0)
             throw MakeStringException(-1, "You can't change password of the system user.");
@@ -2821,15 +3118,15 @@ public:
 #endif
             changePasswordSSL(username, newPassword);
         }
-        else 
+        else
         {
             StringBuffer filter;
             filter.append("uid=").append(username);
 
-            char        **values = NULL;       
+            char        **values = NULL;
             LDAPMessage *message;
 
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+            TIMEVAL timeOut = {LDAPTIMEOUT,0};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -2846,7 +3143,7 @@ public:
 
             StringBuffer userdn;
             message = LdapFirstEntry( ld, searchResult);
-            
+
             if(message != NULL)
             {
                 char *p = ldap_get_dn(ld, message);
@@ -2854,15 +3151,15 @@ public:
                 ldap_memfree(p);
             }
             char* passwdvalue[] = { (char*)newPassword, NULL };
-            LDAPMod pmod = 
+            LDAPMod pmod =
             {
                 LDAP_MOD_REPLACE,
-                "userpassword", 
+                "userpassword",
                 passwdvalue
             };
 
             LDAPMod* pmods[] = {&pmod, NULL};
-            rc = ldap_modify_s(ld, (char*)userdn.str(), pmods);
+            rc = ldap_modify_ext_s(ld, (char*)userdn.str(), pmods, NULL, NULL);
 
             if (rc == LDAP_SUCCESS )
                 DBGLOG("User %s's password has been changed successfully", username);
@@ -2900,62 +3197,62 @@ public:
         else
             fldname = "ou";
         char        *attrs[] = {(char*)fldname, "description", NULL};
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
-        if ( rc != LDAP_SUCCESS )
+        CPagedLDAPSearch pagedSrch(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
+        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basednbuf.str());
-            return false;
-        }
-
-        // Go through the search results by checking message types
-        for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
-        {
-            StringBuffer descbuf;
-            StringBuffer curname;
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
+            // Go through the search results by checking message types
+            CLDAPGetAttributesWrapper   atts(ld, message);
             for ( attribute = atts.getFirst();
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
-                if (vals.hasValues())
+                StringBuffer descbuf;
+                StringBuffer curname;
+                CLDAPGetAttributesWrapper   atts(ld, message);
+                for ( attribute = atts.getFirst();
+                      attribute != NULL;
+                      attribute = atts.getNext())
                 {
-                    char* val = vals.queryValues()[0];
-                    if(val != NULL)
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
+                    if (vals.hasValues())
                     {
-                        if(stricmp(attribute, fldname) == 0)
+                        const char* val = vals.queryCharValue(0);
+                        if(val != NULL)
                         {
-                            curname.append(val);
-                        }
-                        else if(stricmp(attribute, "description") == 0)
-                        {
-                            descbuf.append(val);
+                            if(stricmp(attribute, fldname) == 0)
+                            {
+                                curname.append(val);
+                            }
+                            else if(stricmp(attribute, "description") == 0)
+                            {
+                                descbuf.append(val);
+                            }
                         }
                     }
                 }
-            }
-            if(curname.length() == 0)
-                continue;
-            StringBuffer resourcename;
-            if(prefix != NULL && *prefix != '\0')
-                resourcename.append(prefix);
-            resourcename.append(curname.str());
-            CLdapSecResource* resource = new CLdapSecResource(resourcename.str());
-            resource->setDescription(descbuf.str());
-            resources.append(*resource);
-            if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
-            {
-                StringBuffer nextbasedn;
-                nextbasedn.append("ou=").append(curname.str()).append(",").append(basedn);
-                StringBuffer nextprefix;
+                if(curname.length() == 0)
+                    continue;
+                StringBuffer resourcename;
                 if(prefix != NULL && *prefix != '\0')
-                    nextprefix.append(prefix);
-                nextprefix.append(curname.str()).append("::");
-                getResources(rtype, nextbasedn.str(), nextprefix.str(), resources);
+                    resourcename.append(prefix);
+                resourcename.append(curname.str());
+                CLdapSecResource* resource = new CLdapSecResource(resourcename.str());
+                resource->setDescription(descbuf.str());
+                resources.append(*resource);
+                if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
+                {
+                    StringBuffer nextbasedn;
+                    nextbasedn.append("ou=").append(curname.str()).append(",").append(basedn);
+                    StringBuffer nextprefix;
+                    if(prefix != NULL && *prefix != '\0')
+                        nextprefix.append(prefix);
+                    nextprefix.append(curname.str()).append("::");
+                    getResources(rtype, nextbasedn.str(), nextprefix.str(), resources);
+                }
             }
         }
+
         return true;
     }
 
@@ -2973,7 +3270,7 @@ public:
             filter.appendf(")(|(%s=*%s*)))", "uNCName", searchstr);
         }
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -2985,29 +3282,22 @@ public:
         else
             fldname = "ou";
         char        *attrs[] = {(char*)fldname, "description", NULL};
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
-        if ( rc != LDAP_SUCCESS )
+        CPagedLDAPSearch pagedSrch(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
+        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basednbuf.str());
-            return false;
-        }
-
-        // Go through the search results by checking message types
-        for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
-        {
+            // Go through the search results by checking message types
             StringBuffer descbuf;
             StringBuffer curname;
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
+            CLDAPGetAttributesWrapper   atts(ld, message);
             for ( attribute = atts.getFirst();
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
-                    char* val = vals.queryValues()[0];
+                    const char * val = vals.queryCharValue(0);
                     if(val != NULL)
                     {
                         if(stricmp(attribute, fldname) == 0)
@@ -3041,7 +3331,97 @@ public:
                 getResources(rtype, nextbasedn.str(), nextprefix.str(), resources);
             }
         }
+
         return true;
+    }
+
+    virtual IPropertyTreeIterator* getResourceIterator(SecResourceType rtype, const char * basedn,
+        const char* prefix, const char* resourceName, unsigned extraNameFilter)
+    {
+        IArrayOf<ISecResource> resources;
+        getResourcesEx(rtype, basedn, prefix, resourceName, resources);
+
+        Owned<IPTree> resourceTree = createPTree("Resources");
+        ForEachItemIn(i, resources)
+        {
+            ISecResource& resource = resources.item(i);
+            const char* resourceName = resource.getName();
+            if (!resourceName || !*resourceName)
+                continue;
+            if (checkResourceNameExtraFilter(rtype, resourceName, extraNameFilter))
+                addResourceTree(resourceName, resource.getDescription(), resourceTree);
+        }
+        return resourceTree->getElements("*");
+    }
+
+    bool checkResourceNameExtraFilter(SecResourceType rtype, const char* name, unsigned extraNameFilter)
+    {
+        if((rtype == RT_FILE_SCOPE) && (extraNameFilter & RF_RT_FILE_SCOPE_FILE) && strieq(name, "file"))
+            return false;
+        if((rtype == RT_MODULE) && (extraNameFilter & RF_RT_MODULE_NO_REPOSITORY) && strnicmp(name, "repository.", 11))
+            return false;
+        return true;
+    }
+
+    void addResourceTree(const char* name, const char* desc, IPropertyTree* elements)
+    {
+        if (!name || !*name)
+            return;
+
+        Owned<IPTree> element = createPTree();
+        element->addProp(getResourceFieldNames(RFName), name);
+        if (desc && *desc)
+            element->addProp(getResourceFieldNames(RFDesc), desc);
+        elements->addPropTree("Resource", element.getClear());
+    }
+
+    ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char * basedn, const char* resourceName, unsigned extraNameFilter,
+        ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint)
+    {
+        class CElementsPager : public CSimpleInterface, implements IElementsPager
+        {
+            ILdapClient* ldapClient;
+            StringAttr sortOrder, basedn, resourceName;
+            SecResourceType rtype;
+            unsigned extraNameFilter;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CElementsPager(ILdapClient* _ldapClient, SecResourceType _rtype, const char * _basedn, const char* _resourceName,
+                unsigned _extraNameFilter, const char*_sortOrder) : ldapClient(_ldapClient), rtype(_rtype), basedn(_basedn),
+                resourceName(_resourceName), extraNameFilter(_extraNameFilter), sortOrder(_sortOrder) { };
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
+            {
+                StringArray unknownAttributes;
+                Owned<IPropertyTreeIterator> iter = ldapClient->getResourceIterator(rtype, basedn.get(), "", resourceName.get(), extraNameFilter);
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                return NULL;
+            }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, ldap always returns all of matched users.
+        };
+
+        StringBuffer so;
+        if (sortOrder)
+        {
+            for (unsigned i=0;sortOrder[i]!=RFterm;i++)
+            {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortOrder[i];
+                if (fmt&UFreverse)
+                    so.append('-');
+                if (fmt&UFnocase)
+                    so.append('?');
+                if (fmt&UFnumeric)
+                    so.append('#');
+                so.append(getUserFieldNames((UserField) (fmt&0xff)));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CElementsPager(this, rtype, basedn, resourceName, extraNameFilter, so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager, pageStartFrom, pageSize, NULL, "", cacheHint, results, total, NULL, false);
+        return new CSecItemIterator(results);
     }
 
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions)
@@ -3061,16 +3441,22 @@ public:
         return true;
     }
 
-    virtual void getAllGroups(StringArray & groups)
+    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions)
     {
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
         {
             groups.append("Authenticated Users");
+            managedBy.append("");
+            descriptions.append("");
             groups.append("Administrators");
+            managedBy.append("");
+            descriptions.append("");
         }
         else
         {
             groups.append("Directory Administrators");
+            managedBy.append("");
+            descriptions.append("");
         }
 
         char        *attribute;
@@ -3083,37 +3469,107 @@ public:
         else
             filter.append("objectClass=groupofuniquenames");
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
+        char *attrs[] = {"cn", "managedBy", "description", NULL};
 
-        char        *attrs[] = {"cn", NULL};
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
-
-        if ( rc != LDAP_SUCCESS )
+        CPagedLDAPSearch pagedSrch(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
+        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getGroupBasedn());
-            return;
-        }
-
-        // Go through the search results by checking message types
-        for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
-        {
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
+            // Go through the search results by checking message types
+            CLDAPGetAttributesWrapper   atts(ld, message);
             for ( attribute = atts.getFirst();
                   attribute != NULL;
                   attribute = atts.getNext())
             {
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
+                if (!vals.hasValues())
+                    continue;
                 if(stricmp(attribute, "cn") == 0)
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
-                    if (vals.hasValues())
-                        groups.append(vals.queryValues()[0]);
+                    groups.append(vals.queryCharValue(0));
+                    managedBy.append("");
+                    descriptions.append("");
                 }
+                else if(stricmp(attribute, "managedBy") == 0)
+                    managedBy.replace(vals.queryCharValue(0), groups.length() - 1);
+                else if(stricmp(attribute, "description") == 0)
+                    descriptions.replace(vals.queryCharValue(0), groups.length() - 1);
             }
         }
+
+    }
+
+    virtual IPropertyTreeIterator* getGroupIterator()
+    {
+        StringArray groupNames, managedBy, descriptions;
+        getAllGroups(groupNames, managedBy, descriptions);
+
+        Owned<IPTree> groups = createPTree("Groups");
+        ForEachItemIn(i, groupNames)
+            addGroupTree(groupNames.item(i), managedBy.item(i), descriptions.item(i), groups);
+        return groups->getElements("*");
+    }
+
+    void addGroupTree(const char* name, const char* manageBy, const char* desc, IPropertyTree* groups)
+    {
+        if (!name || !*name)
+            return;
+
+        Owned<IPTree> group = createPTree();
+        group->addProp(getGroupFieldNames(GFName), name);
+        if (manageBy && *manageBy)
+            group->addProp(getGroupFieldNames(GFManagedBy), manageBy);
+        if (desc && *desc)
+            group->addProp(getGroupFieldNames(GFDesc), desc);
+        groups->addPropTree("Group", group.getClear());
+    }
+
+    ISecItemIterator* getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint)
+    {
+        class CElementsPager : public CSimpleInterface, implements IElementsPager
+        {
+            ILdapClient* ldapClient;
+            StringAttr sortOrder;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CElementsPager(ILdapClient* _ldapClient, const char*_sortOrder)
+                : ldapClient(_ldapClient), sortOrder(_sortOrder) { };
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
+            {
+                StringArray unknownAttributes;
+                Owned<IPropertyTreeIterator> iter = ldapClient->getGroupIterator();
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                return NULL;
+            }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, ldap always returns all of matched users.
+        };
+
+        StringBuffer so;
+        if (sortOrder)
+        {
+            for (unsigned i=0;sortOrder[i]!=GFterm;i++)
+            {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortOrder[i];
+                if (fmt&UFreverse)
+                    so.append('-');
+                if (fmt&UFnocase)
+                    so.append('?');
+                if (fmt&UFnumeric)
+                    so.append('#');
+                so.append(getUserFieldNames((UserField) (fmt&0xff)));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CElementsPager(this, so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager, pageStartFrom, pageSize, NULL, "", cacheHint, results, total, NULL, false);
+        return new CSecItemIterator(results);
     }
 
     virtual bool changePermission(CPermissionAction& action)
@@ -3215,10 +3671,10 @@ public:
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-        int rc = ldap_modify_s(ld, (char*)normdnbuf.str(), attrs);
+        int rc = ldap_modify_ext_s(ld, (char*)normdnbuf.str(), attrs, NULL, NULL);
         if ( rc != LDAP_SUCCESS )
         {
-            throw MakeStringException(-1, "ldap_modify_s error: %d %s", rc, ldap_err2string( rc ));
+            throw MakeStringException(-1, "ldap_modify_ext_s error: %d %s", rc, ldap_err2string( rc ));
         }
 
         return true;
@@ -3274,13 +3730,13 @@ public:
                 {
                     if(0 == stricmp(attribute, "memberOf"))
                     {
-                        CLDAPGetValuesWrapper vals(ld, message, attribute);
+                        CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                         if (vals.hasValues())
                         {
-                            for (int i = 0; vals.queryValues()[ i ] != NULL; i++ )
+                            for (int i = 0; vals.queryBValues()[ i ] != NULL; i++ )
                             {
-                                char* val = vals.queryValues()[i];
-                                char* comma = strchr(val, ',');
+                                const char* val = vals.queryCharValue(i);
+                                char* comma = strchr((char*)val, ',');
                                 StringBuffer groupname;
                                 groupname.append(comma - val -3, val+3);
                                 groups.append(groupname.str());
@@ -3293,7 +3749,9 @@ public:
         else
         {
             StringArray allgroups;
-            getAllGroups(allgroups);
+            StringArray allgroupManagedBy;
+            StringArray allgroupDescription;
+            getAllGroups(allgroups, allgroupManagedBy, allgroupDescription);
             for(unsigned i = 0; i < allgroups.length(); i++)
             {
                 const char* grp = allgroups.item(i);
@@ -3332,7 +3790,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         
-        int rc = ldap_delete_s(ld, (char*)userdn.str());
+        int rc = ldap_delete_ext_s(ld, (char*)userdn.str(), NULL, NULL);
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -3357,15 +3815,15 @@ public:
         return true;
     }
 
-    virtual void addGroup(const char* groupname)
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc)
     {
         if(groupname == NULL || *groupname == '\0')
             throw MakeStringException(-1, "Can't add group, groupname is empty");
 
-        addGroup(groupname, m_ldapconfig->getGroupBasedn());
+        addGroup(groupname, groupOwner, groupDesc, m_ldapconfig->getGroupBasedn());
     }
 
-    virtual void addGroup(const char* groupname, const char* basedn)
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn)
     {
         if(groupname == NULL || *groupname == '\0')
             return;
@@ -3418,11 +3876,29 @@ public:
             member_values
         };
 
-        LDAPMod *attrs[5];
+        char *owner_values[] = {(char*)groupOwner, NULL};
+        LDAPMod owner_attr =
+        {
+            LDAP_MOD_ADD,
+            "managedBy",
+            owner_values
+        };
+        char *desc_values[] = {(char*)groupDesc, NULL};
+        LDAPMod desc_attr =
+        {
+            LDAP_MOD_ADD,
+            "description",
+            desc_values
+        };
+        LDAPMod *attrs[6];
         int ind = 0;
         
         attrs[ind++] = &cn_attr;
         attrs[ind++] = &oc_attr;
+        if (groupOwner && *groupOwner)
+            attrs[ind++] = &owner_attr;
+        if (groupDesc && *groupDesc)
+            attrs[ind++] = &desc_attr;
         attrs[ind] = NULL;
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
@@ -3471,7 +3947,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         
-        int rc = ldap_delete_s(ld, (char*)dn.str());
+        int rc = ldap_delete_ext_s(ld, (char*)dn.str(), NULL, NULL);
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -3522,35 +3998,22 @@ public:
         char        *attrs[] = {(char*)memfieldname, NULL};
         StringBuffer groupbasedn;
         getGroupBaseDN(groupname, groupbasedn);
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)groupbasedn.str(),LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
-        if ( rc != LDAP_SUCCESS )
+        CPagedLDAPSearch pagedSrch(ld, (char*)groupbasedn.str(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
+        for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
-            DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getBasedn());
-            return;
-        }
-        
-        unsigned entries = ldap_count_entries(ld, searchResult);
-        if(entries == 0)
-        {
-            throw MakeStringException(-1, "group %s not found", groupname);
-        }
-
-        // Go through the search results by checking message types
-        for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
-        {
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
+            // Go through the search results by checking message types
+            CLDAPGetAttributesWrapper   atts(ld, message);
             for ( attribute = atts.getFirst();
                   attribute != NULL;
                   attribute = atts.getNext())
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
                 {
-                    for (int i = 0; vals.queryValues()[ i ] != NULL; i++ )
+                    for (int i = 0; vals.queryBValues()[ i ] != NULL; i++ )
                     {
-                        char* val = vals.queryValues()[i];
+                        const char* val = vals.queryCharValue(i);
                         StringBuffer uid;
                         getUidFromDN(val, uid);
                         if(uid.length() > 0)
@@ -3559,6 +4022,85 @@ public:
                 }
             }
         }
+
+    }
+
+    virtual IPropertyTreeIterator* getGroupMemberIterator(const char* groupName)
+    {
+        StringArray users;
+        getGroupMembers(groupName, users);
+
+        Owned<IPropertyTree> usersTree = createPTree("Users");
+        ForEachItemIn(i, users)
+        {
+            const char* usrName = users.item(i);
+            if (!usrName || !*usrName)
+                continue;
+
+            IUserArray usersInBaseDN;
+            retrieveUsers(usrName, usersInBaseDN);
+            ForEachItemIn(x, usersInBaseDN)
+            {
+                ISecUser& usr = usersInBaseDN.item(x);
+                const char* usrName0 = usr.getName();
+                if(usrName0 && strieq(usrName, usrName0))
+                {
+                    //BUG#41536: The users in the Administrators group are all the users on the whole
+                    //active directory, while the users in the users list are only the users who are
+                    //under the "usersBasedn" of this environment. So, we should only return the users
+                    //who are in the usersBasedn.
+                    addUserTree(usr, usersTree);
+                    break;
+                }
+            }
+        }
+        return usersTree->getElements("*");
+    }
+
+    ISecItemIterator* getGroupMembersSorted(const char* groupName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+        unsigned* total, __int64* cacheHint)
+    {
+        class CElementsPager : public CSimpleInterface, implements IElementsPager
+        {
+            ILdapClient* ldapClient;
+            StringAttr sortOrder, groupName;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CElementsPager(ILdapClient* _ldapClient, const char*_groupName, const char*_sortOrder)
+                : ldapClient(_ldapClient), groupName(_groupName), sortOrder(_sortOrder) { };
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
+            {
+                StringArray unknownAttributes;
+                Owned<IPropertyTreeIterator> iter = ldapClient->getGroupMemberIterator(groupName.str());
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                return NULL;
+            }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, ldap always returns all of matched users.
+        };
+
+        StringBuffer so;
+        if (sortOrder)
+        {
+            for (unsigned i=0;sortOrder[i]!=UFterm;i++)
+            {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortOrder[i];
+                if (fmt&UFreverse)
+                    so.append('-');
+                if (fmt&UFnocase)
+                    so.append('?');
+                if (fmt&UFnumeric)
+                    so.append('#');
+                so.append(getUserFieldNames((UserField) (fmt&0xff)));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CElementsPager(this, groupName, so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager, pageStartFrom, pageSize, NULL, "", cacheHint, results, total, NULL, false);
+        return new CSecItemIterator(results);
     }
 
     virtual void deleteResource(SecResourceType rtype, const char* name, const char* basedn)
@@ -3572,7 +4114,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         
-        int rc = ldap_delete_s(ld, (char*)dn.str());
+        int rc = ldap_delete_ext_s(ld, (char*)dn.str(), NULL, NULL);
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -3610,7 +4152,7 @@ public:
             attrs[0] = &uncname_attr;
             attrs[1] = NULL;
 
-            int rc = ldap_modify_s(ld, (char*)olddn.str(), attrs);
+            int rc = ldap_modify_ext_s(ld, (char*)olddn.str(), attrs, NULL, NULL);
 
             if (rc != LDAP_SUCCESS )
             {
@@ -3718,18 +4260,8 @@ public:
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
         char *attrs[] = { LDAP_NO_ATTRS, NULL };
-        CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter, attrs, 0, NULL, NULL, &timeOut, limit, &searchResult.msg );
-
-        if ( rc != LDAP_SUCCESS )
-        {
-            if(rc == LDAP_SIZELIMIT_EXCEEDED)
-                return -1;
-            else
-                throw MakeStringException(-1, "ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter, basedn);
-        }
-
-        int entries = ldap_count_entries(ld, searchResult);
+        CPagedLDAPSearch pagedSrch(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter, attrs);
+        int entries = pagedSrch.countEntries();
         return entries;
     }
 
@@ -3744,18 +4276,19 @@ public:
                 
                 char* pw_attrs[] = {"nsslapd-rootpwstoragescheme", NULL};
                 CLDAPMessage msg;
-                int err = ldap_search_s(ld, "cn=config", LDAP_SCOPE_BASE, "objectClass=*", pw_attrs, false, &msg.msg);
+                TIMEVAL timeOut = {LDAPTIMEOUT,0};
+                int err = ldap_search_ext_s(ld, "cn=config", LDAP_SCOPE_BASE, "objectClass=*", pw_attrs, false, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &msg.msg);
                 if(err != LDAP_SUCCESS)
                 {
-                    DBGLOG("ldap_search_s error: %s", ldap_err2string( err ));
+                    DBGLOG("ldap_search_ext_s error: %s", ldap_err2string( err ));
                     return NULL;
                 }
                 LDAPMessage* entry = LdapFirstEntry(ld, msg);
                 if(entry != NULL)
                 {
-                    CLDAPGetValuesWrapper vals(ld, entry, "nsslapd-rootpwstoragescheme");
+                    CLDAPGetValuesLenWrapper vals(ld, entry, "nsslapd-rootpwstoragescheme");
                     if (vals.hasValues())
-                        m_pwscheme.append(vals.queryValues()[0]);
+                        m_pwscheme.append(vals.queryCharValue(0));
                 }
                 ldap_msgfree(msg);
             }
@@ -3872,9 +4405,9 @@ private:
                 attribute = atts.getFirst();
                 if(attribute != NULL)
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        userdn.append(vals.queryValues()[0]);
+                        userdn.append(vals.queryCharValue(0));
                 }
             }
             if(userdn.length() == 0)
@@ -3934,9 +4467,9 @@ private:
             attribute = atts.getFirst();
             if(attribute != NULL)
             {
-                CLDAPGetValuesWrapper vals(ld, message, attribute);
+                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                 if (vals.hasValues())
-                    uid.append(vals.queryValues()[0]);
+                    uid.append(vals.queryCharValue(0));
             }
         }
     }
@@ -4262,13 +4795,13 @@ private:
             {
                 if(stricmp(attribute, id_fieldname) == 0)
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
-                        resourcename.append(vals.queryValues()[0]);
+                        resourcename.append(vals.queryCharValue(0));
                 }
                 else if(stricmp(attribute, des_fieldname) == 0) 
                 {
-                    valsLen.getValues(ld, message, attribute);
+                    valsLen.retrieveBValues(ld, message, attribute);
                 }
             }
             for(i = 0; i < len; i++)
@@ -4280,7 +4813,7 @@ private:
                     {
                         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
                         {
-                            struct berval* val = valsLen.queryValues()[0];
+                            struct berval* val = valsLen.queryBValues()[0];
                             if(val != NULL)
                             {
                                 CSecurityDescriptor& sd = sdlist.item(i);
@@ -4291,7 +4824,7 @@ private:
                         {
                             MemoryBuffer allvals;
                             int valseq = 0;
-                            struct berval* val = valsLen.queryValues()[valseq++];
+                            struct berval* val = valsLen.queryBValues()[valseq++];
                             while(val != NULL)
                             {
                                 if(val->bv_len > 0)
@@ -4299,7 +4832,7 @@ private:
                                     allvals.append(val->bv_len, val->bv_val);
                                     allvals.append('\0'); // my separator between ACIs
                                 }
-                                val = valsLen.queryValues()[valseq++];
+                                val = valsLen.queryBValues()[valseq++];
                             }
                             if(allvals.length() > 0)
                             {
@@ -4434,7 +4967,7 @@ private:
             {
                 if(stricmp(attribute, sd_fieldname) == 0) 
                 {
-                    valsLen.getValues(ld, message, attribute);
+                    valsLen.retrieveBValues(ld, message, attribute);
                 }
             }
             for(i = 0; i < len; i++)
@@ -4446,7 +4979,7 @@ private:
                     {
                         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
                         {
-                            struct berval* val = valsLen.queryValues()[0];
+                            struct berval* val = valsLen.queryBValues()[0];
                             if(val != NULL)
                             {
                                 CSecurityDescriptor& sd = sdlist.item(i);
@@ -4457,7 +4990,7 @@ private:
                         {
                             MemoryBuffer allvals;
                             int valseq = 0;
-                            struct berval* val = valsLen.queryValues()[valseq++];
+                            struct berval* val = valsLen.queryBValues()[valseq++];
                             while(val != NULL)
                             {
                                 if(val->bv_len > 0)
@@ -4465,7 +4998,7 @@ private:
                                     allvals.append(val->bv_len, val->bv_val);
                                     allvals.append('\0'); // my separator between ACIs
                                 }
-                                val = valsLen.queryValues()[valseq++];
+                                val = valsLen.queryBValues()[valseq++];
                             }
                             if(allvals.length() > 0)
                             {
@@ -4549,7 +5082,7 @@ private:
         MemoryBuffer sdbuf;
         Owned<CSecurityDescriptor> default_sd = NULL;
         if(m_pp !=  NULL)
-            default_sd.setown(m_pp->createDefaultSD(*user, name, ptype));
+            default_sd.setown(m_pp->createDefaultSD(user, name, ptype));
         if(default_sd != NULL)
             sdbuf.append(default_sd->getDescriptor());
 
@@ -4672,12 +5205,12 @@ private:
             MemoryBuffer template_sd_buf;
             template_sd_buf.append(template_sd->getDescriptor());
             if(m_pp != NULL)
-                default_sd.setown(m_pp->createDefaultSD(user, resource, template_sd_buf));
+                default_sd.setown(m_pp->createDefaultSD(&user, resource, template_sd_buf));
         }
         else
         {
             if(m_pp !=  NULL)
-                default_sd.setown(m_pp->createDefaultSD(user, resource, ptype));
+                default_sd.setown(m_pp->createDefaultSD(&user, resource, ptype));
         }
 
         return addResource(rtype, user, resource, ptype, basedn, default_sd.get());
@@ -4914,10 +5447,10 @@ private:
             {
                 if(0 == stricmp(attribute, "userAccountControl"))
                 {
-                    CLDAPGetValuesWrapper vals(ld, message, attribute);
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
                     {
-                        act_ctrl.append(vals.queryValues()[0]);
+                        act_ctrl.append(vals.queryCharValue(0));
                         break;
                     }
                 }
@@ -5198,104 +5731,6 @@ private:
             return -2;
     }
 };
-
-int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname)
-{
-    LdapServerType deducedSType = LDAPSERVER_UNKNOWN;
-    LDAP* ld = LdapInit("ldap", ldapserver, ldapport, 636); 
-    if(ld == NULL)
-    {
-        ERRLOG("ldap init error");
-        return false;
-    }
-    
-    int err = LdapSimpleBind(ld, NULL, NULL);
-    if(err != LDAP_SUCCESS)
-    {
-        DBGLOG("ldap anonymous bind error (%d) - %s", err, ldap_err2string(err));
-
-        // for new versions of openldap, version 2.2.*
-        if(err == LDAP_PROTOCOL_ERROR)
-            DBGLOG("If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
-
-        return err;
-    }
-
-    LDAPMessage* msg = NULL;
-    char* attrs[] = {"namingContexts", NULL};
-    err = ldap_search_s(ld, NULL, LDAP_SCOPE_BASE, "objectClass=*", attrs, false, &msg);
-    if(err != LDAP_SUCCESS)
-    {
-        DBGLOG("ldap_search_s error: %s", ldap_err2string( err ));
-        if (msg)
-            ldap_msgfree(msg);
-        return err;
-    }
-    LDAPMessage* entry = LdapFirstEntry(ld, msg);
-    if(entry != NULL)
-    {
-        CLDAPGetValuesWrapper vals(ld, entry, "namingContexts");
-        char** domains = vals.queryValues();
-        if(domains != NULL)
-        {
-            int i = 0;
-            char* curdn;
-            StringBuffer onedn;
-            while((curdn = domains[i]) != NULL)
-            {
-                if(*curdn != '\0' && (strncmp(curdn, "dc=", 3) == 0 || strncmp(curdn, "DC=", 3) == 0) && strstr(curdn,"DC=ForestDnsZones")==0 && strstr(curdn,"DC=DomainDnsZones")==0 )
-                {
-                    if(domainDN.length() == 0)
-                    {
-                        StringBuffer curdomain;
-                        LdapUtils::getName(curdn, curdomain);
-                        if(onedn.length() == 0)
-                        {
-                            DBGLOG("Queried '%s', selected basedn '%s'",curdn, curdomain.str());
-                            onedn.append(curdomain.str());
-                        }
-                        else
-                            DBGLOG("Ignoring %s", curdn);
-                        if(!domainname || !*domainname || stricmp(curdomain.str(), domainname) == 0)
-                            domainDN.append(curdn);
-                    }
-                }
-                else if(*curdn != '\0' && strcmp(curdn, "o=NetscapeRoot") == 0)
-                {
-                    PROGLOG("Deduced LDAP Server Type 'iPlanet'");
-                    deducedSType = IPLANET;
-                }
-                i++;
-            }
-            
-            if(domainDN.length() == 0)
-                domainDN.append(onedn.str());
-
-            if (deducedSType == LDAPSERVER_UNKNOWN)
-            {
-                if(i <= 1)
-                {
-                    PROGLOG("Deduced LDAP Server Type 'OpenLDAP'");
-                    deducedSType = OPEN_LDAP;
-                }
-                else
-                {
-                    PROGLOG("Deduced LDAP Server Type 'Active Directory'");
-                    deducedSType = ACTIVE_DIRECTORY;
-                }
-            }
-        }
-    }
-    ldap_msgfree(msg);
-    ldap_unbind(ld);
-
-    if (stype == LDAPSERVER_UNKNOWN)
-        stype = deducedSType;
-    else if (deducedSType != stype)
-        WARNLOG("Ignoring deduced LDAP Server Type, does not match config LDAPServerType");
-
-    return err;
-}
 
 #ifdef _WIN32
 bool verifyServerCert(LDAP* ld, PCCERT_CONTEXT pServerCert)

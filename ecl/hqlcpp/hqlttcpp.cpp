@@ -2526,7 +2526,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
             {
                 OwnedHqlExpr mappedDistribution = replaceSelector(distribution, queryActiveTableSelector(), &cur);
                 OwnedHqlExpr mergeAttr;
-                if (bestSortOrder && isAlreadySorted(&cur, bestSortOrder, true, true))
+                if (bestSortOrder && isAlreadySorted(&cur, bestSortOrder, true, true, false))
                     mergeAttr.setown(createExprAttribute(mergeAtom, replaceSelector(bestSortOrder, queryActiveTableSelector(), &cur)));
                 OwnedHqlExpr distributedInput = createDatasetF(no_distribute, LINK(&cur), LINK(mappedDistribution), mergeAttr.getClear(), NULL);
                 distributedInput.setown(cloneInheritedAnnotations(expr, distributedInput));
@@ -2569,49 +2569,13 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
     return expr->cloneAllAnnotations(grouped);
 }
 
-static IHqlExpression * getNonThorSortedJoinInput(IHqlExpression * joinExpr, IHqlExpression * dataset, const HqlExprArray & sorts, bool implicitSubSort)
-{
-    if (!sorts.length())
-        return LINK(dataset);
-
-    LinkedHqlExpr expr = dataset;
-    if (isGrouped(expr))
-    {
-        expr.setown(createDataset(no_group, LINK(expr), NULL));
-        expr.setown(cloneInheritedAnnotations(joinExpr, expr));
-    }
-
-    // if already sorted or grouped, use it!
-    OwnedHqlExpr groupOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
-    groupOrder.setown(replaceSelector(groupOrder, queryActiveTableSelector(), expr->queryNormalizedSelector()));
-
-    //not used for thor, so sort can be local
-    OwnedHqlExpr table = ensureSorted(expr, groupOrder, joinExpr, false, true, true, implicitSubSort, false);
-    if (table != expr)
-        table.setown(cloneInheritedAnnotations(joinExpr, table));
-
-    OwnedHqlExpr group = createDatasetF(no_group, table.getClear(), LINK(groupOrder), NULL);
-    return cloneInheritedAnnotations(joinExpr, group);
-}
-
-
-static bool sameOrGrouped(IHqlExpression * newLeft, IHqlExpression * oldLeft)
-{
-    if (newLeft->queryBody() == oldLeft->queryBody())
-        return true;
-    if (newLeft->getOperator() != no_group)
-        return false;
-    newLeft = newLeft->queryChild(0);
-    return (newLeft->queryBody() == oldLeft->queryBody());
-}
-
 static bool canReorderMatchExistingLocalSort(HqlExprArray & newElements1, HqlExprArray & newElements2, IHqlExpression * ds1, Shared<IHqlExpression> & ds2, const HqlExprArray & elements1, const HqlExprArray & elements2, bool canSubSort, bool isLocal, bool alwaysLocal)
 {
     newElements1.kill();
     newElements2.kill();
     if (reorderMatchExistingLocalSort(newElements1, newElements2, ds1, elements1, elements2))
     {
-        if (isAlreadySorted(ds2, newElements2, isLocal||alwaysLocal, true))
+        if (isAlreadySorted(ds2, newElements2, isLocal||alwaysLocal, true, true))
             return true;
 
         if (canSubSort && isWorthShuffling(ds2, newElements2, isLocal||alwaysLocal, true))
@@ -2696,8 +2660,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinAndGroup(IHqlExpression * expr
     bool alwaysLocal = !translator.targetThor();
     if (!hasLocal && !alwaysLocal)
     {
-        JoinSortInfo joinInfo;
-        joinInfo.findJoinSortOrders(expr, false);
+        JoinSortInfo joinInfo(expr);
+        joinInfo.findJoinSortOrders(false);
 
         OwnedHqlExpr leftList = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryLeftReq());
         OwnedHqlExpr mappedLeftList = replaceSelector(leftList, queryActiveTableSelector(), newLeft->queryNormalizedSelector());
@@ -2755,6 +2719,26 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinAndGroup(IHqlExpression * expr
     //And finally group it.
     return createDatasetF(no_group, LINK(distributed), LINK(mappedOrder), LINK(newLocalAttr), NULL);
 }
+
+static IHqlExpression * queryDistributionKey(IHqlExpression * rhs)
+{
+    loop
+    {
+        switch (rhs->getOperator())
+        {
+        case no_filter:
+        case no_metaactivity:
+        case no_sorted:
+            rhs = rhs->queryChild(0);
+            break;
+        case no_newkeyindex:
+            return rhs;
+        default:
+            return NULL;
+        }
+    }
+}
+
 
 
 IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression * expr)
@@ -2853,8 +2837,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
 
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, canBeSlidingJoin(expr));
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(canBeSlidingJoin(expr));
 
     //If the data is already distributed so the data is on the correct machines then perform the join locally.
     //Should be equally applicable to lookup, hash, all and normal joins.
@@ -2862,6 +2846,33 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     {
         if (isDistributedCoLocally(leftDs, rightDs, joinInfo.queryLeftReq(), joinInfo.queryRightReq()))
             return appendOwnedOperand(expr, createLocalAttribute());
+
+        if (options.createImplicitKeyedDistributeForJoin && !expr->hasAttribute(lookupAtom))
+        {
+            IHqlExpression * rhsKey = queryDistributionKey(rightDs);
+            if (rhsKey)
+            {
+                IHqlExpression * indexRecord = rightDs->queryRecord();
+                unsigned numUnsortedFields = numPayloadFields(rightDs);
+                unsigned numKeyedFields = getFlatFieldCount(indexRecord)-numUnsortedFields;
+
+                //To create a keyed distribute, all the keyed fields in the rhs key must have equalities
+                //in the join condition.  Need to extract a join condition which just contains that subset.
+                if (joinInfo.numRequiredEqualities() >= numKeyedFields)
+                {
+                    OwnedHqlExpr keyedCondition = joinInfo.getContiguousJoinCondition(numKeyedFields);
+                    if (keyedCondition)
+                    {
+                        OwnedHqlExpr distribute = createDataset(no_keyeddistribute, LINK(leftDs), createComma(LINK(rhsKey), keyedCondition.getClear(), LINK(seq)));
+                        HqlExprArray args;
+                        args.append(*distribute.getClear());
+                        unwindChildren(args, expr, 1);
+                        args.append(*createLocalAttribute());
+                        return expr->clone(args);
+                    }
+                }
+            }
+        }
 
         if (options.matchExistingDistributionForJoin)
         {
@@ -2915,8 +2926,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Worthwhile even for lookup joins
     if (isLightweightJoinCandidate(expr, isLocal, joinInfo.hasOptionalEqualities()))
     {
-        if (isAlreadySorted(leftDs, joinInfo.queryLeftSort(), true, true) &&
-            isAlreadySorted(rightDs, joinInfo.queryRightSort(), true, true))
+        if (isAlreadySorted(leftDs, joinInfo.queryLeftSort(), true, true, false) &&
+            isAlreadySorted(rightDs, joinInfo.queryRightSort(), true, true, false))
         {
             //If this is a lookup join without a many then we need to make sure only the first match is retained.
             return appendOwnedOperand(expr, createAttribute(_lightweight_Atom));
@@ -3000,28 +3011,6 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
                 args.append(*createAttribute(lookupAtom));
                 return expr->clone(args);
             }
-        }
-
-        //Ensure that inputs to the activities in hthor/roxie are sorted and grouped.  (Should really be done in the engines)
-        OwnedHqlExpr newLeft = getNonThorSortedJoinInput(expr, leftDs, joinInfo.queryLeftSort(), options.implicitSubSort);
-        OwnedHqlExpr newRight = getNonThorSortedJoinInput(expr, rightDs, joinInfo.queryRightSort(), options.implicitSubSort);
-        try
-        {
-            if ((leftDs != newLeft) || (rightDs != newRight))
-            {
-                HqlExprArray args;
-                args.append(*newLeft.getClear());
-                args.append(*newRight.getClear());
-                unwindChildren(args, expr, 2);
-                args.append(*createAttribute(_normalized_Atom));
-                return expr->clone(args);
-            }
-        }
-        catch (IException * e)
-        {
-            //Couldn't work out the sort orders - shouldn't be fatal because may constant fold later.
-            EXCLOG(e, "Transform");
-            e->Release();
         }
     }
 
@@ -3182,7 +3171,7 @@ IHqlExpression * ThorHqlTransformer::normalizeSort(IHqlExpression * expr)
 
     bool isLocal = expr->hasAttribute(localAtom);
     bool alwaysLocal = !translator.targetThor();
-    if ((op != no_assertsorted) && isAlreadySorted(dataset, sortlist, isLocal||alwaysLocal, false))
+    if ((op != no_assertsorted) && isAlreadySorted(dataset, sortlist, isLocal||alwaysLocal, false, true))
         return LINK(dataset);
     if (op == no_sorted)
         return normalizeSortSteppedIndex(expr, sortedAtom);
@@ -6670,7 +6659,7 @@ void WorkflowTransformer::analyseExpr(IHqlExpression * expr)
             {
                 StringBuffer s;
                 if (expr->queryName())
-                    s.appendf(" '%s'", expr->queryName()->str());
+                    s.appendf(" '%s'", str(expr->queryName()));
                 //MORE: Better if we also kept nested track of locations
                 translator.WARNINGAT1(CategoryMistake, queryActiveLocation(expr), HQLWRN_WorkflowSeemsToBeDependent, s.str());
             }
@@ -7520,7 +7509,7 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                     IHqlExpression * symbol = queryActiveSymbol();
                     StringBuffer s;
                     if (symbol && symbol->queryBody() == expr)
-                        s.appendf(" '%s'", symbol->queryName()->str());
+                        s.appendf(" '%s'", str(symbol->queryName()));
                     else
                     {
                         s.append(" ").append(getOpString(value->getOperator()));
@@ -9064,12 +9053,16 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
                 if (recordRequiresLinkCount(transformedRecord))
                 {
                     if (expr->hasAttribute(embeddedAtom) || queryAttribute(type, embeddedAtom) || expr->hasAttribute(countAtom) || expr->hasAttribute(sizeofAtom))
-                        throwError1(HQLERR_InconsistentEmbedded, expr->queryId()->str());
+                        throwError1(HQLERR_InconsistentEmbedded, str(expr->queryId()));
                 }
-                if (expr->hasAttribute(embeddedAtom))
+                if (expr->hasAttribute(embeddedAtom) || queryAttribute(type, embeddedAtom))
                 {
-                    OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
-                    return removeAttribute(transformed, embeddedAtom);
+                    HqlExprArray args;
+                    transformChildren(expr, args);
+                    removeAttribute(args, embeddedAtom);
+                    OwnedITypeInfo newType = transformType(type);
+                    OwnedITypeInfo cleanType = removeAttribute(newType, embeddedAtom);
+                    return createField(expr->queryId(), cleanType.getClear(), args);
                 }
                 if (implicitLinkedChildRows && !expr->hasAttribute(_linkCounted_Atom) && !queryAttribute(type, embeddedAtom))
                 {
@@ -9106,6 +9099,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             }
         }
         break;
+    case no_attr:
     case no_embedbody:
         //Don't change the type of an embed body - otherwise result it will become link counted when not expected.
         return LINK(expr);
@@ -9569,7 +9563,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             if (lhs->isDatarow() && newRhs->isDataset())
             {
                 StringBuffer exprText;
-                VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), lhs->queryChild(1)->queryName()->str());
+                VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), str(lhs->queryChild(1)->queryName()));
                 reportError(CategoryError, msg.str());
             }
             if (rhs == newRhs)
@@ -9632,7 +9626,7 @@ void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg)
     int startColumn = location ? location->getStartColumn() : 0;
     ISourcePath * sourcePath = location ? location->querySourcePath() : NULL;
     ErrorSeverity severity = queryDefaultSeverity(category);
-    Owned<IError> err = createError(category, severity, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
+    Owned<IError> err = createError(category, severity, ERR_ASSERT_WRONGSCOPING, msg, str(sourcePath), startLine, startColumn, 0);
     errors.report(err);        // will throw immediately if it is an error.
 }
 
@@ -10419,9 +10413,9 @@ IHqlExpression * NestedCompoundTransformer::createTransformed(IHqlExpression * e
             {
                 StringBuffer s;
                 if (sideEffect->queryName())
-                    s.appendf(" '%s'", sideEffect->queryName()->str());
+                    s.appendf(" '%s'", str(sideEffect->queryName()));
                 else if (value->queryName())
-                    s.appendf(" '%s'", value->queryName()->str());
+                    s.appendf(" '%s'", str(value->queryName()));
                 else
                     s.append(" ").append(getOpString(sideEffect->getOperator()));
                 IHqlExpression * location = queryLocation(sideEffect);
@@ -10528,7 +10522,7 @@ void spotPotentialDuplicateCode(HqlExprArray & exprs)
 
 static bool isUniqueAttributeName(IAtom * name)
 {
-    const char * nameText = name->str();
+    const char * nameText = str(name);
     unsigned len = strlen(nameText);
     if (len > 3)
     {
@@ -10556,7 +10550,7 @@ static IIdAtom * simplifySymbolName(IIdAtom * name, bool commonUniqueNameAttribu
         return NULL;
 
     //Rename all attributes __x__1234__ to __x__
-    const char * nameText = name->lower()->str();
+    const char * nameText = str(lower(name));
     size_t nameLen = strlen(nameText);
     size_t len = nameLen;
     if (len > 3)
@@ -10582,8 +10576,8 @@ static IIdAtom * simplifySymbolName(IIdAtom * name, bool commonUniqueNameAttribu
 
 static IIdAtom * lowerCaseSymbolName(IIdAtom * name)
 {
-    if (containsUpperCase(name->str()))
-        return createIdAtom(name->lower()->str());
+    if (containsUpperCase(str(name)))
+        return createIdAtom(str(lower(name)));
     return name;
 }
 
@@ -12136,7 +12130,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 else if (cur->getOperator() == no_purevirtual)
                 {
                     IAtom * name = cur->queryName();
-                    throwError1(HQLERR_LibraryMemberArgNotDefined, name ? name->str() : "");
+                    throwError1(HQLERR_LibraryMemberArgNotDefined, name ? str(name) : "");
                 }
                 IHqlExpression * transformed = transform(cur);
                 children.append(*transformed);

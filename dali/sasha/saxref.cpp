@@ -561,7 +561,7 @@ public:
         branch->setProp("Cluster",clustname);
         StringBuffer datastr;
         toXML(branch,datastr);
-        root->addPropTree(name,createPTree(name))->setPropBin("data",datastr.length(),datastr.toCharArray());
+        root->addPropTree(name,createPTree(name))->setPropBin("data",datastr.length(),datastr.str());
     }
 
     CNewXRefManagerBase()
@@ -1389,12 +1389,12 @@ public:
                 dt->addPropInt64("Size",d->totalsize[drv]);
                 if (d->totalsize[drv]) {
                     StringBuffer s1;
-                    if (d->maxnode) {
+                    if (d->maxnode[drv]) {
                         dt->addPropInt64("MaxSize",d->maxsize[drv]);
                         grp->queryNode(d->maxnode[drv]-1).endpoint().getIpText(s1);
                         dt->addProp("MaxIP",s1.str());
                     }
-                    if (d->minnode) {
+                    if (d->minnode[drv]) {
                         dt->addPropInt64("MinSize",d->minsize[drv]);
                         grp->queryNode(d->minnode[drv]-1).endpoint().getIpText(s1.clear());
                         dt->addProp("MinIP",s1.str());

@@ -94,7 +94,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("sqlite3: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", field->name->str());
+        msg.appendf(" for field %s", str(field->name));
     rtlFail(0, msg.str());
 }
 
@@ -530,6 +530,16 @@ public:
     {
         UNSUPPORTED("SET parameters");
     }
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+    {
+        return NULL;
+    }
+    virtual void paramWriterCommit(IInterface *writer)
+    {
+    }
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+    {
+    }
 
     virtual void importFunction(size32_t lenChars, const char *text)
     {
@@ -590,6 +600,10 @@ public:
             UNSUPPORTED("IMPORT");
         else
             return new SqLite3EmbedFunctionContext(flags, options);
+    }
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    {
+        throwUnexpected();
     }
 };
 

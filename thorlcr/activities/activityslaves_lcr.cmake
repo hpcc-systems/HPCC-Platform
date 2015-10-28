@@ -78,6 +78,7 @@ set (    SRCS
          thactivityutil.cpp 
          thdiskbaseslave.cpp 
          topn/thtopnslave.cpp 
+         trace/thtraceslave.cpp
          when/thwhenslave.cpp 
          wuidread/thwuidreadslave.cpp 
          wuidwrite/thwuidwriteslave.cpp 

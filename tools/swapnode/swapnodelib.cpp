@@ -74,14 +74,14 @@ bool WuResubmit(const char *wuid)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
-    if (!wu) {
+    if (!wu)
+    {
         ERRLOG("WuResubmit(%s): could not find workunit",wuid);
         return false;
     }
-    if (wu->getState()!=WUStateFailed) {
-        SCMStringBuffer state;
-        wu->getStateDesc(state);
-        ERRLOG("WuResubmit(%s): could not resubmit as workunit state is '%s'",wuid,state.str());
+    if (wu->getState()!=WUStateFailed)
+    {
+        ERRLOG("WuResubmit(%s): could not resubmit as workunit state is '%s'", wuid, wu->queryStateDesc());
         return false;
     }
     SCMStringBuffer token;

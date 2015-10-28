@@ -169,6 +169,7 @@ void HqlLex::init(IFileContents * _text)
     inmacro = NULL;
     parentLex = NULL;
     inComment = false;
+    inSignature = false;
     inCpp = false;
     hasHashbreak = false;
     encrypted = false;
@@ -344,7 +345,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
     unsigned thisParam = (unsigned)-1;
     if (argumentId)
     {
-        IAtom * argumentName = argumentId->lower();
+        IAtom * argumentName = lower(argumentId);
         unsigned argNum = 0;
         for (unsigned i=0; i < numFormals; i++)
         {
@@ -356,7 +357,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
         }
 
         if (argNum == 0)
-            reportError(errpos, ERR_NAMED_PARAM_NOT_FOUND, "Named parameter '%s' not found in macro", argumentId->str());
+            reportError(errpos, ERR_NAMED_PARAM_NOT_FOUND, "Named parameter '%s' not found in macro", str(argumentId));
         else
             thisParam = argNum;
     }
@@ -389,7 +390,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
 //      if (macroParms->queryProp(formal->queryName()))
 //          reportError(errpos, ERR_NAMED_ALREADY_HAS_VALUE, "Parameter %s already has a value supplied", argumentName->str());
 //      else
-            macroParms->setProp(formal->queryName()->str(), curParam.str());
+            macroParms->setProp(str(formal->queryName()), curParam.str());
     }
     curParam.clear();
 }
@@ -464,7 +465,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
                     if (memicmp(text, "NAMED", 5) == 0)
                         text += 5;
                     while (isspace((byte)*text)) text++;
-                    if (strlen(possibleName->str()) == strlen(text))
+                    if (strlen(str(possibleName)) == strlen(text))
                     {
                         argumentName = possibleName;
                         possibleName = NULL;
@@ -482,7 +483,8 @@ void HqlLex::pushMacro(IHqlExpression *expr)
             return;
         case UNKNOWN_ID:
             possibleName = nextToken.getId();
-            //fall through
+            curParam.append(' ').append(str(possibleName));
+            break;
         default:
             curParam.append(' ');
             getTokenText(curParam);
@@ -504,7 +506,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         for (unsigned idx = parmno; idx < formalParmCt; idx++)
         {
             IHqlExpression* formal = formals->queryChild(idx);
-            if (!macroParms->queryProp(formal->queryName()->str()))
+            if (!macroParms->queryProp(str(formal->queryName())))
             {
                 IHqlExpression* def = queryDefaultValue(defaults, idx);
                 if (def)
@@ -518,7 +520,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
                         msg.append(" should be a constant value");
                         reportError(nextToken, ERR_PARAM_NODEFVALUE, "%s", msg.str());
                     }
-                    macroParms->setProp(formal->queryName()->str(), curParam.str());
+                    macroParms->setProp(str(formal->queryName()), curParam.str());
                     //PrintLog("Set macro parm: %s", curParam.str());
                     curParam.clear();
                 }
@@ -564,6 +566,52 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         inmacro->yyColumn = macroBodyExpr->getStartColumn();
         inmacro->setParentLex(this);
         inmacro->macroParms.setown(macroParms.getClear());
+    }
+}
+
+void HqlLex::checkSignature()
+{
+    YYSTYPE dummyToken;
+    dummyToken.setPosition(0,0,0,text->querySourcePath());
+    Owned<IPipeProcess> pipe = createPipeProcess();
+    pipe->run("gpg", "gpg --verify -", ".", true, false, true, 0, false);
+    try
+    {
+        pipe->write(text->length(), text->getText());
+        pipe->closeInput();
+        unsigned retcode = pipe->wait();
+        if (retcode)
+        {
+            StringBuffer buf;
+            Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
+            const size32_t chunkSize = 8192;
+            for (;;)
+            {
+                size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
+                if (sizeRead < chunkSize)
+                {
+                    buf.setLength(buf.length() - (chunkSize - sizeRead));
+                    break;
+                }
+            }
+            DBGLOG("GPG %d %s", retcode, buf.str());
+            StringArray allErrs;
+            allErrs.appendList(buf, "\n");
+            ForEachItemIn(idx, allErrs)
+            {
+                if (strlen(allErrs.item(idx)))
+                    reportWarning(CategorySecurity, dummyToken, WRN_SECURITY_SIGNERROR, "gpg error: %s", allErrs.item(idx));
+            }
+        }
+        else
+            yyParser->inSignedModule = true;
+    }
+    catch (IException *e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        reportWarning(CategorySecurity, dummyToken, WRN_SECURITY_SIGNERROR, "Failed to execute gpg: %d %s. Module will be treated as unsigned", e->errorCode(), msg.str());
+        e->Release();
     }
 }
 
@@ -808,7 +856,7 @@ void HqlLex::doDeclare(YYSTYPE & returnToken)
         }
 
         name = returnToken.getId();
-        declareXmlSymbol(returnToken, name->getAtomNamePtr());
+        declareXmlSymbol(returnToken, str(name));
 
         tok = yyLex(returnToken, false,0);
         if (tok == ')')
@@ -902,7 +950,7 @@ void HqlLex::doSet(YYSTYPE & returnToken, bool append)
     {
         StringBuffer buf;
         value->getStringValue(buf);
-        setXmlSymbol(returnToken, name->getAtomNamePtr(), buf.str(), append);
+        setXmlSymbol(returnToken, str(name), buf.str(), append);
         value->Release();
     }
 }
@@ -1048,7 +1096,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         }
         catch (...)
         {
-            setXmlSymbol(returnToken, exportname->getAtomNamePtr(), "", false);
+            setXmlSymbol(returnToken, str(exportname), "", false);
             PrintLog("Unexpected exception in doExport()");
         }
         if (!more)
@@ -1057,9 +1105,9 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
     StringBuffer buf;
     toXML(data, buf, 0);
     if (toXml)
-        ensureTopXmlScope()->loadXML(buf.str(), exportname->getAtomNamePtr());
+        ensureTopXmlScope()->loadXML(buf.str(), str(exportname));
     else
-        setXmlSymbol(returnToken, exportname->getAtomNamePtr(), buf.str(), false);
+        setXmlSymbol(returnToken, str(exportname), buf.str(), false);
     data->Release();
 }
 
@@ -1169,7 +1217,7 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
     }
     ::Release(forLoop);
 
-    forLoop = getSubScopes(returnToken, name->getAtomNamePtr(), doAll);
+    forLoop = getSubScopes(returnToken, str(name), doAll);
     if (forFilterText.length())
         forFilter.setown(createFileContentsFromText(forFilterText, sourcePath));
     forBody.setown(createFileContentsFromText(forBodyText, sourcePath));
@@ -1396,7 +1444,7 @@ void HqlLex::doUniqueName(YYSTYPE & returnToken)
             else
                 reportError(returnToken, ERR_EXPECTED, "string expected");
         }
-        declareUniqueName(name->getAtomNamePtr(), pattern);
+        declareUniqueName(str(name), pattern);
     }
 
     if (tok != ')')
@@ -1729,7 +1777,7 @@ IHqlExpression *HqlLex::parseECL(IFileContents * contents, IXmlScope *xmlScope, 
     //  Use an ECL reserved word as the scope name to avoid name conflicts with these defined localscope.
     Owned<IHqlScope> scope = new CHqlMultiParentScope(sharedId,yyParser->queryPrimaryScope(false),yyParser->queryPrimaryScope(true),yyParser->parseScope.get(),NULL);
 
-    HqlGramCtx parentContext(yyParser->lookupCtx);
+    HqlGramCtx parentContext(yyParser->lookupCtx, yyParser->inSignedModule);
     yyParser->saveContext(parentContext, false);
     HqlGram parser(parentContext, scope, contents, xmlScope, true);
     parser.getLexer()->set_yyLineNo(startLine);
@@ -2180,6 +2228,8 @@ int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
             setTokenPosition(returnToken);
             if (inComment)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"Comment is not terminated");
+            else if (inSignature)
+                reportError(returnToken, ERR_COMMENT_UNENDED,"Signature is not terminated");
             else if (inCpp)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"BEGINC++ or EMBED is not terminated");
             if (hashendKinds.ordinality())

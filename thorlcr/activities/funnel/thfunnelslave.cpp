@@ -695,7 +695,7 @@ class NonEmptySlaveActivity : public CSlaveActivity, public CThorDataLink
                 msg.append(anyThisInput);
                 {
                     BooleanOnOff onOff(sendReceiving);
-                    if (!container.queryJob().queryJobComm().sendRecv(msg, 0, masterMpTag, LONGTIMEOUT))
+                    if (!queryJobChannel().queryJobComm().sendRecv(msg, 0, masterMpTag, LONGTIMEOUT))
                         return false;
                 }
                 bool othersRead;
@@ -722,7 +722,7 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         if (!container.queryLocalOrGrouped())
-            masterMpTag = container.queryJob().deserializeMPTag(data);
+            masterMpTag = container.queryJobChannel().deserializeMPTag(data);
         appendOutputLinked(this);
     }
     void abort()
@@ -730,7 +730,7 @@ public:
         CSlaveActivity::abort();
         eoi = true;
         if (sendReceiving)
-            container.queryJob().queryJobComm().cancel(0, masterMpTag);
+            queryJobChannel().queryJobComm().cancel(0, masterMpTag);
     }
 
 // IThorDataLink

@@ -32,21 +32,20 @@ class CWUWrapper : public CInterface
 public:
     CWUWrapper() {}
     CWUWrapper(const char* wuid, IEspContext &context): 
-        factory(context.querySecManager() ? getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser()) : getWorkUnitFactory()), 
-        wu(factory->openWorkUnit(wuid, false))
+        factory(getWorkUnitFactory()), wu(factory->openWorkUnit(wuid, context.querySecManager(), context.queryUser()))
     {
         if(!wu)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Could not open workunit %s",wuid);
     }
 
-    CWUWrapper(const char* wuid): factory(getWorkUnitFactory()), wu(factory->openWorkUnit(wuid, false))
+    CWUWrapper(const char* wuid): factory(getWorkUnitFactory()), wu(factory->openWorkUnit(wuid))
     {
         if(!wu)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Could not open workunit %s",wuid);
     }
 
     CWUWrapper(const char * app, const char * user, IEspContext &context):
-        factory(getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser())), wu(factory->createWorkUnit(app, user))
+        factory(getWorkUnitFactory()), wu(factory->createWorkUnit(app, user, context.querySecManager(), context.queryUser()))
     {
         if(!wu)
             throw MakeStringException(ECLWATCH_CANNOT_CREATE_WORKUNIT,"Could not create workunit.");

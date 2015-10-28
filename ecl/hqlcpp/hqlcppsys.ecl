@@ -29,7 +29,7 @@ const char * cppSystemText[]  = {
     "shared IOutputMetaData := boolean;",
     "shared size32_t := unsigned4;",
     
-    "export InternalCppService := SERVICE",
+    "export InternalCppService := SERVICE:fold",
     //  searchTableStringN(unsigned4 num, string table, string search) : library='eclrtl';
     //  memcpy(void * target, void * src, unsigned len);
     //internal code generation helper functions...
@@ -772,6 +772,7 @@ const char * cppSystemText[]  = {
     "   boolean newExistsAggregateArg(boolean _meta) : include, pseudoentrypoint='new CLibraryExistsAggregateArg';",
     "   boolean newFunnelArg(boolean _ordered, boolean _sequential, boolean _meta) : include, pseudoentrypoint='new CLibraryFunnelArg';",
     "   boolean newGraphLoopResultWriteArg(boolean _meta) : include, pseudoentrypoint='new CLibraryGraphLoopResultWriteArg';",
+    "   boolean newLibraryConstantRawIteratorArg(linkcounted dataset _x, boolean meta) : include, pseudoentrypoint='new CLibraryConstantRawIteratorArg';",
     "   boolean newLocalResultReadArg(unsigned4 _sequence, boolean meta) : include, pseudoentrypoint='new CLibraryLocalResultReadArg';",
     "   boolean newLocalResultSpillArg(unsigned4 _sequence, boolean _usedOutside, boolean meta) : include, pseudoentrypoint='new CLibraryLocalResultSpillArg';",
     "   boolean newNullArg(boolean meta) : include, pseudoentrypoint='new CLibraryNullArg';",

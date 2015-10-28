@@ -52,6 +52,8 @@ namespace ws_workunits {
 
 static const long MAXXLSTRANSFER = 5000000;
 const unsigned DATA_SIZE = 16;
+const unsigned WUARCHIVE_CACHE_SIZE = 8;
+const unsigned WUARCHIVE_CACHE_MINITES = 5;
 const unsigned AWUS_CACHE_SIZE = 16;
 const unsigned AWUS_CACHE_MIN_DEFAULT = 15;
 
@@ -61,7 +63,7 @@ inline bool isEmpty(const char *val){return (!val || !*val);}
 const char *getWuAccessType(IConstWorkUnit& cw, const char *user);
 
 SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, const char *owner, SecAccessFlags accessOwn, SecAccessFlags accessOthers);
-SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, IConstWorkUnit& cw, SecAccessFlags accessOwn, SecAccessFlags accessOthers);
+SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, IConstWorkUnitInfo& cw, SecAccessFlags accessOwn, SecAccessFlags accessOthers);
 SecAccessFlags getWsWorkunitAccess(IEspContext& cxt, IConstWorkUnit& cw);
 
 void getUserWuAccessFlags(IEspContext& context, SecAccessFlags& accessOwn, SecAccessFlags& accessOthers, bool except);
@@ -127,12 +129,15 @@ private:
 
 class WsWuInfo
 {
+    IEspWUArchiveFile* readArchiveFileAttr(IPropertyTree& fileTree, const char* path);
+    IEspWUArchiveModule* readArchiveModuleAttr(IPropertyTree& moduleTree, const char* path);
+    void readArchiveFiles(IPropertyTree* archiveTree, const char* path, IArrayOf<IEspWUArchiveFile>& files);
 public:
     WsWuInfo(IEspContext &ctx, IConstWorkUnit *cw_) :
       context(ctx), cw(cw_)
     {
         version = context.getClientVersion();
-        cw->getWuid(wuid);
+        wuid.set(cw->queryWuid());
     }
 
     WsWuInfo(IEspContext &ctx, const char *wuid_) :
@@ -141,7 +146,7 @@ public:
         wuid.set(wuid_);
         version = context.getClientVersion();
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(ctx.querySecManager(), ctx.queryUser());
-        cw.setown(factory->openWorkUnit(wuid_, false));
+        cw.setown(factory->openWorkUnit(wuid_));
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", wuid_);
     }
@@ -163,10 +168,10 @@ public:
     void getTimers(IEspECLWorkunit &info, unsigned flags);
     void getHelpers(IEspECLWorkunit &info, unsigned flags);
     void getGraphInfo(IEspECLWorkunit &info, unsigned flags);
+    void getWUGraphNameAndTypes(WUGraphType graphType, IArrayOf<IEspNameAndType>& graphNameAndTypes);
     void getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags);
     bool getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize);
 
-    void getRoxieCluster(IEspECLWorkunit &info, unsigned flags);
     void getWorkflow(IEspECLWorkunit &info, unsigned flags);
 
     void getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEspECLHelpFile>& helpers);
@@ -185,11 +190,16 @@ public:
     void getWorkunitDll(StringBuffer &name, MemoryBuffer& buf);
     void getWorkunitXml(const char* plainText, MemoryBuffer& buf);
     void getWorkunitQueryShortText(MemoryBuffer& buf);
-    void getWorkunitAssociatedXml(const char* name, const char* IPAddress, const char* plainText, const char* description, bool forDownload, MemoryBuffer& buf);
+    void getWorkunitAssociatedXml(const char* name, const char* IPAddress, const char* plainText, const char* description,
+        bool forDownload, bool addXMLDeclaration, MemoryBuffer& buf);
     void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload);
     void getEventScheduleFlag(IEspECLWorkunit &info);
     unsigned getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info);
     IDistributedFile* getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent);
+
+    IPropertyTree* getWorkunitArchive();
+    void listArchiveFiles(IPropertyTree* archive, const char* path, IArrayOf<IEspWUArchiveModule>& modules, IArrayOf<IEspWUArchiveFile>& files);
+    void getArchiveFile(IPropertyTree* archive, const char* moduleName, const char* attrName, const char* path, StringBuffer& file);
 
 protected:
     void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
@@ -204,14 +214,14 @@ public:
     Linked<IConstWorkUnit> cw;
     double version;
     SCMStringBuffer clusterName;
-    SCMStringBuffer wuid;
+    StringAttr wuid;
 };
 
 void getSashaNode(SocketEndpoint &ep);
 
 struct WsWuSearch
 {
-    WsWuSearch(IEspContext& context,const char* owner=NULL,const char* state=NULL,const char* cluster=NULL,const char* startDate=NULL,const char* endDate=NULL,const char* ecl=NULL,const char* jobname=NULL,const char* appname=NULL,const char* appkey=NULL,const char* appvalue=NULL);
+    WsWuSearch(IEspContext& context,const char* owner=NULL,const char* state=NULL,const char* cluster=NULL,const char* startDate=NULL,const char* endDate=NULL,const char* jobname=NULL);
 
     typedef std::vector<std::string>::iterator iterator;
 
@@ -320,6 +330,97 @@ struct ArchivedWuCache: public CInterface, implements IInterface
     void add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned numWUsReturned, IArrayOf<IEspECLWorkunit>& wus);
 
     std::list<Linked<ArchivedWuCacheElement> > cache;
+    CriticalSection crit;
+    size32_t cacheSize;
+};
+
+struct WUArchiveCacheElement: public CInterface, implements IInterface
+{
+    IMPLEMENT_IINTERFACE;
+    WUArchiveCacheElement(const char* _wuid, IPropertyTree* _archive) : wuid(_wuid)
+    {
+        archive.setown(_archive);
+        timeCached.setNow();
+    }
+
+    CDateTime timeCached;
+    std::string wuid;
+    Owned<IPropertyTree> archive;
+};
+
+struct CompareWUArchive
+{
+    CompareWUArchive(const char* _wuid): wuid(_wuid) {}
+    bool operator()(const Linked<WUArchiveCacheElement>& e) const
+    {
+        return streq(e->wuid.c_str(), wuid.c_str());
+    }
+    std::string wuid;
+};
+
+struct WUArchiveCache: public CInterface, implements IInterface
+{
+    IMPLEMENT_IINTERFACE;
+
+    WUArchiveCache(size32_t _cacheSize=0): cacheSize(_cacheSize){}
+
+    WUArchiveCacheElement* lookup(IEspContext &context, const char* wuid, unsigned timeOutMin)
+    {
+        CriticalBlock block(crit);
+
+        if (cache.size() < 1)
+            return NULL;
+
+        //erase data if it should be
+        CDateTime timeNow;
+        int timeout = timeOutMin;
+        timeNow.setNow();
+        timeNow.adjustTime(-timeout);
+        while (true)
+        {
+            std::list<Linked<WUArchiveCacheElement> >::iterator list_iter = cache.begin();
+            if (list_iter == cache.end())
+                break;
+
+            WUArchiveCacheElement* wuArchive = list_iter->get();
+            if (!wuArchive || (wuArchive->timeCached > timeNow))
+                break;
+
+            cache.pop_front();
+        }
+
+        if (cache.size() < 1)
+            return NULL;
+
+        //Check whether we have the WUArchive cache for this WU.
+        std::list<Linked<WUArchiveCacheElement> >::iterator it = std::find_if(cache.begin(), cache.end(), CompareWUArchive(wuid));
+        if(it!=cache.end())
+        {
+            return it->getLink();
+        }
+
+        return NULL;
+    }
+
+    void add(const char* _wuid, IPropertyTree* _archive)
+    {
+        Owned<IPropertyTree> archive = _archive;
+        CriticalBlock block(crit);
+
+        //Save new data
+        Owned<WUArchiveCacheElement> e = new WUArchiveCacheElement(_wuid, archive.getClear());
+        if (cacheSize > 0)
+        {
+            if (cache.size() >= cacheSize)
+                cache.pop_front();
+
+            cache.push_back(e.get());
+        }
+
+        return;
+    }
+
+    std::list<Linked<WUArchiveCacheElement> > cache;
     CriticalSection crit;
     size32_t cacheSize;
 };

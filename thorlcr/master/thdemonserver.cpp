@@ -98,11 +98,9 @@ private:
         {
             if (memcmp(graphname,"graph",5)==0)
                 graphname+=5;
-            SCMStringBuffer wuid;
-            wu->getWuid(wuid);
             LOG(daliAuditLogCat,",Timing,ThorGraph,%s,%s,%s,%u,1,%d,%s,%s,%s",
                 queryServerStatus().queryProperties()->queryProp("@thorname"),
-                wuid.str(),
+                wu->queryWuid(),
                 graphname,
                 (unsigned)graph.queryGraphId(),
                 duration,
@@ -128,14 +126,13 @@ private:
             try
             {
                 IConstWorkUnit &currentWU = activeGraphs.item(0).queryJob().queryWorkUnit();
-                Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)activeGraphs.item(0).queryJob()).getGraphProgress();
+                const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    Owned<IWUGraphStats> stats = graphProgress->update(SCTthor, queryStatisticsComponentName(), graph.queryGraphId());
+                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), graph.queryGraphId());
                     reportGraph(stats->queryStatsBuilder(), &graph, finished);
                 }
-                graphProgress.clear();
                 Owned<IWorkUnit> wu = &currentWU.lock();
                 ForEachItemIn (g2, activeGraphs)
                 {
@@ -158,14 +155,11 @@ private:
         try
         {
             IConstWorkUnit &currentWU = graph->queryJob().queryWorkUnit();
-            Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)graph->queryJob()).getGraphProgress();
-
+            const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
             {
-                Owned<IWUGraphStats> stats = graphProgress->update(SCTthor, queryStatisticsComponentName(), graph->queryGraphId());
+                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), graph->queryGraphId());
                 reportGraph(stats->queryStatsBuilder(), graph, finished);
             }
-
-            graphProgress.clear();
 
             Owned<IWorkUnit> wu = &currentWU.lock();
             reportStatus(wu, *graph, startTime, finished, success);
@@ -188,18 +182,15 @@ public:
         reportRate = globals->getPropInt("@watchdogProgressInterval", 30);
     }
 
-    virtual void takeHeartBeat(const SocketEndpoint &sender, MemoryBuffer &progressMb)
+    virtual void takeHeartBeat(MemoryBuffer &progressMb)
     {
         synchronized block(mutex);
         if (0 == activeGraphs.ordinality())
         {
             StringBuffer urlStr;
-            LOG(MCdebugProgress, unknownJob, "heartbeat packet received with no active graphs, from=%s", sender.getUrlStr(urlStr).str());
+            LOG(MCdebugProgress, unknownJob, "heartbeat packet received with no active graphs");
             return;
         }
-        rank_t node = querySlaveGroup().rank(sender);
-        assertex(node != RANK_NULL);
-
         size32_t compressedProgressSz = progressMb.remaining();
         if (compressedProgressSz)
         {
@@ -208,6 +199,8 @@ public:
             do
             {
                 graph_id graphId;
+                unsigned slave;
+                uncompressedMb.read(slave);
                 uncompressedMb.read(graphId);
                 CMasterGraph *graph = NULL;
                 ForEachItemIn(g, activeGraphs) if (activeGraphs.item(g).queryGraphId() == graphId) graph = (CMasterGraph *)&activeGraphs.item(g);
@@ -216,7 +209,7 @@ public:
                     LOG(MCdebugProgress, unknownJob, "heartbeat received from unknown graph %" GIDPF "d", graphId);
                     break;
                 }
-                if (!graph->deserializeStats(node, uncompressedMb))
+                if (!graph->deserializeStats(slave, uncompressedMb))
                 {
                     LOG(MCdebugProgress, unknownJob, "heartbeat error in graph %" GIDPF "d", graphId);
                     break;

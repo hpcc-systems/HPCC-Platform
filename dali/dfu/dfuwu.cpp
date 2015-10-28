@@ -1341,7 +1341,7 @@ public:
     void setCsvOptions(const char *separate,const char *terminate,const char *quote,const char *escape,bool quotedTerminator)
     {
         IPropertyTree *t = queryUpdateProperties();
-        if (separate && *separate)
+        if (separate) //Enable to pass zero string to override default separator
             t->setProp("@csvSeparate",separate);
         if (terminate && *terminate)
             t->setProp("@csvTerminate",terminate);
@@ -3041,6 +3041,7 @@ public:
                 sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), unknownAttributes, elements);
                 return conn.getClear();
             }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, dali always returns all of matched WUs.
         };
 
         StringBuffer query;
@@ -3095,7 +3096,7 @@ public:
         }
         IArrayOf<IPropertyTree> results;
         Owned<IElementsPager> elementsPager = new CDFUWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
-        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,queryowner,cachehint,results,total);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,queryowner,cachehint,results,total, NULL);
         return new CConstDFUWUArrayIterator(this,conn,results);
     }
 
@@ -3107,17 +3108,6 @@ public:
         IPropertyTree *root = conn->queryRoot();
         return root->numChildren();
     }
-
-    virtual unsigned numWorkUnitsFiltered(DFUsortfield *filters,const void *filterbuf)
-    {
-        if (!filters)
-            return numWorkUnits();
-        unsigned total;
-        Owned<IConstDFUWorkUnitIterator> iter = getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,&total);
-        return total;
-    }
-
-
 };
 
 IDFUWorkUnitFactory * getDFUWorkUnitFactory()

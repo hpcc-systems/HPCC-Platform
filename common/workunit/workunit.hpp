@@ -37,6 +37,7 @@
 #include "jtime.hpp"
 #include "jsocket.hpp"
 #include "jstats.h"
+#include "jutil.hpp"
 #include "jprop.hpp"
 
 #define GLOBAL_SCOPE "workunit"
@@ -207,16 +208,6 @@ interface IConstWUGraph : extends IConstWUGraphMeta
     virtual IPropertyTree * getXGMMLTreeRaw() const = 0;
 };
 
-interface IWUGraph : extends IConstWUGraph
-{
-    virtual void setXGMML(const char * text) = 0;
-    virtual void setXGMMLTree(IPropertyTree * tree, bool compress=true) = 0;
-    virtual void setName(const char * name) = 0;
-    virtual void setLabel(const char * name) = 0;
-    virtual void setType(WUGraphType type) = 0;
-};
-
-
 interface IConstWUGraphIterator : extends IScmIterator
 {
     virtual IConstWUGraph & query() = 0;
@@ -341,6 +332,8 @@ interface IWUResult : extends IConstWUResult
     virtual void setResultRow(unsigned len, const void * data) = 0;
     virtual void setResultXmlns(const char *prefix, const char *uri) = 0;
     virtual void setResultFieldOpt(const char *name, const char *value)=0;
+
+    virtual IPropertyTree *queryPTree() = 0;
 };
 
 
@@ -398,6 +391,7 @@ interface IConstWUQuery : extends IInterface
     virtual IConstWUAssociatedFileIterator & getAssociatedFiles() const = 0;
     virtual IStringVal & getQueryShortText(IStringVal & str) const = 0;
     virtual IStringVal & getQueryMainDefinition(IStringVal & str) const = 0;
+    virtual bool isArchive() const = 0;
 };
 
 
@@ -433,25 +427,6 @@ interface IWUWebServicesInfo : extends IConstWUWebServicesInfo
     virtual void setWebServicesCRC(unsigned crc) = 0;
     virtual void setText(const char * name, const char * text) = 0;
 };
-
-
-interface IConstWURoxieQueryInfo : extends IInterface
-{
-    virtual IStringVal & getQueryInfo(IStringVal & str) const = 0;
-    virtual IStringVal & getDefaultPackageInfo(IStringVal & str) const = 0;
-    virtual IStringVal & getRoxieClusterName(IStringVal & str) const = 0;
-    virtual IStringVal & getWuid(IStringVal & str) const = 0;
-};
-
-
-interface IWURoxieQueryInfo : extends IConstWURoxieQueryInfo
-{
-    virtual void setQueryInfo(const char * info) = 0;
-    virtual void setDefaultPackageInfo(const char * pstr, int len) = 0;
-    virtual void setRoxieClusterName(const char * name) = 0;
-    virtual void setWuid(const char * wuid) = 0;
-};
-
 
 
 //! IWUPlugin
@@ -505,6 +480,7 @@ interface IConstWUException : extends IInterface
     virtual IStringVal & getExceptionFileName(IStringVal & str) const = 0;
     virtual unsigned getExceptionLineNo() const = 0;
     virtual unsigned getExceptionColumn() const = 0;
+    virtual unsigned getSequence() const = 0;
 };
 
 
@@ -720,15 +696,20 @@ interface IConstLocalFileUploadIterator : extends IScmIterator
 
 enum WUSubscribeOptions
 {
-    SubscribeOptionRunningState = 0,
-    SubscribeOptionAnyState = 1,
+    SubscribeOptionState = 1,
     SubscribeOptionAbort = 2,
-    SubscribeOptionProgress = 3,
-    SubscribeOptionAll = 4,
-    SubscribeOptionSize = 5
+    SubscribeOptionAction = 4
 };
 
+interface IWorkUnitSubscriber
+{
+    virtual void notify(WUSubscribeOptions flags) = 0;
+};
 
+interface IWorkUnitWatcher : extends IInterface
+{
+    virtual void unsubscribe() = 0;
+};
 
 interface IWUGraphProgress;
 interface IPropertyTree;
@@ -752,10 +733,6 @@ interface IPropertyTree;
 interface IConstWUGraphProgress : extends IInterface
 {
     virtual IPropertyTree * getProgressTree() = 0;
-    virtual WUGraphState queryGraphState() = 0;
-    virtual WUGraphState queryNodeState(WUGraphIDType nodeId) = 0;
-    virtual IWUGraphProgress * update() = 0;
-    virtual IWUGraphStats * update(StatisticCreatorType creatorType, const char * creator, unsigned subgraph) = 0;
     virtual unsigned queryFormatVersion() = 0;
 };
 
@@ -763,12 +740,6 @@ interface IConstWUGraphProgress : extends IInterface
 interface IWUGraphStats : public IInterface
 {
     virtual IStatisticGatherer & queryStatsBuilder() = 0;
-};
-
-interface IWUGraphProgress : extends IConstWUGraphProgress
-{
-    virtual void setGraphState(WUGraphState state) = 0;
-    virtual void setNodeState(WUGraphIDType nodeId, WUGraphState state) = 0;
 };
 
 
@@ -788,9 +759,9 @@ interface IConstWUTimeStampIterator : extends IScmIterator
 
 interface IConstWUAppValue : extends IInterface
 {
-    virtual IStringVal & getApplication(IStringVal & str) const = 0;
-    virtual IStringVal & getName(IStringVal & str) const = 0;
-    virtual IStringVal & getValue(IStringVal & str) const = 0;
+    virtual const char *queryApplication() const = 0;
+    virtual const char *queryName() const = 0;
+    virtual const char *queryValue() const = 0;
 };
 
 
@@ -978,15 +949,34 @@ interface IStringIterator : extends IScmIterator
     virtual IStringVal & str(IStringVal & str) = 0;
 };
 
-interface IConstWorkUnit : extends IInterface
+interface IConstWorkUnitInfo : extends IInterface
+{
+    virtual const char *queryWuid() const = 0;
+    virtual const char *queryUser() const = 0;
+    virtual const char *queryJobName() const = 0;
+    virtual const char *queryWuScope() const = 0;
+    virtual const char *queryClusterName() const = 0;
+    virtual WUState getState() const = 0;
+    virtual const char *queryStateDesc() const = 0;
+    virtual WUAction getAction() const = 0;
+    virtual const char *queryActionDesc() const = 0;
+    virtual WUPriorityClass getPriority() const = 0;
+    virtual const char *queryPriorityDesc() const = 0;
+    virtual int getPriorityLevel() const = 0;
+    virtual bool isProtected() const = 0;
+    virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
+
+    virtual unsigned getTotalThorTime() const = 0;
+    virtual IConstWUAppValueIterator & getApplicationValues() const = 0;
+};
+
+interface IConstWorkUnit : extends IConstWorkUnitInfo
 {
     virtual bool aborting() const = 0;
     virtual void forceReload() = 0;
     virtual WUAction getAction() const = 0;
-    virtual IStringVal& getActionEx(IStringVal & str) const = 0;
     virtual IStringVal & getApplicationValue(const char * application, const char * propname, IStringVal & str) const = 0;
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const = 0;
-    virtual IConstWUAppValueIterator & getApplicationValues() const = 0;
     virtual bool hasWorkflow() const = 0;
     virtual unsigned queryEventScheduledCount() const = 0;
     virtual IPropertyTree * queryWorkflowTree() const = 0;
@@ -995,7 +985,6 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstLocalFileUploadIterator * getLocalFileUploads() const = 0;
     virtual bool requiresLocalFileUpload() const = 0;
     virtual bool getIsQueryService() const = 0;
-    virtual IStringVal & getClusterName(IStringVal & str) const = 0;
     virtual bool hasDebugValue(const char * propname) const = 0;
     virtual IStringVal & getDebugValue(const char * propname, IStringVal & str) const = 0;
     virtual int getDebugValueInt(const char * propname, int defVal) const = 0;
@@ -1010,12 +999,9 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstWUGraphIterator & getGraphs(WUGraphType type) const = 0;
     virtual IConstWUGraph * getGraph(const char * name) const = 0;
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const = 0;
-    virtual IStringVal & getJobName(IStringVal & str) const = 0;
     virtual IConstWUPlugin * getPluginByName(const char * name) const = 0;
     virtual IConstWUPluginIterator & getPlugins() const = 0;
     virtual IConstWULibraryIterator & getLibraries() const = 0;
-    virtual WUPriorityClass getPriority() const = 0;
-    virtual int getPriorityLevel() const = 0;
     virtual IConstWUQuery * getQuery() const = 0;
     virtual bool getRescheduleFlag() const = 0;
     virtual IConstWUResult * getResultByName(const char * name) const = 0;
@@ -1024,41 +1010,31 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstWUResultIterator & getResults() const = 0;
     virtual IStringVal & getScope(IStringVal & str) const = 0;
     virtual IStringVal & getSecurityToken(IStringVal & str) const = 0;
-    virtual WUState getState() const = 0;
     virtual IStringVal & getStateEx(IStringVal & str) const = 0;
     virtual __int64 getAgentSession() const = 0;
     virtual unsigned getAgentPID() const = 0;
-    virtual IStringVal & getStateDesc(IStringVal & str) const = 0;
     virtual IConstWUResult * getTemporaryByName(const char * name) const = 0;
     virtual IConstWUResultIterator & getTemporaries() const = 0;
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const = 0;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const = 0;
-    virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const = 0;
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const = 0; // filter must currently stay alive while the iterator does.
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const = 0;
-    virtual IStringVal & getUser(IStringVal & str) const = 0;
-    virtual IStringVal & getWuScope(IStringVal & str) const = 0;
     virtual IConstWUResult * getVariableByName(const char * name) const = 0;
     virtual IConstWUResultIterator & getVariables() const = 0;
-    virtual IStringVal & getWuid(IStringVal & str) const = 0;
-    virtual bool isProtected() const = 0;
     virtual bool isPausing() const = 0;
     virtual IWorkUnit & lock() = 0;
-    virtual bool reload() = 0;
     virtual void requestAbort() = 0;
     virtual void subscribe(WUSubscribeOptions options) = 0;
     virtual unsigned queryFileUsage(const char * filename) const = 0;
     virtual unsigned getCodeVersion() const = 0;
     virtual unsigned getWuidVersion() const  = 0;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const = 0;
-    virtual bool getWuDate(unsigned & year, unsigned & month, unsigned & day) = 0;
     virtual IPropertyTree * getDiskUsageStats() = 0;
     virtual IPropertyTreeIterator & getFileIterator() const = 0;
     virtual bool getCloneable() const = 0;
     virtual IUserDescriptor * queryUserDescriptor() const = 0;
     virtual IStringVal & getSnapshot(IStringVal & str) const = 0;
     virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const = 0;
-    virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
     virtual IPropertyTreeIterator & getFilesReadIterator() const = 0;
     virtual void protect(bool protectMode) = 0;
     virtual IStringVal & getAllowedClusters(IStringVal & str) const = 0;
@@ -1079,6 +1055,16 @@ interface IConstWorkUnit : extends IInterface
     virtual IStringIterator *getLogs(const char *type, const char *instance=NULL) const = 0;
     virtual IStringIterator *getProcesses(const char *type) const = 0;
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const = 0;
+
+    // Note that these don't read/modify the workunit itself, but rather the associated progress info.
+    // As such they can be called without locking the workunit, and are 'const' as far as the WU is concerned.
+
+    virtual WUGraphState queryGraphState(const char *graphName) const = 0;
+    virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const = 0;
+    virtual void setGraphState(const char *graphName, WUGraphState state) const = 0;
+    virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const = 0;
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const = 0;
+    virtual void clearGraphProgress() const = 0;
 };
 
 
@@ -1105,7 +1091,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultLimit(unsigned value) = 0;
     virtual void setSecurityToken(const char * value) = 0;
     virtual void setState(WUState state) = 0;
-    virtual void setStateEx(const char * text) = 0;
+    virtual void setStateEx(const char * text) = 0;  // Indicates why blocked
     virtual void setAgentSession(__int64 sessionId) = 0;
     virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) = 0;
     virtual void setTracingValue(const char * propname, const char * value) = 0;
@@ -1122,11 +1108,9 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void deschedule() = 0;
     virtual unsigned addLocalFileUpload(LocalFileUploadType type, const char * source, const char * destination, const char * eventTag) = 0;
     virtual IWUResult * updateGlobalByName(const char * name) = 0;
-    virtual IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml) = 0;
-    virtual IWUGraph * updateGraph(const char * name) = 0;
+    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml) = 0;
     virtual IWUQuery * updateQuery() = 0;
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create) = 0;
-    virtual IWURoxieQueryInfo * updateRoxieQueryInfo(const char * wuid, const char * roxieClusterName) = 0;
     virtual IWUPlugin * updatePluginByName(const char * name) = 0;
     virtual IWULibrary * updateLibraryByName(const char * name) = 0;
     virtual IWUResult * updateResultByName(const char * name) = 0;
@@ -1143,7 +1127,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setIsClone(bool value) = 0;
     virtual void setTimeScheduled(const IJlibDateTime & val) = 0;
     virtual void noteFileRead(IDistributedFile * file) = 0;
-    virtual void clearGraphProgress() = 0;
     virtual void resetBeforeGeneration() = 0;
     virtual bool switchThorQueue(const char * newcluster, IQueueSwitcher * qs) = 0;
     virtual void setAllowedClusters(const char * value) = 0;
@@ -1162,7 +1145,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultVarUnicode(const char * stepname, unsigned sequence, UChar const *val) = 0;
     virtual void setResultString(const char * stepname, unsigned sequence, int len, const char *val) = 0;
     virtual void setResultData(const char * stepname, unsigned sequence, int len, const void *val) = 0;
-//  virtual void doSetResultString(type_t type, const char *name, unsigned sequence, int len, const char *val) = 0;
     virtual void setResultRaw(const char * name, unsigned sequence, int len, const void *val) = 0;
     virtual void setResultSet(const char * name, unsigned sequence, bool isAll, size32_t len, const void *val, ISetToXmlTransformer *) = 0;
     virtual void setResultUnicode(const char * name, unsigned sequence, int len, UChar const * val) = 0;
@@ -1174,7 +1156,7 @@ interface IWorkUnit : extends IConstWorkUnit
 
 interface IConstWorkUnitIterator : extends IScmIterator
 {
-    virtual IConstWorkUnit & query() = 0;
+    virtual IConstWorkUnitInfo & query() = 0;
 };
 
 //! IWUTimers
@@ -1200,7 +1182,6 @@ interface ILocalWorkUnit : extends IWorkUnit
 {
     virtual void serialize(MemoryBuffer & tgt) = 0;
     virtual void deserialize(MemoryBuffer & src) = 0;
-    virtual void loadXML(const char * xml) = 0;
     virtual IConstWorkUnit * unlock() = 0;
 };
 
@@ -1215,18 +1196,22 @@ enum WUSortField
     WUSFwuid = 6,
     WUSFwuidhigh = 7,
     WUSFfileread = 8,
-    WUSFroxiecluster = 9,
+    // WUSFroxiecluster = 9, obsolete
     WUSFprotected = 10,
     WUSFtotalthortime = 11,
     WUSFwildwuid = 12,
     WUSFecl = 13,
-    WUSFcustom = 14,
+    // WUSFcustom = 14, obsolete
+    WUSFappvalue=15,
+    WUSFfilewritten = 16,
     WUSFterm = 0,
     WUSFreverse = 256,
     WUSFnocase = 512,
     WUSFnumeric = 1024,
     WUSFwild = 2048
 };
+
+extern WORKUNIT_API const char *queryFilterXPath(WUSortField field);
 
 enum WUQueryFilterBoolean
 {
@@ -1266,25 +1251,35 @@ typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 
 interface IWorkUnitFactory : extends IInterface
 {
-    virtual IWorkUnit * createWorkUnit(const char * app, const char * user) = 0;
-    virtual bool deleteWorkUnit(const char * wuid) = 0;
-    virtual IConstWorkUnit * openWorkUnit(const char * wuid, bool lock) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner) = 0;
-    virtual IWorkUnit * updateWorkUnit(const char * wuid) = 0;
+    virtual IWorkUnit *createWorkUnit(const char *app, const char *scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual bool deleteWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IConstWorkUnit * openWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual bool restoreWorkUnit(const char *base, const char *wuid) = 0;
     virtual int setTracingLevel(int newlevel) = 0;
-    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * user) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField * sortorder, WUSortField * filters, const void * filterbuf, unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total) = 0;
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField sortorder, WUSortField * filters, const void * filterbuf,
+                                                        unsigned startoffset, unsigned maxnum, __int64 * cachehint, unsigned *total,
+                                                        ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual unsigned numWorkUnits() = 0;
-    virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf) = 0;
-    virtual void descheduleAllWorkUnits() = 0;
-    virtual bool deleteWorkUnitEx(const char * wuid) = 0;
+    virtual IConstWorkUnitIterator *getScheduledWorkUnits(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual void descheduleAllWorkUnits(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) = 0;
-};
+    virtual bool isAborting(const char *wuid) const = 0;
+    virtual void clearAborting(const char *wuid) = 0;
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState) = 0;
+    virtual WUAction waitForWorkUnitAction(const char * wuid, WUAction original) = 0;
 
+    virtual unsigned validateRepository(bool fixErrors) = 0;
+    virtual void deleteRepository(bool recreate) = 0;
+    virtual void createRepository() = 0;  // If not already there...
+    virtual const char *queryStoreType() const = 0; // Returns "Dali" or "Cassandra"
+
+    virtual StringArray &getUniqueValues(WUSortField field, const char *prefix, StringArray &result) const = 0;
+    virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const = 0;
+};
 
 interface IWorkflowScheduleConnection : extends IInterface
 {
@@ -1304,7 +1299,8 @@ interface IExtendedWUInterface
     virtual unsigned calculateHash(unsigned prevHash) = 0;
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all) = 0;
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned) = 0;
-    virtual void packWorkUnit(bool pack=true) = 0;
+    virtual IPropertyTree *getUnpackedTree(bool includeProgress) const = 0;
+    virtual IPropertyTree *queryPTree() const = 0;
     
 };
 
@@ -1330,6 +1326,8 @@ protected:
     const char * defaultWho;
 };
 
+typedef IWorkUnitFactory * (* WorkUnitFactoryFactory)(const IPropertyTree *);
+
 extern WORKUNIT_API IStringVal &getEclCCServerQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getEclServerQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getEclSchedulerQueueNames(IStringVal &ret, const char *process);
@@ -1352,11 +1350,12 @@ extern WORKUNIT_API void getRoxieProcessServers(const char *process, SocketEndpo
 extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *process);
 extern WORKUNIT_API bool isProcessCluster(const char *process);
 extern WORKUNIT_API IStatisticGatherer * createGlobalStatisticGatherer(IWorkUnit * wu);
+extern WORKUNIT_API WUGraphType getGraphTypeFromString(const char* type);
 
 extern WORKUNIT_API bool getWorkUnitCreateTime(const char *wuid,CDateTime &time); // based on WUID
-extern WORKUNIT_API bool restoreWorkUnit(const char *base,const char *wuid);
 extern WORKUNIT_API void clientShutdownWorkUnit();
-extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IWorkUnit * wu);
+extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IConstWorkUnit * wu);
+extern WORKUNIT_API const IExtendedWUInterface * queryExtendedWU(const IConstWorkUnit * wu);
 extern WORKUNIT_API unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames, StringArray &queueNames);
 extern WORKUNIT_API unsigned getEnvironmentHThorClusterNames(StringArray &eclAgentNames, StringArray &groupNames, StringArray &targetNames);
 extern WORKUNIT_API StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, unsigned subGraphNum=0, unsigned __int64 subId=0);
@@ -1364,11 +1363,11 @@ extern WORKUNIT_API StringBuffer &formatGraphTimerScope(StringBuffer &str, const
 extern WORKUNIT_API bool parseGraphTimerLabel(const char *label, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphNum, unsigned &subId);
 extern WORKUNIT_API bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphId);
 extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column);
+extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
-extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);
-extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit();
-extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str, bool unpack, bool includeProgress, bool hidePasswords);
+extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit(const char *XML);
+extern WORKUNIT_API IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p);
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords);
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords);
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, const char *password);
@@ -1399,6 +1398,9 @@ extern WORKUNIT_API IPropertyTree * resolveDefinitionInArchive(IPropertyTree * a
 
 inline bool isLibrary(IConstWorkUnit * wu) { return wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0) != 0; }
 extern WORKUNIT_API bool looksLikeAWuid(const char * wuid, const char firstChar);
+
+extern WORKUNIT_API IConstWorkUnitIterator *createSecureConstWUIterator(IPropertyTreeIterator *iter, ISecManager *secmgr, ISecUser *secuser);
+extern WORKUNIT_API IConstWorkUnitIterator *createSecureConstWUIterator(IConstWorkUnitIterator *iter, ISecManager *secmgr, ISecUser *secuser);
 
 enum WUQueryActivationOptions
 {
@@ -1465,6 +1467,8 @@ void WORKUNIT_API testWorkflow();
 #endif
 
 extern WORKUNIT_API const char * getWorkunitStateStr(WUState state);
+extern WORKUNIT_API const char * getWorkunitActionStr(WUAction action);
+extern WORKUNIT_API WUAction getWorkunitAction(const char * actionStr);
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind);
 

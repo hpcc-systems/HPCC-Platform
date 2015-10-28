@@ -101,7 +101,7 @@ void reportException(IException * e)
     StringBuffer eMsg;
     e->errorMessage(eMsg);
     CString msg("An error occured whilst attempting connection:\n");
-    msg += eMsg.toCharArray();
+    msg += eMsg.str();
     msg += ".";
     MessageBox(NULL, msg, "Connection Error", MB_OK | MB_ICONEXCLAMATION);
     e->Release();

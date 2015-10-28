@@ -104,7 +104,7 @@ def queryWuid(jobname,  taskId):
     args.append('status')
     args.append('-v')
     args.append('-n=' + jobname)
-    args.append('--server=' + gConfig.ip)
+    args.append('--server=' + gConfig.espIp)
     args.append('--username=' + gConfig.username)
     args.append('--password=' + gConfig.password)
     res = shell.command(cmd, *defaults)(*args)
@@ -132,7 +132,7 @@ def abortWorkunit(wuid):
     args = []
     args.append('abort')
     args.append('-wu=' + wuid)
-    args.append('--server=' + gConfig.ip)
+    args.append('--server=' + gConfig.espIp)
     args.append('--username=' + gConfig.username)
     args.append('--password=' + gConfig.password)
     state=shell.command(cmd, *defaults)(*args)
@@ -190,70 +190,67 @@ def isLocalIP(ip):
 
     return retVal
 
-def checkHpccStatus(targets):
-    # Check HPCC Systems status on all local/remote target
+def checkHpccStatus():
+    # Check HPCC Systems status on local/remote target
     isLocal = False
     isLocalChecked = False
     isIpChecked={}
     config = getConfig()
-    for target in targets:
-        ip = config.IpAddress[target]
+    ip = config.espIp
+    isIpChecked[ip] = False
+    isLocal = isLocalIP(ip)
 
-        if not ip in isIpChecked:
-            isIpChecked[ip] = False
-
-        isLocal = isLocalIP(ip)
-        if isIpChecked[ip] or (isLocal and isLocalChecked):
-            continue
-
-        try:
-            if isLocal:
-                # There is no remote version (yet)
-                myProc = subprocess.Popen(["ecl --version"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
-                result = myProc.stdout.read() + myProc.stderr.read()
-                results = result.split('\n')
-                for line in results:
-                    if 'not found' in line:
-                        err = Error("6000")
-                        logging.error("%s. %s:'%s'" % (1,  err,  line))
-                        raise  err
-                        break
-
-            myProc = subprocess.Popen("ecl getname --wuid 'W*' --limit=5 --server="+ip,  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
-            result  = myProc.stdout.read() + myProc.stderr.read()
+    try:
+        if isLocal:
+            # There is no remote version (yet)
+            myProc = subprocess.Popen(["ecl --version"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+            result = myProc.stdout.read() + myProc.stderr.read()
             results = result.split('\n')
             for line in results:
-                if "Error connecting" in line:
-                    if isLocal:
-                        err = Error("6001")
-                        logging.error("%s. %s:'%s local %s target!'" % (1,  err,  line,  target))
-                        raise (err)
-                    else:
-                        err = Error("6004")
-                        logging.error("%s. %s:'%s remote %s target!'" % (1,  err,  line,  target))
-                        raise (err)
-                    break
-
-                if "command not found" in line:
-                    err = Error("6002")
+                if 'not found' in line:
+                    err = Error("6000")
                     logging.error("%s. %s:'%s'" % (1,  err,  line))
-                    raise (err)
+                    raise  err
                     break
-
-            if isLocal:
-                isLocalChecked = True
-
-            isIpChecked[ip] = True
-
-        except  OSError:
-            err = Error("6002")
-            logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
-            raise Error(err)
-
-        except ValueError:
-            err = Error("6003")
-            logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
-            raise Error(err)
-
-        finally:
+        else:
+            # Maybe use SSH to run  "ecl --version" on a remote node
             pass
+
+        myProc = subprocess.Popen("ecl getname --wuid 'W*' --limit=5 --server="+ip,  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+        result  = myProc.stdout.read() + myProc.stderr.read()
+        results = result.split('\n')
+        for line in results:
+            if "Error connecting" in line:
+                if isLocal:
+                    err = Error("6001")
+                    logging.error("%s. %s:'%s local target!'" % (1,  err,  line))
+                    raise (err)
+                else:
+                    err = Error("6004")
+                    logging.error("%s. %s:'%s remote target!'" % (1,  err,  line))
+                    raise (err)
+                break
+
+            if "command not found" in line:
+                err = Error("6002")
+                logging.error("%s. %s:'%s'" % (1,  err,  line))
+                raise (err)
+                break
+
+        if isLocal:
+            isLocalChecked = True
+
+        isIpChecked[ip] = True
+
+    except  OSError:
+        err = Error("6002")
+        logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
+        raise Error(err)
+
+    except ValueError:
+        err = Error("6003")
+        logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
+        raise Error(err)
+
+    finally:
+        pass

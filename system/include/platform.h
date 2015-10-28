@@ -37,6 +37,12 @@
 #define _ARCH_ARM64_
 #endif
 
+// Identify all possible flags that mean ppc64el
+#if defined(__powerpc__) || defined(__powerpc64__) \
+ || defined(__ppc__) || defined(__ppc64__) || defined(__ppc64el__)
+#define _ARCH_PPC64EL_
+#endif
+
 // Identify all possible flags that mean x86_64
 #if defined(__amd64__) || defined(__x86_64__) \
  || defined(_M_X64) || defined(_M_AMD64)
@@ -50,7 +56,7 @@
 
 // **** START OF X-PLATFORM SECTION ****
 
-#if defined(_ARCH_X86_64_) || defined(_ARCH_ARM64_) || __WORDSIZE==64
+#if defined(_ARCH_X86_64_) || defined(_ARCH_ARM64_) || defined(_ARCH_PPC64EL_) || __WORDSIZE==64
 #define __64BIT__
 #endif
 
@@ -101,6 +107,10 @@ typedef memsize_t rowsize_t;
 
 // **** END   OF X-PLATFORM SECTION ****
 #if defined(_WIN32)
+
+#define _CRT_SECURE_NO_WARNINGS
+#define NO_WARN_MBCS_MFC_DEPRECATION
+
 #if (_MSC_VER>=1300)
 #pragma warning(disable:4996)
 #endif
@@ -243,9 +253,15 @@ typedef unsigned long MaxCard;
 
 #endif // (_MSC_VER>=1400)
 
+#define likely(x)       (x)
+#define unlikely(x)     (x)
+
 // **** END   OF WIN32 SPECIFIC SECTION ****
 #else
 // **** START OF UNIX GENERAL SECTION ****
+
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
 
 #define _stdcall
 #define __stdcall

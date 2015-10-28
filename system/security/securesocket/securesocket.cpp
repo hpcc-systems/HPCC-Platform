@@ -346,6 +346,11 @@ public:
         return false;
     }
 
+    void set_ttl(unsigned _ttl)   // set ttl
+    {
+        throw MakeStringException(-1, "not implemented");
+    }
+
     size32_t get_receive_buffer_size()  // get OS send buffer
     {
         throw MakeStringException(-1, "not implemented");
@@ -883,7 +888,7 @@ public:
             throw MakeStringException(-1, "ctx can't be created");
         }
         password.set(passphrase);
-        SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.sget());
+        SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.str());
         SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
 
         if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
@@ -933,7 +938,7 @@ public:
             StringBuffer pwd;
             decrypt(pwd, passphrase);
             password.set(pwd);
-            SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.sget());
+            SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.str());
             SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
         }
 

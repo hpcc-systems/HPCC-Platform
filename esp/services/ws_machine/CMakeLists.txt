@@ -71,9 +71,14 @@ target_link_libraries ( ws_machine
          remote 
          dalibase 
          environment 
-         securesocket 
          workunit
     )
+
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_machine
+    	securesocket
+    )
+ENDIF()
 
 FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/DhcpMethods.xslt

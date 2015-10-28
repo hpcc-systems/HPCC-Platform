@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//class=embedded
+
 IMPORT Python;
 
 childrec := RECORD

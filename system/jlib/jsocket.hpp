@@ -246,14 +246,14 @@ public:
 
     // Create client socket connected to a multicast server socket
     //
-    static ISocket*  multicast_connect( unsigned short port, const char *mcgroupip, unsigned ttl);
-    static ISocket*  multicast_connect( const SocketEndpoint &ep, unsigned ttl);
+    static ISocket*  multicast_connect( unsigned short port, const char *mcgroupip, unsigned _ttl);
+    static ISocket*  multicast_connect( const SocketEndpoint &ep, unsigned _ttl);
 
     //
     // Create server multicast socket
     //
-    static ISocket*  multicast_create( unsigned short port, const char *mcgroupip);
-    static ISocket*  multicast_create( unsigned short port, const IpAddress &mcgroupip);
+    static ISocket*  multicast_create( unsigned short port, const char *mcgroupip, unsigned _ttl);
+    static ISocket*  multicast_create( unsigned short port, const IpAddress &mcgroupip, unsigned _ttl);
 
     //
     // Creates an ISocket for an already created socket
@@ -368,13 +368,15 @@ public:
     virtual bool join_multicast_group(SocketEndpoint &ep) = 0;  // for udp multicast
     virtual bool leave_multicast_group(SocketEndpoint &ep) = 0; // for udp multicast
 
-    virtual size32_t get_receive_buffer_size() =0;              // get OS receive buffer
-    virtual void set_receive_buffer_size(size32_t sz) =0;           // set OS receive buffer size
+    virtual void set_ttl(unsigned _ttl) = 0; // set TTL
 
-    virtual void set_keep_alive(bool set)=0;                    // set option SO_KEEPALIVE
+    virtual size32_t get_receive_buffer_size() = 0;             // get OS receive buffer
+    virtual void set_receive_buffer_size(size32_t sz) = 0;      // set OS receive buffer size
 
-    virtual size32_t udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size)=0;
-        virtual bool check_connection() = 0;
+    virtual void set_keep_alive(bool set) = 0;                  // set option SO_KEEPALIVE
+
+    virtual size32_t udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size) = 0;
+    virtual bool check_connection() = 0;
 
 
 /*

@@ -40,7 +40,7 @@ IEclRepository * loadPlugins(const char * pluginPath)
 
 IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeModuleText)
 {
-    HqlParseContext parseCtx(plugins, NULL);
+    HqlParseContext parseCtx(plugins, NULL, NULL);
     HqlLookupContext ctx(parseCtx, NULL);
     HqlScopeArray scopes;
     getRootScopes(scopes, plugins, ctx);
@@ -52,7 +52,7 @@ IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeM
         unsigned flags = module->getPropInt(flagsAtom, 0);
         IPropertyTree* prop = createPTree("Module", ipt_caseInsensitive);
         prop->setProp("@name", module->queryFullName());
-        prop->setProp("@path", module->querySourcePath()->str());
+        prop->setProp("@path", str(module->querySourcePath()));
         prop->setPropInt("@access", module->getPropInt(accessAtom, 3));
         prop->setPropInt("@timestamp", 1);
         prop->setPropInt("@flags", flags);
@@ -99,7 +99,7 @@ IPropertyTree * getPlugin(IPropertyTree * p, IEclRepository * plugins, const cha
 
     if(load && !plugin->getPropInt("@loaded",0))
     {
-        HqlParseContext parseCtx(plugins, NULL);
+        HqlParseContext parseCtx(plugins, NULL, NULL);
         HqlLookupContext GHMOREctx(parseCtx, NULL);
         Owned<IHqlScope> resolved = getResolveDottedScope(modname, LSFpublic, GHMOREctx);
         if (resolved)

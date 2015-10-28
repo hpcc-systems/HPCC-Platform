@@ -298,13 +298,11 @@ struct sQueueData
     unsigned lastWaitEdition;
 };
 
-
-
-class CJobQueue: public CInterface, implements IJobQueue
+class CJobQueueBase: public CInterface, implements IJobQueueConst
 {
     class cOrderedIterator
     {
-        CJobQueue &parent;
+        CJobQueueBase &parent;
         unsigned numqueues;
         unsigned *queueidx;
         sQueueData **queues;
@@ -313,8 +311,7 @@ class CJobQueue: public CInterface, implements IJobQueue
         unsigned current;
 
     public:
-        cOrderedIterator(CJobQueue &_parent)
-            : parent(_parent)
+        cOrderedIterator(CJobQueueBase&_parent) : parent(_parent)
         {
             numqueues=0;
             ForEachQueueIn(parent,qd1)
@@ -324,7 +321,8 @@ class CJobQueue: public CInterface, implements IJobQueue
             queues = (sQueueData **)(queueidx+numqueues);
             queuet = (IPropertyTree **)(queues+numqueues);
             unsigned i = 0;
-            ForEachQueueIn(parent,qd2) {
+            ForEachQueueIn(parent,qd2)
+            {
                 if (qd2->root)
                     queues[i++] = qd2;
             }
@@ -336,7 +334,8 @@ class CJobQueue: public CInterface, implements IJobQueue
             StringBuffer path;
             parent.getItemPath(path,0U);
             current = (unsigned)-1;
-            for (unsigned i = 0; i<numqueues;i++) {
+            for (unsigned i = 0; i<numqueues;i++)
+            {
                 queueidx[i] = 0;
                 queuet[i] = queues[i]->root->queryPropTree(path.str());
                 if (queuet[i])
@@ -355,7 +354,8 @@ class CJobQueue: public CInterface, implements IJobQueue
             parent.getItemPath(path,queueidx[current]);
             queuet[current] = queues[current]->root->queryPropTree(path.str());
             current = (unsigned)-1;
-            for (unsigned i = 0; i<numqueues;i++) {
+            for (unsigned i = 0; i<numqueues;i++)
+            {
                 if (queuet[i])
                     if ((current==(unsigned)-1)||parent.itemOlder(queuet[i],queuet[current]))
                         current = i;
@@ -386,18 +386,425 @@ class CJobQueue: public CInterface, implements IJobQueue
             assertex(current!=(unsigned)-1);
             return *queuet[current];
         }
-
     };
-
+protected:
+    bool doGetLastDequeuedInfo(sQueueData *qd, StringAttr &wuid, CDateTime &enqueuedt, int &priority)
+    {
+        priority = 0;
+        if (!qd)
+            return false;
+        const char *w = qd->root->queryProp("@prevwuid");
+        if (!w||!*w)
+            return false;
+        wuid.set(w);
+        StringBuffer dts;
+        if (qd->root->getProp("@prevenqueuedt",dts))
+            enqueuedt.setString(dts.str());
+        priority = qd->root->getPropInt("@prevpriority");
+        return true;
+    }
 public:
     sQueueData *qdata;
-    sQueueData *activeq;
+    Semaphore notifysem;
+    CriticalSection crit;
 
+    IMPLEMENT_IINTERFACE;
+
+    CJobQueueBase(const char *_qname)
+    {
+        StringArray qlist;
+        qlist.appendListUniq(_qname, ",");
+        sQueueData *last = NULL;
+        ForEachItemIn(i,qlist)
+        {
+            sQueueData *qd = new sQueueData;
+            qd->next = NULL;
+            qd->qname.set(qlist.item(i));
+            qd->conn = NULL;
+            qd->root = NULL;
+            qd->lastWaitEdition = 0;
+            qd->subscriberid = 0;
+            if (last)
+                last->next = qd;
+            else
+                qdata = qd;
+            last = qd;
+        }
+    };
+    virtual ~CJobQueueBase()
+    {
+        while (qdata)
+        {
+            sQueueData * next = qdata->next;
+            delete qdata;
+            qdata = next;
+        }
+    }
+
+    StringBuffer &getItemPath(StringBuffer &path,const char *wuid)
+    {
+        if (!wuid||!*wuid)
+            return getItemPath(path,0U);
+        return path.appendf("Item[@wuid=\"%s\"]",wuid);
+    }
+
+    StringBuffer &getItemPath(StringBuffer &path,unsigned idx)
+    {
+        path.appendf("Item[@num=\"%d\"]",idx+1);
+        return path;
+    }
+
+    IPropertyTree *queryClientRootIndex(sQueueData &qd, unsigned idx)
+    {
+        VStringBuffer path("Client[%d]", idx+1);
+        return qd.root->queryPropTree(path);
+    }
+
+    bool itemOlder(IPropertyTree *qt1, IPropertyTree *qt2)
+    {
+        // if this ever becomes time critical thne could cache enqueued values
+        StringBuffer d1s;
+        if (qt1)
+            qt1->getProp("@enqueuedt",d1s);
+        StringBuffer d2s;
+        if (qt2)
+            qt2->getProp("@enqueuedt",d2s);
+        return (strcmp(d1s.str(),d2s.str())<0);
+    }
+
+    IJobQueueItem *doGetItem(sQueueData &qd,unsigned idx)
+    {
+        if (idx==(unsigned)-1)
+        {
+            idx = qd.root->getPropInt("@count");
+            if (!idx)
+                return NULL;
+            idx--;
+        }
+        StringBuffer path;
+        IPropertyTree *item = qd.root->queryPropTree(getItemPath(path,idx).str());
+        if (!item)
+            return NULL;
+        return new CJobQueueItem(item);
+    }
+
+    IJobQueueItem *getItem(sQueueData &qd,unsigned idx)
+    {
+        return doGetItem(qd, idx);
+    }
+
+    IJobQueueItem *getHead(sQueueData &qd)
+    {
+        return getItem(qd,0);
+    }
+
+    unsigned doFindRank(sQueueData &qd,const char *wuid)
+    {
+        StringBuffer path;
+        IPropertyTree *item = qd.root->queryPropTree(getItemPath(path,wuid).str());
+        if (!item)
+            return (unsigned)-1;
+        return item->getPropInt("@num")-1;
+    }
+
+    unsigned findRank(sQueueData &qd,const char *wuid)
+    {
+        return doFindRank(qd,wuid);
+    }
+
+    IJobQueueItem *find(sQueueData &qd,const char *wuid)
+    {
+        StringBuffer path;
+        IPropertyTree *item = qd.root->queryPropTree(getItemPath(path,wuid).str());
+        if (!item)
+            return NULL;
+        bool cached = item->getPropInt("@num",0)<=0;
+        if (wuid&&cached)
+            return NULL;    // don't want cached value unless explicit
+        return new CJobQueueItem(item);
+    }
+
+    unsigned copyItemsImpl(sQueueData &qd,CJobQueueContents &dest)
+    {
+        unsigned ret=0;
+        StringBuffer path;
+        for (unsigned i=0;;i++)
+        {
+            IPropertyTree *item = qd.root->queryPropTree(getItemPath(path.clear(),i).str());
+            if (!item)
+                break;
+            ret++;
+            dest.append(*new CJobQueueItem(item));
+        }
+        return ret;
+    }
+
+    virtual void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state, StringBuffer& stateDetails)
+    {
+        assertex(qdata);
+        assertex(qdata->root);
+
+        copyItemsImpl(*qdata,contents);
+
+        const char *st = qdata->root->queryProp("@state");
+        if (st&&*st)
+            state.set(st);
+        if (st && (strieq(st, "paused") || strieq(st, "stopped")))
+        {
+            const char *stDetails = qdata->root->queryProp("@stateDetails");
+            if (stDetails&&*stDetails)
+                stateDetails.set(stDetails);
+        }
+    }
+
+    sQueueData *findQD(const char *wuid)
+    {
+        if (wuid&&*wuid)
+        {
+            ForEachQueue(qd)
+            {
+                unsigned idx = doFindRank(*qd,wuid);
+                if (idx!=(unsigned)-1)
+                    return qd;
+            }
+        }
+        return NULL;
+    }
+
+    virtual unsigned waiting()
+    {
+        unsigned ret = 0;
+        ForEachQueue(qd)
+        {
+            for (unsigned i=0;;i++)
+            {
+                IPropertyTree *croot = queryClientRootIndex(*qd,i);
+                if (!croot)
+                    break;
+                ret += croot->getPropInt("@waiting");
+            }
+        }
+        return ret;
+    }
+
+    virtual unsigned findRank(const char *wuid)
+    {
+        assertex(qdata);
+        if (!qdata->next)
+            return findRank(*qdata,wuid);
+        cOrderedIterator it(*this);
+        unsigned i = 0;
+        ForEach(it)
+        {
+            const char *twuid = it.queryTree().queryProp("@wuid");
+            if (twuid&&(strcmp(twuid,wuid)==0))
+                return i;
+            i++;
+        }
+        return (unsigned)-1;
+    }
+
+    virtual unsigned copyItems(CJobQueueContents &dest)
+    {
+        assertex(qdata);
+        if (!qdata->next)
+            return copyItemsImpl(*qdata,dest);
+        cOrderedIterator it(*this);
+        unsigned ret = 0;
+        ForEach(it)
+        {
+            dest.append(*new CJobQueueItem(&it.queryTree()));
+            ret++;
+        }
+        return ret;
+    }
+
+    virtual IJobQueueItem *getItem(unsigned idx)
+    {
+        if (!qdata)
+            return NULL;
+        if (!qdata->next)
+            return getItem(*qdata,idx);
+        cOrderedIterator it(*this);
+        unsigned i = 0;
+        IPropertyTree *ret = NULL;
+        ForEach(it)
+        {
+            if (i==idx)
+            {
+                ret = &it.queryTree();
+                break;
+            }
+            else if (idx==(unsigned)-1)  // -1 means return last
+                ret = &it.queryTree();
+            i++;
+        }
+        if (ret)
+            return new CJobQueueItem(ret);
+        return NULL;
+    }
+
+    virtual IJobQueueItem *getHead()
+    {
+        if (!qdata)
+            return NULL;
+        if (!qdata->next)
+            return getHead(*qdata);
+        return getItem(0);
+    }
+
+    virtual IJobQueueItem *getTail()
+    {
+        if (!qdata)
+            return NULL;
+        if (!qdata->next)
+            return getHead(*qdata);
+        return getItem((unsigned)-1);
+    }
+
+    virtual IJobQueueItem *find(const char *wuid)
+    {
+        if (!qdata)
+            return NULL;
+        sQueueData *qd = qdata->next?findQD(wuid):qdata;
+        if (!qd)
+            return NULL;
+        return find(*qd,wuid);
+    }
+
+    virtual bool paused()
+    {
+        // true if all paused
+        ForEachQueue(qd)
+        {
+            if (qd->root)
+            {
+                const char *state = qd->root->queryProp("@state");
+                if (state&&(strcmp(state,"paused")!=0))
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    virtual bool paused(StringBuffer& info)
+    {
+        // true if all paused
+        ForEachQueue(qd)
+        {
+            if (qd->root)
+            {
+                const char *state = qd->root->queryProp("@state");
+                if (state&&(strcmp(state,"paused")!=0))
+                    return false;
+                if (state&&!info.length())
+                {
+                    const char *stateDetails = qd->root->queryProp("@stateDetails");
+                    if (stateDetails && *stateDetails)
+                        info.set(stateDetails);
+                }
+            }
+        }
+        return true;
+    }
+
+    virtual bool stopped()
+    {
+        // true if all stopped
+        ForEachQueue(qd)
+        {
+            if (qd->root)
+            {
+                const char *state = qd->root->queryProp("@state");
+                if (state&&(strcmp(state,"stopped")!=0))
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    virtual bool stopped(StringBuffer& info)
+    {
+        // true if all stopped
+        ForEachQueue(qd)
+        {
+            if (qd->root)
+            {
+                const char *state = qd->root->queryProp("@state");
+                if (state&&(strcmp(state,"stopped")!=0))
+                    return false;
+                if (state&&!info.length())
+                {
+                    const char *stateDetails = qd->root->queryProp("@stateDetails");
+                    if (stateDetails && *stateDetails)
+                        info.set(stateDetails);
+                }
+            }
+        }
+        return true;
+    }
+
+    virtual unsigned ordinality()
+    {
+        unsigned ret = 0;
+        ForEachQueue(qd)
+        {
+            if (qd->root)
+                ret += qd->root->getPropInt("@count");
+        }
+        return ret;
+    }
+
+    virtual bool getLastDequeuedInfo(StringAttr &wuid, CDateTime &enqueuedt, int &priority)
+    {
+        return doGetLastDequeuedInfo(qdata, wuid, enqueuedt, priority);
+    }
+
+    //Similar to copyItemsAndState(), this method returns the state information for one queue.
+    virtual void getState(StringBuffer& state, StringBuffer& stateDetails)
+    {
+        if (!qdata->root)
+            return;
+        const char *st = qdata->root->queryProp("@state");
+        if (!st || !*st)
+            return;
+
+        state.set(st);
+        if ((strieq(st, "paused") || strieq(st, "stopped")))
+            stateDetails.set(qdata->root->queryProp("@stateDetails"));
+    }
+};
+
+class CJobQueueConst: public CJobQueueBase
+{
+    Owned<IPropertyTree> jobQueueSnapshot;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CJobQueueConst(const char *_qname, IPropertyTree* _jobQueueSnapshot) : CJobQueueBase(_qname)
+    {
+        if (!_jobQueueSnapshot)
+            throw MakeStringException(-1, "No job queue snapshot");
+
+        jobQueueSnapshot.setown(_jobQueueSnapshot);
+        ForEachQueue(qd)
+        {
+            VStringBuffer path("Queue[@name=\"%s\"]", qd->qname.get());
+            qd->root = jobQueueSnapshot->queryPropTree(path.str());
+            if (!qd->root)
+                throw MakeStringException(-1, "No job queue found for %s", qd->qname.get());
+        }
+    };
+};
+
+class CJobQueue: public CJobQueueBase, implements IJobQueue
+{
+public:
+    sQueueData *activeq;
     SessionId sessionid;
     unsigned locknest;
     bool writemode;
-    Semaphore notifysem;
-    CriticalSection crit;
     bool connected;
     Owned<IConversation> initiateconv;
     StringAttr initiatewu;
@@ -423,37 +830,18 @@ public:
 
     IMPLEMENT_IINTERFACE;
 
-    CJobQueue(const char *_qname)
-        : subs(this)
+    CJobQueue(const char *_qname) : CJobQueueBase(_qname), subs(this)
     {
-        StringArray qlist;
-        qlist.appendListUniq(_qname, ",");
-        sQueueData *last = NULL;
-        ForEachItemIn(i,qlist) {
-            sQueueData *qd = new sQueueData;
-            qd->next = NULL;
-            qd->qname.set(qlist.item(i));
-            qd->conn = NULL;
-            qd->root = NULL;
-            qd->lastWaitEdition = 0;
-            qd->subscriberid = 0;
-            if (last)
-                last->next = qd;
-            else 
-                qdata = qd;
-            last = qd;
-        }
-        validateitemsessions = false;
         activeq = qdata;
+        sessionid = myProcessSession();
+        validateitemsessions = false;
         writemode = false;
         locknest = 0;
-        sessionid = myProcessSession();
         connected = false;
         dequeuestop = false;
         cancelwaiting = false;
         Cconnlockblock block(this,false);   // this just checks queue exists
     }
-
     virtual ~CJobQueue()
     {
         try {
@@ -474,15 +862,7 @@ public:
             EXCLOG(e, "~CJobQueue calling dounsubscribe");
             e->Release();
         }
-        while (qdata)
-        {
-            sQueueData * next = qdata->next;
-            delete qdata;
-            qdata = next;
-        }
     }
-
-
     void connlock(bool exclusive)
     {  // must be in sect
         if (locknest++==0) {
@@ -621,21 +1001,6 @@ public:
         }
     };
 
-
-    StringBuffer &getItemPath(StringBuffer &path,const char *wuid)
-    {
-        if (!wuid||!*wuid)
-            return getItemPath(path,0U);
-        return path.appendf("Item[@wuid=\"%s\"]",wuid);
-    }
-
-    StringBuffer &getItemPath(StringBuffer &path,unsigned idx)
-    {
-        path.appendf("Item[@num=\"%d\"]",idx+1);
-        return path;
-    }
-
-
     void removeItem(sQueueData &qd,IPropertyTree *item, bool cache)
     {   // does not adjust or use @count
         unsigned n = item->getPropInt("@num");
@@ -673,25 +1038,6 @@ public:
         }
         item->setPropInt("@num",idx+1);
         return qd.root->addPropTree("Item",item);
-    }
-
-    IPropertyTree *queryClientRoot(sQueueData &qd,unsigned idx=(unsigned)-1)
-    {
-        StringBuffer path;
-        if (idx==(unsigned)-1)
-            path.appendf("Client[@session=\"%" I64F "d\"]",sessionid);
-        else
-            path.appendf("Client[%d]",idx+1);
-        IPropertyTree *ret = qd.root->queryPropTree(path.str());
-        if (!ret&&(idx==(unsigned)-1)) {
-            Cconnlockblock block(this,true);
-            ret = createPTree("Client");
-            ret = qd.root->addPropTree("Client",ret);
-            ret->setPropInt64("@session",sessionid);
-            StringBuffer eps;
-            ret->setProp("@node",queryMyNode()->endpoint().getUrlStr(eps).str());
-        }
-        return ret;
     }
 
     void dosubscribe()
@@ -737,6 +1083,21 @@ public:
         }
     }
 
+    IPropertyTree *queryClientRootSession(sQueueData &qd)
+    {
+        VStringBuffer path("Client[@session=\"%" I64F "d\"]", sessionid);
+        IPropertyTree *ret = qd.root->queryPropTree(path.str());
+        if (!ret)
+        {
+            ret = createPTree("Client");
+            ret = qd.root->addPropTree("Client",ret);
+            ret->setPropInt64("@session",sessionid);
+            StringBuffer eps;
+            ret->setProp("@node",queryMyNode()->endpoint().getUrlStr(eps).str());
+        }
+        return ret;
+    }
+
     void connect(bool _validateitemsessions)
     {
         Cconnlockblock block(this,true);
@@ -749,7 +1110,7 @@ public:
             unsigned waiting;
             unsigned count;
             getStats(*qd,connected,waiting,count); // clear any duff clients
-            IPropertyTree *croot = queryClientRoot(*qd);
+            IPropertyTree *croot = queryClientRootSession(*qd);
             croot->setPropInt64("@connected",croot->getPropInt64("@connected",0)+1);
         }
         connected = true;
@@ -761,23 +1122,11 @@ public:
         if (connected) {
             dounsubscribe();
             ForEachQueue(qd) {
-                IPropertyTree *croot = queryClientRoot(*qd);
+                IPropertyTree *croot = queryClientRootSession(*qd);
                 croot->setPropInt64("@connected",croot->getPropInt64("@connected",0)-1);
             }
             connected = false;
         }
-    }
-
-    bool itemOlder(IPropertyTree *qt1, IPropertyTree *qt2)
-    {
-        // if this ever becomes time critical thne could cache enqueued values
-        StringBuffer d1s;
-        if (qt1)
-            qt1->getProp("@enqueuedt",d1s);
-        StringBuffer d2s;
-        if (qt2)
-            qt2->getProp("@enqueuedt",d2s);
-        return (strcmp(d1s.str(),d2s.str())<0);
     }
 
     sQueueData *findbestqueue(bool useprev,int minprio,unsigned numqueues,sQueueData **queues)
@@ -815,7 +1164,7 @@ public:
     void setWaiting(unsigned numqueues,sQueueData **queues, bool set)
     {
         for (unsigned i=0; i<numqueues; i++) {
-            IPropertyTree *croot = queryClientRoot(*queues[i]);
+            IPropertyTree *croot = queryClientRootSession(*queues[i]);
             croot->setPropInt64("@waiting",croot->getPropInt64("@waiting",0)+(set?1:-1));
         }
     }
@@ -984,14 +1333,14 @@ public:
     void enqueueBefore(sQueueData &qd,IJobQueueItem *qitem,const char *wuid)
     {
         Cconnlockblock block(this,true);
-        placeonqueue(qd,qitem,findRank(qd,wuid));
+        placeonqueue(qd,qitem,doFindRank(qd,wuid));
     }
 
 
     void enqueueAfter(sQueueData &qd,IJobQueueItem *qitem,const char *wuid)
     {
         Cconnlockblock block(this,true);
-        unsigned idx = findRank(qd,wuid);
+        unsigned idx = doFindRank(qd,wuid);
         if (idx!=(unsigned)-1)
             idx++;
         placeonqueue(qd,qitem,idx);
@@ -1010,7 +1359,7 @@ public:
     void enqueueHead(sQueueData &qd,IJobQueueItem *qitem)
     {
         Cconnlockblock block(this,true);
-        Owned<IJobQueueItem> qi = getHead(qd);
+        Owned<IJobQueueItem> qi = doGetItem(qd, 0);
         if (qi)
             enqueueBefore(qd,qitem,qi->queryWUID());
         else
@@ -1023,63 +1372,9 @@ public:
         return qd.root->getPropInt("@count");
     }
 
-
-    unsigned waiting(sQueueData &qd)
-    {
-        Cconnlockblock block(this,false);
-        unsigned ret = 0;
-        for (unsigned i=0;;i++) {
-            IPropertyTree *croot = queryClientRoot(qd,i);
-            if (!croot)
-                break;
-            ret += croot->getPropInt("@waiting");
-        }
-        return ret;
-    }
-
-    IJobQueueItem *getItem(sQueueData &qd,unsigned idx)
-    {
-        Cconnlockblock block(this,false);
-        if (idx==(unsigned)-1) {
-            idx = qd.root->getPropInt("@count");
-            if (!idx)
-                return NULL;
-            idx--;
-        }
-        StringBuffer path;
-        IPropertyTree *item = qd.root->queryPropTree(getItemPath(path,idx).str());
-        if (!item)
-            return NULL;
-        return new CJobQueueItem(item);
-    }
-
-
-
-
-    IJobQueueItem *getHead(sQueueData &qd)
-    {
-        return getItem(qd,0);
-    }
-
     IJobQueueItem *getTail(sQueueData &qd)
     {
-        return getItem(qd,(unsigned)-1);
-    }
-
-
-    unsigned doFindRank(sQueueData &qd,const char *wuid)
-    {
-        StringBuffer path;
-        IPropertyTree *item = qd.root->queryPropTree(getItemPath(path,wuid).str());
-        if (!item)
-            return (unsigned)-1;
-        return item->getPropInt("@num")-1;
-    }
-
-    unsigned findRank(sQueueData &qd,const char *wuid)
-    {
-        Cconnlockblock block(this,false);
-        return doFindRank(qd,wuid);
+        return doGetItem(qd,(unsigned)-1);
     }
 
     IJobQueueItem *loadItem(sQueueData &qd,IJobQueueItem *qi)
@@ -1092,20 +1387,6 @@ public:
         bool cached = item->getPropInt("@num",0)<=0;
         if (cached)
             return NULL;    // don't want cached value
-        return new CJobQueueItem(item);
-    }
-
-
-    IJobQueueItem *find(sQueueData &qd,const char *wuid)
-    {
-        Cconnlockblock block(this,false);
-        StringBuffer path;
-        IPropertyTree *item = qd.root->queryPropTree(getItemPath(path,wuid).str());
-        if (!item)
-            return NULL;
-        bool cached = item->getPropInt("@num",0)<=0;
-        if (wuid&&cached)
-            return NULL;    // don't want cached value unless explicit
         return new CJobQueueItem(item);
     }
 
@@ -1142,50 +1423,10 @@ public:
         return dotake(qd,wuid,false);
     }
 
-
-    unsigned copyItemsImpl(sQueueData &qd,CJobQueueContents &dest)
-    {
-        unsigned ret=0;
-        StringBuffer path;
-        for (unsigned i=0;;i++) {
-            IPropertyTree *item = qd.root->queryPropTree(getItemPath(path.clear(),i).str());
-            if (!item)
-                break;
-            ret++;
-            dest.append(*new CJobQueueItem(item));
-        }
-        return ret;
-    }
-
-    unsigned copyItems(sQueueData &qd,CJobQueueContents &dest)
-    {
-        Cconnlockblock block(this,false);
-        return copyItemsImpl(qd,dest);
-    }
-
-    void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state, StringBuffer& stateDetails)
-    {
-        assertex(qdata);
-        Cconnlockblock block(this,false);
-        assertex(qdata->root);
-
-        copyItemsImpl(*qdata,contents);
-
-        const char *st = qdata->root->queryProp("@state");
-        if (st&&*st)
-            state.set(st);
-        if (st && (strieq(st, "paused") || strieq(st, "stopped")))
-        {
-            const char *stDetails = qdata->root->queryProp("@stateDetails");
-            if (stDetails&&*stDetails)
-                stateDetails.set(stDetails);
-        }
-    }
-
     unsigned takeItems(sQueueData &qd,CJobQueueContents &dest)
     {
         Cconnlockblock block(this,true);
-        unsigned ret = copyItems(qd,dest);
+        unsigned ret = copyItemsImpl(qd,dest);
         clear(qd);
         return ret;
     }
@@ -1199,19 +1440,6 @@ public:
                 enqueue(qd,items.item(i).clone());
         }
     }
-
-    sQueueData *findQD(const char *wuid)
-    {
-        if (wuid&&*wuid) {
-            ForEachQueue(qd) {
-                unsigned idx = doFindRank(*qd,wuid);
-                if (idx!=(unsigned)-1)
-                    return qd;
-            }
-        }
-        return NULL;
-    }
-
 
     void enqueueBefore(IJobQueueItem *qitem,const char *wuid)
     {
@@ -1409,7 +1637,7 @@ public:
         waiting = 0;
         unsigned i=0;
         loop {
-            IPropertyTree *croot = queryClientRoot(qd,i);
+            IPropertyTree *croot = queryClientRootIndex(qd,i);
             if (!croot)
                 break;
             if (!validSession(croot)) {
@@ -1476,54 +1704,6 @@ public:
         }
     }
 
-    unsigned waiting()
-    {
-        Cconnlockblock block(this,false);
-        unsigned ret = 0;
-        ForEachQueue(qd) {
-            for (unsigned i=0;;i++) {
-                IPropertyTree *croot = queryClientRoot(*qd,i);
-                if (!croot)
-                    break;
-                ret += croot->getPropInt("@waiting");
-            }
-        }
-        return ret;
-    }
-
-
-    unsigned findRank(const char *wuid)
-    {
-        assertex(qdata);
-        if (!qdata->next)
-            return findRank(*qdata,wuid);
-        Cconnlockblock block(this,false);
-        cOrderedIterator it(*this);
-        unsigned i = 0;
-        ForEach(it) {
-            const char *twuid = it.queryTree().queryProp("@wuid");
-            if (twuid&&(strcmp(twuid,wuid)==0))
-                return i;
-            i++;
-        }
-        return (unsigned)-1;
-    }
-
-    unsigned copyItems(CJobQueueContents &dest)
-    {
-        assertex(qdata);
-        if (!qdata->next)
-            return copyItems(*qdata,dest);
-        Cconnlockblock block(this,false);
-        cOrderedIterator it(*this);
-        unsigned ret = 0;
-        ForEach(it) {
-            dest.append(*new CJobQueueItem(&it.queryTree()));
-            ret++;
-        }
-        return ret;
-    }
-
     IJobQueueItem *take(const char *wuid)
     {
         assertex(qdata);
@@ -1545,7 +1725,7 @@ public:
         Cconnlockblock block(this,true);
         unsigned ret = 0;
         ForEachQueue(qd) {
-            ret += copyItems(*qd,dest);
+            ret += copyItemsImpl(*qd,dest);
             clear(*qd);
         }
         return ret;
@@ -1706,70 +1886,6 @@ public:
         enqueueTail(*activeq,qitem);
     }
 
-    IJobQueueItem *getItem(unsigned idx)
-    {
-        if (!qdata)
-            return NULL;
-        if (!qdata->next)
-            return getItem(*qdata,idx);
-        Cconnlockblock block(this,false);
-        cOrderedIterator it(*this);
-        unsigned i = 0;
-        IPropertyTree *ret = NULL;
-        ForEach(it) {
-            if (i==idx) {
-                ret = &it.queryTree();
-                break;
-            }
-            else if (idx==(unsigned)-1)  // -1 means return last
-                ret = &it.queryTree();
-            i++;
-        }
-        if (ret)
-            return new CJobQueueItem(ret);
-        return NULL;
-    }
-
-    IJobQueueItem *getHead()
-    {
-        if (!qdata)
-            return NULL;
-        if (!qdata->next)
-            return getHead(*qdata);
-        return getItem(0);
-    }
-
-    IJobQueueItem *getTail()
-    {
-        if (!qdata)
-            return NULL;
-        if (!qdata->next)
-            return getHead(*qdata);
-        return getItem((unsigned)-1);
-    }
-
-    IJobQueueItem *find(const char *wuid)
-    {
-        if (!qdata)
-            return NULL;
-        sQueueData *qd = qdata->next?findQD(wuid):qdata;
-        if (!qd)
-            return NULL;
-        return find(*qd,wuid);
-    }
-
-
-    unsigned ordinality()
-    {
-        Cconnlockblock block(this,false);
-        unsigned ret = 0;
-        ForEachQueue(qd) {
-            if (qd->root)
-                ret += qd->root->getPropInt("@count");
-        }
-        return ret;
-    }
-
     void pause()
     {
         Cconnlockblock block(this,true);
@@ -1789,37 +1905,6 @@ public:
             }
         }
     }
-    bool paused()
-    {
-        // true if all paused
-        Cconnlockblock block(this,false);
-        ForEachQueue(qd) {
-            if (qd->root) {
-                const char *state = qd->root->queryProp("@state");
-                if (state&&(strcmp(state,"paused")!=0))
-                    return false;
-            }
-        }
-        return true;
-    }
-    bool paused(StringBuffer& info)
-    {
-        // true if all paused
-        Cconnlockblock block(this,false);
-        ForEachQueue(qd) {
-            if (qd->root) {
-                const char *state = qd->root->queryProp("@state");
-                if (state&&(strcmp(state,"paused")!=0))
-                    return false;
-                if (state&&!info.length()) {
-                    const char *stateDetails = qd->root->queryProp("@stateDetails");
-                    if (stateDetails && *stateDetails)
-                        info.set(stateDetails);
-                }
-            }
-        }
-        return true;
-    }
     void stop()
     {
         Cconnlockblock block(this,true);
@@ -1838,37 +1923,6 @@ public:
                     qd->root->setProp("@stateDetails",info);
             }
         }
-    }
-    bool stopped()
-    {
-        // true if all stopped
-        Cconnlockblock block(this,false);
-        ForEachQueue(qd) {
-            if (qd->root) {
-                const char *state = qd->root->queryProp("@state");
-                if (state&&(strcmp(state,"stopped")!=0))
-                    return false;
-            }
-        }
-        return true;
-    }
-    bool stopped(StringBuffer& info)
-    {
-        // true if all stopped
-        Cconnlockblock block(this,false);
-        ForEachQueue(qd) {
-            if (qd->root) {
-                const char *state = qd->root->queryProp("@state");
-                if (state&&(strcmp(state,"stopped")!=0))
-                    return false;
-                if (state&&!info.length()) {
-                    const char *stateDetails = qd->root->queryProp("@stateDetails");
-                    if (stateDetails && *stateDetails)
-                        info.set(stateDetails);
-                }
-            }
-        }
-        return true;
     }
 
     void resume()
@@ -1908,7 +1962,7 @@ public:
     {
         return activeq->qname;
     }
-    
+
     void setActiveQueue(const char *name)
     {
         ForEachQueue(qd) {
@@ -1920,7 +1974,7 @@ public:
         if (name)
             throw MakeStringException (-1,"queue %s not found",name);
     }
-    
+
     const char *nextQueueName(const char *last)
     {
         ForEachQueue(qd) {
@@ -1933,24 +1987,111 @@ public:
         return NULL;
     }
 
-    bool getLastDequeuedInfo(StringAttr &wuid, CDateTime &enqueuedt, int &priority)
+    virtual bool paused()
     {
-        priority = 0;
-        if (!activeq)
-            return false;
-        const char *w = activeq->root->queryProp("@prevwuid");
-        if (!w||!*w)
-            return false;
-        wuid.set(w);
-        StringBuffer dts;
-        if (activeq->root->getProp("@prevenqueuedt",dts))
-            enqueuedt.setString(dts.str());
-        priority = activeq->root->getPropInt("@prevpriority");
-        return true;
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::paused();
     }
-
+    virtual bool paused(StringBuffer& info)
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::paused(info);
+    }
+    virtual bool stopped()
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::stopped();
+    }
+    virtual bool stopped(StringBuffer& info)
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::stopped(info);
+    }
+    virtual unsigned ordinality()
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::ordinality();
+    }
+    virtual unsigned waiting()
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::waiting();
+    }
+    virtual IJobQueueItem *getItem(unsigned idx)
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::getItem(idx);
+    }
+    virtual IJobQueueItem *getHead()
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::getHead();
+    }
+    virtual IJobQueueItem *getTail()
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::getTail();
+    }
+    virtual IJobQueueItem *find(const char *wuid)
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::find(wuid);
+    }
+    virtual unsigned findRank(const char *wuid)
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::findRank(wuid);
+    }
+    virtual unsigned copyItems(CJobQueueContents &dest)
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::copyItems(dest);
+    }
+    virtual bool getLastDequeuedInfo(StringAttr &wuid, CDateTime &enqueuedt, int &priority)
+    {
+        Cconnlockblock block(this,false);
+        return CJobQueueBase::doGetLastDequeuedInfo(activeq, wuid, enqueuedt, priority);
+    }
+    virtual void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state, StringBuffer& stateDetails)
+    {
+        Cconnlockblock block(this,false);
+        CJobQueueBase::copyItemsAndState(contents, state, stateDetails);
+    }
+    virtual void getState(StringBuffer& state, StringBuffer& stateDetails)
+    {
+        Cconnlockblock block(this,false);
+        CJobQueueBase::getState(state, stateDetails);
+    }
 };
 
+class CJQSnapshot : public CInterface, implements IJQSnapshot
+{
+    Owned<IPropertyTree> jobQueueInfo;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CJQSnapshot()
+    {
+        Owned<IRemoteConnection> connJobQueues = querySDS().connect("/JobQueues", myProcessSession(), RTM_LOCK_READ, 30000);
+        if (!connJobQueues)
+            throw MakeStringException(-1, "CJQSnapshot::CJQSnapshot: /JobQueues not found");
+
+        jobQueueInfo.setown(createPTreeFromIPT(connJobQueues->queryRoot()));
+    }
+
+    IJobQueueConst* getJobQueue(const char *name)
+    {
+        if (!jobQueueInfo)
+            return NULL;
+        return new CJobQueueConst(name, jobQueueInfo.getLink());
+    }
+};
+
+IJQSnapshot *createJQSnapshot()
+{
+    return new CJQSnapshot();
+}
 
 IJobQueue *createJobQueue(const char *name)
 {
@@ -1982,13 +2123,12 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *cluster)
 extern bool WORKUNIT_API runWorkUnit(const char *wuid)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid, false);
+    Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid);
     if (w)
     {
-        SCMStringBuffer clusterName;
-        w->getClusterName(clusterName);
+        StringAttr clusterName = (w->queryClusterName());
         w.clear();
-        return runWorkUnit(wuid,clusterName.str());
+        return runWorkUnit(wuid, clusterName.str());
     }
     else
         return false;

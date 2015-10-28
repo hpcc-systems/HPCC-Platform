@@ -776,8 +776,10 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKsmartjoin:              return "Smart Join";
     case TAKsmartdenormalize:       return "Smart Denormalize";
     case TAKsmartdenormalizegroup:  return "Smart Denormalize Group";
-    case TAKselfdenormalize:       return "Self Denormalize";
-    case TAKselfdenormalizegroup:  return "Self Denormalize Group";
+    case TAKselfdenormalize:        return "Self Denormalize";
+    case TAKselfdenormalizegroup:   return "Self Denormalize Group";
+    case TAKtrace:                  return "Trace";
+    case TAKquantile:               return "Quantile";
     }
     throwUnexpected();
 }

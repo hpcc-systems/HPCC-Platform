@@ -10,7 +10,7 @@
       </indexterm><indexterm>
         <primary>WHEN Function</primary>
       </indexterm>(</emphasis><emphasis>trigger, action</emphasis><emphasis
-    role="bold"> [ BEFORE | SUCCESS | FAILURE] )</emphasis></para>
+    role="bold"> [, BEFORE | SUCCESS | FAILURE] )</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">

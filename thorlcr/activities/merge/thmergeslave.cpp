@@ -80,7 +80,7 @@ public:
         void load()
         {
             bufpos += bufsize;
-            if (rank==parent->queryContainer().queryJob().queryJobComm().queryGroup().rank()) {
+            if (rank==parent->queryJobChannel().queryMyRank()) {
 #ifdef _FULL_TRACE
                 ::ActPrintLog(parent, "Merge cRemoteStream::load, get chunk from node %d (local) pos = %" I64F "d",rank,bufpos);
 #endif
@@ -92,7 +92,7 @@ public:
 #endif
                 CMessageBuffer mb;
                 mb.append(bufpos);
-                parent->queryContainer().queryJob().queryJobComm().sendRecv(mb, rank, tag);
+                parent->queryContainer().queryJobChannel().queryJobComm().sendRecv(mb, rank, tag);
                 bufsize = mb.length();
                 CThorStreamDeserializerSource dsz(bufsize,mb.bufferBase());
                 while (!dsz.eos()) {
@@ -145,7 +145,7 @@ public:
 #endif
                 CMessageBuffer mb;
                 rank_t sender;
-                if (parent->queryContainer().queryJob().queryJobComm().recv(mb, RANK_ALL, tag, &sender)&&!stopped)  {
+                if (parent->queryJobChannel().queryJobComm().recv(mb, RANK_ALL, tag, &sender)&&!stopped)  {
                     offset_t pos;
                     mb.read(pos);
 #ifdef _FULL_TRACE
@@ -172,7 +172,7 @@ public:
                     ::ActPrintLog(parent, "Merge cProvider replying size %d",mb.length());
 #endif
                     if (!stopped)
-                        parent->queryContainer().queryJob().queryJobComm().reply(mb);
+                        parent->queryJobChannel().queryJobComm().reply(mb);
                 }
             }
 #ifdef _FULL_TRACE
@@ -184,7 +184,7 @@ public:
         {
             if (!stopped) {
                 stopped = true;
-                parent->queryContainer().queryJob().queryJobComm().cancel(RANK_ALL, tag);
+                parent->queryJobChannel().queryJobComm().cancel(RANK_ALL, tag);
                 join();
             }
         }
@@ -195,19 +195,19 @@ public:
 
     IRowStream * createPartitionMerger(CThorKeyArray &sample)
     {
-        container.queryJob().queryJobComm().verifyAll();
+        queryJobChannel().queryJobComm().verifyAll();
         CMessageBuffer mb;
-        mptag_t replytag = createReplyTag();
-        mptag_t intertag = createReplyTag();
+        mptag_t replytag = queryMPServer().createReplyTag();
+        mptag_t intertag = queryMPServer().createReplyTag();
         serializeMPtag(mb,replytag);
         serializeMPtag(mb,intertag);
         sample.serialize(mb);
         ActPrintLog("MERGE sending samples to master");
-        if (!container.queryJob().queryJobComm().send(mb, (rank_t)0, masterMpTag))
+        if (!queryJobChannel().queryJobComm().send(mb, (rank_t)0, masterMpTag))
             return NULL;
         ActPrintLog("MERGE receiving partition from master");
         rank_t sender;
-        if (!container.queryJob().queryJobComm().recv(mb, 0, replytag, &sender)) 
+        if (!queryJobChannel().queryJobComm().recv(mb, 0, replytag, &sender)) 
             return NULL;
         assertex((unsigned)sender==0);
         ActPrintLog("MERGE received partition from master");
@@ -268,7 +268,7 @@ public:
     {
         helper = (IHThorMergeArg *)queryHelper();
         appendOutputLinked(this);
-        masterMpTag = container.queryJob().deserializeMPTag(data);
+        masterMpTag = container.queryJobChannel().deserializeMPTag(data);
     }
 
     void abort()

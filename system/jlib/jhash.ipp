@@ -79,7 +79,7 @@ public:
     ~AtomBase()               { free(key); }
 
 //interface:IMapping
-    virtual const char *        getNamePtr() const { return key; }
+    virtual const char *        queryStr() const { return key; }
     virtual const void *        getKey() const;
     virtual unsigned            getHash() const;
     virtual void                setHash(unsigned);
@@ -123,7 +123,7 @@ public:
     ~CaseAtom() { free(text); }
 
 //interface:IMapping
-    virtual const char *        getNamePtr() const { return text; }
+    virtual const char *        queryStr() const { return text; }
     virtual const void *        getKey() const { return text; }
     virtual unsigned            getHash() const { return hash; }
     virtual void                setHash(unsigned _hash) { hash = _hash; }

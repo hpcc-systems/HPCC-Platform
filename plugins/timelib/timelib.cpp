@@ -48,7 +48,7 @@ static const char * EclDefinition =
 "  UNSIGNED4 startDate; \n"
 "  UNSIGNED4 endDate; \n"
 "END;"
-"EXPORT TimeLib := SERVICE\n"
+"EXPORT TimeLib := SERVICE : fold\n"
 "  INTEGER8 SecondsFromParts(integer2 year, unsigned1 month, unsigned1 day, unsigned1 hour, unsigned1 minute, unsigned1 second, boolean is_local_time) : c,pure,entrypoint='tlSecondsFromParts'; \n"
 "  TRANSFORM(TMPartsRec) SecondsToParts(INTEGER8 seconds) : c,pure,entrypoint='tlSecondsToParts'; \n"
 "  UNSIGNED2 GetDayOfYear(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfYear'; \n"
@@ -63,13 +63,15 @@ static const char * EclDefinition =
 "  INTEGER4 AdjustSeconds(INTEGER8 seconds, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta, INTEGER2 hour_delta, INTEGER4 minute_delta, INTEGER4 second_delta) : c,pure,entrypoint='tlAdjustSeconds'; \n"
 "  UNSIGNED4 AdjustCalendar(UNSIGNED4 date, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta) : c,pure,entrypoint='tlAdjustCalendar'; \n"
 "  BOOLEAN IsLocalDaylightSavingsInEffect() : c,pure,entrypoint='tlIsLocalDaylightSavingsInEffect'; \n"
-"  INTEGER4 LocalTimeZoneOffset() : c,pure,entrypoint='tlLocalTimeZoneOffset'; \n"
+"  UNSIGNED4 GetLastDayOfMonth(UNSIGNED4 date) : c,pure,entrypoint='tlGetLastDayOfMonth'; \n"
+"  TRANSFORM(TMDateRangeRec) DatesForWeek(UNSIGNED4 date) : c,pure,entrypoint='tlDatesForWeek'; \n"
+// NOTE - the next 5 are foldable but not pure, meaning it will only be folded if found in a #IF or similar
+// This is because you usually want them to be executed at runtime
+ "  INTEGER4 LocalTimeZoneOffset() : c,once,entrypoint='tlLocalTimeZoneOffset'; \n"
 "  UNSIGNED4 CurrentDate(BOOLEAN in_local_time) : c,once,entrypoint='tlCurrentDate'; \n"
 "  UNSIGNED4 CurrentTime(BOOLEAN in_local_time) : c,entrypoint='tlCurrentTime'; \n"
 "  INTEGER8 CurrentSeconds(BOOLEAN in_local_time) : c,entrypoint='tlCurrentSeconds'; \n"
 "  INTEGER8 CurrentTimestamp(BOOLEAN in_local_time) : c,entrypoint='tlCurrentTimestamp'; \n"
-"  UNSIGNED4 GetLastDayOfMonth(UNSIGNED4 date) : c,pure,entrypoint='tlGetLastDayOfMonth'; \n"
-"  TRANSFORM(TMDateRangeRec) DatesForWeek(UNSIGNED4 date) : c,pure,entrypoint='tlDatesForWeek'; \n"
 "END;";
 
 TIMELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)

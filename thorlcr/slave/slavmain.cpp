@@ -99,6 +99,9 @@ class CJobListener : public CSimpleInterface
     CriticalSection crit;
     OwningStringSuperHashTableOf<CJobSlave> jobs;
     CFifoFileCache querySoCache; // used to mirror master cache
+    IArrayOf<IMPServer> mpServers;
+    bool processPerSlave;
+    unsigned slavesPerNode;
 
     class CThreadExceptionCatcher : implements IExceptionHandler
     {
@@ -135,11 +138,12 @@ class CJobListener : public CSimpleInterface
             }
             CMessageBuffer msg;
             msg.append(smt_errorMsg);
+            msg.append(0); // unknown really
             serializeThorException(e, msg);
 
             try
             {
-                if (!queryClusterComm().sendRecv(msg, 0, mptag, LONGTIMEOUT))
+                if (!queryNodeComm().sendRecv(msg, 0, mptag, LONGTIMEOUT))
                     EXCLOG(e, "Failed to send exception to master");
             }
             catch (IException *e2)
@@ -153,21 +157,72 @@ class CJobListener : public CSimpleInterface
             return true;
         }
     } excptHandler;
+
 public:
     CJobListener() : excptHandler(*this)
     {
         stopped = true;
+        processPerSlave = globals->getPropBool("@processPerSlave", true);
+        slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+        mpServers.append(* getMPServer());
+        if (!processPerSlave)
+        {
+            unsigned port = getMachinePortBase();
+            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
+            for (unsigned sc=1; sc<slavesPerNode; sc++)
+            {
+                port += localThorPortInc;
+                mpServers.append(*startNewMPServer(port));
+            }
+        }
     }
     ~CJobListener()
     {
+        if (!processPerSlave)
+        {
+            for (unsigned sc=1; sc<slavesPerNode; sc++)
+                mpServers.item(sc).stop();
+        }
+        mpServers.kill();
         stop();
     }
     void stop()
     {
-        queryClusterComm().cancel(0, masterSlaveMpTag);
+        queryNodeComm().cancel(0, masterSlaveMpTag);
     }
     virtual void main()
     {
+        if (!processPerSlave)
+        {
+            class CVerifyThread : public CInterface, implements IThreaded
+            {
+                CThreaded threaded;
+                CJobListener &jobListener;
+                unsigned channel;
+            public:
+                CVerifyThread(CJobListener &_jobListener, unsigned _channel)
+                    : jobListener(_jobListener), channel(_channel), threaded("CVerifyThread", this)
+                {
+                    start();
+                }
+                ~CVerifyThread() { join(); }
+                void start() { threaded.start(); }
+                void join() { threaded.join(); }
+                virtual void main()
+                {
+                    Owned<ICommunicator> comm = jobListener.mpServers.item(channel).createCommunicator(&queryClusterGroup());
+                    PROGLOG("verifying mp connection to rest of slaves (from channel=%d)", channel);
+                    if (!comm->verifyAll())
+                        ERRLOG("Failed to connect to rest of slaves");
+                    else
+                        PROGLOG("verified mp connection to rest of slaves");
+                }
+            };
+            CIArrayOf<CInterface> verifyThreads;
+            for (unsigned c=0; c<slavesPerNode; c++)
+                verifyThreads.append(*new CVerifyThread(*this, c));
+        }
+
         StringBuffer soPath;
         globals->getProp("@query_so_dir", soPath);
         StringBuffer soPattern("*.");
@@ -185,8 +240,7 @@ public:
         CMessageBuffer msg;
         stopped = false;
         bool doReply;
-        rank_t sendert;
-        while (!stopped && queryClusterComm().recv(msg, 0, masterSlaveMpTag, &sendert))
+        while (!stopped && queryNodeComm().recv(msg, 0, masterSlaveMpTag))
         {
             doReply = true;
             msgids cmd;
@@ -202,9 +256,9 @@ public:
                         msg.swapWith(mb);
                         mptag_t mptag, slaveMsgTag;
                         deserializeMPtag(msg, mptag);
-                        queryClusterComm().flush(mptag);
+                        queryNodeComm().flush(mptag);
                         deserializeMPtag(msg, slaveMsgTag);
-                        queryClusterComm().flush(slaveMsgTag);
+                        queryNodeComm().flush(slaveMsgTag);
                         StringBuffer soPath, soPathTail;
                         StringAttr wuid, graphName, remoteSoPath;
                         msg.read(wuid);
@@ -214,7 +268,7 @@ public:
                         msg.read(sendSo);
 
                         RemoteFilename rfn;
-                        SocketEndpoint masterEp = queryClusterGroup().queryNode(0).endpoint();
+                        SocketEndpoint masterEp = queryMyNode()->endpoint();
                         masterEp.port = 0;
                         rfn.setPath(masterEp, remoteSoPath);
                         rfn.getTail(soPathTail);
@@ -281,19 +335,21 @@ public:
                         workUnitInfo->getProp("user", user);
 
                         PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.get(), user.str(), graphName.get());
-
                         PROGLOG("Using query: %s", soPath.str());
-                        Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, soPath.str(), mptag, slaveMsgTag);
-                        jobs.replace(*LINK(job));
 
-                        Owned<IPropertyTree> deps = createPTree(msg);
-                        job->setXGMML(deps);
-
-                        if (!globals->getPropBool("Debug/@slaveDaliClient") && job->getWorkUnitValueBool("slaveDaliClient", false))
+                        if (!globals->getPropBool("Debug/@slaveDaliClient") && workUnitInfo->getPropBool("Debug/slavedaliclient", false))
                         {
                             PROGLOG("Workunit option 'slaveDaliClient' enabled");
                             enableThorSlaveAsDaliClient();
                         }
+
+                        Owned<IPropertyTree> deps = createPTree(msg);
+
+                        Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, soPath.str(), mptag, slaveMsgTag);
+                        job->setXGMML(deps);
+                        for (unsigned sc=0; sc<mpServers.ordinality(); sc++)
+                            job->addChannel(&mpServers.item(sc));
+                        jobs.replace(*job.getLink());
                         job->startJob();
 
                         msg.clear();
@@ -328,26 +384,38 @@ public:
                         CJobSlave *job = jobs.find(jobKey.get());
                         if (!job)
                             throw MakeStringException(0, "Job not found: %s", jobKey.get());
+
                         Owned<IPropertyTree> graphNode = createPTree(msg);
-                        Owned<CSlaveGraph> subGraph = (CSlaveGraph *)job->createGraph();
-                        subGraph->createFromXGMML(graphNode, NULL, NULL, NULL);
-                        PROGLOG("GraphInit: %s, graphId=%" GIDPF "d", jobKey.get(), subGraph->queryGraphId());
-                        subGraph->setExecuteReplyTag(subGraph->queryJob().deserializeMPTag(msg));
+                        mptag_t executeReplyTag = job->deserializeMPTag(msg);
                         size32_t len;
                         msg.read(len);
-                        MemoryBuffer initData;
-                        initData.append(len, msg.readDirect(len));
-                        subGraph->deserializeCreateContexts(initData);
+                        MemoryBuffer createInitData;
+                        createInitData.append(len, msg.readDirect(len));
                         graph_id gid;
                         msg.read(gid);
-                        assertex(gid == subGraph->queryGraphId());
-                        subGraph->init(msg);
+                        unsigned graphInitDataPos = msg.getPos();
+                        job->addSubGraph(*graphNode);
 
-                        job->addSubGraph(*LINK(subGraph));
-                        job->addDependencies(job->queryXGMML(), false);
+                        /* JCSMORE - should improve, create 1st graph with create context/init data and clone
+                         * Should perhaps do this initialization in parallel..
+                         */
+                        for (unsigned c=0; c<job->queryJobChannels(); c++)
+                        {
+                            PROGLOG("GraphInit: %s, graphId=%" GIDPF "d, slaveChannel=%d", jobKey.get(), gid, c);
+                            CJobChannel &jobChannel = job->queryJobChannel(c);
+                            Owned<CSlaveGraph> subGraph = (CSlaveGraph *)jobChannel.getGraph(gid);
+                            subGraph->setExecuteReplyTag(executeReplyTag);
 
-                        subGraph->execute(0, NULL, true, true);
+                            createInitData.reset(0);
+                            subGraph->deserializeCreateContexts(createInitData);
 
+                            msg.reset(graphInitDataPos);
+                            subGraph->init(msg);
+
+                            jobChannel.addDependencies(job->queryXGMML(), false);
+
+                            subGraph->execute(0, NULL, true, true);
+                        }
                         msg.clear();
                         msg.append(false);
 
@@ -364,16 +432,19 @@ public:
                             msg.read(gid);
                             msg.clear();
                             msg.append(false);
-                            Owned<CSlaveGraph> graph = (CSlaveGraph *)job->getGraph(gid);
-                            if (graph)
+                            for (unsigned c=0; c<job->queryJobChannels(); c++)
                             {
-                                graph->getDone(msg);
-                                graph->join(); // graph will wind-up.
-                            }
-                            else
-                            {
-                                msg.clear();
-                                msg.append(false);
+                                CJobChannel &jobChannel = job->queryJobChannel(c);
+                                Owned<CSlaveGraph> graph = (CSlaveGraph *)jobChannel.getGraph(gid);
+                                if (graph)
+                                {
+                                    msg.append(jobChannel.queryMyRank()-1);
+                                    graph->getDone(msg);
+                                }
+                                else
+                                {
+                                    msg.append((rank_t)0); // JCSMORE - not sure why this would ever happen
+                                }
                             }
                         }
                         else
@@ -393,12 +464,16 @@ public:
                         {
                             graph_id gid;
                             msg.read(gid);
-                            Owned<CGraphBase> graph = job->getGraph(gid);
-                            if (graph)
+                            for (unsigned c=0; c<job->queryJobChannels(); c++)
                             {
-                                Owned<IThorException> e = MakeThorException(0, "GraphAbort");
-                                e->setGraphId(gid);
-                                graph->abort(e);
+                                CJobChannel &jobChannel = job->queryJobChannel(c);
+                                Owned<CGraphBase> graph = jobChannel.getGraph(gid);
+                                if (graph)
+                                {
+                                    Owned<IThorException> e = MakeThorException(0, "GraphAbort");
+                                    e->setGraphId(gid);
+                                    graph->abort(e);
+                                }
                             }
                         }
                         msg.clear();
@@ -426,12 +501,16 @@ public:
                             unsigned resultId;
                             msg.read(resultId);
                             mptag_t replyTag = job->deserializeMPTag(msg);
-                            Owned<IThorResult> result = job->getOwnedResult(gid, ownerId, resultId);
-                            Owned<IRowStream> resultStream = result->getRowStream();
                             msg.setReplyTag(replyTag);
                             msg.clear();
-                            sendInChunks(job->queryJobComm(), 0, replyTag, resultStream, result->queryRowInterfaces());
                             doReply = false;
+                            for (unsigned c=0; c<job->queryJobChannels(); c++)
+                            {
+                                CJobChannel &jobChannel = job->queryJobChannel(c);
+                                Owned<IThorResult> result = jobChannel.getOwnedResult(gid, ownerId, resultId);
+                                Owned<IRowStream> resultStream = result->getRowStream();
+                                sendInChunks(jobChannel.queryJobComm(), 0, replyTag, resultStream, result->queryRowInterfaces());
+                            }
                         }
                         break;
                     }
@@ -448,12 +527,12 @@ public:
                     msg.clear();
                     msg.append(true);
                     serializeThorException(e, msg);
-                    queryClusterComm().reply(msg);
+                    queryNodeComm().reply(msg);
                 }
                 e->Release();
             }
             if (doReply && msg.getReplyTag()!=TAG_NULL)
-                queryClusterComm().reply(msg);
+                queryNodeComm().reply(msg);
         }
     }
 
@@ -555,7 +634,7 @@ public:
         path.append("fiplist_");
         globals->getProp("@name", path);
         path.append("_");
-        path.append(queryClusterGroup().rank(queryMyNode()));
+        path.append(queryNodeGroup().rank(queryMyNode()));
         path.append(".lst");
         ensureDirectoryForFile(path.str());
         Owned<IFile> iFile = createIFile(path.str());
@@ -678,11 +757,12 @@ void slaveMain()
 
 #ifdef __linux__
     bool useMirrorMount = globals->getPropBool("Debug/@useMirrorMount", false);
-    if (useMirrorMount && queryClusterGroup().ordinality() > 2)
+
+    if (useMirrorMount && queryNodeGroup().ordinality() > 2)
     {
-        unsigned slaves = queryClusterGroup().ordinality()-1;
-        rank_t next = queryClusterGroup().rank()%slaves;  // note 0 = master
-        const IpAddress &ip = queryClusterGroup().queryNode(next+1).endpoint();
+        unsigned slaves = queryNodeGroup().ordinality()-1;
+        rank_t next = queryNodeGroup().rank()%slaves;  // note 0 = master
+        const IpAddress &ip = queryNodeGroup().queryNode(next+1).endpoint();
         StringBuffer ipStr;
         ip.getIpText(ipStr);
         PROGLOG("Redirecting local mount to %s", ipStr.str());
@@ -694,6 +774,7 @@ void slaveMain()
             overrideReplicateDirectory = "/d$";
         setLocalMountRedirect(ip, overrideReplicateDirectory, "/mnt/mirror");
     }
+
 #endif
 
     jobListener.main();
@@ -702,6 +783,6 @@ void slaveMain()
 void abortSlave()
 {
     if (clusterInitialized())
-        queryClusterComm().cancel(0, masterSlaveMpTag);
+        queryNodeComm().cancel(0, masterSlaveMpTag);
 }
 

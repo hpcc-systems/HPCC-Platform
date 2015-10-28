@@ -243,7 +243,7 @@ void ActiveScopeInfo::newPrivateScope()
 
 IHqlExpression * ActiveScopeInfo::queryParameter(IIdAtom * id)
 {
-    IAtom * name = id->lower();
+    IAtom * name = lower(id);
     ForEachItemIn(idx, activeParameters)
     {
         IHqlExpression &parm = activeParameters.item(idx);
@@ -268,7 +268,7 @@ static IError * createErrorVA(WarnErrorCategory category, ErrorSeverity severity
 {
     StringBuffer msg;
     msg.valist_appendf(format, args);
-    return createError(category, severity, errNo, msg.str(), pos.sourcePath->str(), pos.lineno, pos.column, pos.position);
+    return createError(category, severity, errNo, msg.str(), str(pos.sourcePath), pos.lineno, pos.column, pos.position);
 }
 
 IHqlExpression * HqlGram::createSetRange(attribute & array, attribute & range)
@@ -342,6 +342,7 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
     moduleName = _containerScope->queryId();
     forceResult = false;
     parsingTemplateAttribute = false;
+    inSignedModule = false;
 
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
 
@@ -367,6 +368,7 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
     for (unsigned i=0;i<parent.defaultScopes.length();i++)
         defaultScopes.append(*LINK(&parent.defaultScopes.item(i)));
     sourcePath.set(parent.sourcePath);
+    inSignedModule = parent.inSignedModule;
     errorHandler = lookupCtx.errs;
     moduleName = containerScope->queryId();
 
@@ -430,6 +432,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     moduleName = NULL;
     resolveSymbols = true;
     lastpos = 0;
+    inSignedModule = false;
     
     containerScope = _containerScope;
     globalScope = _globalScope;
@@ -460,7 +463,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
         StringBuffer plugin, version;
         globalScope->getProp(pluginAtom, plugin);
         globalScope->getProp(versionAtom, version);
-        serviceExtraAttributes.setown(createAttribute(pluginAtom, createConstant(plugin.str()), createConstant(version.str())));
+        serviceExtraAttributes.setown(createExprAttribute(pluginAtom, createConstant(plugin.str()), createConstant(version.str())));
     }
 }
 
@@ -773,7 +776,7 @@ static StringBuffer& getFldName(IHqlExpression* field, StringBuffer& s)
         break;
     case no_field:
     default:
-        s.append(field->queryName()->str());
+        s.append(str(field->queryName()));
         break;
     case no_self:
     case no_left:
@@ -804,7 +807,7 @@ IHqlExpression * HqlGram::translateFieldsToNewScope(IHqlExpression * expr, IHqlS
                 newField.setown(record->lookupSymbol(name));
             if (!newField)
             {
-                reportError(ERR_FIELD_NOT_FOUND, err, "Could not find field %s", name->str());
+                reportError(ERR_FIELD_NOT_FOUND, err, "Could not find field %s", str(name));
                 return LINK(expr);
             }
             return createSelectExpr(newDs.getClear(), newField.getClear());
@@ -827,13 +830,13 @@ IHqlExpression * HqlGram::translateFieldsToNewScope(IHqlExpression * expr, IHqlS
 
 void HqlGram::checkSensibleId(const attribute & attr, IIdAtom * id)
 {
-    IAtom * name = id->lower();
+    IAtom * name = lower(id);
     if (name == skipAtom || name == eventExtraAtom || name == eventNameAtom || name == failCodeAtom ||
         name == failMessageAtom || name == countAtom || name == counterAtom ||
         name == matchedAtom || name == matchTextAtom || name == matchUnicodeAtom ||
         name == matchUtf8Atom || name == matchLengthAtom || name == matchPositionAtom
         )
-        reportError(ERR_DUBIOUS_NAME, attr.pos, "Identifier '%s' clashes with a reserved symbol", name->str());
+        reportError(ERR_DUBIOUS_NAME, attr.pos, "Identifier '%s' clashes with a reserved symbol", str(name));
 }
 
 DefineIdSt * HqlGram::createDefineId(int scope, ITypeInfo * ownedType)
@@ -909,11 +912,11 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         if (!moduleId)
             moduleId = unnamedId;
         if (!getEmbedContextFunc)
-            reportError(ERR_PluginNoScripting, errpos, "Module %s does not export getEmbedContext() function", moduleId->getAtomNamePtr());
+            reportError(ERR_PluginNoScripting, errpos, "Module %s does not export getEmbedContext() function", str(moduleId));
         bool isImport = queryAttributeInList(importAtom, attribs) != NULL;
         OwnedHqlExpr checkSupport = pluginScope->lookupSymbol(isImport ? supportsImportId : supportsScriptId, LSFpublic, lookupCtx);
         if (!matchesBoolean(checkSupport, true))
-            reportError(ERR_PluginNoScripting, errpos, "Module %s does not support %s", moduleId->getAtomNamePtr(), isImport ? "import" : "script");
+            reportError(ERR_PluginNoScripting, errpos, "Module %s does not support %s", str(moduleId), isImport ? "import" : "script");
         OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
         if (syntaxCheckFunc && !isImport)
         {
@@ -921,6 +924,8 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         }
         args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
     }
+    if (!checkAllowed(errpos, "cpp", "Embedded code"))
+        args.append(*createExprAttribute(_disallowed_Atom));
     if (attribs)
         attribs->unwindList(args, no_comma);
     Linked<ITypeInfo> type = current_type;
@@ -2295,7 +2300,7 @@ void HqlGram::addFields(const attribute &errpos, IHqlExpression *e, IHqlExpressi
         if (match)
         {
             if (!clone)
-                reportWarning(CategorySyntax, ERR_REC_DUPFIELD, errpos.pos, "A field called %s is already defined in this record",id->str());
+                reportWarning(CategorySyntax, ERR_REC_DUPFIELD, errpos.pos, "A field called %s is already defined in this record",str(id));
             continue;
         }
 
@@ -2468,7 +2473,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
         name = createUnnamedFieldId();
 
     checkFieldnameValid(errpos, name);
-    if(isUnicodeType(fieldType) && (*fieldType->queryLocale()->str() == 0))
+    if(isUnicodeType(fieldType) && (*str(fieldType->queryLocale()) == 0))
     {
         StringBuffer locale;
         IAtom * localeAtom = createLowerCaseAtom(queryDefaultLocale()->queryValue()->getStringValue(locale));
@@ -2492,9 +2497,9 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
     if (fieldSize != UNKNOWN_LENGTH)
     {
         if (fieldSize > MAX_SENSIBLE_FIELD_LENGTH)
-            reportWarning(CategoryEfficiency, SeverityError, ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is larger than max sensible size", name->str());
+            reportWarning(CategoryEfficiency, SeverityError, ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is larger than max sensible size", str(name));
         else if (fieldSize > MAX_POSSIBLE_FIELD_LENGTH)
-            reportError(ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is too large", name->str());
+            reportError(ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is too large", str(name));
     }
 
     OwnedHqlExpr newField = createField(name, fieldType.getClear(), value.getClear(), attrs);
@@ -2622,7 +2627,7 @@ void HqlGram::checkFieldnameValid(const attribute &errpos, IIdAtom * name)
     IHqlSimpleScope *recordScope = self->querySimpleScope();
     OwnedHqlExpr t(recordScope->lookupSymbol(name));
     if (t.get())
-        reportError(ERR_REC_DUPFIELD, errpos, "A field called %s is already defined in this record",name->str());
+        reportError(ERR_REC_DUPFIELD, errpos, "A field called %s is already defined in this record",str(name));
 }
 
 /* Linkage: not affected */
@@ -2723,14 +2728,14 @@ void HqlGram::enterVirtualScope()
         {
             if (fullName.length())
                 fullName.append(".");
-            fullName.append(id->str());
+            fullName.append(str(id));
         }
     }
     if (current_id)
     {
         if (fullName.length())
             fullName.append(".");
-        fullName.append(current_id->str());
+        fullName.append(str(current_id));
     }
 
     ActiveScopeInfo & next = * new ActiveScopeInfo;
@@ -2885,7 +2890,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
         return;
     }
 
-    HqlGramCtx * parentCtx = new HqlGramCtx(lookupCtx);
+    HqlGramCtx * parentCtx = new HqlGramCtx(lookupCtx, inSignedModule);
     saveContext(*parentCtx, true);
     Owned<IHqlScope> newScope = createForwardScope(queryGlobalScope(), parentCtx, lookupCtx.queryParseContext());
     IHqlExpression * newScopeExpr = queryExpression(newScope);
@@ -2916,7 +2921,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
         case UNKNOWN_ID:
             {
                 IIdAtom * id = nextToken.getId();
-                IAtom * name = id->lower();
+                IAtom * name = lower(id);
                 if ((braNesting == 0) && (endNesting == 0))             // last identifier seen, but don't include parameters, or record members
                     prevId = id;
                 if (name == ruleAtom)
@@ -3194,7 +3199,7 @@ IHqlExpression * HqlGram::implementInterfaceFromModule(const attribute & modpos,
                 if (match)
                     syms.append(*match.getClear());
                 else
-                    reportError(ERR_EXPECTED_ATTRIBUTE, ipos, "Interface does not define %s", id->str());
+                    reportError(ERR_EXPECTED_ATTRIBUTE, ipos, "Interface does not define %s", str(id));
             }
         }
         else
@@ -3214,7 +3219,7 @@ IHqlExpression * HqlGram::implementInterfaceFromModule(const attribute & modpos,
                 newScope->defineSymbol(LINK(match));
             }
             else if (!optional)
-                reportError(ERR_EXPECTED_ATTRIBUTE, modpos, "Module does not define %s", id->str());
+                reportError(ERR_EXPECTED_ATTRIBUTE, modpos, "Module does not define %s", str(id));
         }
     }
 
@@ -3356,7 +3361,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                     IHqlExpression* ds = dotScope->queryChild(0);
                     ret = ds->queryRecord()->querySimpleScope()->lookupSymbol(searchName);
                     if (!ret)
-                        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", ds->queryName()->str(), searchName->str());
+                        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", str(ds->queryName()), str(searchName));
                 }
                 else
                 {
@@ -3365,7 +3370,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                     {
                         StringBuffer s;
                         getExprECL(dotScope, s);
-                        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", s.str(), searchName->str());
+                        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", s.str(), str(searchName));
                     }
                 }
             }
@@ -3381,12 +3386,12 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
             if (!resolved)
             {
                 if (modScope->queryName())
-                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a member named '%s'", modScope->queryName()->str(), searchName->str());
+                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a member named '%s'", str(modScope->queryName()), str(searchName));
                 else
-                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object does not have a member named '%s'", searchName->str());
+                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object does not have a member named '%s'", str(searchName));
             }
             else if ((modScope != containerScope) && !isExported(resolved))
-                reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module", searchName->str());
+                reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module", str(searchName));
             return resolved.getClear();
         }
 
@@ -3478,7 +3483,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
             return recordLookupInTemplateContext(searchName, ret, templateScope);
 
         // finally comes the local scope
-        if (legacyImportSemantics && searchName->lower()==globalScope->queryName())
+        if (legacyImportSemantics && lower(searchName)==globalScope->queryName())
             return LINK(recordLookupInTemplateContext(searchName, queryExpression(globalScope), templateScope));
 
         ForEachItemIn(idx2, defaultScopes)
@@ -3577,7 +3582,7 @@ void HqlGram::checkMaxCompatible(IHqlExpression * sortOrder, IHqlExpression * va
 void HqlGram::checkSvcAttrNoValue(IHqlExpression* attr, const attribute& errpos)
 {
     if (attr->numChildren()>0)
-        reportWarning(CategorySyntax, WRN_SVC_ATTRNEEDNOVALUE, errpos.pos,"Service attribute '%s' requires no value; ignored",attr->queryName()->str());
+        reportWarning(CategorySyntax, WRN_SVC_ATTRNEEDNOVALUE, errpos.pos,"Service attribute '%s' requires no value; ignored",str(attr->queryName()));
 }
 
 void cleanupService(IHqlScope*& serviceScope)
@@ -3597,7 +3602,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
     // already defined?
     OwnedHqlExpr def = serviceScope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
     if (def)
-        reportError(ERR_SVC_FUNCDEFINED,errpos, "Function is already defined in service: %s",name->str());
+        reportError(ERR_SVC_FUNCDEFINED,errpos, "Function is already defined in service: %s",str(name));
 
     // gather the attrs
     HqlExprArray attrArray;
@@ -3605,6 +3610,8 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         attrs->unwindList(attrArray,no_comma);
     
     bool hasEntrypoint = false;
+    bool foldSeen = false;
+    bool nofoldSeen = false;
     unsigned count = attrArray.length();
     if (count>0)
     {
@@ -3616,7 +3623,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
             IHqlExpression* attr = &attrArray.item(i);
             IAtom * name = attr->queryName();
             if (attr->queryChild(0) && !attr->queryChild(0)->queryValue())
-                reportError(ERR_EXPECTED_CONST, errpos.pos, "Expected a constant argument for service attribute: '%s';", name->str());
+                reportError(ERR_EXPECTED_CONST, errpos.pos, "Expected a constant argument for service attribute: '%s';", str(name));
 
             // check duplication
             unsigned j;
@@ -3626,7 +3633,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 if (cur.queryName()==name)
                 {
                     if (&cur != attr)
-                        reportError(ERR_SVC_ATTRDEFINED, errpos, "Service has duplicate attribute with different value: %s", name->str());
+                        reportError(ERR_SVC_ATTRDEFINED, errpos, "Service has duplicate attribute with different value: %s", str(name));
                     break;
                 }
             }
@@ -3676,7 +3683,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 }
 
                 if (invalid)
-                    reportError(ERR_SVC_INVALIDLIBRARY,errpos,"Invalid %s: can not be empty", name->getAtomNamePtr());
+                    reportError(ERR_SVC_INVALIDLIBRARY,errpos,"Invalid %s: can not be empty", str(name));
             }
             else if (name == includeAtom)
             {
@@ -3727,10 +3734,13 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
             {
                 //backward compatibility
             }
+            else if (name == foldAtom)
+                foldSeen = true;
+            else if (name == nofoldAtom)
+                nofoldSeen = true;
             else // unsupported
-                reportWarning(CategorySyntax,WRN_SVC_UNSUPPORTED_ATTR, errpos.pos, "Unsupported service attribute: '%s'; ignored", name->str());
+                reportWarning(CategorySyntax,WRN_SVC_UNSUPPORTED_ATTR, errpos.pos, "Unsupported service attribute: '%s'; ignored", str(name));
         }
-
         // check attribute conflicts
         int apiAttrs = 0;
         if (rtlApi) apiAttrs++;
@@ -3739,10 +3749,16 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         if (apiAttrs>1)
             reportWarning(CategorySyntax, ERR_SVC_ATTRCONFLICTS, errpos.pos, "Attributes eclrtl, bcd, c are conflict: only 1 can be used at a time");
     }
+    if (foldSeen && !nofoldSeen)
+    {
+        // Check that we are allowed to fold...
+        if (!checkAllowed(errpos, "foldextern", "FOLD attribute"))
+            attrs = createComma(attrs, createAttribute(_disallowed_Atom));
+    }
 
     if (!hasEntrypoint)
     {
-        IHqlExpression *nameAttr = createAttribute(entrypointAtom, createConstant(name->str()));
+        IHqlExpression *nameAttr = createAttribute(entrypointAtom, createConstant(str(name)));
         attrs = createComma(attrs, nameAttr);
     }
     attrs = createComma(attrs, LINK(serviceExtraAttributes));
@@ -3906,7 +3922,7 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
     ITypeInfo *t2 = a2.queryExprType();
 
     Owned<ITypeInfo> type = ::getPromotedECLType(t1, t2);
-    if (isStringType(type) && (t1->getStringLen() != t2->getStringLen()))
+    if ((isStringType(type) || isUnicodeType(type)) && (t1->getStringLen() != t2->getStringLen()))
         type.setown(getStretchedType(UNKNOWN_LENGTH, type));
 
     ensureType(a1, type);
@@ -4224,7 +4240,7 @@ IHqlExpression * HqlGram::createIndirectSelect(IHqlExpression * lhs, IHqlExpress
         }
     }
 
-    reportError(ERR_DATASET_NOT_CONTAIN_X, errpos, "Dataset doesn't contain a field %s", field->queryName()->str());
+    reportError(ERR_DATASET_NOT_CONTAIN_X, errpos, "Dataset doesn't contain a field %s", str(field->queryName()));
     lhs->Release();
     return createNullExpr(rhs);
 }
@@ -4412,7 +4428,7 @@ IAtom * HqlGram::ensureCommonLocale(attribute &a, attribute &b)
 void HqlGram::ensureUnicodeLocale(attribute & a, char const * locale)
 {
     Owned<ITypeInfo> type = a.queryExpr()->getType();
-    if(strcmp(locale, type->queryLocale()->str()) != 0)
+    if(strcmp(locale, str(type->queryLocale())) != 0)
     {
         switch (type->getTypeCode())
         {
@@ -5695,6 +5711,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     if (attr == assertAtom) ok = true;
                     if (attr == stableAtom) ok = true;
                     if (attr == unstableAtom) ok = true;
+                    if (attr == parallelAtom) ok = true;
                     break;
                 case no_nwaymerge:
                     if (attr == localAtom) ok = true;
@@ -5769,6 +5786,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
     return NULL;
 }
 
+
 IHqlExpression * HqlGram::createDistributeCond(IHqlExpression * leftDs, IHqlExpression * rightDs, const attribute & err, const attribute & seqAttr)
 {
     IHqlSimpleScope * leftScope = leftDs->queryRecord()->querySimpleScope();
@@ -5786,7 +5804,7 @@ IHqlExpression * HqlGram::createDistributeCond(IHqlExpression * leftDs, IHqlExpr
             IHqlExpression * leftField = leftScope->lookupSymbol(rightField->queryId());
             if (!leftField)
             {
-                reportError(ERR_FIELD_NOT_FOUND, err, "Could not find a field %s in the dataset", rightField->queryName()->str());
+                reportError(ERR_FIELD_NOT_FOUND, err, "Could not find a field %s in the dataset", str(rightField->queryName()));
                 leftField = LINK(rightField);
             }
             IHqlExpression * test = createBoolExpr(no_eq, createSelectExpr(LINK(left), leftField), createSelectExpr(LINK(right), LINK(rightField)));
@@ -5852,7 +5870,7 @@ void HqlGram::reportError(int errNo, const ECLlocation & pos, const char* format
 
 void HqlGram::reportErrorUnexpectedX(const attribute& errpos, IAtom * unexpected)
 {
-    reportError(ERR_UNEXPECTED_ATTRX, errpos, "Unexpected attribute %s", unexpected->str());
+    reportError(ERR_UNEXPECTED_ATTRX, errpos, "Unexpected attribute %s", str(unexpected));
 }
 
 void HqlGram::doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
@@ -5876,9 +5894,9 @@ void HqlGram::reportMacroExpansionPosition(IError * warning, HqlLex * lexer)
     expandingMacroPosition = true;
     unsigned code = warning->errorCode();
     if (warning->getSeverity() == SeverityFatal)
-        errorHandler->reportError(code, s.str(), lexer->querySourcePath()->str(), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
+        errorHandler->reportError(code, s.str(), str(lexer->querySourcePath()), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
     else
-        doReportWarning(warning->getCategory(), code, s.str(), lexer->querySourcePath()->str(), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
+        doReportWarning(warning->getCategory(), code, s.str(), str(lexer->querySourcePath()), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
     expandingMacroPosition = false;
 }
 
@@ -5892,7 +5910,7 @@ void HqlGram::reportError(int errNo, const char *msg, int lineno, int column, in
 {
     if (errorHandler && !errorDisabled)
     {
-        Owned<IError> error = createError(errNo, msg, lexObject->queryActualSourcePath()->str(), lineno, column, position);
+        Owned<IError> error = createError(errNo, msg, str(lexObject->queryActualSourcePath()), lineno, column, position);
         report(error);
     }
 }
@@ -6033,7 +6051,7 @@ void HqlGram::checkFormals(IIdAtom * name, HqlExprArray& parms, HqlExprArray& de
         IHqlExpression* parm = (IHqlExpression*)&parms.item(idx);
 
         if (isMacro && !parm->hasAttribute(noTypeAtom))
-            reportError(ERR_MACRO_NOPARAMTYPE, object, "Type is not allowed for macro: parameter %d of %s", idx+1, name->str());
+            reportError(ERR_MACRO_NOPARAMTYPE, object, "Type is not allowed for macro: parameter %d of %s", idx+1, str(name));
 
         //
         // check default value
@@ -6044,7 +6062,7 @@ void HqlGram::checkFormals(IIdAtom * name, HqlExprArray& parms, HqlExprArray& de
             if ((def->getOperator() != no_omitted) && !def->isConstant()) 
             {
                 if (def->queryType()->getTypeCode() != type_string)                 
-                    reportError(ERR_MACRO_CONSTDEFPARAM, object, "Default parameter to macro must be constant string: parameter %d of %s",idx+1,name->str());
+                    reportError(ERR_MACRO_CONSTDEFPARAM, object, "Default parameter to macro must be constant string: parameter %d of %s",idx+1,str(name));
             }   
         } 
     }   
@@ -6316,7 +6334,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
         ((actualType->getTypeCode() == type_void) && !actual->isFunction()))
     {
         if (errpos)
-            reportError(ERR_PARAM_NOTYPEORVOID, *errpos, "Non-typed or void type expression can not used: parameter %s", formalName->str());
+            reportError(ERR_PARAM_NOTYPEORVOID, *errpos, "Non-typed or void type expression can not used: parameter %s", str(formalName));
         return NULL;
     }
 
@@ -6330,9 +6348,9 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
                 if (errpos)
                 {
                     if (isGrouped(formal) != isGrouped(actual))
-                        reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "Grouping for functional parameter %s does not match", formalName->str());
+                        reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "Grouping for functional parameter %s does not match", str(formalName));
                     else
-                        reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "Types for functional parameter %s does not match exactly", formalName->str());
+                        reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "Types for functional parameter %s does not match exactly", str(formalName));
                 }
                 return NULL;
             }
@@ -6342,12 +6360,12 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
         if (formal->isFunction())
         {
             if (errpos)
-                reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "Parameter %s requires an unbound functional argument", formalName->str());
+                reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "Parameter %s requires an unbound functional argument", str(formalName));
             return NULL;
         }
 
         if (errpos)
-            reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "Cannot pass a functional definition to parameter %s", formalName->str());
+            reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "Cannot pass a functional definition to parameter %s", str(formalName));
         return NULL;
     }
 
@@ -6395,13 +6413,13 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
                 StringBuffer s,tp1,tp2;
                 if (isDefault)
                 {
-                    s.appendf("Default for parameter %s type mismatch - expected %s, given %s",formalName->str(),
+                    s.appendf("Default for parameter %s type mismatch - expected %s, given %s",str(formalName),
                             getFriendlyTypeStr(formal,tp1).str(),
                             getFriendlyTypeStr(actual,tp2).str());
                 }
                 else
                 {
-                    s.appendf("Parameter %s type mismatch - expected %s, given %s",formalName->str(),
+                    s.appendf("Parameter %s type mismatch - expected %s, given %s",str(formalName),
                             getFriendlyTypeStr(formal,tp1).str(),
                             getFriendlyTypeStr(actual,tp2).str());
                 }
@@ -6421,7 +6439,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
         if (!isValidFieldReference(actual))
         {
             if (errpos)
-                reportError(ERR_EXPECTED_FIELD, *errpos, "Expected a field reference to be passed to parameter %s", formalName->str());
+                reportError(ERR_EXPECTED_FIELD, *errpos, "Expected a field reference to be passed to parameter %s", str(formalName));
             return NULL;
         }
         if (ret->getOperator() != no_indirect)
@@ -6432,7 +6450,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
         if (isFieldSelectedFromRecord(ret))
         {
             if (errpos)
-                reportError(ERR_EXPECTED, *errpos, "Expression expected for parameter %s.  Fields from records can only be passed to field references", formalName->str());
+                reportError(ERR_EXPECTED, *errpos, "Expression expected for parameter %s.  Fields from records can only be passed to field references", str(formalName));
             return NULL;
         }
     }
@@ -6442,7 +6460,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
         if (!isValidFieldReference(actual) && actualTC != type_sortlist)
         {
             if (errpos)
-                reportError(ERR_EXPECTED_FIELD, *errpos, "Expected a field reference to be passed to parameter %s", formalName->str());
+                reportError(ERR_EXPECTED_FIELD, *errpos, "Expected a field reference to be passed to parameter %s", str(formalName));
             return NULL;
         }
     }
@@ -6452,7 +6470,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
 
 static unsigned findParameterByName(IHqlExpression * formals, IIdAtom * searchId)
 {
-    IAtom * searchName = searchId->lower();
+    IAtom * searchName = lower(searchId);
     ForEachChild(i, formals)
     {
         if (formals->queryChild(i)->queryName() == searchName)
@@ -6503,13 +6521,13 @@ bool HqlGram::processParameter(FunctionCallInfo & call, IIdAtom * name, IHqlExpr
         targetActual = findParameterByName(formals, name);
         if (targetActual == (unsigned)-1)
         {
-            reportError(ERR_NAMED_PARAM_NOT_FOUND, errpos, "Could not find a parameter named %s", name->str());
+            reportError(ERR_NAMED_PARAM_NOT_FOUND, errpos, "Could not find a parameter named %s", str(name));
             return false;
         }
 
         if (call.actuals.isItem(targetActual) && call.actuals.item(targetActual).getOperator() != no_omitted)
         {
-            reportError(ERR_NAMED_ALREADY_HAS_VALUE, errpos, "Parameter %s already has a value supplied", name->str());
+            reportError(ERR_NAMED_ALREADY_HAS_VALUE, errpos, "Parameter %s already has a value supplied", str(name));
             return false;
         }
         call.hadNamed = true;
@@ -6548,7 +6566,7 @@ bool HqlGram::processParameter(FunctionCallInfo & call, IIdAtom * name, IHqlExpr
         if (isOmitted(actual))
             return true;
 
-        reportError(ERR_PARAM_TOOMANY, errpos, "Too many parameters passed to function %s (expected %d)", funcName->str(), call.numFormals);
+        reportError(ERR_PARAM_TOOMANY, errpos, "Too many parameters passed to function %s (expected %d)", str(funcName), call.numFormals);
         return false;
     }
 
@@ -6584,7 +6602,7 @@ bool HqlGram::checkParameters(IHqlExpression* func, HqlExprArray& actuals, const
     if (!func->isFunction())
     {
         if (actuals.length())
-            reportError(ERR_TYPE_NOPARAMNEEDED, errpos, "Type does not require parameters: %s", funcName->str());
+            reportError(ERR_TYPE_NOPARAMNEEDED, errpos, "Type does not require parameters: %s", str(funcName));
         return false; 
     }
 
@@ -6603,7 +6621,7 @@ bool HqlGram::checkParameters(IHqlExpression* func, HqlExprArray& actuals, const
             if (!defvalue)
             {
                 IIdAtom * formalName = formal->queryId();
-                reportError(ERR_PARAM_NODEFVALUE, errpos, "Omitted parameter %s has no default value", formalName->str());
+                reportError(ERR_PARAM_NODEFVALUE, errpos, "Omitted parameter %s has no default value", str(formalName));
                 return false;
             }
 //          actuals.replace(*LINK(defvalue), idx);
@@ -6853,7 +6871,7 @@ bool HqlGram::doCheckValidFieldValue(const attribute &errpos, IHqlExpression *va
             } while (value->getOperator() == no_select);
             if (value->getOperator() == no_selfref)
             {
-                reportError(ERR_BAD_FIELD_ATTR, errpos, "SELF cannot be used to provide a value for field '%s'", field->queryName()->str());
+                reportError(ERR_BAD_FIELD_ATTR, errpos, "SELF cannot be used to provide a value for field '%s'", str(field->queryName()));
                 return false;
             }
             return true;
@@ -6926,7 +6944,7 @@ IHqlExpression * HqlGram::checkOutputRecord(IHqlExpression *record, const attrib
                 {
 
                     IIdAtom * name = field->queryId();
-                    reportError(ERR_REC_FIELDNODEFVALUE, errpos, REC_FLD_ERR_STR, name ? name->str() : "?");
+                    reportError(ERR_REC_FIELDNODEFVALUE, errpos, REC_FLD_ERR_STR, name ? str(name) : "?");
                     allConstant = false;                                        // no point reporting this as well.
 
                     HqlExprArray args;
@@ -7019,7 +7037,7 @@ void HqlGram::reportUnsupportedFieldType(ITypeInfo * type, const attribute & err
 
 void HqlGram::reportInvalidIndexFieldType(IHqlExpression * expr, bool isKeyed, const attribute & errpos)
 {
-    const char * id = expr->queryId()->str();
+    const char * id = str(expr->queryId());
     StringBuffer s;
     getFriendlyTypeStr(expr, s);
     if (isKeyed)
@@ -7077,7 +7095,7 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
                 {
                     if (type->isSigned() ||
                         ((tc == type_littleendianint) && (type->getSize() != 1)))
-                        reportError(ERR_INDEX_BADTYPE, errpos.pos, "Signed or little-endian field %s is not supported inside a keyed record field ", id->str());
+                        reportError(ERR_INDEX_BADTYPE, errpos.pos, "Signed or little-endian field %s is not supported inside a keyed record field ", str(id));
                 }
                 break;
             default:
@@ -7085,7 +7103,7 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
                     reportInvalidIndexFieldType(expr, false, errpos);
                 else if ((type->getSize() == UNKNOWN_LENGTH) && !variableOk)
                 {
-                    reportError(ERR_INDEX_BADTYPE, errpos, "Variable size fields (%s) are not supported inside indexes", id->str());
+                    reportError(ERR_INDEX_BADTYPE, errpos, "Variable size fields (%s) are not supported inside indexes", str(id));
                     break;
                 }
             }
@@ -7127,7 +7145,7 @@ void HqlGram::checkIndexRecordTypes(IHqlExpression * index, const attribute & er
     {
         if (filename->getOperator() == no_select)
             reportError(ERR_INDEX_DEPEND_DATASET, errpos, "INDEX Filename cannot be dependent on the input dataset.  Field '%s' used from the index.",
-                    filename->queryChild(1)->queryId()->str());
+                    str(filename->queryChild(1)->queryId()));
         else
             reportError(ERR_INDEX_DEPEND_DATASET, errpos, "INDEX filename cannot be dependent on the input dataset.");
     }
@@ -7197,7 +7215,7 @@ public:
         if (!match)
             return true;
         if (field->queryType() != match->queryType())
-            gram.reportError(ERR_TYPEMISMATCH_RECORD, errpos, "Field %s has different type in records", id->str());
+            gram.reportError(ERR_TYPEMISMATCH_RECORD, errpos, "Field %s has different type in records", str(id));
         return false;
     }
 protected:
@@ -7219,7 +7237,7 @@ public:
         ForEachItemIn(i, names)
         {
             if (!matchedName.item(i))
-                gram.reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Record doesn't contain a field called %s", names.item(i).str());
+                gram.reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Record doesn't contain a field called %s", str(&names.item(i)));
         }
     }
     void expand(IHqlExpression * list)
@@ -7263,7 +7281,7 @@ public:
         if (match)
         {
             if (field->queryType() != match->queryType())
-                gram.reportError(ERR_TYPEMISMATCH_RECORD, errpos, "Field %s has different type in records", id->str());
+                gram.reportError(ERR_TYPEMISMATCH_RECORD, errpos, "Field %s has different type in records", str(id));
             return true;
         }
         return false;
@@ -7557,7 +7575,7 @@ void HqlGram::checkGrouping(const attribute& errpos, HqlExprArray & parms, IHqlE
 
                         StringBuffer msg("Field ");
                         if (id)
-                            msg.append("'").append(id->str()).append("' ");
+                            msg.append("'").append(str(id)).append("' ");
                         msg.append("in TABLE does not appear to be properly defined by grouping conditions");
                         reportWarning(CategoryUnexpected, ERR_GROUP_BADSELECT,errpos.pos, "%s", msg.str());
                     }
@@ -7644,7 +7662,7 @@ void HqlGram::checkConditionalAggregates(IIdAtom * name, IHqlExpression * value,
     }
 
     if (cond)
-        reportError(ERR_AGG_FIELD_AFTER_VAR, errpos, "Field %s: Conditional aggregates cannot follow a variable length field", name ? name->str() : "");
+        reportError(ERR_AGG_FIELD_AFTER_VAR, errpos, "Field %s: Conditional aggregates cannot follow a variable length field", name ? str(name) : "");
 }
 
 
@@ -7670,7 +7688,7 @@ void HqlGram::checkProjectedFields(IHqlExpression * e, attribute & errpos)
                 if (isVariableSize)
                 {
                     if (hadVariableAggregate)
-                        reportError(ERR_AGG_FIELD_AFTER_VAR, errpos, "Field %s: Fields cannot follow a variable length aggregate in the record", id ? id->str() : "");
+                        reportError(ERR_AGG_FIELD_AFTER_VAR, errpos, "Field %s: Fields cannot follow a variable length aggregate in the record", id ? str(id) : "");
 
                     if (value->isGroupAggregateFunction())
                         hadVariableAggregate = true;
@@ -7760,7 +7778,7 @@ static bool isFromFile(IHqlExpression * expr)
 static const char * getName(IHqlExpression * e)
 {
     if (e->queryName())
-        return e->queryName()->str();
+        return str(e->queryName());
     return "";
 }
 
@@ -8097,7 +8115,7 @@ void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHq
                     if (curValue)
                         curValue = queryStripCasts(curValue->queryNormalizedSelector());
                     if (matchValue != curValue)
-                        reportError(ERR_REC_DUPFIELD, errpos, "Field %s is already defined in the key portion", cur->queryName()->str());
+                        reportError(ERR_REC_DUPFIELD, errpos, "Field %s is already defined in the key portion", str(cur->queryName()));
                 }
                 else
                 {
@@ -8382,7 +8400,7 @@ void HqlGram::checkValidCsvRecord(const attribute & errpos, IHqlExpression * rec
     {
         IHqlExpression * badField = queryInvalidCsvRecordField(record);
         if (badField)
-            reportError(ERR_INVALID_CSV_RECORD, errpos, "CSV cannot be used on this record structure (field %s)", badField->queryName()->str());
+            reportError(ERR_INVALID_CSV_RECORD, errpos, "CSV cannot be used on this record structure (field %s)", str(badField->queryName()));
     }
 }
 
@@ -8446,11 +8464,11 @@ int HqlGram::checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right
                 if (lAlien && rAlien && 
                     queryExpression(lType)->queryFunctionDefinition() == queryExpression(rType)->queryFunctionDefinition())
                 {
-                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Fields %s and %s use incompatible instances of the same user type %s",lfield->queryName()->str(), rfield->queryName()->str(), ltype.str());
+                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Fields %s and %s use incompatible instances of the same user type %s",str(lfield->queryName()), str(rfield->queryName()), ltype.str());
                 }
                 else
                 {
-                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Type mismatch for corresponding fields %s (%s) vs %s (%s)",lfield->queryName()->str(), ltype.str(), rfield->queryName()->str(), rtype.str());
+                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Type mismatch for corresponding fields %s (%s) vs %s (%s)",str(lfield->queryName()), ltype.str(), str(rfield->queryName()), rtype.str());
                 }
             }
         }
@@ -8516,7 +8534,7 @@ bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression 
             IAtom * rightName = rightExpr->queryName();
             if (leftName != rightName)
             {
-                reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Name mismatch for corresponding fields %s vs %s",leftName->str(), rightName->str());
+                reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Name mismatch for corresponding fields %s vs %s",str(leftName), str(rightName));
                 return false;
             }
 
@@ -8529,10 +8547,10 @@ bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression 
                     StringBuffer ltype, rtype;
                     getFriendlyTypeStr(leftExpr, ltype);
                     getFriendlyTypeStr(rightExpr, rtype);
-                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Type mismatch for corresponding fields %s (%s) vs %s (%s)",leftName->str(), ltype.str(), rightName->str(), rtype.str());
+                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Type mismatch for corresponding fields %s (%s) vs %s (%s)",str(leftName), ltype.str(), str(rightName), rtype.str());
                 }
                 else
-                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Datasets must have the same types for field %s vs %s: one is Record, the other is not", leftName->str(), rightName->str());
+                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Datasets must have the same types for field %s vs %s: one is Record, the other is not", str(leftName), str(rightName));
                 return false;
             }
 
@@ -8765,9 +8783,9 @@ void HqlGram::checkNotAlreadyDefined(IIdAtom * name, IHqlScope * scope, const at
     if (expr)
     {
         if (legacyImportSemantics && isImport(expr))
-            reportWarning(CategoryConfuse, ERR_ID_REDEFINE, idattr.pos, "Identifier '%s' hides previous import", name->str());
+            reportWarning(CategoryConfuse, ERR_ID_REDEFINE, idattr.pos, "Identifier '%s' hides previous import", str(name));
         else
-            reportError(ERR_ID_REDEFINE, idattr, "Identifier '%s' is already defined", name->str());
+            reportError(ERR_ID_REDEFINE, idattr, "Identifier '%s' is already defined", str(name));
     }
 }
 
@@ -8780,7 +8798,7 @@ void HqlGram::checkNotAlreadyDefined(IIdAtom * name, const attribute & idattr)
     checkNotAlreadyDefined(name, activeScope.privateScope, idattr);
     unsigned numScopes = defineScopes.ordinality();
     if ((numScopes > 1) && defineScopes.item(numScopes-2).queryParameter(name))
-        reportError(ERR_ID_REDEFINE, idattr, "Identifier '%s' is already defined as a parameter", name->str());
+        reportError(ERR_ID_REDEFINE, idattr, "Identifier '%s' is already defined as a parameter", str(name));
 }
 
 
@@ -9006,16 +9024,30 @@ void HqlGram::checkDerivedCompatible(IIdAtom * name, IHqlExpression * scope, IHq
             if (match)
             {
                 if (!canBeVirtual(match))
-                    reportError(ERR_MISMATCH_PROTO, errpos, "Definition %s, cannot override this kind of definition", name->str());
+                    reportError(ERR_MISMATCH_PROTO, errpos, "Definition %s, cannot override this kind of definition", str(name));
                 else
                 {
                     if (!areSymbolsCompatible(expr, isParametered, parameters, match))
-                        reportError(ERR_MISMATCH_PROTO, errpos, "Prototypes for %s in base and derived modules must match", name->str());
+                        reportError(ERR_MISMATCH_PROTO, errpos, "Prototypes for %s in base and derived modules must match", str(name));
                 }
             }
         }
     }
 }
+
+bool HqlGram::checkAllowed(const attribute & errpos, const char *category, const char *description)
+{
+    if (lookupCtx.queryParseContext().codegenCtx && !lookupCtx.queryParseContext().codegenCtx->allowAccess(category, inSignedModule))
+    {
+        if (!inSignedModule && lookupCtx.queryParseContext().codegenCtx->allowAccess(category, true))
+            reportWarning(CategorySecurity, WRN_REQUIRES_SIGNED, errpos.pos, "%s is only permitted in a signed module", description);
+        else
+            reportWarning(CategorySecurity, WRN_DISALLOWED, errpos.pos, "%s is not permitted by your security settings", description);
+        return false;
+    }
+    return true;
+}
+
 
 bool HqlGram::okToAddSideEffects(IHqlExpression * expr)
 {
@@ -9067,7 +9099,7 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
             {
                 if (expr->isScope())
                 {
-                    Owned<IError> error = createError(CategorySyntax, SeverityError, ERR_RESULT_IGNORED_SCOPE, "Cannot associate a side effect with a module - action will be lost", errpos.sourcePath->str(), errpos.lineno, errpos.column, errpos.position);
+                    Owned<IError> error = createError(CategorySyntax, SeverityError, ERR_RESULT_IGNORED_SCOPE, "Cannot associate a side effect with a module - action will be lost", str(errpos.sourcePath), errpos.lineno, errpos.column, errpos.position);
                     //Unusual processing.  Create a warning and save it in the parse context
                     //The reason is that this error is reporting "the associated side-effects will be lost" - but
                     //the same will apply to the warning, and if it's lost there will be no way to report it later...
@@ -9115,18 +9147,18 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
         // define the symbol
         if (defineid->scope & (EXPORT_FLAG | SHARED_FLAG))
         {
-            if (expectedAttribute && (expectedAttribute->lower() != name->lower()) && (activeScope.localScope == parseScope))
+            if (expectedAttribute && (lower(expectedAttribute) != lower(name)) && (activeScope.localScope == parseScope))
             {
                 OwnedHqlExpr resolved = parseScope->lookupSymbol(expectedAttribute, LSFsharedOK, lookupCtx);
                 if (resolved)
                 {
-                    reportError(ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Definition of '%s' has a trailing public definition '%s'", expectedAttribute->str(), name->str());
+                    reportError(ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Definition of '%s' has a trailing public definition '%s'", str(expectedAttribute), str(name));
                 }
                 else
                 {
                     //Make this warning come out now - otherwise a subsequent error about an undefined symbol makes less sense.
                     RestoreValueBlock<bool> block(associateWarnings, false);
-                    reportWarning(CategorySyntax, ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Name of exported symbol '%s' does not match the expected name '%s'", name->str(), expectedAttribute->str());
+                    reportWarning(CategorySyntax, ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Name of exported symbol '%s' does not match the expected name '%s'", str(name), str(expectedAttribute));
                 }
                 defineid->scope = 0;
             }
@@ -9328,7 +9360,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
         if (etype && etype->getTypeCode()==type_record)
         {
             IHqlExpression *recordDef = queryExpression(etype);
-            expr.setown(createDatasetF(no_table, createConstant(*name), LINK(recordDef), LINK(expr), NULL));
+            expr.setown(createDatasetF(no_table, createConstant(str(name)), LINK(recordDef), LINK(expr), NULL));
         }
         break;
 
@@ -9370,13 +9402,13 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
             {
                 //only report error in base class clash, others will be reported later.
                 if (!localMatch)
-                    reportError(ERR_SHOULD_BE_EXPORTED, nameattr, "Private symbol %s clashes with public symbol in base module", name->str());
+                    reportError(ERR_SHOULD_BE_EXPORTED, nameattr, "Private symbol %s clashes with public symbol in base module", str(name));
             }
 
             if (localScopeExpr->hasAttribute(interfaceAtom))
             {
 //              defineid->scope |= EXPORT_FLAG;
-                reportError(ERR_SHOULD_BE_EXPORTED, nameattr, "Symbol %s in INTERFACE should be EXPORTed or SHARED", name->str());
+                reportError(ERR_SHOULD_BE_EXPORTED, nameattr, "Symbol %s in INTERFACE should be EXPORTed or SHARED", str(name));
             }
         }
         else
@@ -9384,7 +9416,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
             if (anyMatch && !localScopeExpr->hasAttribute(_virtualSeq_Atom))
             {
                 //Not quite right - it is a problem if the place it is defined in isn't virtual
-                reportError(ERR_CANNOT_REDEFINE, nameattr, "Cannot redefine definition %s from a non-virtual MODULE", name->str());
+                reportError(ERR_CANNOT_REDEFINE, nameattr, "Cannot redefine definition %s from a non-virtual MODULE", str(name));
             }
             else if (anyMatch && !localMatch)
             {
@@ -9400,7 +9432,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
                         //allow dataset with no record to match, as long as base type is the same
                         if (queryRecord(type) != queryNullRecord() || (type->getTypeCode() != matchType->getTypeCode()))
                         {
-                            reportError(ERR_SAME_TYPE_REQUIRED, nameattr, "Explicit type for %s doesn't match definition in base module", name->str());
+                            reportError(ERR_SAME_TYPE_REQUIRED, nameattr, "Explicit type for %s doesn't match definition in base module", str(name));
                         }
                         else
                         {
@@ -9543,7 +9575,7 @@ bool HqlGram::checkCompatibleSymbol(const attribute & errpos, IHqlExpression * p
 IHqlExpression * HqlGram::extractBranchMatch(const attribute & errpos, IHqlExpression & curSym, HqlExprArray & values)
 {
     IIdAtom * id = curSym.queryId();
-    IAtom * name = id->lower();
+    IAtom * name = lower(id);
     ForEachItemIn(i, values)
     {
         IHqlExpression & cur = values.item(i);
@@ -9567,7 +9599,7 @@ IHqlExpression * HqlGram::extractBranchMatch(const attribute & errpos, IHqlExpre
         // The following test is no good though, we need to check if reused only in this branch.
 //      if (curSym.isShared())
 //          return NULL;
-        reportWarning(CategoryMistake, WRN_COND_ASSIGN_NO_PREV, errpos.pos, "Conditional assignment to %s isn't defined in all branches, and has no previous definition", id->str());
+        reportWarning(CategoryMistake, WRN_COND_ASSIGN_NO_PREV, errpos.pos, "Conditional assignment to %s isn't defined in all branches, and has no previous definition", str(id));
         return NULL;
     }
 
@@ -9652,7 +9684,7 @@ void HqlGram::processIfScope(const attribute & errpos, IHqlExpression * cond, IH
                 {
                     OwnedHqlExpr match = activeScope.localScope->lookupSymbol(id, LSFsharedOK|LSFignoreBase, lookupCtx);
                     if (match)
-                        reportError(ERR_ID_REDEFINE, errpos, "Identifier '%s' is already defined as a public symbol in this context", id->str());
+                        reportError(ERR_ID_REDEFINE, errpos, "Identifier '%s' is already defined as a public symbol in this context", str(id));
                 }
                 defineScope->defineSymbol(newSym.getClear());
             }
@@ -9685,7 +9717,7 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
             ForEachItemIn(iSym, syms)
             {
                 IIdAtom * id = syms.item(iSym).queryId();
-                IAtom * name = id->lower();
+                IAtom * name = lower(id);
                 OwnedHqlExpr baseSym = curBase->lookupSymbol(id, LSFsharedOK|LSFfromderived, lookupCtx);
                 OwnedHqlExpr match  = scope->lookupSymbol(id, LSFsharedOK|LSFignoreBase, lookupCtx);
 
@@ -9703,7 +9735,7 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
                         if (mapped->queryBody() != match->queryBody())
                         {
                             //MORE: Could allow it to be ambiguous (by creating a no_purevirtual), but better to require immediate resolution
-                            reportError(ERR_AMBIGUOUS_DEF, errpos, "Definition %s must be specified, it has different definitions in base modules", id->str());
+                            reportError(ERR_AMBIGUOUS_DEF, errpos, "Definition %s must be specified, it has different definitions in base modules", str(id));
                         }
                     }
                 }
@@ -9749,17 +9781,17 @@ void HqlGram::checkExportedModule(const attribute & errpos, IHqlExpression * sco
             if (value)
             {
                 if (value->isFunction())
-                    reportError(ERR_BAD_LIBRARY_SYMBOL, errpos, "Library modules cannot export functional definition %s", id->str());
+                    reportError(ERR_BAD_LIBRARY_SYMBOL, errpos, "Library modules cannot export functional definition %s", str(id));
                 else if (value->isDataset() || value->isDatarow() || value->queryType()->isScalar())
                 {
                 }
                 else if (value->isList())
-                    reportError(ERR_BAD_LIBRARY_SYMBOL, errpos, "Library modules cannot export list definition %s (use a dataset instead)", id->str());
+                    reportError(ERR_BAD_LIBRARY_SYMBOL, errpos, "Library modules cannot export list definition %s (use a dataset instead)", str(id));
                 else
                 {
                     //Should we report an error, or should we just ignore it?  Probably doesn't cause any problems as long as caught
                     //on invalid use.
-                    //reportError(ERR_BAD_LIBRARY_SYMBOL, errpos, "Library modules cannot export functional definition %s", name->str());
+                    //reportError(ERR_BAD_LIBRARY_SYMBOL, errpos, "Library modules cannot export functional definition %s", str(name));
                 }
             }
         }
@@ -9781,7 +9813,7 @@ void HqlGram::checkLibraryParametersMatch(const attribute & errpos, bool isParam
                     IHqlExpression & cur = activeParameters.item(i);
                     IHqlExpression * expected = formals->queryChild(i);
                     if ((cur.queryName() != expected->queryName()) || (cur.queryType() != expected->queryType()))
-                        reportError(ERR_PROTOTYPE_MISMATCH, errpos, "Parameter %s does not match the appropriate parameter as the LIBRARY interface it implements", cur.queryName()->str());
+                        reportError(ERR_PROTOTYPE_MISMATCH, errpos, "Parameter %s does not match the appropriate parameter as the LIBRARY interface it implements", str(cur.queryName()));
                 }
             }
             else
@@ -10065,7 +10097,7 @@ IIdAtom * HqlGram::getNameFromExpr(attribute& attr)
         default:
             {
                 IIdAtom * id = expr->queryId();
-                if (id && (id->lower() != unnamedId->lower()))
+                if (id && (lower(id) != lower(unnamedId)))
                     return id;
                 reportError(ERR_EXPECTED_IDENTIFIER, attr, "Expected an identifier");
                 return unknownId;
@@ -10105,7 +10137,7 @@ IIdAtom * HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
                 StringBuffer temp;
                 temp.append("_unnamed_").append(getOpString(expr->getOperator())).append("_");
                 temp.toLowerCase();
-                temp.append(createFieldNameFromExpr(expr->queryChild(0))->lower());
+                temp.append(lower(createFieldNameFromExpr(expr->queryChild(0))));
                 name = createUnnamedFieldId(temp.str());
             }
             break;
@@ -10115,9 +10147,9 @@ IIdAtom * HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
                 StringBuffer temp;
                 temp.append("_unnamed_").append(getOpString(expr->getOperator())).append("_");
                 temp.toLowerCase();
-                temp.append(createFieldNameFromExpr(expr->queryChild(0))->lower());
+                temp.append(lower(createFieldNameFromExpr(expr->queryChild(0))));
                 temp.append("_");
-                temp.append(createFieldNameFromExpr(expr->queryChild(1))->lower());
+                temp.append(lower(createFieldNameFromExpr(expr->queryChild(1))));
                 name = createUnnamedFieldId(temp.str());
             }
             break;
@@ -10168,10 +10200,10 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
 
             StringBuffer msg;
             if (!importMatch)
-                msg.appendf("Import names unknown module \"%s\"", id->getAtomNamePtr());
+                msg.appendf("Import names unknown module \"%s\"", str(id));
             else
-                msg.appendf("Import item  \"%s\" is not a module", id->getAtomNamePtr());
-            reportError(ERR_MODULE_UNKNOWN, msg.toCharArray(),  
+                msg.appendf("Import item  \"%s\" is not a module", str(id));
+            reportError(ERR_MODULE_UNKNOWN, msg.str(),
                         lexObject->getActualLineNo(), 
                         lexObject->getActualColumn(), 
                         lexObject->get_yyPosition());
@@ -10185,10 +10217,10 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
     if (!parent)
         return NULL;
 
-    const char * parentName = parent->queryId()->str();
+    const char * parentName = str(parent->queryId());
     if (name == _container_Atom)
     {
-        const char * containerName = parent->queryFullContainerId()->str();
+        const char * containerName = str(parent->queryFullContainerId());
         //This is a bit ugly - remove the last qualified module, and resolve the name again.  A more "correct" method
         //saving container pointers hit problems because remote scopes within CHqlMergedScope containers have a remote
         //scope as the parent, rather than the merged scope...
@@ -10218,13 +10250,13 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
     {
         if (!parentName)
             parentName = "$";
-        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", parentName, childId->str());
+        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", parentName, str(childId));
         return NULL;
     }
     IHqlScope * ret = resolved->queryScope();
     if (!ret)
     {
-        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "'%s' is not a module", childId->str());
+        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "'%s' is not a module", str(childId));
         return NULL;
     }
     return resolved.getClear();
@@ -10327,7 +10359,7 @@ void HqlGram::processImport(attribute & membersAttr, attribute & modulesAttr, II
             defineImport(membersAttr, resolved, newName);
         }
         else
-            reportError(ERR_OBJ_NOSUCHFIELD, modulesAttr, "Module '%s' does not contain a definition named '%s'", module->queryName()->str(), id->str());
+            reportError(ERR_OBJ_NOSUCHFIELD, modulesAttr, "Module '%s' does not contain a definition named '%s'", str(module->queryName()), str(id));
     }
 }
 
@@ -10648,6 +10680,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case PROJECT: msg.append("PROJECT"); break;
     case PULL: msg.append("PULL"); break;
     case PULLED: msg.append("PULLED"); break;
+    case QUANTILE: msg.append("QUANTILE"); break;
     case QUOTE: msg.append("QUOTE"); break;
     case RANDOM: msg.append("RANDOM"); break;
     case RANGE: msg.append("RANGE"); break;
@@ -10679,6 +10712,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case RULE: msg.append("RULE"); break;
     case SAMPLE: msg.append("SAMPLE"); break;
     case SCAN: msg.append("SCAN"); break;
+    case SCORE: msg.append("SCORE"); break;
     case SECTION: msg.append("SECTION"); break;
     case SELF: msg.append("SELF"); break;
     case SEPARATOR: msg.append("SEPARATOR"); break;
@@ -10727,6 +10761,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TOPN: msg.append("TOPN"); break;
     case TOUNICODE: msg.append("TOUNICODE"); break;
     case TOXML: msg.append("TOXML"); break;
+    case TRACE: msg.append("TRACE"); break;
     case TRANSFER: msg.append("TRANSFER"); break;
     case TRANSFORM: msg.append("TRANSFORM"); break;
     case TRIM: msg.append("TRIM"); break;
@@ -10902,7 +10937,7 @@ void HqlGram::simplifyExpected(int *expected)
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
                        HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, 0);
+                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
                        COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
                        TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,
@@ -10952,7 +10987,7 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
         if (yytext && *yytext)
             msg.append(" \"").append(yytext).append('\"');
 
-        reportError(ERR_UNKNOWN_IDENTIFIER,msg.toCharArray(), lineno, column, pos);
+        reportError(ERR_UNKNOWN_IDENTIFIER,msg.str(), lineno, column, pos);
         return;
     }
     else if ((token == '.') && (expected[0] == ASSIGN) && !expected[1])
@@ -11003,7 +11038,7 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
                 if (yytext && *yytext)
                     msg.append(yytext);
                 msg.append("' is already defined");
-                reportError(ERR_ID_REDEFINE,msg.toCharArray(), lineno, column, pos);
+                reportError(ERR_ID_REDEFINE,msg.str(), lineno, column, pos);
                 return;
             }
         }
@@ -11035,7 +11070,7 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
         }
     }
 
-    reportError(ERR_EXPECTED, msg.toCharArray(), lineno, column, pos);
+    reportError(ERR_EXPECTED, msg.str(), lineno, column, pos);
 }
 
 
@@ -11534,7 +11569,7 @@ void HqlGram::checkFieldMap(IHqlExpression* map, attribute& errpos)
     {
         for (unsigned j=i+2;j<mapCount; j+=2)
             if (maps.item(i).queryName()==maps.item(j).queryName())
-                reportError(ERR_DSPARM_MAPDUPLICATE, errpos, "Field '%s' is mapped more than once", maps.item(i).queryName()->str());
+                reportError(ERR_DSPARM_MAPDUPLICATE, errpos, "Field '%s' is mapped more than once", str(maps.item(i).queryName()));
     }
 
     // Note: a->b, b->c is allowed. Even the following are allowed:
@@ -11587,7 +11622,7 @@ PseudoPatternScope::PseudoPatternScope(IHqlExpression * _patternList) : CHqlScop
 
 IHqlExpression * PseudoPatternScope::lookupSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    const char * text = name->str();
+    const char * text = str(name);
     if (*text == '$')
     {
         unsigned index = atoi(text+1);
@@ -11633,13 +11668,13 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
             if (E->errorCode()==0)
             {
                 StringBuffer s;
-                ctx.errs->reportError(ERR_INTERNALEXCEPTION, E->errorMessage(s).toCharArray(), sourcePath->str(), 0, 0, 1);
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, E->errorMessage(s).str(), str(sourcePath), 0, 0, 1);
             }
             else
             {
                 StringBuffer s("Internal error: ");
                 E->errorMessage(s);
-                ctx.errs->reportError(ERR_INTERNALEXCEPTION, s.toCharArray(), sourcePath->str(), 0, 0, 1);
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, s.str(), str(sourcePath), 0, 0, 1);
             }
         }
         E->Release();
@@ -11670,13 +11705,13 @@ extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlL
             if (E->errorCode()==0)
             {
                 StringBuffer s;
-                ctx.errs->reportError(ERR_INTERNALEXCEPTION, E->errorMessage(s).toCharArray(), sourcePath->str(), 0, 0, 1);
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, E->errorMessage(s).str(), str(sourcePath), 0, 0, 1);
             }
             else
             {
                 StringBuffer s("Internal error: ");
                 E->errorMessage(s);
-                ctx.errs->reportError(ERR_INTERNALEXCEPTION, s.toCharArray(), sourcePath->str(), 0, 0, 1);
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, s.str(), str(sourcePath), 0, 0, 1);
             }
         }
         E->Release();

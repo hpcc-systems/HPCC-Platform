@@ -68,7 +68,7 @@ public:
                 if (!encrypted)
                 {
                     Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", fetchFile->queryLogicalName());
-                    container.queryJob().fireException(e);
+                    queryJobChannel().fireException(e);
                 }
             }
             else if (encrypted)

@@ -210,8 +210,8 @@ public:
         CCatchSlaveActivityBase::init(data, slaveData);
         if (global)
         {
-            mptag_t barrierTag = container.queryJob().deserializeMPTag(data);
-            barrier.setown(container.queryJob().createBarrier(barrierTag));
+            mptag_t barrierTag = container.queryJobChannel().deserializeMPTag(data);
+            barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
         }
     }
     virtual void start()

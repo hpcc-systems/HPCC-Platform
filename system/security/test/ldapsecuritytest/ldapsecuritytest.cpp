@@ -326,7 +326,7 @@ int main(int argc, char* argv[])
             if(lastname != NULL)
                 usr->setLastName(lastname);
             usr->credentials().setPassword(passwd);
-            bool ok = secmgr->addUser(*usr);
+            bool ok = usr?secmgr->addUser(*usr):false;
             if(ok)
                 printf("user %s added\n", username);
             else

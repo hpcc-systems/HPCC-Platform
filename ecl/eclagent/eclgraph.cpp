@@ -293,6 +293,8 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createLibraryCallActivity(agent, activityId, subgraphId, (IHThorLibraryCallArg &)arg, kind, node);
     case TAKsorted:
         return createSortedActivity(agent, activityId, subgraphId, (IHThorSortedArg &)arg, kind);
+    case TAKtrace:
+        return createTraceActivity(agent, activityId, subgraphId, (IHThorTraceArg &)arg, kind);
     case TAKgrouped:
         return createGroupedActivity(agent, activityId, subgraphId, (IHThorGroupedArg &)arg, kind);
     case TAKnwayjoin:
@@ -728,42 +730,6 @@ IHThorException * EclGraphElement::makeWrappedException(IException * e)
 
 //---------------------------------------------------------------------------
 
-class GraphRunningState
-{
-public:
-    GraphRunningState(EclGraph & parent, unsigned _id) : graphProgress(parent.getGraphProgress()), id(_id), running(true)
-    {
-        set(WUGraphRunning);
-    }
-
-    ~GraphRunningState()
-    {
-        if(running)        
-            set(WUGraphFailed);
-    }
-
-    void complete()
-    {
-        set(WUGraphComplete);
-        running = false;
-    }
-
-private:
-    void set(WUGraphState state)
-    {
-        Owned<IWUGraphProgress> progress = graphProgress->update();
-        if(id)
-            progress->setNodeState(id, state);
-        else
-            progress->setGraphState(state);
-    }
-
-private:
-    Owned<IConstWUGraphProgress> graphProgress;
-    unsigned id;
-    bool running;
-};
-
 EclSubGraph::EclSubGraph(IAgentContext & _agent, EclGraph & _parent, EclSubGraph * _owner, unsigned _seqNo, bool enableProbe, CHThorDebugContext * _debugContext, IProbeManager * _probeManager)
     : parent(_parent), owner(_owner), seqNo(_seqNo), probeEnabled(enableProbe), debugContext(_debugContext), probeManager(_probeManager)
 {
@@ -883,8 +849,7 @@ void EclSubGraph::updateProgress()
 {
     if (!isChildGraph && agent->queryRemoteWorkunit())
     {
-        Owned<IConstWUGraphProgress> graphProgress = parent.getGraphProgress();
-        Owned<IWUGraphStats> progress = graphProgress->update(queryStatisticsComponentType(), queryStatisticsComponentName(), id);
+        Owned<IWUGraphStats> progress = parent.updateStats(queryStatisticsComponentType(), queryStatisticsComponentName(), id);
         IStatisticGatherer & stats = progress->queryStatsBuilder();
         updateProgress(stats);
     }
@@ -1198,42 +1163,47 @@ void EclGraph::createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, boo
 
 void EclGraph::execute(const byte * parentExtract)
 {
-    GraphRunningState * run = NULL;
     if (agent->queryRemoteWorkunit())
-        run = new GraphRunningState(*this, 0);
+        wu->setGraphState(queryGraphName(), WUGraphRunning);
 
-    unsigned startTime = msTick();
-    aindex_t lastSink = -1;
-    ForEachItemIn(idx, graphs)
+    try
     {
-        EclSubGraph & cur = graphs.item(idx);
-        if (cur.isSink)
-            cur.execute(parentExtract);
+        unsigned startTime = msTick();
+        aindex_t lastSink = -1;
+        ForEachItemIn(idx, graphs)
+        {
+            EclSubGraph & cur = graphs.item(idx);
+            if (cur.isSink)
+                cur.execute(parentExtract);
+        }
+
+        {
+            unsigned elapsed = msTick()-startTime;
+
+            Owned<IWorkUnit> wu(agent->updateWorkUnit());
+
+            StringBuffer description;
+            formatGraphTimerLabel(description, queryGraphName(), 0, 0);
+
+            unsigned __int64 totalTimeNs = 0;
+            unsigned __int64 totalThisTimeNs = 0;
+            unsigned __int64 elapsedNs = milliToNano(elapsed);
+            const char *totalTimeStr = "Total cluster time";
+            getWorkunitTotalTime(wu, "hthor", totalTimeNs, totalThisTimeNs);
+
+            updateWorkunitTimeStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs);
+            updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedNs);
+            wu->setStatistic(SCTsummary, "hthor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedNs, 1, 0, StatsMergeReplace);
+        }
+
+        if (agent->queryRemoteWorkunit())
+            wu->setGraphState(queryGraphName(), WUGraphComplete);
     }
-
+    catch (...)
     {
-        unsigned elapsed = msTick()-startTime;
-
-        Owned<IWorkUnit> wu(agent->updateWorkUnit());
-
-        StringBuffer description;
-        formatGraphTimerLabel(description, queryGraphName(), 0, 0);
-
-        unsigned __int64 totalTimeNs = 0;
-        unsigned __int64 totalThisTimeNs = 0;
-        unsigned __int64 elapsedNs = milliToNano(elapsed);
-        const char *totalTimeStr = "Total cluster time";
-        getWorkunitTotalTime(wu, "hthor", totalTimeNs, totalThisTimeNs);
-
-        updateWorkunitTimeStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs);
-        updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedNs);
-        wu->setStatistic(SCTsummary, "hthor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedNs, 1, 0, StatsMergeReplace);
-    }
-
-    if (run)
-    {
-        run->complete();
-        delete run;
+        if (agent->queryRemoteWorkunit())
+            wu->setGraphState(queryGraphName(), WUGraphFailed);
+        throw;
     }
 }
 
@@ -1288,12 +1258,10 @@ void EclGraph::updateLibraryProgress()
     //Check for old format embedded graph names, and don't update the stats if not the correct format
     if (!MATCHES_CONST_PREFIX(queryGraphName(), GraphScopePrefix))
         return;
-
-    Owned<IConstWUGraphProgress> graphProgress = getGraphProgress();
     ForEachItemIn(idx, graphs)
     {
         EclSubGraph & cur = graphs.item(idx);
-        Owned<IWUGraphStats> progress = graphProgress->update(queryStatisticsComponentType(), queryStatisticsComponentName(), cur.id);
+        Owned<IWUGraphStats> progress = wu->updateStats(queryGraphName(), queryStatisticsComponentType(), queryStatisticsComponentName(), cur.id);
         cur.updateProgress(progress->queryStatsBuilder());
     }
 }
@@ -1434,11 +1402,9 @@ void GraphResults::setResult(unsigned id, IHThorGraphResult * result)
 
 //---------------------------------------------------------------------------
 
-
-
-IConstWUGraphProgress * EclGraph::getGraphProgress()
+IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const char * creator, unsigned subgraph)
 {
-    return wu->getGraphProgress(queryGraphName());
+    return wu->updateStats (queryGraphName(), creatorType, creator, subgraph);
 }
 
 IThorChildGraph * EclGraph::resolveChildQuery(unsigned subgraphId)
@@ -1496,13 +1462,9 @@ extern IProbeManager *createDebugManager(IDebuggableContext *debugContext, const
 
 void EclAgent::executeThorGraph(const char * graphName)
 {
-    SCMStringBuffer wuid;
-    wuRead->getWuid(wuid);
-
-    SCMStringBuffer cluster;
-    SCMStringBuffer owner;
-    wuRead->getClusterName(cluster);
-    wuRead->getUser(owner);
+    StringAttr wuid(wuRead->queryWuid());
+    StringAttr owner(wuRead->queryUser());
+    StringAttr cluster(wuRead->queryClusterName());
     int priority = wuRead->getPriorityValue();
     unsigned timelimit = queryWorkUnit()->getDebugValueInt("thorConnectTimeout", config->getPropInt("@thorConnectTimeout", 60));
     Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
@@ -1513,78 +1475,21 @@ void EclAgent::executeThorGraph(const char * graphName)
     Owned<IJobQueue> jq = createJobQueue(queueName.str());
 
     bool resubmit;
+    Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
     do // loop if pause interrupted graph and needs resubmitting on resume
     {
         resubmit = false; // set if job interrupted in thor
-        class CWorkunitResumeHandler : public CInterface, implements ISDSSubscription
-        {
-            IConstWorkUnit &wu;
-            StringBuffer xpath;
-            StringAttr wuid;
-            SubscriptionId subId;
-            CriticalSection crit;
-            Semaphore sem;
-            
-            void unsubscribe()
-            {
-                CriticalBlock b(crit);
-                if (subId)
-                {
-                    SubscriptionId _subId = subId;
-                    subId = 0;
-                    querySDS().unsubscribe(_subId);
-                }
-            }
-        public:
-            IMPLEMENT_IINTERFACE;
-            CWorkunitResumeHandler(IConstWorkUnit &_wu) : wu(_wu)
-            {
-                xpath.append("/WorkUnits/");
-                SCMStringBuffer istr;
-                wu.getWuid(istr);
-                wuid.set(istr.str());
-                xpath.append(wuid.get()).append("/Action");
-                subId = 0;
-            }
-            ~CWorkunitResumeHandler()
-            {
-                unsubscribe();
-            }
-            void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-            {
-                CriticalBlock b(crit);
-                if (0 == subId) return;
-                if (valueLen==strlen("resume") && (0 == strncmp("resume", (const char *)valueData, valueLen)))
-                    sem.signal();
-            }
-            bool wait()
-            {
-                subId = querySDS().subscribe(xpath.str(), *this, false, true);
-                assertex(subId);
-                PROGLOG("Job %s paused, waiting for resume/abort", wuid.get());
-                bool ret = true;
-                while (!sem.wait(10000))
-                {
-                    wu.forceReload();
-                    if (WUStatePaused != wu.getState() || wu.aborting())
-                    {
-                        SCMStringBuffer str;
-                        wu.getStateDesc(str);
-                        PROGLOG("Aborting pause job %s, state : %s", wuid.get(), str.str());
-                        ret = false;
-                        break;
-                    }
-                }
-                unsubscribe();
-                return ret;
-            }
-        } workunitResumeHandler(*queryWorkUnit());
-
         unlockWorkUnit();
         if (WUStatePaused == queryWorkUnit()->getState()) // check initial state - and wait if paused
         {
-            if (!workunitResumeHandler.wait())
-                throw new WorkflowException(0,"User abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
+            loop
+            {
+                WUAction action = wuFactory->waitForWorkUnitAction(wuid, queryWorkUnit()->getAction());
+                if (action == WUActionUnknown)
+                    throw new WorkflowException(0, "Workunit aborting", 0, WorkflowException::ABORT, MSGAUD_user);
+                if (action != WUActionPause && action != WUActionPauseNow)
+                    break;
+            }
         }
         {
             Owned <IWorkUnit> w = updateWorkUnit();
@@ -1704,10 +1609,7 @@ void EclAgent::executeThorGraph(const char * graphName)
                 if (isException)
                 {
                     Owned<IException> e = deserializeException(reply);
-                    StringBuffer str("Pausing job ");
-                    SCMStringBuffer istr;
-                    queryWorkUnit()->getWuid(istr);
-                    str.append(istr.str()).append(" caused exception");
+                    VStringBuffer str("Pausing job %s caused exception", queryWorkUnit()->queryWuid());
                     EXCLOG(e, str.str());
                 }
                 Owned <IWorkUnit> w = updateWorkUnit();
@@ -1738,8 +1640,8 @@ void EclAgent::executeThorGraph(const char * graphName)
     while (resubmit); // if pause interrupted job (i.e. with pausenow action), resubmit graph
 }
 
-//In case of logfile rollover, update workunit logfile name(s) stored
-//in SDS/WorkUnits/{WUID}/Process/EclAgent/myeclagent<log>
+//In case of logfile rollover, update logfile name(s) stored in workunit
+
 void EclAgent::updateWULogfile()
 {
     if (logMsgHandler && config->hasProp("@name"))
@@ -1789,6 +1691,10 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
             unsigned guillotineTimeout = queryWorkUnit()->getDebugValueInt("maxRunTime", 0);
             if (guillotineTimeout)
                 abortmonitor->setGuillotineTimeout(guillotineTimeout);
+            StringBuffer jobTempDir;
+            getTempfileBase(jobTempDir);
+            if (!recursiveCreateDirectory(jobTempDir))
+                throw MakeStringException(0, "Failed to create temporary directory: %s", jobTempDir.str());
             activeGraph->execute(NULL);
             updateWULogfile();//Update workunit logfile name in case of rollover
             if (guillotineTimeout)

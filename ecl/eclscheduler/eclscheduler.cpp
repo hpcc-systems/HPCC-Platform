@@ -140,7 +140,7 @@ private:
             {
                 //The work unit failed to run for some reason.. check if it has disappeared
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid, false);
+                Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid);
                 if (!w)
                 {
                     ERRLOG("Scheduled workunit %s no longer exists - descheduling", wuid);

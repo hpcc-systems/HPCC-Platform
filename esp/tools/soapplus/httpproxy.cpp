@@ -197,12 +197,16 @@ int COneServerHttpProxyThread::start()
         socket2.setown(ISocket::connect(ep));
         if(m_use_ssl && m_ssctx != NULL)
         {
+#ifdef USE_OPENSSL
             Owned<ISecureSocket> securesocket = m_ssctx->createSecureSocket(socket2.getLink());
             int res = securesocket->secure_connect();
             if(res >= 0)
             {
                 socket2.set(securesocket.get());
             }
+#else
+        throw MakeStringException(-1, "COneServerHttpProxyThread: failure to create SSL socket - OpenSSL not enabled in build");
+#endif
         }
 
         if(socket2.get() == NULL)
@@ -558,7 +562,11 @@ HttpProxy::HttpProxy(int localport, const char* url, FILE* ofile, const char* ur
 
         if(m_use_ssl)
         {
+#ifdef USE_OPENSSL
             m_ssctx.setown(createSecureSocketContext(ClientSocket));
+#else
+        throw MakeStringException(-1, "HttpProxy: failure to create SSL socket - OpenSSL not enabled in build");
+#endif
         }       
     }
     
@@ -574,10 +582,14 @@ HttpProxy::HttpProxy(int localport, const char* host, int port, FILE* ofile, boo
     m_use_ssl = use_ssl;
     if(use_ssl)
     {
+#ifdef USE_OPENSSL
         if(sslconfig != NULL)
             m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ClientSocket));
         else
             m_ssctx.setown(createSecureSocketContext(ClientSocket));
+#else
+        throw MakeStringException(-1, "HttpProxy: failure to create SSL socket - OpenSSL not enabled in build");
+#endif
     }       
 }
 

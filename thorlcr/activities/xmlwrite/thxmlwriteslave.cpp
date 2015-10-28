@@ -64,9 +64,9 @@ public:
                 out.set(suppliedHeader);
             else
                 out.set(DEFAULTXMLHEADER).newline();
-            outraw->write(out.length(), out.toCharArray());
+            outraw->write(out.length(), out.str());
             if (calcFileCrc)
-                fileCRC.tally(out.length(), out.toCharArray());
+                fileCRC.tally(out.length(), out.str());
         }
         Owned<IXmlWriterExt> writer = createIXmlWriterExt(helper->getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSON : WTStandard);
         writer->outputBeginArray(rowTag); //need this to format rows, even if not outputting it below
@@ -92,9 +92,9 @@ public:
                 out.set(suppliedFooter);
             else
                 out.set(DEFAULTXMLFOOTER).newline();
-            outraw->write(out.length(), out.toCharArray());
+            outraw->write(out.length(), out.str());
             if (calcFileCrc)
-                fileCRC.tally(out.length(), out.toCharArray());
+                fileCRC.tally(out.length(), out.str());
         }
     }
     virtual bool wantRaw() { return true; }

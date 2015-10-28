@@ -18,6 +18,7 @@
   <mpStart>7101</mpStart>
   <mpEnd>7500</mpEnd>
   <mpSoMaxConn>128</mpSoMaxConn>
+  <mpTraceLevel>0</mpTraceLevel>
  </EnvSettings>
  <Hardware>
   <Computer computerType="linuxmachine"
@@ -865,6 +866,7 @@
                 monitorDaliFileServer="false"
                 multicastBase="239.1.1.1"
                 multicastLast="239.1.254.254"
+                multicastTTL="1"
                 name="myroxie"
                 nodeCacheMem="100"
                 nodeCachePreload="false"
@@ -1002,6 +1004,7 @@
                monitorDaliFileServer="true"
                name="mythor"
                pluginsPath="${PLUGINS_PATH}"
+               processPerSlave="true"
                replicateAsync="false"
                replicateOutputs="false"
                slavesPerNode="1"
@@ -1029,6 +1032,7 @@
                monitorDaliFileServer="true"
                name="mythor3way"
                pluginsPath="${PLUGINS_PATH}"
+               processPerSlave="true"
                replicateAsync="false"
                replicateOutputs="false"
                slaveport="21100"

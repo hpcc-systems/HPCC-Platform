@@ -86,9 +86,13 @@ target_link_libraries ( hthor
          deftype
          workunit
          jhtree
-         securesocket
          thorhelper
          roxiemem
          schedulectrl
     )
 
+IF (USE_OPENSSL)
+    target_link_libraries ( hthor
+    	securesocket
+    )
+ENDIF()

@@ -60,7 +60,7 @@ public:
                 unsigned slaves = container.queryJob().querySlaves();
                 CMessageBuffer mb;
                 mb.append(total);
-                container.queryJob().queryJobComm().send(mb, RANK_ALL_OTHER, mpTag);
+                queryJobChannel().queryJobComm().send(mb, RANK_ALL_OTHER, mpTag);
                 break;
             }
             case TAKlimit:

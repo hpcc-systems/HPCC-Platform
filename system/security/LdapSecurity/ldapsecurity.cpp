@@ -910,12 +910,6 @@ bool CLdapSecManager::addResources(ISecUser& sec_user, ISecResourceList * resour
 
 bool CLdapSecManager::addUser(ISecUser & user)
 {
-    if(&user == NULL)
-    {
-        DBGLOG("CLdapSecManager::addUser - user is NULL");
-        return false;
-    }
-
     bool ok = m_ldap_client->addUser(user);
     if(!ok)
         return false;
@@ -974,6 +968,12 @@ void CLdapSecManager::searchUsers(const char* searchstr, IUserArray& users)
     m_ldap_client->retrieveUsers(searchstr, users);
 }
 
+ISecItemIterator* CLdapSecManager::getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom,
+    const unsigned pageSize, unsigned* total, __int64* cacheHint)
+{
+    return m_ldap_client->getUsersSorted(userName, sortOrder, pageStartFrom, pageSize, total, cacheHint);
+}
+
 void CLdapSecManager::getAllUsers(IUserArray& users)
 {
     m_ldap_client->retrieveUsers(users);
@@ -987,6 +987,12 @@ bool CLdapSecManager::getResources(SecResourceType rtype, const char * basedn, I
 bool CLdapSecManager::getResourcesEx(SecResourceType rtype, const char * basedn, const char* searchstr, IArrayOf<ISecResource> & resources)
 {
     return m_ldap_client->getResourcesEx(rtype, basedn, "", searchstr, resources);
+}
+
+ISecItemIterator* CLdapSecManager::getResourcesSorted(SecResourceType rtype, const char * basedn, const char * resourceName, unsigned extraNameFilter,
+    ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned *total, __int64 *cachehint)
+{
+    return m_ldap_client->getResourcesSorted(rtype, basedn, resourceName, extraNameFilter, sortOrder, pageStartFrom, pageSize, total, cachehint);
 }
 
 void CLdapSecManager::setExtraParam(const char * name, const char * value)
@@ -1130,9 +1136,21 @@ bool CLdapSecManager::updateUserPassword(const char* username, const char* newPa
     return m_ldap_client->updateUserPassword(username, newPassword);
 }
 
-void CLdapSecManager::getAllGroups(StringArray & groups)
+void CLdapSecManager::getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions)
 {
-    m_ldap_client->getAllGroups(groups);
+    m_ldap_client->getAllGroups(groups, managedBy, descriptions);
+}
+
+ISecItemIterator* CLdapSecManager::getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+    unsigned *total, __int64 *cachehint)
+{
+    return m_ldap_client->getGroupsSorted(sortOrder, pageStartFrom, pageSize, total, cachehint);
+}
+
+ISecItemIterator* CLdapSecManager::getGroupMembersSorted(const char* groupName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+    unsigned *total, __int64 *cachehint)
+{
+    return m_ldap_client->getGroupMembersSorted(groupName, sortOrder, pageStartFrom, pageSize, total, cachehint);
 }
 
 bool CLdapSecManager::getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions)
@@ -1140,9 +1158,9 @@ bool CLdapSecManager::getPermissionsArray(const char* basedn, SecResourceType rt
     return m_ldap_client->getPermissionsArray(basedn, rtype, name, permissions);
 }
 
-void CLdapSecManager::addGroup(const char* groupname)
+void CLdapSecManager::addGroup(const char* groupname, const char * groupOwner, const char * groupDesc)
 {
-    m_ldap_client->addGroup(groupname);
+    m_ldap_client->addGroup(groupname, groupOwner, groupDesc);
 }
 
 void CLdapSecManager::deleteGroup(const char* groupname)

@@ -158,6 +158,7 @@ public:
 protected:
     bool contains(IHqlExpression & field) const;
     bool contains(IAtom * name) const; // debugging only
+    IHqlExpression * findByName(IAtom * name) const;
     IHqlExpression * createFilteredAssign(IHqlExpression * field, IHqlExpression * value, IHqlExpression * newSelf, const UsedFieldSet * exceptions) const;
     void createFilteredAssigns(HqlExprArray & assigns, IHqlExpression * transform, IHqlExpression * newSelf, const UsedFieldSet * exceptions) const;
     IHqlExpression * createRowTransform(IHqlExpression * row, const UsedFieldSet * exceptions) const;

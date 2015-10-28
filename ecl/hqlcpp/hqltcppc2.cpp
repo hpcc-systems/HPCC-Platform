@@ -373,7 +373,7 @@ void CChildDatasetColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx 
 
 AColumnInfo * CChildDatasetColumnInfo::lookupColumn(IHqlExpression * search)
 {
-    throwError1(HQLERR_LookupNotActiveDataset, search->queryName()->str());
+    throwError1(HQLERR_LookupNotActiveDataset, str(search->queryName()));
     return NULL;
 }
 
@@ -613,7 +613,7 @@ void CChildLimitedDatasetColumnInfo::setColumnFromBuilder(HqlCppTranslator & tra
 
 AColumnInfo * CChildLimitedDatasetColumnInfo::lookupColumn(IHqlExpression * search)
 {
-    throwError1(HQLERR_LookupNotActiveDataset, search->queryName()->str());
+    throwError1(HQLERR_LookupNotActiveDataset, str(search->queryName()));
     return NULL;
 }
 
@@ -768,7 +768,7 @@ void CChildLinkedDatasetColumnInfo::setColumn(HqlCppTranslator & translator, Bui
 
 AColumnInfo * CChildLinkedDatasetColumnInfo::lookupColumn(IHqlExpression * search)
 {
-    throwError1(HQLERR_LookupNotActiveDataset, search->queryName()->str());
+    throwError1(HQLERR_LookupNotActiveDataset, str(search->queryName()));
     return NULL;
 }
 

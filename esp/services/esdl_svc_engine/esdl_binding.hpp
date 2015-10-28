@@ -25,6 +25,8 @@
 #include "jptree.hpp"
 #include "xsdparser.hpp"
 #include "loggingmanager.h"
+#include "thorplugin.hpp"
+#include "eclrtl.hpp"
 
 static const char* ESDL_DEFS_ROOT_PATH="/ESDL/Definitions/";
 static const char* ESDL_DEF_PATH="/ESDL/Definitions/Definition";
@@ -62,12 +64,22 @@ static const char* ESDL_METHOD_HELP="help";
 #define REQ_REF_NUM_NAME    "_req_ref_num"
 #define MCACHE_OBJECT_KEY   "_mcache_object_key_"
 
+#ifdef LINK_STATICALLY  // May be useful for debugging...
+namespace javaembed { IEmbedContext* getEmbedContext(); }
+#endif
+
 class EsdlServiceImpl : public CInterface, implements IEspService
 {
 private:
     IEspContainer *container;
     MapStringToMyClass<ISmartSocketFactory> connMap;
+    MapStringToMyClass<IEmbedServiceContext> javaServiceMap;
     Owned<ILoggingManager> loggingManager;
+#ifndef LINK_STATICALLY
+    Owned<ILoadedDllEntry> javaPluginDll;
+#endif
+    Owned<IEmbedContext> javaplugin;
+
 
 public:
     StringBuffer                m_espServiceType;
@@ -76,6 +88,7 @@ public:
     Owned<IPropertyTree>        m_pServiceConfig;
     Owned<IPropertyTree>        m_pServiceMethodTargets;
     Owned<IEsdlTransformer>     m_pEsdlTransformer;
+    Owned<IEsdlDefinition>      m_esdl;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -86,6 +99,24 @@ public:
     virtual const char * getServiceType()
     {
         return m_espServiceType.str();
+    }
+    IEmbedContext &ensureJavaEmbeded()
+    {
+        if (!javaplugin)
+        {
+#ifdef LINK_STATICALLY  // May be useful for debugging...
+            javaplugin.setown(javaembed::getEmbedContext());
+#else
+            javaPluginDll.setown(createDllEntry("javaembed", false, NULL));
+            if (!javaPluginDll)
+                throw makeStringException(0, "Failed to load javaembed plugin");
+            GetEmbedContextFunction pf = (GetEmbedContextFunction) javaPluginDll->getEntry("getEmbedContextDynamic");
+            if (!pf)
+                throw makeStringException(0, "Failed to load javaembed plugin");
+            javaplugin.setown(pf());
+#endif
+            }
+        return *javaplugin;
     }
 
     virtual bool init(const char * name, const char * type, IPropertyTree * cfg, const char * process)
@@ -115,6 +146,9 @@ public:
     virtual bool loadLogggingManager();
     virtual void init(const IPropertyTree *cfg, const char *process, const char *service);
     virtual void configureTargets(IPropertyTree *cfg, const char *service);
+    void configureJavaMethod(const char *method, IPropertyTree &entry, const char *classPath);
+    void configureUrlMethod(const char *method, IPropertyTree &entry);
+
     virtual void handleServiceRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, const char *ns, const char *schema_location, IPropertyTree *req, StringBuffer &out, StringBuffer &logdata, unsigned int flags);
     virtual void generateTransactionId(IEspContext & context, StringBuffer & trxid)=0;
     void generateTargetURL(IEspContext & context, IPropertyTree *srvinfo, StringBuffer & url, bool isproxy);
@@ -124,18 +158,14 @@ public:
     virtual void getTargetResponseFile(IEspContext & context, IPropertyTree *srvinfo, const char * req, StringBuffer &resp);
     virtual void esdl_log(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IPropertyTree *req_pt, const char *xmlresp, const char *logdata, unsigned int timetaken){}
     virtual void processHeaders(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req, StringBuffer &headers){};
-    virtual void processRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req, StringBuffer &hashedReq) {};
-    virtual void processResponse(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &resp,StringBuffer &hashedReq) {};
+    virtual void processRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req) {};
+    virtual void processResponse(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &resp) {};
     virtual void createServersList(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer &servers) {};
     virtual bool handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawresp, const char * finalresp);
     void handleEchoTest(const char *mthName, IPropertyTree *req, StringBuffer &soapResp, unsigned flags=0);
     virtual void handleFinalRequest(IEspContext &context, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy);
     void getSoapBody(StringBuffer& out,StringBuffer& soapresp);
     void getSoapError(StringBuffer& out,StringBuffer& soapresp,const char *,const char *);
-    virtual void generateHashFromReq(IEsdlDefService &srvdef,
-                                    IEsdlDefMethod &mthdef,
-                                    const StringBuffer &req,
-                                    StringBuffer &hashedReq) {};
 };
 
 //RODRIGO: BASE URN should be configurable.
@@ -293,6 +323,8 @@ public:
     {
     }
 
+    virtual int onGet(CHttpRequest* request, CHttpResponse* response);
+
     virtual void initEsdlServiceInfo(IEsdlDefService &srvdef);
 
     virtual void addService(const char * name, const char * host, unsigned short port, IEspService & service);
@@ -306,6 +338,8 @@ public:
     int onGetXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName);
     virtual bool getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method, bool standalone);
     int onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName);
+    int onJavaPlugin(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName);
+
     int onGetXForm(IEspContext &context, CHttpRequest* request,   CHttpResponse* response, const char *serv, const char *method);
     virtual int onGetFile(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *pathex);
     int getJsonTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response);

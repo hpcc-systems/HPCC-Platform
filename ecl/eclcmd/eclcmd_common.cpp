@@ -294,7 +294,7 @@ const char *EclObjectParameter::queryTypeName()
 StringBuffer &EclObjectParameter::getDescription(StringBuffer &s)
 {
     s.append(queryTypeName()).append(' ');
-    if (streq(value.sget(), "stdin"))
+    if (streq(value.str(), "stdin"))
         s.append("from ");
     return s.append(value.get());
 }
@@ -335,7 +335,7 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
     if (iter.matchOption(tempArg, "-brk"))
     {
 #if defined(_WIN32) && defined(_DEBUG)
-        unsigned id = atoi(tempArg.sget());
+        unsigned id = atoi(tempArg.str());
         if (id == 0)
             DebugBreak();
         else
@@ -453,7 +453,7 @@ public:
         buildCmd(cmdLine);
 
         Owned<IPipeProcess> pipe = createPipeProcess();
-        bool hasInput = streq(cmd.optObj.value.sget(), "stdin");
+        bool hasInput = streq(cmd.optObj.value.str(), "stdin");
         pipe->run(cmd.optVerbose ? "EXEC" : NULL, cmdLine.str(), NULL, hasInput, true, true);
 
         StringBuffer errors;
@@ -676,7 +676,7 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
 
     if (optObj.type==eclObjTypeUnknown)
     {
-        fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
+        fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.str());
         return false;
     }
 
@@ -718,7 +718,7 @@ eclCmdOptionMatchIndicator EclCmdWithQueryTarget::matchCommandLineOption(ArgvIte
             optQuerySet.set(optTemp.get());
             return EclCmdOptionMatch;
         }
-        fprintf(stderr, "\nunrecognized argument %s\n", optQuery.sget());
+        fprintf(stderr, "\nunrecognized argument %s\n", optQuery.str());
             return EclCmdOptionCompletion;
     }
     return EclCmdCommon::matchCommandLineOption(iter, true);

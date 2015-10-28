@@ -470,6 +470,7 @@ class ECLFile:
         return self.ignoreResult
 
     def getStoredInputParameters(self):
+        logging.debug("%3d. getStoredInputParameters (ecl:'%s', X parameters are:'%s')", self.taskId,  self.ecl, self.optX)
         return self.optX
 
     def getFParameters(self):

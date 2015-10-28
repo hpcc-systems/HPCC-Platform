@@ -386,6 +386,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="multicastTTL" type="xs:nonNegativeInteger" use="optional" default="1">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>The multicast TTL (Time To Live) setting for this roxie cluster.  Zero means do not explicitly set TTL, and use the default OS setting.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="directory" type="absolutePath" use="optional" default="${EXEC_PREFIX}/lib/${DIR_NAME}/roxie/">
         <xs:annotation>
           <xs:appinfo>
@@ -898,6 +905,20 @@
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Level of detail in reporting SOAPCALL information(set to 0 for none, 1 for normal, >1 or more for extended)</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="traceEnabled" type="xs:boolean" use="optional" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>TRACE activity output enabled by default (can be overridden in workunit or query)</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="traceLimit" type="xs:nonNegativeInteger" use="optional" default="10">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Number of rows output by TRACE activity</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

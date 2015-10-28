@@ -1016,8 +1016,7 @@ public:
 class CRoxieContextBase : public CInterface, implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback
 {
 protected:
-    Owned<IConstWUGraphProgress> progress;  // These need to be destroyed very late (particularly, after the childgraphs)
-    Owned<IWUGraphStats> graphStats;
+    Owned<IWUGraphStats> graphStats;   // This needs to be destroyed very late (particularly, after the childgraphs)
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
     Owned<IRowManager> rowManager; // NOTE: the order of destruction here is significant. For leak check to work destroy this BEFORE allAllocators, but after most other things
     Owned <IDebuggableContext> debugContext;
@@ -1322,10 +1321,7 @@ public:
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
         if (workUnit)
-        {
-            progress.setown(workUnit->getGraphProgress(graph->queryName()));
-            graphStats.setown(progress->update(SCTroxie, queryStatisticsComponentName(), 0));
-        }
+            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), 0));
     }
 
     virtual void endGraph(cycle_t startCycles, bool aborting)
@@ -1356,10 +1352,7 @@ public:
             graph.clear();
             childGraphs.kill();
             if (graphStats)
-            {
                 graphStats.clear();
-                progress.clear();
-            }
         }
     }
 
@@ -1976,7 +1969,7 @@ protected:
                 if (daliHelper && daliHelper->connected())
                 {
                     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                    Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid, false);
+                    Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid);
                     externalWU->remoteCheckAccess(queryUserDescriptor(), false);
                     Owned<IConstWUResult> wuResult = getWorkUnitResult(externalWU, stepname, sequence);
                     if (!wuResult)
@@ -2044,13 +2037,10 @@ protected:
     void executeThorGraph(const char *graphName)
     {
         assertex(workUnit);
-        SCMStringBuffer wuid;
-        workUnit->getWuid(wuid);
+        StringAttr wuid(workUnit->queryWuid());
+        StringAttr owner(workUnit->queryUser());
+        StringAttr cluster(workUnit->queryClusterName());
 
-        SCMStringBuffer cluster;
-        SCMStringBuffer owner;
-        workUnit->getClusterName(cluster);
-        workUnit->getUser(owner);
         int priority = workUnit->getPriorityValue();
         unsigned timelimit = workUnit->getDebugValueInt("thorConnectTimeout", defaultThorConnectTimeout);
         Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
@@ -2059,79 +2049,21 @@ protected:
         SCMStringBuffer queueName;
         c->getThorQueue(queueName);
         Owned<IJobQueue> jq = createJobQueue(queueName.str());
-
+        Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
         bool resubmit;
         do // loop if pause interrupted graph and needs resubmitting on resume
         {
             resubmit = false; // set if job interrupted in thor
-            class CWorkunitResumeHandler : public CInterface, implements ISDSSubscription
-            {
-                IConstWorkUnit &wu;
-                StringBuffer xpath;
-                StringAttr wuid;
-                SubscriptionId subId;
-                CriticalSection crit;
-                Semaphore sem;
-
-                void unsubscribe()
-                {
-                    CriticalBlock b(crit);
-                    if (subId)
-                    {
-                        SubscriptionId _subId = subId;
-                        subId = 0;
-                        querySDS().unsubscribe(_subId);
-                    }
-                }
-            public:
-                IMPLEMENT_IINTERFACE;
-                CWorkunitResumeHandler(IConstWorkUnit &_wu) : wu(_wu)
-                {
-                    xpath.append("/WorkUnits/");
-                    SCMStringBuffer istr;
-                    wu.getWuid(istr);
-                    wuid.set(istr.str());
-                    xpath.append(wuid.get()).append("/Action");
-                    subId = 0;
-                }
-                ~CWorkunitResumeHandler()
-                {
-                    unsubscribe();
-                }
-                void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-                {
-                    CriticalBlock b(crit);
-                    if (0 == subId) return;
-                    if (valueLen==strlen("resume") && (0 == strncmp("resume", (const char *)valueData, valueLen)))
-                        sem.signal();
-                }
-                bool wait()
-                {
-                    subId = querySDS().subscribe(xpath.str(), *this, false, true);
-                    assertex(subId);
-                    PROGLOG("Job %s paused, waiting for resume/abort", wuid.get());
-                    bool ret = true;
-                    while (!sem.wait(10000))
-                    {
-                        wu.forceReload();
-                        if (WUStatePaused != wu.getState() || wu.aborting())
-                        {
-                            SCMStringBuffer str;
-                            wu.getStateDesc(str);
-                            PROGLOG("Aborting pause job %s, state : %s", wuid.get(), str.str());
-                            ret = false;
-                            break;
-                        }
-                    }
-                    unsubscribe();
-                    return ret;
-                }
-            } workunitResumeHandler(*workUnit);
-
             if (WUStatePaused == workUnit->getState()) // check initial state - and wait if paused
             {
-                if (!workunitResumeHandler.wait())
-                    throw new WorkflowException(0,"User abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
+                loop
+                {
+                    WUAction action = wuFactory->waitForWorkUnitAction(wuid, queryWorkUnit()->getAction());
+                    if (action == WUActionUnknown)
+                        throw new WorkflowException(0, "Workunit aborting", 0, WorkflowException::ABORT, MSGAUD_user);
+                    if (action != WUActionPause && action != WUActionPauseNow)
+                        break;
+                }
             }
             setWUState(WUStateBlocked);
 
@@ -2613,8 +2545,7 @@ protected:
         {
             bool breakAtStart = workUnit->getDebugValueBool("BreakAtStart", true);
             wu->setState(WUStateDebugRunning);
-            SCMStringBuffer wuid;
-            initDebugMode(breakAtStart, workUnit->getWuid(wuid).str());
+            initDebugMode(breakAtStart, workUnit->queryWuid());
         }
         else
             wu->setState(WUStateRunning);
@@ -2717,6 +2648,9 @@ public:
                 StatsSubgraphScope graphScope(builder, subgraphId);
                 StatsEdgeScope scope(builder, activityId, _idx);
                 builder.addStatistic(StNumRowsProcessed, _processed);
+                builder.addStatistic(StNumStarted, 1);
+                builder.addStatistic(StNumStopped, 1);
+                builder.addStatistic(StNumSlaves, 1);  // Arguable
             }
             logctx.noteStatistic(StNumRowsProcessed, _processed);
         }
@@ -3613,14 +3547,12 @@ public:
     {
         if (workUnit)
         {
-            SCMStringBuffer out;
-            workUnit->getClusterName(out);
-            return out.s.detach();  // detach will return "" rather than NULL
+            return strdup(workUnit->queryClusterName());
         }
         else
         {
             // predeployed queries with no workunit should return the querySet name
-            return strdup(querySetName.sget()); // sget will return "" rather than NULL
+            return strdup(querySetName.str()); // StringAttr::str()  will return "" rather than NULL
         }
     }
     virtual char *getGroupName() { throwUnexpected(); }
@@ -3633,9 +3565,7 @@ public:
     {
         if (workUnit)
         {
-            SCMStringBuffer jobName;
-            workUnit->getJobName(jobName);
-            return strdup(jobName.str());
+            return strdup(workUnit->queryJobName());
         }
         return strdup(factory->queryQueryName());
     }
@@ -3648,9 +3578,7 @@ public:
     {
         if (workUnit)
         {
-            SCMStringBuffer wuid;
-            workUnit->getWuid(wuid);
-            return strdup(wuid.str());
+            return strdup(workUnit->queryWuid());
         }
         else
         {
@@ -3795,7 +3723,7 @@ public:
         StringBuffer responseHead, responseTail;
         responseHead.append("<").append(queryName).append("Response");
         responseHead.append(" sequence=\"").append(seqNo).append("\"");
-        responseHead.append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.sget()).append("\">");
+        responseHead.append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append("\">");
         responseHead.append("<Results><Result>");
         unsigned len = responseHead.length();
         client->write(responseHead.detach(), len, true);

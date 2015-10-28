@@ -53,7 +53,7 @@ class NullContextCallback : public CInterface, implements ICodegenContextCallbac
     IMPLEMENT_IINTERFACE
 
     virtual void noteCluster(const char *clusterName) {}
-    virtual bool allowAccess(const char * category) { return true; }
+    virtual bool allowAccess(const char * category, bool isSigned) { return true; }
 };
 
 class HqlDllGenerator : public CInterface, implements IHqlExprDllGenerator, implements IAbortRequestCallback
@@ -480,7 +480,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 
 void HqlDllGenerator::addWorkUnitAsResource()
 {
-    SCMStringBuffer wuXML;
+    StringBuffer wuXML;
     exportWorkUnitToXML(wu, wuXML, false, false, false);
     code->addCompressResource("WORKUNIT", wuXML.length(), wuXML.str(), NULL, 1000);
 }

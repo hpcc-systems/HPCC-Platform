@@ -27,6 +27,7 @@
 #include "daserver.hpp"
 #include "dasds.hpp"
 #include "dasubs.ipp"
+#include "dautils.hpp"
 #include "dadiags.hpp"
 
 #ifdef _MSC_VER
@@ -121,16 +122,17 @@ public:
                 else if (0 == stricmp(id, "mpqueue")) {
                     mb.append(getReceiveQueueDetails(buf).str());
                 }
-                else if (0 == stricmp(id, "locks")) {
-                    mb.append(querySDS().getLocks(buf).str());
+                else if (0 == stricmp(id, "locks")) { // Legacy - newer diag clients should use querySDS().getLocks() directly
+                    Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks();
+                    mb.append(lockInfoCollection->toString(buf).str());
                 }
-                else if (0 == stricmp(id, "sdsstats")) {
+                else if (0 == stricmp(id, "sdsstats")) { // Legacy - newer diag clients should use querySDS().getUsageStats() directly
                     mb.append(querySDS().getUsageStats(buf).str());
                 }
-                else if (0 == stricmp(id, "connections")) {
+                else if (0 == stricmp(id, "connections")) { // Legacy - newer diag clients should use querySDS().getConnections() directly
                     mb.append(querySDS().getConnections(buf).str());
                 }
-                else if (0 == stricmp(id, "sdssubscribers")) {
+                else if (0 == stricmp(id, "sdssubscribers")) { // Legacy - newer diag clients should use querySDS().getSubscribers() directly
                     mb.append(querySDS().getSubscribers(buf).str());
                 }
                 else if (0 == stricmp(id, "clients")) {

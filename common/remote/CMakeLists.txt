@@ -66,6 +66,11 @@ install ( TARGETS remote RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${L
 target_link_libraries ( remote 
     jlib 
     mp
-    securesocket
     ${URIPARSER_LIBRARIES}
     )
+
+IF (USE_OPENSSL)
+    target_link_libraries ( remote 
+    	securesocket
+    )
+ENDIF()

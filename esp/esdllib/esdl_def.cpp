@@ -964,7 +964,7 @@ public:
                 const char * finger = product;
                 while(*finger && *finger !=':'){val.append(*finger++);}
 
-                props->setProp("product_", val.toCharArray());
+                props->setProp("product_", val.str());
                 props->setProp("productdefault_", true);
             }
             else
@@ -987,8 +987,8 @@ public:
         if (prod.length() > 0)
         {
             if(prod.endsWith(":default"))
-                return prod.substring(0, prod.indexOf(":"))->toCharArray();
-            return prod.toCharArray();
+                return prod.substring(0, prod.indexOf(":"))->str();
+            return prod.str();
         }
         else
             return NULL;
@@ -1310,6 +1310,10 @@ public:
     bool hasFileLoaded(const char *filename);
     bool hasXMLDefintionLoaded(const char *esdlDefName, int ver);
     bool hasXMLDefintionLoaded(const char *esdlDefId);
+    EsdlBasicElementType translateSimpleType(const char *type)
+    {
+        return esdlSimpleType(type);
+    }
 
 
     IEsdlDefObject *queryObj(const char *name)
@@ -1920,7 +1924,8 @@ public:
 
 bool EsdlDefinition::hasFileLoaded(const char *filename)
 {
-    return added.getValue(filename);
+    //The existance of the entry indicates whether it has been added or not
+    return added.getValue(filename) != NULL;
 }
 bool EsdlDefinition::hasXMLDefintionLoaded(const char *esdlDefName, int ver)
 {
@@ -1935,7 +1940,8 @@ bool EsdlDefinition::hasXMLDefintionLoaded(const char *esdlDefName, int ver)
 
 bool EsdlDefinition::hasXMLDefintionLoaded(const char *esdlDefId)
 {
-    return added.getValue(esdlDefId);
+    //The existance of the entry indicates whether it has been added or not
+    return added.getValue(esdlDefId) != NULL;
 }
 
 void EsdlDefinition::addDefinitionsFromFile(const char *filename)
@@ -2084,4 +2090,105 @@ esdl_decl void releaseEsdlDefinition(const char *esdl_ns)
     }
     else
         default_ns.clear();
+}
+
+static bool type_list_inited = false;
+
+typedef MapStringTo<EsdlBasicElementType> EsdlTypeList;
+static EsdlTypeList esdlTypeList;
+
+void init_type_list(EsdlTypeList &list)
+{
+    static CriticalSection crit;
+    CriticalBlock block(crit);
+    if (!type_list_inited)
+    {
+        //strings:
+        list.setValue("StringBuffer", ESDLT_STRING);
+        list.setValue("string", ESDLT_STRING);
+        list.setValue("binary", ESDLT_STRING);
+        list.setValue("base64Binary", ESDLT_STRING);
+        list.setValue("normalizedString", ESDLT_STRING);
+        list.setValue("xsdString", ESDLT_STRING);
+        list.setValue("xsdBinary", ESDLT_STRING);
+        list.setValue("xsdDuration", ESDLT_STRING);
+        list.setValue("xsdDateTime", ESDLT_STRING);
+        list.setValue("xsdTime", ESDLT_STRING);
+        list.setValue("xsdDate", ESDLT_STRING);
+        list.setValue("xsdYearMonth", ESDLT_STRING);
+        list.setValue("xsdYear", ESDLT_STRING);
+        list.setValue("xsdMonthDay", ESDLT_STRING);
+        list.setValue("xsdDay", ESDLT_STRING);
+        list.setValue("xsdMonth", ESDLT_STRING);
+        list.setValue("xsdAnyURI", ESDLT_STRING);
+        list.setValue("xsdQName", ESDLT_STRING);
+        list.setValue("xsdNOTATION", ESDLT_STRING);
+        list.setValue("xsdToken", ESDLT_STRING);
+        list.setValue("xsdLanguage", ESDLT_STRING);
+        list.setValue("xsdNMTOKEN", ESDLT_STRING);
+        list.setValue("xsdNMTOKENS", ESDLT_STRING);
+        list.setValue("xsdName", ESDLT_STRING);
+        list.setValue("xsdNCName", ESDLT_STRING);
+        list.setValue("xsdID", ESDLT_STRING);
+        list.setValue("xsdIDREF", ESDLT_STRING);
+        list.setValue("xsdIDREFS", ESDLT_STRING);
+        list.setValue("xsdENTITY", ESDLT_STRING);
+        list.setValue("xsdENTITIES", ESDLT_STRING);
+        list.setValue("xsdBase64Binary", ESDLT_STRING);
+        list.setValue("xsdNormalizedString", ESDLT_STRING);
+        list.setValue("EspTextFile", ESDLT_STRING);
+        list.setValue("EspResultSet", ESDLT_STRING);
+        //numeric
+        list.setValue("bool", ESDLT_BOOL);
+        list.setValue("boolean", ESDLT_BOOL);
+        list.setValue("decimal", ESDLT_FLOAT);
+        list.setValue("float", ESDLT_FLOAT);
+        list.setValue("double", ESDLT_DOUBLE);
+        list.setValue("integer", ESDLT_INT32);
+        list.setValue("int64", ESDLT_INT64);
+        list.setValue("long", ESDLT_INT32);
+        list.setValue("int", ESDLT_INT32);
+        list.setValue("unsigned", ESDLT_UINT32);
+        list.setValue("short", ESDLT_INT16);
+        list.setValue("nonPositiveInteger", ESDLT_INT32);
+        list.setValue("negativeInteger", ESDLT_INT32);
+        list.setValue("nonNegativeInteger", ESDLT_UINT32);
+        list.setValue("unsignedLong", ESDLT_UINT32);
+        list.setValue("unsignedInt", ESDLT_UINT32);
+        list.setValue("unsignedShort", ESDLT_UINT16);
+        list.setValue("unsignedByte", ESDLT_UBYTE);
+        list.setValue("positiveInteger", ESDLT_UINT32);
+        list.setValue("xsdBoolean", ESDLT_BOOL);
+        list.setValue("xsdDecimal", ESDLT_FLOAT);
+        list.setValue("xsdInteger", ESDLT_INT32);
+        list.setValue("xsdByte", ESDLT_INT8);
+        list.setValue("xsdNonPositiveInteger", ESDLT_INT32);
+        list.setValue("xsdNegativeInteger", ESDLT_INT32);
+        list.setValue("xsdNonNegativeInteger", ESDLT_UINT32);
+        list.setValue("xsdUnsignedLong", ESDLT_UINT32);
+        list.setValue("xsdUnsignedInt", ESDLT_UINT32);
+        list.setValue("xsdUnsignedShort", ESDLT_UINT16);
+        list.setValue("xsdUnsignedByte", ESDLT_UINT8);
+        list.setValue("xsdPositiveInteger", ESDLT_UINT64);
+        list.setValue("unsigned8", ESDLT_UINT64);
+
+        type_list_inited=true;
+    }
+}
+
+esdl_decl void initEsdlTypeList()
+{
+    if (!type_list_inited)
+        init_type_list(esdlTypeList);
+}
+
+esdl_decl EsdlBasicElementType esdlSimpleType(const char *type)
+{
+    if (!type || !*type)
+        return ESDLT_STRING;
+    initEsdlTypeList();
+    EsdlBasicElementType *val = esdlTypeList.getValue(type);
+    if (val)
+        return *val;
+    return ESDLT_COMPLEX;
 }
