@@ -1054,7 +1054,7 @@ void retrieveQuerysetDetails(IEspContext &context, IArrayOf<IEspWUQuerySetDetail
     retrieveQuerysetDetails(context, details, registry, type, value, cluster, queriesOnCluster);
 }
 
-IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset)
+IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset, bool checkAllNodes)
 {
     if (isEmpty(target))
         target = queryset;
@@ -1072,7 +1072,10 @@ IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset)
     try
     {
         Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIECONNECTIONTIMEOUT);
-        return sendRoxieControlAllNodes(sock, "<control:queries/>", false, ROXIECONTROLQUERIESTIMEOUT);
+        if (checkAllNodes)
+            return sendRoxieControlAllNodes(sock, "<control:queries/>", false, ROXIECONTROLQUERIESTIMEOUT);
+        else
+            return sendRoxieControlQuery(sock, "<control:queries/>", ROXIECONTROLQUERIESTIMEOUT);
     }
     catch(IException* e)
     {
@@ -1083,9 +1086,9 @@ IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset)
     }
 }
 
-void retrieveQuerysetDetailsByCluster(IEspContext &context, IArrayOf<IEspWUQuerySetDetail> &details, const char *target, const char *queryset, const char *type, const char *value)
+void retrieveQuerysetDetailsByCluster(IEspContext &context, IArrayOf<IEspWUQuerySetDetail> &details, const char *target, const char *queryset, const char *type, const char *value, bool checkAllNodes)
 {
-    Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(target, queryset);
+    Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(target, queryset, checkAllNodes);
     retrieveQuerysetDetails(context, details, target, type, value, target, queriesOnCluster);
 }
 
@@ -1124,7 +1127,7 @@ bool CWsWorkunitsEx::onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDet
         const char* cluster = req.getClusterName();
         if (isEmpty(cluster))
             cluster = req.getQuerySetName();
-        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, req.getQuerySetName());
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, req.getQuerySetName(), req.getCheckAllNodes());
         retrieveQuerysetDetails(context, registry, req.getFilterTypeAsString(), req.getFilter(), respQueries, respAliases, cluster, queriesOnCluster);
 
         resp.setQuerysetQueries(respQueries);
@@ -1133,7 +1136,7 @@ bool CWsWorkunitsEx::onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDet
     else
     {
         IArrayOf<IEspWUQuerySetDetail> respDetails;
-        retrieveQuerysetDetailsByCluster(context, respDetails, req.getClusterName(), req.getQuerySetName(), req.getFilterTypeAsString(), req.getFilter());
+        retrieveQuerysetDetailsByCluster(context, respDetails, req.getClusterName(), req.getQuerySetName(), req.getFilterTypeAsString(), req.getFilter(), false);
         if (respDetails.ordinality())
         {
             IEspWUQuerySetDetail& detail = respDetails.item(0);
@@ -1150,7 +1153,7 @@ bool CWsWorkunitsEx::onWUMultiQuerysetDetails(IEspContext &context, IEspWUMultiQ
     IArrayOf<IEspWUQuerySetDetail> respDetails;
 
     if (notEmpty(req.getClusterName()))
-        retrieveQuerysetDetailsByCluster(context, respDetails, req.getClusterName(), req.getQuerySetName(), req.getFilterTypeAsString(), req.getFilter());
+        retrieveQuerysetDetailsByCluster(context, respDetails, req.getClusterName(), req.getQuerySetName(), req.getFilterTypeAsString(), req.getFilter(), req.getCheckAllNodes());
     else if (notEmpty(req.getQuerySetName()))
         retrieveQuerysetDetails(context, respDetails, req.getQuerySetName(), req.getFilterTypeAsString(), req.getFilter());
     else
@@ -1221,14 +1224,14 @@ unsigned CWsWorkunitsEx::getGraphIdsByQueryId(const char *target, const char *qu
 //This method is thread safe because a query belongs to a single queryset. The method may be called by different threads.
 //Since one thread is for one queryset and a query only belongs to a single queryset, it is impossible for different threads
 //to update the same query object.
-void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries)
+void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes)
 {
     try
     {
         double version = context.getClientVersion();
         if (isEmpty(cluster))
             cluster = querySetId;
-        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, querySetId);
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, querySetId, checkAllNodes);
         if (!queriesOnCluster)
         {
             DBGLOG("getQueriesOnCluster() returns NULL for cluster<%s> and querySetId<%s>", cluster, querySetId);
@@ -1255,7 +1258,7 @@ void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const ch
     }
 }
 
-void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries)
+void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes)
 {
     UnsignedArray threadHandles;
     ForEachItemIn(i, querySetIds)
@@ -1264,7 +1267,7 @@ void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const ch
         if(!querySetId || !*querySetId)
             continue;
 
-        Owned<CClusterQueryStateParam> threadReq = new CClusterQueryStateParam(this, context, cluster, querySetId, queries);
+        Owned<CClusterQueryStateParam> threadReq = new CClusterQueryStateParam(this, context, cluster, querySetId, queries, checkAllNodes);
         PooledThreadHandle handle = clusterQueryStatePool->start( threadReq.getClear() );
         threadHandles.append(handle);
     }
@@ -1418,7 +1421,7 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
         queries.append(*q.getClear());
     }
 
-    checkAndSetClusterQueryState(context, clusterReq, querySetIds, queries);
+    checkAndSetClusterQueryState(context, clusterReq, querySetIds, queries, req.getCheckAllNodes());
 
     resp.setQuerysetQueries(queries);
     resp.setNumberOfQueries(numberOfQueries);
@@ -1602,7 +1605,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     }
     if (includeStateOnClusters && (version >= 1.43))
     {
-        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(querySet, querySet);
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(querySet, querySet, req.getCheckAllNodes());
         if (queriesOnCluster)
         {
             IArrayOf<IEspClusterQueryState> clusterStates;

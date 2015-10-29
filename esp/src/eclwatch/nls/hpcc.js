@@ -43,6 +43,8 @@ define({root:
     BlobPrefix: "BLOB Prefix",
     Bottom: "Bottom",
     Cancel: "Cancel",
+    CheckAllNodes: "Check All Nodes",
+    CheckSingleNode: "Check Single Node",
     Clear: "Clear",
     Clone: "Clone",
     Close: "Close",

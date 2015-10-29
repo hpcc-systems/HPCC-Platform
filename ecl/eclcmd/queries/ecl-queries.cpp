@@ -89,7 +89,7 @@ private:
 class EclCmdQueriesList : public EclCmdCommon
 {
 public:
-    EclCmdQueriesList() : flags(0), optInactive(false)
+    EclCmdQueriesList() : flags(0), optInactive(false), optCheckAllNodes(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -110,6 +110,8 @@ public:
             if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
                 continue;
             if (iter.matchFlag(optInactive, ECLOPT_INACTIVE))
+                continue;
+            if (iter.matchFlag(optCheckAllNodes, ECLOPT_CHECK_ALL_NODES))
                 continue;
             StringAttr temp;
             if (iter.matchOption(temp, ECLOPT_SHOW))
@@ -154,6 +156,8 @@ public:
 
             flags = QUERYLIST_SHOW_INACTIVE;
         }
+        if (!optCheckAllNodes)
+            extractEclCmdOption(optCheckAllNodes, globals, ECLOPT_CHECK_ALL_NODES_ENV, ECLOPT_CHECK_ALL_NODES_INI, false);
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
         return true;
@@ -256,6 +260,7 @@ public:
         req->setQuerySetName(optTargetCluster.get());
         req->setClusterName(optTargetCluster.get());
         req->setFilterType("All");
+        req->setCheckAllNodes(optCheckAllNodes);
 
         Owned<IClientWUMultiQuerySetDetailsResponse> resp = client->WUMultiQuerysetDetails(req);
         if (resp->getExceptions().ordinality())
@@ -282,6 +287,7 @@ public:
             "   <target>               Name of target cluster to get list of queries for\n"
             "   --show=<flags>         Show only queries with matching flags\n"
             "   --inactive             Show only queries that do not have an active alias\n"
+            "   --check-all-nodes      Check query status on all nodes in the process cluster\n"
             " Flags:\n"
             "   A                      Query is active\n"
             "   S                      Query is suspended in queryset\n"
@@ -295,6 +301,7 @@ private:
     StringAttr optTargetCluster;
     unsigned flags;
     bool optInactive;
+    bool optCheckAllNodes;
 };
 
 class EclCmdQueryFiles : public EclCmdCommon
