@@ -82,6 +82,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_SIGNED_CHAR "Build system with default char type is signed" OFF)
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
 
+  option(MAKE_R_ONLY "Create a package with ONLY the R plugin" OFF)
+
   option(USE_MYSQL "Enable MySQL support" ON)
   option(USE_CASSANDRA "Enable Cassandra support" ON)
   option(USE_SQLITE3 "Enable SqLite3 support" ON)
