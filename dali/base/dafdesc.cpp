@@ -2121,7 +2121,7 @@ IFileDescriptor *createFileDescriptor()
     return new CFileDescriptor(NULL,NULL,0);
 }
 
-static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, bool lookup, CDateTime *modTime)
+static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, bool lookup)
 {
     CDfsLogicalFileName logicalname;
     logicalname.set(_logicalname);
@@ -2174,7 +2174,8 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
     fileDesc->setDefaultDir(dir.str());
     unsigned n = group.get()?group->ordinality():1;
     StringBuffer partname;
-    bool moddtset = false;
+    CDateTime modTime;
+    StringBuffer modTimeStr;
     for (unsigned i=0;i<n;i++)
     {
         if (group.get())
@@ -2207,7 +2208,7 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
             ep.port = getDaliServixPort();
         RemoteFilename rfn;
         rfn.setPath(ep,partname.str());
-        if (modTime&&!isspecial&&(memcmp(partname.str(),"/$/",3)!=0)&&(memcmp(partname.str(),"\\$\\",3)!=0)) // don't get date on external data
+        if (!isspecial&&(memcmp(partname.str(),"/$/",3)!=0)&&(memcmp(partname.str(),"\\$\\",3)!=0)) // don't get date on external data
         {
             try
             {
@@ -2215,10 +2216,10 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
                 CDateTime dt;
                 if (file&&file->getTime(NULL,&dt,NULL))
                 {
-                    if (!moddtset||(dt.compareDate(*modTime)>0))
+                    if ((0 == modTimeStr.length())||(dt.compareDate(modTime)>0))
                     {
-                        modTime->set(dt);
-                        moddtset = true;
+                        modTime.set(dt);
+                        modTime.getString(modTimeStr);
                     }
                 }
             }
@@ -2234,7 +2235,14 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
             if (!iFile->exists())
                 return NULL; // >=1 part does not exist.
         }
-        fileDesc->setPart(i,rfn);
+        if (modTimeStr.length())
+        {
+            Owned<IPropertyTree> part = createPTree("Part");
+            part->setProp("@modified", modTimeStr.str());
+            fileDesc->setPart(i, rfn, part);
+        }
+        else
+            fileDesc->setPart(i, rfn);
     }
     fileDesc->queryPartDiskMapping(0).defaultCopies = DFD_NoCopies;
     return fileDesc.getClear();
@@ -2242,11 +2250,11 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
 
 IFileDescriptor *createExternalFileDescriptor(const char *logicalname)
 {
-    return _createExternalFileDescriptor(logicalname, false, NULL);
+    return _createExternalFileDescriptor(logicalname, false);
 }
-IFileDescriptor *getExternalFileDescriptor(const char *logicalname, CDateTime *modTime)
+IFileDescriptor *getExternalFileDescriptor(const char *logicalname)
 {
-    return _createExternalFileDescriptor(logicalname, true, modTime);
+    return _createExternalFileDescriptor(logicalname, true);
 }
 
 inline void moveProp(IPropertyTree *to,IPropertyTree *from,const char *name)

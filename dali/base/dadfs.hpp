@@ -555,7 +555,8 @@ interface IDistributedFileDirectory: extends IInterface
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
 
-    virtual IDistributedFile *createNew(IFileDescriptor *desc,bool includeports=false) = 0;
+    virtual IDistributedFile *createNew(IFileDescriptor *desc, bool includeports=false) = 0;
+    virtual IDistributedFile *createExternal(IFileDescriptor *desc, const char *name, bool includeports=false) = 0;
 
     virtual IDistributedFileIterator *getIterator(const char *wildname, bool includesuper, IUserDescriptor *user) = 0;
             // wildname is in form scope/name and may contain wild components for either
