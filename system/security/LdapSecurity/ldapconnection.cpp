@@ -5014,6 +5014,17 @@ private:
         }
     }
 
+    virtual bool organizationalUnitExists(const char * ou)
+    {
+        Owned<ILdapConnection> lconn = m_connections->getConnection();
+        LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
+        char* attrs[] = {"ou", NULL};
+        CLDAPMessage searchResult;
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+        int rc = ldap_search_ext_s(sys_ld, (char*)ou, LDAP_SCOPE_ONELEVEL, NULL, attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
+        return rc == LDAP_SUCCESS;
+    }
+
     virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype)
     {
         if(basedn == NULL || basedn[0] == '\0')
@@ -5037,7 +5048,7 @@ private:
             ptr = comma + 1;
         }
 
-        if(ptr != NULL)
+        if (ptr && !organizationalUnitExists(ptr))
             createLdapBasedn(user, ptr, ptype);
 
         addOrganizationalUnit(user, oubuf.str(), ptr, ptype);
@@ -5054,6 +5065,8 @@ private:
 
         StringBuffer dn;
         dn.append("ou=").append(name).append(",").append(basedn);
+        if (organizationalUnitExists(dn.str()))
+            return true;
 
         char *ou_values[] = {(char*)name, NULL };
         LDAPMod ou_attr = 
