@@ -89,7 +89,7 @@
   <para>We encourage experienced users to use SSH and log into the VM and
   further examine the configuration of a 1-node monitoring solution.</para>
 
-  <sect3 id="ViewingTheMetrics" role="brk">
+  <sect3 id="Viewing_The_Metrics" role="brk">
     <title>Viewing the Metrics</title>
 
     <para>To view the metrics page, go to the following page(s) in your
