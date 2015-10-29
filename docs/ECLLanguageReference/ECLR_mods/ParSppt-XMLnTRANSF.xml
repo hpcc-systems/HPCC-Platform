@@ -11,22 +11,26 @@
   from the PARSE function, or the input RECORD structure for a DATASET
   containing XML data.</emphasis></para>
 
-  <para><emphasis
-  role="bold">XMLTEXT(</emphasis><emphasis>xmltag</emphasis><emphasis
+  <para><emphasis role="bold">XMLTEXT<indexterm>
+      <primary>XMLTEXT</primary>
+    </indexterm>(</emphasis><emphasis>xmltag</emphasis><emphasis
   role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">XMLTEXT</emphasis> returns the ASCII text from
   the <emphasis>xmltag</emphasis>.</para>
 
-  <para><emphasis
-  role="bold">XMLUNICODE(</emphasis><emphasis>xmltag</emphasis><emphasis
+  <para><emphasis role="bold">XMLUNICODE<indexterm>
+      <primary>XMLUNICODE</primary>
+    </indexterm>(</emphasis><emphasis>xmltag</emphasis><emphasis
   role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">XMLUNICODE</emphasis> returns the Unicode text
   from the <emphasis>xmltag</emphasis>.</para>
 
-  <para><emphasis role="bold">XMLPROJECT(</emphasis><emphasis>xmltag,
-  transform</emphasis><emphasis role="bold">)</emphasis></para>
+  <para><emphasis role="bold">XMLPROJECT<indexterm>
+      <primary>XMLPROJECT</primary>
+    </indexterm>(</emphasis><emphasis>xmltag, transform</emphasis><emphasis
+  role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">XMLPROJECT</emphasis> returns the text from the
   <emphasis>xmltag </emphasis>as a child dataset.</para>
