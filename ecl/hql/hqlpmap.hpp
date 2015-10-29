@@ -173,6 +173,7 @@ extern HQL_API IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlEx
 extern HQL_API void replaceSelectors(HqlExprArray & out, unsigned first, IHqlExpression * oldDataset, IHqlExpression * newDataset);
 extern HQL_API IHqlExpression * scopedReplaceSelector(IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset);
 extern HQL_API IHqlExpression * replaceSelfRefSelector(IHqlExpression * expr, IHqlExpression * newDataset);
+extern HQL_API IHqlExpression * updateActiveSelectorFields(IHqlExpression * expr, IHqlExpression * oldRecord, IHqlExpression * newRecord, unsigned firstChild);
 
 extern HQL_API bool isNullProject(IHqlExpression * expr, bool canIgnorePayload, bool canLoseFieldsFromEnd);
 extern HQL_API bool isSimpleProject(IHqlExpression * expr);                             // Restriction or rearrangement only
