@@ -1115,6 +1115,14 @@ bool matchDeployAddress(const char *searchIP, const char *envIP)
     return false;
 }
 
+
+/* Look into the topology section of the given environment.xml file.  Parse Topology section
+ * And extract RoxieServerProcess, ThorServerProcess, EclServerProcess component names and
+ * Add them to the pTopologyComponents list.
+ * Then search the software section.  If the software components buildSet property matches
+ * roxie, thor, or eclserver.  We then check it against the unique list made from topology.
+ * If the the unique list also has the name of the software component, we process it.
+ * Otherwise we skip it and move on to the next component.*/
 IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName, 
                             const char* compType, const char* ipAddr, bool listall)
 {
@@ -1128,7 +1136,10 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
     ForEach(*pClusterProcessIter)
     {
       IPropertyTree * pClusterProcess = &pClusterProcessIter->query();
-      if (!strcmp(pClusterProcess->queryName(),"RoxieCluster") || !strcmp(pClusterProcess->queryName(),"ThorCluster"))
+      if (!strcmp(pClusterProcess->queryName(),"RoxieCluster") || !strcmp(pClusterProcess->queryName(),"ThorCluster")
+            || !strcmp(pClusterProcess->queryName(),"EclServerProcess") || !strcmp(pClusterProcess->queryName(),"EclAgentProcess")
+            || !strcmp(pClusterProcess->queryName(),"EclCCServerProcess") || !strcmp(pClusterProcess->queryName(),"EclSchedulerProcess")
+            || !strcmp(pClusterProcess->queryName(),"EclSchedulerProcess"))
         pTopologyComponents.appendUniq(pClusterProcess->queryProp("@process"));
     }
   }
@@ -1154,7 +1165,9 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
       const char* masterPort = pComponent->queryProp("@masterport");
       const char* logDir = NULL;
 
-      if ((!strcmp(buildSet,"thor") || !strcmp(buildSet,"roxie")) && !pTopologyComponents.contains(name))
+      /* If one of these components found isn't also declared in topology, skip it. */
+      if ((!strcmp(buildSet,"thor") || !strcmp(buildSet,"roxie") || !strcmp(buildSet,"eclserver") || !strcmp(buildSet,"eclagent")
+            || !strcmp(buildSet,"eclccserver") || !strcmp(buildSet,"eclscheduler")) && !pTopologyComponents.contains(name))
         continue;
 
       if (listall)
