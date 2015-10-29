@@ -11679,6 +11679,7 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
     funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
             "#pragma GCC diagnostic error \"-Wall\"\n"
             "#pragma GCC diagnostic error \"-Wextra\"\n"
+            "#pragma GCC diagnostic ignored \"-Wunused-parameter\"\n"  // Generated prototype tends to include ctx that is often not used
             "#endif\n");
 
     funcctx.addQuotedCompound(proto, "\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"

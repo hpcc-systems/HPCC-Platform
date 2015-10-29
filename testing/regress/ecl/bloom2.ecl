@@ -38,11 +38,10 @@ bloomFilter(UNSIGNED DECIMAL6_3 falsePositiveProbability,
         unsigned long long slot = 0;
         unsigned int shift      = 0;
         unsigned int mask       = 0;
-        unsigned int test       = 0;
         const int slotsize = 8;
         unsigned long long numbits = _tablesize * slotsize;
         byte * outbits = self + sizeof(unsigned);
-        for (int i=0; i< _numhashes; i++) {
+        for (unsigned i=0; i< _numhashes; i++) {
           // Kirsch and Mitzenmacher technique (Harvard U)
           bit   =  (hash1 + (i * hash2)) % numbits;
           slot  = bit / slotsize;
@@ -91,7 +90,7 @@ bloomFilter(UNSIGNED DECIMAL6_3 falsePositiveProbability,
         bool retval = true;
 
         // Test each bit in the char array
-        for (int i=0; i< _numhashes; i++) {
+        for (unsigned i=0; i< _numhashes; i++) {
             // Kirsch and Mitzenmacher technique (Harvard U)
             bit   =  (hash1 + (i * hash2)) % numbits;
             slot  = bit / 8;
