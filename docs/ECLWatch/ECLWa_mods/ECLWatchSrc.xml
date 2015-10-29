@@ -628,7 +628,7 @@
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsTimersTab" role="brk">
-          <title id="ECLWatch_ECLWorkunits_TimersTab">Timers tab</title>
+          <title id="ECLWatch_ECLWorkUnits_TimersTab">Timers tab</title>
 
           <para>Click on the <emphasis role="bold">Timers</emphasis> tab to
           see the workunit timings. <figure>
@@ -667,7 +667,7 @@
           the graph.</para>
         </sect3>
 
-        <sect3 id="ECLWatch_ECLWorkunitsTimersTab" role="brk">
+        <sect3 id="ECLWatchECLWorkunitsTimersTab" role="brk">
           <title>Timers tab</title>
 
           <para>Click on the <emphasis role="bold">Timers</emphasis> tab to
