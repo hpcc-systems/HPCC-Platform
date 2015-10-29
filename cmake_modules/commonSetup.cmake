@@ -82,6 +82,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_SIGNED_CHAR "Build system with default char type is signed" OFF)
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
 
+  option(MAKE_R_ONLY "Create a package with ONLY the R plugin" OFF)
+
   option(WITH_PLUGINS "Enable the building of plugins" ON)
   # WITH_PLUGINS = OFF will disable all of the following, else they can be set off on a case by case basis
   option(USE_MYSQL "Enable MySQL support" ON)
