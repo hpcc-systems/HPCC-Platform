@@ -283,7 +283,7 @@ define([
             var store = this.params.searchResults ? this.params.searchResults : ESPQuery.CreateQueryStore();
             this.querySetGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: store,
-                query: this.getFilter(),
+                query: this.getGridQuery(),
                 sort: [{ attribute: "Id" }],
                 columns: {
                     col1: selector({
@@ -465,7 +465,7 @@ define([
         },
 
         refreshGrid: function (clearSelection) {
-            this.querySetGrid.set("query", this.getFilter());
+            this.querySetGrid.set("query", this.getGridQuery());
             if (clearSelection) {
               this.querySetGrid.clearSelection();
             }
@@ -513,6 +513,14 @@ define([
             }
         },
 
+        _onSetOptions: function (event) {
+            if (registry.byId(this.id + "OptionsForm").validate()) {
+                this.refreshGrid();
+                registry.byId(this.id + "Options").closeDropDown();
+            }
+        },
+
+
         _onRowDblClick: function (item, workunitTab) {
             var tab = null;
             if (workunitTab) {
@@ -523,8 +531,10 @@ define([
             this.selectChild(tab);
         },
 
-        getFilter: function(){
-            return this.filter.toObject();
+        getGridQuery: function(){
+            optionsForm = registry.byId(this.id + "OptionsForm");
+            optionsValues = optionsForm.getValues();
+            return lang.mixin(this.filter.toObject(), optionsValues);
         },
 
         ensurePane: function (id, params, workunitTab) {

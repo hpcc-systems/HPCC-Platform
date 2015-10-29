@@ -92,6 +92,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DELETE_SUBFILES "--delete-subfiles"
 #define ECLOPT_DELETE_RECURSIVE "--delete-recursive"
 #define ECLOPT_RETRY "--retry"
+#define ECLOPT_CHECK_ALL_NODES "--check-all-nodes"
+#define ECLOPT_CHECK_ALL_NODES_INI "checkAllNodes"
+#define ECLOPT_CHECK_ALL_NODES_ENV "CHECK_ALL_NODES"
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format

@@ -998,6 +998,7 @@ public:
      * The caller must associated it with a name and credentials when it is attached (attach())
      */
     IDistributedFile *createNew(IFileDescriptor * fdesc, bool includeports=false);
+    IDistributedFile *createExternal(IFileDescriptor *desc, const char *name, bool includeports=false);
     IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction=NULL);
     void removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction);
 
@@ -7280,14 +7281,10 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
     {
         checkLogicalName(*logicalname,user,true,writeattr,true,NULL);
         if (logicalname->isExternal()) {
-            CDateTime modTime;
-            Owned<IFileDescriptor> fDesc = getExternalFileDescriptor(logicalname->get(), &modTime);
+            Owned<IFileDescriptor> fDesc = getExternalFileDescriptor(logicalname->get());
             if (!fDesc)
                 return NULL;
-            CDistributedFile *ret = new CDistributedFile(this, fDesc, NULL, true);
-            ret->setLogicalName(logicalname->get());
-            ret->setModificationTime(modTime);
-            return ret;
+            return queryDistributedFileDirectory().createExternal(fDesc, logicalname->get(), true);
         }
         if (logicalname->isForeign()) {
             IDistributedFile * ret = getFile(logicalname->get(),user,NULL);
@@ -7449,6 +7446,13 @@ bool CDistributedFileDirectory::existsPhysical(const char *_logicalname, IUserDe
 IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc, bool includeports)
 {
     return new CDistributedFile(this, fdesc, NULL, includeports);
+}
+
+IDistributedFile *CDistributedFileDirectory::createExternal(IFileDescriptor *fdesc, const char *name, bool includeports)
+{
+    CDistributedFile *dFile = new CDistributedFile(this, fdesc, NULL, includeports);
+    dFile->setLogicalName(name);
+    return dFile;
 }
 
 ////////////////////////////////////
