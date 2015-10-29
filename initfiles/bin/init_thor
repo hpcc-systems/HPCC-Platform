@@ -51,7 +51,7 @@ if [[ ! -z ${THORPRIMARY} ]]; then
 else
     groupName=${THORNAME}
 fi
-ln -s -f $deploydir/thormaster${LCR} thormaster_$THORNAME
+ln -s -f $deploydir/thormaster_lcr thormaster_$THORNAME
 
 ENV_DIR=$(cat ${HPCC_CONFIG} | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^configs=" | sed -e 's/^configs=//')
 
@@ -194,7 +194,7 @@ while [[ 1 ]]; do
 
     thorpid=$!
     if [[ "$thorpid" -ne "0" ]]; then
-        log "thormaster$LCR process started pid = $thorpid"
+        log "thormaster_lcr process started pid = $thorpid"
 
         echo $thorpid > $PID_NAME
         wait $thorpid
@@ -228,7 +228,7 @@ while [[ 1 ]]; do
             fi
             log "Stopping thorslave(s) for restart"
             kill_slaves
-            if [[ 0 != $autoSwapNode ]]; then
+            if [[ "false" != "$autoSwapNode" ]]; then
                 log "Running autoswap $THORNAME :: ($thorpid)"
                 swapnode auto $DALISERVER $component
                 errcode=$?
@@ -241,7 +241,7 @@ while [[ 1 ]]; do
             ;;
         esac
     else
-        log "failed to start thormaster$LCR, pausing for 30 seconds"
+        log "failed to start thormaster_lcr, pausing for 30 seconds"
         sleep 30
         kill_slaves
     fi

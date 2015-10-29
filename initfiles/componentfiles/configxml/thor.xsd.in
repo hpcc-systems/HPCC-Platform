@@ -190,7 +190,7 @@
 	      <docid>Th.t4</docid>
             </xs:appinfo>
           </xs:annotation>
-          <xs:attribute name="AutoSwapNode" type="xs:boolean" use="optional" default="false">
+          <xs:attribute name="AutoSwapNode" type="xs:boolean" default="false">
             <xs:annotation>
               <xs:appinfo>
                 <tooltip>Failing nodes will be automatically swapped for spare nodes</tooltip>
@@ -269,20 +269,6 @@
 	  	<docid>Th.t5</docid>
               </xs:appinfo>
            </xs:annotation>
-          <xs:attribute name="breakoutLimit" type="xs:nonNegativeInteger" use="optional" default="3600">
-            <xs:annotation>
-              <xs:appinfo>
-                <tooltip>Number of iterations of backup status check</tooltip>
-              </xs:appinfo>
-            </xs:annotation>
-          </xs:attribute>
-          <xs:attribute name="refreshRate" type="xs:nonNegativeInteger" use="optional" default="3">
-            <xs:annotation>
-              <xs:appinfo>
-                <tooltip>Time in seconds for each iteration of backup status check</tooltip>
-              </xs:appinfo>
-            </xs:annotation>
-          </xs:attribute>
           </xs:complexType>
         </xs:element>
         <xs:element name="Notes" maxOccurs="unbounded">
@@ -469,7 +455,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="slaveport" type="xs:nonNegativeInteger" default="20100" use="optional">
+      <xs:attribute name="slaveport" type="xs:nonNegativeInteger" default="20100">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Base port to use for slaves</tooltip>
@@ -483,21 +469,21 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="slavesPerNode" type="xs:nonNegativeInteger" use="optional" default="1">
+      <xs:attribute name="slavesPerNode" type="xs:nonNegativeInteger" default="1">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>This allows multiple slaves to exist on each node</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="processPerSlave" type="xs:boolean" use="optional" default="true">
+      <xs:attribute name="processPerSlave" type="xs:boolean" default="true">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Makes each slave run in it's own process</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" use="optional" default="200">
+      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" default="200">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Port increment between slaves on same node</tooltip>
