@@ -182,16 +182,17 @@ homePath=$(cat /etc/passwd | grep -e "^${user}:" | cut -d':' -f6)
 homeBase=$(dirname $homePath)
 echo ""
 
-# Generate environment.xml
-echo "Generate environment.xml"
-${path}/sbin/envgen -env ${path}/etc/HPCCSystems/rpmnew/environment.xml -ip . -roxienodes 1 -thornodes 1 -slavesPerNode 1 -o data4=/var/lib/[NAME]/hpcc-data4/[COMPONENT] -set_xpath_attrib_value Software/EclCCServerProcess/Option @name maxCompileThreads -set_xpath_attrib_value Software/EclCCServerProcess/Option @value 2 -override roxie,@allFilesDynamic,true -override roxie,@laxyOpen,smart -override roxie,@localSlave,true -override roxie,@slaveConfig,simple > /dev/null 2>&1 || exit 1
-cp ${path}/etc/HPCCSystems/rpmnew/environment.xml ${path}/testing/regress/environment.xml || exit 1
-echo ""
-
 # installing files
 installConfs "environment.conf" $configs/ 1 || exit 1
-installConfs "environment.xml" $configs/  1 || exit 1
 installConfs "genenvrules.conf" $configs/ 1 || exit 1
+
+echo "Generate environment.xml"
+# Generate environment.xml
+${path}/sbin/create-env-xml.sh > /dev/null 2>&1 || exit 1
+echo ""
+
+# installing environment.xml
+installConfs "environment.xml" $configs/  1 || exit 1
 
 installFile "$path${CONFIG_DIR}/version" "${CONFIG_DIR}/version" 1 || exit 1
 installFile "$initPath/dafilesrv" "/etc/init.d/dafilesrv" 1 || exit 1
