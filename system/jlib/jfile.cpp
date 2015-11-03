@@ -6239,7 +6239,7 @@ public:
             DWORD err = GetLastError();
             throw makeOsException(err,"CMemoryMappedFile::reinit");
         }
-#elif defined (_linux__)
+#elif defined (__linux__)
         ptr = (byte *) mmap(NULL, mapsz, writeaccess?(PROT_READ|PROT_WRITE):PROT_READ, MAP_SHARED|MAP_NORESERVE, hfile, realofs);
             // error checking TBD
 #else
