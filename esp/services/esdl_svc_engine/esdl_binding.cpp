@@ -259,8 +259,17 @@ void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &ent
     if (!javaServiceMap.getValue(javaScopedClass))
     {
         VStringBuffer classPathOption("classpath=%s", classPath);
-        Owned<IEmbedServiceContext> srvctx = ensureJavaEmbeded().createServiceContext(javaScopedClass, EFimport, classPathOption);
-        javaServiceMap.setValue(javaScopedClass, srvctx.getClear());
+        try
+        {
+            Owned<IEmbedServiceContext> srvctx = ensureJavaEmbeded().createServiceContext(javaScopedClass, EFimport, classPathOption);
+            if (srvctx)
+                javaServiceMap.setValue(javaScopedClass, srvctx.getClear());
+        }
+        catch (IException *E)
+        {
+            DBGLOG(E, "DynamicESDL-JavaMethod:");
+            E->Release();
+        }
     }
 }
 

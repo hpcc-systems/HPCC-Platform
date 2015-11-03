@@ -3110,7 +3110,7 @@ class JavaEmbedServiceContext : public CInterfaceOf<IEmbedServiceContext>
 {
 public:
     JavaEmbedServiceContext(JavaThreadContext *_sharedCtx, const char *service, const char *_options)
-    : sharedCtx(_sharedCtx), Class(0), options(_options), className(service)
+    : sharedCtx(_sharedCtx), Class(0), options(_options), className(service), object(0)
     {
         StringArray opts;
         opts.appendList(options, ",");
@@ -3135,8 +3135,10 @@ public:
     }
     ~JavaEmbedServiceContext()
     {
-        sharedCtx->JNIenv->DeleteGlobalRef(object);
-        sharedCtx->JNIenv->DeleteGlobalRef(Class);
+        if (object)
+            sharedCtx->JNIenv->DeleteGlobalRef(object);
+        if (Class)
+            sharedCtx->JNIenv->DeleteGlobalRef(Class);
         // Pop local reference frame; explicitly frees all local
         // references made during that frame's lifetime
         sharedCtx->JNIenv->PopLocalFrame(NULL);
@@ -3149,9 +3151,9 @@ public:
         checkException();
         jstring methodString = sharedCtx->JNIenv->NewStringUTF(className);
         checkException();
+
         Class = (jclass) sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString));
         checkException();
-
         jmethodID constructor = sharedCtx->JNIenv->GetMethodID(Class, "<init>", "()V");
         checkException();
         object = sharedCtx->JNIenv->NewGlobalRef(sharedCtx->JNIenv->NewObject(Class, constructor));
@@ -3159,6 +3161,8 @@ public:
     }
     virtual IEmbedFunctionContext *createFunctionContext(const char *function)
     {
+        if (!object)
+            return NULL;
         Owned<JavaEmbedImportContext> fctx = new JavaEmbedImportContext(queryContext(), object, options);
         fctx->importFunction(rtlUtf8Length(strlen(function), function), function);
         return fctx.getClear();
