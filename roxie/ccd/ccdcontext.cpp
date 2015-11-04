@@ -1328,31 +1328,41 @@ public:
     {
         if (graph)
         {
-            unsigned __int64 elapsedTime = cycle_to_nanosec(get_cycles_now() - startCycles);
-            if (debugContext)
-                debugContext->checkBreakpoint(aborting ? DebugStateGraphAbort : DebugStateGraphEnd, NULL, graph->queryName());
-            if (aborting)
-                graph->abort();
-            if (workUnit)
+            IException * error = NULL;
+            try
             {
-                unsigned __int64 totalTimeNs = 0;
-                unsigned __int64 totalThisTimeNs = 0;
-                const char *totalTimeStr = "Total cluster time";
-                getWorkunitTotalTime(workUnit, "roxie", totalTimeNs, totalThisTimeNs);
+                unsigned __int64 elapsedTime = cycle_to_nanosec(get_cycles_now() - startCycles);
+                if (debugContext)
+                    debugContext->checkBreakpoint(aborting ? DebugStateGraphAbort : DebugStateGraphEnd, NULL, graph->queryName());
+                if (aborting)
+                    graph->abort();
+                if (workUnit)
+                {
+                    unsigned __int64 totalTimeNs = 0;
+                    unsigned __int64 totalThisTimeNs = 0;
+                    const char *totalTimeStr = "Total cluster time";
+                    getWorkunitTotalTime(workUnit, "roxie", totalTimeNs, totalThisTimeNs);
 
-                const char * graphName = graph->queryName();
-                StringBuffer graphDesc;
-                formatGraphTimerLabel(graphDesc, graphName);
-                WorkunitUpdate progressWorkUnit(&workUnit->lock());
-                updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
-                updateWorkunitTimeStat(progressWorkUnit, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedTime);
-                progressWorkUnit->setStatistic(SCTsummary, "roxie", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedTime, 1, 0, StatsMergeReplace);
+                    const char * graphName = graph->queryName();
+                    StringBuffer graphDesc;
+                    formatGraphTimerLabel(graphDesc, graphName);
+                    WorkunitUpdate progressWorkUnit(&workUnit->lock());
+                    updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
+                    updateWorkunitTimeStat(progressWorkUnit, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedTime);
+                    progressWorkUnit->setStatistic(SCTsummary, "roxie", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedTime, 1, 0, StatsMergeReplace);
+                }
+                graph->reset();
             }
-            graph->reset();
+            catch (IException * e)
+            {
+                error = e;
+            }
             graph.clear();
             childGraphs.kill();
             if (graphStats)
                 graphStats.clear();
+            if (error)
+                throw error;
         }
     }
 
