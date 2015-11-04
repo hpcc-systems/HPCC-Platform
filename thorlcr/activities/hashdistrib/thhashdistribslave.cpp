@@ -1000,7 +1000,7 @@ public:
         bucketSendSize = activity->getOptUInt(THOROPT_HDIST_BUCKET_SIZE, DISTRIBUTE_DEFAULT_OUT_BUFFER_SIZE);
         istop = _istop;
         inputBufferSize = activity->getOptUInt(THOROPT_HDIST_BUFFER_SIZE, DISTRIBUTE_DEFAULT_IN_BUFFER_SIZE);
-        pullBufferSize = DISTRIBUTE_PULL_BUFFER_SIZE;
+        pullBufferSize = activity->getOptUInt(THOROPT_HDIST_PULLBUFFER_SIZE, DISTRIBUTE_PULL_BUFFER_SIZE);
         selfstopped = false;
         pull = false;
 
@@ -1034,7 +1034,7 @@ public:
         ActPrintLog("Writer thread pool size : %d", writerPoolSize);
         candidateLimit = activity->getOptUInt(THOROPT_HDIST_CANDIDATELIMIT);
         ActPrintLog("candidateLimit : %d", candidateLimit);
-        ActPrintLog("inputBufferSize : %d, bucketSendSize = %d", inputBufferSize, bucketSendSize);
+        ActPrintLog("inputBufferSize : %d, bucketSendSize = %d, pullBufferSize=%d", inputBufferSize, bucketSendSize, pullBufferSize);
         targetWriterLimit = activity->getOptUInt(THOROPT_HDIST_TARGETWRITELIMIT);
         ActPrintLog("targetWriterLimit : %d", targetWriterLimit);
     }
