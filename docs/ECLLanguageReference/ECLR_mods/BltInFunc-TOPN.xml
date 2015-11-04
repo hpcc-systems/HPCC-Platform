@@ -90,16 +90,16 @@
   <emphasis>sorts</emphasis> order from the <emphasis>recordset</emphasis>.
   This is roughly equivalent to
   CHOOSEN(SORT(<emphasis>recordset</emphasis>,<emphasis>sorts</emphasis>),<emphasis>count</emphasis>)
-  but with simpler syntax that will also work for grouped
-  <emphasis>recordsets</emphasis> and local operations.</para>
+  but with simpler syntax. This also returns the top number of rows in each
+  group of GROUPed <emphasis>recordsets</emphasis> and local
+  operations.</para>
 
   <para>Example:</para>
 
-  <programlisting>y := TOPN(Person,1000,state,sex);
-  //first 1000 recs in state, sex order
-z := TOPN(Person,1000,sex,BEST('F')); //first 1000
-          females
-</programlisting>
+  <programlisting>y := TOPN(Person,1000,state,sex);     //first 1000 recs in state, sex order
+z := TOPN(Person,1000,sex,BEST('F')); //first 1000 females</programlisting>
 
-  <para>See Also: <link linkend="CHOOSEN">CHOOSEN</link>, <link linkend="SORT">SORT</link></para>
+  <para>See Also: <link linkend="CHOOSEN">CHOOSEN</link>, <link
+  linkend="SORT">SORT</link>, <link
+  linkend="GROUP_function">GROUP</link></para>
 </sect1>
