@@ -676,11 +676,12 @@ status_component() {
     log "${compName} ---> Stopped"
     printf "%-15s is stopped" "$compName"
   elif [[ ${compType} == "thor" ]]; then
-    if [[ -e ${runtime}/${compName}/thorgroup && -e ${runtime}/${compName}/slaves ]]; then
-      __slavenum=$(cat ${runtime}/${compName}/thorgroup | wc -l)
-      __hostnum=$(cat ${runtime}/${compName}/slaves | sort | uniq | wc -l)
-      log "${compName} ---> Running ( pid ${__pidValue} ) with {__slavenum} slaves across {__hostnum} hosts"
-      printf "%-15s ( pid %8s ) is running with %s slaves across %s hosts ..." "${compName}" "${__pidValue}" "${__slavenum}" "${__hostnum}"
+    if [[ -e ${runtime}/${compName}/slaves && -e ${runtime}/${compName}/setvars ]]; then
+      source ${runtime}/${compName}/setvars
+      __slaves=$(cat ${runtime}/${compName}/slaves | wc -l)
+      __slaveprocesses=$((${__slaves} * ${slavespernode}))
+      log "${compName} ---> Running ( pid ${__pidValue} ) with {__slaveprocesses} slave process(es)"
+      printf "%-15s ( pid %8s ) is running with %s slave process(es) ..." "${compName}" "${__pidValue}" "${__slaveprocesses}"
     else
       log "${compName} missing file in ${runtime}/${compName} necessary for status_component"
       printf "${compName} missing file in ${runtime}/${compName} necessary for status_component"

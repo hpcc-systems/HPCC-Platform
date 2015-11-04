@@ -110,28 +110,17 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             replyError(TE_FailedToRegisterSlave, "Thor master/slave version mismatch");
             return false;
         }
-        Owned<IGroup> group = deserializeIGroup(msg);
+        Owned<IGroup> rawGroup = deserializeIGroup(msg);
         globals->Release();
         globals = createPTree(msg);
         mergeCmdParams(globals); // cmd line
 
-        bool processPerSlave = globals->getPropBool("@processPerSlave", true);
         unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
-        unsigned basePort = getMachinePortBase();
-        if (processPerSlave)
-            setClusterGroup(masterNode, group);
-        else
-            setClusterGroup(masterNode, group, slavesPerNode, basePort, localThorPortInc);
+        unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
+        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+        setClusterGroup(masterNode, rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
 
-        SocketEndpoint myEp = queryMyNode()->endpoint();
-        unsigned _mySlaveNum = group->rank(queryMyNode())+1;
-        assertex(_mySlaveNum == mySlaveNum);
-        if (RANK_NULL == mySlaveNum)
-        {
-            replyError(TE_FailedToRegisterSlave, "Node not part of thorgroup");
-            return false;
-        }
         const char *_masterBuildTag = globals->queryProp("@masterBuildTag");
         const char *masterBuildTag = _masterBuildTag?_masterBuildTag:"no build tag";
         PROGLOG("Master build: %s", masterBuildTag);

@@ -2563,9 +2563,8 @@ void CMasterGraph::getFinalProgress()
         if (0 == msg.remaining())
             continue;
 
-        bool processPerSlave = globals->getPropBool("@processPerSlave", true);
-        unsigned slavesPerProcess = processPerSlave ? 1 : globals->getPropInt("@slavesPerNode", 1); // JCSMORE - should move somewhere common
-        for (unsigned sc=0; sc<slavesPerProcess; sc++)
+        unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1); // JCSMORE - should move somewhere common
+        for (unsigned sc=0; sc<channelsPerSlave; sc++)
         {
             unsigned slave;
             msg.read(slave);
