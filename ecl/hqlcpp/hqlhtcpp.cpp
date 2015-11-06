@@ -452,8 +452,12 @@ public:
                 return true;
             switch (search->getOperator())
             {
-            case no_selectnth:
             case no_newaggregate:
+                //Hash aggregate is NOT a trivial operation.
+                if (queryRealChild(search, 3))
+                    return false;
+                break;
+            case no_selectnth:
             case no_filter:
                 break;
             case no_select:
