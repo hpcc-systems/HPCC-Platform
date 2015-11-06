@@ -31,3 +31,6 @@
 [submodule "esp/src/crossfilter"]
 	path = esp/src/crossfilter
 	url = https://github.com/hpcc-systems/crossfilter.git
+[submodule "plugins/kafka/librdkafka"]
+	path = plugins/kafka/librdkafka
+	url = https://github.com/hpcc-systems/librdkafka.git
