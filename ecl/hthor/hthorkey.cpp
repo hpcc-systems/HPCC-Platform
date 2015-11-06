@@ -3429,6 +3429,12 @@ public:
         }
     }
 
+    virtual void done()
+    {
+        ldFile.clear();
+        CHThorThreadedActivityBase::done();
+    }
+
     virtual void initializeThreadPool()
     {
         threadPool.setown(createThreadPool("hthor keyed join fetch thread pool", &threadFactory));
