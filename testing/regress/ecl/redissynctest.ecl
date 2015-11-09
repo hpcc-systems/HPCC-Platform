@@ -166,7 +166,7 @@ INTEGER N2 := 1000;
 subDS := DATASET(N2, TRANSFORM({ integer a }, SELF.a := (INTEGER)myRedis.Subscribe('PubSubTest' + (STRING)COUNTER)));
 
 INTEGER pub(STRING channel) := FUNCTION
-        sl := Std.System.Debug.Sleep(2);
+        sl := Std.System.Debug.Sleep(10);
         value :=  myRedis.Publish(channel, '1');
      RETURN WHEN(value, sl, BEFORE);
 END;
@@ -174,7 +174,7 @@ pubDS := DATASET(N2, TRANSFORM({ integer a }, SELF.a := pub('PubSubTest' + (STRI
 
 INTEGER pub2(STRING channel) := FUNCTION
         sl := SEQUENTIAL(
-            Std.System.Debug.Sleep(2),
+            Std.System.Debug.Sleep(10),
             myRedis.Publish(channel, '3')//This pub is the one read by the sub.
             );
         value :=  myRedis.Publish(channel, '10000');//This pub isn't read by the sub, however the returned subscription count is present in the sum
