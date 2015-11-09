@@ -3908,6 +3908,11 @@ private:
         StringBuffer filter;
         filter.append("distinguishedName=").append(dn);
 
+        filter.replaceString("\\", "\\5c");//Replace special characters with valid UTF-8 string (see valueencoding rule in RFC 4515)
+        filter.replaceString("*", "\\2a");
+        filter.replaceString("(", "\\28");
+        filter.replaceString(")", "\\29");
+
         char        *attribute;
         LDAPMessage *message;
 
