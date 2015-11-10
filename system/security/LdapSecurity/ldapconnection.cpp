@@ -4515,7 +4515,7 @@ private:
             ptr = comma + 1;
         }
 
-        if (ptr && !organizationalUnitExists(ptr))
+        if (ptr && strstr(ptr,"ou=") && !organizationalUnitExists(ptr))
             createLdapBasedn(user, ptr, ptype);
 
         addOrganizationalUnit(user, oubuf.str(), ptr, ptype);
