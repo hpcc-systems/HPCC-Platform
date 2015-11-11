@@ -17,14 +17,18 @@
 
 cmd=$1
 ip=$2
-master=$3
-masterport=$4
-logpth=$5
-instancedir=$6
-deploydir=$7
-hpcc_compname=$8
-hpcc_setenv=$9
-export logfile="${logpth}/${hpcc_compname}/${10}"
+slavespernode=$3
+slaveport=$4
+slaveportinc=$5
+master=$6
+masterport=$7
+logpth=$8
+instancedir=$9
+deploydir=${10}
+hpcc_compname=${11}
+hpcc_setenv=${12}
+
+export logfile="${logpth}/${hpcc_compname}/${13}"
 
 source "$hpcc_setenv"
 source "$(dirname $hpcc_setenv)/../etc/init.d/hpcc_common"
@@ -55,7 +59,6 @@ stop_slaves()
 
 start_slaves()
 {
-
     # insuring dafilesrv is running on the machine as it is a prerequisite
     sudo /etc/init.d/dafilesrv status > /dev/null 2>&1
     if [[ $? -ne 0 ]];then
@@ -78,42 +81,45 @@ start_slaves()
     ulimit -Sn hard > /dev/null 2>&1
     [[ $? -ne 0 ]] && log "Failed to set ulimit for number of file descriptors open"
 
-    log "slave(${ip}) init"
+    log "slave init"
     log "slave(s) starting"
 
     # create symlink for easier identification of slaves by compName
     ln -s -f $deploydir/thorslave_lcr ${slavename}
 
-    # sync to current master thorgroup
-    log "rsync -e ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no ${master}:${instancedir}/thorgroup ${instancedir}/thorgroup.slave"
-    rsync -e "ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
+    # sync to current master slaves list
+    log "rsync -e ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no ${master}:${instancedir}/slaves ${instancedir}/slaves.tmp"
+    rsync -e "ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no" $master:$instancedir/slaves $instancedir/slaves.tmp
 
-    let "slavenum = 1";
-    for slave in $(cat $instancedir/thorgroup.slave); do
-        slaveip=${slave/:*/}
+    # NB: Would simply use slavesPerNode to create N slaves, but for backward compatilibty reasons, need to cater for clusters
+    # defined with arbitrary repeated IP's listed in their definitions.    
+    clusternodes=$(cat $instancedir/slaves.tmp | wc -l)
+    clusternode=1
+    for slaveip in $(cat $instancedir/slaves.tmp); do
         if [[ ${slaveip} = ${ip} ]]; then
-            slaveport=${slave/*:/}
-            if [[ "$slaveport" = "" ]]; then
-                slaveport=$THORSLAVEPORT
-            fi
-            log "$slavename  master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname"
-            ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
-            slavepid=$!
-            if [[ "$slavepid" -eq "0" ]]; then
-                log "failed to start"
-            else
-                log "slave pid $slavepid started"
-                PID_NAME="$PID/${slavename}_${slavenum}.pid"
-                echo $slavepid > $PID_NAME
-            fi
+            for (( slave=0; slave<${slavespernode}; slave++ )); do
+                slavenum=$(( ${clusternode} + (${slave} * ${clusternodes}) ))
+                log "$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname"
+                ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
+                slavepid=$!
+                if [[ "$slavepid" -eq "0" ]]; then
+                    log "failed to start"
+                else
+                    log "slave pid $slavepid started"
+                    PID_NAME="$PID/${slavename}_${slavenum}.pid"
+                    echo $slavepid > $PID_NAME
+                fi
+                slaveport=$(( ${slaveport} + ${slaveportinc} ))
+            done
         fi
-        let "slavenum += 1";
+        clusternode=$(( $clusternode + 1 ))
     done
+    rm -f $instancedir/slaves.tmp > /dev/null 2>&1
 }
 
 print_usage()
 {
-  log "usage: cmd ip master masterport logdir workingdir deploydir hpcc_compname hpcc_setenv logredirect"
+    log "usage: cmd ip slavespernode slaveport slaveportinc master masterport logdir workingdir deploydir hpcc_compname hpcc_setenv logredirect"
 }
 
 ##  Main

@@ -154,7 +154,7 @@ interface IPTArrayValue
     virtual void removeElement(unsigned idx) = 0;
     virtual unsigned elements() const = 0;
     virtual const void *queryValueRaw() const = 0;
-    virtual unsigned queryValueRawSize() const = 0;
+    virtual size32_t queryValueRawSize() const = 0;
 
     virtual void serialize(MemoryBuffer &tgt) = 0;
     virtual void deserialize(MemoryBuffer &src) = 0;
@@ -175,7 +175,7 @@ public:
     virtual void removeElement(unsigned idx) { remove(idx); }
     virtual unsigned elements() const { return ordinality(); }
     virtual const void *queryValueRaw() const { UNIMPLEMENTED; return NULL; }
-    virtual unsigned queryValueRawSize() const { UNIMPLEMENTED; return 0; }
+    virtual size32_t queryValueRawSize() const { UNIMPLEMENTED; return 0; }
 
 // serializable
     virtual void serialize(MemoryBuffer &tgt) { UNIMPLEMENTED; }
@@ -204,7 +204,7 @@ public:
     virtual void removeElement(unsigned idx) { UNIMPLEMENTED; }
     virtual unsigned elements() const {  UNIMPLEMENTED; return (unsigned)-1; }
     virtual const void *queryValueRaw() const { return get(); }
-    virtual unsigned queryValueRawSize() const { return length(); }
+    virtual size32_t queryValueRawSize() const { return (size32_t)length(); }
 
 // serilizable
     virtual void serialize(MemoryBuffer &tgt);

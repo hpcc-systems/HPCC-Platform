@@ -135,13 +135,13 @@ void RaiseOutOfMemException(int errcode, size_t wanted, size_t got,bool expected
     throw createOutOfMemException(errcode, wanted, got,expected);
 }
 
-MemoryAttr::MemoryAttr(size32_t _len)
+MemoryAttr::MemoryAttr(size_t _len)
 {
     ptr = checked_malloc(_len,-1); 
     len = _len;
 }
 
-MemoryAttr::MemoryAttr(size32_t _len, const void * _ptr)
+MemoryAttr::MemoryAttr(size_t _len, const void * _ptr)
 {
     len = 0;
     ptr = NULL;
@@ -157,13 +157,13 @@ MemoryAttr::MemoryAttr(const MemoryAttr & src)
 
 
 
-void MemoryAttr::set(size32_t _len, const void * _ptr)
+void MemoryAttr::set(size_t _len, const void * _ptr)
 {
     memcpy(allocate(_len), _ptr, _len);
 }
 
 
-void MemoryAttr::setOwn(size32_t _len, void * _ptr)
+void MemoryAttr::setOwn(size_t _len, void * _ptr)
 {
     free(ptr);
     len = _len;
@@ -188,9 +188,9 @@ void * MemoryAttr::detach()
 
 int MemoryAttr::compare(const MemoryAttr & m1, const MemoryAttr & m2)
 {
-    size32_t len1 = m1.length();
-    size32_t len2 = m2.length();
-    size32_t len = len1;
+    size_t len1 = m1.length();
+    size_t len2 = m2.length();
+    size_t len = len1;
     
     if (len1 > len2)
         len = len2;
@@ -200,7 +200,7 @@ int MemoryAttr::compare(const MemoryAttr & m1, const MemoryAttr & m2)
     return compare;
 }
 
-void *  MemoryAttr::allocate(size32_t _len)
+void *  MemoryAttr::allocate(size_t _len)
 { 
     if (_len==len)
         return ptr;
@@ -210,14 +210,14 @@ void *  MemoryAttr::allocate(size32_t _len)
     return ptr; 
 }
 
-void * MemoryAttr::ensure(size32_t _len)
+void * MemoryAttr::ensure(size_t _len)
 {
     if (_len <=len)
         return ptr;
     return reallocate(_len);
 }
 
-void *  MemoryAttr::reallocate(size32_t _len)
+void *  MemoryAttr::reallocate(size_t _len)
 { 
     if (_len==len)
         return ptr;
@@ -365,12 +365,13 @@ MemoryBuffer & MemoryBuffer::_reverse()
     return *this;
 }
 
-void MemoryBuffer::setBuffer(size32_t len, void * _buffer, bool takeOwnership)
+void MemoryBuffer::setBuffer(size_t len, void * _buffer, bool takeOwnership)
 {
+    assertex((size32_t)len == len);
     kill();
     buffer = (char *) _buffer;
     if (len) assertex(buffer);
-    curLen = maxLen = len;
+    curLen = maxLen = (size32_t)len;
     ownBuffer = takeOwnership;
     readPos = 0;
 }
@@ -436,10 +437,11 @@ void MemoryBuffer::swapWith(MemoryBuffer & other)
 //-----------------------------------------------------------------------
 
 
-MemoryBuffer::MemoryBuffer(size32_t initial)
+MemoryBuffer::MemoryBuffer(size_t initial)
 {
+    assertex((size32_t)initial == initial);
     init();
-    _realloc(initial);
+    _realloc((size32_t)initial);
 }
 
 MemoryBuffer::MemoryBuffer(MemoryBuffer & value)
@@ -447,10 +449,11 @@ MemoryBuffer::MemoryBuffer(MemoryBuffer & value)
     assertex(!"This should never be used");
 }
 
-MemoryBuffer::MemoryBuffer(size32_t len, const void * newBuffer)
+MemoryBuffer::MemoryBuffer(size_t len, const void * newBuffer)
 {
     init();
-    append(len, newBuffer);
+    assertex((size32_t)len == len);
+    append((size32_t)len, newBuffer);
 }
 
 MemoryBuffer & MemoryBuffer::append(char value)
@@ -855,7 +858,7 @@ bool MemoryBuffer::setSwapEndian(bool swap)
 
 MemoryBuffer & serialize(MemoryBuffer & buffer, const MemoryAttr & value)
 {
-    unsigned length = value.length();
+    size32_t length = (size32_t)value.length();
     buffer.append(length).append(length, value.get());
     return buffer;
 }

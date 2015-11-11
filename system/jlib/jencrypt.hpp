@@ -26,8 +26,8 @@
 
 //for AES, keylen must be 16, 24, or 32 Bytes
 
-extern jlib_decl MemoryBuffer &aesEncrypt(const void *key, unsigned keylen, const void *input, unsigned inlen, MemoryBuffer &output);
-extern jlib_decl MemoryBuffer &aesDecrypt(const void *key, unsigned keylen, const void *input, unsigned inlen, MemoryBuffer &output);
+extern jlib_decl MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
+extern jlib_decl MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
 
 #define encrypt _LogProcessError12
 #define decrypt _LogProcessError15
@@ -43,15 +43,15 @@ class Csimplecrypt
     unsigned n;
     size32_t blksize;
 public:
-    Csimplecrypt(const byte *key, size32_t keysize, size32_t blksize)
+    Csimplecrypt(const byte *key, size32_t keysize, size32_t _blksize)
     {
-        n = blksize/sizeof(unsigned);
-        blksize = n*sizeof(unsigned);
+        n = (unsigned)(_blksize/sizeof(unsigned));
+        blksize = (size32_t)(n*sizeof(unsigned));
         r = (unsigned *)malloc(blksize);
         byte * z = (byte *)r;
         size32_t ks = keysize;
         const byte *k = key;
-        for (unsigned i=0;i<blksize;i++) {
+        for (size32_t i=0;i<blksize;i++) {
             z[i] = (byte)(*k+i);
             if (--ks==0) {
                 k = key;

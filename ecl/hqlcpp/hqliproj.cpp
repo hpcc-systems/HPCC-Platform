@@ -2942,6 +2942,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 args.append(*next.getClear());
             }
             transformed.setown(expr->clone(args));
+            transformed.setown(updateSelectors(transformed, expr));
             logChange("Passthrough modified", expr, complexExtra->outputFields);
         }
         else
@@ -3213,7 +3214,6 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
     {
     case childdataset_none: 
     case childdataset_many_noscope:
-    case childdataset_many:
     case childdataset_if:
     case childdataset_case:
     case childdataset_map:
@@ -3221,6 +3221,9 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
         return LINK(newExpr);
         //None of these have any scoped arguments, so no need to remove them
         break;
+    case childdataset_many:
+        //The selectors listed in the sorted list may need updating if nested records have changed
+        return updateActiveSelectorFields(newExpr, oldExpr->queryRecord(), newExpr->queryRecord(), getNumChildTables(newExpr));
     case childdataset_dataset:
         {
             return updateMappedFields(newExpr, oldDs->queryNormalizedSelector(), newDs->queryNormalizedSelector(), 1);

@@ -478,7 +478,7 @@ public:
     virtual size32_t length() 
     { 
         ensureLoaded();
-        return fileContents.length()-1;
+        return (size32_t)(fileContents.length()-1);
     }
 
 private:

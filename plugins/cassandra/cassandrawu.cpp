@@ -2973,7 +2973,7 @@ class CCasssandraWorkUnitFactory : public CWorkUnitFactory, implements ICassandr
 {
     IMPLEMENT_IINTERFACE;
 public:
-    CCasssandraWorkUnitFactory(const IPropertyTree *props) : cluster(cass_cluster_new()), randomizeSuffix(0), randState((unsigned) get_cycles_now()), cacheRetirer(*this)
+    CCasssandraWorkUnitFactory(const SharedObject *_dll, const IPropertyTree *props) : cluster(cass_cluster_new()), randomizeSuffix(0), randState((unsigned) get_cycles_now()), cacheRetirer(*this)
     {
         StringArray options;
         Owned<IPTreeIterator> it = props->getElements("Option");
@@ -3030,6 +3030,7 @@ public:
             cluster.disconnect();
         }
         cacheRetirer.start();
+        LINK(_dll);  // Yes, this leaks. Not really sure how to avoid that.
     }
 
     ~CCasssandraWorkUnitFactory()
@@ -3038,6 +3039,11 @@ public:
         cacheRetirer.join();
         if (traceLevel)
             DBGLOG("CCasssandraWorkUnitFactory destroyed");
+    }
+    virtual bool initializeStore()
+    {
+        createRepository();
+        return true;
     }
     virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const
     {
@@ -3628,7 +3634,7 @@ public:
         CassandraSession s(cass_session_new());
         CassandraFuture future(cass_session_connect(s, cluster.queryCluster()));
         future.wait("connect without keyspace");
-        VStringBuffer create("CREATE KEYSPACE %s WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' } ;", cluster.queryKeySpace()); // MORE - options from props? Not 100% sure if they are appropriate.
+        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' };", cluster.queryKeySpace()); // MORE - options from props? Not 100% sure if they are appropriate.
         executeSimpleCommand(s, create);
         s.set(NULL);
         cluster.connect();
@@ -3661,16 +3667,20 @@ private:
     {
         StringBuffer schema;
         executeSimpleCommand(querySession(), describeTable(versionMappings, schema));
-        VStringBuffer versionInfo("<Version major='%d' minor='%d'/>", majorVersion, minorVersion);
-        CassandraBatch versionBatch(cass_batch_new(CASS_BATCH_TYPE_LOGGED));
-        Owned<IPTree> pt = createPTreeFromXMLString(versionInfo);
-        for (int i = 0; i < NUM_PARTITIONS; i++)
+        Owned<IPTree> oldVersion = getVersionInfo();
+        if (!oldVersion)
         {
-            pt->setPropInt("@partition", i);
-            simpleXMLtoCassandra(this, versionBatch, versionMappings, pt, NULL);
+            VStringBuffer versionInfo("<Version major='%d' minor='%d'/>", majorVersion, minorVersion);
+            CassandraBatch versionBatch(cass_batch_new(CASS_BATCH_TYPE_LOGGED));
+            Owned<IPTree> pt = createPTreeFromXMLString(versionInfo);
+            for (int i = 0; i < NUM_PARTITIONS; i++)
+            {
+                pt->setPropInt("@partition", i);
+                simpleXMLtoCassandra(this, versionBatch, versionMappings, pt, NULL);
+            }
+            CassandraFuture futureBatch(cass_session_execute_batch(querySession(), versionBatch));
+            futureBatch.wait("createVersionTable");
         }
-        CassandraFuture futureBatch(cass_session_execute_batch(querySession(), versionBatch));
-        futureBatch.wait("createVersionTable");
     }
     IPTree *getVersionInfo()
     {
@@ -4212,7 +4222,7 @@ private:
 
 } // namespace
 
-extern "C" EXPORT IWorkUnitFactory *createWorkUnitFactory(const IPropertyTree *props)
+extern "C" EXPORT IWorkUnitFactory *createWorkUnitFactory(const SharedObject *dll, const IPropertyTree *props)
 {
-    return new cassandraembed::CCasssandraWorkUnitFactory(props);
+    return new cassandraembed::CCasssandraWorkUnitFactory(dll, props);
 }

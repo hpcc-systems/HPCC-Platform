@@ -635,7 +635,7 @@ void dfscsv(const char *dali,IUserDescriptor *udesc)
 
 //=============================================================================
 
-static void dfsgroup(const char *name, const char *outputFilename, bool cluster)
+static void writeGroup(IGroup *group, const char *name, const char *outputFilename)
 {
     Owned<IFileIOStream> io;
     if (outputFilename)
@@ -643,27 +643,6 @@ static void dfsgroup(const char *name, const char *outputFilename, bool cluster)
         OwnedIFile iFile = createIFile(outputFilename);
         OwnedIFileIO iFileIO = iFile->open(IFOcreate);
         io.setown(createIOStream(iFileIO));
-    }
-    Owned<IGroup> group;
-    if (cluster)
-    {
-        group.setown(getClusterGroup(name, "ThorCluster", false));
-        Owned<INodeIterator> iter = group->getIterator();
-        IArrayOf<INode> nodes;
-        ForEach(*iter)
-        {
-            SocketEndpoint ep = iter->query().endpoint();
-            ep.port = 0;
-            nodes.append(*createINode(ep));
-        }
-        group.setown(createIGroup(nodes.ordinality(), nodes.getArray()));
-    }
-    else
-        group.setown(queryNamedGroupStore().lookup(name));
-    if (!group)
-    {
-        ERRLOG("cannot find group %s",name);
-        return;
     }
     StringBuffer eps;
     for (unsigned i=0;i<group->ordinality();i++)
@@ -677,6 +656,28 @@ static void dfsgroup(const char *name, const char *outputFilename, bool cluster)
         else
             OUTLOG("%s",eps.str());
     }
+}
+
+static void dfsGroup(const char *name, const char *outputFilename)
+{
+    Owned<IGroup> group = queryNamedGroupStore().lookup(name);
+    if (!group)
+    {
+        ERRLOG("cannot find group %s",name);
+        return;
+    }
+    writeGroup(group, name, outputFilename);
+}
+
+static void clusterGroup(const char *name, const char *outputFilename)
+{
+    Owned<IGroup> group = getClusterNodeGroup(name, "ThorCluster");
+    if (!group)
+    {
+        ERRLOG("cannot find group %s",name);
+        return;
+    }
+    writeGroup(group, name, outputFilename);
 }
 
 //=============================================================================
@@ -2806,11 +2807,11 @@ int main(int argc, char* argv[])
                     }
                     else if (stricmp(cmd,"dfsgroup")==0) {
                         CHECKPARAMS(1,2);
-                        dfsgroup(params.item(1),(np>1)?params.item(2):NULL, false);
+                        dfsGroup(params.item(1),(np>1)?params.item(2):NULL);
                     }
                     else if (stricmp(cmd,"clusternodes")==0) {
                         CHECKPARAMS(1,2);
-                        dfsgroup(params.item(1),(np>1)?params.item(2):NULL, true);
+                        clusterGroup(params.item(1),(np>1)?params.item(2):NULL);
                     }
                     else if (stricmp(cmd,"dfsmap")==0) {
                         CHECKPARAMS(1,1);

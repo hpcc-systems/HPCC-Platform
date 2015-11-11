@@ -142,7 +142,7 @@ HINSTANCE HelperDll::getInstance() const
 
 void * HelperDll::getEntry(const char * name) const
 {
-    return GetSharedProcedure(so.getInstanceHandle(), name);
+    return so.getEntry(name);
 }
 
 bool HelperDll::IsShared()

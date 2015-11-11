@@ -9067,20 +9067,14 @@ class CInitGroups
         grp->setProp("@name", name);
     }
 
-#define DEFAULT_SLAVEBASEPORT 20100 // defaults are in thor.xsl.in AND init_thor at the moment
-#define DEFAULT_LOCALTHORPORTINC 200
     IGroup *getGroupFromCluster(GroupType groupType, IPropertyTree &cluster, bool expand)
     {
         SocketEndpointArray eps;
         const char *processName=NULL;
-        unsigned slavePort = 0;
-        unsigned localThorPortInc = 0;
         switch (groupType)
         {
             case grp_thor:
                 processName = "ThorSlaveProcess";
-                slavePort = cluster.getPropInt("@slaveport", DEFAULT_SLAVEBASEPORT);
-                localThorPortInc = cluster.getPropInt("@localThorPortInc", DEFAULT_LOCALTHORPORTINC);
                 break;
             case grp_thorspares:
                 processName = "ThorSpareProcess";
@@ -9127,7 +9121,6 @@ class CInitGroups
                     break;
                 case grp_thor:
                 case grp_thorspares:
-                    ep.port = slavePort;
                     eps.append(ep);
                     break;
                 default:
@@ -9137,20 +9130,17 @@ class CInitGroups
         if (!eps.ordinality())
             return NULL;
         Owned<IGroup> grp;
-        unsigned slavesPerNode = 0;
-        if (grp_thor == groupType)
-            slavesPerNode = cluster.getPropInt("@slavesPerNode", 1);
-        if (expand && slavesPerNode)
+        if (grp_thor != groupType)
+            expand = false;
+        if (expand)
         {
+            unsigned slavesPerNode = cluster.getPropInt("@slavesPerNode", 1);
+            unsigned channelsPerSlave = cluster.getPropInt("@channelsPerSlave", 1);
             SocketEndpointArray msEps;
-            for (unsigned s=0; s<slavesPerNode; s++)
+            for (unsigned s=0; s<(slavesPerNode*channelsPerSlave); s++)
             {
                 ForEachItemIn(e, eps)
-                {
-                    SocketEndpoint ep = eps.item(e);
-                    ep.port = slavePort + (s * localThorPortInc);
-                    msEps.append(ep);
-                }
+                    msEps.append(eps.item(e));
             }
             grp.setown(createIGroup(msEps));
         }
@@ -9220,7 +9210,6 @@ class CInitGroups
         Owned<IGroup> group = getGroupFromCluster(groupType, cluster, true);
         if (!group)
             return NULL;
-        // NB: creates IP group, ignore any ports in group
         return createClusterGroup(groupType, group, dir, realCluster);
     }
 
@@ -9248,7 +9237,7 @@ class CInitGroups
                 break;
             case grp_thorspares:
                 getClusterSpareGroupName(cluster, gname);
-                realCluster = false;
+                oldRealCluster = realCluster = false;
                 break;
             case grp_roxie:
                 gname.append(cluster.queryProp("@name"));
@@ -9283,13 +9272,18 @@ class CInitGroups
                 VStringBuffer msg("Forcing new group layout for %s [ matched active = %s, matched old environment = %s ]", gname.str(), matchExisting?"true":"false", matchOldEnv?"true":"false");
                 WARNLOG("%s", msg.str());
                 messages.append(msg).newline();
-                matchExisting = matchOldEnv = false;
+                matchOldEnv = false;
             }
             else
             {
                 VStringBuffer msg("Active cluster '%s' group layout does not match environment [matched old environment=%s]", gname.str(), matchOldEnv?"true":"false");
                 LOG(MCoperatorWarning, unknownJob, "%s", msg.str());                                                                        \
                 messages.append(msg).newline();
+                if (existingClusterGroup)
+                {
+                    // NB: not used at moment, but may help spot clusters that have swapped nodes
+                    existingClusterGroup->setPropBool("@mismatched", true);
+                }
             }
         }
         if (!existingClusterGroup || (!matchExisting && !matchOldEnv))
@@ -9551,14 +9545,35 @@ bool removeClusterSpares(const char *clusterName, const char *type, SocketEndpoi
     return init.removeSpares(clusterName, type, eps, response);
 }
 
-IGroup *getClusterGroup(const char *clusterName, const char *type, bool expand, unsigned timems)
+IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned timems)
 {
-    CInitGroups init(timems);
-    VStringBuffer cluster("/Environment/Software/%s[@name=\"%s\"]", type, clusterName);
-    Owned<IRemoteConnection> conn = querySDS().connect(cluster.str(), myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+    VStringBuffer clusterPath("/Environment/Software/%s[@name=\"%s\"]", type, clusterName);
+    Owned<IRemoteConnection> conn = querySDS().connect(clusterPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
     if (!conn)
         return NULL;
-    return init.getGroupFromCluster(type, *conn->queryRoot(), expand);
+    IPropertyTree &cluster = *conn->queryRoot();
+    StringBuffer nodeGroupName;
+    getClusterGroupName(cluster, nodeGroupName);
+    if (0 == nodeGroupName.length())
+        throwUnexpected();
+
+    /* NB: Due to the way node groups and swapNode work, we need to return the IP's from the node group corresponding to the cluster
+     * which may no longer match the cluster IP's due to node swapping.
+     * As the node group is an expanded form of the cluster group (with a IP per partition/slave), with the cluster group repeated
+     * N times, where N is slavesPerNode*channelsPerSlave, return the first M (cluster group width) IP's of the node group.
+     * Ideally the node group representation would change to match the cluster group definition, but that require a lot of changes
+     * to DFS and elsewhere.
+     */
+    Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(nodeGroupName);
+    CInitGroups init(timems);
+    Owned<IGroup> expandedClusterGroup = init.getGroupFromCluster(type, cluster, true);
+    if (nodeGroup->ordinality() != expandedClusterGroup->ordinality()) // sanity check
+        throwUnexpected();
+    Owned<IGroup> clusterGroup = init.getGroupFromCluster(type, cluster, false);
+    ICopyArrayOf<INode> nodes;
+    for (unsigned n=0; n<clusterGroup->ordinality(); n++)
+        nodes.append(nodeGroup->queryNode(n));
+    return createIGroup(nodes.ordinality(), nodes.getArray());
 }
 
 

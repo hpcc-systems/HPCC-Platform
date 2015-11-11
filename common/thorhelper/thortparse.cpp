@@ -55,7 +55,7 @@ bool GrammarSymbol::canMerge(const GrammarSymbol * other)
     }
 
     assertex(features.info == other->features.info);
-    unsigned len = features.values.length();
+    size_t len = features.values.length();
     return memcmp(features.values.get(), other->features.values.get(), len) == 0;
 }
 
@@ -119,7 +119,7 @@ NonTerminal::NonTerminal(symbol_id _id, IAtom * _name, FeatureValue & _features,
     }
 
     name = _name;
-    unsigned len = _features.values.length();
+    size_t len = _features.values.length();
     features.info = _features.info;
     if (len)
         features.values.setOwn(len, _features.values.detach());

@@ -73,11 +73,6 @@
 #define SHUTDOWN_IN_PARALLEL 20
 
 
-#define DEFAULT_THORMASTERPORT 20000
-#define DEFAULT_THORSLAVEPORT 20100
-#define DEFAULT_SLAVEPORTINC 200
-
-
 class CRegistryServer : public CSimpleInterface
 {
     unsigned msgDelay, slavesRegistered;
@@ -375,13 +370,13 @@ CRegistryServer *CRegistryServer::registryServer = NULL;
 //
 //////////////////
 
-bool checkClusterRelicateDAFS(IGroup *grp)
+bool checkClusterRelicateDAFS(IGroup &grp)
 {
     // check the dafilesrv is running (and right version) 
     unsigned start = msTick();
     PROGLOG("Checking cluster replicate nodes");
     SocketEndpointArray epa;
-    grp->getSocketEndpoints(epa);
+    grp.getSocketEndpoints(epa);
     ForEachItemIn(i1,epa) {
         epa.element(i1).port = getDaliServixPort();
     }
@@ -505,7 +500,6 @@ int main( int argc, char *argv[]  )
     removeSentinelFile(sentinelFile);
 
     setMachinePortBase(thorEp.port);
-    unsigned slavePort = globals->hasProp("@slaveport")?atoi(globals->queryProp("@slaveport")):THOR_BASESLAVE_PORT;
 
     EnableSEHtoExceptionMapping(); 
 #ifndef __64BIT__
@@ -565,22 +559,19 @@ int main( int argc, char *argv[]  )
             globals->setProp("@name", thorname);
         }
 
-        if (!globals->getProp("@nodeGroup", nodeGroup)) {
+        if (!globals->getProp("@nodeGroup", nodeGroup))
+        {
             nodeGroup.append(thorname);
             globals->setProp("@nodeGroup", thorname);
         }
-        bool processPerSlave = globals->getPropBool("@processPerSlave", true);
-        Owned<IGroup> rawGroup = getClusterGroup(thorname, "ThorCluster", processPerSlave);
         unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-        if (processPerSlave)
-            setClusterGroup(queryMyNode(), rawGroup);
-        else
+        unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
+        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+        Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
+        setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
+        if (globals->getPropBool("@replicateOutputs")&&globals->getPropBool("@validateDAFS",true)&&!checkClusterRelicateDAFS(queryNodeGroup()))
         {
-            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
-            unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
-            setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, slaveBasePort, localThorPortInc);
-        }
-        if (globals->getPropBool("@replicateOutputs")&&globals->getPropBool("@validateDAFS",true)&&!checkClusterRelicateDAFS(rawGroup)) {
             FLLOG(MCoperatorError, thorJob, "ERROR: Validate failure(s) detected, exiting Thor");
             return globals->getPropBool("@validateDAFSretCode"); // default is no recycle!
         }
@@ -633,9 +624,9 @@ int main( int argc, char *argv[]  )
                     mmemSize = gmemSize; // default to same as slaves
             }
             unsigned perSlaveSize = gmemSize;
-            if (processPerSlave && slavesPerNode>1)
+            if (slavesPerNode>1)
             {
-                PROGLOG("Sharing globalMemorySize(%d MB), between %d slave. %d MB each", perSlaveSize, slavesPerNode, perSlaveSize / slavesPerNode);
+                PROGLOG("Sharing globalMemorySize(%d MB), between %d slave processes. %d MB each", perSlaveSize, slavesPerNode, perSlaveSize / slavesPerNode);
                 perSlaveSize /= slavesPerNode;
             }
             globals->setPropInt("@globalMemorySize", perSlaveSize);
@@ -648,14 +639,6 @@ int main( int argc, char *argv[]  )
             }
             if (0 == mmemSize)
                 mmemSize = gmemSize;
-            if (!processPerSlave)
-            {
-                /* Preserving previous semantics, if globalMemorySize defined, it defined how much per slave.
-                 * So if N virtual slaves, the total memory needs to be globalMemorySize * slavesPerNode
-                 * The slave process will give each slave channel row manager a split of the total
-                 */
-                globals->setPropInt("@globalMemorySize", gmemSize * slavesPerNode);
-            }
         }
         bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
         gmemAllowHugePages = globals->getPropBool("@heapMasterUseHugePages", gmemAllowHugePages);

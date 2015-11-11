@@ -31,21 +31,21 @@ class jlib_decl MemoryAttr
 {
 public:
     inline MemoryAttr() { len = 0; ptr = NULL; }
-    MemoryAttr(size32_t _len);                      
-    MemoryAttr(size32_t _len, const void * _ptr);
+    MemoryAttr(size_t _len);
+    MemoryAttr(size_t _len, const void * _ptr);
     MemoryAttr(const MemoryAttr & src);
     inline ~MemoryAttr() { free(ptr); }
 
-    void *              allocate(size32_t _len);
+    void *              allocate(size_t _len);
     void                clear();
     void *              detach();
-    void *              ensure(size32_t _len);
-    void *              reallocate(size32_t _len);
+    void *              ensure(size_t _len);
+    void *              reallocate(size_t _len);
     inline const void * get() const         { return ptr; }
-    inline size32_t     length() const      { return len; }
+    inline size_t       length() const      { return len; }
     inline void *       mem() const         { return ptr; }
-    void                set(size32_t _len, const void * _ptr);
-    void                setOwn(size32_t _len, void * _ptr);
+    void                set(size_t _len, const void * _ptr);
+    void                setOwn(size_t _len, void * _ptr);
     
     static int          compare(const MemoryAttr & m1, const MemoryAttr & m2);
 
@@ -53,7 +53,7 @@ public:
 
 private:
     void * ptr;
-    size32_t len;
+    size_t len;
 };
 
 
@@ -135,8 +135,8 @@ class jlib_decl MemoryBuffer
 {
 public:
     inline MemoryBuffer()  { init(); }
-    MemoryBuffer(size32_t initial);
-    MemoryBuffer(size32_t len, const void * buffer);
+    MemoryBuffer(size_t initial);
+    MemoryBuffer(size_t len, const void * buffer);
     inline ~MemoryBuffer() { kill(); }
     
     MemoryBuffer &  rewrite(size32_t pos = 0);
@@ -202,7 +202,7 @@ public:
     inline size32_t remaining() const { return curLen - readPos; }
 
     void            resetBuffer();
-    void            setBuffer(size32_t len, void * buffer, bool takeOwnership=false);
+    void            setBuffer(size_t len, void * buffer, bool takeOwnership=false);
     void            setLength(unsigned len);
     void            setWritePos(unsigned len);      // only use for back patching data
     void *          detach();
@@ -248,7 +248,7 @@ private:
 class jlib_decl DelayedSizeMarker
 {
     MemoryBuffer &mb;
-    unsigned pos;
+    size32_t pos;
 public:
     DelayedSizeMarker(MemoryBuffer &_mb) : mb(_mb)
     {
@@ -261,7 +261,7 @@ public:
     }
     inline size32_t size() const
     {
-        return mb.length() - (pos + sizeof(size32_t));
+        return (size32_t)(mb.length() - (pos + sizeof(size32_t)));
     }
     // resets position marker and writes another size to be filled subsequently by write()
     inline void restart()
@@ -287,9 +287,9 @@ public:
 
     virtual const void * data() const { return buffer.toByteArray(); }
     virtual void clear() { } // clearing when appending does nothing
-    virtual void setLen(const void * val, unsigned length) { buffer.append(length, val); }
-    virtual unsigned length() const { return buffer.length(); }
-    virtual void * reserve(unsigned length) { return buffer.reserveTruncate(length); }
+    virtual void setLen(const void * val, size_t length) { buffer.append((size32_t)length, val); }
+    virtual size_t length() const { return buffer.length(); }
+    virtual void * reserve(size_t length) { return buffer.reserveTruncate((size32_t)length); }
 
 private:
     MemoryBuffer & buffer;
@@ -302,10 +302,10 @@ public:
      IMPLEMENT_IINTERFACE;
 
      virtual const char * str() const;
-     virtual void set(const char *val) { attr.set((size32_t)strlen(val), val); }
+     virtual void set(const char *val) { attr.set(strlen(val), val); }
      virtual void clear() { attr.clear(); } // clearing when appending does nothing
      virtual void setLen(const char *val, unsigned length) { attr.set(length, val); }
-     virtual unsigned length() const { return attr.length(); };
+     virtual unsigned length() const { return (size32_t)attr.length(); };
 
 protected:
      MemoryAttr & attr;
@@ -319,12 +319,12 @@ public:
 
     virtual const void * data() const { return *pData; };
     virtual void clear() { free(*pData); *pData = NULL; *pLen = 0; };
-    virtual void setLen(const void * val, unsigned length) { free(*pData); *pData = malloc(length); memcpy(*pData, val, length); *pLen = length; }
-    virtual unsigned length() const { return *pLen; };
-    virtual void * reserve(unsigned length) { free(*pData); *pData = malloc(length); *pLen = length; return *pData; }
+    virtual void setLen(const void * val, size_t length) { free(*pData); *pData = malloc(length); memcpy(*pData, val, length); *pLen = (size32_t)length; }
+    virtual size_t length() const { return *pLen; };
+    virtual void * reserve(size_t length) { free(*pData); *pData = malloc(length); *pLen = (size32_t)length; return *pData; }
 
 private:
-    unsigned * pLen;
+    unsigned * pLen; // Should really be a size_t
     void * * pData;
 };
 
@@ -332,17 +332,17 @@ private:
 class jlib_decl Fixed2IDataVal : public CInterface, implements IDataVal
 {
 public:
-    Fixed2IDataVal(unsigned _len, void * _ptr) { len = _len; ptr = _ptr; }
+    Fixed2IDataVal(size_t _len, void * _ptr) { len = _len; ptr = _ptr; }
     IMPLEMENT_IINTERFACE;
 
     virtual const void * data() const { return ptr; };
     virtual void clear() { memset(ptr, 0, len); };
-    virtual void setLen(const void * val, unsigned length) { assertex(length <= len); memcpy(ptr, val, length); }
-    virtual unsigned length() const { return len; };
-    virtual void * reserve(unsigned length) { assertex(length <= len); return ptr; }
+    virtual void setLen(const void * val, size_t length) { assertex(length <= len); memcpy(ptr, val, length); }
+    virtual size_t length() const { return len; };
+    virtual void * reserve(size_t length) { assertex(length <= len); return ptr; }
 
 private:
-    unsigned len;
+    size_t len;
     void * ptr;
 };
 

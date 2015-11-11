@@ -41,9 +41,6 @@ export THORNAME=<xsl:value-of select="@name"/>
 
     <xsl:if test="@nodeGroup">
 export THORPRIMARY=<xsl:value-of select="@nodeGroup"/>
-        <xsl:if test="string(@name) != string(@nodeGroup)">
-export THORSECONDARY=<xsl:value-of select="@name"/>
-        </xsl:if>
     </xsl:if>
 export THORMASTER=<xsl:call-template name="getNetAddress">
                     <xsl:with-param name="computer" select="ThorMasterProcess/@computer"/>
@@ -64,6 +61,10 @@ export slavespernode=<xsl:call-template name="setOrDefault">
                         <xsl:with-param name="attribute" select="@slavesPerNode"/>
                         <xsl:with-param name="default" select="'1'"/>
                      </xsl:call-template>
+export channelsperslave=<xsl:call-template name="setOrDefault">
+                        <xsl:with-param name="attribute" select="@channelsPerSlave"/>
+                        <xsl:with-param name="default" select="'1'"/>
+                     </xsl:call-template>
 export DALISERVER=<xsl:call-template name="getDaliServers">
                     <xsl:with-param name="daliServer" select="@daliServers"/>
                 </xsl:call-template>
@@ -71,10 +72,6 @@ export localthor=<xsl:call-template name="setOrDefault">
                     <xsl:with-param name="attribute" select="@localThor"/>
                     <xsl:with-param name="default" select="'false'"/>
                 </xsl:call-template>
-export processperslave=<xsl:call-template name="setOrDefault">
-                            <xsl:with-param name="attribute" select="@processPerSlave"/>
-                            <xsl:with-param name="default" select="'true'"/>
-                       </xsl:call-template>
 export breakoutlimit=<xsl:call-template name="setOrDefault">
                         <xsl:with-param name="attribute" select="Storage/@breakoutLimit"/>
                         <xsl:with-param name="default" select="'3600'"/>

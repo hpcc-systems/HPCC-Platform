@@ -121,7 +121,7 @@ public:
 #elif defined __FreeBSD__ || defined __APPLE__
         thandle = (int)(memsize_t)threadid;
 #else
-        thandle = threadid; 
+        thandle = (int)threadid;
 #endif
         tid = tidlog;
         return getName(); 

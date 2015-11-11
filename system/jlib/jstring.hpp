@@ -490,7 +490,7 @@ inline StringBuffer &appendJSONStringValue(StringBuffer& s, const char *name, un
 
 inline StringBuffer &appendJSONStringValue(StringBuffer& s, const char *name, const char *value, bool encode, bool quoted=true)
 {
-    return appendJSONStringValue(s, name, value ? strlen(value) : 0, value, encode, quoted);
+    return appendJSONStringValue(s, name, (size32_t)(value ? strlen(value) : 0), value, encode, quoted);
 }
 
 template <typename type>

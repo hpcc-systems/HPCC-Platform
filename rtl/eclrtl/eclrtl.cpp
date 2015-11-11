@@ -440,10 +440,10 @@ void normalizeUnicodeString(UnicodeString const & in, UnicodeString & out)
 
 // padding
 
-void multimemset(char * out, unsigned outlen, char const * in, unsigned inlen)
+static void multimemset(char * out, size_t outlen, char const * in, size_t inlen)
 {
-    unsigned outpos = 0;
-    unsigned inpos = 0;
+    size_t outpos = 0;
+    size_t inpos = 0;
     while(outpos < outlen)
     {
         out[outpos++] = in[inpos++];
@@ -468,14 +468,14 @@ MODULE_EXIT()
 
 UChar unicodeSpace = 0x0020;
 
-void codepageBlankFill(char const * codepage, char * out, unsigned len)
+void codepageBlankFill(char const * codepage, char * out, size_t len)
 {
     CriticalBlock b(ubcCrit);
     MemoryAttr * cached = unicodeBlankCache->getValue(codepage);
     if(cached)
     {
         char const * blank = (char const *)cached->get();
-        size32_t blanklen = cached->length();
+        size_t blanklen = cached->length();
         if(blanklen==1)
             memset(out, *blank, len);
         else

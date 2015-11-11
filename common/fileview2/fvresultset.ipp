@@ -199,7 +199,7 @@ public:
     void serialize(MemoryBuffer & buffer);
 
 protected:
-    bool matches(const byte * rowValue, unsigned valueLen, const byte * value);
+    bool matches(const byte * rowValue, size32_t valueLen, const byte * value);
 
 protected:
     MemoryAttrArray values;

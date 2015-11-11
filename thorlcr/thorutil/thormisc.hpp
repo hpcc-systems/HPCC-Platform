@@ -50,8 +50,9 @@
 #define THOROPT_COMPRESS_SPILLS       "compressInternalSpills"  // Compress internal spills, e.g. spills created by lookahead or sort gathering  (default = true)
 #define THOROPT_HDIST_SPILL           "hdistSpill"              // Allow distribute receiver to spill to disk, rather than blocking              (default = true)
 #define THOROPT_HDIST_WRITE_POOL_SIZE "hdistSendPoolSize"       // Distribute send thread pool size                                              (default = 16)
-#define THOROPT_HDIST_BUCKET_SIZE     "hdOutBufferSize"      // Distribute target bucket send size                                            (default = 1MB)
-#define THOROPT_HDIST_BUFFER_SIZE     "hdInBufferSize"       // Distribute send buffer size (for all targets)                                 (default = 32MB)
+#define THOROPT_HDIST_BUCKET_SIZE     "hdOutBufferSize"         // Distribute target bucket send size                                            (default = 1MB)
+#define THOROPT_HDIST_BUFFER_SIZE     "hdInBufferSize"          // Distribute send buffer size (for all targets)                                 (default = 32MB)
+#define THOROPT_HDIST_PULLBUFFER_SIZE "hdPullBufferSize"        // Distribute pull buffer size (receiver side limit, before spilling)
 #define THOROPT_HDIST_CANDIDATELIMIT  "hdCandidateLimit"        // Limits # of buckets to push to the writers when send buffer is full           (default = is 50% largest)
 #define THOROPT_HDIST_TARGETWRITELIMIT "hdTargetLimit"          // Limit # of writer threads working on a single target                          (default = unbound, but picks round-robin)
 #define THOROPT_HDIST_COMP            "hdCompressorType"        // Distribute compressor to use                                                  (default = "FLZ")
@@ -276,6 +277,9 @@ public:
 };
 
 
+#define DEFAULT_THORMASTERPORT 20000
+#define DEFAULT_THORSLAVEPORT 20100
+#define DEFAULT_SLAVEPORTINC 200
 #define DEFAULT_QUERYSO_LIMIT 10
 
 class graph_decl CFifoFileCache : public CSimpleInterface
@@ -428,7 +432,7 @@ extern graph_decl const LogMsgJobInfo thorJob;
 
 extern graph_decl StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *queryName, unsigned version);
 
-extern graph_decl void setClusterGroup(INode *masterNode, IGroup *group, unsigned slavesPerProcess=0, unsigned portBase=0, unsigned portInc=0);
+extern graph_decl void setClusterGroup(INode *masterNode, IGroup *group, unsigned slavesPerNode, unsigned channelsPerSlave, unsigned portBase, unsigned portInc);
 extern graph_decl bool clusterInitialized();
 extern graph_decl INode &queryMasterNode();
 extern graph_decl IGroup &queryRawGroup();
