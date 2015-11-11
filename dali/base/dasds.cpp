@@ -6015,6 +6015,19 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             if (0 != stricmp("Environment", envTree->queryName()))
                 throw MakeStringException(0, "External environment file '%s', has '%s' as root, expecting a 'Environment' xml node.", environment, envTree->queryName());
 
+            Owned <IMPServer> thisDali = getMPServer();
+            assertex(thisDali);
+            IPropertyTree *thisDaliInfo = findDaliProcess(envTree, thisDali->queryMyNode()->endpoint());
+            assertex(thisDaliInfo);
+            Owned<IPropertyTreeIterator> plugins = thisDaliInfo->getElements("Plugin");
+            ForEach(*plugins)
+            {
+                Owned<IPluggableFactory> factory = loadPlugin(&plugins->query());
+                assertex (factory);
+                if (!factory->initializeStore())
+                    throw MakeStringException(0, "Failed to initialize plugin store '%s'", plugins->query().queryProp("@name"));
+            }
+
             oldEnvironment.setown(root->getPropTree("Environment"));
             root->removeTree(oldEnvironment);
             root->addPropTree("Environment", envTree.getClear());

@@ -2686,6 +2686,10 @@ public:
     {
         removeShutdownHook(*this);
     }
+    virtual bool initializeStore()
+    {
+        throwUnexpected(); // Used when loading a plugin factory - not applicable here
+    }
     virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const
     {
         return new CDaliWorkUnitWatcher(subscriber, options, wuid);
@@ -3082,7 +3086,6 @@ extern WORKUNIT_API IConstWorkUnitIterator *createSecureConstWUIterator(IPropert
 
 
 static CriticalSection factoryCrit;
-static Owned<ILoadedDllEntry> workunitServerPlugin;  // NOTE - unload AFTER the factory is released!
 static Owned<IWorkUnitFactory> factory;
 
 void CDaliWorkUnitFactory::clientShutdown()
@@ -3113,24 +3116,17 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
         {
             const char *forceEnv = getenv("FORCE_DALI_WORKUNITS");
             bool forceDali = forceEnv && !strieq(forceEnv, "off") && !strieq(forceEnv, "0");
-            Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/WorkUnitsServer", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-            // MORE - arguably should be looking in the config section that corresponds to the dali we connected to. If you want to allow some dalis to be configured to use a WU server and others not.
-            if (conn && !forceDali)
+            Owned<IRemoteConnection> env = querySDS().connect("/Environment", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+            IPropertyTree *pluginInfo = NULL;
+            if (env)
             {
-                const IPropertyTree *ptree = conn->queryRoot();
-                const char *pluginName = ptree->queryProp("@plugin");
-                if (!pluginName)
-                    throw makeStringException(WUERR_WorkunitPluginError, "WorkUnitsServer information missing plugin name");
-                workunitServerPlugin.setown(createDllEntry(pluginName, false, NULL));
-                if (!workunitServerPlugin)
-                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: failed to load plugin %s", pluginName);
-                WorkUnitFactoryFactory pf = (WorkUnitFactoryFactory) workunitServerPlugin->getEntry("createWorkUnitFactory");
-                if (!pf)
-                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: function createWorkUnitFactory not found in plugin %s", pluginName);
-                factory.setown(pf(ptree));
-                if (!factory)
-                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: createWorkUnitFactory returned NULL in plugin %s", pluginName);
+                SocketEndpoint targetDali = queryCoven().queryGroup().queryNode(0).endpoint();
+                IPropertyTree *daliInfo = findDaliProcess(env->queryRoot(), targetDali);
+                if (daliInfo)
+                    pluginInfo = daliInfo->queryPropTree("Plugin[@type='WorkunitServer']");
             }
+            if (pluginInfo && !forceDali)
+                factory.setown( (IWorkUnitFactory *) loadPlugin(pluginInfo));
             else
                 factory.setown(new CDaliWorkUnitFactory());
         }
@@ -3149,6 +3145,10 @@ public:
     CSecureWorkUnitFactory(IWorkUnitFactory *_baseFactory, ISecManager *_secMgr, ISecUser *_secUser)
         : baseFactory(_baseFactory), defaultSecMgr(_secMgr), defaultSecUser(_secUser)
     {
+    }
+    virtual bool initializeStore()
+    {
+        throwUnexpected(); // Used when loading a plugin factory - not applicable here
     }
     virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const
     {
