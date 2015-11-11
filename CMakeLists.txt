@@ -1,4 +1,3 @@
-###############################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -92,15 +91,32 @@ option(ENV_CONF_FILE "Set the environment conf file name.")
 option(LICENSE_FILE "Set the license file to use.")
 
 if( NOT LICENSE_FILE )
+  if ( MAKE_R_ONLY )
+    set(LICENSE_FILE "R-LICENSE.txt")
+  else ()
     set(LICENSE_FILE "LICENSE.txt")
+  endif()
 endif()
 
 include(${HPCC_SOURCE_DIR}/cmake_modules/optionDefaults.cmake)
 ###
 
+if ( MAKE_R_ONLY )
+  # various components that are not needed if only making the R plugin
+  SET(USE_LIBARCHIVE 0)
+  SET(USE_APR 0)
+endif()
+
 include(${HPCC_SOURCE_DIR}/cmake_modules/commonSetup.cmake)
 
-if ( NOT MAKE_DOCS_ONLY )
+if ( MAKE_R_ONLY )
+    HPCC_ADD_SUBDIRECTORY (roxie/roxiemem)
+    HPCC_ADD_SUBDIRECTORY (rtl/nbcd)
+    HPCC_ADD_SUBDIRECTORY (rtl/eclrtl)
+    HPCC_ADD_SUBDIRECTORY (system/lzma)
+    HPCC_ADD_SUBDIRECTORY (system/jlib)
+    HPCC_ADD_SUBDIRECTORY (plugins/Rembed)
+elseif ( NOT MAKE_DOCS_ONLY )
     HPCC_ADD_SUBDIRECTORY (initfiles)
     HPCC_ADD_SUBDIRECTORY (tools)
     HPCC_ADD_SUBDIRECTORY (common)
@@ -131,7 +147,10 @@ endif (APPLE OR WIN32)
 ## CPack install and packaging setup.
 ###
 INCLUDE(InstallRequiredSystemLibraries)
-if ( PLATFORM )
+if ( MAKE_R_ONLY )
+    set(CPACK_PACKAGE_NAME "hpccsystems-r-plugin")
+    set(PACKAGE_FILE_NAME_PREFIX "hpccsystems-r-plugin")
+elseif ( PLATFORM )
     set(CPACK_PACKAGE_NAME "hpccsystems-platform")
     set(PACKAGE_FILE_NAME_PREFIX "hpccsystems-platform-${projname}")
 else()

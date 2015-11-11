@@ -43,7 +43,9 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DROXIEMEM_EXPORTS)
 
 HPCC_ADD_LIBRARY( roxiemem SHARED ${SRCS} ${INCLUDES})
-install ( TARGETS roxiemem RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+if (NOT MAKE_R_ONLY)
+  install ( TARGETS roxiemem RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+endif()
 target_link_libraries ( roxiemem
          jlib
          ${CPPUNIT_LIBRARIES}
