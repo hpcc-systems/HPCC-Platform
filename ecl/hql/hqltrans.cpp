@@ -3214,6 +3214,11 @@ void NewSelectorReplacingTransformer::setNestedMapping(IHqlExpression * oldSel, 
     }
 }
 
+void NewSelectorReplacingTransformer::setActiveSelectorMapping(IHqlExpression * oldRecord, IHqlExpression * newRecord)
+{
+    setNestedMapping(queryActiveTableSelector(), queryActiveTableSelector(), oldRecord->querySimpleScope(), newRecord, false);
+}
+
 void NewSelectorReplacingTransformer::setRootMapping(IHqlExpression * oldSel, IHqlExpression * newSel, IHqlExpression * oldRecord, bool isSelector)
 {
     if (isSelector)
@@ -3343,6 +3348,34 @@ IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldS
     if (oldSelector != newSelector)
         transformer.initSelectorMapping(oldSelector, newSelector);
     transformer.setRootMapping(newSelector, newSelector, newSelector->queryRecord(), false);
+    bool same = true;
+    for (; i < max; i++)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        IHqlExpression * transformed = transformer.transformRoot(cur);
+        args.append(*transformed);
+        if (cur != transformed)
+            same = false;
+    }
+    if (same)
+        return LINK(expr);
+    return expr->clone(args);
+}
+
+IHqlExpression * updateActiveSelectorFields(IHqlExpression * expr, IHqlExpression * oldRecord, IHqlExpression * newRecord, unsigned firstChild)
+{
+    if (oldRecord == newRecord)
+        return LINK(expr);
+
+    unsigned max = expr->numChildren();
+    unsigned i;
+    HqlExprArray args;
+    args.ensure(max);
+    for (i = 0; i < firstChild; i++)
+        args.append(*LINK(expr->queryChild(i)));
+
+    NewSelectorReplacingTransformer transformer;
+    transformer.setActiveSelectorMapping(oldRecord, newRecord);
     bool same = true;
     for (; i < max; i++)
     {
