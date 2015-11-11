@@ -179,7 +179,8 @@ private:
 						throw MakeStringException(-1, "htpasswd Password file appears malformed");
 					*colon = (char)NULL;
 					userMap.setValue(next, colon+1);//username, enctypted password
-				} while (next = strtok_r(NULL, seps, &saveptr));
+					next = strtok_r(NULL, seps, &saveptr);
+				} while (next);
 			}
 
 			io->close();
