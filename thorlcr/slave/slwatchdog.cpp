@@ -76,12 +76,15 @@ public:
     }
     virtual void stop()
     {
+        if (!stopped)
+        {
 #ifdef _WIN32
-        threaded.adjustPriority(0); // restore to normal before stopping
+            threaded.adjustPriority(0); // restore to normal before stopping
 #endif
-        stopped = true;
-        threaded.join();
-        LOG(MCdebugProgress, thorJob, "Stopped watchdog");
+            stopped = true;
+            threaded.join();
+            LOG(MCdebugProgress, thorJob, "Stopped watchdog");
+        }
     }
 
     size32_t gatherData(MemoryBuffer &mb)
