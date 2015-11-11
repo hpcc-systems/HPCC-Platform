@@ -55,6 +55,7 @@
 #endif
 
 #include "RInside.h"
+#include "Rinterface.h"
 
 #include "jexcept.hpp"
 #include "jthread.hpp"
