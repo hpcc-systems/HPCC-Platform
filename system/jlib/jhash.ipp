@@ -112,7 +112,7 @@ class jlib_decl LowerCaseAtom : public Atom
     LowerCaseAtom(const void * k) : Atom(k)
     { 
         for (byte * cur = (byte *)key; *cur; cur++)
-            *cur = tolower(*cur);
+            *cur = (byte)tolower(*cur);
     }
 };
 

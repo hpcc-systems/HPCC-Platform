@@ -390,7 +390,7 @@ public:
     inline unsigned           queryUSecs() const { return 0; }
 #else
     inline time_t             queryTime() const { return timeStarted.tv_sec; }
-    inline unsigned           queryUSecs() const { return timeStarted.tv_usec; }
+    inline unsigned           queryUSecs() const { return (unsigned)timeStarted.tv_usec; }
 #endif
     inline unsigned           queryProcessID() const { return processID; }
     inline unsigned           queryThreadID() const { return threadID; }

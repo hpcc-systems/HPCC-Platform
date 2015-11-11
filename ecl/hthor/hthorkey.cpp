@@ -1829,7 +1829,7 @@ public:
                     unsigned __int64 expectedSize;
                     Owned<IExpander> eexp;
                     if (encryptionkey.length()!=0) {
-                        eexp.setown(createAESExpander256(encryptionkey.length(),encryptionkey.get()));
+                        eexp.setown(createAESExpander256((size32_t)encryptionkey.length(),encryptionkey.get()));
                         blockcompressed = true;
                     }
                     if(blockcompressed)

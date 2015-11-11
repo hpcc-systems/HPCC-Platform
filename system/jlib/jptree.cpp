@@ -496,7 +496,7 @@ IPTreeException *MakeIPTException(int code, const char *format, ...)
     return e;
 }
 
-IPTreeException *MakeXPathException(const char *xpath, int code, unsigned pos, const char *format, ...)
+IPTreeException *MakeXPathException(const char *xpath, int code, size_t pos, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -508,7 +508,7 @@ IPTreeException *MakeXPathException(const char *xpath, int code, unsigned pos, c
 #endif
     const char *msg = "in xpath = ";
     s.append("\n").append(msg).append(xpath);
-    s.append("\n").appendN((size32_t)strlen(msg)+pos, ' ').append("^");
+    s.append("\n").appendN((size32_t)(strlen(msg)+pos), ' ').append("^");
     return MakeIPTException(code, s.str());
 }
 
@@ -838,11 +838,13 @@ const void *CPTValue::queryValue() const
 
 void CPTValue::serialize(MemoryBuffer &tgt)
 {
-    tgt.append(length());
-    if (length())
+    //Retain backward compatibility for the serialization format.
+    size32_t serialLen = (size32_t)length();
+    tgt.append(serialLen);
+    if (serialLen)
     {
         tgt.append(compressed);
-        tgt.append(length(), get());
+        tgt.append(serialLen, get());
     }
 }
 
@@ -876,9 +878,9 @@ MemoryBuffer &CPTValue::getValue(MemoryBuffer &tgt, bool binary) const
     else
     {
         if (binary)
-            tgt.append(length(), get());
+            tgt.append((size32_t)length(), get());
         else
-            tgt.append(length()-1, get());
+            tgt.append((size32_t)length()-1, get());
     }
 
     return tgt;
@@ -906,9 +908,9 @@ StringBuffer &CPTValue::getValue(StringBuffer &tgt, bool binary) const
     else
     {
         if (binary) // this should probably be an assert?
-            tgt.append(length(), (const char *)get());
+            tgt.append((size32_t)length(), (const char *)get());
         else if (length())
-            tgt.append(length()-1, (const char *)get());
+            tgt.append((size32_t)length()-1, (const char *)get());
     }
 
     return tgt;
@@ -923,7 +925,7 @@ size32_t CPTValue::queryValueSize() const
         return sz;
     }
     else
-        return length();
+        return (size32_t)length();
 }
 
 ///////////////////

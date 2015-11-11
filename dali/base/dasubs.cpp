@@ -463,7 +463,7 @@ public:
         mb.append(fn).append(tag).append(id);
         queryMyNode()->serialize(mb);
         const MemoryAttr &data = subs->queryData();
-        size32_t dlen = data.length();
+        size32_t dlen = (size32_t)data.length();
         mb.append(dlen);
         mb.append(dlen,data.get());
         try

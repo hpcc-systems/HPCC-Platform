@@ -435,8 +435,10 @@ void MemoryValue::pushDecimalValue()
 
 void MemoryValue::serialize(MemoryBuffer &tgt)
 {
-    tgt.append(val.length());
-    tgt.append(val.length(), val.get());
+    size32_t serialLen = (size32_t)val.length();
+    assertex(serialLen == val.length());
+    tgt.append(serialLen);
+    tgt.append(serialLen, val.get());
 }
 
 void MemoryValue::deserialize(MemoryBuffer &src)
@@ -535,7 +537,7 @@ bool StringValue::getBoolValue()
 
 __int64 StringValue::getIntValue()
 {
-    return rtlStrToInt8(val.length(), (const char *)val.get());
+    return rtlStrToInt8((size32_t)val.length(), (const char *)val.get());
 }
 
 const char *StringValue::getStringValue(StringBuffer &out)
@@ -720,7 +722,7 @@ const char *UnicodeValue::getStringValue(StringBuffer &out)
 
 void * UnicodeValue::getUCharStringValue(unsigned len, void * out)
 {
-    unsigned vallen = val.length()/2;
+    size_t vallen = val.length()/2;
     if(vallen > len)
         vallen = len;
     memcpy(out, val.get(), vallen*2);
@@ -738,7 +740,7 @@ const char *UnicodeValue::getCodepageValue(StringBuffer &out, char const * codep
 {
     char * buff;
     unsigned bufflen;
-    rtlUnicodeToCodepageX(bufflen, buff, val.length()/2, (UChar const *)val.get(), codepage);
+    rtlUnicodeToCodepageX(bufflen, buff, (size32_t)(val.length()/2), (UChar const *)val.get(), codepage);
     out.append(bufflen, buff);
     rtlFree(buff);
     return out.str();
@@ -1060,7 +1062,7 @@ size32_t Utf8Value::getSize()
     unsigned size = rtlUtf8Size(type->getStringLen(), val.get());
     assertex(size == val.length());
 #endif
-    return val.length();
+    return (size32_t)val.length();
 }
 
 const void *Utf8Value::queryValue() const
@@ -1230,7 +1232,7 @@ DataValue::DataValue(const void *v, ITypeInfo *_type) : MemoryValue(v, _type)
 const char *DataValue::generateECL(StringBuffer &out)
 {
     out.append("X'");
-    appendDataAsHex(out, val.length(), val.get());
+    appendDataAsHex(out, (size32_t)val.length(), val.get());
     out.append('\'');
     return out.str();
 }
@@ -1320,7 +1322,7 @@ bool DataValue::getBoolValue()
 
 const char *DataValue::getStringValue(StringBuffer &out)
 {
-    appendDataAsHex(out, val.length(), val.get());
+    appendDataAsHex(out, (size32_t)val.length(), val.get());
     return out.str();
 }
 

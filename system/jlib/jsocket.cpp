@@ -5250,7 +5250,7 @@ class CSocketBufferReader: public CInterface, implements ISocketBufferReader
         {
             CriticalBlock block(sect);
             assertex(pending);
-            size32_t sz = blk.length();
+            size32_t sz = (size32_t)blk.length();
             if (sz)
                 mb.setBuffer(sz,blk.detach(),true);
             pending = false;
@@ -5262,7 +5262,7 @@ class CSocketBufferReader: public CInterface, implements ISocketBufferReader
         }
         size32_t size()
         {
-            return blk.length();
+            return (size32_t)blk.length();
         }
         ISocket *getSocket() { return sock; }
     } *elems;
