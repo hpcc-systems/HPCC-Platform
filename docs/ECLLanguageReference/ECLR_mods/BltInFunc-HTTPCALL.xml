@@ -143,6 +143,15 @@
             <entry>Specifies all trailing spaces are removed from strings
             before output.</entry>
           </row>
+
+          <row>
+            <entry><emphasis role="bold">HTTPHEADER<indexterm>
+                <primary>HTTPHEADER</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Specifies header information to be passed to the
+            service.</entry>
+          </row>
         </tbody>
       </tgroup>
     </informaltable></para>
