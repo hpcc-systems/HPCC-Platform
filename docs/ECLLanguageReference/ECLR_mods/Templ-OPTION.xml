@@ -971,8 +971,7 @@
               <entry>Default: 1</entry>
 
               <entry>The level of detail in reporting SOAPCALL information
-              (set to 0 for none, 1 for normal, &gt;1 or more for detail)
-              </entry>
+              (set to 0 for none, 1 for normal, 2 - 8 for more detail)</entry>
             </row>
           </tbody>
         </tgroup>
