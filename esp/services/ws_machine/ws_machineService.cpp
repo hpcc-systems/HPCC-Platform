@@ -23,6 +23,7 @@
 #include "roxiecommlibscm.hpp"
 #include "componentstatus.hpp"
 #include "rmtssh.hpp"
+#include "platform.h"
 
 #ifndef eqHoleCluster
 #define eqHoleCluster  "HoleCluster"
