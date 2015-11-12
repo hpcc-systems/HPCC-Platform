@@ -964,6 +964,16 @@
 
               <entry>If true, enables ASSERT checking.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>soapTraceLevel</emphasis></entry>
+
+              <entry>Default: 1</entry>
+
+              <entry>The level of detail in reporting SOAPCALL information
+              (set to 0 for none, 1 for normal, &gt;1 or more for detail)
+              </entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
