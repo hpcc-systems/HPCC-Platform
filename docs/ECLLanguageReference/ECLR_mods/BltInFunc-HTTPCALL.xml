@@ -166,7 +166,15 @@ OutRec1 := RECORD
   DATASET(worldBankSource) Fred{XPATH('/source')};
 END;
 
-raw := HTTPCALL('http://api.worldbank.org/sources', 'GET', 'text/xml', OutRec1);
+raw := HTTPCALL('http://api.worldbank.org/sources', 'GET', 'text/xml', OutRec1, );
 
-OUTPUT(raw);</programlisting>
+OUTPUT(raw);
+
+////Using HTTPHEADER to pass Authorization info
+raw2 := HTTPCALL('http://api.worldbank.org/sources', 'GET', 'text/xml', 
+                 OutRec1, HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ='));
+
+OUTPUT(raw2);
+
+</programlisting>
 </sect1>
