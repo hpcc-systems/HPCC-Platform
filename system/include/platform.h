@@ -495,4 +495,13 @@ typedef __int64 cycle_t;
 // BUILD_TAG not needed here anymore - defined in build_tag.h
 //#define BUILD_TAG "build_0000" // Will get substituted during pre-build
 
+#ifdef _WINDOWS
+#ifndef popen
+#define popen   _popen
+#endif
+#ifndef pclose
+#define pclose  _pclose
+#endif
+#endif
+
 #endif

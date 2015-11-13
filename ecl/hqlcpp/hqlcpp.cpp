@@ -11685,6 +11685,7 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
     funcctx.addQuotedCompound(proto, "\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
             "#pragma GCC diagnostic ignored \"-Wall\"\n"
             "#pragma GCC diagnostic ignored \"-Wextra\"\n"
+            "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"  // Some variants of gcc seemt to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
             "#endif\n");
     if (location)
         funcctx.addLine(locationFilename, startLine);

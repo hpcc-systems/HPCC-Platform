@@ -93,7 +93,7 @@ if [ $# -eq 3 ]; then
     conffile=$3
     echo "<filename> = ${filename}"
     echo "<portnumber> = ${portnum}"
-    echo "<LocalConfFile> = ${conffile}"
+    echo "<LocalEnvConfFile> = ${conffile}"
     #checking where files exists or not
     if [ ! -e ${filename} ] || [ ! -e ${conffile} ]
     then

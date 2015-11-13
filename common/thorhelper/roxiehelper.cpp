@@ -621,6 +621,8 @@ extern IGroupedInput *createSortedGroupedInputReader(IInputBase *_input, const I
 class CSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
 {
 public:
+    CSortAlgorithm() { elapsedCycles = 0; }
+
     virtual void getSortedGroup(ConstPointerArray & result)
     {
         loop
@@ -631,6 +633,17 @@ public:
             result.append(row);
         }
     }
+
+    virtual cycle_t getElapsedCycles(bool reset)
+    {
+        cycle_t ret = elapsedCycles;
+        if (reset)
+            elapsedCycles = 0;
+        return ret;
+    }
+
+protected:
+    cycle_t elapsedCycles;
 };
 
 class CInplaceSortAlgorithm : public CSortAlgorithm
@@ -676,7 +689,28 @@ public:
     {
         curIndex = 0;
         if (input->nextGroup(sorted))
+        {
+            cycle_t startCycles = get_cycles_now();
             qsortvec(const_cast<void * *>(sorted.getArray()), sorted.ordinality(), *compare);
+            elapsedCycles += (get_cycles_now() - startCycles);
+        }
+    }
+};
+
+class CTbbQuickSortAlgorithm : public CInplaceSortAlgorithm
+{
+public:
+    CTbbQuickSortAlgorithm(ICompare *_compare) : CInplaceSortAlgorithm(_compare) {}
+
+    virtual void prepare(IInputBase *input)
+    {
+        curIndex = 0;
+        if (input->nextGroup(sorted))
+        {
+            cycle_t startCycles = get_cycles_now();
+            tbbqsortvec(const_cast<void * *>(sorted.getArray()), sorted.ordinality(), *compare);
+            elapsedCycles += (get_cycles_now() - startCycles);
+        }
     }
 };
 
@@ -696,7 +730,9 @@ public:
             void **rows = const_cast<void * *>(sorted.getArray());
             MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
             void **temp = (void **) tempAttr.bufferBase();
+            cycle_t startCycles = get_cycles_now();
             sortRows(rows, numRows, temp);
+            elapsedCycles += (get_cycles_now() - startCycles);
         }
     }
 };
@@ -731,6 +767,17 @@ public:
     virtual void sortRows(void * * rows, size_t numRows, void * * temp)
     {
         parmsortvecstableinplace(rows, numRows, *compare, temp);
+    }
+};
+
+class CTbbStableQuickSortAlgorithm : public CStableInplaceSortAlgorithm
+{
+public:
+    CTbbStableQuickSortAlgorithm(ICompare *_compare) : CStableInplaceSortAlgorithm(_compare) {}
+
+    virtual void sortRows(void * * rows, size_t numRows, void * * temp)
+    {
+        tbbqsortstable(rows, numRows, *compare, temp);
     }
 };
 
@@ -1277,6 +1324,7 @@ protected:
         unsigned numRows = rowsToSort.numCommitted();
         if (numRows)
         {
+            cycle_t startCycles = get_cycles_now();
             void ** rows = const_cast<void * *>(rowsToSort.getBlock(numRows));
             //MORE: Should this be parallel?  Should that be dependent on whether it is grouped?  Should be a hint.
             if (stable)
@@ -1287,6 +1335,7 @@ protected:
             }
             else
                 sortRows(rows, numRows, *compare, NULL);
+            elapsedCycles += (get_cycles_now() - startCycles);
         }
     }
     bool spillRows()
@@ -1372,6 +1421,16 @@ extern ISortAlgorithm *createStableQuickSortAlgorithm(ICompare *_compare)
     return new CStableQuickSortAlgorithm(_compare);
 }
 
+extern ISortAlgorithm *createTbbQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CTbbQuickSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createTbbStableQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CTbbStableQuickSortAlgorithm(_compare);
+}
+
 extern ISortAlgorithm *createInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId)
 {
     return new CInsertionSortAlgorithm(_compare, _rowManager, _activityId);
@@ -1420,6 +1479,10 @@ extern ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm _algorithm, ICompa
         return new CSpillingMergeSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, false);
     case spillingParallelMergeSortAlgorithm:
         return new CSpillingMergeSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, true);
+    case tbbQuickSortAlgorithm:
+        return createTbbQuickSortAlgorithm(_compare);
+    case tbbStableQuickSortAlgorithm:
+        return createTbbStableQuickSortAlgorithm(_compare);
     default:
         break;
     }
