@@ -527,4 +527,94 @@ CPPUNIT_TEST_SUITE_REGISTRATION( JlibStringBufferTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStringBufferTest, "JlibStringBufferTest" );
 
 
+/* =========================================================== */
+
+static const unsigned split4_2[] = {0, 2, 4 };
+static const unsigned split100_2[] = {0, 50, 100  };
+static const unsigned split100_10[] = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100  };
+static const unsigned split7_10[] = {0,1,1,2,3,3,4,5,6,6,7 };
+static const unsigned split10_3[] = {0,3,7,10 };
+static const unsigned split58_10[] = {0,6,12,17,23,29,35,41,46,52,58 };
+static const unsigned split9_2T[] = { 0,5,9 };
+static const unsigned split9_2F[] = { 0,4,9 };
+static const unsigned split15_3[] = { 0,5,10,15 };
+
+class JlibQuantileTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( JlibQuantileTest );
+        CPPUNIT_TEST(testQuantile);
+        CPPUNIT_TEST(testRandom);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    JlibQuantileTest()
+    {
+    }
+
+    void testQuantilePos(unsigned numItems, unsigned numDivisions, bool roundUp, const unsigned * expected)
+    {
+        if (numDivisions == 0)
+            return;
+
+        QuantilePositionIterator iter(numItems, numDivisions, roundUp);
+        QuantileFilterIterator filter(numItems, numDivisions, roundUp);
+
+        unsigned prevPos = 0;
+        iter.first();
+        for (unsigned i=0; i <= numDivisions; i++)
+        {
+            //Check the values from the quantile iterator match those that are expected
+            unsigned pos = (unsigned)iter.get();
+#if 0
+            printf("(%d,%d) %d=%d\n", numItems, numDivisions, i, pos);
+#endif
+            if (expected)
+                CPPUNIT_ASSERT_EQUAL(expected[i], pos);
+
+            //Check that the quantile filter correctly returns true and false for subsequent calls.
+            while (prevPos < pos)
+            {
+                CPPUNIT_ASSERT(!filter.get());
+                filter.next();
+                prevPos++;
+            }
+
+            if (prevPos == pos)
+            {
+                CPPUNIT_ASSERT(filter.get());
+                filter.next();
+                prevPos++;
+            }
+            iter.next();
+        }
+    }
+
+    void testQuantile()
+    {
+        testQuantilePos(4, 2, false, split4_2);
+        testQuantilePos(100, 2, false, split100_2);
+        testQuantilePos(100, 10, false, split100_10);
+        testQuantilePos(7, 10, false, split7_10);
+        testQuantilePos(10, 3, false, split10_3);
+        testQuantilePos(10, 3, true, split10_3);
+        testQuantilePos(58, 10, false, split58_10);
+        //testQuantilePos(9, 2, true, split9_2T);
+        testQuantilePos(9, 2, false, split9_2F);
+        testQuantilePos(15, 3, false, split15_3);
+        testQuantilePos(1231, 57, false, NULL);
+        testQuantilePos(1, 63, false, NULL);
+        testQuantilePos(10001, 17, false, NULL);
+    }
+    void testRandom()
+    {
+        //test various random combinations to ensure the results are consistent.
+        for (unsigned i=0; i < 10; i++)
+            testQuantilePos(random() % 1000000, random() % 10000, true, NULL);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibQuantileTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibQuantileTest, "JlibQuantileTest" );
+
+
 #endif // _USE_CPPUNIT
