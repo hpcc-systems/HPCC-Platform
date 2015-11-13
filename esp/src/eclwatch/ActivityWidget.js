@@ -26,6 +26,7 @@ define([
     "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane",
+    "dijit/Tooltip",
 
     "dgrid/selector",
     "dgrid/tree",
@@ -37,7 +38,7 @@ define([
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
-                registry, Button, ToggleButton, ToolbarSeparator, ContentPane,
+                registry, Button, ToggleButton, ToolbarSeparator, ContentPane, Tooltip,
                 selector, tree,
                 GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil) {
     return declare("ActivityWidget", [GridDetailsWidget], {
@@ -49,6 +50,7 @@ define([
 
         _onAutoRefresh: function (event) {
             this.activity.disableMonitor(!this.autoRefreshButton.get("checked"));
+            this.createStackControllerTooltip(this.id + "AutoRefresh", this.i18n.AutoRefresh + ": " + this.autoRefreshButton.get("checked"));
         },
 
         _onPause: function (event, params) {
@@ -206,13 +208,14 @@ define([
                     context.refreshGrid();
                 }
             });
+            this.createStackControllerTooltip(this.id + "AutoRefresh", this.i18n.AutoRefresh + ": " + this.autoRefreshButton.get("checked"));
         },
 
         createGrid: function (domID) {
             var context = this;
 
             this.openButton = registry.byId(this.id + "Open");
-            this.refreshButton = registry.byId(this.id + "Refresh");            
+            this.refreshButton = registry.byId(this.id + "Refresh");
             this.autoRefreshButton = new ToggleButton({
                 id: this.id + "AutoRefresh",
                 iconClass:'iconAutoRefresh',
@@ -583,6 +586,15 @@ define([
             this.wuMoveUpButton.set("disabled", !wuCanUp);
             this.wuMoveDownButton.set("disabled", !wuCanDown);
             this.wuMoveBottomButton.set("disabled", !wuCanDown);
+        },
+
+        createStackControllerTooltip: function (widgetID, text) {
+            return new Tooltip({
+                connectId: [widgetID],
+                label: text,
+                showDelay: 1,
+                position: ["below"]
+            });
         }
     });
 });
