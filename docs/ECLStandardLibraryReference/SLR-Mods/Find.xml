@@ -78,7 +78,8 @@
   </emphasis>string. If the <emphasis>target</emphasis> is not found or the
   specified <emphasis>instance</emphasis> is greater than the number of
   occurrences of the <emphasis>target</emphasis> in the
-  <emphasis>source</emphasis>, StringFind returns zero (0).</para>
+  <emphasis>source</emphasis>, <emphasis role="bold">Find</emphasis> returns
+  zero (0).</para>
 
   <para>Example:</para>
 

@@ -2565,8 +2565,9 @@ function promptVerifyPwd(category, params, attrName, oldValue, newValue, recordI
       xmlArgs += "\" attrName=\"" + attrName;
       xmlArgs += "\" viewType=\"password";
       xmlArgs += "\" rowIndex=\"" + recordIndex;
-      xmlArgs += "\" oldValue=\"" + escape(oldValue);
-      xmlArgs += "\" newValue=\"" + escape(pwd) + "\"/></XmlArgs>";
+      xmlArgs += "\" oldValue=\"" + oldValue;
+      xmlArgs += "\" newValue=\"" + pwd + "\"/></XmlArgs>";
+      xmlArgs = encodeURIComponent(xmlArgs);
 
       YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/SaveSetting', {
         success: function(o) {
