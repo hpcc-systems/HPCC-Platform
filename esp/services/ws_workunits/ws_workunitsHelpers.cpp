@@ -2475,12 +2475,12 @@ ArchivedWuCacheElement* ArchivedWuCache::lookup(IEspContext &context, const char
     return NULL;
 }
 
-void ArchivedWuCache::add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned numWUsReturned, IArrayOf<IEspECLWorkunit>& wus)
+void ArchivedWuCache::add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned numWUsReturned, IArrayOf<IEspECLWorkunit>& wus, IArrayOf<IEspECLWorkunitLW>& lwwus)
 {
     CriticalBlock block(crit);
 
     //Save new data
-    Owned<ArchivedWuCacheElement> e=new ArchivedWuCacheElement(filter, sashaUpdatedWhen, hasNextPage, numWUsReturned, wus);
+    Owned<ArchivedWuCacheElement> e=new ArchivedWuCacheElement(filter, sashaUpdatedWhen, hasNextPage, numWUsReturned, wus, lwwus);
     if (cacheSize > 0)
     {
         if (cache.size() >= cacheSize)

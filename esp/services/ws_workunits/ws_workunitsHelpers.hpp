@@ -287,7 +287,7 @@ struct DataCache: public CInterface, implements IInterface
 
 interface IArchivedWUsReader : extends IInterface
 {
-    virtual void getArchivedWUs(IArrayOf<IEspECLWorkunit>& results) = 0;
+    virtual void getArchivedWUs(bool lightWeight, IEspWUQueryRequest& req, IEspWULightWeightQueryRequest& reqLW, IArrayOf<IEspECLWorkunit>& results, IArrayOf<IEspECLWorkunitLW>& resultsLW) = 0;
     virtual bool getHasMoreWU() = 0;
     virtual unsigned getNumberOfWUsReturned() = 0;
 };
@@ -295,19 +295,25 @@ interface IArchivedWUsReader : extends IInterface
 struct ArchivedWuCacheElement: public CInterface, implements IInterface
 {
     IMPLEMENT_IINTERFACE;
-    ArchivedWuCacheElement(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned _numWUsReturned, IArrayOf<IEspECLWorkunit>& wus):m_filter(filter),
+    ArchivedWuCacheElement(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned _numWUsReturned, IArrayOf<IEspECLWorkunit>& wus, IArrayOf<IEspECLWorkunitLW>& lwwus):m_filter(filter),
         m_sashaUpdatedWhen(sashaUpdatedWhen), m_hasNextPage(hasNextPage), numWUsReturned(_numWUsReturned)
     {
         m_timeCached.setNow();
-        if (wus.length() > 0)
-
-        for (unsigned i = 0; i < wus.length(); i++)
+        ForEachItemIn(i, wus)
         {
             Owned<IEspECLWorkunit> info= createECLWorkunit("","");
             IEspECLWorkunit& info0 = wus.item(i);
             info->copy(info0);
 
             m_results.append(*info.getClear());
+        }
+        ForEachItemIn(ii, lwwus)
+        {
+            Owned<IEspECLWorkunitLW> info= createECLWorkunitLW("","");
+            IEspECLWorkunitLW& info0 = lwwus.item(ii);
+            info->copy(info0);
+
+            resultsLW.append(*info.getClear());
         }
     }
 
@@ -318,6 +324,7 @@ struct ArchivedWuCacheElement: public CInterface, implements IInterface
 
     CDateTime m_timeCached;
     IArrayOf<IEspECLWorkunit> m_results;
+    IArrayOf<IEspECLWorkunitLW> resultsLW;
 };
 
 struct ArchivedWuCache: public CInterface, implements IInterface
@@ -327,7 +334,7 @@ struct ArchivedWuCache: public CInterface, implements IInterface
     ArchivedWuCache(size32_t _cacheSize=0): cacheSize(_cacheSize){}
     ArchivedWuCacheElement* lookup(IEspContext &context, const char* filter, const char* sashaUpdatedWhen, unsigned timeOutMin);
 
-    void add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned numWUsReturned, IArrayOf<IEspECLWorkunit>& wus);
+    void add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned numWUsReturned, IArrayOf<IEspECLWorkunit>& wus, IArrayOf<IEspECLWorkunitLW>& lwwus);
 
     std::list<Linked<ArchivedWuCacheElement> > cache;
     CriticalSection crit;
