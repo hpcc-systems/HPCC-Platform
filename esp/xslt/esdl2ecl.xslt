@@ -76,17 +76,6 @@
 			<xsl:text> := MODULE
 
 </xsl:text>
-		<xsl:if test="$docname='wsm_share'">
-		<xsl:text>export t_IntegerArrayItem := record
-	integer value { xpath('')};
-end;
-
-export t_StringArrayItem := record
-	string value { xpath(''), MAXLENGTH(8192) };
-end;
-
-</xsl:text>
-		</xsl:if>
 		<xsl:apply-templates select="EsdlStruct"/>
 		<xsl:apply-templates select="EsdlRequest"/>
 		<xsl:apply-templates select="EsdlResponse"/>
@@ -120,7 +109,7 @@ end;
 	</xsl:template>
 	<xsl:template match="EsdlArray[@type='string']">
 		<xsl:if test="not(@ecl_hide) and (@ecl_keep or not(@get_data_from))">
-		<xsl:text>	dataset(</xsl:text><xsl:call-template name="output_arrayitem_ref"/><xsl:text>) </xsl:text><xsl:call-template name="output_ecl_name"/>
+		<xsl:text>	set of string </xsl:text><xsl:call-template name="output_ecl_name"/>
 		<xsl:text> {xpath('</xsl:text>
 		<xsl:if test="not(@flat_array)"><xsl:value-of select="@name"/></xsl:if><xsl:text>/</xsl:text><xsl:call-template name="output_item_tag"/><xsl:text>')</xsl:text>
 		<xsl:choose>
@@ -341,13 +330,6 @@ end;
 		<xsl:otherwise><xsl:if test="@attribute"><xsl:value-of select="'@'"/></xsl:if> <xsl:value-of select="@name"/></xsl:otherwise>
 	</xsl:choose>
 	<xsl:text>')</xsl:text>
-</xsl:template>
-
-<xsl:template name="output_arrayitem_ref">
-	<xsl:choose>
-		<xsl:when test="@ecl_item"><xsl:text>t_</xsl:text><xsl:value-of select="@ecl_item"/></xsl:when>
-		<xsl:otherwise><xsl:if test="$sourceFileName!='share'"><xsl:text>share.</xsl:text></xsl:if><xsl:text>t_StringArrayItem</xsl:text></xsl:otherwise>
-	</xsl:choose>
 </xsl:template>
 
 <xsl:template name="output_item_tag">
