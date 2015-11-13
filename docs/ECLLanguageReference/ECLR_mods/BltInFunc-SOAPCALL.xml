@@ -325,6 +325,15 @@
             different message format, where type information is embedded in
             the XML.</entry>
           </row>
+
+          <row>
+            <entry><emphasis role="bold">HTTPHEADER<indexterm>
+                <primary>HTTPHEADER</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Specifies header information to be passed to the
+            service.</entry>
+          </row>
         </tbody>
       </tgroup>
     </informaltable></para>
@@ -410,6 +419,11 @@ DATASET(outRecord), ONFAIL(genDefault1())));
 OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(genDefault2(LEFT))));
 
 OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP)));
+
+//Using HTTPHEADER to pass Authorization info
+OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),
+                HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ=')))
+
 </programlisting>
   </sect2>
 
