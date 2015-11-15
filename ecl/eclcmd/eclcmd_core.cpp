@@ -280,7 +280,8 @@ class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
     EclCmdPublish() : optNoActivate(false), optSuspendPrevious(false), optDeletePrevious(false),
-        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000), optAllowForeign(false), optUpdateDfs(false)
+        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000), optAllowForeign(false), optUpdateDfs(false),
+        optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
         optTimeLimit = (unsigned) -1;
@@ -336,6 +337,12 @@ public:
             if (iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS)||iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS_S))
                 continue;
             if (iter.matchFlag(optUpdateDfs, ECLOPT_UPDATE_DFS))
+                continue;
+            if (iter.matchFlag(optUpdateSuperfiles, ECLOPT_UPDATE_SUPER_FILES))
+                continue;
+            if (iter.matchFlag(optUpdateCloneFrom, ECLOPT_UPDATE_CLONE_FROM))
+                continue;
+            if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -413,6 +420,9 @@ public:
         req->setDontCopyFiles(optDontCopyFiles);
         req->setAllowForeignFiles(optAllowForeign);
         req->setUpdateDfs(optUpdateDfs);
+        req->setUpdateSuperFiles(optUpdateSuperfiles);
+        req->setUpdateCloneFrom(optUpdateCloneFrom);
+        req->setAppendCluster(!optDontAppendCluster);
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -470,7 +480,10 @@ public:
             "   --no-files             Do not copy DFS file information for referenced files\n"
             "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
-            "   --update-dfs           Update local DFS info if remote DALI has changed\n"
+            "   -O, --overwrite        Completely replace existing DFS file information (dangerous)\n"
+            "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
+            "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
+            "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n"
             "   --source-process       Process cluster to copy files from\n"
             "   --timeLimit=<ms>       Value to set for query timeLimit configuration\n"
             "   --warnTimeLimit=<ms>   Value to set for query warnTimeLimit configuration\n"
@@ -501,6 +514,9 @@ private:
     bool optDeletePrevious;
     bool optAllowForeign;
     bool optUpdateDfs;
+    bool optUpdateSuperfiles;
+    bool optUpdateCloneFrom;
+    bool optDontAppendCluster; //Undesirable but here temporarily because DALI may have locking issues
 };
 
 class EclCmdRun : public EclCmdWithEclTarget

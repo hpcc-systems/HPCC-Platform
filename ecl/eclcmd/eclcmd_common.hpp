@@ -61,6 +61,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_NORELOAD "--no-reload"
 #define ECLOPT_OVERWRITE "--overwrite"
+#define ECLOPT_REPLACE "--replace"
 #define ECLOPT_OVERWRITE_S "-O"
 #define ECLOPT_OVERWRITE_INI "overwriteDefault"
 #define ECLOPT_OVERWRITE_ENV NULL
@@ -95,6 +96,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_CHECK_ALL_NODES "--check-all-nodes"
 #define ECLOPT_CHECK_ALL_NODES_INI "checkAllNodes"
 #define ECLOPT_CHECK_ALL_NODES_ENV "CHECK_ALL_NODES"
+#define ECLOPT_UPDATE_SUPER_FILES "--update-super-files"
+#define ECLOPT_UPDATE_CLONE_FROM "--update-clone-from"
+#define ECLOPT_DONT_APPEND_CLUSTER "--dont-append-cluster"
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format
