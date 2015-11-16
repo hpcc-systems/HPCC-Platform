@@ -1117,51 +1117,41 @@ class TbbParallelMergeSorter
                 {
                     size_t leftPos = iterLeft.get();
                     size_t rightPos = iterRight.get();
+                    int c;
                     if (leftPos == n1)
-                    {
-                        if (skip == 0)
-                        {
-                            posLeft[part] = findFirstGT(src2[rightPos], prevLeft, leftPos, src1);
-                            posRight[part] = rightPos;
-                        }
-                        iterRight.next();
-                    }
+                        c = +1;
                     else if (rightPos == n2)
-                    {
-                        if (skip == 0)
-                        {
-                            posLeft[part] = leftPos;
-                            posRight[part] = findFirstGE(src1[leftPos], prevRight, rightPos, src2);
-                        }
-                        iterLeft.next();
-                    }
+                        c = -1;
                     else
+                        c = compare.docompare(src1[leftPos], src2[rightPos]);
+
+                    if (skip == 0)
                     {
-                        int c = compare.docompare(src1[leftPos], src2[rightPos]);
-                        if (skip == 0)
-                        {
-                            if (c <= 0)
-                            {
-                                //value in left is smallest.  Find the position of the value <= the left value
-                                posLeft[part] = leftPos;
-                                posRight[part] = findFirstGE(src1[leftPos], prevRight, rightPos, src2);
-                            }
-                            else
-                            {
-                                posLeft[part] = findFirstGT(src2[rightPos], prevLeft, leftPos, src1);
-                                posRight[part] = rightPos;
-                            }
-                        }
                         if (c <= 0)
                         {
-                            iterLeft.next();
-                            prevLeft = leftPos;
+                            //value in left is smallest.  Find the position of the value <= the left value
+                            posLeft[part] = leftPos;
+                            size_t matchRight = findFirstGE(src1[leftPos], prevRight, rightPos, src2);
+                            posRight[part] = matchRight;
+                            prevRight = matchRight;  // potentially reduce the search range next time
                         }
                         else
                         {
-                            iterRight.next();
-                            prevRight = rightPos;
+                            size_t matchLeft = findFirstGT(src2[rightPos], prevLeft, leftPos, src1);
+                            posLeft[part] = matchLeft;
+                            posRight[part] = rightPos;
+                            prevLeft = matchLeft;  // potentially reduce the search range next time
                         }
+                    }
+                    if (c <= 0)
+                    {
+                        iterLeft.next();
+                        prevLeft = leftPos;
+                    }
+                    else
+                    {
+                        iterRight.next();
+                        prevRight = rightPos;
                     }
                 }
             }
