@@ -11764,9 +11764,12 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
             if (condValue)
             {
                 unsigned idx = (unsigned)condValue->getIntValue();
-                IHqlExpression * branch = queryRealChild(expr, idx);
-                if (branch)
-                    return transform(branch);
+                if (idx != 0)
+                {
+                    IHqlExpression * branch = queryRealChild(expr, idx);
+                    if (branch)
+                        return transform(branch);
+                }
                 IHqlExpression * defaultExpr = queryLastNonAttribute(expr);
                 return transform(defaultExpr);
             }
