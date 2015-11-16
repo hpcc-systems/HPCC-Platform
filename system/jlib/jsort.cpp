@@ -41,6 +41,7 @@
 //#define MCMERGESTATS
 #endif
 
+//#define PARANOID_PARTITION
 //#define TRACE_PARTITION
 
 #define PARALLEL_GRANULARITY 1024
@@ -1079,17 +1080,16 @@ class TbbParallelMergeSorter
 
         void calculatePartitions()
         {
-#ifdef PARANOID
+#ifdef PARANOID_PARTITION
             {
                 for (unsigned ix=1; ix<n1; ix++)
                     if (compare.docompare(src1[ix-1], src1[ix]) > 0)
-                        printf("Failure left@%u\n", ix);
+                        DBGLOG("Failure left@%u", ix);
             }
-            if (false)
             {
                 for (unsigned ix=1; ix<n2; ix++)
                     if (compare.docompare(src2[ix-1], src2[ix]) > 0)
-                        printf("Failure right@%u\n", ix);
+                        DBGLOG("Failure right@%u", ix);
             }
 #endif
             //If dividing into P parts, select S*P-1 even points from each side.
@@ -1121,7 +1121,7 @@ class TbbParallelMergeSorter
                     {
                         if (skip == 0)
                         {
-                            posLeft[part] = leftPos;
+                            posLeft[part] = findFirstGT(src2[rightPos], prevLeft, leftPos, src1);
                             posRight[part] = rightPos;
                         }
                         iterRight.next();
@@ -1131,7 +1131,7 @@ class TbbParallelMergeSorter
                         if (skip == 0)
                         {
                             posLeft[part] = leftPos;
-                            posRight[part] = rightPos;
+                            posRight[part] = findFirstGE(src1[leftPos], prevRight, rightPos, src2);
                         }
                         iterLeft.next();
                     }
@@ -1169,7 +1169,7 @@ class TbbParallelMergeSorter
             posLeft[numPartitions] = n1;
             posRight[numPartitions] = n2;
 #ifdef TRACE_PARTITION
-            printf("%d,%d -> {", (unsigned)n1, (unsigned)n2);
+            DBGLOG("%d,%d -> {", (unsigned)n1, (unsigned)n2);
 #endif
             for (unsigned i= 0; i < numPartitions; i++)
             {
@@ -1178,7 +1178,7 @@ class TbbParallelMergeSorter
                 size_t num = end - start;
                 size_t numFwd = num/2;
 #ifdef TRACE_PARTITION
-                printf("([%d..%d],[%d..%d] %d,%d = %d)\n",
+                DBGLOG("  ([%d..%d],[%d..%d] %d,%d = %d)",
                         (unsigned)posLeft[i], (unsigned)posLeft[i+1], (unsigned)posRight[i], (unsigned)posRight[i+1],
                         (unsigned)start, (unsigned)end, (unsigned)num);
 #endif
@@ -1192,9 +1192,6 @@ class TbbParallelMergeSorter
                                       posRight[i], posRight[i+1]-posRight[i],
                                       num-numFwd);
             }
-#ifdef TRACE_PARTITION
-            printf("}\n");
-#endif
         }
 
         virtual task * execute()
