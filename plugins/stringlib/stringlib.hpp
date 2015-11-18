@@ -77,6 +77,9 @@ STRINGLIB_API bool STRINGLIB_CALL slStringContains(unsigned srcLen, const char *
 STRINGLIB_API void STRINGLIB_CALL slStringExtractMultiple(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned __int64 mask);
 STRINGLIB_API unsigned STRINGLIB_CALL slEditDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right);
 STRINGLIB_API bool STRINGLIB_CALL slEditDistanceWithinRadiusV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius);
+STRINGLIB_API unsigned STRINGLIB_CALL slDamerauLevenshteinDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right);
+STRINGLIB_API unsigned STRINGLIB_CALL slWeightedDamerauLevenshteinDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right);
+STRINGLIB_API unsigned STRINGLIB_CALL slOptimalStringAlignmentDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right);
 STRINGLIB_API void STRINGLIB_CALL slStringGetNthWord(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned n);
 STRINGLIB_API unsigned STRINGLIB_CALL slStringWordCount(unsigned srcLen, const char * src);
 STRINGLIB_API void STRINGLIB_CALL slStringExcludeLastWord(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src);

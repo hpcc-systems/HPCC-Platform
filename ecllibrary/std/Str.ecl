@@ -300,7 +300,7 @@ EXPORT STRING CombineWords(SET OF STRING words, STRING separator) := lib_stringl
 
 
 /**
- * Returns the minimum edit distance between the two strings.  An insert change or delete counts as a single edit.
+ * Returns the minimum (Levenshtein) edit distance between the two strings.  An insert, change, or delete counts as a single edit.
  * The two strings are trimmed before comparing.
  * 
  * @param _left         The first string to be compared.
@@ -311,13 +311,51 @@ EXPORT STRING CombineWords(SET OF STRING words, STRING separator) := lib_stringl
 EXPORT UNSIGNED4 EditDistance(STRING _left, STRING _right) :=
     lib_stringlib.StringLib.EditDistanceV2(_left, _right);
 
+EXPORT UNSIGNED4 LevenshteinDistance(STRING _left, STRING _right) :=
+    lib_stringlib.StringLib.EditDistanceV2(_left, _right);
+/**
+ * Returns the minimum Damerau–Levenshtein (restricted) edit distance (AKA optimal string alignment distance) between the two strings.
+ * The two strings are trimmed before comparing.
+ * 
+ * @param _left         The first string to be compared.
+ * @param _right        The second string to be compared.
+ * @return              The minimum edit distance between the two strings.
+ */
+
+EXPORT UNSIGNED4 OptimalStringAlignmentDistance(STRING _left, STRING _right) :=
+    lib_stringlib.StringLib.OptimalStringAlignmentDistanceV2(_left, _right);
+
+/**
+ * Returns the minimum Damerau–Levenshtein (unrestricted) edit distance between the two strings.
+ * The two strings are trimmed before comparing.
+ * 
+ * @param _left         The first string to be compared.
+ * @param _right        The second string to be compared.
+ * @return              The minimum edit distance between the two strings.
+ */
+
+EXPORT UNSIGNED4 DamerauLevenshteinDistance(STRING _left, STRING _right) :=
+    lib_stringlib.StringLib.damerauLevenshteinDistanceV2(_left, _right);
+
+/**
+ * Returns the minimum Damerau–Levenshtein (unrestricted) edit distance between the two strings.
+ * The two strings are trimmed before comparing.
+ * 
+ * @param _left         The first string to be compared.
+ * @param _right        The second string to be compared.
+ * @return              The minimum edit distance between the two strings.
+ */
+
+EXPORT UNSIGNED4 WeightedDamerauLevenshteinDistance(STRING _left, STRING _right) :=
+    lib_stringlib.StringLib.weightedDamerauLevenshteinDistanceV2(_left, _right);
+    
 /**
  * Returns true if the minimum edit distance between the two strings is with a specific range.
  * The two strings are trimmed before comparing.
  * 
  * @param _left         The first string to be compared.
  * @param _right        The second string to be compared.
- * @param radius        The maximum edit distance that is accepable.
+ * @param radius        The maximum edit distance that is acceptable.
  * @return              Whether or not the two strings are within the given specified edit distance.
  */
 

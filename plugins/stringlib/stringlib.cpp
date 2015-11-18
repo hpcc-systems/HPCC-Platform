@@ -74,9 +74,15 @@ static const char * EclDefinition =
 "  boolean StringContains(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint='slStringContains'; \n"
 "  string StringExtractMultiple(const string src, unsigned8 mask) : c,pure,entrypoint='slStringExtractMultiple'; \n"
 "  unsigned integer4 EditDistance(const string l, const string r) : c, pure,entrypoint='slEditDistanceV2'; \n"
-"  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
 "  unsigned integer4 EditDistanceV2(const string l, const string r) : c, pure,entrypoint='slEditDistanceV2'; \n"
+"  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
 "  boolean EditDistanceWithinRadiusV2(const string l, const string r, unsigned4 radius) : c,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
+"  unsigned integer4 OptimalStringAlignmentDistance(const string l, const string r) : c, pure,entrypoint='slOptimalStringAlignmentDistanceV2'; \n"
+"  unsigned integer4 OptimalStringAlignmentDistanceV2(const string l, const string r) : c, pure,entrypoint='slOptimalStringAlignmentDistanceV2'; \n"
+"  unsigned integer4 DamerauLevenshteinDistance(const string l, const string r) : c, pure,entrypoint='slDamerauLevenshteinDistanceV2'; \n"
+"  unsigned integer4 DamerauLevenshteinDistanceV2(const string l, const string r) : c, pure,entrypoint='slDamerauLevenshteinDistanceV2'; \n"
+"  unsigned integer4 WeightedDamerauLevenshteinDistance(const string l, const string r) : c, pure,entrypoint='slWeightedDamerauLevenshteinDistanceV2'; \n"
+"  unsigned integer4 WeightedDamerauLevenshteinDistanceV2(const string l, const string r) : c, pure,entrypoint='slWeightedDamerauLevenshteinDistanceV2'; \n"
 "  string StringGetNthWord(const string src, unsigned4 n) : c, pure,entrypoint='slStringGetNthWord'; \n"
 "  string StringExcludeLastWord(const string src) : c, pure,entrypoint='slStringExcludeLastWord'; \n"
 "  string StringExcludeNthWord(const string src, unsigned4 n) : c, pure,entrypoint='slStringExcludeNthWord'; \n"
@@ -190,7 +196,7 @@ unsigned editDistance(unsigned leftLen, const char * left, unsigned rightLen, co
     //Optimize the storage requirements by
     //i) Only storing two stripes
     //ii) Calculate, but don't store the row comparing against the null string
-    unsigned char da[2][256];
+    unsigned char da[3][256];
     char r_0 = right[0];
     char l_0 = left[0];
     bool matched_l0 = false;
@@ -223,6 +229,269 @@ unsigned editDistance(unsigned leftLen, const char * left, unsigned rightLen, co
     return da[mask(leftLen-1)][rightLen-1];
 }
 
+unsigned optimalStringAlignmentDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
+{
+    /* This is the restricted form of the Damerau-Levenshtein distance AKA optimal string alignment (OSA).
+     * It is restricted in that a substring can only be altered once.
+     * e.g. OSA(CA, ABC) = 3, CA -> A -> AB -> ABC : fullDL(CA, ABC) = 2, CA -> AC -> ABC (i.e. a transposition then an insertion upon that transposition).
+     * e.g. OSA(abcde, acbed) = 3 & fullDL(abcde, acbed) = 2
+     */
+    if (rightLen < 2 || leftLen < 2)
+        return editDistance(leftLen, left, rightLen, right);
+
+    unsigned i, j;
+
+    clip(leftLen, left);
+    clip(rightLen, right);
+
+    if (leftLen > 255)
+        leftLen = 255;
+
+    if (rightLen > 255)
+        rightLen = 255;
+
+    if (leftLen == 0)
+        return rightLen;
+
+    if (rightLen == 0)
+        return leftLen;
+
+#if 0
+    unsigned char d[256][256];
+    for (i = 0; i <=leftLen; ++i)
+    {
+        d[i][0] = i;
+    }
+    for (j = 0; j <=rightLen; ++j)
+    {
+        d[0][j] = j;
+    }
+
+    for (j = 1; j <= rightLen; ++j)
+    {
+        for (i = 1; i <= leftLen; ++i)
+        {
+            unsigned char cost = left[i-1] == right[j-1] ? 0 : 1;
+            d[i][j] = min3( d[i][j-1]+1, d[i-1][j] + 1, d[i-1][j-1] + cost);
+            if(i > 1 && j > 1 && left[i-1] == right[j-2] && left[i-2] == right[j-1] &&  d[i][j] > d[i-2][j-2] + cost)
+                d[i][j] = d[i-2][j-2] + cost;
+            }
+    }
+
+#if 0
+    for (i = 0; i <= leftLen; ++i)
+    {
+        for (j = 0; j <= rightLen; ++j)
+        {
+            printf(" %u", d[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+#endif
+    return d[leftLen][rightLen];
+#endif
+
+    //Optimize the storage requirements by
+    //i) Only storing two stripes + one more for adjacent transpositions i.e. D(i-2, j-2). Do this always even if not needed when min(leftLen, rightLen) < 3 so as to allocate on the stack.
+    unsigned char da[3][256];
+    char r_0 = right[0];
+    char l_0 = left[0];
+    bool matched_l0 = false;
+    //Transpositions aren't included until i,j > 1 to allow for -2 offset - therefore this first row is the same as for Levenshtein.
+    for (j = 0; j < rightLen; j++)
+    {
+        if (right[j] == l_0) matched_l0 = true;
+        da[0][j] = (matched_l0) ? j : j+1;
+        da[2][j] = j; //This is the NULL row. NOTE: da[2][reightLen] is never actually referenced.
+    }
+
+    bool matched_r0 = (l_0 == r_0);
+    for (i = 1; i < leftLen; ++i)
+    {
+        char l_i = left[i];
+        if (l_i == r_0)
+            matched_r0 = true;
+        //Initialise NULL string boundary
+        byte da_i_0 = matched_r0 ? i : i+1;
+        /*Instead of always using da[0][j] for D[i-1][j] and da[1][] for D[i][] and have to copy da[1][] to da[0][] with each ith iteration,
+         * rotate active insertion row about each i using the mask(i) = i & 1 to control row insertion thus eliminating the superfluous copy an
+         * the entire row.
+         */
+        da[mask(i)][0] = da_i_0;
+        byte da_i_prevj = da_i_0;
+        for (j = 1; j < rightLen; ++j)
+        {
+            char r_j = right[j];
+            unsigned char cost = (l_i == r_j) ? 0 : 1;
+            unsigned char next = min3(da[mask(i-1)][j] + 1/*deletion*/, da_i_prevj + 1/*insertion*/, da[mask(i-1)][j-1] + cost/*substitution*/);
+            if (i > 1 && j > 1 && l_i == right[j-1] && left[i-1] == r_j && next > da[2][j-2] + cost)
+                next = da[2][j-2] + cost;
+            da[2][j] = da[mask(i-1)][j];
+            da[mask(i)][j] = next;
+            da_i_prevj = next;
+        }
+        da[2][0] = i-1;
+    }
+
+    return da[mask(leftLen-1)][rightLen-1];
+}
+
+/*The following confusion  matrix holds the cost of transpositions and substitutions for weighted-Damerau-Levenshtein Distance.
+ *If two characters are likely to be confused, their cost = 0.
+ *Confusions include optical (i & l), vowel pairs (ie & ei etc), keyboard proximity ( g with t, y, h, b, v, & f).
+ *Optical confusions are derived from lower case comparisons only. Whilst the matrix itself is only lower case
+ *the implementation of weightedDamerauLevenshteinDistance is case insensitive (not generically) as it converts both lower and upper
+ *character references to this matrix. Note, however, that the implementation is not generically case insensitive but instead only
+ *when referencing this default confusion matrix.
+ */
+static byte const defaultConfusionMatrixLength = 26;
+static unsigned char defaultConfusionMatrix[defaultConfusionMatrixLength*(defaultConfusionMatrixLength+1)/2] =
+{
+   // a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z
+/*a*/ 0,
+/*b*/ 1, 0,
+/*c*/ 1, 1, 0,
+/*d*/ 1, 0, 0, 0,
+/*e*/ 0, 1, 0, 0, 0,
+/*f*/ 1, 1, 0, 0, 1, 0,
+/*g*/ 1, 0, 1, 1, 1, 0, 0,
+/*h*/ 1, 0, 1, 1, 1, 1, 0, 0,
+/*i*/ 1, 1, 1, 1, 0, 1, 1, 1, 0,
+/*j*/ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+/*k*/ 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+/*l*/ 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0,
+/*m*/ 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0,
+/*n*/ 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+/*o*/ 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0,
+/*p*/ 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0,
+/*q*/ 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+/*r*/ 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+/*s*/ 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+/*t*/ 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0,
+/*u*/ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0,
+/*v*/ 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+/*w*/ 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0,
+/*x*/ 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0,
+/*y*/ 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0,
+/*z*/ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0
+   // a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z
+};
+#define defaultConfusionMatrixIndx(i,j) (i>=j)?(i*(i+1)>>1)+j:(j*(j+1)>>1)+i
+#define defaultConfusionMatrix(i,j) defaultConfusionMatrix[defaultConfusionMatrixIndx(i,j)]
+
+unsigned damerauLevenshteinDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned char * confusionMatrix/*= NULL*/, byte confusionMatrixLength/*= 0*/)
+{
+    //if (rightLen < 2 || leftLen < 2)
+    //    return editDistance(leftLen, left, rightLen, right);
+
+    unsigned i, j;
+
+    clip(leftLen, left);
+    clip(rightLen, right);
+
+    if (leftLen > 255)
+        leftLen = 255;
+
+    if (rightLen > 255)
+        rightLen = 255;
+
+    if (leftLen == 0)
+        return rightLen;
+
+    if (rightLen == 0)
+        return leftLen;
+
+    unsigned char d[256][256];
+    unsigned char c[256];
+
+    //Initialize relevant character alphabet only, other characters are irrelevant.
+    for (i = 0; i < leftLen; ++i)
+    {
+        c[left[i]] = 0;
+    }
+    for (j = 0; j < rightLen; ++j)
+    {
+        c[right[j]] = 0;
+    }
+
+    for (i = 0; i <= leftLen; ++i)
+    {
+        d[i][0] = i;
+    }
+    for (j = 0; j <= rightLen; ++j)
+    {
+        d[0][j] = j;
+    }
+
+    for (i = 1; i <= leftLen; ++i)
+    {
+        unsigned db = 0;
+        byte im1 = i-1;
+        for (j = 1; j <= rightLen; ++j)
+        {
+            byte jm1 = j-1;
+            byte i1 = c[right[jm1]];
+            byte j1 = db;
+            unsigned char next = 0;
+            unsigned char cost = 1;
+            if (left[im1] == right[jm1])
+            {
+                cost = 0;
+                db = j;
+                //next = min3(d[i][j-1] + 1, d[i-1][j] + 1, d[i-1][j-1]);
+                next = d[i][jm1] < d[im1][j] ? d[i][jm1] : d[im1][j];
+                ++next;
+                if (next > d[im1][jm1])
+                    next = d[im1][jm1];
+            }
+            else
+            {
+                if (confusionMatrix)
+                {
+                    byte a = left[im1];
+                    byte b = right[jm1];
+                    if (confusionMatrix == defaultConfusionMatrix)
+                    {
+                        //Check characters are covered by default confusion matrix.
+                        if ( ((a >= 97 && a <= 122) || (a >= 65 && a <= 90)) && ((b >= 97 && b <= 122) || (b >= 65 && b <= 90)) )
+                        {
+                            //Make case insensitive
+                            a -= (a >= 97) ? 97 : 65;
+                            b -= (b >= 97) ? 97 : 65;
+                            cost = defaultConfusionMatrix(a, b);
+                        }
+                    }
+                    else if (a < confusionMatrixLength && b < confusionMatrixLength)//MORE: Could pass in an offset to where defaultConfusionMatrix starts in the ascii table?
+                        cost = *(confusionMatrix + a*confusionMatrixLength + b);
+                }
+
+                next = min3(d[i  ][jm1] + 1,
+                            d[im1][j  ] + 1,
+                            d[im1][jm1] + cost);
+            }
+            d[i][j] = next;
+
+            if (i1 > 0 && j1 > 0)
+            {
+                unsigned char transposition = d[i1-1][j1-1] + (im1-i1) + (jm1-j1) + cost;
+                if (d[i][j] > transposition)
+                    d[i][j] = transposition;
+            }
+        }
+        c[left[im1]] = i;
+    }
+
+    return d[leftLen][rightLen];
+}
+
+unsigned weightedDamerauLevenshteinDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned char * confusionMatrix/*= NULL*/, byte confusionMatrixLength/*= 0*/)
+{
+    if (confusionMatrix && confusionMatrixLength > 0)
+        return damerauLevenshteinDistance(leftLen, left, rightLen, right, confusionMatrix, confusionMatrixLength);
+    else
+        return damerauLevenshteinDistance(leftLen, left, rightLen, right, defaultConfusionMatrix, defaultConfusionMatrixLength);
+}
 
 //This could be further improved in the following ways:
 // * Only use 2*radius bytes of temporary storage - I doubt it is worth it.
@@ -951,6 +1220,24 @@ STRINGLIB_API unsigned STRINGLIB_CALL slEditDistanceV2(unsigned leftLen, const c
     return nsStringlib::editDistance(leftLen, left, rightLen, right);
 }
 
+STRINGLIB_API unsigned STRINGLIB_CALL slLevenshteinDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
+{
+    return nsStringlib::editDistance(leftLen, left, rightLen, right);
+}
+
+STRINGLIB_API unsigned STRINGLIB_CALL slDamerauLevenshteinDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
+{
+    return nsStringlib::damerauLevenshteinDistance(leftLen, left, rightLen, right, NULL, 0);
+}
+
+STRINGLIB_API unsigned STRINGLIB_CALL slWeightedDamerauLevenshteinDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
+{
+    return nsStringlib::weightedDamerauLevenshteinDistance(leftLen, left, rightLen, right, NULL, 0);
+}
+STRINGLIB_API unsigned STRINGLIB_CALL slOptimalStringAlignmentDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
+{
+    return nsStringlib::optimalStringAlignmentDistance(leftLen, left, rightLen, right);
+}
 
 STRINGLIB_API bool STRINGLIB_CALL slEditDistanceWithinRadiusV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
 {
