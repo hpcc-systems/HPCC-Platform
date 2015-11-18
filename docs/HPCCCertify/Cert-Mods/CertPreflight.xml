@@ -8,7 +8,7 @@
   configured properly is to run a preflight check on the components. This
   ensures that all machines are operating and have the proper executables
   running. This also confirms there is adequate disk space, available memory,
-  and acceptable available CPU % values. </para>
+  and acceptable available CPU % values.</para>
 
   <itemizedlist mark="bullet">
     <listitem>
@@ -52,7 +52,7 @@
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon
         then click on the <emphasis role="bold">System Servers</emphasis>
-        link. </para>
+        link.</para>
 
         <para><figure>
             <title>System Servers link</title>
@@ -115,7 +115,7 @@
           </mediaobject>
         </figure>This screen displays information on several system
       components. This information indicates whether several components are
-      actually up and running appropriately. The resulting page shows useful
+      actually running appropriately. The resulting page shows useful
       information about each component. The component name, the condition, the
       component state, how long the component has been up and running, the
       amount of disk usage, memory usage and other information is available at
@@ -136,6 +136,104 @@
           </imageobject>
         </mediaobject>
       </figure>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Preflight_Target_Clusters">
+    <title>Preflight Target Clusters</title>
+
+    <para>Use the Target Clusters link to preflight all your clusters at once.
+    To preflight clusters individually, see the following <emphasis>Preflight
+    Thor</emphasis> or <emphasis>Preflight Roxie</emphasis> sections.</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon
+        then click on the <emphasis role="bold">Target Clusters</emphasis>
+        link.</para>
+
+        <para><figure>
+            <title>Target Clusters Link</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg040.jpg"
+                           vendor="eclwatchSS, topology" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>This displays all of your system Clusters.</para>
+      </listitem>
+
+      <listitem>
+        <para>Click to check on the <emphasis role="bold">Select All /
+        None</emphasis> box, to select all of the clusters.</para>
+
+        <para>Optionally, you can just check the box(es) next to the
+        cluster(s) you want to check.</para>
+
+        <para><figure>
+            <title>Select Target Clusters</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg041.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Press the <emphasis role="bold">Submit</emphasis> button at the
+        bottom of the page to start preflight.</para>
+
+        <para><figure>
+            <title>Submit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg03.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+    </orderedlist>
+
+    <sect2 id="Expected_Results_Data_refinery">
+      <title>EXPECTED RESULTS:</title>
+
+      <para>After pressing <emphasis role="bold">Submit</emphasis>, a screen
+      similar to the following should display.<figure>
+          <title>Target Cluster Information</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/CSimg042.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure>This screen displays information on your system's component
+      nodes. This information can help to indicate if everything is operating
+      normally or can help to point out any potential concerns.</para>
+
+      <para>If there are any failed components or notable alerts, they are
+      highlighted in orange. These alerts usually require some
+      attention.</para>
+
+      <figure>
+        <title>Failed Component</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../../images/CS-1912.jpg" vendor="eclwatchSS" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>If you have any orange fields you should examine the specified
+      component further. It is indicative of some kind of problem or
+      abnormality.</para>
     </sect2>
   </sect1>
 
@@ -211,12 +309,9 @@
               <imagedata fileref="../../images/CSimg07.jpg" />
             </imageobject>
           </mediaobject>
-        </figure>This screen displays information on Thor components. This
-      information indicates whether the components are actually up and running
-      appropriately. The resulting page shows useful information about each
-      component. The component name, the condition, the component state, how
-      long the component has been up and running, the amount of disk usage,
-      memory usage and other information is available at a glance.</para>
+        </figure>This screen displays information on your Thor cluster. This
+      information can help to indicate if everything is operating normally or
+      can help to point out any potential concerns.</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -240,8 +335,9 @@
 
       <?hard-pagebreak ?>
 
-      <para>If there are any failed components, they are highlighted in
-      orange, indicating they are not ready.</para>
+      <para>If there are any failed nodes or notable alerts, they are
+      highlighted in orange. The orange alerts usually require some additional
+      attention.</para>
 
       <figure>
         <title>Failed Component</title>
@@ -310,8 +406,8 @@
           </mediaobject>
         </figure></para>
 
-      <para>This indicates whether the Roxie nodes are up and running, and
-      some information about them.</para>
+      <para>This indicates whether the Roxie nodes are running, and some
+      additional information about them.</para>
 
       <informaltable colsep="1" frame="all" rowsep="1">
         <?dbfo keep-together="always"?>
