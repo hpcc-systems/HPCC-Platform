@@ -259,8 +259,22 @@ void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &ent
     if (!javaServiceMap.getValue(javaScopedClass))
     {
         VStringBuffer classPathOption("classpath=%s", classPath);
-        Owned<IEmbedServiceContext> srvctx = ensureJavaEmbeded().createServiceContext(javaScopedClass, EFimport, classPathOption);
-        javaServiceMap.setValue(javaScopedClass, srvctx.getClear());
+        try
+        {
+            Owned<IEmbedServiceContext> srvctx = ensureJavaEmbeded().createServiceContext(javaScopedClass, EFimport, classPathOption);
+            if (srvctx)
+                javaServiceMap.setValue(javaScopedClass, srvctx.getClear());
+            else
+            {
+                //Log error, but try again next reload, in case the java class is fixed
+                DBGLOG("ESDL binding - failed to load java class %s for target method %s", javaScopedClass.str(), method);
+            }
+        }
+        catch (IException *E)
+        {
+            DBGLOG(E, "DynamicESDL-JavaMethod:");
+            E->Release();
+        }
     }
 }
 
