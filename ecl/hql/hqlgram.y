@@ -5890,25 +5890,25 @@ primexpr1
                         {
                             parser->normalizeExpression($3);
                             IHqlExpression * expr = $3.getExpr();
-                            $$.setExpr(createValue(no_nofold, expr->getType(), expr));
+                            $$.setExpr(createValue(no_nofold, expr->getType(), expr), $1);
                         }
     | NOCOMBINE '(' expression ')'
                         {
                             parser->normalizeExpression($3);
                             IHqlExpression * expr = $3.getExpr();
-                            $$.setExpr(createValue(no_nocombine, expr->getType(), expr));
+                            $$.setExpr(createValue(no_nocombine, expr->getType(), expr), $1);
                         }
     | NOHOIST '(' expression ')'
                         {
                             parser->normalizeExpression($3);
                             IHqlExpression * expr = $3.getExpr();
-                            $$.setExpr(createValue(no_nohoist, expr->getType(), expr));
+                            $$.setExpr(createValue(no_nohoist, expr->getType(), expr), $1);
                         }
     | NOTHOR '(' expression ')'
                         {
                             parser->normalizeExpression($3);
                             IHqlExpression * expr = $3.getExpr();
-                            $$.setExpr(createValue(no_nothor, expr->getType(), expr));
+                            $$.setExpr(createValue(no_nothor, expr->getType(), expr), $1);
                         }
     | ABS '(' expression ')'
                         {
