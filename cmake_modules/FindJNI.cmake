@@ -195,6 +195,7 @@ JAVA_APPEND_LIBRARY_DIRECTORIES(JAVA_AWT_EXPANDED_INCLUDE_DIRECTORIES
   /usr/lib/jvm/java-6-sun-1.6.0.00/include       # can this one be removed according to #8821 ? Alex
   /usr/lib/jvm/java-7-openjdk-{libarch}/include  # Ubuntu 13.04 location
   /usr/lib/jvm/java-6-openjdk-{libarch}/jre/lib/{libarch}  # Ubuntu 12.10 location
+  /usr/lib/jvm/java-6-openjdk-{libarch}/include
   /usr/lib/jvm/java-6-openjdk/include
   /usr/local/share/java/include
   /usr/lib/j2sdk1.4-sun/include
