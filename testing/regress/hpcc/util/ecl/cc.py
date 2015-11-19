@@ -64,8 +64,10 @@ class ECLCC(Shell):
                     lowerLine = line.lower()
                     if  (": error " in lowerLine) or (": warning " in lowerLine):
                         ecl.diff += line.replace("'",  "")
-                    if ("): error " in  line) or ("): warning " in lowerLine):
+                    elif ("): error " in  line) or ("): warning " in lowerLine):
                         ecl.diff += line.replace("\\'", "'")
+                    else:
+                        ecl.diff += line
                 #ecl.diff += repr(self.makeArchiveError).replace('\\n',  '\n\t')
             except Exception as ex:
                 logging.debug("Exception:'%s'",  str(ex))
