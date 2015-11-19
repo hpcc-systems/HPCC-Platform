@@ -1561,8 +1561,19 @@ void CHttpRequest::getBasicAuthorization(StringBuffer& userid, StringBuffer& pas
 
     StringBuffer uidpair;
     Utils::base64decode(authheader.length() - strlen("Basic "), authheader.str() + strlen("Basic "), uidpair);
+
+    //uidpair formatted as   [domain\]username:password    (domain optional)
     
+    //Look for optional domain name separator. Assumes username cannot contain '\'
     const char* pairstr = strchr(uidpair.str(), '\\');
+
+    if (pairstr)
+    {
+        const char * pwdSep = strchr(uidpair, ':');//look for user:pwd separator
+        if (pwdSep && pwdSep < pairstr)//if : is before \, then \ is part of password and not domain separator
+            pairstr = NULL;
+    }
+
     if(pairstr!=NULL)
     {
         realm.append(pairstr - uidpair.str(),uidpair.str());

@@ -717,7 +717,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         
         roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true);   // enable use of multicast for sending requests to slaves
         if (udpSnifferEnabled && !roxieMulticastEnabled)
+        {
             DBGLOG("WARNING: ignoring udpSnifferEnabled setting as multicast not enabled");
+            udpSnifferEnabled = false;
+        }
 
         int ttlTmp = topology->getPropInt("@multicastTTL", 1);
         if (ttlTmp < 0)
