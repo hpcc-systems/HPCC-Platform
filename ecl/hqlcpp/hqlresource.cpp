@@ -3146,6 +3146,7 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
         case no_preservemeta:
         case no_nofold:
         case no_nohoist:
+        case no_nocombine:
         case no_section:
         case no_sectioninput:
         case no_dataset_alias:
