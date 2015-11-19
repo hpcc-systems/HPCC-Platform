@@ -326,7 +326,7 @@ RTLUnicodeConverter * queryRTLUnicodeConverter(char const * codepage)
 {
     if (!unicodeConverterMap) // NB: one per thread, so no contention
     {
-        unicodeConverterMap = new MapStrToUnicodeConverter(GetCurrentThreadId());
+        unicodeConverterMap = new MapStrToUnicodeConverter;
         // Use thread terminator hook to clear them up on thread exit.
         // NB: May need to revisit if not on a jlib Thread.
         prevThreadTerminator = addThreadTermFunc(clearUnicodeConverterMap);
