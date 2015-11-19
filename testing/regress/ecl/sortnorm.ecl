@@ -4,7 +4,7 @@
 //version algo='mergesort'
 //version algo='parmergesort'
 //version algo='heapsort'
-//version algo='tbbstableqsort'
+//version algo='tbbstableqsort',nohthor
 
 import ^ as root;
 algo := #IFDEFINED(root.algo, 'quicksort');

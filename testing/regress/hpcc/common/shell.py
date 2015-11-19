@@ -58,12 +58,14 @@ class Shell:
         logging.debug("Shell _run retCode: %d",  retCode)
         logging.debug("            stdout:'%s'",  stdout)
         logging.debug("            stderr:'%s'",  stderr)
+
         if retCode or ((len(stderr) > 0) and ('Error' in stderr)):
             exception = CalledProcessError(
                 process.returncode, repr(args))
-            exception.output = ''.join(filter(None, [stdout, stderr]))
-            logging.debug("exception.output:'%s'",  exception.output)
-            raise Error('1001', err=repr(exception.output))
+            err_msg = "retCode: "+str(retCode)+", msg:'"+str(''.join(filter(None, [stdout, stderr])))+"'"
+            exception.output = err_msg
+            logging.debug("exception.output:'%s'",  err_msg)
+            raise Error('1001', err=str(err_msg))
         return stdout
 
     # Currently hacked to use the CMD dict as which can be tempramental.
