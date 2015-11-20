@@ -162,6 +162,8 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
     return true;
 }
 
+static bool jobListenerStopped = true;
+
 void UnregisterSelf(IException *e)
 {
     StringBuffer slfStr;
@@ -180,7 +182,8 @@ void UnregisterSelf(IException *e)
         LOG(MCdebugProgress, thorJob, "Unregistered slave : %s", slfStr.str());
     }
     catch (IException *e) {
-        FLLOG(MCexception(e), thorJob, e,"slave unregistration error");
+        if (!jobListenerStopped)
+            FLLOG(MCexception(e), thorJob, e,"slave unregistration error");
         e->Release();
     }
 }
@@ -189,9 +192,12 @@ bool ControlHandler(ahType type)
 {
     if (ahInterrupt == type)
         LOG(MCdebugProgress, thorJob, "CTRL-C pressed");
-    if (masterNode)
-        UnregisterSelf(NULL);
-    abortSlave();
+    if (!jobListenerStopped)
+    {
+        if (masterNode)
+            UnregisterSelf(NULL);
+        abortSlave();
+    }
     return false;
 }
 
@@ -403,14 +409,15 @@ int main( int argc, char *argv[]  )
                 else
                     multiThorMemoryThreshold = 0;
             }
-            slaveMain();
+            slaveMain(jobListenerStopped);
         }
 
         LOG(MCdebugProgress, thorJob, "ThorSlave terminated OK");
     }
     catch (IException *e) 
     {
-        FLLOG(MCexception(e), thorJob, e,"ThorSlave");
+        if (!jobListenerStopped)
+            FLLOG(MCexception(e), thorJob, e,"ThorSlave");
         unregisterException.setown(e);
     }
     ClearTempDirs();

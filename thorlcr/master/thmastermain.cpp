@@ -338,16 +338,15 @@ public:
     {
         CriticalBlock block(crit);
         unsigned i=0;
+        mptag_t shutdownTag = createReplyTag();
         for (; i<queryNodeClusterWidth(); i++)
         {
             if (status->test(i))
             {
-                status->set(i, false);
                 SocketEndpoint ep = queryNodeGroup().queryNode(i+1).endpoint();
-                if (watchdog)
-                    watchdog->removeSlave(ep);
                 CMessageBuffer msg;
                 msg.append((unsigned)Shutdown);
+                serializeMPtag(msg, shutdownTag);
                 try
                 {
                     queryNodeComm().send(msg, i+1, masterSlaveMpTag, MP_ASYNC_SEND);
@@ -358,6 +357,48 @@ public:
                     EXCLOG(e, "Shutting down slave");
                     e->Release();
                 }
+                if (watchdog)
+                    watchdog->removeSlave(ep);
+            }
+        }
+
+        CTimeMon tm(20000);
+        unsigned numReplied = 0;
+        while (numReplied < slavesRegistered)
+        {
+            unsigned remaining;
+            if (tm.timedout(&remaining))
+            {
+                PROGLOG("Timeout waiting for Shutdown reply from slave(s) (%u replied out of %u total)", numReplied, slavesRegistered);
+                StringBuffer slaveList;
+                for (i=0;i<slavesRegistered;i++)
+                {
+                    if (status->test(i))
+                    {
+                        if (slaveList.length())
+                            slaveList.append(",");
+                        slaveList.append(i+1);
+                    }
+                }
+                if (slaveList.length())
+                    PROGLOG("Slaves that have not replied: %s", slaveList.str());
+                break;
+            }
+            try
+            {
+                rank_t sender;
+                CMessageBuffer msg;
+                if (queryNodeComm().recv(msg, RANK_ALL, shutdownTag, &sender, remaining))
+                {
+                    if (sender) // paranoid, sender should always be > 0
+                        status->set(sender-1, false);
+                    numReplied++;
+                }
+            }
+            catch (IException *e)
+            {
+                // do not log MP link closed exceptions from ending slaves
+                e->Release();
             }
         }
     }

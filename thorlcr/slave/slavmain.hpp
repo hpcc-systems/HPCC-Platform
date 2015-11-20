@@ -19,7 +19,7 @@
 #define SLAVMAIN_HPP
 
 void abortSlave();
-void slaveMain();
+void slaveMain(bool &jobListenerStopped);
 void enableThorSlaveAsDaliClient();
 void disableThorSlaveAsDaliClient();
 
