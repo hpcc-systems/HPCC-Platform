@@ -1919,6 +1919,7 @@ public:
                 StringBuffer s;
                 master->logctx.CTXLOG("Exception %s - retrying? (%d<%d)", e->errorMessage(s).str(), attempts, master->maxRetries);
 
+                attempts++;
                 if (attempts > master->maxRetries)
                 {
                     // error affects all inputRows
@@ -1927,7 +1928,6 @@ public:
                     break;
                 }
                 master->logctx.CTXLOG("Retrying: maxRetries not exceeded");
-                attempts++;
                 e->Release();
             }
             catch (std::exception & es)
