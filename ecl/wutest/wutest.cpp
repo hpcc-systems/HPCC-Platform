@@ -1721,7 +1721,7 @@ protected:
 
         size32_t lenResult;
         void * result;
-        wsWorkunitList(&ctx, lenResult, result, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false);
+        wsWorkunitList(&ctx, lenResult, result, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL);
         /* export WsWorkunitRecord := record "
                                     " string24 wuid;"                         0
                                     " string owner{maxlength(64)};"           24
@@ -1759,7 +1759,7 @@ protected:
 
         // Now filter owner via generic mechanism
         unsigned start = msTick();
-        wsWorkunitList(&ctx, lenResult, result, NULL, NULL, "WuTestUser00", NULL, NULL, "completed", NULL, NULL, NULL, NULL, NULL, true, false);
+        wsWorkunitList(&ctx, lenResult, result, NULL, NULL, "WuTestUser00", NULL, NULL, "completed", NULL, NULL, NULL, NULL, NULL, true, false, NULL);
         ASSERT(lenResult % sizeof(resultStruct) == 0);
         unsigned numResults = lenResult/sizeof(resultStruct);
         resultStruct *it = (resultStruct *) result;
