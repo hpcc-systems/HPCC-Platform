@@ -22,13 +22,11 @@ string20        surname;
             END;
 
 
-//Horrible code - get a list of workunits that match the name of the job that creates the result
+//Horrible code - get a list of workunits that create the result
 //which needs to be inside a nothor.
 
 import Std.System.Workunit as Wu;
-myWuid := workunit;
-startOfDay := myWuid[1..9] + '-000000';
-writers := Wu.WorkunitList(lowWuid := startOfDay,jobname := 'aaawriteresult*');
+writers := Wu.WorkunitList(appvalues := 'regress/writeresult=1');
 
 //Now sort and extract the most recent wuid that matches the condition
 lastWriter := sort(nothor(writers), -wuid);

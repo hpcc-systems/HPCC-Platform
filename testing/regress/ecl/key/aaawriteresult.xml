@@ -1,3 +1,6 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>true</Result_1></Row>
+</Dataset>
 <Dataset name='ExportedNames'>
  <Row><forename>Jo        </forename><surname>Smith               </surname></Row>
  <Row><forename>Jim       </forename><surname>Smithe              </surname></Row>

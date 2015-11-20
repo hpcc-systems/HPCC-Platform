@@ -34,8 +34,12 @@
 #include "workunit.hpp"
 #include "eclhelper.hpp"
 
-WORKUNITSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
-WORKUNITSERVICES_API void setPluginContext(IPluginContext * _ctx);
+extern "C"
+{
+  WORKUNITSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
+  WORKUNITSERVICES_API void setPluginContext(IPluginContext * _ctx);
+}
+
 WORKUNITSERVICES_API char * WORKUNITSERVICES_CALL wsGetBuildInfo(void);
 
 WORKUNITSERVICES_API bool WORKUNITSERVICES_CALL wsWorkunitExists(ICodeContext *ctx, const char *wuid, bool online, bool archived);
@@ -67,6 +71,8 @@ WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitFilesRead( ICodeContex
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitFilesWritten( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid );
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitTimings( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid );
 WORKUNITSERVICES_API IRowStream * WORKUNITSERVICES_CALL wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, bool includeActivities, const char * filterText);
+
+WORKUNITSERVICES_API bool WORKUNITSERVICES_CALL wsWorkunitTimings( ICodeContext *ctx, const char *wuid, const char * appname, const char *key, const char *value, bool overwrrite);
 
 #endif
 

@@ -120,10 +120,10 @@ static const char * EclDefinition =
                             " string description;"
                             " string unit;"
                         " end;\n"
-"export WorkunitServices := SERVICE\n"
+"export WorkunitServices := SERVICE : cpp\n"
 "   boolean WorkunitExists(const varstring wuid, boolean online=true, boolean archived=false) : context,entrypoint='wsWorkunitExists'; \n"
 "   dataset(WsWorkunitRecord) WorkunitList("
-                                        " const varstring lowwuid," 
+                                        " const varstring lowwuid='',"
                                         " const varstring highwuid=''," 
                                         " const varstring username=''," 
                                         " const varstring cluster=''," 
@@ -146,7 +146,7 @@ static const char * EclDefinition =
 "  dataset(WsFileWritten) WorkunitFilesWritten(const varstring wuid) : context,entrypoint='wsWorkunitFilesWritten'; \n"
 "  dataset(WsTiming) WorkunitTimings(const varstring wuid) : context,entrypoint='wsWorkunitTimings'; \n"
 "  streamed dataset(WsStatistic) WorkunitStatistics(const varstring wuid, boolean includeActivities = false, const varstring _filter = '') : context,entrypoint='wsWorkunitStatistics'; \n"
-    
+"  boolean setWorkunitAppValue(const varstring app, const varstring key, const varstring value, boolean overwrite=true) : context,entrypoint='wsSetWorkunitAppValue'; \n"
 "END;";
 
 #define WAIT_SECONDS 30
@@ -728,6 +728,17 @@ WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngi
         filter->setScopeDepth(1, 2);
     Owned<IConstWUStatisticIterator> stats = &wu->getStatistics(filter);
     return new StreamedStatistics(wu, allocator, stats);
+}
+
+WORKUNITSERVICES_API bool wsSetWorkunitAppValue( ICodeContext *ctx, const char *appname, const char *key, const char *value, bool overwrite)
+{
+    if (appname && *appname && key && *key && value && *value)
+    {
+        WorkunitUpdate w(ctx->updateWorkUnit());
+        w->setApplicationValue(appname, key, value, overwrite);
+        return true;
+    }
+    return false;
 }
 
 
