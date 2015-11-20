@@ -226,7 +226,7 @@ void Connection::redisConnect()
         context = ::redisConnect(ip.str(), port);
     else
     {
-        unsigned _timeLeft = timeLeft();
+        int _timeLeft = (int) timeLeft();
         struct timeval to = { _timeLeft/1000, (_timeLeft%1000)*1000 };
         context = ::redisConnectWithTimeout(ip.str(), port, to);
     }
@@ -280,7 +280,7 @@ unsigned Connection::timeLeft()
 }
 void Connection::redisSetTimeout()
 {
-    unsigned _timeLeft = timeLeft();
+    int _timeLeft = (int) timeLeft();
     if (_timeLeft == 0)
         return;
     struct timeval to = { _timeLeft/1000, (_timeLeft%1000)*1000 };

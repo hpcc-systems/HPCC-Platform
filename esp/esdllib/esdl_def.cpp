@@ -1893,7 +1893,7 @@ public:
     {
         if (filename && *filename)
         {
-            if (def->added.getValue(filename) == false)
+            if (!def->added.getValue(filename))
             {
                 StringBuffer dbgstr;
                 dbgstr.appendN(indent, ' ').append("Adding: ").append(filename);
@@ -1963,7 +1963,7 @@ void EsdlDefinition::addDefinitionFromXML(const StringBuffer & xmlDef, const cha
     if (!esdlDefId || !*esdlDefId)
         DBGLOG("XML ESDL definition cannot be loaded with out definition ID.");
 
-    if (added.getValue(esdlDefId) == false)
+    if (!added.getValue(esdlDefId))
     {
         DBGLOG("Loading XML ESDL definition: %s",esdlDefId);
         TimeSection ts("adding XML ESDL definition");

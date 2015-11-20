@@ -47,7 +47,7 @@ public:
 
     void transform(const char * source, const char * outdir="", StringBuffer * out=NULL, bool outputIncludes=true, bool includedESDL=false)
     {
-        if (added.getValue(source) == false)
+        if (!added.getValue(source))
         {
             if (optVerbose)
             {
