@@ -298,7 +298,7 @@ define([
 
     var Subgraph = declare([GraphItem], {
         constructor: function (graph, id) {
-            this._globalType = "Cluster";
+            this._globalType = id === "0" ? "Graph" : "Cluster";
             this.__hpcc_subgraphs = [];
             this.__hpcc_vertices = [];
             this.__hpcc_edges = [];
@@ -498,6 +498,15 @@ define([
                                 break;
                             case "edge":
                                 var edge = this.walkDocument(childNode, childNode.getAttribute("id"));
+                                if (edge.count) {
+                                    edge._eclwatchCount = edge.count.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                                }
+                                if (edge.inputProgress) {
+                                    edge._eclwatchInputProgress = "[" + edge.inputProgress.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "]";
+                                }
+                                if (edge.maxskew && edge.minskew) {
+                                    edge._eclwatchSkew = "+" + edge.maxskew + "%%, -" + edge.minskew + "%%";
+                                }
                                 retVal.addEdge(edge);
                                 break;
                             default:

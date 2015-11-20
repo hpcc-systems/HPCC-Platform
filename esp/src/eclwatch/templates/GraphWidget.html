@@ -20,15 +20,45 @@
                 </select>
                 <span data-dojo-type="dijit.ToolbarSeparator"></span>
                 <span data-dojo-attach-point="containerNode"></span>
-                <div title="${i18n.DepthTooltip}" data-dojo-props="iconClass:'iconDepth', showLabel:false, disabled: true" data-dojo-type="dijit.form.Button"></div>
+                <div id="${id}DepthLabel" title="${i18n.DepthTooltip}" data-dojo-props="iconClass:'iconDepth', showLabel:false, disabled: true" data-dojo-type="dijit.form.Button"></div>
                 <input id="${id}Depth" style="width: 60px" value="2" title="${i18n.DepthTooltip}" data-dojo-attach-event="onChange:_onDepthChange" data-dojo-props="intermediateChanges:true, constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
                 <div id="${id}DistanceLabel" title="${i18n.DistanceTooltip}" data-dojo-props="iconClass:'iconDistance', showLabel:false, disabled: true" data-dojo-type="dijit.form.Button"></div>
                 <input id="${id}Distance" style="width: 60px" value="2" title="${i18n.DistanceTooltip}" data-dojo-attach-event="onChange:_onDistanceChange" data-dojo-props="intermediateChanges:true, constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
                 <span id="${id}SyncSelectionSplitter" data-dojo-type="dijit.ToolbarSeparator"></span>
                 <div id="${id}SyncSelection" data-dojo-attach-event="onClick:_onSyncSelection" data-dojo-props="iconClass:'iconSync', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ResetViewToSelection}</div>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                <div id="${id}OptionsDropDown" data-dojo-type="dijit.form.DropDownButton">
+                    <span>${i18n.Options}</span>
+                    <div data-dojo-type="dijit.TooltipDialog">
+                        <div id="${id}OptionsForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div data-dojo-type="hpcc.TableContainer">
+                                <input id="${id}showSubgraphs" title="${i18n.Subgraphs}:" name="subgraph" data-dojo-type="dijit.form.CheckBox" />
+                            </div>
+                            <div data-dojo-type="dijit.Fieldset">
+                                <legend>${i18n.Activities}</legend>
+                                <div data-dojo-type="hpcc.TableContainer">
+                                    <input title="${i18n.Icon}:" name="vicon" checked data-dojo-type="dijit.form.CheckBox" />
+                                    <input title="${i18n.Label}:" name="vlabel" value="%label%" style="width: 95%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    <input title="${i18n.Tooltip}:" name="vtooltip" value="%ecl%" style="width: 95%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                </div>
+                            </div>
+                            <div data-dojo-type="dijit.Fieldset">
+                                <legend>${i18n.Edges}</legend>
+                                <div data-dojo-type="hpcc.TableContainer">
+                                    <input title="${i18n.Label}:" name="elabel" value="%label%\n%_eclwatchCount%\n%_eclwatchInputProgress%\n%_eclwatchSkew%" style="width: 95%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    <input title="${i18n.Tooltip}:" name="etooltip" value="" style="width: 95%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                </div>
+                            </div>
+                            <div class="dijitDialogPaneActionBar">
+                                <button type="submit" data-dojo-attach-event="onClick:_onOptionsApply" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
+                                <button data-dojo-attach-event="onClick:_onOptionsReset" data-dojo-type="dijit.form.Button">${i18n.Defaults}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div id="${id}GraphContentPane" class="${baseClass}GraphContentPane" style="padding: 0px; overflow: hidden; background-color: #707070" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+        <div id="${id}GraphContentPane" class="${baseClass}GraphContentPane" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
         </div>
     </div>
 </div>

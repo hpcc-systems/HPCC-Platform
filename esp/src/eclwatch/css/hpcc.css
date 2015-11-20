@@ -1077,25 +1077,14 @@ margin-left:-20px;
     fill: white;
 }
 
-.claro .graph_Graph .edge .common_Shape {
-    fill: white;
-}
-
-.claro .graph_Graph .graphVertex > .common_Shape .common_Shape {
+.claro .graph_Graph .graphVertex > .common_Shape rect.common_Shape {
     stroke: black;
     fill: none;
 }
 
+.claro .graph_Graph .graphVertex > .common_Shape .common_Shape {
+}
+
 .claro .graph_Graph .graphVertex > .common_Shape.selected .common_Shape {
-    stroke: #1f77b4;
-}
-
-.claro .graph_Graph .graphVertex .common_TextBox .common_Shape {
-    stroke: black;
-    fill: white;
-}
-
-.claro .graph_Graph .graphVertex .common_TextBox.selected .common_Shape {
-    fill: #dcf1ff;
-    stroke: #1f77b4;
+    stroke: red
 }
