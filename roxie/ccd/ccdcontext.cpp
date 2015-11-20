@@ -1870,7 +1870,7 @@ protected:
     IPropertyTree &useContext(unsigned sequence)
     {
         checkAbort();
-        switch (sequence)
+        switch ((int) sequence)
         {
         case ResultSequenceStored:
             if (context)
@@ -1908,7 +1908,7 @@ protected:
     IDeserializedResultStore &useResultStore(unsigned sequence)
     {
         checkAbort();
-        switch (sequence)
+        switch ((int) sequence)
         {
         case ResultSequenceOnce:
             return factory->queryOnceResultStore();

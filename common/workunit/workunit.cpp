@@ -1828,7 +1828,7 @@ public:
 
 extern WORKUNIT_API bool isSpecialResultSequence(unsigned sequence)
 {
-    switch (sequence)
+    switch ((int) sequence)
     {
     case ResultSequenceInternal:
     case ResultSequenceOnce:
