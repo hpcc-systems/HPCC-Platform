@@ -1013,7 +1013,7 @@ class CKeyException : public CInterface, implements IKeyException
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyException(int _errCode, const char *_errMsg, va_list &args) : errCode(_errCode)
+    CKeyException(int _errCode, const char *_errMsg, va_list &args) __attribute__((format(printf,3,0))) : errCode(_errCode)
     {
         if (_errMsg)
             errMsg.valist_appendf(_errMsg, args);

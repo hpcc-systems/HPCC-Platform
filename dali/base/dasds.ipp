@@ -360,7 +360,7 @@ public:
     CSDSException(int _errCode) : errCode(_errCode)
     {
     }
-    CSDSException(int _errCode, const char *_errMsg, va_list &args) : errCode(_errCode)
+    CSDSException(int _errCode, const char *_errMsg, va_list &args) __attribute__((format(printf,3,0))) : errCode(_errCode)
     {
         if (_errMsg)
             errMsg.valist_appendf(_errMsg, args);

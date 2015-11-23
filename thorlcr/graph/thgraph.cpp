@@ -2401,13 +2401,13 @@ public:
     {
         traceLevel = 1;
     }
-    virtual void CTXLOGva(const char *format, va_list args) const
+    virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
     {
         StringBuffer ss;
         ss.valist_appendf(format, args);
         LOG(MCdebugProgress, thorJob, "%s", ss.str());
     }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
     {
         StringBuffer ss;
         ss.append("ERROR");

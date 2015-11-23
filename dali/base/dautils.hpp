@@ -217,7 +217,7 @@ struct da_decl TransactionLog
         unsigned transCount = owner.getTransactionCount(cmd);
         PROGLOG(">>>[%d] %s", transCount, msg.str());
     }
-    inline void log(const char *formatMsg, ...)
+    inline void log(const char *formatMsg, ...) __attribute__((format(printf, 2, 3)))
     {
         va_list args;
         va_start(args, formatMsg);
@@ -231,7 +231,7 @@ struct da_decl TransactionLog
         if (!extraStartMs)
             extraStartMs = msTick();
     }
-    inline void extra(const char *formatMsg, ...)
+    inline void extra(const char *formatMsg, ...) __attribute__((format(printf, 2, 3)))
     {
         va_list args;
         va_start(args, formatMsg);

@@ -207,7 +207,7 @@ public:
     {
         return ctx->queryStats();
     }
-    virtual void CTXLOGva(const char *format, va_list args) const
+    virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
     {
         ctx->CTXLOGva(format, args);
     }
@@ -215,11 +215,11 @@ public:
     {
         ctx->CTXLOGa(category, prefix, text);
     }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
     {
         ctx->logOperatorExceptionVA(E, file, line, format, args);
     }
-    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
+    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const __attribute__((format(printf,6,0)))
     {
         ctx->CTXLOGaeva(E, file, line, prefix, format, args);
     }
@@ -971,7 +971,7 @@ public:
             DBGLOG("[%s] %s", prefix, text);
     }
 
-    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
+    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const __attribute((format(printf,6,0)))
     {
         if (ctx)
             ctx->CTXLOGaeva(E, file, line, prefix, format, args);

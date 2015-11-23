@@ -76,14 +76,14 @@ interface IRoxieContextLogger : extends IContextLogger
 {
     // Override base interface with versions that add prefix
     // We could consider moving some or all of these down into IContextLogger
-    virtual void CTXLOGva(const char *format, va_list args) const
+    virtual void CTXLOGva(const char *format, va_list args) const  __attribute__((format(printf,2,0)))
     {
         StringBuffer text, prefix;
         getLogPrefix(prefix);
         text.valist_appendf(format, args);
         CTXLOGa(LOG_TRACING, prefix.str(), text.str());
     }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const  __attribute__((format(printf,5,0)))
     {
         StringBuffer prefix;
         getLogPrefix(prefix);

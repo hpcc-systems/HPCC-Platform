@@ -70,8 +70,8 @@ public:
     StringBuffer &  appendLower(unsigned len, const char * value);
 
     StringBuffer &  setf(const char* format, ...) __attribute__((format(printf,2,3)));
-    StringBuffer &  limited_valist_appendf(unsigned szLimit, const char *format, va_list args);
-    inline StringBuffer &valist_appendf(const char *format, va_list args) { return limited_valist_appendf(0, format, args); }
+    StringBuffer &  limited_valist_appendf(unsigned szLimit, const char *format, va_list args) __attribute__((format(printf,3,0)));
+    inline StringBuffer &valist_appendf(const char *format, va_list args) __attribute__((format(printf,2,0))) { return limited_valist_appendf(0, format, args); }
     StringBuffer &  appendhex(unsigned char value, char lower);
     inline char     charAt(size32_t pos) { return buffer[pos]; }
     inline StringBuffer & clear() { curLen = 0; return *this; }
@@ -461,7 +461,7 @@ jlib_decl StringBuffer &encodeJSON(StringBuffer &s, const char *value);
 jlib_decl StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *value);
 
 jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name);
-jlib_decl StringBuffer &appendfJSONName(StringBuffer &s, const char *format, ...);
+jlib_decl StringBuffer &appendfJSONName(StringBuffer &s, const char *format, ...) __attribute__((format(printf, 2, 3)));
 jlib_decl StringBuffer &appendJSONDataValue(StringBuffer& s, const char *name, unsigned len, const void *_value);
 jlib_decl StringBuffer &appendJSONRealValue(StringBuffer& s, const char *name, double value);
 

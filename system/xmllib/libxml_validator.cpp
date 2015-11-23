@@ -177,6 +177,7 @@ static xmlSAXHandler emptySAXHandlerStruct = {
 
 static xmlSAXHandlerPtr emptySAXHandler = &emptySAXHandlerStruct;
 
+static void libxmlXsdErrorMsgHandler(void *ctx, const char *format, ...) __attribute__((format(printf,2,3)));
 static void libxmlXsdErrorMsgHandler(void *ctx, const char *format, ...)
 {
     va_list args;

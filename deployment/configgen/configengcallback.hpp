@@ -80,7 +80,7 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
         fprintf(stdout, "%s", sb.str());
     }
     virtual void printStatus(StatusType type, const char* processType, const char* comp, 
-        const char* instance, const char* msg=NULL, ...)
+        const char* instance, const char* msg=NULL, ...)  __attribute__((format(printf,6,7)))
     {
       if (!m_verbose) return;
       char buf[1024];

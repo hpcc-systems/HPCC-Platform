@@ -938,37 +938,25 @@ protected:
     }
     void ActPrintLog(const char *format, ...)  __attribute__((format(printf, 2, 3)))
     {
-        const char *pdFormat;
-        StringBuffer dFormat;
+        StringBuffer msg;
         if (id.get())
-        {
-            dFormat.appendf("[ %s ] : ", id.get());
-            dFormat.append(format);
-            pdFormat = dFormat.str();
-        }
-        else
-            pdFormat = format;
+            msg.appendf("[ %s ] : ", id.get());
         va_list args;
         va_start(args, format);
-        ::ActPrintLogArgs(&activity->queryContainer(), thorlog_null, MCdebugProgress, pdFormat, args);
+        msg.valist_appendf(format, args);
         va_end(args);
+        ::ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCdebugProgress, "%s", msg.str());
     }
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)))
     {
-        const char *pdFormat;
-        StringBuffer dFormat;
+        StringBuffer msg;
         if (id.get())
-        {
-            dFormat.appendf("[ %s ] : ", id.get());
-            dFormat.append(format);
-            pdFormat = dFormat.str();
-        }
-        else
-            pdFormat = format;
+            msg.appendf("[ %s ] : ", id.get());
         va_list args;
         va_start(args, format);
-        ::ActPrintLogArgs(&activity->queryContainer(), e, thorlog_all, MCexception(e), format, args);
+        msg.valist_appendf(format, args);
         va_end(args);
+        ::ActPrintLogEx(&activity->queryContainer(), e, thorlog_all, MCexception(e), "%s", msg.str());
     }
 protected:
     CActivityBase *activity;

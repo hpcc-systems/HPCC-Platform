@@ -2571,7 +2571,7 @@ class COrderedOutputSerializer : implements IOrderedOutputSerializer, public CIn
             }
             return closed;
         }
-        size32_t printf(const char *format, va_list args)
+        size32_t printf(const char *format, va_list args)  __attribute__((format(printf,2,0)))
         {
             if (closed)
                 throw MakeStringException(0, "Attempting to append to previously closed result in COrderedResult::printf");

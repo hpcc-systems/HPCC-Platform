@@ -299,6 +299,7 @@ void outs(int indents, const char *s)
     out(s,strlen(s));
 }
 
+static void voutf(const char* fmt,va_list args) __attribute__((format(printf,1,0)));
 void voutf(const char* fmt,va_list args)
 {
     const int BUF_LEN = 0x4000;
@@ -355,6 +356,7 @@ void indentOuts1(int inc, const char* s)
     out(s,strlen(s));
 }
 
+void indentOutf(const char* fmt,...) __attribute__((format(printf,1,2)));
 void indentOutf(const char* fmt, ...)
 {
     indent(gIndent);
@@ -364,6 +366,7 @@ void indentOutf(const char* fmt, ...)
     voutf(fmt,args);
 }
 
+void indentOutf(int inc, const char* fmt,...) __attribute__((format(printf,2,3)));
 void indentOutf(int inc, const char* fmt, ...)
 {
     gIndent += inc;
@@ -374,6 +377,7 @@ void indentOutf(int inc, const char* fmt, ...)
     voutf(fmt,args);
 }
 
+void indentOutf1(int inc, const char* fmt,...) __attribute__((format(printf,2,3)));
 void indentOutf1(int inc, const char* fmt, ...)
 {
     indent(gIndent+inc);
