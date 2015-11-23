@@ -4269,6 +4269,7 @@ void getRoxieProcessServers(const char *process, SocketEndpointArray &servers)
 class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
 {
     StringAttr name;
+    StringAttr alias;
     StringAttr serverQueue;
     StringAttr agentQueue;
     StringAttr roxieProcess;
@@ -4287,8 +4288,8 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
 
 public:
     IMPLEMENT_IINTERFACE;
-    CEnvironmentClusterInfo(const char *_name, const char *_prefix, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
-        : name(_name), prefix(_prefix), roxieRedundancy(0), channelsPerNode(0), roxieReplicateOffset(1)
+    CEnvironmentClusterInfo(const char *_name, const char *_prefix, const char *_alias, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
+        : name(_name), prefix(_prefix), alias(_alias), roxieRedundancy(0), channelsPerNode(0), roxieReplicateOffset(1)
     {
         StringBuffer queue;
         if (thors.ordinality())
@@ -4373,6 +4374,11 @@ public:
     IStringVal & getName(IStringVal & str) const
     {
         str.set(name.get());
+        return str;
+    }
+    IStringVal & getAlias(IStringVal & str) const
+    {
+        str.set(alias.get());
         return str;
     }
     IStringVal & getScope(IStringVal & str) const
@@ -4650,7 +4656,7 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
         }
     }
     const char *roxieName = cluster->queryProp("RoxieCluster/@process");
-    return new CEnvironmentClusterInfo(clustname, prefix, agent, thors, queryRoxieProcessTree(environment, roxieName));
+    return new CEnvironmentClusterInfo(clustname, prefix, cluster->queryProp("@alias"), agent, thors, queryRoxieProcessTree(environment, roxieName));
 }
 
 IPropertyTree* getTopologyCluster(Owned<IPropertyTree> &envRoot, const char *clustname)

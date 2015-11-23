@@ -325,6 +325,7 @@ extern IPropertyTree *ccdChannels;
 extern IPropertyTree *topology;
 extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
+extern IProperties *targetAliases;
 
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;

@@ -92,6 +92,7 @@ StringBuffer topologyFile;
 CriticalSection ccdChannelsCrit;
 IPropertyTree* ccdChannels;
 StringArray allQuerySetNames;
+IProperties *targetAliases;
 
 bool allFilesDynamic;
 bool lockSuperFiles;
@@ -878,6 +879,20 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         topology->addPropBool("@linuxOS", true);
 #endif
         allQuerySetNames.appendListUniq(topology->queryProp("@querySets"), ",");
+        targetAliases = createProperties();
+        StringArray tempList;
+        tempList.appendListUniq(topology->queryProp("@targetAliases"), ",");
+        ForEachItemIn(i, tempList)
+        {
+            const char *alias = tempList.item(i);
+            const char *eq = strchr(alias, '=');
+            if (eq)
+            {
+                StringAttr name(alias, eq-alias);
+                if (!allQuerySetNames.contains(name))
+                    targetAliases->setProp(name.str(), ++eq);
+            }
+        }
 
         Owned<IPropertyTreeIterator> roxieServers = topology->getElements("./RoxieServerProcess");
         ForEach(*roxieServers)
