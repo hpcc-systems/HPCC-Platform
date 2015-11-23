@@ -220,6 +220,10 @@ public:
         eofHit = inputsConfigured = writeBlocked = pagedOut = false;
         recsReady = 0;
     }
+    virtual ~NSplitterSlaveActivity()
+    {
+        delayInputsList.kill();
+    }
     void ensureInputsConfigured()
     {
         CriticalBlock block(startLock);
@@ -283,9 +287,9 @@ public:
     {
         ForEachItemIn(o, container.outputs)
         {
-            CDelayedInput *delayedInput = new CDelayedInput(*this);
-            delayInputsList.append(delayedInput);
-            appendOutput(delayedInput);
+            Owned<CDelayedInput> delayedInput = new CDelayedInput(*this);
+            delayInputsList.append(delayedInput.getLink());
+            appendOutput(delayedInput.getClear());
         }
         IHThorSplitArg *helper = (IHThorSplitArg *)queryHelper();
         int dV = getOptInt(THOROPT_SPLITTER_SPILL, -1);
