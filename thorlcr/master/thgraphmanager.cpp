@@ -89,7 +89,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 sock->cancel_accept();
             threaded.join();
         }
-        virtual unsigned getPort() { return port; }
+        virtual unsigned getPort() const { return port; }
 
         virtual void processDebugCommand(CSafeSocket &ssock, StringBuffer &rawText)
         {
