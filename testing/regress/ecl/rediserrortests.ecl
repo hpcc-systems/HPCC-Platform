@@ -114,11 +114,16 @@ SEQUENTIAL(
 STRING pluginTO := 'Redis Plugin: ERROR - function timed out internally.';
 STRING redisTO := 'Redis Plugin: ERROR - GetOrLock<type> \'timeoutTest2\' on database 0 for 127.0.0.1:6379 failed : Resource temporarily unavailable';
 STRING authTO := 'Redis Plugin: ERROR - server authentication for 127.0.0.1:6379 failed : Resource temporarily unavailable';
+STRING getSetTO := 'Redis Plugin: ERROR - SET %b %b NX PX 1000 \'timeoutTest2\' on database 0 for 127.0.0.1:6379 failed : Resource temporarily unavailable';
 dsTO2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := redis.GetOrLockString('timeoutTest' + (string)(1+COUNTER), server, /*database*/, password, 1/*ms*/)));
 SEQUENTIAL(
     myRedis.FlushDB();
     myRedis.GetOrLockString('timeoutTest2');
-    OUTPUT(CATCH(dsTO2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = pluginTO OR FAILMESSAGE = redisTO OR FAILMESSAGE = authTO, 'Timed Out', 'Unexpected Error - ' + FAILMESSAGE)))));
+    OUTPUT(CATCH(dsTO2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = pluginTO
+                                                                         OR FAILMESSAGE = redisTO
+                                                                         OR FAILMESSAGE = authTO
+                                                                         OR FAILMESSAGE = getSetTO,
+                                                                         'Timed Out', 'Unexpected Error - ' + FAILMESSAGE)))));
     );
 
 myRedis.FlushDB();
