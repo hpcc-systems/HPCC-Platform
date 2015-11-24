@@ -429,6 +429,35 @@ IThorGraphIterator *CGraphElementBase::getAssociatedChildGraphs() const
     return new CGraphArrayIterator(associatedChildGraphs);
 }
 
+StringBuffer &CGraphElementBase::getOpt(const char *prop, StringBuffer &out) const
+{
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    if (!queryXGMML().getProp(path.toLowerCase().str(), out))
+        queryJob().getOpt(prop, out);
+    return out;
+}
+
+bool CGraphElementBase::getOptBool(const char *prop, bool defVal) const
+{
+    bool def = queryJob().getOptBool(prop, defVal);
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    return queryXGMML().getPropBool(path.toLowerCase().str(), def);
+}
+
+int CGraphElementBase::getOptInt(const char *prop, int defVal) const
+{
+    int def = queryJob().getOptInt(prop, defVal);
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    return queryXGMML().getPropInt(path.toLowerCase().str(), def);
+}
+
+__int64 CGraphElementBase::getOptInt64(const char *prop, __int64 defVal) const
+{
+    __int64 def = queryJob().getOptInt64(prop, defVal);
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    return queryXGMML().getPropInt64(path.toLowerCase().str(), def);
+}
+
 IThorGraphDependencyIterator *CGraphElementBase::getDependsIterator() const
 {
     return new ArrayIIteratorOf<const CGraphDependencyArray, CGraphDependency, IThorGraphDependencyIterator>(dependsOn);
@@ -3104,33 +3133,4 @@ void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
     cancelledReceive = true;
     if (receiving)
         queryJobChannel().queryJobComm().cancel(rank, mpTag);
-}
-
-StringBuffer &CActivityBase::getOpt(const char *prop, StringBuffer &out) const
-{
-    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    if (!container.queryXGMML().getProp(path.toLowerCase().str(), out))
-        queryJob().getOpt(prop, out);
-    return out;
-}
-
-bool CActivityBase::getOptBool(const char *prop, bool defVal) const
-{
-    bool def = queryJob().getOptBool(prop, defVal);
-    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropBool(path.toLowerCase().str(), def);
-}
-
-int CActivityBase::getOptInt(const char *prop, int defVal) const
-{
-    int def = queryJob().getOptInt(prop, defVal);
-    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropInt(path.toLowerCase().str(), def);
-}
-
-__int64 CActivityBase::getOptInt64(const char *prop, __int64 defVal) const
-{
-    __int64 def = queryJob().getOptInt64(prop, defVal);
-    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropInt64(path.toLowerCase().str(), def);
 }

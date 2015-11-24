@@ -160,10 +160,17 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="fileCrcDisabled" type="xs:boolean" use="optional" default="false">
+            <xs:attribute name="crcReadEnabled" type="xs:boolean" use="optional" default="true">
               <xs:annotation>
                 <xs:appinfo>
-                  <tooltip>Disables file CRC checking</tooltip>
+                  <tooltip>Verify that a read file's CRC matches the published meta data CRC</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="crcWriteEnabled" type="xs:boolean" use="optional" default="true">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Calculate and publish a CRC per published disk output file</tooltip>
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
