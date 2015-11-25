@@ -1754,7 +1754,7 @@ public:
     {
         StringBuffer request;
         StringBuffer response;
-        unsigned attempts = 0;
+        unsigned numRetries = 0;
         unsigned retryInterval = 0;
 
         Url &url = master->urlArray.item(idx);
@@ -1917,17 +1917,17 @@ public:
 
                 // other IException ... retry up to maxRetries
                 StringBuffer s;
-                master->logctx.CTXLOG("Exception %s - retrying? (%d<%d)", e->errorMessage(s).str(), attempts, master->maxRetries);
+                master->logctx.CTXLOG("Exception %s", e->errorMessage(s).str());
 
-                if (attempts > master->maxRetries)
+                if (numRetries >= master->maxRetries)
                 {
                     // error affects all inputRows
-                    master->logctx.CTXLOG("Exiting: maxRetries exceeded");
+                    master->logctx.CTXLOG("Exiting: maxRetries %d exceeded", master->maxRetries);
                     processException(url, inputRows, e);
                     break;
                 }
-                master->logctx.CTXLOG("Retrying: maxRetries not exceeded");
-                attempts++;
+                numRetries++;
+                master->logctx.CTXLOG("Retrying: attempt %d of %d", numRetries, master->maxRetries);
                 e->Release();
             }
             catch (std::exception & es)
