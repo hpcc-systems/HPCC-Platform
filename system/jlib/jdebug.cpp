@@ -358,6 +358,7 @@ void calibrate_timing()
 }
 
 
+#if !defined(INLINE_GET_CYCLES_NOW) || !defined(HAS_GOOD_CYCLE_COUNTER)
 cycle_t jlib_decl get_cycles_now()
 {
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
@@ -377,6 +378,7 @@ cycle_t jlib_decl get_cycles_now()
     gettimeofday(&tm,NULL);
     return ((cycle_t)tm.tv_sec)*1000000000L+(cycle_t)tm.tv_usec*1000L; 
 }
+#endif
 
 __int64 jlib_decl cycle_to_nanosec(cycle_t cycles)
 {

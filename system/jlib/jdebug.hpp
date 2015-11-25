@@ -29,12 +29,13 @@ __int64 jlib_decl cycle_to_nanosec(cycle_t cycles);
 __int64 jlib_decl cycle_to_microsec(cycle_t cycles);
 __int64 jlib_decl cycle_to_millisec(cycle_t cycles);
 cycle_t jlib_decl nanosec_to_cycle(__int64 cycles);
-cycle_t jlib_decl get_cycles_now();  // equivalent to getTSC when available
 double jlib_decl getCycleToNanoScale();
 void jlib_decl display_time(const char * title, cycle_t diff);
 
 // X86 / X86_64
 #if defined(_ARCH_X86_64_) || defined(_ARCH_X86_)
+
+#define HAS_GOOD_CYCLE_COUNTER
 
 #if defined(_WIN32) && defined (_ARCH_X86_)
 #pragma warning(push)
@@ -60,6 +61,12 @@ inline cycle_t getTSC() { return __rdtsc(); }
 // http://neocontra.blogspot.co.uk/2013/05/user-mode-performance-counters-for.html
 inline cycle_t getTSC() { return 0; }
 #endif // X86
+
+#if defined(INLINE_GET_CYCLES_NOW) && defined(HAS_GOOD_CYCLE_COUNTER)
+inline cycle_t get_cycles_now() { return getTSC(); }
+#else
+cycle_t jlib_decl get_cycles_now();  // equivalent to getTSC when available
+#endif
 
 struct HardwareInfo
 {
