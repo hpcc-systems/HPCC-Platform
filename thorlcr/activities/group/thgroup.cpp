@@ -19,10 +19,44 @@
 #include "thactivitymaster.ipp"
 
 
-class CGroupActivityMaster : public CMasterActivity
+class CGroupBaseActivityMaster : public CMasterActivity
+{
+    Owned<CThorStats> statNumGroups;
+    Owned<CThorStats> statNumGroupMax;
+public:
+    CGroupBaseActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
+    {
+    }
+    virtual void init()
+    {
+        CMasterActivity::init();
+        statNumGroups.setown(new CThorStats(StNumGroups));
+        statNumGroupMax.setown(new CThorStats(StNumGroupMax));
+    }
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
+    {
+        CMasterActivity::deserializeStats(node, mb);
+
+        rowcount_t numGroups;
+        mb.read(numGroups);
+        statNumGroups->set(node, numGroups);
+
+        rowcount_t numGroupMax;
+        mb.read(numGroupMax);
+        statNumGroupMax->set(node, numGroupMax);
+    }
+    virtual void getActivityStats(IStatisticGatherer & stats)
+    {
+        CMasterActivity::getActivityStats(stats);
+        statNumGroups->getStats(stats, false);
+        statNumGroupMax->getStats(stats, false);
+    }
+};
+
+class CGroupActivityMaster : public CGroupBaseActivityMaster
 {
 public:
-    CGroupActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
+    CGroupActivityMaster(CMasterGraphElement *info) : CGroupBaseActivityMaster(info)
     {
         mpTag = container.queryJob().allocateMPTag();
     }
@@ -35,7 +69,7 @@ public:
 CActivityBase *createGroupActivityMaster(CMasterGraphElement *container)
 {
     if (container->queryLocalOrGrouped())
-        return new CMasterActivity(container);
+        return new CGroupBaseActivityMaster(container);
     else
         return new CGroupActivityMaster(container);
 }

@@ -147,7 +147,7 @@ public:
     virtual void getActivityStats(IStatisticGatherer & stats)
     {
         CMasterActivity::getActivityStats(stats);
-        loopCounterProgress->getStats(stats, false, false);
+        loopCounterProgress->getStats(stats, false);
     }
 
 };

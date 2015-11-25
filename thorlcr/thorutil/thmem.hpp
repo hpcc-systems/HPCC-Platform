@@ -517,6 +517,7 @@ interface IThorRowCollectorCommon : extends IInterface
     virtual void setup(ICompare *iCompare, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=50) = 0;
     virtual void resize(rowidx_t max) = 0;
     virtual void setOptions(unsigned options) = 0;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
 };
 
 interface IThorRowLoader : extends IThorRowCollectorCommon

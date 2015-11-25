@@ -368,14 +368,6 @@ public:
 
     virtual unsigned __int64 getStatistic(StatisticKind kind)
     {
-        switch (kind)
-        {
-        case StTimeDiskReadIO:
-            return cycle_to_nanosec(getStatistic(StCycleDiskReadIOCycles));
-        case StTimeDiskWriteIO:
-            return cycle_to_nanosec(getStatistic(StCycleDiskWriteIOCycles));
-        }
-
         CriticalBlock b(crit);
         unsigned __int64 openValue = current->getStatistic(kind);
         return openValue + fileStats.getStatisticValue(kind);

@@ -32,9 +32,7 @@ protected:
     Owned<CSlavePartMapping> mapping;
     IHash *hash;
     Owned<ProgressInfo> inputProgress;
-    Owned<CThorStats> statTimeDiskRead;
-    Owned<CThorStats> statSizeDiskRead;
-    Owned<CThorStats> statNumDiskReads;
+    CThorStatsCollection diskStats;
     StringAttr fileName;
 
 public:
@@ -51,9 +49,7 @@ class CWriteMasterBase : public CMasterActivity
 {
     bool publishReplicatedDone;
     Owned<ProgressInfo> replicateProgress;
-    Owned<CThorStats> statTimeDiskWrite;
-    Owned<CThorStats> statSizeDiskWrite;
-    Owned<CThorStats> statNumDiskWrites;
+    CThorStatsCollection diskStats;
     __int64 recordsProcessed;
     bool published;
     StringAttr fileName;

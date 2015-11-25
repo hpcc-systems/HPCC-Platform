@@ -1336,3 +1336,6 @@ IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMo
     };
     return new CPerfMonHook(job, maxLevel, chain);
 }
+
+
+const StatisticsMapping spillStatistics(StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile, StKindNone);

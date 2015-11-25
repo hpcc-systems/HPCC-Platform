@@ -73,6 +73,7 @@ class JoinSlaveActivity : public CSlaveActivity, public CThorDataLink, implement
     bool leftInputStopped;
     bool rightInputStopped;
     bool rightpartition;
+    CRuntimeStatisticCollection spillStats;
 
 
     bool noSortPartitionSide()
@@ -137,7 +138,7 @@ public:
 
 
     JoinSlaveActivity(CGraphElementBase *_container, bool local)
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container), CThorDataLink(this), spillStats(spillStatistics)
     {
         islocal = local;
         portbase = 0;
@@ -423,6 +424,7 @@ public:
             leftStream.setown(iLoaderL->load(leftInput, abortSoon));
             isemptylhs = 0 == iLoaderL->numRows();
             stopLeftInput();
+            mergeStats(spillStats, iLoaderL);
         }
         if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0))
         {
@@ -442,6 +444,7 @@ public:
             Owned<IThorRowLoader> iLoaderR = createThorRowLoader(*this, ::queryRowInterfaces(rightInput), rightCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
             rightStream.setown(iLoaderR->load(rightInput, abortSoon));
             stopRightInput();
+            mergeStats(spillStats, iLoaderR);
         }
     }
     bool doglobaljoin()
@@ -542,6 +545,8 @@ public:
         }
         // NB: on secondary sort, the primaryKeySerializer is used
         sorter->Gather(secondaryRowIf, secondaryInput, secondaryCompare, primarySecondaryCompare, primarySecondaryUpperCompare, primaryKeySerializer, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, primaryRowIf); // primaryKeySerializer *is* correct
+        mergeStats(spillStats, sorter);
+        //MORE: Stats from spilling the primaryStream??
         partitionRow.clear();
         stopOtherInput();
         if (abortSoon)
@@ -580,6 +585,7 @@ public:
             mb.append(joinhelper->getLhsProgress());
             mb.append(joinhelper->getRhsProgress());
         }
+        spillStats.serialize(mb);
     }
 };
 

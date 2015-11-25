@@ -151,7 +151,7 @@ class CWriteIntercept : public CSimpleInterface
     class CFileOwningStream : public CSimpleInterface, implements IRowStream
     {
         Linked<CWriteIntercept> parent;
-        Owned<IRowStream> stream;
+        Owned<IExtRowStream> stream;
         offset_t startOffset;
         rowcount_t max;
     public:
@@ -596,6 +596,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     Semaphore startgathersem, finishedmergesem, closedownsem;
     InterruptableSemaphore startmergesem;
     size32_t transferblocksize, midkeybufsize;
+    CRuntimeStatisticCollection spillStats;
 
     class CRowToKeySerializer : public CSimpleInterfaceOf<IOutputRowSerializer>
     {
@@ -773,7 +774,7 @@ public:
 
     CThorSorter(CActivityBase *_activity, SocketEndpoint &ep, IDiskUsage *_iDiskUsage, ICommunicator *_clusterComm, mptag_t _mpTagRPC)
         : activity(_activity), myendpoint(ep), iDiskUsage(_iDiskUsage), clusterComm(_clusterComm), mpTagRPC(_mpTagRPC),
-          rowArray(*_activity, _activity), threaded("CThorSorter", this)
+          rowArray(*_activity, _activity), threaded("CThorSorter", this), spillStats(spillStatistics)
     {
         numnodes = 0;
         partno = 0;
@@ -1248,6 +1249,9 @@ public:
             PrintExceptionLog(e,"**Exception(2)");
             throw;
         }
+
+        mergeStats(spillStats, sortedloader);
+
         if (!abort)
         {
             transferblocksize = TRANSFERBLOCKSIZE;
@@ -1261,7 +1265,9 @@ public:
                 assertex(!intercept);
                 overflowinterval=sortedloader->overflowScale();
                 intercept.setown(new CWriteIntercept(*activity, rowif, overflowinterval));
+                CCycleTimer startCycles;
                 grandtotalsize = intercept->write(overflowstream);
+                spillStats.mergeStatistic(StTimeSpillElapsed, startCycles.elapsedNs());
                 intercept->transferRows(rowArray); // get sample rows
             }
             else // all in memory
@@ -1289,6 +1295,10 @@ public:
         finishedmergesem.signal();
         ActPrintLog(activity, "Local merge finished");
         rowif.clear();
+    }
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        return spillStats.getStatisticValue(kind);
     }
 };
 

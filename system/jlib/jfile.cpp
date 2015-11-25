@@ -6467,14 +6467,6 @@ public:
     
     unsigned __int64 getStatistic(StatisticKind kind)
     {
-        switch (kind)
-        {
-        case StTimeDiskReadIO:
-            return cycle_to_nanosec(getStatistic(StCycleDiskReadIOCycles));
-        case StTimeDiskWriteIO:
-            return cycle_to_nanosec(getStatistic(StCycleDiskWriteIOCycles));
-        }
-
         CriticalBlock block(sect);
         unsigned __int64 openValue = cachedio ? cachedio->getStatistic(kind) : 0;
         return openValue + fileStats.getStatisticValue(kind);

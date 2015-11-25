@@ -487,6 +487,7 @@ public:
     const char * tags[StNextModifier/StVariantScale];
 };
 
+//The order of entries in this table must match the order in the enumeration
 static const StatisticMeta statsMetaData[StMax] = {
     { StKindNone, SMeasureNone, { "none" }, { "@none" } },
     { StKindAll, SMeasureAll, { "all" }, { "@all" } },
@@ -550,6 +551,14 @@ static const StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(DiskWriteIOCycles) },
     { NUMSTAT(DiskReads) },
     { NUMSTAT(DiskWrites) },
+    { NUMSTAT(Spills) },
+    { TIMESTAT(SpillElapsed) },
+    { TIMESTAT(SortElapsed) },
+    { NUMSTAT(Groups) },
+    { NUMSTAT(GroupMax) },
+    { SIZESTAT(SpillFile) },
+    { CYCLESTAT(SpillElapsedCycles) },
+    { CYCLESTAT(SortElapsedCycles) },
 };
 
 
@@ -594,6 +603,24 @@ const char * queryStatisticName(StatisticKind kind)
     dbgassertex(variant < (StNextModifier/StVariantScale));
     return statsMetaData[rawkind].names[variant];
 }
+
+
+unsigned __int64 convertMeasure(StatisticMeasure from, StatisticMeasure to, unsigned __int64 value)
+{
+    if (from == to)
+        return value;
+    if ((from == SMeasureCycle) && (to == SMeasureTimeNs))
+        return cycle_to_nanosec(value);
+    if ((from == SMeasureTimeNs) && (to == SMeasureCycle))
+        return nanosec_to_cycle(value);
+    throwUnexpected();
+}
+
+unsigned __int64 convertMeasure(StatisticKind from, StatisticKind to, unsigned __int64 value)
+{
+    return convertMeasure(queryMeasure(from), queryMeasure(to), value);
+}
+
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -1496,18 +1523,6 @@ bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
 }
 
 
-void mergeStats(CRuntimeStatisticCollection & stats, IFileIO * file)
-{
-    if (!file)
-        return;
-
-    ForEachItemIn(iStat, stats)
-    {
-        StatisticKind kind = stats.getKind(iStat);
-        stats.mergeStatistic(kind, file->getStatistic(kind), queryMergeMode(kind));
-    }
-}
-
 //---------------------------------------------------
 
 bool ScopedItemFilter::matchDepth(unsigned low, unsigned high) const
@@ -1811,6 +1826,13 @@ extern int registerStatsCategory(const char *longName, const char *shortName)
 
 static void checkKind(StatisticKind kind)
 {
+    if (kind < StMax)
+    {
+        const StatisticMeta & meta = statsMetaData[kind];
+        if (meta.kind != kind)
+            throw makeStringExceptionV(0, "Statistic %u in the wrong order", kind);
+    }
+
     StatisticMeasure measure = queryMeasure(kind);
     const char * shortName = queryStatisticName(kind);
     StringBuffer longName;
