@@ -339,7 +339,7 @@ void CWsDeployEngine::deploy(CDeployOptions& pOptions)
         if (m_errorCount > 1)
           msg.append('s');
       }
-      printStatus(STATUS_NORMAL, NULL, NULL, NULL, msg.str());
+      printStatus(STATUS_NORMAL, NULL, NULL, NULL, "%s", msg.str());
     }
   }
   catch (IException* e)
@@ -488,7 +488,7 @@ void CWsDeployEngine::deploy()
         if (m_errorCount > 1)
           msg.append('s');
       }
-      printStatus(STATUS_NORMAL, NULL, NULL, NULL, msg.str());
+      printStatus(STATUS_NORMAL, NULL, NULL, NULL, "%s", msg.str());
     }
   }
   catch (IException* e)

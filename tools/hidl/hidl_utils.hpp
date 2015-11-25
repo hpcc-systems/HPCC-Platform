@@ -67,7 +67,7 @@ public:
     StrBuffer &  setf(const char* format, ...) __attribute__((format(printf, 2, 3)));
     StrBuffer &  set(const char* val) { return clear().append(val); }
     StrBuffer &  clear() { curLen = 0; return *this; }
-    StrBuffer & va_append(const char *format, va_list args);
+    StrBuffer & va_append(const char *format, va_list args)  __attribute__((format(printf,2,0)));
     
     const char * str() const;
     operator const char* () const { return str(); }

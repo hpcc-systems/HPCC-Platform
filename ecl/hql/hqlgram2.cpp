@@ -264,6 +264,7 @@ bool HqlGramCtx::hasAnyActiveParameters()
 }
 
 
+static IError * createErrorVA(WarnErrorCategory category, ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, va_list args) __attribute__((format(printf,5,0)));
 static IError * createErrorVA(WarnErrorCategory category, ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, va_list args)
 {
     StringBuffer msg;

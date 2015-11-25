@@ -477,6 +477,7 @@ CLibXslTransform *getXsltTransformObject(xsltTransformContextPtr x)
 
 void globalLibXsltExtensionHandler(xmlXPathParserContextPtr ctxt, int nargs);
 
+static void libxsltErrorMsgHandler(void *ctx, const char *format, ...) __attribute__((format(printf,2,3)));
 static void libxsltErrorMsgHandler(void *ctx, const char *format, ...)
 {
     if (!ctx)

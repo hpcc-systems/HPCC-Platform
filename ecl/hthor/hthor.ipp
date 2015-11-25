@@ -53,7 +53,8 @@ class CHThorException : public CInterface, implements IHThorException
 {
 public: 
     IMPLEMENT_IINTERFACE;
-    CHThorException(int _code, char const * format, va_list args, MessageAudience _audience, ThorActivityKind _kind, unsigned _activityId, unsigned _subgraphId) : code(_code), audience(_audience), kind(_kind), activityId(_activityId), subgraphId(_subgraphId)
+    CHThorException(int _code, char const * format, va_list args, MessageAudience _audience, ThorActivityKind _kind, unsigned _activityId, unsigned _subgraphId)  __attribute__((format(printf,3,0)))
+    : code(_code), audience(_audience), kind(_kind), activityId(_activityId), subgraphId(_subgraphId)
     {
         msg.valist_appendf(format, args);
     }

@@ -601,7 +601,7 @@ public:
             log.append(* new LogItem(category, prefix, msTick() - start, channel, text));
         }
     }
-    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
+    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const  __attribute__((format(printf,6,0)))
     {
         StringBuffer text;
         text.append("ERROR");

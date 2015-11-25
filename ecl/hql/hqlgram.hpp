@@ -583,11 +583,11 @@ public:
     void reportErrorUnexpectedX(const attribute & errpos, IAtom * unexpected);
 
     // Don't use overloading: va_list is the same as char*!!
-    void reportErrorVa(int errNo, const ECLlocation & a, const char* format, va_list args);
+    void reportErrorVa(int errNo, const ECLlocation & a, const char* format, va_list args) __attribute__((format(printf,4,0)));
     void reportError(int errNo, const char *msg, int lineno, int column, int position=0);
     void reportWarning(WarnErrorCategory category, int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 5,6)));
     void reportWarning(WarnErrorCategory category, ErrorSeverity severity, int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 6, 7)));
-    void reportWarningVa(WarnErrorCategory category, int errNo, const attribute& a, const char* format, va_list args);
+    void reportWarningVa(WarnErrorCategory category, int errNo, const attribute& a, const char* format, va_list args) __attribute__((format(printf, 5,0)));
     void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, int lineno, int column);
     void addResult(IHqlExpression *query, const attribute& errpos);
 

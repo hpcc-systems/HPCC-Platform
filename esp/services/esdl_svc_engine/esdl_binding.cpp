@@ -1426,7 +1426,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
         text.appendf("Parsing xml error: %s.", exml.getMessage().c_str());
         ESPLOG(LogMax, "%s\n", text.str());
 
-        throw makeWsException(  ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "Esp", text.str() );
+        throw makeWsException(  ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "Esp", "%s", text.str() );
     }
     catch (IException *e)
     {
@@ -1438,7 +1438,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
         StringBuffer text;
         text.append( "EsdlBindingImpl could not process SOAP request" );
         ESPLOG(LogMax,"%s", text.str());
-        throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP", text.str() );
+        throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP", "%s", text.str() );
     }
 
     return 0;

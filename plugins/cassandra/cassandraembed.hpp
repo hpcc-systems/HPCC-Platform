@@ -295,7 +295,7 @@ public:
         check(cass_statement_bind_collection(statement, idx, value));
     }
 private:
-    void traceBind(unsigned idx, const char *format, ...)
+    void traceBind(unsigned idx, const char *format, ...) __attribute__((format(printf,3,4)))
     {
         assert(query.length());
         StringBuffer bound;
