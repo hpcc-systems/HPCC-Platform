@@ -2825,9 +2825,12 @@ void CThorStats::processInfo()
     calculateSkew();
 }
 
-void CThorStats::getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual)
+void CThorStats::getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual, bool suppressIfZero)
 {
     processInfo();
+    if (suppressIfZero && (0 == tot))
+        return;
+
     //MORE: For most measures (not time stamps etc.) it would be sensible to output the total here....
     if (!suppressMinMaxWhenEqual || (maxSkew != minSkew))
     {
@@ -2876,7 +2879,7 @@ void ProgressInfo::processInfo() // reimplement as counts have special flags (i.
 
 void ProgressInfo::getStats(IStatisticGatherer & stats)
 {
-    CThorStats::getStats(stats, true);
+    CThorStats::getStats(stats, true, false);
     stats.addStatistic(kind, tot);
     stats.addStatistic(StNumSlaves, counts.ordinality());
     stats.addStatistic(StNumStarted, startcount);

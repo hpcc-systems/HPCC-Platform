@@ -33,6 +33,9 @@ CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterAct
 {
     hash = NULL;
     inputProgress.setown(new ProgressInfo);
+    statTimeDiskRead.setown(new CThorStats(StTimeDiskReadIO));
+    statSizeDiskRead.setown(new CThorStats(StSizeDiskRead));
+    statNumDiskReads.setown(new CThorStats(StNumDiskReads));
 }
 
 void CDiskReadMasterBase::init()
@@ -120,6 +123,20 @@ void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
     rowcount_t progress;
     mb.read(progress);
     inputProgress->set(node, progress);
+
+    CRuntimeStatisticCollection fileStats(diskReadRemoteStatistics);
+    fileStats.deserialize(mb);
+    statTimeDiskRead->set(node, fileStats.getStatisticValue(StTimeDiskReadIO));
+    statSizeDiskRead->set(node, fileStats.getStatisticValue(StSizeDiskRead));
+    statNumDiskReads->set(node, fileStats.getStatisticValue(StNumDiskReads));
+}
+
+void CDiskReadMasterBase::getActivityStats(IStatisticGatherer & stats)
+{
+    CMasterActivity::getActivityStats(stats);
+    statTimeDiskRead->getStats(stats, false, false);
+    statSizeDiskRead->getStats(stats, false, false);
+    statNumDiskReads->getStats(stats, false, false);
 }
 
 void CDiskReadMasterBase::getEdgeStats(IStatisticGatherer & stats, unsigned idx)
@@ -234,6 +251,10 @@ CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info) : CMasterActivity(
 {
     publishReplicatedDone = !globals->getPropBool("@replicateAsync", true);
     replicateProgress.setown(new ProgressInfo);
+    statTimeDiskWrite.setown(new CThorStats(StTimeDiskWriteIO));
+    statSizeDiskWrite.setown(new CThorStats(StSizeDiskWrite));
+    statNumDiskWrites.setown(new CThorStats(StNumDiskWrites));
+
     diskHelperBase = (IHThorDiskWriteArg *)queryHelper();
     targetOffset = 0;
 }
@@ -244,6 +265,12 @@ void CWriteMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
     unsigned repPerc;
     mb.read(repPerc);
     replicateProgress->set(node, repPerc);
+
+    CRuntimeStatisticCollection fileStats(diskWriteRemoteStatistics);
+    fileStats.deserialize(mb);
+    statTimeDiskWrite->set(node, fileStats.getStatisticValue(StTimeDiskWriteIO));
+    statSizeDiskWrite->set(node, fileStats.getStatisticValue(StSizeDiskWrite));
+    statNumDiskWrites->set(node, fileStats.getStatisticValue(StNumDiskWrites));
 }
 
 void CWriteMasterBase::getActivityStats(IStatisticGatherer & stats)
@@ -254,6 +281,9 @@ void CWriteMasterBase::getActivityStats(IStatisticGatherer & stats)
         replicateProgress->processInfo();
         stats.addStatistic(StPerReplicated, replicateProgress->queryAverage() * 10000);
     }
+    statTimeDiskWrite->getStats(stats, false, false);
+    statSizeDiskWrite->getStats(stats, false, false);
+    statNumDiskWrites->getStats(stats, false, false);
 }
 
 void CWriteMasterBase::preStart(size32_t parentExtractSz, const byte *parentExtract)

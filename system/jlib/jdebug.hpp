@@ -114,7 +114,7 @@ class CCycleTimer
 {
     cycle_t start_time;
 public:
-    CCycleTimer()
+    inline CCycleTimer()
     {
         reset();
     }

@@ -22,6 +22,7 @@
 #include "jiter.ipp"
 #include "jlog.hpp"
 #include "jregexp.hpp"
+#include "jfile.hpp"
 
 #ifdef _WIN32
 #include <sys/timeb.h>
@@ -62,7 +63,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 //--------------------------------------------------------------------------------------------------------------------
 
 // Textual forms of the different enumerations, first items are for none and all.
-static const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", NULL };
+static const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", NULL };
 static const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
 static const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", NULL };
 
@@ -322,6 +323,9 @@ void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasur
     case SMeasureIPV4:
         formatIPV4(out, value);
         break;
+    case SMeasureCycle:
+        out.append(value);
+        break;
     default:
         throwUnexpected();
     }
@@ -366,6 +370,7 @@ const char * queryMeasurePrefix(StatisticMeasure measure)
     case SMeasureNode:          return "Node";
     case SMeasurePercent:       return "Per";
     case SMeasureIPV4:          return "Ip";
+    case SMeasureCycle:         return "Cycle";
     default:
         throwUnexpected();
     }
@@ -391,14 +396,15 @@ StatsMergeAction queryMergeMode(StatisticMeasure measure)
     switch (measure)
     {
     case SMeasureTimeNs:        return StatsMergeSum;
-    case SMeasureTimestampUs:   return StatsMergeKeep;
+    case SMeasureTimestampUs:   return StatsMergeKeepNonZero;
     case SMeasureCount:         return StatsMergeSum;
     case SMeasureSize:          return StatsMergeSum;
     case SMeasureLoad:          return StatsMergeMax;
     case SMeasureSkew:          return StatsMergeMax;
-    case SMeasureNode:          return StatsMergeKeep;
+    case SMeasureNode:          return StatsMergeKeepNonZero;
     case SMeasurePercent:       return StatsMergeReplace;
-    case SMeasureIPV4:          return StatsMergeKeep;
+    case SMeasureIPV4:          return StatsMergeKeepNonZero;
+    case SMeasureCycle:         return StatsMergeSum;
     default:
         throwUnexpected();
     }
@@ -482,6 +488,7 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 #define NODESTAT(y) STAT(Node, y, SMeasureNode)
 #define PERSTAT(y) STAT(Per, y, SMeasurePercent)
 #define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4)
+#define CYCLESTAT(y) STAT(Cycle, y, SMeasureCycle)
 
 //The following variants are used where a different tag name is required
 #define TIMESTAT2(y, dft) TAGSTAT(Time, y, SMeasureTimeNs, dft)
@@ -554,6 +561,14 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(DiskRejected) },
     { TIMESTAT(Soapcall) },
     { TIMESTAT(FirstExecute) },
+    { TIMESTAT(DiskReadIO) },
+    { TIMESTAT(DiskWriteIO) },
+    { SIZESTAT(DiskRead) },
+    { SIZESTAT(DiskWrite) },
+    { CYCLESTAT(DiskReadIOCycles) },
+    { CYCLESTAT(DiskWriteIOCycles) },
+    { NUMSTAT(DiskReads) },
+    { NUMSTAT(DiskWrites) },
 };
 
 
@@ -683,6 +698,7 @@ inline void mergeUpdate(StatisticMeasure measure, unsigned __int64 & value, cons
     case SMeasureSize:
     case SMeasureLoad:
     case SMeasureSkew:
+    case SMeasureCycle:
         value += otherValue;
         break;
     case SMeasureTimestampUs:
@@ -702,8 +718,10 @@ unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int6
 {
     switch (mergeAction)
     {
-    case StatsMergeKeep:
-        return prevValue;
+    case StatsMergeKeepNonZero:
+        if (prevValue)
+            return prevValue;
+        return newValue;
     case StatsMergeAppend:
     case StatsMergeReplace:
         return newValue;
@@ -799,6 +817,10 @@ void StatisticsMapping::createMappings()
 }
 
 const StatisticsMapping allStatistics;
+const StatisticsMapping diskLocalStatistics(StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StKindNone);
+const StatisticsMapping diskRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StKindNone);
+const StatisticsMapping diskReadRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StKindNone);
+const StatisticsMapping diskWriteRemoteStatistics(StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StKindNone);
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -1404,11 +1426,13 @@ void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & othe
         StatisticKind kind = other.getKind(i);
         unsigned __int64 value = other.getStatisticValue(kind);
         if (value)
-        {
-            StatsMergeAction mergeAction = queryMergeMode(kind);
-            mergeStatistic(kind, other.getStatisticValue(kind), mergeAction);
-        }
+            mergeStatistic(kind, other.getStatisticValue(kind));
     }
+}
+
+void CRuntimeStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value)
+{
+    queryStatistic(kind).merge(value, queryMergeMode(kind));
 }
 
 void CRuntimeStatisticCollection::rollupStatistics(unsigned numTargets, IContextLogger * const * targets) const
@@ -1527,6 +1551,19 @@ bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
         }
     }
     return numValid != 0;
+}
+
+
+void mergeStats(CRuntimeStatisticCollection & stats, IFileIO * file)
+{
+    if (!file)
+        return;
+
+    ForEachItemIn(iStat, stats)
+    {
+        StatisticKind kind = stats.getKind(iStat);
+        stats.mergeStatistic(kind, file->getStatistic(kind), queryMergeMode(kind));
+    }
 }
 
 //---------------------------------------------------

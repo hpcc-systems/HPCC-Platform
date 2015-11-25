@@ -1336,6 +1336,7 @@ class CLazyFileIO : public CInterface, implements IFileIO, implements IDelayedFi
     Linked<IExpander> expander;
     bool compressed;
     StringAttr filename;
+    CRuntimeStatisticCollection fileStats;
     CriticalSection crit;
     Owned<IFileIO> iFileIO; // real IFileIO
 
@@ -1343,7 +1344,8 @@ class CLazyFileIO : public CInterface, implements IFileIO, implements IDelayedFi
 
 public:
     IMPLEMENT_IINTERFACE;
-    CLazyFileIO(CFileCache &_cache, const char *_filename, IReplicatedFile *_repFile, bool _compressed, IExpander *_expander) : cache(_cache), filename(_filename), repFile(_repFile), compressed(_compressed), expander(_expander)
+    CLazyFileIO(CFileCache &_cache, const char *_filename, IReplicatedFile *_repFile, bool _compressed, IExpander *_expander)
+    : cache(_cache), filename(_filename), repFile(_repFile), compressed(_compressed), expander(_expander), fileStats(diskLocalStatistics)
     {
     }
     ~CLazyFileIO()
@@ -1382,7 +1384,10 @@ public:
     {
         CriticalBlock b(crit);
         if (iFileIO)
+        {
+            mergeStats(fileStats, iFileIO);
             iFileIO->close();
+        }
         iFileIO.clear();
     }
     virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1)
@@ -1396,6 +1401,20 @@ public:
         CriticalBlock b(crit);
         checkOpen();
         iFileIO->setSize(size);
+    }
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        switch (kind)
+        {
+        case StTimeDiskReadIO:
+            return cycle_to_nanosec(getStatistic(StCycleDiskReadIOCycles));
+        case StTimeDiskWriteIO:
+            return cycle_to_nanosec(getStatistic(StCycleDiskWriteIOCycles));
+        }
+
+        CriticalBlock b(crit);
+        unsigned __int64 openValue = iFileIO ? iFileIO->getStatistic(kind) : 0;
+        return openValue + fileStats.getStatisticValue(kind);
     }
 // IDelayedFile impl.
     virtual IMemoryMappedFile *queryMappedFile() { return NULL; }

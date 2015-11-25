@@ -274,6 +274,10 @@ public:
     {
         stream->reinit(offset, len, maxRows);
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        return stream->getStatistic(kind);
+    }
 };
 
 

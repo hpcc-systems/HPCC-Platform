@@ -51,6 +51,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
         Linked<IEngineRowAllocator> allocator;
         CCsvReadSlaveActivity &activity;
         Owned<ISerialStream> inputStream;
+        OwnedIFileIO iFileIO;
         CSVSplitter csvSplitter;
         CRC32 inputCRC;
         bool readFinished;
@@ -83,6 +84,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
         CCsvPartHandler(CCsvReadSlaveActivity &_activity) : CDiskPartHandlerBase(_activity), activity(_activity)
         {
             readFinished = false;
+            localOffset = 0;
             //Initialise information...
             ICsvParameters * csvInfo = activity.helper->queryCsvParameters();
             csvSplitter.init(activity.helper->getMaxColumns(), csvInfo, activity.csvQuote, activity.csvSeparate, activity.csvTerminate, activity.csvEscape);
@@ -99,16 +101,19 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             localOffset = 0;
             CDiskPartHandlerBase::open();
             readFinished = false;
-            OwnedIFileIO iFileIO;
-            if (compressed)
+
             {
-                iFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
-                if (!iFileIO)
-                    throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
-                checkFileCrc = false;
+                CriticalBlock block(statsCs);
+                if (compressed)
+                {
+                    iFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
+                    if (!iFileIO)
+                        throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
+                    checkFileCrc = false;
+                }
+                else
+                    iFileIO.setown(iFile->open(IFOread));
             }
-            else
-                iFileIO.setown(iFile->open(IFOread));
 
             inputStream.setown(createFileSerialStream(iFileIO));
             if (activity.headerLines)
@@ -139,6 +144,9 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
         }
         virtual void close(CRC32 &fileCRC)
         {
+            CriticalBlock block(statsCs);
+            mergeStats(fileStats, iFileIO);
+            iFileIO.clear();
             inputStream.clear();
             fileCRC = inputCRC;
         }
@@ -163,6 +171,12 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             }
         }
         offset_t getLocalOffset() { return localOffset; }
+        virtual void gatherStats(CRuntimeStatisticCollection & merged)
+        {
+            CriticalBlock block(statsCs);
+            CDiskPartHandlerBase::gatherStats(merged);
+            mergeStats(merged, iFileIO);
+        }
     };
 
     unsigned &getHeaderLines(unsigned subFile)

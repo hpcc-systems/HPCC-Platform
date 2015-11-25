@@ -139,6 +139,10 @@ public:
     {
         throwUnexpected();
     }
+    unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        return 0;
+    }
 protected:
     MemoryBuffer buf;
 };

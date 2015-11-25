@@ -277,6 +277,10 @@ public:
     {
         throwUnexpected();
     }
+    unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        return 0;
+    }
 protected:
     struct archive *archive;
     offset_t fileSize;
