@@ -182,7 +182,7 @@ public:
     MemoryBuffer &  readFile(StringAttr &fileName);
     MemoryBuffer &  readSwap(size32_t len, void * value);
     const byte *    readDirect(size32_t len);                                       // for efficiency
-    inline MemoryBuffer &  readMemSize(memsize_t & value) { __int64 val; read(val); value = (memsize_t)val; assertex(val == (memsize_t)value); return *this; }
+    inline MemoryBuffer &  readMemSize(memsize_t & value) { __int64 val; read(val); value = (memsize_t)val; assertex(val == (__int64) value); return *this; }
     MemoryBuffer &  skip(unsigned len);
     void            writeDirect(size32_t pos,size32_t len,const void *buf);         // NB does not extend buffer
     void            writeEndianDirect(size32_t pos,size32_t len,const void *buf);   // NB does not extend buffer

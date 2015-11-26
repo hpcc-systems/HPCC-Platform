@@ -963,36 +963,6 @@ void StatsScopeId::setSubgraphId(unsigned _id)
     setId(SSTsubgraph, _id);
 }
 
-
-//Use an atom table to minimimize memory usage in esp.
-//The class could try and use a combination of the scope type and an unsigned, but I suspect not worth it.
-IAtom * createStatsScope(const char * name)
-{
-    //MORE: Should this use a separate atom table?
-    return createAtom(name);
-}
-
-IAtom * createActivityScope(unsigned value)
-{
-    char temp[12];
-    sprintf(temp, ActivityScopePrefix "%u", value);
-    return createStatsScope(temp);
-}
-
-static IAtom * createSubGraphScope(unsigned value)
-{
-    char temp[13];
-    sprintf(temp, SubGraphScopePrefix "%u", value);
-    return createStatsScope(temp);
-}
-
-IAtom * createEdgeScope(unsigned value1, unsigned value2)
-{
-    StringBuffer temp;
-    temp.append(EdgeScopePrefix).append(value1).append("_").append(value2);
-    return createStatsScope(temp);
-}
-
 //--------------------------------------------------------------------------------------------------------------------
 
 enum
@@ -1025,7 +995,7 @@ class CStatisticCollection : public CInterfaceOf<IStatisticCollection>
 {
     friend class CollectionHashTable;
 public:
-    CStatisticCollection(CStatisticCollection * _parent, const StatsScopeId & _id) : parent(_parent), id(_id)
+    CStatisticCollection(CStatisticCollection * _parent, const StatsScopeId & _id) : id(_id), parent(_parent)
     {
     }
 
@@ -1845,7 +1815,7 @@ static void checkKind(StatisticKind kind)
     const char * shortName = queryStatisticName(kind);
     StringBuffer longName;
     queryLongStatisticName(longName, kind);
-    const char * tagName = queryTreeTag(kind);
+    const char * tagName __attribute__ ((unused)) = queryTreeTag(kind);
     const char * prefix = queryMeasurePrefix(measure);
     //Check short names are all correctly prefixed.
     assertex(strncmp(shortName, prefix, strlen(prefix)) == 0);
@@ -1874,7 +1844,7 @@ void verifyStatisticFunctions()
     //Check the various functions return values for all possible values.
     for (unsigned i1=SMeasureAll; i1 < SMeasureMax; i1++)
     {
-        const char * prefix = queryMeasurePrefix((StatisticMeasure)i1);
+        const char * prefix __attribute__((unused)) = queryMeasurePrefix((StatisticMeasure)i1);
         const char * name = queryMeasureName((StatisticMeasure)i1);
         assertex(queryMeasure(name) == i1);
     }

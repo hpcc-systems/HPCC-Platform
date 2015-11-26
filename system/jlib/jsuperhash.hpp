@@ -154,8 +154,8 @@ public:
 
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(ET, FP);
 
-    virtual void onAdd(void *et) { }
-    virtual void onRemove(void *et) { }
+    virtual void onAdd(void * et __attribute__((unused))) { }
+    virtual void onRemove(void * et __attribute__((unused))) { }
     virtual unsigned getHashFromElement(const void *et) const
     {
         return hashc((const unsigned char *) ((const ET *) et)->queryFindParam(), sizeof(FP), 0);
@@ -168,7 +168,7 @@ public:
     {
         return ((const ET *)et)->queryFindParam();
     }
-    virtual bool matchesFindParam(const void *et, const void *fp, unsigned fphash) const
+    virtual bool matchesFindParam(const void *et, const void *fp, unsigned fphash __attribute__((unused))) const
     {
         return *(FP *)((const ET *)et)->queryFindParam() == *(FP *)fp;
     }
@@ -189,7 +189,7 @@ public:
 class jlib_decl SuperHashIterator : public CInterface
 {
 public:
-    SuperHashIterator(const SuperHashTable & _table, bool _linkTable=true) : table(_table), linkTable(_linkTable) { cur = NULL; if (linkTable) table.Link(); }
+    SuperHashIterator(const SuperHashTable & _table, bool _linkTable=true) : linkTable(_linkTable), table(_table) { cur = NULL; if (linkTable) table.Link(); }
     ~SuperHashIterator() { if (linkTable) table.Release(); }
 
     IMPLEMENT_IINTERFACE
@@ -206,7 +206,7 @@ protected:
 private:
     bool linkTable;
     const SuperHashTable & table;
-    void*            cur;
+    void * cur;
 };
 
 template <class ET>
@@ -264,8 +264,8 @@ public:
     StringSuperHashTableOf<ET>(unsigned initsize) : SuperHashTableOf<ET, const char>(initsize) { }
     ~StringSuperHashTableOf<ET>() { SELF::kill(); }
 
-    virtual void onAdd(void *et) { }
-    virtual void onRemove(void *et) { }
+    virtual void onAdd(void *et __attribute__((unused))) { }
+    virtual void onRemove(void *et __attribute__((unused))) { }
     virtual unsigned getHashFromElement(const void *et) const
     {
         const char *str = ((const ET *) et)->queryFindString();
@@ -279,7 +279,7 @@ public:
     {
         return ((const ET *)et)->queryFindString();
     }
-    virtual bool matchesFindParam(const void *et, const void *fp, unsigned fphash) const
+    virtual bool matchesFindParam(const void *et, const void *fp, unsigned fphash __attribute__((unused))) const
     {
         return (0==strcmp(((const ET *)et)->queryFindString(), (const char *)fp));
     }
@@ -303,8 +303,8 @@ class ThreadSafeSimpleHashTableOf : private SuperHashTable
 {
     typedef ThreadSafeSimpleHashTableOf<ET, FP> SELF;
 
-    virtual void onAdd(void *et) { }
-    virtual void onRemove(void *et) { }
+    virtual void onAdd(void *et __attribute__((unused))) { }
+    virtual void onRemove(void *et __attribute__((unused))) { }
     virtual unsigned getHashFromElement(const void *et) const
     {
         return hashc((const unsigned char *) ((const ET *) et)->queryFindParam(), sizeof(FP), 0);
@@ -317,7 +317,7 @@ class ThreadSafeSimpleHashTableOf : private SuperHashTable
     {
         return ((const ET *)et)->queryFindParam();
     }
-    virtual bool matchesFindParam(const void *et, const void *fp, unsigned fphash) const
+    virtual bool matchesFindParam(const void *et, const void *fp, unsigned fphash __attribute__((unused))) const
     {
         return *(FP *)((const ET *)et)->queryFindParam() == *(FP *)fp;
     }
@@ -536,7 +536,7 @@ public:
 
 protected:
 // SuperHashTable definitions
-    virtual void onAdd(void *e) { }
+    virtual void onAdd(void *e __attribute__((unused))) { }
     virtual void onRemove(void *e) 
     { 
         free(e); 
@@ -560,7 +560,7 @@ protected:
         return ((HashKeyElement *) e)->get();
     }
 
-    virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash) const
+    virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash __attribute__((unused))) const
     {
         if (nocase)
             return (0 == stricmp(((HashKeyElement *)e)->get(), (const char *)fp));

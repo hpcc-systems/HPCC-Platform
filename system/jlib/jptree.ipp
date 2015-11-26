@@ -312,7 +312,7 @@ public:
     ChildMap *queryChildren() { return children; }
     aindex_t findChild(IPropertyTree *child, bool remove=false);
     inline bool isnocase() const { return IptFlagTst(flags, ipt_caseInsensitive); }
-    const ipt_flags queryFlags() const { return (ipt_flags) flags; }
+    ipt_flags queryFlags() const { return (ipt_flags) flags; }
 public:
     void serializeCutOff(MemoryBuffer &tgt, int cutoff=-1, int depth=0);
     void serializeAttributes(MemoryBuffer &tgt);

@@ -23,8 +23,6 @@
 #include "jexcept.hpp"
 #include "jerror.hpp"
 
-static int tzDelta = 0;                 // Mainly for testing, but could be used for a cache
-
 #ifndef __GNUC__
 
 #if _WIN32 //this appears to be the best way of controlling timezone information used by mktime
@@ -1083,7 +1081,7 @@ public:
     CronTableItem(CronTableItem * _prev, CronTableItem * _next, char const * spec, char const * _tag, bool inframe) : prev(_prev), next(_next), tag(_tag), markDelete(false), markNew(inframe)
     {
         char const * specend = cron.set(spec);
-        if((specend-spec) != strlen(spec))
+        if (*specend)
             throw MakeStringException(0, "Bad cron spec %s", spec);
     }
     CronTableItem * prev;

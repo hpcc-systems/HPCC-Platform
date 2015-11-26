@@ -278,7 +278,6 @@ public:
     void popn(aindex_t n, bool nodestruct = false)
     {
         assertex(SELF::used>=n);
-        MEMBER * head= (MEMBER *)SELF::_head;
         while (n--)
         {
             --SELF::used;
@@ -440,7 +439,7 @@ public:
     {
         member = &newValue;
     }
-    static inline void destruct(ITEM * & member)
+    static inline void destruct(ITEM * & member __attribute__((unused)))
     {
     }
     static inline bool matches(ITEM * const & member, ITEM & param)

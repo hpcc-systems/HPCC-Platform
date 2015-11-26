@@ -62,14 +62,19 @@ HiresTimer logTimer;
 class CStdLogIntercept: public ILogIntercept
 {
     bool nl;
+#ifdef MINIMALTRACE
     time_t lastt;
     unsigned lasttpid;
+#endif
     unsigned detail;
 
 public:
     CStdLogIntercept()
     {
+#ifdef MINIMALTRACE
         lasttpid = 0;
+        lastt = 0;
+#endif
         nl = true;
         detail = _LOG_TIME | _LOG_PID | _LOG_TID;
 #ifdef LOGCLOCK
@@ -90,17 +95,13 @@ public:
             time_t tNow;
             time(&tNow);
 #ifdef _WIN32
-            unsigned tpid = GetCurrentThreadId();
-#else
-            unsigned tpid = getpid();
-#endif
-#ifdef _WIN32
             struct tm ltNow = *localtime(&tNow);
 #else
             struct tm ltNow;
             localtime_r(&tNow, &ltNow);
 #endif
 #ifdef MINIMALTRACE
+            unsigned tpid = GetCurrentThreadId();
             if (((detail & _LOG_TID) && tpid!=lasttpid)||((detail & _LOG_TIME) && memcmp(&tNow,&lastt,sizeof(tNow))!=0))
             {
                 lasttpid = tpid;
@@ -793,7 +794,7 @@ BOOL WINAPI ModuleExitHandler ( DWORD dwCtrlType )
     }
     return FALSE; 
 } 
-#else
+#elif defined(__linux__)
 static void UnixAbortHandler(int signo)
 {
     ahType type = ahInterrupt;

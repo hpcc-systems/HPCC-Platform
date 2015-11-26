@@ -213,7 +213,7 @@ class IpLogMsgFilter : public CLogMsgFilter
 {
 public:
     IpLogMsgFilter(const char * name, bool local) : ip(name), localFlag(local) {}
-    IpLogMsgFilter(const IpAddress & _ip, bool local) : localFlag(local), ip(_ip) 
+    IpLogMsgFilter(const IpAddress & _ip, bool local) : ip(_ip), localFlag(local)
     {
     }
     IpLogMsgFilter(bool local) : localFlag(local) { GetHostIp(ip); }

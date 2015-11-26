@@ -36,7 +36,6 @@
 
 #ifdef _DEBUG
 // #define PARANOID
-// #define DOUBLE_COMPARE
 //#define TESTPARSORT
 //#define MCMERGESTATS
 #endif
@@ -45,7 +44,6 @@
 //#define TRACE_PARTITION
 
 #define PARALLEL_GRANULARITY 1024
-static const unsigned numPartitionSamples = 3;
 
 static bool sortParallel(unsigned &numcpus)
 {
@@ -857,11 +855,12 @@ void msortvecstableinplace(void ** rows, size_t n, const ICompare & compare, voi
 
 //=========================================================================
 
+#ifdef _USE_TBB
+static const unsigned numPartitionSamples = 3;
 //These constants are probably architecture and number of core dependent
 static const size_t singleThreadedMSortThreshold = 2000;
 static const size_t multiThreadedBlockThreshold = 64;       // must be at least 2!
 
-#ifdef _USE_TBB
 using tbb::task;
 class TbbParallelMergeSorter
 {
@@ -889,7 +888,7 @@ class TbbParallelMergeSorter
     {
     public:
         BisectTask(TbbParallelMergeSorter & _sorter, void ** _rows, size_t _n, void ** _temp, unsigned _depth, task * _next)
-        : sorter(_sorter), rows(_rows), n(_n), temp(_temp), depth(_depth), next(_next)
+        : sorter(_sorter), rows(_rows), temp(_temp), next(_next), n(_n), depth(_depth)
         {
         }
         virtual task * execute()
@@ -965,7 +964,7 @@ class TbbParallelMergeSorter
     {
     public:
         SubSortTask(TbbParallelMergeSorter & _sorter, void ** _rows, size_t _n, void ** _temp, unsigned _depth)
-        : sorter(_sorter), rows(_rows), n(_n), temp(_temp), depth(_depth)
+        : sorter(_sorter), rows(_rows), temp(_temp), n(_n), depth(_depth)
         {
         }
 
@@ -987,7 +986,7 @@ class TbbParallelMergeSorter
     {
     public:
         MergeTask(const ICompare & _compare, void * * _result, size_t _n1, void * * _src1, size_t _n2, void * * _src2, size_t _n)
-        : compare(_compare),result(_result), n1(_n1), src1(_src1), n2(_n2), src2(_src2), n(_n)
+        : compare(_compare),result(_result), src1(_src1), src2(_src2), n1(_n1), n2(_n2), n(_n)
         {
         }
 
@@ -1062,7 +1061,7 @@ class TbbParallelMergeSorter
     {
     public:
         PartitionSplitTask(size_t _n1, void * * _src1, size_t _n2, void * * _src2, unsigned _numPartitions, const ICompare & _compare)
-            : numPartitions(_numPartitions), n1(_n1), n2(_n2), src1(_src1), src2(_src2), compare(_compare)
+            : compare(_compare), numPartitions(_numPartitions), n1(_n1), n2(_n2), src1(_src1), src2(_src2)
         {
             //These could be local variables in calculatePartitions(), but placed here to simplify cleanup.  (Should consider using alloca)
             posLeft = new size_t[numPartitions+1];
@@ -1388,27 +1387,7 @@ public:
 #define INSERTMAX 10000
 #define BUFFSIZE 0x100000   // used for output buffer
 
-
-
 //==================================================================================================
-#ifdef DOUBLE_COMPARE
-#define BuffCompare(a, b) ((MSbuffcomp(a,b,inbuffers,mergeheap,icmp)+MSbuffcomp(a,b,inbuffers,mergeheap,icmp))/2)
-#else
-#define BuffCompare(a, b) MSbuffcomp(a,b,inbuffers,mergeheap,icmp)
-#endif
-
-static inline int MSbuffcomp(unsigned a,unsigned b, void **inbuffers, unsigned *mergeheap, ICompare *icmp)
-{
-    int ret = icmp->docompare(inbuffers[mergeheap[a]], inbuffers[mergeheap[b]]);
-    if (ret==0) 
-        ret = (int)mergeheap[a]-mergeheap[b];
-    return ret;
-}
-
-
-    
-
-
 
 class CRowStreamMerger
 {

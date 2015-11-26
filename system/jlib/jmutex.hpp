@@ -203,7 +203,7 @@ private:
     ThreadId owner;
     unsigned depth;
 #endif
-    inline CriticalSection(CriticalSection & value) { assert(false); } // dummy to prevent inadvertant use as block
+    inline CriticalSection(CriticalSection & value __attribute__((unused))) { assert(false); } // dummy to prevent inadvertant use as block
 public:
     inline CriticalSection()
     {
@@ -377,7 +377,7 @@ class jlib_decl  SpinLock
     atomic_t value;
     unsigned nesting;           // not volatile since it is only accessed by one thread at a time
     struct { volatile ThreadId tid; } owner;
-    inline SpinLock(SpinLock & value) { assert(false); } // dummy to prevent inadvetant use as block
+    inline SpinLock(SpinLock & value __attribute__((unused))) { assert(false); } // dummy to prevent inadvetant use as block
 public:
     inline SpinLock()       
     {   
@@ -460,7 +460,7 @@ class jlib_decl NonReentrantSpinLock
 {
     atomic_t value;
     struct { volatile ThreadId tid; } owner; // atomic
-    inline NonReentrantSpinLock(NonReentrantSpinLock & value) { assert(false); } // dummy to prevent inadvertent use as block
+    inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) { assert(false); } // dummy to prevent inadvertent use as block
 public:
     inline NonReentrantSpinLock()       
     {
@@ -488,7 +488,7 @@ public:
 class jlib_decl  NonReentrantSpinLock
 {
     atomic_t value;
-    inline NonReentrantSpinLock(NonReentrantSpinLock & value) { assert(false); } // dummy to prevent inadvertent use as block
+    inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) { assert(false); } // dummy to prevent inadvertent use as block
 public:
     inline NonReentrantSpinLock()       
     {   
