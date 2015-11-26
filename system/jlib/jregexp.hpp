@@ -71,7 +71,7 @@ public:
   // can only be called after a successful find/findnext
   // maxlen is the maximum size of the result string after replacement
 
-  const char * substitute(StringBuffer &s,const char *mask,...);
+  const char * substitute(StringBuffer &s,const char *mask,...) __attribute__((format(printf,3,4)));;
   // (for DAB)
   // Creates a string from mask (and following parameters) where mask is
   // a 'sprintf' string with the addition that *after* the sprintf

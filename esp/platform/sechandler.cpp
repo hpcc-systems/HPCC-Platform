@@ -291,12 +291,10 @@ void SecHandler::AuditMessage(AuditType type, const char *filterType, const char
     va_list args;
     va_start(args, parms);
 
-    StringBuffer msg;
-    StringBuffer format(title);
-    format.appendf("\n\tProcess: esp\n\tUser: %s",  m_user->getName());
+    StringBuffer msg(title);
+    msg.appendf("\n\tProcess: esp\n\tUser: %s",  m_user->getName());
     if (parms)
-        format.append("\n\t").append(parms);
-    msg.valist_appendf(format.str(), args);
+        msg.append("\n\t").valist_appendf(parms, args);
     
     va_end(args);
     AUDIT(type, msg.str());

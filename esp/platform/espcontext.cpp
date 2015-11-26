@@ -386,7 +386,7 @@ public:
         return m_SecurityHandler.validateSecFeatureAccess(pszFeatureUrl, required, throwExcpt);
     }
 
-    void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms, ...);
+    void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms, ...) __attribute__((format(printf, 5, 6)));
     void AuditMessage(AuditType type, const char *filterType, const char *title);
 
     IProperties * queryXslParameters()
@@ -484,12 +484,10 @@ void CEspContext::AuditMessage(AuditType type, const char *filterType, const cha
     va_list args;
     va_start(args, parms);
 
-    StringBuffer msg;
-    StringBuffer format(title);
-    format.appendf("\n\tProcess: esp\n\tService: %s\n\tUser: %s", m_servName.str(), queryUserId());
+    StringBuffer msg(title);
+    msg.appendf("\n\tProcess: esp\n\tService: %s\n\tUser: %s", m_servName.str(), queryUserId());
     if (parms)
-        format.append("\n\t").append(parms);
-    msg.valist_appendf(format.str(), args);
+        msg.append("\n\t").valist_appendf(parms, args);
     
     va_end(args);
     AUDIT(type, msg.str());

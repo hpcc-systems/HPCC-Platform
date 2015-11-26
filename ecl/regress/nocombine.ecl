@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,14 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef SLAVMAIN_HPP
-#define SLAVMAIN_HPP
 
-void abortSlave();
-void slaveMain(bool &jobListenerStopped);
-void enableThorSlaveAsDaliClient();
-void disableThorSlaveAsDaliClient();
+ds := DATASET(100, TRANSFORM({ unsigned id, unsigned value }, SELF.id := COUNTER; SELF.value := 10;));
 
-#endif
+dsNoFold := NOFOLD(ds)(value between 10 and 20);
+dsNoCombine := NOCOMBINE(ds)(value between 10 and 20);
 
-
+sequential(
+    output(dsNoFold, { value });
+    output(dsNoCombine, { value }); // check fields are projected and value are percolated
+    output(count(dsNoFold));
+    output(count(dsNoCombine));
+);

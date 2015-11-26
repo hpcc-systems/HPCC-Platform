@@ -123,7 +123,7 @@ inline IError * createError(int errNo, const char *msg, const char *filename, in
     return createError(CategoryError, SeverityFatal, errNo, msg, filename, lineno, column, pos);
 }
 extern HQL_API void reportErrors(IErrorReceiver & receiver, IErrorArray & errors);
-void HQL_API reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char* format, va_list args);
+void HQL_API reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char* format, va_list args) __attribute__((format(printf, 4, 0)));
 void HQL_API reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...) __attribute__((format(printf, 4, 5)));
 
 extern HQL_API IErrorReceiver * createFileErrorReceiver(FILE *f);

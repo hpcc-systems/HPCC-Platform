@@ -67,10 +67,10 @@ interface IExceptionHandler
 };
 
 IException jlib_decl *makeStringExceptionV(int code, const char *why, ...) __attribute__((format(printf, 2, 3)));
-IException jlib_decl *makeStringExceptionVA(int code, const char *why, va_list args);
+IException jlib_decl *makeStringExceptionVA(int code, const char *why, va_list args) __attribute__((format(printf, 2, 0)));
 IException jlib_decl *makeStringException(int code, const char *why);
 IException jlib_decl *makeStringExceptionV(MessageAudience aud, int code, const char *why, ...) __attribute__((format(printf, 3, 4)));
-IException jlib_decl *makeStringExceptionVA(MessageAudience aud, int code, const char *why, va_list args);
+IException jlib_decl *makeStringExceptionVA(MessageAudience aud, int code, const char *why, va_list args) __attribute__((format(printf, 3, 0)));
 IException jlib_decl *makeStringException(MessageAudience aud, int code, const char *why);
 __declspec(noreturn) void jlib_decl throwStringExceptionV(int code, const char *format, ...) __attribute__((format(printf, 2, 3), noreturn));
 

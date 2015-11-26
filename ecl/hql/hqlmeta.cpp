@@ -1945,6 +1945,8 @@ CHqlMetaProperty * querySimpleDatasetMeta(IHqlExpression * expr)
     case no_keyed:
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
     case no_section:
     case no_sectioninput:
     case no_sub:
@@ -1990,7 +1992,6 @@ CHqlMetaProperty * querySimpleDatasetMeta(IHqlExpression * expr)
     case no_thisnode:
     case no_forcelocal:
     case no_filtergroup:
-    case no_forcegraph:
     case no_related:
     case no_executewhen:
     case no_outofline:
@@ -2058,6 +2059,8 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
     case no_keyed:
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
     case no_section:
     case no_sectioninput:
     case no_sub:
@@ -2103,7 +2106,6 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
     case no_thisnode:
     case no_forcelocal:
     case no_filtergroup:
-    case no_forcegraph:
     case no_related:
     case no_executewhen:
     case no_outofline:
@@ -3243,6 +3245,8 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
     case no_keyed:
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
     case no_section:
     case no_sectioninput:
     case no_sub:
@@ -3289,7 +3293,6 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
     case no_thisnode:
     case no_forcelocal:
     case no_filtergroup:
-    case no_forcegraph:
     case no_related:
     case no_executewhen:
     case no_outofline:

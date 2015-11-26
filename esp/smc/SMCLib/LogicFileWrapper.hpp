@@ -57,7 +57,7 @@ struct ErrorReceiver: public CInterface, implements IErrorListener
 {
     IMPLEMENT_IINTERFACE;    
     
-    virtual void reportError(const char* err,...)
+    virtual void reportError(const char* err,...) __attribute__((format(printf,2,3)))
     {
         va_list args;
         va_start(args, err);

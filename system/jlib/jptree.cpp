@@ -48,7 +48,7 @@
 #undef UNIMPLEMENTED
 #define UNIMPLEMENTED throw MakeIPTException(-1, "UNIMPLEMENTED")
 #define CHECK_ATTRIBUTE(X) if (X && isAttribute(X)) throw MakeIPTException(PTreeExcpt_XPath_Unsupported, "Attribute usage invalid here");
-#define AMBIGUOUS_PATH(X,P) { StringBuffer buf; buf.append(X": ambiguous xpath \"").append(P).append("\"");  throw MakeIPTException(PTreeExcpt_XPath_Ambiguity,buf.str()); }
+#define AMBIGUOUS_PATH(X,P) { StringBuffer buf; buf.append(X": ambiguous xpath \"").append(P).append("\"");  throw MakeIPTException(PTreeExcpt_XPath_Ambiguity,"%s",buf.str()); }
 
 #define PTREE_COMPRESS_THRESHOLD (4*1024)    // i.e. only use compress if > threshold
 #define PTREE_COMPRESS_BOTHER_PECENTAGE (80) // i.e. if it doesn't compress to <80 % of original size don't bother
@@ -454,7 +454,7 @@ class jlib_thrown_decl CPTreeException : public CInterface, implements IPTreeExc
 public:
     IMPLEMENT_IINTERFACE;
 
-    CPTreeException(int _errCode, const char *_errMsg, va_list &args) : errCode(_errCode)
+    CPTreeException(int _errCode, const char *_errMsg, va_list &args) __attribute__((format(printf,3,0))) : errCode(_errCode)
     {
         if (_errMsg)
             errMsg.valist_appendf(_errMsg, args);
@@ -487,6 +487,9 @@ public:
     MessageAudience errorAudience() const { return MSGAUD_user; }
 };
 
+static IPTreeException *MakeIPTException(int code, const char *format, ...) __attribute__((format(printf,2,3)));
+static IPTreeException *MakeXPathException(const char *xpath, int code, size_t pos, const char *format, ...) __attribute__((format(printf,4,5)));
+
 IPTreeException *MakeIPTException(int code, const char *format, ...)
 {
     va_list args;
@@ -509,7 +512,7 @@ IPTreeException *MakeXPathException(const char *xpath, int code, size_t pos, con
     const char *msg = "in xpath = ";
     s.append("\n").append(msg).append(xpath);
     s.append("\n").appendN((size32_t)(strlen(msg)+pos), ' ').append("^");
-    return MakeIPTException(code, s.str());
+    return MakeIPTException(code, "%s", s.str());
 }
 
 inline static void readID(const char *&xxpath, bool started)

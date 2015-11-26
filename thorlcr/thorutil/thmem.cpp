@@ -365,10 +365,7 @@ public:
     ~CSpillableStream()
     {
         spillStream.clear();
-        while (pos < numReadRows)
-        {
-            ReleaseThorRow(readRows[pos++]);
-        }
+        roxiemem::ReleaseRoxieRowRange(readRows, pos, numReadRows);
         ReleaseThorRow(readRows);
     }
 
@@ -582,8 +579,7 @@ inline bool CThorExpandingRowArray::_resize(rowidx_t requiredRows, unsigned maxS
         {
             if (numRows > requiredRows)
             {
-                for (rowidx_t i = requiredRows; i < numRows; i++)
-                    ReleaseThorRow(rows[i]);
+                roxiemem::ReleaseRoxieRowRange(rows, requiredRows, numRows);
                 numRows = requiredRows;
             }
         }
@@ -661,8 +657,7 @@ void CThorExpandingRowArray::setup(IRowInterfaces *_rowIf, bool _allowNulls, Sta
 
 void CThorExpandingRowArray::clearRows()
 {
-    for (rowidx_t i = 0; i < numRows; i++)
-        ReleaseThorRow(rows[i]);
+    roxiemem::ReleaseRoxieRowArray(numRows, rows);
     numRows = 0;
 }
 
@@ -789,8 +784,7 @@ void CThorExpandingRowArray::removeRows(rowidx_t start, rowidx_t n)
     if (rows)
     {
         rowidx_t end = start+n;
-        for (rowidx_t i = start; i < end; i++)
-            ReleaseThorRow(rows[i]);
+        roxiemem::ReleaseRoxieRowRange(rows, start, end);
         //firstRow = 0;
         const void **from = rows+start;
         memmove(from, from+n, (numRows-end) * sizeof(void *));
@@ -1237,8 +1231,7 @@ CThorSpillableRowArray::~CThorSpillableRowArray()
 
 void CThorSpillableRowArray::clearRows()
 {
-    for (rowidx_t i = firstRow; i < numRows; i++)
-        ReleaseThorRow(rows[i]);
+    roxiemem::ReleaseRoxieRowRange(rows, firstRow, numRows);
     numRows = 0;
     firstRow = 0;
     commitRows = 0;

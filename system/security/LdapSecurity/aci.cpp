@@ -142,7 +142,7 @@ public:
                 curptr++;
             if(*curptr != '\0')
                 curptr++;
-            while(*curptr != '"' && curptr != '\0')
+            while(*curptr != '"' && *curptr != '\0')
             {
                 m_targetattr.append(*curptr);
                 curptr++;
@@ -162,7 +162,7 @@ public:
             if(strncmp(curptr, "ldap:///", 8) == 0)
                 curptr += 8;
 
-            while(*curptr != '"' && curptr != '\0')
+            while(*curptr != '"' && *curptr != '\0')
             {
                 m_target.append(*curptr);
                 curptr++;

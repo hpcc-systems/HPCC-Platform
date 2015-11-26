@@ -1750,10 +1750,7 @@ public:
     }
     ~CRowMultiWriterReader()
     {
-        while (rowPos < rowsToRead)
-        {
-            ReleaseThorRow(readRows[rowPos++]);
-        }
+        roxiemem::ReleaseRoxieRowRange(readRows, rowPos, rowsToRead);
         ReleaseThorRow(readRows);
     }
     void writerStopped()

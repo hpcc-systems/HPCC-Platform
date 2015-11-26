@@ -431,7 +431,9 @@ class jlib_decl LogMsg : public CInterface
 public:
     LogMsg() : category(), sysInfo(), jobInfo(), remoteFlag(false) {}
     LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned _compo, unsigned port, LogMsgSessionId session) : category(_cat), sysInfo(_id, port, session), jobInfo(_jobInfo), msgCode(_code), component(_compo), remoteFlag(false) { text.append(_text); }
-    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args, unsigned _compo, unsigned port, LogMsgSessionId session) : category(_cat), sysInfo(_id, port, session), jobInfo(_jobInfo), msgCode(_code), component(_compo), remoteFlag(false) { text.valist_appendf(format, args); }
+    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args,
+           unsigned _compo, unsigned port, LogMsgSessionId session)  __attribute__((format(printf,6, 0)))
+    : category(_cat), sysInfo(_id, port, session), jobInfo(_jobInfo), msgCode(_code), component(_compo), remoteFlag(false) { text.valist_appendf(format, args); }
     LogMsg(MemoryBuffer & in) { deserialize(in, false); }
     StringBuffer &            toStringPlain(StringBuffer & out, unsigned fields = MSGFIELD_all) const;
     StringBuffer &            toStringXML(StringBuffer & out, unsigned fields = MSGFIELD_all) const;
@@ -996,9 +998,9 @@ extern jlib_decl void AuditSystemAccess(const char *userid, bool success, char c
 interface jlib_decl IContextLogger : extends IInterface
 {
     void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)));
-    virtual void CTXLOGva(const char *format, va_list args) const = 0;
+    virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0))) = 0;
     void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const  __attribute__((format(printf, 5, 6)));
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const = 0;
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0))) = 0;
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
     virtual unsigned queryTraceLevel() const = 0;

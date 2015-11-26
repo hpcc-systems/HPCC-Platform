@@ -62,6 +62,6 @@ interface IWsException : extends IException
 IWsException esdl_decl *makeWsException(IMultiException& me, WsErrorType errorType);
 IWsException esdl_decl *makeWsException(const char *source, WsErrorType errorType);
 IWsException esdl_decl *makeWsException(IException& e, WsErrorType errorType, const char* source = NULL );
-IWsException esdl_decl *makeWsException(int errorCode, WsErrorType errorType, const char* source, const char *format, ...);
+IWsException esdl_decl *makeWsException(int errorCode, WsErrorType errorType, const char* source, const char *format, ...) __attribute__((format(printf,4,5)));
 
 #endif

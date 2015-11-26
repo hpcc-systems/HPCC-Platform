@@ -393,16 +393,25 @@ define([
 
         _onSprayXml: function(event) {
             var context = this;
-            this._spraySelectedOneAtATime("SprayXmlDropDown", "SprayXmlForm", function (request, item) {
-                lang.mixin(request, {
-                    sourceRowTag: item.targetRowTag
+            this.sprayXmlTargetRowTag = registry.byId(this.id + "sprayXmlTargetRowTag");
+            if (this.sprayXmlTargetRowTag.getValue()) {
+                this._spraySelectedOneAtATime("SprayXmlDropDown", "SprayXmlForm", function (request, item) {
+                    lang.mixin(request, {
+                        sourceRowTag: item.targetRowTag
+                    });
+                    FileSpray.SprayVariable({
+                        request: request
+                    }).then(function (response) {
+                        context._handleResponse("SprayResponse.wuid", response);
+                    });
                 });
-                FileSpray.SprayVariable({
-                    request: request
-                }).then(function (response) {
-                    context._handleResponse("SprayResponse.wuid", response);
+            } else {
+                topic.publish("hpcc/brToaster", {
+                    Severity: "Error",
+                    Source: "FileSpray.SprayVariable",
+                    Exceptions: [{ Message: this.i18n.TargetRowTagRequired }]
                 });
-            });
+            }
         },
 
         _onSprayJson: function(event) {
@@ -628,15 +637,21 @@ define([
                 columns: {
                     targetName: editor({
                         label: this.i18n.TargetName,
-                        width: 144,
+                        width: 120,
                         autoSave: true,
                         editor: "text"
                     }),
                     targetRowTag: editor({
                         label: this.i18n.RowTag,
-                        width: 72,
+                        width:100,
                         autoSave: true,
-                        editor: "text"
+                        editor: dijit.form.ValidationTextBox,
+                        editorArgs: {
+                            required: true,
+                            id: this.id + "sprayXmlTargetRowTag",
+                            placeholder: this.i18n.RequiredForXML,
+                            promptMessage: this.i18n.RequiredForXML
+                        }
                     })
                 }
             });
@@ -715,7 +730,7 @@ define([
                     lang.mixin(item, lang.mixin({
                         targetName: item.displayName,
                         targetRecordLength: "",
-                        targetRowTag: context.i18n.tag,
+                        targetRowTag: "",
                         targetRowPath: "/"
                     }, item));
                     data.push(item);

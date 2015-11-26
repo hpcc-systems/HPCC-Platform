@@ -100,8 +100,8 @@ public:
     virtual StringBuffer& mangle(const char* src, StringBuffer& mangled) { return ::mangle(m_lookupContext.errs,src,mangled,false); }
     virtual StringBuffer& demangle(const char* mangled, StringBuffer& demangled) { return ::mangle(m_lookupContext.errs,mangled,demangled,true); }
 
-    virtual void reportError(int errNo,const char* format,...);
-    virtual void reportWarning(int warnNo,const char* format,...);
+    virtual void reportError(int errNo,const char* format,...)  __attribute__((format(printf,3,4)));
+    virtual void reportWarning(int warnNo,const char* format,...) __attribute__((format(printf,3,4)));;
 };
 
 void CTemplateContext::reportError(int errNo,const char* format,...)

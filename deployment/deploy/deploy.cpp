@@ -268,7 +268,7 @@ public:
             m_transform->transform( outputXml );
             m_transform->closeResultTarget();
             
-            m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, m_transform->getMessages());
+            m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "%s", m_transform->getMessages());
 
             if (!m_nValidationErrors)//this may get filled in by the external function
                 valid = true;

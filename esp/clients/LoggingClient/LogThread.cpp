@@ -754,7 +754,7 @@ bool CLogThread::FlattenTree(IArrayOf<IEspLogInfo>& valueArray,IPropertyTree& tr
             else
             {
                 const char* _value = tree.queryProp(node.queryName());
-                if(tree.hasProp(node.queryName())==true && _value!=0 && _value!='\0')
+                if(tree.hasProp(node.queryName())==true && _value!=0 && *_value!='\0')
                 {
                     Value.appendf("%s",tree.queryProp(node.queryName()));
                     IClientLogInfo& logElement = addLogInfoElement(valueArray);

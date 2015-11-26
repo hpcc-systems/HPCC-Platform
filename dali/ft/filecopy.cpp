@@ -3105,7 +3105,8 @@ void FileSprayer::updateTargetProperties()
                      (stricmp(aname,"@owner")==0)||
                      ((stricmp(aname,FArecordCount)==0)&&!gotrc) ||
                      ((stricmp(aname,"@blockCompressed")==0)&&copyCompressed) ||
-                     ((stricmp(aname,"@rowCompressed")==0)&&copyCompressed)
+                     ((stricmp(aname,"@rowCompressed")==0)&&copyCompressed)||
+                     (stricmp(aname,"@local")==0)
                      )
                     )
                     curProps.setProp(aname,aiter->queryValue());

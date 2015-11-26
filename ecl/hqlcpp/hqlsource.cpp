@@ -201,6 +201,7 @@ bool isSimpleSource(IHqlExpression * expr)
         case no_sectioninput:
         case no_nofold:
         case no_nohoist:
+        case no_nocombine:
         case no_dataset_alias:
             break;
         default:
@@ -970,6 +971,7 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     case no_sectioninput:
     case no_nofold:
     case no_nohoist:
+    case no_nocombine:
     case no_dataset_alias:
         break;
     case no_preload:
@@ -1359,6 +1361,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
     case no_sectioninput:
     case no_nofold:
     case no_nohoist:
+    case no_nocombine:
         break;
     case no_filter:
         {

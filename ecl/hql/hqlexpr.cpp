@@ -1247,6 +1247,7 @@ const char *getOpString(node_operator op)
     case no_template_context: return "no_template_context";
     case no_nofold: return "NOFOLD";
     case no_nohoist: return "NOHOIST";
+    case no_nocombine: return "NOCOMBINE";
     case no_fail: return "FAIL";
     case no_filepos: return "no_filepos";
     case no_file_logicalname: return "no_file_logicalname";
@@ -1522,7 +1523,7 @@ const char *getOpString(node_operator op)
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused25: case no_unused28: case no_unused29:
+    case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
@@ -1948,7 +1949,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_preload:
     case no_limit:
     case no_catchds:
-    case no_forcegraph:
     case no_owned_ds:
     case no_dataset_alias:
     case no_split:
@@ -1985,6 +1985,8 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_globalscope:
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
     case no_section:
     case no_thor:
     case no_catch:
@@ -2234,7 +2236,6 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_graphloop:
     case no_extractresult:
     case no_filtergroup:
-    case no_forcegraph:
     case no_normalizegroup:
     case no_owned_ds:
     case no_dataset_alias:
@@ -2319,6 +2320,8 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_globalscope:
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
     case no_section:
     case no_thor:
     case no_pipe:
@@ -2451,6 +2454,8 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_metaactivity:
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
     case no_section:
     case no_sample:
     case no_sort:
@@ -2496,7 +2501,6 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_assert_ds:
     case no_spillgraphresult:
     case no_sectioninput:
-    case no_forcegraph:
     case no_related:
     case no_outofline:
     case no_fieldmap:
@@ -3257,6 +3261,8 @@ void CHqlExpression::initFlagsBeforeOperands()
         infoFlags2 &= ~HEF2constant;
         break;
     case no_nofold:
+    case no_forcegraph:
+    case no_nocombine:
     case no_section:            // not so sure about this...
     case no_sectioninput:
     case no_wuid:
@@ -10810,6 +10816,8 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
         }
     case no_nofold:
     case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
     case no_thor:
     case no_nothor:
     case no_alias:

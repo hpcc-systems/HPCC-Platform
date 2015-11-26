@@ -310,6 +310,7 @@ public:
     MessageAudience errorAudience() const { return audience; }
 };
 
+CThorException *_MakeThorException(LogMsgAudience audience,int code, const char *format, va_list args) __attribute__((format(printf,3,0)));
 CThorException *_MakeThorException(LogMsgAudience audience,int code, const char *format, va_list args)
 {
     StringBuffer eStr;
@@ -317,6 +318,7 @@ CThorException *_MakeThorException(LogMsgAudience audience,int code, const char 
     return new CThorException(audience, code, eStr.str());
 }
 
+CThorException *_ThorWrapException(IException *e, const char *format, va_list args) __attribute__((format(printf,2,0)));
 CThorException *_ThorWrapException(IException *e, const char *format, va_list args)
 {
     StringBuffer eStr;
@@ -370,6 +372,7 @@ void setExceptionActivityInfo(CGraphElementBase &container, IThorException *e)
     e->setGraphId(container.queryOwner().queryGraphId());
 }
 
+IThorException *_MakeActivityException(CGraphElementBase &container, int code, const char *format, va_list args) __attribute__((format(printf,3,0)));
 IThorException *_MakeActivityException(CGraphElementBase &container, int code, const char *format, va_list args)
 {
     IThorException *e = _MakeThorException(MSGAUD_user, code, format, args);
@@ -377,14 +380,14 @@ IThorException *_MakeActivityException(CGraphElementBase &container, int code, c
     return e;
 }
 
+IThorException *_MakeActivityException(CGraphElementBase &container, IException *e, const char *_format, va_list args) __attribute__((format(printf,3,0)));
 IThorException *_MakeActivityException(CGraphElementBase &container, IException *e, const char *_format, va_list args)
 {
-    StringBuffer format;
-    e->errorMessage(format);
+    StringBuffer msg;
+    e->errorMessage(msg);
     if (_format)
-        format.append(", ").append(_format);
-    _format = format.str();
-    IThorException *e2 = _MakeThorException(e->errorAudience(), e->errorCode(), format.str(), args);
+        msg.append(", ").limited_valist_appendf(1024, _format, args);
+    IThorException *e2 = new CThorException(e->errorAudience(), e->errorCode(), msg.str());
     setExceptionActivityInfo(container, e2);
     return e2;
 }

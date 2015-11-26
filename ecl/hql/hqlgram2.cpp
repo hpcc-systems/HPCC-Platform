@@ -264,6 +264,7 @@ bool HqlGramCtx::hasAnyActiveParameters()
 }
 
 
+static IError * createErrorVA(WarnErrorCategory category, ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, va_list args) __attribute__((format(printf,5,0)));
 static IError * createErrorVA(WarnErrorCategory category, ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, va_list args)
 {
     StringBuffer msg;
@@ -10630,6 +10631,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case NAMESPACE: msg.append("NAMESPACE"); break;
     case NOBOUNDCHECK: msg.append("NOBOUNDCHECK"); break;
     case NOCASE: msg.append("NOCASE"); break;
+    case NOCOMBINE: msg.append("NOCOMBINE"); break;
     case NOFOLD: msg.append("NOFOLD"); break;
     case NOHOIST: msg.append("NOHOIST"); break;
     case NOLOCAL: msg.append("NOLOCAL"); break;
@@ -10935,7 +10937,7 @@ void HqlGram::simplifyExpected(int *expected)
     //simplify checks if the first item in the list is expected next, and if so it removes all of the others as expected tokens.
     simplify(expected, DISTRIBUTE, DISTRIBUTE, ASCII, CHOOSEN, CHOOSESETS, DEDUP, DISTRIBUTED, EBCDIC, ENTH, SAMPLE, SORT, SORTED, TABLE, DATASET, FETCH,
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
-                       HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
+                       HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOCOMBINE, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
                        TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
