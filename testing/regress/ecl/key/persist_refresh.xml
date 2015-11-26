@@ -1,0 +1,6 @@
+<Dataset name='Result 1'>
+ <Row><country>Spain</country><population>40397842</population></Row>
+ <Row><country>Sweden</country><population>9016596</population></Row>
+ <Row><country>Switzerland</country><population>7523934</population></Row>
+ <Row><country>United Kingdom</country><population>60609153</population></Row>
+</Dataset>
