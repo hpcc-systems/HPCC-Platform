@@ -3942,6 +3942,7 @@ public:
                     EXCLOG(e,"CSocketSelectThread::updateItems");
                     e->Release();
                 }
+                // NOTE: si is a reference, put last item into remove slot
                 n--;
                 if (i<n) 
                     si = items.item(n);
@@ -4331,8 +4332,7 @@ class CSocketEpollThread: public CSocketBaseThread
         // if another thread closed fd before here don't fail
         if ( (srtn < 0) && (op != EPOLL_CTL_DEL) ){
             int err = ERRNO();
-            LOGERR(err,1,"epoll_ctl");
-            THROWJSOCKEXCEPTION2(err);
+            WARNLOG("epoll_ctl failed op:%d, fd:%d, err=%d", op, fd, err);
         }
     }
 
@@ -4446,8 +4446,8 @@ public:
             try {
                 SelectItem &si = items.element(i);
                 epoll_op(epfd, EPOLL_CTL_DEL, si.handle, 0);
-                si.sock->Release();
                 si.nfy->Release();
+                si.sock->Release();
             }
             catch (IException *e) {
                 EXCLOG(e,"~CSocketEpollThread");
@@ -4478,8 +4478,10 @@ public:
                 reindex = true;
             }
             if (si.del) {
-                epoll_op(epfd, EPOLL_CTL_DEL, si.handle, 0);
-                epfdtbl[si.handle] = -1;
+                if (epfdtbl[si.handle] >= 0) {
+                    epoll_op(epfd, EPOLL_CTL_DEL, si.handle, 0);
+                    epfdtbl[si.handle] = -1;
+                }
                 reindex = true;
                 si.nfy->Release();
                 try {
@@ -4492,6 +4494,7 @@ public:
                     EXCLOG(e,"CSocketEpollThread::updateItems");
                     e->Release();
                 }
+                // NOTE: si is a reference, put last item into remove slot
                 n--;
                 if (i<n)
                     si = items.item(n);
