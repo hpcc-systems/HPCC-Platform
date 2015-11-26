@@ -283,6 +283,12 @@ public:
     void releaseIOs();
     void addDependsOn(CGraphBase *graph, int controlId);
     IThorGraphDependencyIterator *getDependsIterator() const;
+    StringBuffer &getOpt(const char *prop, StringBuffer &out) const;
+    bool getOptBool(const char *prop, bool defVal=false) const;
+    int getOptInt(const char *prop, int defVal=0) const;
+    unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return (unsigned)getOptInt(prop, defVal); }
+    __int64 getOptInt64(const char *prop, __int64 defVal=0) const;
+    unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return (unsigned __int64)getOptInt64(prop, defVal); }
     void ActPrintLog(const char *format, ...)  __attribute__((format(printf, 2, 3)));
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
     void ActPrintLog(IException *e);
@@ -1045,12 +1051,12 @@ public:
     virtual unsigned queryActivityId() { return (unsigned)queryId(); }
     virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
 
-    StringBuffer &getOpt(const char *prop, StringBuffer &out) const;
-    bool getOptBool(const char *prop, bool defVal=false) const;
-    int getOptInt(const char *prop, int defVal=0) const;
-    unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return (unsigned)getOptInt(prop, defVal); }
-    __int64 getOptInt64(const char *prop, __int64 defVal=0) const;
-    unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return (unsigned __int64)getOptInt64(prop, defVal); }
+    StringBuffer &getOpt(const char *prop, StringBuffer &out) const { return container.getOpt(prop, out); }
+    bool getOptBool(const char *prop, bool defVal=false) const { return container.getOptBool(prop, defVal); }
+    int getOptInt(const char *prop, int defVal=0) const { return container.getOptInt(prop, defVal); }
+    unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return container.getOptUInt(prop, defVal); }
+    __int64 getOptInt64(const char *prop, __int64 defVal=0) const { return container.getOptInt64(prop, defVal); }
+    unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return container.getOptUInt64(prop, defVal); }
 };
 
 interface IFileInProgressHandler : extends IInterface

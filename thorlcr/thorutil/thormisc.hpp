@@ -72,6 +72,10 @@
 #define THOROPT_COMP_FORCELZW         "forceLZW"                // Forces file compression to use LZW                                            (default = false)
 #define THOROPT_TRACE_ENABLED         "traceEnabled"            // Output from TRACE activity enabled                                            (default = false)
 #define THOROPT_TRACE_LIMIT           "traceLimit"              // Number of rows from TRACE activity                                            (default = 10)
+#define THOROPT_READ_CRC              "crcReadEnabled"          // Enabled CRC validation on disk reads if file CRC are available                (default = true)
+#define THOROPT_WRITE_CRC             "crcWriteEnabled"         // Calculate CRC's for disk outputs and store in file meta data                  (default = true)
+#define THOROPT_READCOMPRESSED_CRC    "crcReadCompressedEnabled"  // Enabled CRC validation on compressed disk reads if file CRC are available   (default = false)
+#define THOROPT_WRITECOMPRESSED_CRC   "crcWriteCompressedEnabled" // Calculate CRC's for compressed disk outputs and store in file meta data     (default = false)
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 

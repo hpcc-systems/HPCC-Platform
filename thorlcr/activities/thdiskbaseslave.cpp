@@ -123,7 +123,7 @@ void CDiskPartHandlerBase::open()
         throw e;
     }
     filename.set(iFile->queryFilename());
-    ActPrintLog(&activity, "%s[part=%d]: reading physical file '%s' (logical file = %s)", kindStr, which, filePath.str(), activity.logicalFilename.get());
+    ActPrintLog(&activity, "%s[part=%d]: reading physical file '%s' (logical file = %s), checkFileCrc=%s", kindStr, which, filePath.str(), activity.logicalFilename.get(), checkFileCrc?"true":"false");
     if (checkFileCrc)
     {
         CDateTime createTime, modifiedTime, accessedTime;
@@ -202,9 +202,12 @@ CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_conta
 {
     helper = (IHThorDiskReadBaseArg *)queryHelper();
     reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
-    crcCheckCompressed = 0 != container.queryJob().getWorkUnitValueInt("crcCheckCompressed", 0);
+    crcCheckCompressed = getOptBool(THOROPT_READCOMPRESSED_CRC, false);
     markStart = gotMeta = false;
-    checkFileCrc = !globals->getPropBool("Debug/@fileCrcDisabled");
+    if (globals->hasProp("Debug/@fileCrcDisabled"))
+        checkFileCrc = globals->getPropBool("Debug/@fileCrcDisabled");
+    else
+        checkFileCrc = getOptBool(THOROPT_READ_CRC, true);
 }
 
 // IThorSlaveActivity
@@ -327,7 +330,10 @@ void CDiskWriteSlaveActivityBase::open()
             diskRowMinSz += 1;
     }
 
-    calcFileCrc = true;
+    if (compress)
+        calcFileCrc = getOptBool(THOROPT_WRITECOMPRESSED_CRC, false);
+    else
+        calcFileCrc = getOptBool(THOROPT_WRITE_CRC, true);
 
     bool external = dlfn.isExternal();
     bool query = dlfn.isQuery();
@@ -368,7 +374,7 @@ void CDiskWriteSlaveActivityBase::open()
     }
     if (extend || (external && !query))
         stream->seek(0,IFSend);
-    ActPrintLog("Created output stream for %s", fName.get());
+    ActPrintLog("Created output stream for %s, calcFileCrc=%s", fName.get(), calcFileCrc?"true":"false");
 }
 
 void CDiskWriteSlaveActivityBase::removeFiles()
