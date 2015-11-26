@@ -395,7 +395,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
         if (!streq(ext.str(), SharedObjectExtension))
         {
             // Assume if there's no .so, there may also be no lib at the beginning
-            if (strncmp(tail.str(), SharedObjectPrefix, strlen(SharedObjectPrefix) != 0))
+            if (strncmp(tail.str(), SharedObjectPrefix, strlen(SharedObjectPrefix)) != 0)
                 path.append(SharedObjectPrefix);
             path.append(tail).append(ext).append(SharedObjectExtension);
             name = path.str();
