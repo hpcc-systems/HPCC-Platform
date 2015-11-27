@@ -7109,6 +7109,7 @@ void CHThorTopNActivity::done()
     free(sorted);
     sorted = NULL;
     curIndex = 0;
+    sortedCount = 0;
 }
 
 const void * CHThorTopNActivity::nextInGroup()
