@@ -26,9 +26,9 @@
 project( lzma ) 
 
 set ( SRCS
-        LzFind.c
-        LzmaDec.c
-        LzmaEnc.c
+        LzFind.cpp
+        LzmaDec.cpp
+        LzmaEnc.cpp
 )
 
 ADD_DEFINITIONS( -D_LIB )
