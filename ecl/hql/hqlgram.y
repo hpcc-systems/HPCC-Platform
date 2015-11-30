@@ -3096,7 +3096,7 @@ datasetFlag
                             $$.setExpr(createExprAttribute(distributedAtom));
                             $$.setPosition($1);
                         }
-    | localAttribute
+    | commonAttribute
     ;
 
 optIndexFlags
@@ -5630,7 +5630,7 @@ primexpr1
                         {   $$.inherit($2); }
     | COUNT '(' startTopFilter aggregateFlags ')' endTopFilter
                         {
-                            $$.setExpr(createValue(no_count, LINK(parser->defaultIntegralType), $3.getExpr(), $4.getExpr()));
+                            $$.setExpr(createValueF(no_count, LINK(parser->defaultIntegralType), $3.getExpr(), $4.getExpr(), NULL));
                         }
     | COUNT '(' GROUP optExtraFilter ')'
                         {
@@ -5662,7 +5662,7 @@ primexpr1
                         }
     | EXISTS '(' dataSet aggregateFlags ')'
                         {
-                            $$.setExpr(createBoolExpr(no_exists, $3.getExpr(), $4.getExpr()));
+                            $$.setExpr(createValueF(no_exists, makeBoolType(), $3.getExpr(), $4.getExpr(), NULL));
                             $$.setPosition($1);
                         }
     | EXISTS '(' dictionary ')'
@@ -6023,7 +6023,7 @@ primexpr1
                         {
                             parser->normalizeExpression($5);
                             IHqlExpression *e5 = $5.getExpr();
-                            $$.setExpr(createValue(no_max, e5->getType(), $3.getExpr(), e5, $6.getExpr()));
+                            $$.setExpr(createValueF(no_max, e5->getType(), $3.getExpr(), e5, $6.getExpr(), NULL));
                         }
     | MAX '(' GROUP ',' expression ')'
                         {
@@ -6035,7 +6035,7 @@ primexpr1
                         {
                             parser->normalizeExpression($5);
                             IHqlExpression *e5 = $5.getExpr();
-                            $$.setExpr(createValue(no_min, e5->getType(), $3.getExpr(), e5, $6.getExpr()));
+                            $$.setExpr(createValueF(no_min, e5->getType(), $3.getExpr(), e5, $6.getExpr(), NULL));
                         }
     | MIN '(' GROUP ',' expression ')'
                         {
@@ -6056,7 +6056,7 @@ primexpr1
                             Owned<ITypeInfo> temp = parser->checkPromoteNumeric($5, true);
                             OwnedHqlExpr value = $5.getExpr();
                             Owned<ITypeInfo> type = getSumAggType(value);
-                            $$.setExpr(createValue(no_sum, LINK(type), $3.getExpr(), ensureExprType(value, type), $6.getExpr()));
+                            $$.setExpr(createValueF(no_sum, LINK(type), $3.getExpr(), ensureExprType(value, type), $6.getExpr(), NULL));
                         }
     | SUM '(' GROUP ',' expression optExtraFilter ')'
                         {
@@ -6064,12 +6064,12 @@ primexpr1
                             Owned<ITypeInfo> temp = parser->checkPromoteNumeric($5, true);
                             OwnedHqlExpr value = $5.getExpr();
                             Owned<ITypeInfo> type = getSumAggType(value);
-                            $$.setExpr(createValue(no_sumgroup, LINK(type), ensureExprType(value, type), $6.getExpr()));
+                            $$.setExpr(createValueF(no_sumgroup, LINK(type), ensureExprType(value, type), $6.getExpr(), NULL));
                         }
     | AVE '(' startTopFilter ',' expression aggregateFlags ')' endTopFilter
                         {
                             parser->normalizeExpression($5, type_numeric, false);
-                            $$.setExpr(createValue(no_ave, makeRealType(8), $3.getExpr(), $5.getExpr(), $6.getExpr()));
+                            $$.setExpr(createValueF(no_ave, makeRealType(8), $3.getExpr(), $5.getExpr(), $6.getExpr(), NULL));
                         }
     | AVE '(' GROUP ',' expression optExtraFilter')'
                         {
@@ -6079,7 +6079,7 @@ primexpr1
     | VARIANCE '(' startTopFilter ',' expression aggregateFlags ')' endTopFilter
                         {
                             parser->normalizeExpression($5, type_numeric, false);
-                            $$.setExpr(createValue(no_variance, makeRealType(8), $3.getExpr(), $5.getExpr(), $6.getExpr()));
+                            $$.setExpr(createValueF(no_variance, makeRealType(8), $3.getExpr(), $5.getExpr(), $6.getExpr(), NULL));
                         }
     | VARIANCE '(' GROUP ',' expression optExtraFilter')'
                         {
@@ -6090,7 +6090,7 @@ primexpr1
                         {
                             parser->normalizeExpression($5, type_numeric, false);
                             parser->normalizeExpression($7, type_numeric, false);
-                            $$.setExpr(createValue(no_covariance, makeRealType(8), $3.getExpr(), $5.getExpr(), $7.getExpr(), $8.getExpr()));
+                            $$.setExpr(createValueF(no_covariance, makeRealType(8), $3.getExpr(), $5.getExpr(), $7.getExpr(), $8.getExpr(), NULL));
                         }
     | COVARIANCE '(' GROUP ',' expression ',' expression optExtraFilter')'
                         {
@@ -6102,7 +6102,7 @@ primexpr1
                         {
                             parser->normalizeExpression($5, type_numeric, false);
                             parser->normalizeExpression($7, type_numeric, false);
-                            $$.setExpr(createValue(no_correlation, makeRealType(8), $3.getExpr(), $5.getExpr(), $7.getExpr(), $8.getExpr()));
+                            $$.setExpr(createValueF(no_correlation, makeRealType(8), $3.getExpr(), $5.getExpr(), $7.getExpr(), $8.getExpr(), NULL));
                         }
     | CORRELATION '(' GROUP ',' expression ',' expression optExtraFilter')'
                         {
@@ -6790,11 +6790,16 @@ xmlEncodeFlags
 
 aggregateFlags
     :                   { $$.setNullExpr(); }
-    | ',' KEYED         { $$.setExpr(createAttribute(keyedAtom)); $$.setPosition($2); }
-    | ',' prefetchAttribute
+    | aggregateFlags ',' aggregateFlag
                         {
-                            $$.setExpr($2.getExpr(), $2);
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()), $1);
                         }
+    ;
+
+aggregateFlag
+    : KEYED             { $$.setExpr(createAttribute(keyedAtom), $1); }
+    | prefetchAttribute
+    | hintAttribute
     ;
 
 transfer
@@ -8761,14 +8766,8 @@ simpleDataSet
                             IHqlExpression * counter = $7.getExpr();
                             if (counter)
                                 counter = createAttribute(_countProject_Atom, counter);
-                            OwnedHqlExpr options = $8.getExpr();
-                            if (options)
-                            {
-                                if (options->numChildren() > 0)
-                                    parser->reportError(ERR_DSPARAM_INVALIDOPTCOMB, $8, "The DATASET options DISTRIBUTED, LOCAL, and NOLOCAL are not permutable.");
-                            }
-                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter, options.getClear())));
-                            $$.setPosition($1);
+                            parser->checkInlineDatasetOptions($8);
+                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter, $8.getExpr())), $1);
                         }
     | ENTH '(' dataSet ',' expression optCommonAttrs ')'
                         {

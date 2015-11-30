@@ -31,7 +31,7 @@ end;
 
 // zero
 output(true);
-ds := DATASET(0, t1(COUNTER));
+ds := DATASET(0, t1(COUNTER), HINT(fasterThanAFastThing(true)));
 output(ds);
 
 // plain
