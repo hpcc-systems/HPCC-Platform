@@ -98,6 +98,8 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDL_OPTION_CONFIG              "--config"
 #define ESDL_OPTION_OVERWRITE           "--overwrite"
 #define ESDL_OPTION_ROLLUP              "--rollup"
+#define ESDL_OPTION_ECL_INCLUDE_LIST    "--ecl-includes"
+#define ESDL_OPTION_ECL_HEADER_BLOCK    "--ecl-header"
 
 
 bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
