@@ -182,9 +182,9 @@
       <sect2 id="ECLWatch_GlobalSearch">
         <title>Global Search</title>
 
-        <para>On the navigation bar at the top of the ECL Watch page, about
-        half way across the page is the search box. <figure>
-            <title>Search box</title>
+        <para>The global search box can be found on the navigation bar at the
+        top of the ECL Watch page.<figure>
+            <title>Global Search box</title>
 
             <mediaobject>
               <imageobject>
@@ -193,8 +193,74 @@
             </mediaobject>
           </figure></para>
 
-        <para>You can search for workunits, users, files, or even ECL, using
-        the search box. The search box supports wild cards.</para>
+        <para>You can search ECL Workunits, DFU Workuntis, Logical Files, and
+        Queries using the global search box. The global search box also
+        supports wild cards. To limit or filter your search results you can
+        use keywords as displayed in the empty search box. </para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>file: </term>
+
+              <listitem>
+                <para>Preface the search string with
+                <emphasis>file:</emphasis> to search Logical Files. </para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>wuid:</term>
+
+              <listitem>
+                <para>Preface the search string with
+                <emphasis>wuid:</emphasis> to search only Workunit ids.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>ecl:</term>
+
+              <listitem>
+                <para>Preface the search string with <emphasis>ecl:</emphasis>
+                to search only the ECL workunits. </para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>dfu:</term>
+
+              <listitem>
+                <para>Preface the search string with <emphasis>dfu:</emphasis>
+                to search only DFU workunits. </para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>query:</term>
+
+              <listitem>
+                <para>Preface the search string with
+                <emphasis>qu:ery:</emphasis> to search only published
+                queries.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>Examples of using the global search:</para>
+
+        <para>Enter <emphasis>file:keys</emphasis> into the search box, and it
+        will return all of the logical files that contain "keys". <figure>
+            <title>Global Search Example</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA015.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Enter <emphasis>W201510*</emphasis> into the search box, and it
+        will return all of the workunits from October 2015. </para>
+
+        <!-- Enter <i>ecl:output</i> into the global search box and it will return all of the workunits that contain "output" in the ECL page of ECL Watch-->
       </sect2>
 
       <sect2 id="ECLWatch_AutoRefresh">
