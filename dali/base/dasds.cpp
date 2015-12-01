@@ -3284,15 +3284,6 @@ class CLock : public CInterface, implements IInterface
 
     LockStatus doLock(unsigned mode, unsigned timeout, ConnectionId id, SessionId sessionId, IUnlockCallback &callback, bool change=false)
     {
-        class CLockCallbackUnblock
-        {
-        public:
-            CLockCallbackUnblock(IUnlockCallback &_callback) : callback(_callback) { callback.unblock(); }
-            ~CLockCallbackUnblock() { callback.block(); }
-        private:
-            IUnlockCallback &callback;
-        };
-
         if (INFINITE == timeout)
         {
             loop
@@ -3308,8 +3299,9 @@ class CLock : public CInterface, implements IInterface
                     waiting++;
                     {
                         CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
-                        CLockCallbackUnblock cb(callback);
+                        callback.unblock();
                         timedout = !sem.wait(LOCKSESSCHECK);
+                        callback.block();
                     }
                     if (timedout)
                     {
@@ -3322,8 +3314,9 @@ class CLock : public CInterface, implements IInterface
                         }
                         {
                             CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
-                            CLockCallbackUnblock cb(callback);
+                            callback.unblock();
                             validateConnectionSessions();
+                            callback.block();
                         }
                     }
                 }
@@ -3345,10 +3338,11 @@ class CLock : public CInterface, implements IInterface
                     waiting++;
                     {
                         CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
-                        CLockCallbackUnblock cb(callback);
+                        callback.unblock();
                         unsigned remaining;
                         if (tm.timedout(&remaining) || !sem.wait(remaining>LOCKSESSCHECK?LOCKSESSCHECK:remaining))
                             timedout = true;
+                        callback.block();
                     }
                     if (timedout) {
                         if (!sem.wait(0))
@@ -3357,8 +3351,9 @@ class CLock : public CInterface, implements IInterface
                         bool disconnects;
                         {
                             CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
-                            CLockCallbackUnblock cb(callback);
+                            callback.unblock();
                             disconnects = validateConnectionSessions();
+                            callback.block();
                         }
                         if (tm.timedout())
                         {
