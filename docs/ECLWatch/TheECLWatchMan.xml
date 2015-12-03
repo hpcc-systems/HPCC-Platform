@@ -196,15 +196,15 @@
         <para>You can search ECL Workunits, DFU Workuntis, Logical Files, and
         Queries using the global search box. The global search box also
         supports wild cards. To limit or filter your search results you can
-        use keywords as displayed in the empty search box. </para>
+        use keywords as displayed in the empty search box.</para>
 
         <para><variablelist>
             <varlistentry>
-              <term>file: </term>
+              <term>file:</term>
 
               <listitem>
                 <para>Preface the search string with
-                <emphasis>file:</emphasis> to search Logical Files. </para>
+                <emphasis>file:</emphasis> to search Logical Files.</para>
               </listitem>
             </varlistentry>
 
@@ -222,7 +222,7 @@
 
               <listitem>
                 <para>Preface the search string with <emphasis>ecl:</emphasis>
-                to search only the ECL workunits. </para>
+                to search only the ECL workunits.</para>
               </listitem>
             </varlistentry>
 
@@ -231,7 +231,7 @@
 
               <listitem>
                 <para>Preface the search string with <emphasis>dfu:</emphasis>
-                to search only DFU workunits. </para>
+                to search only DFU workunits.</para>
               </listitem>
             </varlistentry>
 
@@ -240,11 +240,14 @@
 
               <listitem>
                 <para>Preface the search string with
-                <emphasis>qu:ery:</emphasis> to search only published
+                <emphasis>query:</emphasis> to search only published
                 queries.</para>
               </listitem>
             </varlistentry>
           </variablelist>Examples of using the global search:</para>
+
+        <para>Enter <emphasis>W201510*</emphasis> into the search box, and it
+        will return all of the workunits from October 2015.</para>
 
         <para>Enter <emphasis>file:keys</emphasis> into the search box, and it
         will return all of the logical files that contain "keys". <figure>
@@ -256,9 +259,6 @@
               </imageobject>
             </mediaobject>
           </figure></para>
-
-        <para>Enter <emphasis>W201510*</emphasis> into the search box, and it
-        will return all of the workunits from October 2015. </para>
 
         <!-- Enter <i>ecl:output</i> into the global search box and it will return all of the workunits that contain "output" in the ECL page of ECL Watch-->
       </sect2>
