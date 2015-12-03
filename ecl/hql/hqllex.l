@@ -65,6 +65,54 @@ extern void hex2str(char * target, const char * digits, unsigned len);
 #define RETURNHARD(sym) \
         setupdatepos; return sym;
 
+static char getRandomIdChar()
+{
+    unsigned n = rand()%37;
+    if (n < 10)
+        return 48 + n;
+    else if(n == 10)
+        return 95;
+    else if (n > 11  && n < 37)
+        return 97 + n - 11;
+    else
+        return 0;
+}
+
+static IIdAtom * createScrambledIdAtom(const IIdAtom * idToScramble, unsigned nCharToScramble, unsigned probability)
+{
+    if (probability == 0 || nCharToScramble == 0)
+        return NULL;
+
+    if (probability < 100)
+    {
+        if (rand()%100 > probability)
+            return NULL;
+    }
+
+    if (nCharToScramble > 256)
+        nCharToScramble = 256;
+
+    unsigned length = strlen(str(idToScramble))+1;
+    if (!idToScramble || nCharToScramble > length)
+    {
+        //create random id nCharToScramble long
+        char ret[nCharToScramble];
+        for (unsigned i = 0; i < nCharToScramble; i++)
+        {
+            ret[i] = getRandomIdChar();
+        }
+        return createIdAtom(ret);
+    }
+
+    char name[length];
+    memcpy(name, str(idToScramble), length);
+    for (unsigned i = 0; i < nCharToScramble; i++)
+    {
+        name[rand()%length] = getRandomIdChar();
+    }
+    return createIdAtom(name);
+}
+
 int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText)
 {
     if ((tokenText[0] == '$') && tokenText[1]==0)
@@ -228,6 +276,49 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         returnToken.setId(cname);
         token = UNKNOWN_ID;
     }
+
+#if(0)
+    //test how well suggestions work
+    if (strcmp(str(lexer->sourcePath), "<system-definitions>") != 0)
+    {
+        switch(token)
+        {
+        case DATAROW_ID:
+        case DATASET_ID:
+        case DICTIONARY_ID:
+        case SCOPE_ID:
+        case VALUE_ID:
+        case VALUE_ID_REF:
+        case ACTION_ID:
+        case UNKNOWN_ID:
+        case RECORD_ID:
+        case ALIEN_ID:
+        case TRANSFORM_ID:
+        case PATTERN_ID:
+        case FEATURE_ID:
+        case EVENT_ID:
+        case ENUM_ID:
+        case LIST_DATASET_ID:
+        case SORTLIST_ID:
+
+        case TYPE_ID:
+        case SET_TYPE_ID:
+        case PATTERN_TYPE_ID:
+        case DATASET_TYPE_ID:
+        case DICTIONARY_TYPE_ID:
+        {
+            IIdAtom * scrambledName = createScrambledIdAtom(cname, 1/*number of digits to edit*/, 75/*probability of editing at all*/);
+            if (scrambledName)
+            {
+                printf("scrambled name %s\n", str(scrambledName));
+                OwnedHqlExpr nearest = lexer->lookupNearestSymbol(scrambledName, returnToken);
+                assert(nearest);
+                assertex(strcmp(str(cname), str(nearest->queryId())) == 0);
+            }
+        }
+        }//end switch
+    }
+#endif
 
     TraceReturnToken(token);
     return token;

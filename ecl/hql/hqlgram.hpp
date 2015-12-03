@@ -35,6 +35,7 @@
 #define EXPORT_FLAG 1
 #define VIRTUAL_FLAG 2
 #define SHARED_FLAG 4
+#define MAX_SYMBOL_DISTANCE 5
 
 #define REC_FLD_ERR_STR "Need to supply a value for field '%s'"
 #define ERR_WRONGSCOPING_ERR_STR "Value for field '%s' cannot be computed in this scope"
@@ -310,6 +311,7 @@ public:
     IHqlExpression * createDefaults();
     IHqlExpression * createFormals(bool oldSetFormat);
     IHqlExpression * queryParameter(IIdAtom * name);
+    IHqlExpression * queryNearestParameter(IIdAtom * name, unsigned & editDistance);
 
 public:
     Owned<IHqlScope> localScope;
@@ -406,12 +408,13 @@ public:
 
     void yySetLexer(HqlLex *LexObject);
     HqlLex* getLexer() { return lexObject; }
+    const HqlLex * queryLexer() const { return lexObject; }
 
     void saveContext(HqlGramCtx & ctx, bool cloneScopes);
     IHqlScope * queryGlobalScope();
 
     bool canFollowCurrentState(int tok, const short * yyps);
-    void syntaxError(const char *s, int token, int *expected);
+    void syntaxError(const char *s, int token, int *expected, attribute * yylval);
     int mapToken(int lexToken) const;
     IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
     IHqlExpression *lookupSymbol(IHqlScope * scope, IIdAtom * name);
@@ -582,6 +585,13 @@ public:
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportMacroExpansionPosition(IError * warning, HqlLex * lexer);
     void reportErrorUnexpectedX(const attribute & errpos, IAtom * unexpected);
+    static unsigned computeEditDistance(const IIdAtom * id1, const IIdAtom * id2);
+    static const char * composeSymbolSuggestionMsg(IHqlExpression * symbol, StringBuffer & msg);
+    static IHqlExpression * findNearestSymbol(unsigned & minDistance, IHqlExpression * s1, bool OK1, unsigned distance1, IHqlExpression * s2, bool OK2, unsigned distance2);
+    static IHqlExpression * findNearestSymbol(unsigned & minDistance, const HqlExprArray & symbolArray, const unsigned * distanceArray, unsigned penalty);
+    IHqlExpression * lookupNearestSymbol(IIdAtom * searchName);
+    IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned & editDistance);
+
 
     // Don't use overloading: va_list is the same as char*!!
     void reportErrorVa(int errNo, const ECLlocation & a, const char* format, va_list args) __attribute__((format(printf,4,0)));
@@ -1027,7 +1037,7 @@ class HqlLex
 
         void enterEmbeddedMode();
         static int doyyFlex(YYSTYPE & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState);
-        static int lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText);
+        static int lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText);//Definition in hqllex.l
 
         int yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState);    /* lexical analyzer */
 
@@ -1115,6 +1125,7 @@ class HqlLex
         IXmlScope *ensureTopXmlScope();
 
         IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
+        IHqlExpression * lookupNearestSymbol(IIdAtom * name, const attribute& errpos);
         void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
         void reportWarning(WarnErrorCategory category, const YYSTYPE & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 5, 6)));
 

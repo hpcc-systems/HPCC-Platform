@@ -28,7 +28,6 @@
 #include "hqlgram.hpp"
 #include "hqlgram.h"
 
-#include "hqlgram.hpp"
 #include "hqlfold.hpp"
 #include "hqlpmap.hpp"
 
@@ -253,6 +252,25 @@ IHqlExpression * ActiveScopeInfo::queryParameter(IIdAtom * id)
     return NULL;
 }
 
+IHqlExpression * ActiveScopeInfo::queryNearestParameter(IIdAtom * id, unsigned & editDistance)
+{
+    editDistance = -1;
+    IHqlExpression * ret = NULL;
+    ForEachItemIn(idx, activeParameters)
+    {
+        IHqlExpression &parm = activeParameters.item(idx);
+        unsigned distance = HqlGram::computeEditDistance(id, parm.queryId());
+        if (distance == 0)
+            continue;
+        if (distance < editDistance && distance <= MAX_SYMBOL_DISTANCE)
+        {
+            editDistance = distance;
+            ret = &parm;
+        }
+    }
+    return ret;
+}
+
 bool HqlGramCtx::hasAnyActiveParameters()
 {
     ForEachItemIn(i2, defineScopes)
@@ -435,7 +453,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     resolveSymbols = true;
     lastpos = 0;
     inSignedModule = false;
-    
+
     containerScope = _containerScope;
     globalScope = _globalScope;
     parseScope.setown(createPrivateScope(_containerScope));
@@ -2838,6 +2856,7 @@ public:
     virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
     virtual void defineSymbol(IHqlExpression * value) { PSEUDO_UNIMPLEMENTED; ::Release(value); }
     virtual IHqlExpression *lookupSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual void removeSymbol(IIdAtom * name) { PSEUDO_UNIMPLEMENTED; }
 
     virtual void    getSymbols(HqlExprArray& exprs) const { PSEUDO_UNIMPLEMENTED; }
@@ -3341,11 +3360,296 @@ IHqlExpression *HqlGram::lookupSymbol(IHqlScope * scope, IIdAtom * searchName)
     return scope->lookupSymbol(searchName, LSFpublic, lookupCtx);
 }
 
+const char * HqlGram::composeSymbolSuggestionMsg(IHqlExpression * symbol, StringBuffer & msg)
+{
+    if (symbol)
+        msg.append(" - did you perhaps mean \"").append(symbol->queryName()->queryStr()).append("\"?");
+    return msg.str();
+}
+
+IHqlExpression * HqlGram::findNearestSymbol(unsigned & editDistance, const HqlExprArray & symbolArray, const unsigned * distanceArray, unsigned penalty)
+{
+    editDistance = -1;
+    if (symbolArray.empty() || !distanceArray)
+        return NULL;
+
+    if (distanceArray[0] == 0)
+    {
+        editDistance = 0;
+        return LINK(&symbolArray.item(0));
+    }
+
+    IHqlExpression * nearest = NULL;
+    unsigned minDistance = -1;
+    ForEachItemIn (i, symbolArray)
+    {
+
+        unsigned tempDistance = distanceArray[i];
+        if (tempDistance == 0)
+        {
+            editDistance = 0;
+            return LINK(&symbolArray.item(i));
+        }
+
+        if (tempDistance != (unsigned(-1)))
+            tempDistance =+ penalty;
+
+        if (tempDistance < minDistance)
+        {
+            minDistance = tempDistance;
+            editDistance = distanceArray[i];
+            nearest = &symbolArray.item(i);
+        }
+    }
+    return LINK(nearest);
+}
+
+IHqlExpression * HqlGram::findNearestSymbol(unsigned & minDistance, IHqlExpression * s1, bool ok1, unsigned distance1, IHqlExpression * s2, bool ok2, unsigned distance2)
+{
+    minDistance = -1;
+    //The following assumes that sx & okx trace one another correctly.
+    if (!ok1 && !ok2)
+        return NULL;
+    else if (ok1 && !ok2)
+    {
+        minDistance = distance1;
+        return s1;
+    }
+    else if (!ok1 && ok2)
+    {
+        minDistance = distance2;
+        return s2;
+    }
+    else
+    {
+        if (distance1 <= distance2)
+        {
+            minDistance = distance1;
+            return s1;
+        }
+        minDistance = distance2;
+        return s2;
+    }
+    return NULL;
+}
+
 unsigned HqlGram::getExtraLookupFlags(IHqlScope * scope)
 {
     if (scope == containerScope)
         return LSFsharedOK;
     return 0;
+}
+
+IHqlExpression * HqlGram::lookupNearestSymbol(IIdAtom * searchName)
+{
+    unsigned distance = -1;
+    return lookupNearestSymbol(searchName, distance);
+}
+
+IHqlExpression * HqlGram::lookupNearestSymbol(IIdAtom * searchName, unsigned & editDistance)
+{
+    //Check periodically if parsing a referenced identifier has caused the compile to abort.
+    if (lookupCtx.isAborting())
+        aborting = true;
+
+    HqlExprArray symbolArray;
+    unsigned distanceArray[6];
+    unsigned distance = -1;
+    unsigned index = 0;
+
+    try
+    {
+        // If there is a temporary scope, we only look up in that (and it must exist!).
+        if (dotScope)
+        {
+            HqlExprArray tempSymbolArray;
+            unsigned tempDistanceArray[3];
+            unsigned tempIndex = 0;
+
+            OwnedHqlExpr ret;
+            if (dotScope->getOperator() == no_enum)
+            {
+                ret.setown(dotScope->queryScope()->lookupNearestSymbol(searchName, LSFrequired, lookupCtx, distance = -1));
+                if (ret)
+                {
+                    tempSymbolArray.append(*ret.getClear());
+                    tempDistanceArray[tempIndex++] = distance;
+                }
+            }
+            else
+            {
+                IHqlExpression * dotRecord = dotScope->queryRecord();
+                if(dotRecord)
+                {
+                    IHqlExpression* map = queryFieldMap(dotScope);
+                    if (map)
+                    {
+                        searchName = fieldMapTo(map, searchName);
+                        IHqlExpression* ds = dotScope->queryChild(0);
+                        ret.setown(ds->queryRecord()->querySimpleScope()->lookupNearestSymbol(searchName, distance = -1));
+                        if (ret)
+                        {
+                            tempSymbolArray.append(*ret.getClear());
+                            tempDistanceArray[tempIndex++] = distance;
+                        }
+                    }
+                    else
+                    {
+                        ret.setown(dotRecord->querySimpleScope()->lookupNearestSymbol(searchName, distance = -1));
+                        if (ret)
+                        {
+                            tempSymbolArray.append(*ret.getClear());
+                            tempDistanceArray[tempIndex++] = distance;
+                        }
+                    }
+                }
+            }
+
+            // dotScope only works once
+            dotScope.clear();
+            OwnedHqlExpr nearest = findNearestSymbol(distance = -1, tempSymbolArray, tempDistanceArray, 1);
+            if (nearest)
+            {
+                symbolArray.append(*nearest.getClear());
+                distanceArray[index++] = distance;
+            }
+        }
+
+        if (modScope)
+        {
+            OwnedHqlExpr resolved = modScope->lookupNearestSymbol(searchName, LSFrequired|LSFsharedOK, lookupCtx, distance = -1);
+            if (resolved && isExported(resolved))
+            {
+                symbolArray.append(*resolved.getClear());
+                distanceArray[index++] = distance;
+            }
+        }
+
+        // Then come implicitly defined fields...
+        IHqlExpression *top = queryTopScope();
+        if (top)
+        {
+            if (outerScopeAccessDepth == 0)
+            {
+                OwnedHqlExpr ret;
+                IHqlExpression* map = queryFieldMap(top);
+                if (map)
+                {
+                    searchName = fieldMapTo(map, searchName);
+                    IHqlExpression* ds = top->queryChild(0);
+                    ret.setown(ds->queryRecord()->querySimpleScope()->lookupNearestSymbol(searchName, distance = -1));
+                }
+                else
+                    ret.setown(top->queryRecord()->querySimpleScope()->lookupNearestSymbol(searchName, distance = -1));
+
+                if (ret)
+                {
+                    symbolArray.append(*ret.getClear());
+                    distanceArray[index++] = distance;
+                }
+            }
+            else
+                outerScopeAccessDepth--;
+        }
+
+        //Slightly strange... The parameters for the current nested object are stored in the previous ActiveScopeInfo record.
+        //This means outerScopeDepth is decremented after looking at the parameters.  It also means we need to increment by
+        //one before we start.
+        //It does mean
+        //export anotherFunction(integer SomeValue2) := SomeValue2 * ^.SomeValue2; Doesn't quite work as expected, but
+        //it serves the user right for choosing a parameter name that clashes.  Otherwise you'd generally need one more ^ than you'd expect.
+        if (outerScopeAccessDepth)
+            outerScopeAccessDepth++;
+
+        //Also note, if we're inside a template function then we need to record all access to symbols that occur at an outer level
+
+        HqlExprArray tempSymbolArray;
+        unsigned tempDistanceArray[outerScopeAccessDepth];
+        unsigned tempIndex = 0;
+
+        IHqlScope * templateScope = NULL;
+        ForEachItemInRev(scopeIdx, defineScopes)
+        {
+            HqlExprArray tempSymbolArray;
+            unsigned tempDistanceArray[outerScopeAccessDepth];
+            unsigned tempIndex = 0;
+
+            ActiveScopeInfo & cur = defineScopes.item(scopeIdx);
+            if (cur.templateAttrContext)
+                templateScope = cur.templateAttrContext;
+            if (outerScopeAccessDepth == 0)
+            {
+                IHqlExpression * match = cur.queryNearestParameter(searchName, distance = -1);
+                if (match)
+                {
+                    tempSymbolArray.append(*LINK(match));
+                    tempDistanceArray[tempIndex++] = distance;
+                }
+
+                OwnedHqlExpr ret = cur.privateScope->lookupNearestSymbol(searchName, LSFsharedOK, lookupCtx, distance = -1);
+                if (ret)
+                {
+                    tempSymbolArray.append(*ret.getClear());
+                    tempDistanceArray[tempIndex++] = distance;
+                }
+
+                if (cur.localScope)
+                {
+                    ret.setown(cur.localScope->lookupNearestSymbol(searchName, LSFsharedOK, lookupCtx, distance = -1));
+                    if (ret)
+                    {
+                        tempSymbolArray.append(*ret.getClear());
+                        tempDistanceArray[tempIndex++] = distance;
+                    }
+                }
+                OwnedHqlExpr nearest;
+                nearest.setown(findNearestSymbol(distance, tempSymbolArray, tempDistanceArray, 0));
+                if (nearest)
+                {
+                    symbolArray.append(*nearest.getClear());
+                    distanceArray[index++] = distance;
+                }
+            }
+            else
+                outerScopeAccessDepth--;
+        }
+
+        //Now look up imports
+        OwnedHqlExpr ret;
+        ret.setown(parseScope->lookupNearestSymbol(searchName, LSFsharedOK, lookupCtx, distance = -1));
+        if (ret)
+        {
+            symbolArray.append(*ret.getClear());
+            distanceArray[index++] = distance;
+        }
+
+        // finally comes the local scope
+        //if (legacyImportSemantics && lower(searchName)==globalScope->queryName())
+        //    return LINK(recordLookupInTemplateContext(searchName, queryExpression(globalScope), templateScope));
+
+        ForEachItemIn(idx2, defaultScopes)
+        {
+            IHqlScope &plugin = defaultScopes.item(idx2);
+            OwnedHqlExpr ret;
+            ret.setown(plugin.lookupNearestSymbol(searchName, LSFpublic|getExtraLookupFlags(&plugin), lookupCtx, distance = -1));
+            if (ret)
+            {
+                symbolArray.append(*ret.getClear());
+                distanceArray[index++] = distance;
+            }
+        }
+
+        return findNearestSymbol(editDistance, symbolArray, distanceArray, 1);
+    }
+    catch(IError* error)
+    {
+        if(errorHandler && !errorDisabled)
+            errorHandler->report(error);
+        error->Release();
+        // recover: to avoid reload the definition again and again
+        //return createSymbol(searchName, createConstant(0), ob_private);
+    }
+    return NULL;
 }
 
 IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& errpos)
@@ -3384,7 +3688,17 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                     IHqlExpression* ds = dotScope->queryChild(0);
                     ret = ds->queryRecord()->querySimpleScope()->lookupSymbol(searchName);
                     if (!ret)
-                        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", str(ds->queryName()), str(searchName));
+                    {
+                        if(lookupCtx.queryParseContext().autoIdSuggestions)
+                        {
+                            StringBuffer msgSuffix;
+                            OwnedHqlExpr nearestKnownId;
+                            nearestKnownId.setown(ds->queryRecord()->querySimpleScope()->lookupNearestSymbol(searchName));
+                            reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'%s", str(ds->queryName()), str(searchName), composeSymbolSuggestionMsg(nearestKnownId, msgSuffix));
+                        }
+                        else
+                            reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", str(ds->queryName()), str(searchName));
+                    }
                 }
                 else
                 {
@@ -3393,11 +3707,20 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                     {
                         StringBuffer s;
                         getExprECL(dotScope, s);
-                        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", s.str(), str(searchName));
+
+                        if(lookupCtx.queryParseContext().autoIdSuggestions)
+                        {
+                            StringBuffer msgSuffix;
+                            OwnedHqlExpr nearestKnownId;
+                            nearestKnownId.setown(dotRecord->querySimpleScope()->lookupNearestSymbol(searchName));
+                            reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'%s", s.str(), str(searchName), composeSymbolSuggestionMsg(nearestKnownId, msgSuffix));
+                        }
+                        else
+                            reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", s.str(), str(searchName));
                     }
                 }
             }
-            
+
             // dotScope only works once
             dotScope.clear();
             return ret;
@@ -3408,15 +3731,37 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
             OwnedHqlExpr resolved = modScope->lookupSymbol(searchName, LSFrequired|LSFsharedOK, lookupCtx);
             if (!resolved)
             {
+                StringBuffer msgSuffix;
+                OwnedHqlExpr nearest;
+                if(lookupCtx.queryParseContext().autoIdSuggestions)
+                    nearest.setown(modScope->lookupNearestSymbol(searchName, LSFrequired, lookupCtx));
                 if (modScope->queryName())
-                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a member named '%s'", str(modScope->queryName()), str(searchName));
+                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a member named '%s'%s", str(modScope->queryName()), str(searchName), composeSymbolSuggestionMsg(nearest, msgSuffix));
                 else
                     reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object does not have a member named '%s'", str(searchName));
+                resolved.setown(nearest.getClear());//prevents follow on unknown id syntax error (if(nearest)).
             }
             else if ((modScope != containerScope) && !isExported(resolved))
-                reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module", str(searchName));
+            {
+                if(lookupCtx.queryParseContext().autoIdSuggestions)
+                {
+                    StringBuffer msgSuffix;
+                    OwnedHqlExpr nearest;
+                    nearest.setown(modScope->lookupNearestSymbol(searchName, LSFrequired, lookupCtx));
+                    reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module%s", str(searchName), composeSymbolSuggestionMsg(nearest, msgSuffix));
+                }
+                else
+                    reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module", str(searchName));
+            }
             return resolved.getClear();
         }
+
+        /*Scopes are now searched for symbol. If not initially found, move onto the next scope.
+         *For each scope that doesn't find a match, the nearest symbol should be located and stored in an array.
+         *Once all scopes are searched, the array should be filtered to give suggested symbol.
+         *However, no errors are thrown below and thus and editDistance comparisons would be a hinderance and possible wasted.
+         *Copy this function and call when actually thowing an error for an unknownID e.g. in the grammar.
+         */
 
         // Then come implicitly defined fields...
         IHqlExpression *top = queryTopScope();
@@ -10982,8 +11327,8 @@ void HqlGram::simplifyExpected(int *expected)
     simplify(expected, END, '}', 0);
 }
 
-void HqlGram::syntaxError(const char *s, int token, int *expected)
-{ 
+void HqlGram::syntaxError(const char *s, int token, int *expected, attribute * yylval)
+{
     if (errorDisabled || !s || !errorHandler)
         return;
 
@@ -11006,14 +11351,23 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
     {
         msg.append("Unknown identifier");
         if (yytext && *yytext)
+        {
             msg.append(" \"").append(yytext).append('\"');
+            if(lookupCtx.queryParseContext().autoIdSuggestions)
+            {
+                IIdAtom * searchName = createIdAtom(yytext);
+                OwnedHqlExpr nearest = lookupNearestSymbol(searchName);
+                composeSymbolSuggestionMsg(nearest, msg);
+            }
+        }
 
         reportError(ERR_UNKNOWN_IDENTIFIER,msg.str(), lineno, column, pos);
         return;
     }
     else if ((token == '.') && (expected[0] == ASSIGN) && !expected[1])
     {
-        reportError(ERR_UNKNOWN_IDENTIFIER,"Unknown identifier before \".\" (expected :=)", lineno, column, pos);
+        //reportError(ERR_UNKNOWN_IDENTIFIER,"Unknown identifier before \".\" (expected :=)", lineno, column, pos);//MORE: this message is confusing!
+        reportError(ERR_UNKNOWN_IDENTIFIER,"Unknown identifier before \".\"", lineno, column, pos);//A little better.
         return;
     }
     else switch(token)
@@ -11641,6 +11995,11 @@ PseudoPatternScope::PseudoPatternScope(IHqlExpression * _patternList) : CHqlScop
     patternList = _patternList;     // Do not link!
 }
 
+IHqlExpression * PseudoPatternScope::lookupNearestSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx)
+{
+    return NULL;
+}
+
 IHqlExpression * PseudoPatternScope::lookupSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     const char * text = str(name);
@@ -12009,3 +12368,186 @@ IHqlExpression *HqlGram::doParse()
     return NULL;
 }
 
+/*The following confusion  matrix holds the cost of transpositions and substitutions for weighted-Damerau-Levenshtein Distance.
+ *If two characters are likely to be confused, their cost = 0.
+ *Confusions include optical (i & l), vowel pairs (ie & ei etc), keyboard proximity ( g with t, y, h, b, v, & f).
+ *Optical confusions are derived from lower case comparisons only. Whilst the matrix itself is only lower case
+ *the implementation of weightedDamerauLevenshteinDistance is case insensitive (not generically) as it converts both lower and upper
+ *character references to this matrix. Note, however, that the implementation is not generically case insensitive but instead only
+ *when referencing this default confusion matrix.
+ */
+static byte const defaultConfusionMatrixLength = 26;
+static unsigned char defaultConfusionMatrix[defaultConfusionMatrixLength*(defaultConfusionMatrixLength+1)/2] =
+{
+   // a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z
+/*a*/ 0,
+/*b*/ 1, 0,
+/*c*/ 1, 1, 0,
+/*d*/ 1, 0, 0, 0,
+/*e*/ 0, 1, 0, 0, 0,
+/*f*/ 1, 1, 0, 0, 1, 0,
+/*g*/ 1, 0, 1, 1, 1, 0, 0,
+/*h*/ 1, 0, 1, 1, 1, 1, 0, 0,
+/*i*/ 1, 1, 1, 1, 0, 1, 1, 1, 0,
+/*j*/ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+/*k*/ 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+/*l*/ 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0,
+/*m*/ 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0,
+/*n*/ 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+/*o*/ 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0,
+/*p*/ 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0,
+/*q*/ 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+/*r*/ 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+/*s*/ 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+/*t*/ 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0,
+/*u*/ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0,
+/*v*/ 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+/*w*/ 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0,
+/*x*/ 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0,
+/*y*/ 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0,
+/*z*/ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0
+   // a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z
+};
+#define defaultConfusionMatrixIndx(i,j) (i>=j)?(i*(i+1)>>1)+j:(j*(j+1)>>1)+i
+#define defaultConfusionMatrix(i,j) defaultConfusionMatrix[defaultConfusionMatrixIndx(i,j)]
+
+static inline void clip(unsigned &len, const char * s)
+{
+    while ( len > 0 && s[len-1]==' ' )
+        len--;
+}
+
+static inline unsigned min3(unsigned a, unsigned b, unsigned c)
+{
+    unsigned mi;
+
+    mi = a;
+    if (b < mi)
+    {
+        mi = b;
+    }
+    if (c < mi)
+    {
+        mi = c;
+    }
+    return mi;
+}
+
+static unsigned damerauLevenshteinDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned char * confusionMatrix/*= NULL*/, byte confusionMatrixLength/*= 0*/)
+{
+    //if (rightLen < 2 || leftLen < 2)
+    //    return editDistance(leftLen, left, rightLen, right);
+
+    unsigned i, j;
+
+    clip(leftLen, left);
+    clip(rightLen, right);
+
+    if (leftLen > 255)
+        leftLen = 255;
+
+    if (rightLen > 255)
+        rightLen = 255;
+
+    if (leftLen == 0)
+        return rightLen;
+
+    if (rightLen == 0)
+        return leftLen;
+
+    unsigned char d[256][256];
+    unsigned char c[256];
+
+    //Initialize relevant character alphabet only, other characters are irrelevant.
+    for (i = 0; i < leftLen; ++i)
+    {
+        c[left[i]] = 0;
+    }
+    for (j = 0; j < rightLen; ++j)
+    {
+        c[right[j]] = 0;
+    }
+
+    for (i = 0; i <= leftLen; ++i)
+    {
+        d[i][0] = i;
+    }
+    for (j = 0; j <= rightLen; ++j)
+    {
+        d[0][j] = j;
+    }
+
+    for (i = 1; i <= leftLen; ++i)
+    {
+        unsigned db = 0;
+        byte im1 = i-1;
+        for (j = 1; j <= rightLen; ++j)
+        {
+            byte jm1 = j-1;
+            byte i1 = c[right[jm1]];
+            byte j1 = db;
+            unsigned char next = 0;
+            unsigned char cost = 1;
+            if (left[im1] == right[jm1])
+            {
+                cost = 0;
+                db = j;
+                //next = min3(d[i][j-1] + 1, d[i-1][j] + 1, d[i-1][j-1]);
+                next = d[i][jm1] < d[im1][j] ? d[i][jm1] : d[im1][j];
+                ++next;
+                if (next > d[im1][jm1])
+                    next = d[im1][jm1];
+            }
+            else
+            {
+                if (confusionMatrix)
+                {
+                    byte a = left[im1];
+                    byte b = right[jm1];
+                    if (confusionMatrix == defaultConfusionMatrix)
+                    {
+                        //Check characters are covered by default confusion matrix.
+                        if ( ((a >= 97 && a <= 122) || (a >= 65 && a <= 90)) && ((b >= 97 && b <= 122) || (b >= 65 && b <= 90)) )
+                        {
+                            //Make case insensitive
+                            a -= (a >= 97) ? 97 : 65;
+                            b -= (b >= 97) ? 97 : 65;
+                            cost = defaultConfusionMatrix(a, b);
+                        }
+                    }
+                    else if (a < confusionMatrixLength && b < confusionMatrixLength)//MORE: Could pass in an offset to where defaultConfusionMatrix starts in the ascii table?
+                        cost = *(confusionMatrix + a*confusionMatrixLength + b);
+                }
+
+                next = min3(d[i  ][jm1] + 1,
+                            d[im1][j  ] + 1,
+                            d[im1][jm1] + cost);
+            }
+            d[i][j] = next;
+
+            if (i1 > 0 && j1 > 0)
+            {
+                unsigned char transposition = d[i1-1][j1-1] + (im1-i1) + (jm1-j1) + cost;
+                if (d[i][j] > transposition)
+                    d[i][j] = transposition;
+            }
+        }
+        c[left[im1]] = i;
+    }
+
+    return d[leftLen][rightLen];
+}
+
+unsigned HqlGram::computeEditDistance(const IIdAtom * id1, const IIdAtom * id2)
+{
+    StringAttr str1 = str(lower(id1));
+    StringAttr str2 = str(lower(id2));
+
+    if (strcmp(str1, str2) == 0)
+        return 0;
+
+    //The edit distance computation below is the full Damerau Levenshtein Distance with a weighted matrix.
+    //Therefore it is possible for it to return a distance of 0 yet the two strings not be identicle.
+    //For this reason +1 is added to differentiat if no weights are used, the restricted version is used, or the standard Levenshtein edit idstance is used.
+    return damerauLevenshteinDistance(str1.length(), str1.str(), str2.length(), str2.str(), defaultConfusionMatrix, defaultConfusionMatrixLength) + 1;
+}

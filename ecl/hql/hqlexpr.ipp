@@ -39,6 +39,7 @@
 #include "javahash.hpp"
 #include "defvalue.hpp"
 #include "hqlexpr.hpp"
+#include "hqlgram.hpp"
 
 #ifdef USE_TBB
 #include "tbb/scalable_allocator.h"
@@ -960,7 +961,7 @@ inline IHqlExpression * lookupSymbol(SymbolTable & symbols, IIdAtom * searchName
 
     if (!ret)
         return NULL; 
-    
+
     if (!(ret->isExported() || sharedOK))
         return NULL;
 
@@ -1020,6 +1021,8 @@ public:
     virtual void removeSymbol(IIdAtom * id) { throwUnexpected(); }
 
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance);
     virtual void    getSymbols(HqlExprArray& exprs) const;
     virtual IAtom *   queryName() const;
     virtual IIdAtom * queryId() const;
@@ -1081,6 +1084,8 @@ public:
     virtual void removeSymbol(IIdAtom * id);
 
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance);
 
     virtual IAtom * queryName() const {return lower(id);}
     virtual IIdAtom * queryId() const { return id; }
@@ -1141,7 +1146,7 @@ public:
 
 protected:
     void initContainer();
-    void throwRecursiveError(IIdAtom * id);
+    void throwRecursiveError(IIdAtom * id, const char * msgSuffix = NULL);
 };
 
 class HQL_API CHqlRemoteScope : public CHqlScope, implements IHqlRemoteScope
@@ -1175,6 +1180,7 @@ public:
 
 //interface IHqlScope
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance);
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx);
     virtual void defineSymbol(IHqlExpression * expr);
     using CHqlScope::defineSymbol;
@@ -1227,6 +1233,7 @@ protected:
     virtual bool equals(const IHqlExpression & other) const;
     IHqlScope * deriveConcreteScope();
     IHqlExpression * lookupBaseSymbol(IHqlExpression * & definitionModule, IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    IHqlExpression * lookupNearestBaseSymbol(IHqlExpression * & definitionModule, IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance);
     void resolveUnboundSymbols();
     void ensureVirtualSeq();
 
@@ -1240,6 +1247,7 @@ public:
     virtual IHqlExpression *closeExpr();
     virtual void defineSymbol(IHqlExpression * expr);
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance);
     virtual bool queryForceSymbolVirtual(IIdAtom * searchName, HqlLookupContext & ctx);
     virtual void sethash();
 
@@ -1257,6 +1265,7 @@ public:
     void addScope(IHqlScope * scope);
 
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance);
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx);
     virtual bool allBasesFullyBound() const;
     virtual bool isImplicit() const;
@@ -1279,6 +1288,7 @@ public:
     CHqlMultiParentScope(IIdAtom *, ...);
 
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance);
     virtual IHqlScope * queryConcreteScope() { return this; }
     virtual bool allBasesFullyBound() const { return true; }
 };
@@ -1295,10 +1305,38 @@ public:
     CHqlContextScope(IHqlScope* scope);
 
     virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value,bool exported, bool shared, unsigned symbolFlags)
-    {  defined.setValue(lower(id),value);  }
+    {
+        defined.setValue(lower(id),value);
+    }
 
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
-{  return defined.getLinkedValue(lower(searchName)); }
+    {
+        return defined.getLinkedValue(lower(searchName));
+    }
+
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+    {
+        //Find nearest symbol i.e. that with the lowest edit distance, if multiple symbols with equal distance are found, return first.
+        //Therefore if a distance of 0 is encountered just return that.
+        //MORE: Unsure as to whether returning 1st encountered is best functionality, but then what else?
+
+        OwnedHqlExpr ret;
+        editDistance = -1;
+        SymbolTableIterator iter(defined);
+        for (iter.first(); iter.isValid(); iter.next())
+        {
+            IHqlExpression * cur = defined.mapToValue(&iter.query());
+            unsigned distance = HqlGram::computeEditDistance(searchName, cur->queryId());
+            if (distance == 0)
+                continue;
+            else if (distance < editDistance && distance <= MAX_SYMBOL_DISTANCE)
+            {
+                ret.setown(cur);
+                editDistance = distance;
+            }
+        }
+        return ret.getClear();
+    }
 
     virtual IHqlScope * queryConcreteScope()    { return this; }
     virtual bool allBasesFullyBound() const { return false; }
@@ -1450,6 +1488,7 @@ public:
 //IHqlScope
     virtual void defineSymbol(IHqlExpression * expr)            { throwUnexpected(); }
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance);
 
     virtual void getSymbols(HqlExprArray& exprs) const          { typeScope->getSymbols(exprs); }
     virtual IHqlScope * queryConcreteScope() { return NULL; }
@@ -1479,6 +1518,7 @@ public:
 //IHqlScope
     virtual void defineSymbol(IHqlExpression * expr)            { throwUnexpected(); }
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual bool hasBaseClass(IHqlExpression * searchBase)      { return libraryScope->hasBaseClass(searchBase); }
     virtual bool allBasesFullyBound() const { return false; }
     virtual IHqlScope * queryConcreteScope()    { return this; }
@@ -1505,6 +1545,8 @@ public:
 //IHqlScope
     virtual IHqlExpression * queryExpression() { return this; }
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance);
 
     virtual void    getSymbols(HqlExprArray& exprs) const;
     virtual IAtom *   queryName() const { return NULL; }
@@ -1689,8 +1731,11 @@ public:
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
 
 // IHqlSimpleScope
-    IHqlExpression *lookupSymbol(IIdAtom * fieldName);
-    void insertSymbols(IHqlExpression * expr);
+    IHqlExpression * lookupSymbol(IIdAtom * fieldName);
+    IHqlExpression * lookupNearestSymbol(IIdAtom * fieldName);
+    IHqlExpression * lookupNearestSymbol(IIdAtom * fieldName, unsigned & editDistance);
+
+    virtual void insertSymbols(IHqlExpression * expr);
 };
 
 class CHqlDictionary : public CHqlExpressionWithType // , implements IHqlDictionary
@@ -1818,6 +1863,8 @@ public:
 
 // IHqlSimpleScope
     IHqlExpression *lookupSymbol(IIdAtom * fieldName);
+    IHqlExpression * lookupNearestSymbol(IIdAtom * fieldName);
+    IHqlExpression * lookupNearestSymbol(IIdAtom * fieldName, unsigned & editDistance);
 
 // interface IHqlAlienTypeInfo
     virtual ITypeInfo *getLogicalType() { return LINK(logical); }

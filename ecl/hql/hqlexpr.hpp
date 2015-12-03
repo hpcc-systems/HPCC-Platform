@@ -811,7 +811,9 @@ enum ExprPropKind
 
 interface IHqlSimpleScope : public IInterface
 {
-    virtual IHqlExpression *lookupSymbol(IIdAtom * name) = 0;
+    virtual IHqlExpression * lookupSymbol(IIdAtom * name) = 0;
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * name) = 0;
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * name, unsigned & editDistance) = 0;
 };
 
 interface IHqlAlienTypeInfo : public IInterface
@@ -884,6 +886,7 @@ public:
         ignoreUnknownImport = false;
         _clear(metaState);
         aborting = false;
+        autoIdSuggestions = true;
     }
 
     void addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child);
@@ -917,6 +920,7 @@ public:
     bool expandCallsWhenBound;
     bool ignoreUnknownImport;
     bool aborting;
+    bool autoIdSuggestions;
     Linked<ICodegenContextCallback> codegenCtx;
 
 private:
@@ -1019,6 +1023,8 @@ interface IHqlScope : public IInterface
 {
     virtual IHqlExpression * queryExpression() = 0;
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx) = 0;
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx) = 0;
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance) = 0;
 
     virtual void getSymbols(HqlExprArray& exprs) const= 0;
     virtual IAtom * queryName() const = 0;
