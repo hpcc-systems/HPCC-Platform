@@ -971,7 +971,7 @@ public:
             DBGLOG("[%s] %s", prefix, text);
     }
 
-    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const __attribute((format(printf,6,0)))
+    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const __attribute__((format(printf,6,0)))
     {
         if (ctx)
             ctx->CTXLOGaeva(E, file, line, prefix, format, args);
