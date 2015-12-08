@@ -2496,16 +2496,16 @@ bool EclAgent::checkPersistUptoDate(IRuntimeWorkflowItem & item, const char * lo
     crcName.append(lfn).append("$crc");
     eclName.append(lfn).append("$eclcrc");
 
-    if (!isResult(lfn, (unsigned)-2))
+    if (!isResult(lfn, ResultSequencePersist))
         errText.appendf("Building PERSIST('%s'): It hasn't been calculated before", logicalName);
-    else if (!isResult(crcName, (unsigned)-2))
+    else if (!isResult(crcName, ResultSequencePersist))
         errText.appendf("Rebuilding PERSIST('%s'): Saved CRC isn't present", logicalName);
     else if (isFile && !fileExists(logicalName))
         errText.appendf("Rebuilding PERSIST('%s'): Persistent file does not exist", logicalName);
     else
     {
-        unsigned savedEclCRC = (unsigned)getResultInt(eclName, (unsigned)-2);
-        unsigned __int64 savedCRC = (unsigned __int64)getResultInt(crcName, (unsigned)-2);
+        unsigned savedEclCRC = (unsigned)getResultInt(eclName, ResultSequencePersist);
+        unsigned __int64 savedCRC = (unsigned __int64)getResultInt(crcName, ResultSequencePersist);
         if (savedEclCRC != eclCRC)
             errText.appendf("Rebuilding PERSIST('%s'): ECL has changed", logicalName);
         else if (savedCRC != allCRC)
