@@ -456,6 +456,7 @@ public:
     void checkIntegerOrString(attribute & e1);
     void checkNumeric(attribute &e1);
     ITypeInfo *checkNumericGetType(attribute &e1);
+    void checkInlineDatasetOptions(const attribute & attr);
     void checkLibraryParametersMatch(const attribute & errpos, bool isParametered, const HqlExprArray & activeParameters, IHqlExpression * definition);
     void checkReal(attribute &e1);
     ITypeInfo *checkStringIndex(attribute & strAttr, attribute & idxAttr);

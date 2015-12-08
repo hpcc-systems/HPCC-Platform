@@ -39,5 +39,5 @@ output(count(namesTable5) = 5);
 namesTable6 := dataset('x6',namesRecord,FLAT);
 output(count(namesTable6) != 5);
 namesTable7 := dataset('x7',namesRecord,FLAT);
-output(count(namesTable7) != 5);
-output(count(namesTable7) > 0);
+output(count(namesTable7, HINT(goQuitefast(true))) != 5);
+output(count(namesTable7, HINT(goReallyReallyFast(true))) > 0);
