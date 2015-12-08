@@ -1637,7 +1637,7 @@ public:
 
 //ITypeInfo
     virtual type_t getTypeCode() const { return type_record; }
-    virtual size32_t getSize() { return 0; }
+    virtual size32_t getSize();
     virtual unsigned getAlignment();
     virtual unsigned getPrecision() { assertex(!"tbd"); return 0; }
     virtual unsigned getBitSize()  { return 0; }

@@ -2399,6 +2399,24 @@ void CBitfieldInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IRe
 
 //---------------------------------------------------------------------------
 
+void CRowReferenceColumnInfo::gatherSize(SizeStruct & target)
+{
+    if (isConditional())
+        addVariableSize(queryType()->getSize(), target);
+    else
+        target.addFixed(sizeof(void *));
+}
+
+
+IHqlExpression * CRowReferenceColumnInfo::buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector)
+{
+    size32_t typeSize = sizeof(void *);
+    return getSizetConstant(typeSize);
+}
+
+
+//---------------------------------------------------------------------------
+
 CVirtualColumnInfo::CVirtualColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column) : CColumnInfo(_container, _prior, _column)
 {
 }
@@ -3028,7 +3046,7 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
     case type_row:
         {
             if (hasReferenceModifier(type))
-                created = new CColumnInfo(container, prior, column);
+                created = new CRowReferenceColumnInfo(container, prior, column);
             else
             {
                 CRecordInfo * next = new CRecordInfo(container, prior, column);

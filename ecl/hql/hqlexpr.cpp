@@ -6509,6 +6509,13 @@ bool CHqlRecord::equals(const IHqlExpression & r) const
     return false;
 }
 
+size32_t CHqlRecord::getSize()
+{
+    if (isVariableSizeRecord(this))
+        return UNKNOWN_LENGTH;
+    return getMinRecordSize(this);
+}
+
 unsigned CHqlRecord::getAlignment() 
 { 
     if (!thisAlignment)
