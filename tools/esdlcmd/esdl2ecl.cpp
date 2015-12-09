@@ -238,7 +238,7 @@ public:
                 continue;
             if (iter.matchFlag(optOutputExpandedXML, ESDL_CONVERT_EXPANDEDXML) || iter.matchFlag(optOutputExpandedXML, ESDL_CONVERT_EXPANDEDXML_x))
                 continue;
-            if (iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR) || iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR_CDE))
+            if (iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR_CDE))
                 continue;
             if (iter.matchFlag(optRollUpEclToSingleFile, ESDL_OPTION_ROLLUP))
                 continue;
@@ -261,7 +261,7 @@ public:
             return EsdlCmdOptionMatch;
         if (iter.matchFlag(optOutputExpandedXML, ESDL_CONVERT_EXPANDEDXML) || iter.matchFlag(optOutputExpandedXML, ESDL_CONVERT_EXPANDEDXML_x))
             return EsdlCmdOptionMatch;
-        if (iter.matchOption(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR) || iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR_CDE))
+        if (iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR_CDE))
             return EsdlCmdOptionMatch;
         if (iter.matchOption(optHPCCCompFilesDir, ESDL_OPTION_ECL_INCLUDE_LIST))
             return EsdlCmdOptionMatch;
@@ -379,8 +379,8 @@ public:
                 "      -x, --expandedxml     Output expanded XML files\n"
                 "      --includes            Process all included files\n"
                 "      --rollup              Roll-up all processed includes to single ecl output file\n"
-                "      --CDE, --compfilesdir HPCC Component files directory (xslt files)\n"
-                "      --ecl-includes        Coma-delimited import list to be attached to output ECL\n"
+                "      -cde                  HPCC Component files directory (xslt files)\n"
+                "      --ecl-imports         Coma-delimited import list to be attached to output ECL\n"
                 "                            each entry generates a corresponding import *.<entry>\n"
                 "      --ecl-header          Text included in target header (must be valid ECL) \n"
                 ,stdout);

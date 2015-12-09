@@ -27,7 +27,7 @@
     <xsl:template match="text()" name="outputImports">
     <xsl:param name="import" select="."/>
         <xsl:if test="string-length($import) > 0">
-            <xsl:text>import $.</xsl:text><xsl:value-of select="$import"/><xsl:text>;
+            <xsl:text>import </xsl:text><xsl:value-of select="$import"/><xsl:text>;
 </xsl:text>
         </xsl:if>
     </xsl:template>
