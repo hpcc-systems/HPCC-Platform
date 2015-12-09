@@ -573,7 +573,7 @@ MemoryBuffer & OutputProgress::deserializeExtra(MemoryBuffer & in, unsigned vers
 static const char * const statusText[] = {"Init","Active","Copied","Renamed"};
 void OutputProgress::trace()
 {
-    LOG(MCdebugInfoDetail, unknownJob, "[%d] %s  %" I64F "d[%x]->%" I64F "d[%x]", whichPartition, statusText[status], inputLength, inputCRC, outputLength, outputCRC);
+    LOG(MCdebugInfoDetail, unknownJob, "Chunk %d status: %s  input length: %" I64F "d[CRC:%x] -> output length:%" I64F "d[CRC:%x]", whichPartition, statusText[status], inputLength, inputCRC, outputLength, outputCRC);
 }
 
 MemoryBuffer & OutputProgress::serializeCore(MemoryBuffer & out)        
