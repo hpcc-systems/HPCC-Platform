@@ -3813,7 +3813,12 @@ void CHThorGroupSortActivity::createSorter()
             sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
     }
     else if(stricmp(algoname, "parquicksort") == 0)
-        sorter.setown(new CParallelStableQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
+    {
+        if((flags & TAFstable) != 0)
+            sorter.setown(new CParallelStableQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
+        else
+            sorter.setown(new CParallelQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
+    }
     else if(stricmp(algoname, "mergesort") == 0)
     {
         if((flags & TAFparallel) != 0)
@@ -3959,6 +3964,19 @@ void CQuickSorter::performSort()
     {
         const void * * rows = rowsToSort.getBlock(numRows);
         qsortvec((void * *)rows, numRows, *compare);
+        finger = 0;
+    }
+}
+
+// Quick sort
+
+void CParallelQuickSorter::performSort()
+{
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        parqsortvec((void * *)rows, numRows, *compare);
         finger = 0;
     }
 }
