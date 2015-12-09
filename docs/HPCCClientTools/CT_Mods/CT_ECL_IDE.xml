@@ -189,7 +189,20 @@
               <?dbfo keep-together="always"?>
 
               <para>Select the <emphasis role="bold">Compiler</emphasis> tab.
-              The compiler details are automatically specified:</para>
+              </para>
+
+              <para>The compiler details are automatically specified. If you
+              want to override the defaults, check the <emphasis
+              role="bold">Override Automatic Compiler Selection</emphasis>
+              checkbox.</para>
+
+              <para><emphasis role="bold">Note:</emphasis> You can have
+              multiple versions of the compiler and client tools installed.
+              This allows you to have multiple configurations where the
+              compiler matches each server you need to access. Check the
+              <emphasis role="bold">Override Automatic Compiler
+              Selection</emphasis> checkbox and specify the Complier that
+              matches your HPCC instance.</para>
 
               <para><graphic fileref="../../images/CT03a.jpg" /></para>
             </listitem>
