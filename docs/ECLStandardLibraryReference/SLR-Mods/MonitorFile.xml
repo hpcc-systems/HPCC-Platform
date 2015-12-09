@@ -113,11 +113,13 @@
 
   <para>The <emphasis role="bold">MonitorFile </emphasis>function creates a
   file monitor job in the DFU Server. Once the job is received it goes into a
-  'monitoring' mode (which can be seen in the eclwatch DFU Workunit display),
-  which polls at a fixed interval (default 15 mins). If an appropriately named
-  file arrives in this interval it will fire the <emphasis>event</emphasis>
-  with the name of the triggering object as the event subtype (see the EVENT
-  function).</para>
+  'monitoring' mode (which can be seen in the ECL Watch DFU Workunit display),
+  which polls at a fixed interval. This interval is specified in the DFU
+  Server's <emphasis role="bold">monitorinterval</emphasis> configuration
+  setting. The default interval is 900 seconds (15 minutes). If an
+  appropriately named file arrives in this interval it will fire the
+  <emphasis>event</emphasis> with the name of the triggering object as the
+  event subtype (see the EVENT function).</para>
 
   <para>This process continues until either:</para>
 
