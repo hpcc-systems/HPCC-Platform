@@ -1402,6 +1402,7 @@ protected:
     // Handling failover to a) hashed local lookupjoin b) hash distributed standard join
     bool smart;
     bool rhsCollated;
+    bool compressSpills;
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
     ICompare *compareLeft;
     UnsignedArray flushedRowMarkers;
@@ -1758,7 +1759,7 @@ protected:
                             /* NB: will kill array when stream exhausted or if spilt
                              * Ensure spill priority of these spillable streams is lower than the stream in the loader in the next stage
                              */
-                            rightStreams.append(*rows.createRowStream()); // NB: default SPILL_PRIORITY_SPILLABLE_STREAM is lower than SPILL_PRIORITY_LOOKUPJOIN
+                            rightStreams.append(*rows.createRowStream(SPILL_PRIORITY_SPILLABLE_STREAM, compressSpills)); // NB: default SPILL_PRIORITY_SPILLABLE_STREAM is lower than SPILL_PRIORITY_LOOKUPJOIN
                         }
                     }
                     // NB: 'right' deliberately added after rhsNodeRow streams, so that rhsNodeRow can be consumed into loader 1st
@@ -1967,6 +1968,7 @@ public:
                 break;
         }
         overflowWriteCount = 0;
+        compressSpills = getOptBool(THOROPT_COMPRESS_SPILLS, true);
         ActPrintLog("Smart join = %s", smart?"true":"false");
     }
     bool exceedsLimit(rowidx_t count, const void *left, const void *right, const void *&failRow)

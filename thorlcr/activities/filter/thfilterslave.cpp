@@ -242,6 +242,7 @@ class CFilterGroupSlaveActivity : public CFilterSlaveActivityBase, public CThorS
     IHThorFilterGroupArg *helper;
     Owned<IThorRowLoader> groupLoader;
     Owned<IRowStream> groupStream;
+    bool compressSpills;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -249,6 +250,7 @@ public:
     CFilterGroupSlaveActivity(CGraphElementBase *container) : CFilterSlaveActivityBase(container), CThorSteppable(this)
     {
         groupLoader.setown(createThorRowLoader(*this, NULL, stableSort_none, rc_allMem));
+        compressSpills = getOptBool(THOROPT_COMPRESS_SPILLS, true);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -286,7 +288,7 @@ public:
                 {
                     CThorSpillableRowArray spillableRows(*this, this);
                     spillableRows.transferFrom(rows);
-                    groupStream.setown(spillableRows.createRowStream());
+                    groupStream.setown(spillableRows.createRowStream(SPILL_PRIORITY_SPILLABLE_STREAM, compressSpills));
                 }
                 // else read next group
             }
