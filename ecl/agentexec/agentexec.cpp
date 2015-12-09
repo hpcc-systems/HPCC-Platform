@@ -164,7 +164,8 @@ int CEclAgentExecutionServer::run()
             }
             else
             {
-                ERRLOG("Unexpected dequeue of bogus job queue item, exiting agentexec");
+                if (started)
+                    ERRLOG("Unexpected dequeue of bogus job queue item, exiting agentexec");
                 removeSentinelFile(sentinelFile);//no reason to restart
                 assert(!started);
                 break;
@@ -188,7 +189,7 @@ int CEclAgentExecutionServer::run()
         EXCLOG(e, "Server queue disconnect: ");
         e->Release();
     }
-    PROGLOG("Exiting agentexec\n");
+    PROGLOG("Exiting agentexec");
     return 1;
 }
 
@@ -272,8 +273,9 @@ int main(int argc, char **argv)
         execSvr->stop();
     }
 
+    closedownClientProcess();
     releaseAtoms();
     ExitModuleObjects();
 
     return 0;
-} 
+}
