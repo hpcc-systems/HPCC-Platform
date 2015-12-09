@@ -7373,6 +7373,15 @@ public:
             case TAFstable|TAFspill: sortAlgorithm = stableSpillingQuickSortAlgorithm; break;
             }
         }
+        else if (stricmp(algorithmName, "parquicksort")==0)
+        {
+            switch (sortFlags & TAFstable)
+            {
+            case 0: sortAlgorithm = parallelQuickSortAlgorithm; break;
+            case TAFstable: sortAlgorithm = parallelStableQuickSortAlgorithm; break;
+            default: throwUnexpected();
+            }
+        }
         else if (stricmp(algorithmName, "heapsort")==0)
             sortAlgorithm = heapSortAlgorithm; // NOTE - we do allow UNSTABLE('heapsort') in order to facilitate runtime selection. Also explicit selection of heapsort overrides request to spill
         else if (stricmp(algorithmName, "insertionsort")==0)
@@ -11861,7 +11870,7 @@ public:
     CRoxieServerJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
-        forceSpill = _queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);
+        forceSpill = _graphNode.getPropBool("hint[@name='spill']/@value", _queryFactory.queryOptions().allSortsMaySpill);
         input2 = 0;
         input2idx = 0;
     }
