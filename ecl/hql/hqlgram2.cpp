@@ -2153,6 +2153,20 @@ void HqlGram::checkConstant(attribute & attr)
 }
 
 
+void HqlGram::checkInlineDatasetOptions(const attribute & attr)
+{
+    IHqlExpression * options = attr.queryExpr();
+    unsigned optionCount = 0;
+    if (queryAttributeInList(distributedAtom, options))
+        optionCount++;
+    if (queryAttributeInList(localAtom, options))
+        optionCount++;
+    if (queryAttributeInList(noLocalAtom, options))
+        optionCount++;
+    if (optionCount > 1)
+        reportError(ERR_DSPARAM_INVALIDOPTCOMB, attr, "The DATASET options DISTRIBUTED, LOCAL, and NOLOCAL cannot be combined.");
+}
+
 IHqlExpression * HqlGram::checkConcreteModule(const attribute & errpos, IHqlExpression * expr)
 {
     return checkCreateConcreteModule(this, expr, errpos.pos);

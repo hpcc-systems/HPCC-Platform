@@ -46,7 +46,7 @@ public:
 
     virtual void printStatus(IDeployTask* task);
     virtual void printStatus(StatusType type, const char* processType, const char* process, 
-                             const char* instance, const char* format=NULL, ...) __attribute((format(printf,6,7)));
+                             const char* instance, const char* format=NULL, ...) __attribute__((format(printf,6,7)));
    virtual bool onDisconnect(const char* target);
     bool getAbortStatus() const
     {

@@ -453,28 +453,14 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
     BASE_TAGS(x, y) \
     "@TimeDelta" # y
 
-#define LEGACYTAGS(dft)    \
-        dft, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL
-
 #define CORESTAT(x, y, m)     St##x##y, m, { NAMES(x, y) }, { TAGS(x, y) }
-#define STAT(x, y, m)         CORESTAT(x, y, m), { LEGACYTAGS(NULL) }
-#define TAGSTAT(x, y, m, dft) St##x##y, m, { NAMES(x, y) }, { TAGS(x, y) }, { LEGACYTAGS(dft) }
-
+#define STAT(x, y, m)         CORESTAT(x, y, m)
 
 //--------------------------------------------------------------------------------------------------------------------
 
 //These are the macros to use to define the different entries in the stats meta table
 #define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
-#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, { TIMENAMES(When, y) }, { TIMETAGS(When, y) }, { LEGACYTAGS(NULL) }
+#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, { TIMENAMES(When, y) }, { TIMETAGS(When, y) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
@@ -482,10 +468,6 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 #define NODESTAT(y) STAT(Node, y, SMeasureNode)
 #define PERSTAT(y) STAT(Per, y, SMeasurePercent)
 #define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4)
-
-//The following variants are used where a different tag name is required
-#define TIMESTAT2(y, dft) TAGSTAT(Time, y, SMeasureTimeNs, dft)
-#define NUMSTAT2(y, dft) TAGSTAT(Num, y, SMeasureCount, dft)
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -496,7 +478,6 @@ public:
     StatisticMeasure measure;
     const char * names[StNextModifier/StVariantScale];
     const char * tags[StNextModifier/StVariantScale];
-    const char * legacytags[StNextModifier/StVariantScale];
 };
 
 static const StatisticMeta statsMetaData[StMax] = {
@@ -511,38 +492,38 @@ static const StatisticMeta statsMetaData[StMax] = {
     { WHENSTAT(Compiled) },
     { WHENSTAT(WorkunitModified) },
     { TIMESTAT(Elapsed) },
-    { CORESTAT(Time, LocalExecute, SMeasureTimeNs), { "@localTime", "@timeMinMs", "@timeMaxMs" } },
-    { TIMESTAT2(TotalExecute, "@totalTime") },
+    { TIMESTAT(LocalExecute) },
+    { TIMESTAT(TotalExecute) },
     { TIMESTAT(Remaining) },
     { SIZESTAT(GeneratedCpp) },
     { SIZESTAT(PeakMemory) },
     { SIZESTAT(MaxRowSize) },
-    { CORESTAT(Num, RowsProcessed, SMeasureCount), { "@count", "@min", "@max", NULL, "skew", "minskew", "maxskew", NULL, NULL, NULL } },
-    { NUMSTAT2(Slaves, "@slaves") },
-    { NUMSTAT2(Started, "@started") },
-    { NUMSTAT2(Stopped, "@stopped") },
-    { NUMSTAT2(IndexSeeks, "@seeks") },
-    { NUMSTAT2(IndexScans, "@scans") },
-    { NUMSTAT2(IndexWildSeeks, "@wildscans") },
-    { NUMSTAT2(IndexSkips, "@skips") },
-    { NUMSTAT2(IndexNullSkips, "@nullskips") },
-    { NUMSTAT2(IndexMerges, "@merges") },
-    { NUMSTAT2(IndexMergeCompares, "@mergecompares") },
-    { NUMSTAT2(PreFiltered, "@prefiltered") },
-    { NUMSTAT2(PostFiltered, "@postfiltered") },
-    { NUMSTAT2(BlobCacheHits, "@blobhit") },
-    { NUMSTAT2(LeafCacheHits, "@leafhit") },
-    { NUMSTAT2(NodeCacheHits, "@nodehit") },
-    { NUMSTAT2(BlobCacheAdds, "@blobadd") },
-    { NUMSTAT2(LeafCacheAdds, "@leadadd") },
-    { NUMSTAT2(NodeCacheAdds, "@nodeadd") },
-    { NUMSTAT2(PreloadCacheHits, "@preloadhits") },
-    { NUMSTAT2(PreloadCacheAdds, "@preloadadds") },
-    { NUMSTAT2(ServerCacheHits, "@sschits") },
-    { NUMSTAT2(IndexAccepted, "@accepted") },
-    { NUMSTAT2(IndexRejected, "@rejected") },
-    { NUMSTAT2(AtmostTriggered, "@atmost") },
-    { NUMSTAT2(DiskSeeks, "@fseeks") },
+    { NUMSTAT(RowsProcessed) },
+    { NUMSTAT(Slaves) },
+    { NUMSTAT(Started) },
+    { NUMSTAT(Stopped) },
+    { NUMSTAT(IndexSeeks) },
+    { NUMSTAT(IndexScans) },
+    { NUMSTAT(IndexWildSeeks) },
+    { NUMSTAT(IndexSkips) },
+    { NUMSTAT(IndexNullSkips) },
+    { NUMSTAT(IndexMerges) },
+    { NUMSTAT(IndexMergeCompares) },
+    { NUMSTAT(PreFiltered) },
+    { NUMSTAT(PostFiltered) },
+    { NUMSTAT(BlobCacheHits) },
+    { NUMSTAT(LeafCacheHits) },
+    { NUMSTAT(NodeCacheHits) },
+    { NUMSTAT(BlobCacheAdds) },
+    { NUMSTAT(LeafCacheAdds) },
+    { NUMSTAT(NodeCacheAdds) },
+    { NUMSTAT(PreloadCacheHits) },
+    { NUMSTAT(PreloadCacheAdds) },
+    { NUMSTAT(ServerCacheHits) },
+    { NUMSTAT(IndexAccepted) },
+    { NUMSTAT(IndexRejected) },
+    { NUMSTAT(AtmostTriggered) },
+    { NUMSTAT(DiskSeeks) },
     { NUMSTAT(Iterations) },
     { LOADSTAT(WhileSorting) },
     { NUMSTAT(LeftRows) },
@@ -615,15 +596,6 @@ const char * queryTreeTag(StatisticKind kind)
     dbgassertex(rawkind >= StKindNone && rawkind < StMax);
     dbgassertex(variant < (StNextModifier/StVariantScale));
     return statsMetaData[rawkind].tags[variant];
-}
-
-const char * queryLegacyTreeTag(StatisticKind kind)
-{
-    StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
-    unsigned variant = (kind / StVariantScale);
-    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
-    dbgassertex(variant < (StNextModifier/StVariantScale));
-    return statsMetaData[rawkind].legacytags[variant];
 }
 
 //--------------------------------------------------------------------------------------------------------------------

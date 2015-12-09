@@ -1752,7 +1752,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.alwaysUseGraphResults,"alwaysUseGraphResults",false),
         DebugOption(options.noConditionalLinks,"noConditionalLinks",false),
         DebugOption(options.reportAssertFilenameTail,"reportAssertFilenameTail",false),        
-        DebugOption(options.newBalancedSpotter,"newBalancedSpotter",false),
+        DebugOption(options.newBalancedSpotter,"newBalancedSpotter",true),
         DebugOption(options.keyedJoinPreservesOrder,"keyedJoinPreservesOrder",true),
         DebugOption(options.expandSelectCreateRow,"expandSelectCreateRow",false),
         DebugOption(options.obfuscateOutput,"obfuscateOutput",false),
