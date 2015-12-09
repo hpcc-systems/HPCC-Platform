@@ -2152,6 +2152,10 @@ public:
     {
         return SPILL_PRIORITY_LOOKUPJOIN;
     }
+    virtual unsigned getActivityId() const
+    {
+        return this->queryActivityId();
+    }
     virtual bool freeBufferedRows(bool critical)
     {
         // NB: only installed if lookup join and global

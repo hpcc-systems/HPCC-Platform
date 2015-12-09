@@ -276,6 +276,10 @@ public:
 
     bool hasSink(IHqlExpression * expr) const { return sink == expr->queryBody(); }
     bool hasSource(IHqlExpression * expr) const { return source == expr->queryBody(); }
+    IHqlExpression * querySource() const { return source; }
+    IHqlExpression * querySink() const { return sink; }
+
+    void mergeSinkLink(CSplitterLink & sinkLink);
 
 private:
     LinkedHqlExpr source;
@@ -290,7 +294,7 @@ public:
     ~CSplitterInfo();
 
     void addLink(IHqlExpression * source, IHqlExpression * sink, bool isExternal);
-    bool allInputsPulledIndependently(IHqlExpression * expr) const;
+    static bool allInputsPulledIndependently(IHqlExpression * expr);
     void gatherPotentialSplitters(IHqlExpression * expr, IHqlExpression * sink, ResourceGraphInfo * graph, bool isDependency);
     bool isSplitOrBranch(IHqlExpression * expr) const;
     bool isBalancedSplitter(IHqlExpression * expr) const;
@@ -430,6 +434,7 @@ public:
     unsigned curBalanceLink;
     unsigned lastPass;
     unsigned balancedExternalUses;
+    unsigned balancedInternalUses;
 #ifdef TRACE_BALANCED
     unsigned balanceId;
 #endif
@@ -447,6 +452,7 @@ public:
     bool projectResult:1;
     bool visited:1;
     bool balancedVisiting:1;
+    bool removedParallelPullers:1;
 };
 
 class EclResourceDependencyGatherer;
@@ -520,6 +526,9 @@ protected:
     void spotSharedInputs(IHqlExpression * expr, ResourceGraphInfo * graph);
     void spotSharedInputs();
 
+    bool removePassThrough(CSplitterInfo & connections, ResourcerInfo & info);
+    void removeDuplicateIndependentLinks(CSplitterInfo & connections, ResourcerInfo & info);
+    void optimizeIndependentLinks(CSplitterInfo & connections, ResourcerInfo & info);
     void optimizeConditionalLinks(CSplitterInfo & connections);
     IHqlExpression * walkPotentialSplitterLinks(CSplitterInfo & connections, IHqlExpression * expr, const CSplitterLink * link);
     IHqlExpression * walkPotentialSplitters(CSplitterInfo & connections, IHqlExpression * expr, const CSplitterLink & link);

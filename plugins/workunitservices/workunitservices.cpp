@@ -54,11 +54,9 @@ Persists changed?
 #include "workunitservices.ipp"
 #include "environment.hpp"
 
-#define WORKUNITSERVICES_VERSION "WORKUNITSERVICES 1.0.1"
+#define WORKUNITSERVICES_VERSION "WORKUNITSERVICES 1.0.2"
 
 static const char * compatibleVersions[] = {
-    "WORKUNITSERVICES 1.0 ",  // a version was released with a space here in signature... 
-    "WORKUNITSERVICES 1.0.1", 
     NULL };
 
 static const char * EclDefinition =
@@ -122,10 +120,10 @@ static const char * EclDefinition =
                             " string description;"
                             " string unit;"
                         " end;\n"
-"export WorkunitServices := SERVICE\n"
-"   boolean WorkunitExists(const varstring wuid, boolean online=true, boolean archived=false) : c,context,entrypoint='wsWorkunitExists'; \n"
+"export WorkunitServices := SERVICE : cpp\n"
+"   boolean WorkunitExists(const varstring wuid, boolean online=true, boolean archived=false) : context,entrypoint='wsWorkunitExists'; \n"
 "   dataset(WsWorkunitRecord) WorkunitList("
-                                        " const varstring lowwuid," 
+                                        " const varstring lowwuid='',"
                                         " const varstring highwuid=''," 
                                         " const varstring username=''," 
                                         " const varstring cluster=''," 
@@ -137,17 +135,18 @@ static const char * EclDefinition =
                                         " const varstring roxiecluster='',"
                                         " const varstring eclcontains='',"
                                         " boolean online=true,"
-                                        " boolean archived=false"
-                                        ") : c,context,entrypoint='wsWorkunitList'; \n"
-"  varstring WUIDonDate(unsigned4 year,unsigned4 month,unsigned4 day,unsigned4 hour, unsigned4 minute) : c,entrypoint='wsWUIDonDate'; \n"
-"  varstring WUIDdaysAgo(unsigned4  daysago) : c,entrypoint='wsWUIDdaysAgo'; \n"
-"  dataset(WsTimeStamp) WorkunitTimeStamps(const varstring wuid) : c,context,entrypoint='wsWorkunitTimeStamps'; \n"
-"  dataset(WsMessage) WorkunitMessages(const varstring wuid) : c,context,entrypoint='wsWorkunitMessages'; \n"
-"  dataset(WsFileRead) WorkunitFilesRead(const varstring wuid) : c,context,entrypoint='wsWorkunitFilesRead'; \n"
-"  dataset(WsFileWritten) WorkunitFilesWritten(const varstring wuid) : c,context,entrypoint='wsWorkunitFilesWritten'; \n"
-"  dataset(WsTiming) WorkunitTimings(const varstring wuid) : c,context,entrypoint='wsWorkunitTimings'; \n"
-"  streamed dataset(WsStatistic) WorkunitStatistics(const varstring wuid, boolean includeActivities = false, const varstring _filter = '') : c,context,entrypoint='wsWorkunitStatistics'; \n"
-    
+                                        " boolean archived=false,"
+                                        " const varstring appvalues=''"
+                                        ") : context,entrypoint='wsWorkunitList'; \n"
+"  varstring WUIDonDate(unsigned4 year,unsigned4 month,unsigned4 day,unsigned4 hour, unsigned4 minute) : entrypoint='wsWUIDonDate'; \n"
+"  varstring WUIDdaysAgo(unsigned4  daysago) : entrypoint='wsWUIDdaysAgo'; \n"
+"  dataset(WsTimeStamp) WorkunitTimeStamps(const varstring wuid) : context,entrypoint='wsWorkunitTimeStamps'; \n"
+"  dataset(WsMessage) WorkunitMessages(const varstring wuid) : context,entrypoint='wsWorkunitMessages'; \n"
+"  dataset(WsFileRead) WorkunitFilesRead(const varstring wuid) : context,entrypoint='wsWorkunitFilesRead'; \n"
+"  dataset(WsFileWritten) WorkunitFilesWritten(const varstring wuid) : context,entrypoint='wsWorkunitFilesWritten'; \n"
+"  dataset(WsTiming) WorkunitTimings(const varstring wuid) : context,entrypoint='wsWorkunitTimings'; \n"
+"  streamed dataset(WsStatistic) WorkunitStatistics(const varstring wuid, boolean includeActivities = false, const varstring _filter = '') : context,entrypoint='wsWorkunitStatistics'; \n"
+"  boolean setWorkunitAppValue(const varstring app, const varstring key, const varstring value, boolean overwrite=true) : context,entrypoint='wsSetWorkunitAppValue'; \n"
 "END;";
 
 #define WAIT_SECONDS 30
@@ -337,10 +336,11 @@ static bool serializeWUInfo(IConstWorkUnitInfo &info,MemoryBuffer &mb)
     return true;
 }
 
-
 }//namespace
 
 using namespace nsWorkunitservices;
+
+static const unsigned MAX_FILTERS=20;
 
 WORKUNITSERVICES_API void wsWorkunitList(
     ICodeContext *ctx,
@@ -358,7 +358,8 @@ WORKUNITSERVICES_API void wsWorkunitList(
     const char *roxiecluster,  // Not in use - retained for compatibility only
     const char *eclcontains,
     bool online,
-    bool archived 
+    bool archived,
+    const char *appvalues
 )
 {
     MemoryBuffer mb;
@@ -409,7 +410,7 @@ WORKUNITSERVICES_API void wsWorkunitList(
     }
     if (online)
     {
-        WUSortField filters[20];  // NOTE - increase if you add a LOT more parameters!
+        WUSortField filters[MAX_FILTERS+1];  // NOTE - increase if you add a LOT more parameters! The +1 is to allow space for the terminator
         unsigned filterCount = 0;
         MemoryBuffer filterbuf;
 
@@ -437,6 +438,37 @@ WORKUNITSERVICES_API void wsWorkunitList(
         addWUQueryFilter(filters, filterCount, filterbuf, eclcontains, (WUSortField) (WUSFecl | WUSFwild));
         addWUQueryFilter(filters, filterCount, filterbuf, lowwuid, WUSFwuid);
         addWUQueryFilter(filters, filterCount, filterbuf, highwuid, WUSFwuidhigh);
+        if (appvalues && *appvalues)
+        {
+            StringArray appFilters;
+            appFilters.appendList(appvalues, "|");   // Multiple filters separated by |
+            ForEachItemIn(idx, appFilters)
+            {
+                StringArray appFilter; // individual filter of form appname/key=value or appname/*=value
+                appFilter.appendList(appFilters.item(idx), "=");
+                const char *appvalue;
+                switch (appFilter.length())
+                {
+                case 1:
+                    appvalue = NULL;
+                    break;
+                case 2:
+                    appvalue = appFilter.item(1);
+                    break;
+                default:
+                    throw MakeStringException(-1,"WORKUNITSERVICES: Invalid application value filter %s (expected format is 'appname/keyname=value')", appFilters.item(idx));
+                }
+                const char *appkey = appFilter.item(0);
+                if (!strchr(appkey, '/'))
+                    throw MakeStringException(-1,"WORKUNITSERVICES: Invalid application value filter %s (expected format is 'appname/keyname=value')", appFilters.item(idx));
+                if (filterCount>=MAX_FILTERS)
+                    throw MakeStringException(-1,"WORKUNITSERVICES: Too many filters");
+                filterbuf.append(appkey);
+                filterbuf.append(appvalue);
+                filters[filterCount++] = WUSFappvalue;
+            }
+        }
+
         filters[filterCount] = WUSFterm;
         Owned<IWorkUnitFactory> wuFactory = getWorkunitFactory(ctx);
         Owned<IConstWorkUnitIterator> it = wuFactory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), filters, filterbuf.bufferBase(), 0, INT_MAX, NULL, NULL); // MORE - need security flags here!
@@ -696,6 +728,17 @@ WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngi
         filter->setScopeDepth(1, 2);
     Owned<IConstWUStatisticIterator> stats = &wu->getStatistics(filter);
     return new StreamedStatistics(wu, allocator, stats);
+}
+
+WORKUNITSERVICES_API bool wsSetWorkunitAppValue( ICodeContext *ctx, const char *appname, const char *key, const char *value, bool overwrite)
+{
+    if (appname && *appname && key && *key && value && *value)
+    {
+        WorkunitUpdate w(ctx->updateWorkUnit());
+        w->setApplicationValue(appname, key, value, overwrite);
+        return true;
+    }
+    return false;
 }
 
 

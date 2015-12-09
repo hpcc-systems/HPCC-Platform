@@ -87,6 +87,10 @@ public:
         in = NULL;
         helper = NULL;
         abort = NULL;
+        dedupIdx = dedupCount = 0;
+        dedupArray = NULL;
+        iStopInput = NULL;
+        keepLeft = true;
         rowLoader.setown(createThorRowLoader(*activity, NULL, stableSort_none, rc_allMem));
     }
 
@@ -568,6 +572,9 @@ public:
 
     CRollupGroupSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
+        eoi = false;
+        input = NULL;
+        helper = NULL;
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {

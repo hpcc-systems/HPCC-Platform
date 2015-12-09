@@ -63,10 +63,11 @@ EXPORT BOOLEAN WorkunitExists(varstring wuid, boolean online=true, boolean archi
  * @param eclcontains   the text to search for in the workunit�s ECL code. This may contain wildcard ( * ? ) characters.
  * @param online        the flag specifying whether the search is performed online.
  * @param archived      the flag specifying whether the search is performed in the archives.
+ * @param appvalues     application values to search for. Use a string of the form appname/key=value or appname/*=value.
  */
 
 EXPORT dataset(WorkunitRecord) WorkunitList(
-                                         varstring lowwuid, 
+                                         varstring lowwuid='',
                                          varstring highwuid='', 
                                          varstring username='', 
                                          varstring cluster='', 
@@ -78,13 +79,14 @@ EXPORT dataset(WorkunitRecord) WorkunitList(
                                          varstring roxiecluster='',
                                          varstring eclcontains='',
                                          boolean online=true,
-                                         boolean archived=false
+                                         boolean archived=false,
+                                         varstring appvalues=''
                                         ) :=
     lib_workunitservices.WorkUnitServices.WorkunitList(
                                         lowwuid, highwuid, 
                                         username, cluster, jobname, state, priority,
                                         fileread, filewritten, roxiecluster, eclcontains,
-                                        online, archived);
+                                        online, archived, appvalues);
 
 /*
  * Returns a valid Workunit identifier for the specified date and time.  This is useful for creating ranges of wuids 
@@ -162,6 +164,18 @@ EXPORT dataset(TimingRecord) WorkunitTimings(varstring wuid) :=
 
 EXPORT dataset(StatisticRecord) WorkunitStatistics(varstring wuid, boolean includeActivities = false, varstring _filter = '') :=
   lib_workunitservices.WorkUnitServices.WorkunitStatistics(wuid, includeActivities, _filter);
+
+/*
+ * Sets an application value in current workunit. Returns true if the value was set successfully.
+ *
+ * @param app           the app name to set.
+ * @param key           the name of the value to set.
+ * @param value         the value to set.
+ * @param overwrite     whether an existing value should be overwritten (default=true).
+*/
+
+EXPORT boolean SetWorkunitAppValue(varstring app, varstring key, varstring value, boolean overwrite=true) :=
+  lib_workunitservices.WorkUnitServices.SetWorkunitAppValue(app, key, value, overwrite);
 
 
 END;

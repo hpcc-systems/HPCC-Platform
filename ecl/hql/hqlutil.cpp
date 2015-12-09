@@ -4594,11 +4594,16 @@ extern HQL_API IHqlExpression * convertScalarAggregateToDataset(IHqlExpression *
         field.setown(createField(valueId, expr->getType(), NULL));
 
     IHqlExpression * aggregateRecord = createRecord(field);
-    IHqlExpression * keyedAttr = expr->queryAttribute(keyedAtom);
-    IHqlExpression * prefetchAttr = expr->queryAttribute(prefetchAtom);
 
     HqlExprArray valueArgs;
-    unwindChildren(valueArgs, expr, 1);
+    ForEachChildFrom(i1, expr, 1)
+    {
+        IHqlExpression * cur = expr->queryChild(i1);
+        //keyed is currently required on the aggregate operator
+        if (!cur->isAttribute() || (cur->queryName() == keyedAtom))
+            valueArgs.append(*LINK(cur));
+    }
+
     IHqlExpression * newValue = createValue(newop, expr->getType(), valueArgs);
     IHqlExpression * assign = createAssign(createSelectExpr(getSelf(aggregateRecord), LINK(field)), newValue);
     IHqlExpression * transform = createValue(no_newtransform, makeTransformType(aggregateRecord->getType()), assign);
@@ -4608,7 +4613,17 @@ extern HQL_API IHqlExpression * convertScalarAggregateToDataset(IHqlExpression *
     if (dataset->queryType()->getTypeCode() == type_groupedtable)
         dataset = createDataset(no_group, dataset, NULL);
 
-    IHqlExpression * project = createDataset(no_newaggregate, dataset, createComma(aggregateRecord, transform, LINK(keyedAttr), LINK(prefetchAttr)));
+    HqlExprArray args;
+    args.append(*dataset);
+    args.append(*aggregateRecord);
+    args.append(*transform);
+    ForEachChild(i2, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i2);
+        if (cur->isAttribute())
+            args.append(*LINK(cur));
+    }
+    IHqlExpression * project = createDataset(no_newaggregate, args);
     return createRow(no_selectnth, project, createConstantOne());
 }
 

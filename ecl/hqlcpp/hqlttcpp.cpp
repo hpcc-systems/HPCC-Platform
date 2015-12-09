@@ -4681,7 +4681,9 @@ IHqlExpression * OptimizeActivityTransformer::optimizeCompare(IHqlExpression * l
         if (lhs->getOperator() == no_count)
         {
             IHqlExpression * ds = lhs->queryChild(0);
-            OwnedHqlExpr ret = createValue(no_exists, makeBoolType(), LINK(ds));
+            HqlExprArray args;
+            unwindChildren(args, lhs);
+            OwnedHqlExpr ret = createValue(no_exists, makeBoolType(), args);
             if (existOp == no_not)
                 return createValue(no_not, makeBoolType(), ret.getClear());
             return ret.getClear();

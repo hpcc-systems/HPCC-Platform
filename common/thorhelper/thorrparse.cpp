@@ -3391,43 +3391,46 @@ bool RegexParser::performMatch(IMatchedAction & action, const void * row, unsign
         const byte * end = endData - algo->minPatternLength;
 
         RegexState state(cache, algo->kind, helper, this, algo->inputFormat, len, start);
-        state.row = row;
-        state.processor = &action;
-        state.best = NULL;
-        for (const byte * curScan = start; curScan <= end;)
+        if (len >= algo->minPatternLength)
         {
-            state.cur = curScan;
-            state.top.start = curScan;
-            state.nextScanPosition = NULL;
-            state.score = 0;
-            if (!algo->singleChoicePerLine)
-                state.best = NULL;
-            if ((size32_t)(endData - curScan) > maxSize)
+            state.row = row;
+            state.processor = &action;
+            state.best = NULL;
+            for (const byte * curScan = start; curScan <= end;)
             {
-                state.end = curScan + (maxSize + charWidth);
-                state.lengthIsLimited = true;
+                state.cur = curScan;
+                state.top.start = curScan;
+                state.nextScanPosition = NULL;
+                state.score = 0;
+                if (!algo->singleChoicePerLine)
+                    state.best = NULL;
+                if ((size32_t)(endData - curScan) > maxSize)
+                {
+                    state.end = curScan + (maxSize + charWidth);
+                    state.lengthIsLimited = true;
+                }
+                else
+                {
+                    state.end = endData;
+                    state.lengthIsLimited = false;
+                }
+                algo->match(state);
+                if (state.numMatched >= algo->keepLimit)
+                    break;
+                if (state.numMatched > algo->atMostLimit)
+                {
+                    results.reset();
+                    return false;
+                }
+                if (algo->scanAction == INlpParseAlgorithm::NlpScanWhole)
+                    break;
+                if (state.numMatched && (algo->scanAction == INlpParseAlgorithm::NlpScanNone))
+                    break;
+                if (state.nextScanPosition && (algo->scanAction == INlpParseAlgorithm::NlpScanNext) && (curScan != state.nextScanPosition))
+                    curScan = state.nextScanPosition;
+                else
+                    curScan += charWidth;
             }
-            else
-            {
-                state.end = endData;
-                state.lengthIsLimited = false;
-            }
-            algo->match(state);
-            if (state.numMatched >= algo->keepLimit)
-                break;
-            if (state.numMatched > algo->atMostLimit)
-            {
-                results.reset();
-                return false;
-            }
-            if (algo->scanAction == INlpParseAlgorithm::NlpScanWhole)
-                break;
-            if (state.numMatched && (algo->scanAction == INlpParseAlgorithm::NlpScanNone))
-                break;
-            if (state.nextScanPosition && (algo->scanAction == INlpParseAlgorithm::NlpScanNext) && (curScan != state.nextScanPosition))
-                curScan = state.nextScanPosition;
-            else
-                curScan += charWidth;
         }
 
         if (state.numMatched == 0)

@@ -1067,6 +1067,7 @@ public:
 
     //interface roxiemem::IBufferedRowCallback
     virtual unsigned getSpillCost() const;
+    virtual unsigned getActivityId() const;
     virtual bool freeBufferedRows(bool critical);
 
 private:

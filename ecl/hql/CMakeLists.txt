@@ -113,6 +113,8 @@ if (WIN32)
     )
 else()
     add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.h
+        #delete output files before building to force rebuilds with errors to fail rather than continue unnoticed, using the existing output files.
+        COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.h ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp
         #pipe result through grep to remove warnings that are hard to suppress, and pipe through cat to prevent error code from no matches aborting the compile
         COMMAND ${bisoncmdprefix} ${bisoncmd} --report=state --defines=${CMAKE_CURRENT_BINARY_DIR}/hqlgram.h --output=${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_SOURCE_DIR}/hqlgram.y 2>&1 | grep -v "unused value" | cat
         DEPENDS hqlgram.y

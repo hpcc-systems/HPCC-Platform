@@ -114,23 +114,24 @@ define([
 
         createGrid: function (domID) {
             var context = this;
-            this.openSafeMode = new Button({
-                label: this.i18n.OpenSafeMode,
+            this.openLegacyMode = new Button({
+                label: this.i18n.OpenLegacyMode,
                 onClick: function (event) {
                     context._onOpen(event, {
-                        safeMode: true
+                        legacyMode: true
                     });
                 }
             }).placeAt(this.widget.Open.domNode, "after");
-            this.openTreeMode = new Button({
-                label: this.i18n.OpenTreeMode,
-                onClick: function (event) {
-                    context._onOpen(event, {
-                        treeMode: true
-                    });
-                }
-            }).placeAt(this.widget.Open.domNode, "after");
-
+            if (dojoConfig.isPluginInstalled()) {
+                this.openNativeMode = new Button({
+                    label: this.i18n.OpenNativeMode,
+                    onClick: function (event) {
+                        context._onOpen(event, {
+                            nativeMode: true
+                        });
+                    }
+                }).placeAt(this.widget.Open.domNode, "after");
+            }
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
@@ -194,10 +195,10 @@ define([
 
         getDetailID: function (row, params) {
             var retVal = "Detail" + row[this.idProperty];
-            if (params && params.treeMode) {
-                retVal += "Tree";
-            } else if (params && params.safeMode) {
-                retVal += "Safe";
+            if (params && params.nativeMode) {
+                retVal += "Native";
+            } else if (params && params.legacyMode) {
+                retVal += "Legacy";
             }
             return retVal;
         },
@@ -228,16 +229,27 @@ define([
                 }
             }
             var title = row.Name;
-            if (params && params.treeMode) {
-                title += " (T)";
-            } else if (params && params.safeMode) {
-                title += " (S)";
+            var delayWidget = "GraphTreeWidget";
+            var delayProps = {
+                forceJS: true
+            };
+            if (params && params.nativeMode) {
+                title += " (N)";
+                delayWidget = "GraphTreeWidget";
+                delayProps = {
+                    forceNative: true
+                };
+            } else if (params && params.legacyMode) {
+                delayWidget = "GraphPageWidget";
+                title += " (L)";
+                delayProps = {};
             }
             return new DelayLoadWidget({
                 id: id,
                 title: title,
                 closable: true,
-                delayWidget: (params && params.treeMode) ? "GraphTreeWidget" : "GraphPageWidget",
+                delayWidget: delayWidget,
+                delayProps: delayProps,
                 hpcc: {
                     type: "graph",
                     params: localParams
@@ -298,8 +310,10 @@ define([
         refreshActionState: function (selection) {
             this.inherited(arguments);
 
-            this.openTreeMode.set("disabled", !selection.length);
-            this.openSafeMode.set("disabled", !selection.length);
+            if (this.openNativeMode) {
+                this.openNativeMode.set("disabled", !selection.length);
+            }
+            this.openLegacyMode.set("disabled", !selection.length);
         },
 
         syncSelectionFrom: function (sourceControl) {

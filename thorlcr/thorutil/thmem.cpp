@@ -205,13 +205,14 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSpillableStreamBase(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriorirty)
-        : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf, _preserveNulls), preserveNulls(_preserveNulls), spillPriority(_spillPriorirty)
+    CSpillableStreamBase(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority)
+        : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf, _preserveNulls), preserveNulls(_preserveNulls), spillPriority(_spillPriority)
     {
         assertex(inRows.isFlushed());
         rows.swap(inRows);
         useCompression = false;
         mmRegistered = false;
+        ownsRows = false;
     }
     ~CSpillableStreamBase()
     {
@@ -224,6 +225,10 @@ public:
     virtual unsigned getSpillCost() const
     {
         return spillPriority;
+    }
+    virtual unsigned getActivityId() const
+    {
+        return activity.queryActivityId();
     }
     virtual bool freeBufferedRows(bool critical)
     {
@@ -1755,6 +1760,10 @@ public:
     {
         return spillPriority;
     }
+    virtual unsigned getActivityId() const
+    {
+        return activity.queryActivityId();
+    }
     virtual bool freeBufferedRows(bool critical)
     {
         if (!spillingEnabled())
@@ -1909,12 +1918,6 @@ IThorRowCollector *createThorRowCollector(CActivityBase &activity, IRowInterface
     collector->setPreserveGrouping(preserveGrouping);
     return collector.getClear();
 }
-
-IThorRowCollector *createThorRowCollector(CActivityBase &activity, ICompare *iCompare, StableSortFlag stableSort, RowCollectorSpillFlags diskMemMix, unsigned spillPriority, bool preserveGrouping)
-{
-    return createThorRowCollector(activity, &activity, iCompare, stableSort, diskMemMix, spillPriority, preserveGrouping);
-}
-
 
 void setThorInABox(unsigned num)
 {

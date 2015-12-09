@@ -60,6 +60,8 @@ static CriticalSection * protectedGeneratorCs;
 
 #if defined (__APPLE__)
 #include <mach-o/dyld.h>
+#include <mach/mach_time.h> /* mach_absolute_time */
+mach_timebase_info_data_t timebase_info  = { 1,1 };
 #endif
 
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
@@ -68,6 +70,10 @@ MODULE_INIT(INIT_PRIORITY_SYSTEM)
 #ifdef _WIN32
     protectedGenerator = createRandomNumberGenerator();
     protectedGeneratorCs = new CriticalSection;
+#endif
+#if defined (__APPLE__)
+    if (mach_timebase_info(&timebase_info) != KERN_SUCCESS)
+        return false;
 #endif
     return true;
 }
@@ -395,7 +401,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
         if (!streq(ext.str(), SharedObjectExtension))
         {
             // Assume if there's no .so, there may also be no lib at the beginning
-            if (strncmp(tail.str(), SharedObjectPrefix, strlen(SharedObjectPrefix) != 0))
+            if (strncmp(tail.str(), SharedObjectPrefix, strlen(SharedObjectPrefix)) != 0)
                 path.append(SharedObjectPrefix);
             path.append(tail).append(ext).append(SharedObjectExtension);
             name = path.str();
@@ -1483,6 +1489,20 @@ unsigned usTick()
     gettimeofday(&tm,NULL);
     return tm.tv_sec*1000000+tm.tv_usec; 
 }
+#elif __APPLE__
+
+unsigned usTick()
+{
+    __uint64 nano = mach_absolute_time() * (uint64_t)timebase_info.numer / (uint64_t)timebase_info.denom;
+    return nano / 1000;
+}
+
+unsigned msTick()
+{
+    __uint64 nano = mach_absolute_time() * (uint64_t)timebase_info.numer / (uint64_t)timebase_info.denom;
+    return nano / 1000000;
+}
+
 #else
 #warning "clock_gettime(CLOCK_MONOTONIC) not supported"
 unsigned msTick() 

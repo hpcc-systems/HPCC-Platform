@@ -1,0 +1,43 @@
+<Dataset name='PingToCreateTopic'>
+ <Row><PingToCreateTopic>0</PingToCreateTopic></Row>
+</Dataset>
+<Dataset name='ConsumerGetTopicPartitionCount'>
+ <Row><ConsumerGetTopicPartitionCount>1</ConsumerGetTopicPartitionCount></Row>
+</Dataset>
+<Dataset name='ConsumerResetMessageOffsets1'>
+ <Row><ConsumerResetMessageOffsets1>1</ConsumerResetMessageOffsets1></Row>
+</Dataset>
+<Dataset name='PublisherGetTopicPartitionCount'>
+ <Row><PublisherGetTopicPartitionCount>1</PublisherGetTopicPartitionCount></Row>
+</Dataset>
+<Dataset name='PublishMessageUnkeyed'>
+ <Row><PublishMessageUnkeyed>true</PublishMessageUnkeyed></Row>
+</Dataset>
+<Dataset name='PublishMessageKeyed'>
+ <Row><PublishMessageKeyed>true</PublishMessageKeyed></Row>
+</Dataset>
+<Dataset name='GetMessages1'>
+ <Row><partitionnum>0</partitionnum><offset>0</offset><message>Regular message</message></Row>
+ <Row><partitionnum>0</partitionnum><offset>1</offset><message>Keyed message</message></Row>
+</Dataset>
+<Dataset name='GetMessagesEmpty'>
+</Dataset>
+<Dataset name='ConsumerResetMessageOffsets2'>
+ <Row><ConsumerResetMessageOffsets2>1</ConsumerResetMessageOffsets2></Row>
+</Dataset>
+<Dataset name='GetMessages2'>
+ <Row><partitionnum>0</partitionnum><offset>0</offset><message>Regular message</message></Row>
+ <Row><partitionnum>0</partitionnum><offset>1</offset><message>Keyed message</message></Row>
+</Dataset>
+<Dataset name='ConsumerSetExplicitMessageOffsets'>
+ <Row><ConsumerSetExplicitMessageOffsets>1</ConsumerSetExplicitMessageOffsets></Row>
+</Dataset>
+<Dataset name='GetMessages3'>
+ <Row><partitionnum>0</partitionnum><offset>1</offset><message>Keyed message</message></Row>
+</Dataset>
+<Dataset name='ConsumerResetMessageOffsets3'>
+ <Row><ConsumerResetMessageOffsets3>1</ConsumerResetMessageOffsets3></Row>
+</Dataset>
+<Dataset name='ConsumerLastMessageOffsets'>
+ <Row><partitionnum>0</partitionnum><offset>1</offset></Row>
+</Dataset>

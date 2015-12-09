@@ -117,7 +117,7 @@ typedef IAtom ISourcePath;
 struct HQL_API ECLlocation
 {
 public:
-    inline ECLlocation() {}
+    inline ECLlocation() : lineno(0), column(0), position(0), sourcePath(NULL) {}
     ECLlocation(const IHqlExpression * _expr) { if (!extractLocationAttr(_expr)) clear(); }
     ECLlocation(int _line, int _column, int _position, ISourcePath * _sourcePath) { set(_line, _column, _position, _sourcePath); }
 

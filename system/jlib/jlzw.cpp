@@ -173,8 +173,8 @@ static struct __initShiftArray {
 
 #define PUTCODE(code)                                       \
 {                                                            \
-  register unsigned inbits=code;                             \
-  register int shift=curShift;                               \
+  unsigned inbits=code;                                      \
+  int shift=curShift;                                        \
   int copyBits = dict.curbits - BITS_PER_UNIT;               \
                                                              \
   *(outbytes++) = (unsigned char)(inbits&0xff);              \
@@ -482,7 +482,7 @@ void CLZWExpander::expand(void *buf)
     unsigned char *outend = out+outlen;
     int oldcode ;
     GETCODE(oldcode);
-    register int ch=oldcode;
+    int ch=oldcode;
     *(out++)=(unsigned char)ch;
     while (out!=outend) {
         int newcode;

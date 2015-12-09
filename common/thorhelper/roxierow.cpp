@@ -177,7 +177,7 @@ public:
     {
         return meta.queryOriginal();
     }
-    virtual unsigned queryActivityId()
+    virtual unsigned queryActivityId() const
     {
         return activityId;
     }

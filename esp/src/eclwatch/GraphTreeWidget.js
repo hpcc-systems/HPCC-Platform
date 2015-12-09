@@ -82,6 +82,14 @@ define([
         found: [],
         foundIndex: 0,
 
+        constructor: function (args) {
+            if (args.forceNative) {
+                this.graphType = "GraphWidget";
+            } else {
+                this.graphType = "JSGraphWidget";
+            }
+        },
+
         buildRendering: function (args) {
             this.inherited(arguments);
         },
@@ -233,7 +241,7 @@ define([
             pMenu.addChild(new MenuSeparator());
             pMenu.addChild(new CheckedMenuItem({
                 label: this.i18n.Activities,
-                checked: true,
+                checked: false,
                 onClick: function (evt) {
                     if (this.checked) {
                         context.treeGrid.set("query", {
@@ -289,8 +297,7 @@ define([
             if (this.findText != this.widget.FindField.value) {
                 this.findText = this.widget.FindField.value;
                 this.found = this.global.findAsGlobalID(this.findText);
-                this.global.setSelectedAsGlobalID(this.found);
-                this.syncSelectionFrom(this.global);
+                this.syncSelectionFrom(this.found);
                 this.foundIndex = -1;
             }
             this.foundIndex += prev ? -1 : +1;
@@ -446,7 +453,7 @@ define([
         },
 
         loadGraphFromXGMML: function (xgmml) {
-            if (this.global.loadXGMML(xgmml, false, this.graphTimers)) {
+            if (this.global.loadXGMML(xgmml, false, this.graphTimers, true)) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
                 var initialSelection = [];
                 var mainRoot = [0];
@@ -465,7 +472,7 @@ define([
         },
 
         mergeGraphFromXGMML: function (xgmml) {
-            if (this.global.loadXGMML(xgmml, true, this.graphTimers)) {
+            if (this.global.loadXGMML(xgmml, true, this.graphTimers, true)) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
                 this.refreshMainXGMML();
                 this.loadSubgraphs();
@@ -580,7 +587,10 @@ define([
             } else if (this.isQuery()) {
                 this.treeStore.appendColumns(columns, ["localTime", "totalTime", "label", "ecl"], ["DescendantCount", "definition", "SubgraphCount", "ActivityCount", "ChildCount", "Depth"]);
             }
-            this.treeGrid.set("query", {id:"0"});
+            this.treeGrid.set("query", {
+                id: "0",
+                __hpcc_notActivity: true
+            });
             this.treeGrid.set("columns", columns);
             this.treeGrid.refresh();
         },
@@ -657,6 +667,8 @@ define([
                         selectedGlobalIDs.push(items[i]._globalID);
                     }
                 }
+            } else if (sourceControl === this.found ) {
+                selectedGlobalIDs = this.found;
             } else {
                 selectedGlobalIDs = sourceControl.getSelectionAsGlobalID();
             }

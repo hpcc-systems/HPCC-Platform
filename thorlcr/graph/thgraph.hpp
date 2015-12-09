@@ -1048,7 +1048,7 @@ public:
     virtual IOutputRowSerializer * queryRowSerializer(); 
     virtual IOutputRowDeserializer * queryRowDeserializer(); 
     virtual IOutputMetaData *queryRowMetaData() { return baseHelper->queryOutputMeta(); }
-    virtual unsigned queryActivityId() { return (unsigned)queryId(); }
+    virtual unsigned queryActivityId() const { return (unsigned)queryId(); }
     virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
 
     StringBuffer &getOpt(const char *prop, StringBuffer &out) const { return container.getOpt(prop, out); }

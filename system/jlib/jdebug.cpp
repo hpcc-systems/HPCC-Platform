@@ -364,7 +364,9 @@ cycle_t jlib_decl get_cycles_now()
     if (useRDTSC)
         return getTSC();
 #endif
-#ifndef __APPLE__
+#ifdef __APPLE__
+    return mach_absolute_time();
+#elif defined(CLOCK_MONOTONIC)
     if (!use_gettimeofday) {
         timespec tm;
         if (clock_gettime(CLOCK_MONOTONIC, &tm)>=0)
@@ -383,6 +385,9 @@ __int64 jlib_decl cycle_to_nanosec(cycle_t cycles)
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
     if (useRDTSC)
         return (__int64)((double)cycles * cycleToNanoScale);
+#ifdef __APPLE__
+    return cycles * (uint64_t) timebase_info.numer / (uint64_t)timebase_info.denom;
+#endif
 #endif
     return cycles;
 }
