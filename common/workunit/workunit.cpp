@@ -2876,9 +2876,12 @@ public:
         StringAttr namefilterlo;
         StringAttr namefilterhi;
         StringArray unknownAttributes;
-        if (filters) {
-            const char *fv = (const char *)filterbuf;
-            for (unsigned i=0;filters[i]!=WUSFterm;i++) {
+        if (filters)
+        {
+            const char *fv = (const char *) filterbuf;
+            for (unsigned i=0;filters[i]!=WUSFterm;i++)
+            {
+                assertex(fv);
                 int fmt = filters[i];
                 int subfmt = (fmt&0xff);
                 if (subfmt==WUSFwuid)
@@ -2889,17 +2892,21 @@ public:
                     namefilter.set(fv);
                 else if (subfmt==WUSFappvalue)
                 {
-                    query.append("[Application/").append(fv).append("=?~\"");
+                    const char *app = fv;
                     fv = fv + strlen(fv)+1;
-                    query.append(fv).append("\"]");
+                    query.append("[Application/").append(app);
+                    if (*fv)
+                        query.append("=?~\"").append(fv).append('\"');
+                    query.append("]");
                 }
-                else if (!fv || !*fv)
+                else if (!*fv)
                 {
                     unknownAttributes.append(getEnumText(subfmt,workunitSortFields));
                     if (subfmt==WUSFtotalthortime)
                         sortorder = (WUSortField) (sortorder | WUSFnumeric);
                 }
-                else {
+                else
+                {
                     query.append('[').append(getEnumText(subfmt,workunitSortFields)).append('=');
                     if (fmt&WUSFnocase)
                         query.append('?');

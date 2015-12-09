@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+import Std.System.Workunit as Wu;
+
 namesRecord := 
             RECORD
 string10        forename;
@@ -22,5 +24,6 @@ string20        surname;
             END;
 
 ds := dataset([{'Jo','Smith'},{'Jim','Smithe'},{'Joe','Schmitt'}], namesRecord);
-    
+
+wu.setWorkunitAppValue('regress', 'writeresult', '1', true);
 output(ds,NAMED('ExportedNames'));
