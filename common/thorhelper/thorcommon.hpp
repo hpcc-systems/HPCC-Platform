@@ -71,7 +71,7 @@ interface IRowInterfaces: extends IInterface
     virtual IOutputRowSerializer * queryRowSerializer()=0; 
     virtual IOutputRowDeserializer * queryRowDeserializer()=0; 
     virtual IOutputMetaData *queryRowMetaData()=0;
-    virtual unsigned queryActivityId()=0;
+    virtual unsigned queryActivityId() const=0;
     virtual ICodeContext *queryCodeContext()=0;
 };
 

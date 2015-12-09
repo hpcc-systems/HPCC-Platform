@@ -1105,7 +1105,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICode
         {
             return meta;
         }
-        unsigned queryActivityId()
+        unsigned queryActivityId() const
         {
             return actid;
         }

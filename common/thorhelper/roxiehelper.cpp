@@ -1307,6 +1307,10 @@ public:
             return 20;
         return 10;
     }
+    virtual unsigned getActivityId() const
+    {
+        return activityId;
+    }
     virtual bool freeBufferedRows(bool critical)
     {
         roxiemem::RoxieOutputRowArrayLock block(rowsToSort);

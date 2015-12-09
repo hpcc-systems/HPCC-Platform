@@ -2921,7 +2921,7 @@ public:
     virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) { throwUnexpected(); }
 
     virtual IOutputMetaData * queryOutputMeta() { return NULL; }
-    virtual unsigned queryActivityId() { return 0; }
+    virtual unsigned queryActivityId() const { return 0; }
     virtual StringBuffer &getId(StringBuffer & out) { return out; }
     virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx = NULL) { throwUnexpected(); }
     virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) { throwUnexpected(); }

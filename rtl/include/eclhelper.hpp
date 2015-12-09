@@ -254,7 +254,7 @@ interface IEngineRowAllocator : extends IInterface
     virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) = 0;
 
     virtual IOutputMetaData * queryOutputMeta() = 0;
-    virtual unsigned queryActivityId() = 0;
+    virtual unsigned queryActivityId() const = 0;
     virtual StringBuffer &getId(StringBuffer &) = 0;
     virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx = NULL) = 0;
     virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) = 0;
