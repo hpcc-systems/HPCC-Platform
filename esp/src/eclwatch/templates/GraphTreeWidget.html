@@ -1,29 +1,31 @@
 <div class="${baseClass}">
     <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
-        <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
-            <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
-            <span data-dojo-type="dijit.ToolbarSeparator"></span>
-            <div id="${id}FindField" style="width: 120px" data-dojo-props="placeHolder:'${i18n.Find}'" data-dojo-type="dijit.form.TextBox">${i18n.Find}</div>
-            <div id="${id}Find" data-dojo-attach-event="onClick:_onFind" data-dojo-props="iconClass:'iconFind', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Find}</div>
-            <div id="${id}FindPrevious" data-dojo-attach-event="onClick:_onFindPrevious" data-dojo-props="iconClass:'iconLeft', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.FindPrevious}</div>
-            <div id="${id}FindNext" data-dojo-attach-event="onClick:_onFindNext" data-dojo-props="iconClass:'iconRight', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.FindNext}</div>
-            <span data-dojo-type="dijit.ToolbarSeparator"></span>
-            <div id="${id}AdvancedMenu" data-dojo-type="dijit.form.DropDownButton">
-                <span>${i18n.Advanced}</span>
-                <div data-dojo-type="dijit.Menu" >
-                    <div id="${id}GetSVG" data-dojo-attach-event="onClick:_onGetSVG" data-dojo-type="dijit.MenuItem">${i18n.ShowSVG}</div>
-                    <div id="${id}RenderSVG" data-dojo-attach-event="onClick:_onRenderSVG" data-dojo-type="dijit.MenuItem">${i18n.RenderSVG}</div>
-                    <div id="${id}GetXGMML" data-dojo-attach-event="onClick:_onGetXGMML" data-dojo-type="dijit.MenuItem">${i18n.EditXGMML}</div>
-                    <div id="${id}EditDOT" data-dojo-attach-event="onClick:_onEditDOT" data-dojo-type="dijit.MenuItem">${i18n.EditDOT}</div>
-                    <span data-dojo-type="dijit.MenuSeparator"></span>
-                    <div id="${id}GetGraphAttributes" data-dojo-attach-event="onClick:_onGetGraphAttributes" data-dojo-type="dijit.MenuItem">${i18n.EditGraphAttributes}</div>
-                    <span data-dojo-type="dijit.MenuSeparator"></span>
-                    <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">${i18n.AboutGraphControl}</div>
+        <div id="${id}ToolbarContentPane" class="${baseClass}ToolbarContentPane" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
+            <div id="${id}Toolbar" class="topPanel dijit dijitToolbar" role="toolbar">
+                <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                <div id="${id}FindField" style="width: 120px" data-dojo-props="placeHolder:'${i18n.Find}'" data-dojo-type="dijit.form.TextBox">${i18n.Find}</div>
+                <div id="${id}Find" data-dojo-attach-event="onClick:_onFind" data-dojo-props="iconClass:'iconFind', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Find}</div>
+                <div id="${id}FindPrevious" data-dojo-attach-event="onClick:_onFindPrevious" data-dojo-props="iconClass:'iconLeft', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.FindPrevious}</div>
+                <div id="${id}FindNext" data-dojo-attach-event="onClick:_onFindNext" data-dojo-props="iconClass:'iconRight', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.FindNext}</div>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                <div id="${id}AdvancedMenu" data-dojo-type="dijit.form.DropDownButton">
+                    <span>${i18n.Advanced}</span>
+                    <div data-dojo-type="dijit.Menu">
+                        <div id="${id}GetSVG" data-dojo-attach-event="onClick:_onGetSVG" data-dojo-type="dijit.MenuItem">${i18n.ShowSVG}</div>
+                        <div id="${id}RenderSVG" data-dojo-attach-event="onClick:_onRenderSVG" data-dojo-type="dijit.MenuItem">${i18n.RenderSVG}</div>
+                        <div id="${id}GetXGMML" data-dojo-attach-event="onClick:_onGetXGMML" data-dojo-type="dijit.MenuItem">${i18n.EditXGMML}</div>
+                        <div id="${id}EditDOT" data-dojo-attach-event="onClick:_onEditDOT" data-dojo-type="dijit.MenuItem">${i18n.EditDOT}</div>
+                        <span data-dojo-type="dijit.MenuSeparator"></span>
+                        <div id="${id}GetGraphAttributes" data-dojo-attach-event="onClick:_onGetGraphAttributes" data-dojo-type="dijit.MenuItem">${i18n.EditGraphAttributes}</div>
+                        <span data-dojo-type="dijit.MenuSeparator"></span>
+                        <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">${i18n.AboutGraphControl}</div>
+                    </div>
                 </div>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                <label id="${id}Warning"></label>
+                <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
             </div>
-            <span data-dojo-type="dijit.ToolbarSeparator"></span>
-            <label id="${id}Warning"></label>
-            <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
         </div>
         <div id="${id}MainGraphWidget" data-dojo-props="region: 'center'" data-dojo-type="${graphType}">
         </div>
@@ -64,11 +66,10 @@
     </div>
     <div id="${id}XGMMLDialog" title="${i18n.XGMML}" data-dojo-type="dijit.Dialog">
         <div class="dijitDialogPaneContentArea">
-            <textarea id="${id}XGMMLTextArea" rows="25" cols="80" data-dojo-type="dijit.form.SimpleTextarea">
-            </textarea>
+            <textarea id="${id}XGMMLTextArea" rows="25" cols="80" data-dojo-type="dijit.form.SimpleTextarea"></textarea>
         </div>
         <div class="dijitDialogPaneActionBar">
-            <button id="${id}XGMMLDialogApply" type="submit" data-dojo-type="dijit.form.Button" >${i18n.Apply}</button>
+            <button id="${id}XGMMLDialogApply" type="submit" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
             <button id="${id}XGMMLDialogCancel" type="button" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
         </div>
     </div>
