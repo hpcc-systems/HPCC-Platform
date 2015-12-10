@@ -284,8 +284,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         }
         if (list.length())
         {
-            SCMStringBuffer alias;
-            clusterInfo->getAlias(alias);
+            StringAttr alias(clusterInfo->getAlias());
             Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(list.str(), !loadBalanced, includeTargetInURL, loadBalanced ? alias.str() : NULL);
             connMap.setValue(target.str(), sf.get());
             if (alias.length() && !connMap.getValue(alias.str())) //only need one vip per alias for routing purposes

@@ -4376,10 +4376,9 @@ public:
         str.set(name.get());
         return str;
     }
-    IStringVal & getAlias(IStringVal & str) const
+    const char *getAlias() const
     {
-        str.set(alias.get());
-        return str;
+        return alias;
     }
     IStringVal & getScope(IStringVal & str) const
     {

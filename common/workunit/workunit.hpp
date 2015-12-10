@@ -527,7 +527,7 @@ interface IConstWUClusterInfo : extends IInterface
     virtual unsigned getRoxieRedundancy() const = 0;
     virtual unsigned getChannelsPerNode() const = 0;
     virtual int getRoxieReplicateOffset() const = 0;
-    virtual IStringVal & getAlias(IStringVal & str) const = 0;
+    virtual const char *getAlias() const = 0;
 };
 
 //! IWorkflowItem
