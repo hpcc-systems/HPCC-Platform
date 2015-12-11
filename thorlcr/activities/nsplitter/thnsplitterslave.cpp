@@ -206,6 +206,9 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
             return input->queryTotalCycles();
         }
     };
+
+    IPointerArrayOf<CDelayedInput> delayInputsList;
+
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -216,6 +219,10 @@ public:
         nstopped = 0;
         eofHit = inputsConfigured = writeBlocked = pagedOut = false;
         recsReady = 0;
+    }
+    virtual ~NSplitterSlaveActivity()
+    {
+        delayInputsList.kill();
     }
     void ensureInputsConfigured()
     {
@@ -235,9 +242,9 @@ public:
                     break;
             }
             assertex(io);
-            ForEachItemIn(o2, outputs)
+            ForEachItemIn(o2, delayInputsList)
             {
-                CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o2);
+                CDelayedInput *delayedInput = delayInputsList.item(o2);
                 if (o2 == o)
                     delayedInput->setInput(new CInputWrapper(*this, inputs.item(0)));
                 else
@@ -246,9 +253,9 @@ public:
         }
         else
         {
-            ForEachItemIn(o, outputs)
+            ForEachItemIn(o, delayInputsList)
             {
-                CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o);
+                CDelayedInput *delayedInput = delayInputsList.item(o);
                 if (NULL != container.connectedOutputs.queryItem(o))
                     delayedInput->setInput(new CSplitterOutput(*this, o), o);
                 else
@@ -268,9 +275,9 @@ public:
         if (inputsConfigured)
         {
             // ensure old inputs cleared, to avoid being reused before re-setup on subsequent executions
-            ForEachItemIn(o, outputs)
+            ForEachItemIn(o, delayInputsList)
             {
-                CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o);
+                CDelayedInput *delayedInput = delayInputsList.item(o);
                 delayedInput->setInput(NULL);
             }
             inputsConfigured = false;
@@ -279,7 +286,11 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         ForEachItemIn(o, container.outputs)
-            appendOutput(new CDelayedInput(*this));
+        {
+            Owned<CDelayedInput> delayedInput = new CDelayedInput(*this);
+            delayInputsList.append(delayedInput.getLink());
+            appendOutput(delayedInput.getClear());
+        }
         IHThorSplitArg *helper = (IHThorSplitArg *)queryHelper();
         int dV = getOptInt(THOROPT_SPLITTER_SPILL, -1);
         if (-1 == dV)
@@ -317,7 +328,7 @@ public:
                     // mark any unconnected outputs of smartBuf as already stopped.
                     ForEachItemIn(o, outputs)
                     {
-                        CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o);
+                        IThorDataLink *delayedInput = outputs.item(o);
                         if (NULL == container.connectedOutputs.queryItem(o))
                             smartBuf->queryOutput(o)->stop();
                     }
@@ -411,7 +422,7 @@ public:
         unsigned __int64 _totalCycles = totalCycles.totalCycles; // more() time
         ForEachItemIn(o, outputs)
         {
-            CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o);
+            IThorDataLink *delayedInput = outputs.item(o);
             _totalCycles += delayedInput->queryTotalCycles();
         }
         return _totalCycles;

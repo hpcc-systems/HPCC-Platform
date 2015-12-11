@@ -156,6 +156,7 @@ public:
     }
 
     unsigned __int64 queryTotalCycles() const { return ((CSlaveActivity *)owner)->queryTotalCycles(); }
+    unsigned __int64 queryEndCycles() const  { return ((CSlaveActivity *)owner)->queryEndCycles(); }
 
     inline rowcount_t getDataLinkGlobalCount()
     {
@@ -165,7 +166,7 @@ public:
     {
         return icount; 
     } 
-
+    virtual void debugRequest(MemoryBuffer &msg) { }
     CActivityBase *queryFromActivity() { return owner; }
 
     void initMetaInfo(ThorDataLinkMetaInfo &info); // for derived children to call from getMetaInfo

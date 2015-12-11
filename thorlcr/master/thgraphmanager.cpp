@@ -44,6 +44,7 @@
 #include "thactivitymaster.ipp"
 #include "thdemonserver.hpp"
 #include "thgraphmanager.hpp"
+#include "roxiehelper.hpp"
 
 class CJobManager : public CSimpleInterface, implements IJobManager, implements IExceptionHandler
 {
@@ -60,9 +61,162 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     StringAttr          currentWuid;
     ILogMsgHandler *logHandler;
 
+    CJobMaster *getCurrentJob() { CriticalBlock b(jobCrit); return jobs.ordinality() ? &OLINK(jobs.item(0)) : NULL; }
     bool executeGraph(IConstWorkUnit &workunit, const char *graphName, const SocketEndpoint &agentEp);
     void addJob(CJobMaster &job) { CriticalBlock b(jobCrit); jobs.append(job); }
     void removeJob(CJobMaster &job) { CriticalBlock b(jobCrit); jobs.zap(job); }
+
+    class CThorDebugListener : public CSimpleInterfaceOf<IInterface>, implements IThreaded
+    {
+    protected:
+        CThreaded threaded;
+        unsigned port;
+        Owned<ISocket> sock;
+        CJobManager &mgr;
+    private:
+        volatile bool running;
+    public:
+        CThorDebugListener(CJobManager &_mgr) : threaded("CThorDebugListener", this), mgr(_mgr)
+        {
+            port = globals->getPropInt("DebugPort", THOR_DEBUG_PORT);
+            running = true;
+            threaded.start();
+        }
+        ~CThorDebugListener()
+        {
+            running = false;
+            if (sock)
+                sock->cancel_accept();
+            threaded.join();
+        }
+        virtual unsigned getPort() const { return port; }
+
+        virtual void processDebugCommand(CSafeSocket &ssock, StringBuffer &rawText)
+        {
+            Owned<IPropertyTree> queryXml;
+            try
+            {
+                queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces)));
+            }
+            catch (IException *E)
+            {
+                StringBuffer s;
+                DBGLOG("ERROR: Invalid XML received from %s:%s", E->errorMessage(s).str(), rawText.str());
+                throw;
+            }
+
+            Linked<CJobMaster> job = mgr.getCurrentJob();
+            const char *graphId = job->queryGraphName();
+            if (!job || !graphId)
+                throw MakeStringException(5300, "Command not available when no graph active");
+
+            const char *command = queryXml->queryName();
+            if (!command) throw MakeStringException(5300, "Invalid debug command");
+
+            FlushingStringBuffer response(&ssock, false, MarkupFmt_XML, false, false, queryDummyContextLogger());
+            response.startDataset("Debug", NULL, (unsigned) -1);
+
+            if (strncmp(command,"print", 5) == 0)
+            {
+                const char *edgeId = queryXml->queryProp("@edgeId");
+                if (!edgeId) throw MakeStringException(5300, "Debug command requires edgeId");
+
+                ICommunicator &comm = job->queryNodeComm();
+                CMessageBuffer mbuf;
+                mbuf.append(DebugRequest);
+                mbuf.append(job->queryKey());
+                mptag_t replyTag = createReplyTag();
+                serializeMPtag(mbuf, replyTag);
+                mbuf.append(rawText);
+                if (!comm.send(mbuf, RANK_ALL_OTHER, masterSlaveMpTag, MP_ASYNC_SEND))
+                {
+                    DBGLOG("Failed to send debug info to slave");
+                    throwUnexpected();
+                }
+                unsigned nodes = job->queryNodes();
+                response.appendf("<print graphId='%s' edgeId='%s'>", graphId, edgeId);
+                while (nodes)
+                {
+                    rank_t sender;
+                    mbuf.clear();
+                    comm.recv(mbuf, RANK_ALL, replyTag, &sender, 10000);
+                    while (mbuf.remaining())
+                    {
+                        StringAttr row;
+                        mbuf.read(row);
+                        response.append(row);
+                    }
+                    nodes--;
+                }
+                response.append("</print>");
+            }
+            else if (strncmp(command,"quit", 4) == 0)
+            {
+                LOG(MCwarning, thorJob, "ABORT detected from user during debug session");
+                Owned<IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort during debug session");
+                job->fireException(e);
+                response.appendf("<quit state='quit'/>");
+            }
+            else
+                throw MakeStringException(5300, "Command not supported by Thor");
+
+            response.flush(true);
+        }
+        virtual void main()
+        {
+            sock.setown(ISocket::create(port));
+            while (running)
+            {
+                try
+                {
+                    Owned<ISocket> client = sock->accept(true);
+                    if (client)
+                    {
+                        client->set_linger(-1);
+                        CSafeSocket ssock(client.getClear());
+                        StringBuffer rawText;
+                        IpAddress peer;
+                        bool continuationNeeded;
+                        bool isStatus;
+
+                        ssock.querySocket()->getPeerAddress(peer);
+                        DBGLOG("Reading debug command from socket...");
+                        if (!ssock.readBlock(rawText, WAIT_FOREVER, NULL, continuationNeeded, isStatus, 1024*1024))
+                        {
+                            WARNLOG("No data reading query from socket");
+                            continue;
+                        }
+                        assertex(!continuationNeeded);
+                        assertex(!isStatus);
+
+                        try
+                        {
+                            processDebugCommand(ssock,rawText);
+                        }
+                        catch (IException *E)
+                        {
+                            StringBuffer s;
+                            ssock.sendException("Thor", E->errorCode(), E->errorMessage(s), false, queryDummyContextLogger());
+                            E->Release();
+                        }
+                        // Write terminator
+                        unsigned replyLen = 0;
+                        ssock.write(&replyLen, sizeof(replyLen));
+                    }
+                }
+                catch (IException *E)
+                {
+                    EXCLOG(E);
+                    E->Release();
+                }
+                catch (...)
+                {
+                    DBGLOG("Unexpected exception in CThorDebugListener");
+                }
+            }
+        }
+    };
+    Owned<CThorDebugListener> debugListener;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -100,6 +254,7 @@ CJobManager::CJobManager(ILogMsgHandler *_logHandler) : logHandler(_logHandler)
         globals->setPropBool("@watchdogProgressEnabled", false);
     atomic_set(&activeTasks, 0);
     setJobManager(this);
+    debugListener.setown(new CThorDebugListener(*this));
 }
 
 CJobManager::~CJobManager()
@@ -511,6 +666,16 @@ void CJobManager::run()
                 throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
             if ((workunit->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (workunit->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION))
                 throw MakeStringException(0, "Workunit was compiled for eclagent interface version %d, this thor requires version %d..%d", workunit->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+
+            if (debugListener)
+            {
+                WorkunitUpdate wu(&workunit->lock());
+                StringBuffer sb;
+                queryHostIP().getIpText(sb);
+                wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
+                wu->setDebugAgentListenerPort(debugListener->getPort());
+            }
+
             allDone = doit(workunit, graphName, agentep);
             daliLock.clear();
             reply(workunit, wuid, NULL, agentep, allDone);
