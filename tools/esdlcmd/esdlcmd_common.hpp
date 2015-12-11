@@ -57,8 +57,7 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDL_CONVERT_EXPANDEDXML        "--expandedxml"
 #define ESDL_CONVERT_EXPANDEDXML_x      "-x"
 
-#define HPCC_COMPONENT_FILES_DIR        "--compfilesdir"
-#define HPCC_COMPONENT_FILES_DIR_CDE    "--CDE"
+#define HPCC_COMPONENT_FILES_DIR_CDE    "-cde"
 
 #define ESDLOPT_XSLT_PATH               "--xslt"
 
@@ -98,6 +97,8 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDL_OPTION_CONFIG              "--config"
 #define ESDL_OPTION_OVERWRITE           "--overwrite"
 #define ESDL_OPTION_ROLLUP              "--rollup"
+#define ESDL_OPTION_ECL_INCLUDE_LIST    "--ecl-imports"
+#define ESDL_OPTION_ECL_HEADER_BLOCK    "--ecl-header"
 
 
 bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);

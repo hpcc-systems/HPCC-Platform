@@ -826,11 +826,22 @@ protected: friend class CMPPacketReader;
 #ifdef _TRACE
                                 EXCLOG(e, "MP: Failed to connect");
 #endif
-                                e->Release();
                                 if ((retrycount--==0)||(tm.timeout==MP_ASYNC_SEND))
                                 {   // don't bother retrying on async send
+                                    e->Release();
                                     throw new CMPException(MPERR_connection_failed,remoteep);
                                 }
+
+                                // if other side closes, connect again
+                                if (e->errorCode() == JSOCKERR_graceful_close)
+                                {
+                                    LOG(MCdebugInfo(100), unknownJob, "MP: Retrying (other side closed connection, probably due to clash)");
+                                    e->Release();
+                                    break;
+                                }
+
+                                e->Release();
+
 #ifdef _TRACE
                                 LOG(MCdebugInfo(100), unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).toCharArray(),retrycount+1);
 #endif

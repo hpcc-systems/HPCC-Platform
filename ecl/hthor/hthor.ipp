@@ -1126,6 +1126,13 @@ public:
     virtual void performSort();
 };
 
+class CParallelQuickSorter : public CSimpleSorterBase
+{
+public:
+    CParallelQuickSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta) {}
+    virtual void performSort();
+};
+
 class CStableSorter : public CSimpleSorterBase
 {
 public:
