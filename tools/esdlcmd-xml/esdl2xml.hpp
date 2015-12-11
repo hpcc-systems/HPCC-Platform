@@ -75,6 +75,8 @@ public:
                    transform(subfile, outdir, out, outputIncludes, true);
                 }
             }
+            if (optVerbose)
+                fprintf(stdout, "Finished processing ESDL definition\n");
         }
         else if (optVerbose)
             fprintf(stdout, "ESDL definition: %s has already been loaded!\n", source);

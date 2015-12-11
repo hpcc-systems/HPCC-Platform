@@ -238,11 +238,14 @@ public:
                 continue;
             if (iter.matchFlag(optOutputExpandedXML, ESDL_CONVERT_EXPANDEDXML) || iter.matchFlag(optOutputExpandedXML, ESDL_CONVERT_EXPANDEDXML_x))
                 continue;
-            if (iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR) || iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR_CDE))
+            if (iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR_CDE))
                 continue;
             if (iter.matchFlag(optRollUpEclToSingleFile, ESDL_OPTION_ROLLUP))
                 continue;
-
+            if (iter.matchOption(optECLIncludesList, ESDL_OPTION_ECL_INCLUDE_LIST))
+                continue;
+            if (iter.matchOption(optECLHeaderBlock, ESDL_OPTION_ECL_HEADER_BLOCK))
+                continue;
             if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
                 return false;
         }
@@ -258,7 +261,11 @@ public:
             return EsdlCmdOptionMatch;
         if (iter.matchFlag(optOutputExpandedXML, ESDL_CONVERT_EXPANDEDXML) || iter.matchFlag(optOutputExpandedXML, ESDL_CONVERT_EXPANDEDXML_x))
             return EsdlCmdOptionMatch;
-        if (iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR) || iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR_CDE))
+        if (iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR_CDE))
+            return EsdlCmdOptionMatch;
+        if (iter.matchOption(optHPCCCompFilesDir, ESDL_OPTION_ECL_INCLUDE_LIST))
+            return EsdlCmdOptionMatch;
+        if (iter.matchOption(optECLHeaderBlock, ESDL_OPTION_ECL_HEADER_BLOCK))
             return EsdlCmdOptionMatch;
 
         return EsdlCmdCommon::matchCommandLineOption(iter, true);
@@ -338,7 +345,7 @@ public:
                 StringBuffer xmlfile;
                 toXML(&file, xmlfile, 0,0);
 
-                outputEcl(srcPath.str(), filename, optOutDirPath.get(), idxxml.str(), xmlfile);
+                outputEcl(srcPath.str(), filename, optOutDirPath.get(), idxxml.str(), xmlfile, optECLIncludesList.str(), optECLHeaderBlock.str());
             }
         }
         else
@@ -352,7 +359,7 @@ public:
                     StringBuffer xmlfile;
                     toXML(file, xmlfile, 0,0);
 
-                    outputEcl(srcPath.str(), srcName.str(), optOutDirPath.get(), idxxml.str(), xmlfile);
+                    outputEcl(srcPath.str(), srcName.str(), optOutDirPath.get(), idxxml.str(), xmlfile, optECLIncludesList.str(), optECLHeaderBlock.str());
                 }
             }
         }
@@ -367,15 +374,19 @@ public:
                 "esdl ecl sourcePath outputPath [options]\n"
                 "\nsourcePath must be absolute path to the ESDL Definition file containing the"
                 "EsdlService definition for the service you want to work with.\n"
-                "outputPath must be the absolute path where the ECL output with be created."
+                "outputPath must be the absolute path where the ECL output with be created.\n"
                 "   Options:\n"
                 "      -x, --expandedxml     Output expanded XML files\n"
                 "      --includes            Process all included files\n"
-                "      --rollup              Roll-up all processed includes to single ecl output file"
+                "      --rollup              Roll-up all processed includes to single ecl output file\n"
+                "      -cde                  HPCC Component files directory (xslt files)\n"
+                "      --ecl-imports         Coma-delimited import list to be attached to output ECL\n"
+                "                            each entry generates a corresponding import *.<entry>\n"
+                "      --ecl-header          Text included in target header (must be valid ECL) \n"
                 ,stdout);
     }
 
-    void outputEcl(const char *srcpath, const char *file, const char *path, const char *types, const char * xml)
+    void outputEcl(const char *srcpath, const char *file, const char *path, const char *types, const char * xml, const char * eclimports, const char * eclheader)
     {
         DBGLOG("Generating ECL file for %s", file);
 
@@ -443,6 +454,8 @@ public:
 
         Owned<IProperties> params = createProperties();
         params->setProp("sourceFileName", finger);
+        params->setProp("importsList", eclimports);
+        params->setProp("eclHeader", eclheader);
         StringBuffer esdl2eclxslt (optHPCCCompFilesDir.get());
         esdl2eclxslt.append("/xslt/esdl2ecl.xslt");
         esdl2eclxsltTransform(expstr.str(), esdl2eclxslt.str(), params, outfile.str());
@@ -488,4 +501,6 @@ public:
     bool optProcessIncludes;
     bool optOutputExpandedXML;
     StringAttr optHPCCCompFilesDir;
+    StringAttr optECLIncludesList;
+    StringAttr optECLHeaderBlock;
 };
