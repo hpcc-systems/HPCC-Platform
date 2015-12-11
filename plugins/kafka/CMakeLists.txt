@@ -90,6 +90,7 @@ if (USE_KAFKA)
                 ./../../system/jlib
                 ${PROJECT_BINARY_DIR}/include
                 ${CMAKE_BINARY_DIR}
+                ${CMAKE_BINARY_DIR}/oss
             )
 
         ADD_DEFINITIONS( -D_USRDLL -DECL_KAFKA_EXPORTS )
