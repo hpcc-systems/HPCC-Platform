@@ -3800,6 +3800,8 @@ public:
         if (spillSize > systemMemoryLimit)
             spillSize = systemMemoryLimit;
         maxPageLimit = (unsigned) PAGES(bytes, HEAP_ALIGNMENT_SIZE);
+        if (maxPageLimit == 0)
+            maxPageLimit = UNLIMITED_PAGES;
         spillPageLimit = (unsigned) PAGES(spillSize, HEAP_ALIGNMENT_SIZE);
 
         if (memTraceLevel >= 2)
