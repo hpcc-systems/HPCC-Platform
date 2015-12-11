@@ -34,7 +34,11 @@ integer5 i5 := 0 : stored('i5', format(fieldwidth(5), sequence(5)));
 unsigned5 u5 := 0 : stored('u5', format(fieldwidth(5), sequence(15)));
 integer4 i4 := 0 : stored('i4', format(fieldwidth(4), sequence(4)));
 unsigned3 u3 := 0 : stored('u3', format(fieldwidth(3), sequence(13)));
-unsigned8 u8 := 0 : stored('u8', format(fieldwidth(8), sequence(18)));
+unsigned8 u8 := 0 : stored('u8', format(fieldwidth(8), sequence(18), select('one=1,two=2,three=3,*four=4')));
+
+string ch1 := 'ban' : stored('ch1', format(select('apple=app,pear,*banana=ban,orange')));
+string ch2 := '' : stored('ch2', format(select(',apple=app,pear,banana=ban,orange'))); //start with empty, no specified default
+string ch3 := '' : stored('ch3', format(select('apple=app,pear,*,banana=ban,orange'))); //empty in middle, is default
 
 string pw := 'powow' : stored('pw', format(password, fieldwidth(40)));
 
@@ -57,5 +61,8 @@ output (u7, named('u7'));
 output (u8, named('u8'));
 
 output (s1, named('s1'));
+output (ch1, named('choice1'));
+output (ch2, named('choice2'));
+output (ch3, named('choice3'));
 
 output (pw, named('showpw'));

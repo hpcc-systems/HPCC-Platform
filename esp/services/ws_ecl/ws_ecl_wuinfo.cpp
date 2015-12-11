@@ -61,10 +61,11 @@ void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *r
     SCMStringBuffer eclschema;
     var.getResultEclSchema(eclschema);
 
-    StringBuffer width, height, fieldSeq, isPassword;
+    StringBuffer width, height, fieldSeq, isPassword, select;
     var.getResultFieldOpt("fieldwidth", StringBufferAdaptor(width));
     var.getResultFieldOpt("fieldheight", StringBufferAdaptor(height));
     var.getResultFieldOpt("password", StringBufferAdaptor(isPassword));
+    var.getResultFieldOpt("select", StringBufferAdaptor(select));
     if (hashWebserviceSeq)
         fieldSeq.append(hashWebserviceSeq);
     else
@@ -128,6 +129,34 @@ void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *r
             part->setProp("@sequence", fieldSeq);
         if (isPassword.length())
             part->setProp("@password", isPassword);
+        if (select.length())
+        {
+            StringArray optionList;
+            optionList.appendList(select, ",");
+            IPropertyTree *selectTree = ensurePTree(part, "select");
+            ForEachItemIn(i, optionList)
+            {
+                const char *value = optionList.item(i);
+                bool selected = '*'==*value;
+                if (selected)
+                    value++;
+                StringAttr name;
+                const char *eq = strchr(value, '=');
+                if (!eq)
+                    name.set(value);
+                else
+                {
+                    name.set(value, eq-value);
+                    value = eq + 1;
+                }
+                Owned<IPropertyTree> optionTree = createPTree();
+                optionTree->setProp("@name", name);
+                optionTree->setProp("@value", value);
+                if (selected)
+                    optionTree->setPropBool("@selected", true);
+                selectTree->addPropTree("option", optionTree.getClear());
+            }
+        }
     }
     parts.append(*part.getClear());
 }
