@@ -27,7 +27,7 @@ extern THORHELPER_API unsigned traceLevel;
 //---------------------------------------------------
 // Base classes for all Roxie/HThor activities
 //---------------------------------------------------
-struct THORHELPER_API ISimpleInputBase //base for IInputBase and IHThorSimpleInput
+struct THORHELPER_API ISimpleInputBase : public IInterface //base for IInputBase and IHThorSimpleInput
 {
     virtual const void * nextInGroup() = 0;     // return NULL for eog/eof
     virtual bool nextGroup(ConstPointerArray & group);      // note: default implementation can be overridden for efficiency...

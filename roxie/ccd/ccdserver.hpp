@@ -90,7 +90,7 @@ interface IRoxieServerContext;
 interface IRoxieSlaveContext;
 class ClusterWriteHandler;
 
-interface IRoxieInput : extends IInterface, extends IInputBase
+interface IRoxieInput : extends IInputBase
 {
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
     virtual void stop(bool aborting) = 0;
