@@ -1709,6 +1709,12 @@ readAnother:
                         {
                             client->setHttpMode(queryName, isRequestArray, httpHelper);
                             querySetName.set(httpHelper.queryTarget());
+                            if (querySetName.length())
+                            {
+                                const char *target = targetAliases->queryProp(querySetName.str());
+                                if (target)
+                                    querySetName.set(target);
+                            }
                         }
                         queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, NULL, logctx));
                         if (queryFactory)

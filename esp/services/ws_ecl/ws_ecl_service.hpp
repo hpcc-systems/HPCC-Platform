@@ -91,8 +91,9 @@ class RoxieSocketFactory : public CSmartSocketFactory
 {
 public:
     bool includeTargetInURL;
+    StringAttr alias;
 
-    RoxieSocketFactory(const char *_socklist, bool _retry, bool includeTarget) : CSmartSocketFactory(_socklist, _retry), includeTargetInURL(includeTarget)
+    RoxieSocketFactory(const char *_socklist, bool _retry, bool includeTarget, const char *_alias) : CSmartSocketFactory(_socklist, _retry), includeTargetInURL(includeTarget), alias(_alias)
     {
     }
 };
@@ -111,7 +112,9 @@ public:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CWsEclService(){}
+    CWsEclService()
+    {
+    }
     ~CWsEclService();
 
     virtual const char * getServiceType(){return "ws_ecl";}
