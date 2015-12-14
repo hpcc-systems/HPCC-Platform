@@ -472,7 +472,7 @@ public:
     void transferFrom(CThorExpandingRowArray &src);
     void transferFrom(CThorSpillableRowArray &src);
 
-    IRowStream *createRowStream(unsigned spillPriority=SPILL_PRIORITY_SPILLABLE_STREAM);
+    IRowStream *createRowStream(unsigned spillPriority, bool compressSpills);
 
     offset_t serializedSize()
     {

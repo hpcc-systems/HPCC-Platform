@@ -441,18 +441,19 @@ public:
         size32_t blksize = 0x100000;
 
         // JCSMORE - at the moment, the localsort set is already sorted
+        bool compressSpills = activity.getOptBool(THOROPT_COMPRESS_SPILLS, true);
         if (1 == activity.queryJob().querySlaves())
         {
             CThorSpillableRowArray spillableRows(activity, &rowIf);
             rowCount = localRows.ordinality();
             spillableRows.transferFrom(localRows);
-            return spillableRows.createRowStream();
+            return spillableRows.createRowStream(SPILL_PRIORITY_SPILLABLE_STREAM, compressSpills);
         }
         if (partNo)
         {
             CThorSpillableRowArray spillableRows(activity, &rowIf);
             spillableRows.transferFrom(localRows);
-            Owned<IRowStream> spillableStream = spillableRows.createRowStream();
+            Owned<IRowStream> spillableStream = spillableRows.createRowStream(SPILL_PRIORITY_SPILLABLE_STREAM, compressSpills);
 
             CMessageBuffer mb;
             loop
@@ -553,7 +554,7 @@ public:
             rowCount = globalRows.ordinality();
             CThorSpillableRowArray spillableRows(activity, &rowIf);
             spillableRows.transferFrom(globalRows);
-            return spillableRows.createRowStream();
+            return spillableRows.createRowStream(SPILL_PRIORITY_SPILLABLE_STREAM, compressSpills);
         }
     }
 };
