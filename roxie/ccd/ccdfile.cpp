@@ -188,7 +188,10 @@ public:
         try
         {
             if (current.get()!=&failure)
+            {
                 atomic_dec(&numFilesOpen[remote]);
+                mergeStats(fileStats, current);
+            }
             current.set(&failure); 
         }
         catch (IException *E) 
@@ -374,7 +377,7 @@ public:
         }
 
         CriticalBlock b(crit);
-        unsigned __int64 openValue = current ? current->getStatistic(kind) : 0;
+        unsigned __int64 openValue = current->getStatistic(kind);
         return openValue + fileStats.getStatisticValue(kind);
     }
 
