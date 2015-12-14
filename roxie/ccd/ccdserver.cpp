@@ -870,6 +870,7 @@ protected:
     bool createPending;
     bool debugging;
     bool timeActivities;
+    bool aborted;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -893,6 +894,7 @@ public:
         colocalParent = NULL;
         createPending = true;
         timeActivities = defaultTimeActivities;
+        aborted = false;
     }
     
     CRoxieServerActivity(IHThorArg & _helper) : factory(NULL), basehelper(_helper), stats(allStatistics)
@@ -909,6 +911,7 @@ public:
         colocalParent = NULL;
         createPending = true;
         timeActivities = defaultTimeActivities;
+        aborted = false;
     }
 
     ~CRoxieServerActivity()
@@ -1142,7 +1145,7 @@ public:
         ForEachItemIn(idx, dependencies)
         {
             if (dependencyControlIds.item(idx) == controlId)
-                dependencies.item(idx).stop(false);
+                dependencies.item(idx).stop();
         }
     }
 
@@ -1177,7 +1180,7 @@ public:
         }
     }
 
-    inline void stop(bool aborting)
+    inline void stop()
     {
         // NOTE - don't be tempted to skip the stop for activities that are reset - splitters need to see the stops
         if (state != STATEstopped)
@@ -1203,9 +1206,16 @@ public:
                         dependencies.item(idx).stopSink(dependencyIndexes.item(idx));
                 }
                 if (input)
-                    input->stop(aborting);
+                    input->stop();
             }
         }
+    }
+
+    virtual void abort()
+    {
+        aborted = true;
+        // MORE - should abort dependencies here?
+        stop();
     }
 
     inline void reset()
@@ -1219,7 +1229,7 @@ public:
                 {
                     if (traceStartStop || traceLevel > 2)
                         CTXLOG("STATE: activity %d reset without stop", activityId);
-                    stop(false);
+                    stop();
                 }
                 state = STATEreset;
 #ifdef TRACE_STARTSTOP
@@ -1239,6 +1249,7 @@ public:
                     input->reset();
             }
         }
+        aborted = false;
     }
 
     virtual void addDependency(IRoxieServerActivity &source, unsigned sourceIdx, int controlId) 
@@ -1384,7 +1395,7 @@ protected:
         {
             if (traceStartStop)
                 CTXLOG("lateStart activity stopping input early as prefiltered");
-            input->stop(false);
+            input->stop();
         }
     }
 
@@ -1398,15 +1409,15 @@ public:
         eof = false;
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         if (!prefiltered)
         {
-            input->stop(aborting);
+            input->stop();
         }
         else if (traceStartStop)
             CTXLOG("lateStart activity NOT stopping input late as prefiltered");
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -1564,13 +1575,13 @@ public:
         }
     }
 
-    void stop(bool aborting)
+    void stop()
     {
         if (traceStartStop)
             DBGLOG("RecordPullerThread::stop");
         {
             CriticalBlock c(crit); // stop is called on our consumer's thread. We need to take care calling stop for our input to make sure it is not in mid-nextInGroup etc etc.
-            input->stop(aborting);
+            input->stop();
         }
         RestartableThread::join();
     }
@@ -1740,15 +1751,15 @@ public:
         }
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         if (disabled)
-            puller.queryInput()->stop(aborting);
+            puller.queryInput()->stop();
         else
         {
             space.interrupt();
             ready.interrupt();
-            puller.stop(aborting);
+            puller.stop();
         }
     }
 
@@ -1912,10 +1923,10 @@ public:
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
     }
 
-    virtual void stop(bool aborting)    
+    virtual void stop()
     {
-        input1->stop(aborting);
-        CRoxieServerActivity::stop(aborting); 
+        input1->stop();
+        CRoxieServerActivity::stop();
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -2042,13 +2053,13 @@ public:
         }
     }
 
-    virtual void stop(bool aborting)    
+    virtual void stop()
     {
         for (unsigned i = 0; i < numInputs; i++)
         {
-            inputArray[i]->stop(aborting);
+            inputArray[i]->stop();
         }
-        CRoxieServerMultiInputBaseActivity::stop(aborting); 
+        CRoxieServerMultiInputBaseActivity::stop();
     }
 
 };
@@ -2101,7 +2112,7 @@ public:
             for (unsigned s = 0; s < numOutputs; s++)
                 if (!stopped[s])
                     return;
-            stop(false); // all outputs stopped - stop parent.
+            stop(); // all outputs stopped - stop parent.
         }
     }
 
@@ -2126,19 +2137,19 @@ public:
                     ActivityTimer t(totalCycles, timeActivities); // unfortunately this is not really best place for seeing in debugger.
                     onExecute();
                 }
-                stop(false);
+                stop();
                 executed = true;
             }
             catch (IException *E)
             {
                 exception.set(E); // (or maybe makeWrappedException?)
-                stop(true);
+                abort();
                 throw;
             }
             catch (...)
             {
                 exception.set(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", __FILE__, __LINE__));
-                stop(true);
+                abort();
                 throw;
             }
         }
@@ -3737,17 +3748,17 @@ public:
         stopAfter = _stopAfter;
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
 #ifdef TRACE_STARTSTOP
         if (traceStartStop)
             activity.queryLogCtx().CTXLOG("RRAstop");
 #endif
-        onStop(aborting);
-        owner->stop(aborting);
+        onStop();
+        owner->stop();
     }
 
-    void onStop(bool aborting)
+    void onStop()
     {
 #ifdef TRACE_STARTSTOP
         if (traceStartStop)
@@ -4909,9 +4920,9 @@ public:
         ok = false;
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        CRoxieServerChildBaseActivity::stop(aborting);
+        CRoxieServerChildBaseActivity::stop();
         ReleaseRoxieRow(lastInput);
         lastInput = NULL;
     }
@@ -5144,13 +5155,13 @@ public:
                 retSize = result.length();
                 ret = result.detach();
             }
-            stop(false);
+            stop();
             reset(); 
         }
         catch(IException *E)
         {
             ctx->notifyAbort(E);
-            stop(true);
+            abort();
             reset(); 
             throw;
         }
@@ -5158,7 +5169,7 @@ public:
         {
             Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", __FILE__, __LINE__);
             ctx->notifyAbort(E);
-            stop(true);
+            abort();
             reset(); 
             throw;
         }
@@ -5405,10 +5416,10 @@ public:
         CriticalBlock procedure(cs);
         input->start(parentExtractSize, parentExtract, paused);
     }
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         CriticalBlock procedure(cs);
-        input->stop(aborting);
+        input->stop();
     }
     virtual void reset()
     {
@@ -5479,7 +5490,7 @@ public:
 
     virtual IOutputMetaData * queryOutputMeta() const { throwUnexpected(); }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) { }
-    virtual void stop(bool aborting) { }
+    virtual void stop() { }
     virtual void reset() { }
     virtual void checkAbort() { }
     virtual unsigned queryId() const { throwUnexpected(); }
@@ -5497,9 +5508,9 @@ public:
     {
         input->start(parentExtractSize, parentExtract, paused);
     }
-    virtual void stop(bool aborting) 
+    virtual void stop()
     {
-        input->stop(aborting);
+        input->stop();
     }
     virtual void reset()
     { 
@@ -5818,10 +5829,10 @@ public:
         streamInput->start(parentExtractSize, parentExtract, paused);
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        CRoxieServerActivity::stop(aborting);
-        streamInput->stop(aborting);
+        CRoxieServerActivity::stop();
+        streamInput->stop();
     }
 
     virtual void reset() 
@@ -6077,11 +6088,11 @@ public:
         }
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         if (iter)
-            iter->stop(aborting);
-        CRoxieServerActivity::stop(aborting);
+            iter->stop();
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset() 
@@ -7151,9 +7162,9 @@ public:
         cursor = helper.queryIterator();
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
@@ -7996,13 +8007,13 @@ public:
             parent->start(oid, parentExtractSize, parentExtract, paused);
         }
 
-        virtual void stop(bool aborting) 
+        virtual void stop()
         {
             if (traceStartStop)
                 parent->CTXLOG("%p stop Input adaptor %d stopped = %d", this, oid, stopped);
             if (!stopped)
             {
-                parent->stop(oid, idx, aborting);   // NOTE - may call init()
+                parent->stop(oid, idx);   // NOTE - may call init()
                 stopped = true; // parent code relies on stop being called exactly once per adaptor, so make sure it is!
             }
         };
@@ -8212,7 +8223,7 @@ public:
         }
     }
 
-    void stop(unsigned oid, unsigned & idx, bool aborting)
+    void stop(unsigned oid, unsigned & idx)
     {
         // Note that OutputAdaptor code ensures that stop is not called more than once per adaptor
         CriticalBlock b(crit);
@@ -8257,7 +8268,7 @@ public:
         CTXLOG("%p: All outputs done", this);
 #endif
         activeOutputs = numOutputs;
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     };
 
     void reset(unsigned oid)
@@ -8435,9 +8446,9 @@ public:
         openPipe(pipeProgram);
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
         pipe.clear();
         readTransformer->setStream(NULL);
     }
@@ -8569,12 +8580,12 @@ public:
         inputMeta.set(_in->queryOutputMeta());
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         pipeVerified.interrupt(NULL);
         pipeOpened.interrupt(NULL);
-        puller.stop(aborting);
-        CRoxieServerActivity::stop(aborting);
+        puller.stop();
+        CRoxieServerActivity::stop();
         pipe.clear();
         readTransformer->setStream(NULL);
     }
@@ -8748,9 +8759,9 @@ public:
         }
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        if (!aborting && helper.getSequence() >= 0)
+        if (!aborted && helper.getSequence() >= 0)
         {
             WorkunitUpdate wu = ctx->updateWorkUnit();
             if (wu)
@@ -8763,7 +8774,7 @@ public:
                 }
             }
         }
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
         pipe.clear();
     }
 
@@ -8888,14 +8899,14 @@ public:
         rows.setown(helper.createInput());
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         if (rows)
         {
             rows->stop();
             rows.clear();
         }
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     }
 
     virtual const void *nextInGroup()
@@ -9318,12 +9329,12 @@ public:
                 executed = true;
                 start(parentExtractSize, parentExtract, false);
                 helper.action();
-                stop(false);
+                stop();
             }
             catch(IException *E)
             {
                 ctx->notifyAbort(E);
-                stop(true);
+                abort();
                 exception.set(E);
                 throw;
             }
@@ -10471,9 +10482,9 @@ public:
         outSeq.setown(createRowWriter(diskout, rowIf, rwFlags));
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        if (aborting)
+        if (aborted)
         {
             if (writer)
                 writer->finish(false, this);
@@ -10493,7 +10504,7 @@ public:
             }
         }
         writer.clear();
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
@@ -11020,16 +11031,16 @@ public:
         }
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         if (writer)
         {
-            if (!aborting)
+            if (!aborted)
                 updateWorkUnitResult();
-            writer->finish(!aborting, this);
+            writer->finish(!aborted, this);
             writer.clear();
         }
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
@@ -11938,10 +11949,10 @@ public:
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().concatPreload, false, ctx);
     }
 
-    void stop(bool aborting)
+    void stop()
     {
         space.interrupt();
-        puller.stop(aborting);
+        puller.stop();
     }
 
     IRoxieInput *queryInput() const
@@ -12083,12 +12094,12 @@ public:
         }
     }
 
-    virtual void stop(bool aborting)    
+    virtual void stop()
     {
         ready.interrupt();
         ForEachItemIn(idx, pullers)
-            pullers.item(idx).stop(aborting);
-        CRoxieServerActivity::stop(aborting);
+            pullers.item(idx).stop();
+        CRoxieServerActivity::stop();
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -12211,11 +12222,11 @@ public:
             inputArray[i]->start(parentExtractSize, parentExtract, paused);
     }
 
-    virtual void stop(bool aborting)    
+    virtual void stop()
     {
         for (unsigned i = 0; i < numInputs; i++)
-            inputArray[i]->stop(aborting);
-        CRoxieServerActivity::stop(aborting); 
+            inputArray[i]->stop();
+        CRoxieServerActivity::stop();
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -12342,19 +12353,19 @@ public:
         savedParentExtract = parentExtract;
     }
 
-    virtual void stop(bool aborting)    
+    virtual void stop()
     {
         if (foundInput)
         {
             if (selectedInput)
-                selectedInput->stop(aborting);
+                selectedInput->stop();
         }
         else
         {
             for (unsigned i = 0; i < numInputs; i++)
-                inputArray[i]->stop(aborting);
+                inputArray[i]->stop();
         }
-        CRoxieServerMultiInputBaseActivity::stop(aborting); 
+        CRoxieServerMultiInputBaseActivity::stop();
     }
 
     virtual void reset()    
@@ -12385,11 +12396,11 @@ public:
                 {
                     //Found a row so stop remaining
                     for (unsigned j=i+1; j < numInputs; j++)
-                        inputArray[j]->stop(false);
+                        inputArray[j]->stop();
                     processed++;
                     return next;
                 }
-                selectedInput->stop(false);
+                selectedInput->stop();
             }
             selectedInput = NULL;
             return NULL;
@@ -12616,13 +12627,13 @@ public:
 
     }
 
-    virtual void stop(bool aborting)    
+    virtual void stop()
     {
         for (unsigned i = 0; i < numInputs; i++)
         {
-            inputArray[i]->stop(aborting);
+            inputArray[i]->stop();
         }
-        CRoxieServerActivity::stop(aborting); 
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()    
@@ -13402,12 +13413,12 @@ public:
         puller.start(parentExtractSize, parentExtract, paused, preload, !isThreaded, ctx);
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         space.interrupt();
         ready.interrupt();
-        CRoxieServerActivity::stop(aborting);
-        puller.stop(aborting);
+        CRoxieServerActivity::stop();
+        puller.stop();
     }
 
     virtual void reset()
@@ -13623,9 +13634,9 @@ public:
         helper.createParentExtract(loopExtractBuilder);         // could possibly delay this until execution actually happens
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
         loopExtractBuilder.clear();
     }
 
@@ -13683,11 +13694,11 @@ public:
         loopInputBuilder = new RtlLinkedDatasetBuilder(rowAllocator);
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         delete loopInputBuilder;
         loopInputBuilder = NULL;
-        CRoxieServerLoopActivity::stop(aborting);
+        CRoxieServerLoopActivity::stop();
     }
 
     virtual const void * nextInGroup()
@@ -13914,7 +13925,7 @@ public:
     void onCreate(IRoxieSlaveContext * _ctx);
 
     void start(unsigned parentExtractSize, const byte *parentExtract, bool paused);
-    void stop(bool aborting);
+    void stop();
     void reset();
 
     virtual int run();
@@ -13991,13 +14002,13 @@ public:
         executor.setInput(this, _in, flags);
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         CriticalBlock b(scrit); // can stop while still starting, if unlucky...
         readySpace.interrupt();
         recordsReady.interrupt();
         executor.join(); // MORE - may not be needed given stop/reset split
-        CRoxieServerLoopActivity::stop(aborting);
+        CRoxieServerLoopActivity::stop();
     }
 
     virtual void reset()
@@ -14130,9 +14141,9 @@ int LoopExecutorThread::run()
     return 0;
 }
 
-void LoopExecutorThread::stop(bool aborting)
+void LoopExecutorThread::stop()
 {
-    safeInput->stop(aborting);
+    safeInput->stop();
     RestartableThread::join();
 }
 
@@ -14245,7 +14256,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
         {
             cachedGraphs.item(i).queryLoopGraph()->afterExecute();
         }
-        curInput->stop(true);
+        curInput->stop();
         curInput->reset();
         throw;
     }
@@ -14253,7 +14264,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
     {
         cachedGraphs.item(i).queryLoopGraph()->afterExecute();
     }
-    curInput->stop(false);
+    curInput->stop();
     curInput->reset();
 }
 
@@ -14364,9 +14375,9 @@ public:
         }
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
         GraphExtractBuilder.clear();
     }
 
@@ -14415,11 +14426,11 @@ public:
         evaluated = false;
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         if (loopGraph)
             loopGraph->clearGraphLoopResults();
-        CRoxieServerGraphLoopActivity::stop(aborting);
+        CRoxieServerGraphLoopActivity::stop();
     }
 
     virtual const void * nextInGroup()
@@ -14604,11 +14615,11 @@ public:
         resultInput->start(GraphExtractBuilder.size(), GraphExtractBuilder.getbytes(), paused);
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         if (resultInput)
-            resultInput->stop(aborting);
-        CRoxieServerGraphLoopActivity::stop(aborting);
+            resultInput->stop();
+        CRoxieServerGraphLoopActivity::stop();
     }
 
     virtual void reset()
@@ -14776,13 +14787,13 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
         }
 
-        virtual void stop(bool aborting) 
+        virtual void stop()
         {
             if (!stopped)
             {
                 stopped = true;
-                parent->stop(oid, aborting);  // parent code relies on stop being called exactly once per adaptor, so make sure it is!
-                CExtractMapperInput::stop(aborting);
+                parent->stop(oid);  // parent code relies on stop being called exactly once per adaptor, so make sure it is!
+                CExtractMapperInput::stop();
             }
         };
 
@@ -14913,7 +14924,7 @@ public:
                 if (inputUsed[i1])
                     inputAdaptors[i1]->setParentExtract(parentExtractSize, parentExtract);
                 else
-                    inputAdaptors[i1]->stop(false);
+                    inputAdaptors[i1]->stop();
             }
 
             for (unsigned i2 = 0; i2 < numOutputs; i2++)
@@ -14925,12 +14936,12 @@ public:
             ForEachItemIn(i3, extra.unusedOutputs)
             {
                 Owned<IRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
-                output->stop(false);
+                output->stop();
             }
         }
     }
 
-    virtual void stop(unsigned oid, bool aborting)  
+    virtual void stop(unsigned oid)
     {
         CriticalBlock b(crit);
         if (--numActiveOutputs == 0)
@@ -14941,9 +14952,9 @@ public:
             ForEachItemIn(i3, extra.unusedOutputs)
             {
                 Owned<IRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
-                output->stop(false);
+                output->stop();
             }
-            CRoxieServerActivity::stop(aborting);
+            CRoxieServerActivity::stop();
         }
     }
 
@@ -15125,12 +15136,12 @@ public:
             selectedInputs.item(i2)->start(parentExtractSize, parentExtract, paused);
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         ForEachItemIn(i2, selectedInputs)
-            selectedInputs.item(i2)->stop(aborting);
+            selectedInputs.item(i2)->stop();
 
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -15255,12 +15266,12 @@ public:
         }
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         ForEachItemIn(i, inputs)
-            inputs.item(i)->stop(aborting);
+            inputs.item(i)->stop();
 
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()    
@@ -15534,10 +15545,10 @@ public:
         merger.initInputs(expandedInputs.length(), expandedInputs.getArray());
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         merger.done();
-        CRoxieServerNaryActivity::stop(aborting);
+        CRoxieServerNaryActivity::stop();
     }
 
     virtual void reset()    
@@ -15645,10 +15656,10 @@ public:
         processor.beforeProcessing(inputAllocator, outputAllocator);
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         processor.afterProcessing();
-        CRoxieServerNaryActivity::stop(aborting);
+        CRoxieServerNaryActivity::stop();
     }
 
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector)
@@ -18545,7 +18556,7 @@ public:
 protected:
     void onException(IException *E)
     {
-        input->stop(true);
+        input->stop();
         ReleaseRoxieRows(buff);
         if (createRow)
         {
@@ -18743,10 +18754,10 @@ public:
         else
             keepLimit = 0;
     }
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         name.clear();
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     }
 
     virtual bool isPassThrough()
@@ -18878,20 +18889,20 @@ public:
         for (unsigned idx = 0; idx < numInputs; idx++)
         {
             if (idx!=cond)
-                inputs[idx]->stop(false); // Note: stopping unused branches early helps us avoid buffering splits too long.
+                inputs[idx]->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
         }
         in = inputs[cond];
         unusedStopped = true;
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         for (unsigned idx = 0; idx < numInputs; idx++)
         {
             if (idx==cond || !unusedStopped)
-                inputs[idx]->stop(aborting);
+                inputs[idx]->stop();
         }
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
@@ -18979,25 +18990,25 @@ public:
         {
             inputTrue->start(parentExtractSize, parentExtract, paused);
             if (inputFalse)
-                inputFalse->stop(false); // Note: stopping unused branches early helps us avoid buffering splits too long.
+                inputFalse->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
         }
         else 
         {
             if (inputFalse)
                 inputFalse->start(parentExtractSize, parentExtract, paused);
-            inputTrue->stop(false);
+            inputTrue->stop();
         }
         unusedStopped = true;
 
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         if (!unusedStopped || cond)
-            inputTrue->stop(aborting);
+            inputTrue->stop();
         if (inputFalse && (!unusedStopped || !cond))
-            inputFalse->stop(aborting);
-        CRoxieServerActivity::stop(aborting);
+            inputFalse->stop();
+        CRoxieServerActivity::stop();
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -19154,12 +19165,12 @@ public:
                 executed = true;
                 start(parentExtractSize, parentExtract, false);
                 doExecuteAction(parentExtractSize, parentExtract);
-                stop(false);
+                stop();
             }
             catch (IException * E)
             {
                 ctx->notifyAbort(E);
-                stop(true);
+                abort();
                 exception.set(E);
                 throw;
             }
@@ -19340,6 +19351,8 @@ public:
     {
         savedExtractSize = 0;
         savedExtract = NULL;
+        eofseen = false;
+        eogseen = false;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -19349,32 +19362,54 @@ public:
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         executeDependencies(parentExtractSize, parentExtract, WhenBeforeId);
         executeDependencies(parentExtractSize, parentExtract, WhenParallelId);        // MORE: This should probably be done in parallel!
+        eofseen = false;
+        eogseen = false;
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        if (state == STATEreset)
+        if (state == STATEreset || (!aborted && !eofseen))  // If someone else aborted, then WHEN clauses don't trigger, whatever
         {
             stopDependencies(savedExtractSize, savedExtract, WhenSuccessId);
             stopDependencies(savedExtractSize, savedExtract, WhenFailureId);
         }
         else if (state != STATEstopped)
         {
-            stopDependencies(savedExtractSize, savedExtract, aborting ? WhenSuccessId : WhenFailureId);  // These ones don't get executed
-            executeDependencies(savedExtractSize, savedExtract, aborting ? WhenFailureId : WhenSuccessId); // These ones do
+            stopDependencies(savedExtractSize, savedExtract, aborted ? WhenSuccessId : WhenFailureId);  // These ones don't get executed
+            executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId); // These ones do
         }
-        CRoxieServerActivity::stop(aborting);
+        CRoxieServerActivity::stop();
     }
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities); // bit of a waste of time....
-        return input->nextInGroup();
+        try
+        {
+            ActivityTimer t(totalCycles, timeActivities); // bit of a waste of time....
+            const void *ret = input->nextInGroup();
+            if (!ret)
+            {
+                if (eogseen)
+                    eofseen = true;
+                else
+                    eogseen = true;
+            }
+            else
+                eogseen = false;
+            return ret;
+        }
+        catch (...)
+        {
+            aborted = true;
+            throw;
+        }
     }
 
 protected:
-    unsigned savedExtractSize;
     const byte *savedExtract;
+    unsigned savedExtractSize;
+    bool eofseen;
+    bool eogseen;
 };
 
 
@@ -19420,14 +19455,14 @@ public:
         executeDependencies(parentExtractSize, parentExtract, WhenParallelId);        // MORE: This should probably be done in parallel!
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         if (state != STATEstopped)
         {
-            stopDependencies(savedExtractSize, savedExtract, aborting ? WhenSuccessId : WhenFailureId);  // these are NOT going to execute
-            executeDependencies(savedExtractSize, savedExtract, aborting ? WhenFailureId : WhenSuccessId);
+            stopDependencies(savedExtractSize, savedExtract, aborted ? WhenSuccessId : WhenFailureId);  // these are NOT going to execute
+            executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
         }
-        CRoxieServerActionBaseActivity::stop(aborting);
+        CRoxieServerActionBaseActivity::stop();
     }
 
     virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract)
@@ -20212,11 +20247,11 @@ public:
         // no merging so no issue...
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         if (useRemote())
-            remote->onStop(aborting);
-        CRoxieServerActivity::stop(aborting);
+            remote->onStop();
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
@@ -21462,10 +21497,10 @@ public:
         variableInfoPending = false;
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        remote.onStop(aborting);
-        CRoxieServerActivity::stop(aborting);
+        remote.onStop();
+        CRoxieServerActivity::stop();
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
@@ -23187,11 +23222,11 @@ public:
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().fetchPreload, false, ctx);
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         // Called from remote, so no need to call back to it....
-        puller.stop(aborting);
-        CRoxieServerActivity::stop(aborting);
+        puller.stop();
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
@@ -23914,10 +23949,10 @@ public:
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().fullKeyedJoinPreload, false, ctx);
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        puller.stop(aborting);
-        CRoxieServerActivity::stop(aborting);
+        puller.stop();
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
@@ -24219,12 +24254,12 @@ public:
             createDefaultRight();
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        puller.stop(aborting);
+        puller.stop();
         if (indexReadInput)
-            indexReadInput->stop(aborting);
-        CRoxieServerActivity::stop(aborting); 
+            indexReadInput->stop();
+        CRoxieServerActivity::stop();
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -25278,19 +25313,19 @@ public:
             soaphelper.clear();
             if (e)
                 throw e;
-            stop(false);
+            stop();
         }
         catch (IException *E)
         {
             ctx->notifyAbort(E);
-            stop(true);
+            abort();
             throw;
         }
         catch(...)
         {
             Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", __FILE__, __LINE__);
             ctx->notifyAbort(E);
-            stop(true);
+            abort();
             throw;
 
         }
@@ -25650,7 +25685,7 @@ public:
         ForEachItemIn(idx, sinks)
         {
             IRoxieServerActivity &sink = sinks.item(idx);
-            sink.stop(true);
+            sink.abort();
         }
     }
 
@@ -25829,7 +25864,7 @@ public:
     {
         ForEachItemIn(i, sinks)
         {
-            sinks.item(i).stop(false);
+            sinks.item(i).stop();
         }
         if (graphSlaveContext.queryDebugContext())
         {
@@ -26227,7 +26262,7 @@ public:
     {
         throwUnexpected();
     }
-    virtual void stop(bool aborting) 
+    virtual void stop()
     {
         state = STATEstopped; 
     }
@@ -26436,7 +26471,7 @@ protected:
                     ASSERT(next == NULL);
                 }
             }
-            activity->stop(false);
+            activity->stop();
             ASSERT(in.state == TestInput::STATEstopped);
             ASSERT(!input2 || in2.state == TestInput::STATEstopped);
             activity->reset();
@@ -26500,7 +26535,7 @@ protected:
                     ASSERT(memcmp(next, buf, outsize) == 0);
                     ReleaseRoxieRow(next);
                 }
-                out->stop(false);
+                out->stop();
             }
         private:
             IRoxieServerActivity *activity;

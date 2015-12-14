@@ -2565,7 +2565,7 @@ protected:
 };
 
 
-class LocalResultInput : public ISimpleInputBase
+class LocalResultInput : public CInterfaceOf<ISimpleInputBase>
 {
 public:
     void init(IHThorGraphResult * _result)      
@@ -2586,7 +2586,7 @@ protected:
 
 
 
-class ConstPointerArrayInput : public ISimpleInputBase
+class ConstPointerArrayInput : public CInterfaceOf<ISimpleInputBase>
 {
 public:
     void init(ConstPointerArray * _array)       { array = _array; curRow = 0; }

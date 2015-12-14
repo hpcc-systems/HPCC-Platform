@@ -115,10 +115,10 @@ public:
         inMeta = in->queryOutputMeta();
         assertex(inMeta);
     }
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         hasStopped = true;
-        in->stop(aborting);
+        in->stop();
     }
     virtual void reset()
     {
@@ -851,9 +851,9 @@ public:
         targetAct->updateTimes(debugContext->querySequence());
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        InputProbe::stop(aborting);
+        InputProbe::stop();
         sourceAct->updateTimes(debugContext->querySequence());
         targetAct->updateTimes(debugContext->querySequence());
     }

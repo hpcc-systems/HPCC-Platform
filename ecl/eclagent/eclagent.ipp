@@ -845,7 +845,7 @@ class EclSubGraph : public CInterface, implements ILocalEclGraphResults, public 
     friend class EclGraphElement;
 private:
 
-    class LegacyInputProbe : public CInterface, implements IHThorInput, implements IInterface
+    class LegacyInputProbe : public CInterfaceOf<IHThorInput>
     {
         IHThorInput  *in;
         EclSubGraph  *owner;
@@ -856,8 +856,6 @@ private:
         StringAttr edgeId;
 
     public:
-        IMPLEMENT_IINTERFACE;
-
         LegacyInputProbe(IHThorInput *_in, EclSubGraph *_owner, unsigned _sourceId, int outputidx)
             : in(_in), owner(_owner), sourceId(_sourceId), outputIndex(outputidx)
         {
