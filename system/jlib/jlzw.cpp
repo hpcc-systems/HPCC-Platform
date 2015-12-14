@@ -2235,6 +2235,11 @@ public:
         return ret;
     }
 
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        return fileio->getStatistic(kind);
+    }
+
     void setSize(offset_t size) { UNIMPLEMENTED; }
     offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; }
 

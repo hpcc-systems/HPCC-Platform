@@ -211,7 +211,7 @@ public:
     unsigned queryMinNode() { return minNode; }
 
     void set(unsigned node, unsigned __int64 count);
-    void getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual);
+    void getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual, bool suppressIfZero);
 
 protected:
     void calculateSkew();
@@ -222,7 +222,7 @@ class graphmaster_decl CTimingInfo : public CThorStats
 {
 public:
     CTimingInfo();
-    void getStats(IStatisticGatherer & stats) { CThorStats::getStats(stats, false); }
+    void getStats(IStatisticGatherer & stats) { CThorStats::getStats(stats, false, false); }
 };
 
 class graphmaster_decl ProgressInfo : public CThorStats

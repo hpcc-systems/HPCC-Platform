@@ -38,6 +38,7 @@
 #include "jset.hpp"
 
 #include "remoteerr.hpp"
+#include <atomic>
 
 #define SOCKET_CACHE_MAX 500
 
@@ -2144,6 +2145,12 @@ class CRemoteFileIO : public CInterface, implements IFileIO
 protected:
     Linked<CRemoteFile> parent;
     RemoteFileIOHandle  handle;
+    std::atomic<cycle_t> ioReadCycles;
+    std::atomic<cycle_t> ioWriteCycles;
+    std::atomic<__uint64> ioReadBytes;
+    std::atomic<__uint64> ioWriteBytes;
+    std::atomic<__uint64> ioReads;
+    std::atomic<__uint64> ioWrites;
     IFOmode mode;
     compatIFSHmode compatmode;
     IFEflags extraFlags;
@@ -2151,7 +2158,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE
     CRemoteFileIO(CRemoteFile *_parent)
-        : parent(_parent)
+        : parent(_parent), ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0)
+
     {
         handle = 0;
         disconnectonexit = false;
@@ -2215,6 +2223,7 @@ public:
             break;
         default:
             mode = _mode;
+            break;
         }
         compatmode = _compatmode;
         extraFlags = _extraFlags;
@@ -2247,12 +2256,39 @@ public:
         return ret;
     }
 
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        switch (kind)
+        {
+        case StCycleDiskReadIOCycles:
+            return ioReadCycles.load(std::memory_order_relaxed);
+        case StCycleDiskWriteIOCycles:
+            return ioWriteCycles.load(std::memory_order_relaxed);
+        case StTimeDiskReadIO:
+            return cycle_to_nanosec(ioReadCycles.load(std::memory_order_relaxed));
+        case StTimeDiskWriteIO:
+            return cycle_to_nanosec(ioWriteCycles.load(std::memory_order_relaxed));
+        case StSizeDiskRead:
+            return ioReadBytes.load(std::memory_order_relaxed);
+        case StSizeDiskWrite:
+            return ioWriteBytes.load(std::memory_order_relaxed);
+        case StNumDiskReads:
+            return ioReads.load(std::memory_order_relaxed);
+        case StNumDiskWrites:
+            return ioWrites.load(std::memory_order_relaxed);
+        }
+        return 0;
+    }
 
     size32_t read(offset_t pos, size32_t len, void * data)
     {
         size32_t got;
         MemoryBuffer replyBuffer;
+        CCycleTimer timer;
         const void *b = doRead(pos,len,replyBuffer,got,data);
+        ioReadCycles.fetch_add(timer.elapsedCycles());
+        ioReadBytes.fetch_add(got);
+        ++ioReads;
         if (b!=data)
             memcpy(data,b,got);
         return got;
@@ -2320,6 +2356,7 @@ public:
     {
         unsigned tries=0;
         size32_t ret = 0;
+        CCycleTimer timer;
         loop {
             try {
                 MemoryBuffer replyBuffer;
@@ -2341,6 +2378,9 @@ public:
 
             }
         }
+        ioWriteCycles.fetch_add(timer.elapsedCycles());
+        ioWriteBytes.fetch_add(ret);
+        ++ioWrites;
         if ((ret==(size32_t)-1) || (ret < len))
             throw createDafsException(DISK_FULL_EXCEPTION_CODE,"write failed, disk full?");
         return ret;

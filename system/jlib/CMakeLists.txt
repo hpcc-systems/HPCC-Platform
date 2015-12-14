@@ -137,6 +137,8 @@ set (    INCLUDES
         jsocket.hpp
         jsort.hpp
         jsorta.hpp
+        jstatcodes.h
+        jstats.h
         jstream.hpp
         jstream.ipp
         jstring.hpp

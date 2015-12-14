@@ -24,7 +24,7 @@
 #include "jio.hpp"
 #include "jtime.hpp"
 #include "jsocket.hpp"
-
+#include "jstatcodes.h"
 
 interface IFile;
 interface IFileIO;
@@ -159,6 +159,12 @@ extern jlib_decl unsigned sortDirectory(
 
 
 
+enum FileIOStat {
+    FIOSiocycles,
+    FIOSiobytes,
+    FIOSmax
+};
+
 //This is closed by releasing the interface
 interface IFileIO : public IInterface
 {
@@ -169,6 +175,7 @@ interface IFileIO : public IInterface
     virtual void setSize(offset_t size) = 0;
     virtual void flush() = 0;
     virtual void close() = 0;       // no other access is allowed after this call
+    virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
 };
 
 interface IFileIOCache : extends IInterface

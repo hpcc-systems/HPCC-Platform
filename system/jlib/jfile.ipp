@@ -22,6 +22,7 @@
 #include "jfile.hpp"
 #include "jmutex.hpp"
 #include "jio.ipp"
+#include <atomic>
 
 #ifndef _WIN32
 #include <sys/types.h>
@@ -107,10 +108,11 @@ public:
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len);
     virtual void flush();
     virtual void close();
+    virtual unsigned __int64 getStatistic(StatisticKind kind);
 
     bool create(const char * filename, bool replace);
     bool open(const char * filename);
-    
+
     HANDLE queryHandle() { return file; } // for debugging
 
 
@@ -123,6 +125,12 @@ protected:
     IFEflags            extraFlags;
     atomic_t            bytesRead;
     atomic_t            bytesWritten;
+    std::atomic<cycle_t> ioReadCycles;
+    std::atomic<cycle_t> ioWriteCycles;
+    std::atomic<__uint64> ioReadBytes;
+    std::atomic<__uint64> ioWriteBytes;
+    std::atomic<__uint64> ioReads;
+    std::atomic<__uint64> ioWrites;
 private:
     void setPos(offset_t pos);
 
@@ -141,6 +149,7 @@ public:
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; return 0; }
     virtual void flush() { io->flush(); }
     virtual void close() { io->close(); }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) { return io->getStatistic(kind); }
 
 protected:
     Linked<IFileIO>     io;
@@ -163,6 +172,7 @@ public:
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len);
     virtual void flush();
     virtual void close();
+    virtual unsigned __int64 getStatistic(StatisticKind kind);
 
     virtual void setSize(offset_t size);
     virtual IFileAsyncResult *readAsync(offset_t pos, size32_t len, void * data);

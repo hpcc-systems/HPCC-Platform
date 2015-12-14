@@ -64,7 +64,7 @@ void getPartsMetaInfo(ThorDataLinkMetaInfo &metaInfo, CThorDataLink &link, unsig
 //////////////////////////////////////////////
 
 CDiskPartHandlerBase::CDiskPartHandlerBase(CDiskReadSlaveActivityBase &_activity) 
-    : activity(_activity)
+    : activity(_activity), fileStats(diskReadRemoteStatistics)
 {
     checkFileCrc = activity.checkFileCrc;
     which = 0;
@@ -284,6 +284,11 @@ void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 {
     CSlaveActivity::serializeStats(mb);
     mb.append(diskProgress);
+
+    CRuntimeStatisticCollection activeStats(diskReadRemoteStatistics);
+    if (partHandler)
+        partHandler->gatherStats(activeStats);
+    activeStats.serialize(mb);
 }
 
 
@@ -348,7 +353,10 @@ void CDiskWriteSlaveActivityBase::open()
     if (extend||(external&&!query))
         twFlags |= TW_Extend;
 
-    Owned<IFileIO> iFileIO = createMultipleWrite(this, *partDesc, diskRowMinSz, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
+    {
+        CriticalBlock block(statsCs);
+        outputIO.setown(createMultipleWrite(this, *partDesc, diskRowMinSz, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL));
+    }
 
     if (compress)
     {
@@ -359,12 +367,12 @@ void CDiskWriteSlaveActivityBase::open()
     Owned<IFileIOStream> stream;
     if (wantRaw())
     {
-        outraw.setown(createBufferedIOStream(iFileIO));
+        outraw.setown(createBufferedIOStream(outputIO));
         stream.set(outraw);
     }
     else
     {
-        stream.setown(createIOStream(iFileIO));
+        stream.setown(createIOStream(outputIO));
         unsigned rwFlags = 0;
         if (grouped)
             rwFlags |= rw_grouped;
@@ -409,6 +417,13 @@ void CDiskWriteSlaveActivityBase::close()
             uncompressedBytesWritten = outraw->tell();
             outraw.clear();
         }
+
+        {
+            CriticalBlock block(statsCs);
+            mergeStats(fileStats, outputIO);
+            outputIO.clear();
+        }
+
         if (!rfsQueryParallel && dlfn.isExternal() && !lastNode())
         {
             rowcount_t rows = processed & THORDATALINK_COUNT_MASK;
@@ -430,7 +445,8 @@ void CDiskWriteSlaveActivityBase::close()
         removeFiles();
 }
 
-CDiskWriteSlaveActivityBase::CDiskWriteSlaveActivityBase(CGraphElementBase *container) : ProcessSlaveActivity(container)
+CDiskWriteSlaveActivityBase::CDiskWriteSlaveActivityBase(CGraphElementBase *container)
+: ProcessSlaveActivity(container), fileStats(diskWriteRemoteStatistics)
 {
     grouped = false;
     compress = calcFileCrc = false;
@@ -486,8 +502,14 @@ void CDiskWriteSlaveActivityBase::abort()
 
 void CDiskWriteSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 {
+    CriticalBlock block(statsCs);
+
     ProcessSlaveActivity::serializeStats(mb);
     mb.append(replicateDone);
+
+    CRuntimeStatisticCollection activeStats(fileStats);
+    mergeStats(activeStats, outputIO);
+    activeStats.serialize(mb);
 }
 
 // ICopyFileProgress
