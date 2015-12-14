@@ -55,7 +55,6 @@ struct IHThorInput : public IInputBase
     virtual IOutputMetaData * queryOutputMeta() const = 0;
 
     virtual void ready() = 0;
-    virtual void done() = 0;
     virtual void updateProgress(IStatisticGatherer &progress) const = 0;
     virtual const void * nextGE(const void * seek, unsigned numFields) { throwUnexpected(); }   // can only be called on stepping fields.
     virtual IInputSteppingMeta * querySteppingMeta() { return NULL; }
@@ -76,7 +75,7 @@ struct IHThorActivity : implements IActivityBase
     virtual IHThorInput *queryOutput(unsigned) = 0;
     virtual void ready() = 0;
     virtual void execute() = 0;
-    virtual void done() = 0;
+    virtual void stop() = 0;
     virtual __int64 getCount() = 0;
     virtual unsigned queryOutputs() = 0;
     virtual void updateProgress(IStatisticGatherer &progress) const = 0;

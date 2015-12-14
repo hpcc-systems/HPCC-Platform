@@ -699,7 +699,7 @@ public:
 
     void ready() { if (!alreadyUpdated) activity->ready(); }
     void execute() { if (!alreadyUpdated) activity->execute(); }
-    void done() { if (!alreadyUpdated) activity->done(); }
+    void stop() { if (!alreadyUpdated) activity->stop(); }
 
     IHThorException * makeWrappedException(IException * e);
 
@@ -871,12 +871,7 @@ private:
             in->ready();
         }
         
-        void done() 
-        {
-            in->done();
-        }
-
-        void stop()
+        void stop() 
         {
             in->stop();
         }

@@ -49,7 +49,7 @@ public:
     CHThorNaryActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind);
 
     //interface IHThorInput
-    virtual void done();
+    virtual void stop();
     virtual void ready();
     virtual void updateProgress(IStatisticGatherer &progress) const;
 };
@@ -65,7 +65,7 @@ public:
     ~CHThorNWayMergeActivity();
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual const void * nextRow();
     virtual const void * nextGE(const void * seek, unsigned numFields);
     virtual IInputSteppingMeta * querySteppingMeta();
@@ -85,7 +85,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual const void * nextRow();
     virtual const void * nextGE(const void * seek, unsigned numFields);
     virtual IInputSteppingMeta * querySteppingMeta();
@@ -148,7 +148,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual const void * nextRow();
     virtual const void * nextGE(const void * seek, unsigned numFields);
     virtual IInputSteppingMeta * querySteppingMeta();

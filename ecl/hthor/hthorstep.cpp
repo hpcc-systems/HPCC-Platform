@@ -76,12 +76,12 @@ CHThorNaryActivity::CHThorNaryActivity(IAgentContext & _agent, unsigned _activit
 {
 }
 
-void CHThorNaryActivity::done()
+void CHThorNaryActivity::stop()
 {
     ForEachItemIn(i, expandedInputs)
-        expandedInputs.item(i)->done();
+        expandedInputs.item(i)->stop();
     expandedInputs.kill();
-    CHThorMultiInputActivity::done();
+    CHThorMultiInputActivity::stop();
 }
 
 void CHThorNaryActivity::ready()
@@ -126,10 +126,10 @@ CHThorNWayMergeActivity::~CHThorNWayMergeActivity()
     merger.cleanup();
 }
 
-void CHThorNWayMergeActivity::done()    
+void CHThorNWayMergeActivity::stop()    
 {
     merger.done();
-    CHThorNaryActivity::done();
+    CHThorNaryActivity::stop();
 }
 
 const void * CHThorNWayMergeActivity::nextRow()
@@ -180,10 +180,10 @@ CHThorMergeJoinBaseActivity::CHThorMergeJoinBaseActivity(IAgentContext & _agent,
 {
 }
 
-void CHThorMergeJoinBaseActivity::done()
+void CHThorMergeJoinBaseActivity::stop()
 {
     processor.afterProcessing();
-    CHThorNaryActivity::done();
+    CHThorNaryActivity::stop();
 }
 
 
@@ -271,10 +271,10 @@ CHThorNWayJoinActivity::CHThorNWayJoinActivity(IAgentContext & _agent, unsigned 
 {
 }
 
-void CHThorNWayJoinActivity::done()
+void CHThorNWayJoinActivity::stop()
 {
     processor.afterProcessing();
-    CHThorNaryActivity::done();
+    CHThorNaryActivity::stop();
 }
 
 void CHThorNWayJoinActivity::ready()

@@ -207,15 +207,10 @@ void CHThorActivityBase::extractResult(unsigned & len, void * & ret)
     agent.fail(255, "internal logic error: CHThorActivityBase::extractResult");
 }
 
-void CHThorActivityBase::done()
-{
-    if (input)
-        input->done();
-    // Should I call stop() ? should I rename to stop() ?
-}
-
 void CHThorActivityBase::stop()
 {
+    if (input)
+        input->stop();
 }
 
 void CHThorActivityBase::updateProgress(IStatisticGatherer &progress) const
@@ -387,7 +382,7 @@ void CHThorDiskWriteActivity::execute()
     finishOutput();
 }
 
-void CHThorDiskWriteActivity::done()
+void CHThorDiskWriteActivity::stop()
 {
     outSeq->flush();
     if(blockcompressed)
@@ -399,7 +394,7 @@ void CHThorDiskWriteActivity::done()
     incomplete = false;
     if(clusterHandler)
         clusterHandler->finish(file);
-    CHThorActivityBase::done();
+    CHThorActivityBase::stop();
 }
 
 void CHThorDiskWriteActivity::resolve()
@@ -790,7 +785,7 @@ const void *CHThorSpillActivity::nextRow()
     return nextrec;
 }
 
-void CHThorSpillActivity::done()
+void CHThorSpillActivity::stop()
 {
     loop 
     {
@@ -803,7 +798,7 @@ void CHThorSpillActivity::done()
         }   
     }
     finishOutput();
-    CHThorDiskWriteActivity::done();
+    CHThorDiskWriteActivity::stop();
 }
 
 //=====================================================================================================
@@ -1316,7 +1311,7 @@ public:
         openPipe(pipeProgram);
     }
 
-    virtual void done()
+    virtual void stop()
     {
         //Need to close the output (or read it in its entirety), otherwise we might wait forever for the
         //program to finish
@@ -1324,7 +1319,7 @@ public:
             pipe->closeOutput();
         pipe.clear();
         readTransformer->setStream(NULL);
-        CHThorSimpleActivityBase::done();
+        CHThorSimpleActivityBase::stop();
     }
 
     virtual const void *nextRow()
@@ -1506,7 +1501,7 @@ public:
         puller.start();
     }
 
-    void done()
+    void stop()
     {
         //Need to close the output (or read it in its entirety), otherwise we might wait forever for the
         //program to finish
@@ -1515,7 +1510,7 @@ public:
         pipeVerified.interrupt(NULL);
         pipeOpened.interrupt(NULL);
         puller.join();
-        CHThorSimpleActivityBase::done();
+        CHThorSimpleActivityBase::stop();
         pipe.clear();
         readTransformer->setStream(NULL);
     }
@@ -1740,9 +1735,9 @@ CHThorIterateActivity::CHThorIterateActivity(IAgentContext &_agent, unsigned _ac
 {
 }
 
-void CHThorIterateActivity::done()
+void CHThorIterateActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     right.clear();
     left.clear();
 }
@@ -1943,10 +1938,10 @@ bool CHThorNormalizeChildActivity::advanceInput()
     }
 }
 
-void CHThorNormalizeChildActivity::done()
+void CHThorNormalizeChildActivity::stop()
 {
     inbuff.clear();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 void CHThorNormalizeChildActivity::ready()
@@ -2022,11 +2017,11 @@ void CHThorNormalizeLinkedChildActivity::ready()
     CHThorSimpleActivityBase::ready();
 }
 
-void CHThorNormalizeLinkedChildActivity::done()
+void CHThorNormalizeLinkedChildActivity::stop()
 {
     curParent.clear();
     curChild.clear();
-    CHThorSimpleActivityBase::done(); 
+    CHThorSimpleActivityBase::stop(); 
 }
 
 const void * CHThorNormalizeLinkedChildActivity::nextRow()
@@ -2287,12 +2282,12 @@ void CHThorRollupActivity::ready()
     prev.set(left);
 }
 
-void CHThorRollupActivity::done()
+void CHThorRollupActivity::stop()
 {
     left.clear();
     prev.clear();
     right.clear();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 const void *CHThorRollupActivity::nextRow()
@@ -2356,10 +2351,10 @@ void CHThorGroupDedupKeepLeftActivity::ready()
     prev.clear();
 }
 
-void CHThorGroupDedupKeepLeftActivity::done()
+void CHThorGroupDedupKeepLeftActivity::stop()
 {
     prev.clear();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 const void *CHThorGroupDedupKeepLeftActivity::nextRow()
@@ -2450,10 +2445,10 @@ void CHThorGroupDedupKeepRightActivity::ready()
     firstDone = false;
 }
 
-void CHThorGroupDedupKeepRightActivity::done()
+void CHThorGroupDedupKeepRightActivity::stop()
 {
     kept.clear();
-    CHThorGroupDedupActivity::done();
+    CHThorGroupDedupActivity::stop();
 }
 
 const void *CHThorGroupDedupKeepRightActivity::nextRow()
@@ -2506,10 +2501,10 @@ void CHThorGroupDedupAllActivity::ready()
     survivorIndex = 0;
 }
 
-void CHThorGroupDedupAllActivity::done()
+void CHThorGroupDedupAllActivity::stop()
 {
     survivors.clear();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 bool CHThorGroupDedupAllActivity::calcNextDedupAll()
@@ -2637,10 +2632,10 @@ void CHThorHashDedupActivity::ready()
     table.setRowAllocator(agent.queryCodeContext()->getRowAllocator(helper.queryKeySize(), activityId));
 }
 
-void CHThorHashDedupActivity::done()
+void CHThorHashDedupActivity::stop()
 {
     table.kill();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 const void * CHThorHashDedupActivity::nextRow()
@@ -2773,9 +2768,9 @@ void CHThorFilterGroupActivity::ready()
     nextIndex = 0;
 }
 
-void CHThorFilterGroupActivity::done()
+void CHThorFilterGroupActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     pending.clear();
 }
 
@@ -2917,9 +2912,9 @@ void CHThorSkipLimitActivity::ready()
     rowLimit = helper.getRowLimit();
 }
 
-void CHThorSkipLimitActivity::done()
+void CHThorSkipLimitActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     buffer.clear();
 }
 
@@ -2995,9 +2990,9 @@ CHThorSkipCatchActivity::CHThorSkipCatchActivity(IAgentContext &_agent, unsigned
 {
 }
 
-void CHThorSkipCatchActivity::done()
+void CHThorSkipCatchActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     buffer.clear();
 }
 
@@ -3068,11 +3063,11 @@ CHThorIfActivity::CHThorIfActivity(IAgentContext &_agent, unsigned _activityId, 
 }
 
 
-void CHThorIfActivity::done()
+void CHThorIfActivity::stop()
 {
     if (selectedInput)
-        selectedInput->done();
-    CHThorSimpleActivityBase::done();
+        selectedInput->stop();
+    CHThorSimpleActivityBase::stop();
 }
 
 
@@ -3124,10 +3119,10 @@ void CHThorCaseActivity::ready()
     selectedInput->ready();
 }
 
-void CHThorCaseActivity::done()
+void CHThorCaseActivity::stop()
 {
     if (selectedInput)
-        selectedInput->done();
+        selectedInput->stop();
 }
 
 const void *CHThorCaseActivity::nextRow()
@@ -3259,10 +3254,10 @@ void CHThorHashAggregateActivity::ready()
     gathered = false;
 }
 
-void CHThorHashAggregateActivity::done()
+void CHThorHashAggregateActivity::stop()
 {
     aggregated.reset();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 
@@ -3510,10 +3505,10 @@ void CHThorChooseSetsExActivity::ready()
     memset(setCounts, 0, sizeof(unsigned)*numSets);
 }
 
-void CHThorChooseSetsExActivity::done()
+void CHThorChooseSetsExActivity::stop()
 {
     gathered.clear();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 const void * CHThorChooseSetsExActivity::nextRow()
@@ -3686,9 +3681,9 @@ void CHThorGroupActivity::ready()
     firstDone = false;
 }
 
-void CHThorGroupActivity::done()
+void CHThorGroupActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     next.clear();
 }
 
@@ -3751,7 +3746,7 @@ void CHThorGroupSortActivity::ready()
         createSorter();
 }
 
-void CHThorGroupSortActivity::done()
+void CHThorGroupSortActivity::stop()
 {
     if(sorter)
     {
@@ -3762,7 +3757,7 @@ void CHThorGroupSortActivity::done()
     }
     gotSorted = false;
     diskReader.clear();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 const void *CHThorGroupSortActivity::nextRow()
@@ -4175,9 +4170,9 @@ void CHThorGroupedActivity::ready()
     nextRowIndex = 0;
 }
 
-void CHThorGroupedActivity::done()
+void CHThorGroupedActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     next[0].clear();
     next[1].clear();
     next[2].clear();
@@ -4229,9 +4224,9 @@ void CHThorSortedActivity::ready()
     firstDone = false;
 }
 
-void CHThorSortedActivity::done()
+void CHThorSortedActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     next.clear();
 }
 
@@ -4296,9 +4291,9 @@ void CHThorTraceActivity::ready()
         keepLimit = 0;
 }
 
-void CHThorTraceActivity::done()
+void CHThorTraceActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     name.clear();
 }
 
@@ -4429,7 +4424,7 @@ void CHThorJoinActivity::ready()
     }
 }
 
-void CHThorJoinActivity::done()
+void CHThorJoinActivity::stop()
 {
     outBuilder.clear();
     right.clear();
@@ -4437,8 +4432,8 @@ void CHThorJoinActivity::done()
     pendingRight.clear();
     sortedLeftInput.clear();
     groupedSortedRightInput.clear();
-    CHThorActivityBase::done();
-    input1->done();
+    CHThorActivityBase::stop();
+    input1->stop();
 }
 
 void CHThorJoinActivity::setInput(unsigned index, IHThorInput *_input)
@@ -5059,12 +5054,12 @@ void CHThorSelfJoinActivity::ready()
     joinCounter = 0;
 }
 
-void CHThorSelfJoinActivity::done()
+void CHThorSelfJoinActivity::stop()
 {
     outBuilder.clear();
     group.clear();
     groupedInput.clear();
-    CHThorActivityBase::done();
+    CHThorActivityBase::stop();
 }
 
 bool CHThorSelfJoinActivity::fillGroup()
@@ -5424,13 +5419,13 @@ void CHThorLookupJoinActivity::ready()
     joinCounter = 0;
 }
 
-void CHThorLookupJoinActivity::done()
+void CHThorLookupJoinActivity::stop()
 {
     outBuilder.clear();
     left.clear();
     table.clear();
-    CHThorActivityBase::done();
-    input1->done();
+    CHThorActivityBase::stop();
+    input1->stop();
 }
 
 void CHThorLookupJoinActivity::createDefaultRight()
@@ -5810,14 +5805,14 @@ void CHThorAllJoinActivity::ready()
     eos = false;
 }
 
-void CHThorAllJoinActivity::done()
+void CHThorAllJoinActivity::stop()
 {
     outBuilder.clear();
     left.clear();
     rightset.clear();
     matchedRight.kill();
-    CHThorActivityBase::done();
-    input1->done();
+    CHThorActivityBase::stop();
+    input1->stop();
 }
 
 void CHThorAllJoinActivity::createDefaultRight()
@@ -6394,10 +6389,10 @@ const void * CHThorWhenActionActivity::nextRow()
     return input->nextRow();
 }
 
-void CHThorWhenActionActivity::done()
+void CHThorWhenActionActivity::stop()
 {
     graphElement->executeDependentActions(agent, NULL, WhenSuccessId);
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 //=====================================================================================================
@@ -6413,11 +6408,11 @@ void CHThorMultiInputActivity::ready()
         inputs.item(idx)->ready();
 }
 
-void CHThorMultiInputActivity::done()
+void CHThorMultiInputActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     ForEachItemIn(idx, inputs)
-        inputs.item(idx)->done();
+        inputs.item(idx)->stop();
 }
 
 void CHThorMultiInputActivity::setInput(unsigned index, IHThorInput *_input)
@@ -6727,10 +6722,10 @@ void CHThorCombineGroupActivity::ready()
     input1->ready();
 }
 
-void CHThorCombineGroupActivity::done()
+void CHThorCombineGroupActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
-    input1->done();
+    CHThorSimpleActivityBase::stop();
+    input1->stop();
 }
 
 void CHThorCombineGroupActivity::setInput(unsigned index, IHThorInput *_input)
@@ -6921,12 +6916,12 @@ void CHThorWorkunitReadActivity::checkForDiskRead()
     }
 }
 
-void CHThorWorkunitReadActivity::done()
+void CHThorWorkunitReadActivity::stop()
 {
     if(diskread)
-        diskread->done();
+        diskread->stop();
     resultBuffer.resetBuffer();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 
@@ -6985,9 +6980,9 @@ void CHThorParseActivity::ready()
     parser->reset();
 }
 
-void CHThorParseActivity::done()
+void CHThorParseActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     if (curSearchText && helper.searchTextNeedsFree())
         rtlFree(curSearchText);
     curSearchText = NULL;
@@ -7066,7 +7061,7 @@ void CHThorEnthActivity::ready()
     started = false;
 }
 
-void CHThorEnthActivity::done()
+void CHThorEnthActivity::stop()
 {
     outBuilder.clear();
 }
@@ -7131,9 +7126,9 @@ void CHThorTopNActivity::ready()
     eoi = false;
 }
 
-void CHThorTopNActivity::done()
+void CHThorTopNActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     roxiemem::ReleaseRoxieRowRange(sorted, curIndex, sortedCount);
     free(sorted);
     sorted = NULL;
@@ -7243,9 +7238,9 @@ void CHThorXmlParseActivity::ready()
     numProcessedLastGroup = processed;
 }
 
-void CHThorXmlParseActivity::done()
+void CHThorXmlParseActivity::stop()
 {
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
     if(srchStrNeedsFree) rtlFree(srchStr);
     srchStr = NULL;
     in.clear();
@@ -7342,10 +7337,10 @@ public:
         merger.initInputs(inputs.length(), inputs.getArray());
     }
 
-    virtual void done() 
+    virtual void stop() 
     {
         merger.done();
-        CHThorMultiInputActivity::done(); 
+        CHThorMultiInputActivity::stop(); 
     }
 
     virtual const void * nextRow()
@@ -7371,10 +7366,10 @@ CHThorWSCBaseActivity::CHThorWSCBaseActivity(IAgentContext &_agent, unsigned _ac
     init();
 }
 
-void CHThorWSCBaseActivity::done()
+void CHThorWSCBaseActivity::stop()
 {
     WSChelper.clear();//doesn't return until helper threads terminate
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 void CHThorWSCBaseActivity::init()
@@ -7798,10 +7793,10 @@ void CHThorChildGroupAggregateActivity::ready()
     aggregated.start(rowAllocator);
 }
 
-void CHThorChildGroupAggregateActivity::done()
+void CHThorChildGroupAggregateActivity::stop()
 {
     aggregated.reset();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 
@@ -7839,11 +7834,11 @@ CHThorChildThroughNormalizeActivity::CHThorChildThroughNormalizeActivity(IAgentC
 {
 }
 
-void CHThorChildThroughNormalizeActivity::done()
+void CHThorChildThroughNormalizeActivity::stop()
 {
     outBuilder.clear();
     lastInput.clear();
-    CHThorSimpleActivityBase::done();
+    CHThorSimpleActivityBase::stop();
 }
 
 void CHThorChildThroughNormalizeActivity::ready()
@@ -7933,10 +7928,10 @@ void CHThorDiskReadBaseActivity::ready()
     resolve();
 }
 
-void CHThorDiskReadBaseActivity::done()
+void CHThorDiskReadBaseActivity::stop()
 {
     close();
-    CHThorActivityBase::done();
+    CHThorActivityBase::stop();
 }
 
 void CHThorDiskReadBaseActivity::resolve()
@@ -8401,10 +8396,10 @@ void CHThorDiskReadActivity::ready()
 }
 
 
-void CHThorDiskReadActivity::done()
+void CHThorDiskReadActivity::stop()
 { 
     outBuilder.clear();
-    PARENT::done(); 
+    PARENT::stop(); 
 }
 
 
@@ -8509,10 +8504,10 @@ CHThorDiskNormalizeActivity::CHThorDiskNormalizeActivity(IAgentContext &_agent, 
 {
 }
 
-void CHThorDiskNormalizeActivity::done()        
+void CHThorDiskNormalizeActivity::stop()        
 { 
     outBuilder.clear();
-    PARENT::done(); 
+    PARENT::stop(); 
 }
 
 void CHThorDiskNormalizeActivity::ready()       
@@ -8627,10 +8622,10 @@ CHThorDiskAggregateActivity::CHThorDiskAggregateActivity(IAgentContext &_agent, 
 {
 }
 
-void CHThorDiskAggregateActivity::done()        
+void CHThorDiskAggregateActivity::stop()        
 { 
     outBuilder.clear();
-    PARENT::done(); 
+    PARENT::stop(); 
 }
 
 void CHThorDiskAggregateActivity::ready()       
@@ -8867,10 +8862,10 @@ void CHThorCsvReadActivity::ready()
     PARENT::ready();
 }
 
-void CHThorCsvReadActivity::done()
+void CHThorCsvReadActivity::stop()
 {
     csvSplitter.reset();
-    PARENT::done();
+    PARENT::stop();
 }
 
 void CHThorCsvReadActivity::gatherInfo(IFileDescriptor * fd)
@@ -9027,10 +9022,10 @@ void CHThorXmlReadActivity::ready()
     stopAfter = helper.getChooseNLimit();
 }
 
-void CHThorXmlReadActivity::done()
+void CHThorXmlReadActivity::stop()
 {
     xmlParser.clear();
-    CHThorDiskReadBaseActivity::done();
+    CHThorDiskReadBaseActivity::stop();
 }
 
 void CHThorXmlReadActivity::gatherInfo(IFileDescriptor * fd)
@@ -9252,7 +9247,7 @@ const void * CHThorLocalResultSpillActivity::nextRow()
     return ret;
 }
 
-void CHThorLocalResultSpillActivity::done()
+void CHThorLocalResultSpillActivity::stop()
 {
     loop
     {
@@ -9273,7 +9268,7 @@ void CHThorLocalResultSpillActivity::done()
             result->addRowOwn(ret);
         }
     }
-    CHThorSimpleActivityBase::done(); 
+    CHThorSimpleActivityBase::stop(); 
 }
 
 
@@ -9414,12 +9409,12 @@ const void * CHThorLoopActivity::nextRow()
 }
 
 
-void CHThorLoopActivity::done()
+void CHThorLoopActivity::stop()
 {
     ForEachItemIn(idx, loopPending)
         ReleaseRoxieRow(loopPending.item(idx));
     loopPending.kill();
-    CHThorSimpleActivityBase::done(); 
+    CHThorSimpleActivityBase::stop(); 
 }
 
 //---------------------------------------------------------------------------
@@ -9586,12 +9581,12 @@ const void * CHThorGraphLoopActivity::nextRow()
 }
 
 
-void CHThorGraphLoopActivity::done()
+void CHThorGraphLoopActivity::stop()
 {
     rowAllocator.clear();
     finalResult = NULL;
     loopResults.clear();
-    CHThorSimpleActivityBase::done(); 
+    CHThorSimpleActivityBase::stop(); 
 }
 
 //=====================================================================================================
@@ -9651,12 +9646,12 @@ const void * CHThorParallelGraphLoopActivity::nextRow()
 }
 
 
-void CHThorParallelGraphLoopActivity::done()
+void CHThorParallelGraphLoopActivity::stop()
 {
     rowAllocator.clear();
     finalResult = NULL;
     loopResults.clear();
-    CHThorSimpleActivityBase::done(); 
+    CHThorSimpleActivityBase::stop(); 
 }
 
 //=====================================================================================================
@@ -9698,15 +9693,10 @@ void LibraryCallOutput::ready()
     curRow = 0;
 }
 
-void LibraryCallOutput::done()
-{
-    owner->done();
-    result.clear();
-}
-
 void LibraryCallOutput::stop()
 {
-
+    owner->stop();
+    result.clear();
 }
 
 void LibraryCallOutput::updateProgress(IStatisticGatherer &progress) const
@@ -9786,13 +9776,13 @@ const void * CHThorLibraryCallActivity::nextRow()
 }
 
 
-void CHThorLibraryCallActivity::done()
+void CHThorLibraryCallActivity::stop()
 {
     CriticalBlock procedure(cs);
     if (state != StateDone)
     {
         results.clear();
-        CHThorSimpleActivityBase::done(); 
+        CHThorSimpleActivityBase::stop(); 
     }
 }
 
@@ -9917,7 +9907,7 @@ public:
         }
     }
 
-    virtual void done()
+    virtual void stop()
     {
         inputs.kill();
     }
@@ -9952,10 +9942,10 @@ CHThorNWaySelectActivity::CHThorNWaySelectActivity(IAgentContext &_agent, unsign
     selectedInput = NULL;
 }
 
-void CHThorNWaySelectActivity::done()
+void CHThorNWaySelectActivity::stop()
 {
     selectedInput = NULL;
-    CHThorMultiInputActivity::done();
+    CHThorMultiInputActivity::stop();
 }
 
 void CHThorNWaySelectActivity::ready()
@@ -10032,7 +10022,7 @@ const void *CHThorStreamedIteratorActivity::nextRow()
     return next;
 }
 
-void CHThorStreamedIteratorActivity::done()
+void CHThorStreamedIteratorActivity::stop()
 {
     if (rows)
     {
@@ -10087,7 +10077,7 @@ void CHThorExternalActivity::reset()
     processor.clear();
 }
 
-void CHThorExternalActivity::done()
+void CHThorExternalActivity::stop()
 {
     if (rows)
     {

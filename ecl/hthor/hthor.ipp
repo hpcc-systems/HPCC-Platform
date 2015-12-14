@@ -216,7 +216,6 @@ public:
     virtual void ready();
     virtual void execute();
     virtual void extractResult(unsigned & len, void * & ret);
-    virtual void done();
     virtual void stop();
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { UNIMPLEMENTED; }
     virtual __int64 getCount();
@@ -313,7 +312,7 @@ public:
     ~CHThorDiskWriteActivity();
     virtual void execute();
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 };
 
 class CHThorSpillActivity : public CHThorDiskWriteActivity
@@ -322,7 +321,7 @@ public:
     CHThorSpillActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorSpillArg &_arg, ThorActivityKind _kind);
 
     virtual void setInput(unsigned, IHThorInput *);
-    virtual void done();
+    virtual void stop();
     virtual void execute();
     virtual void ready();
 
@@ -402,7 +401,7 @@ public:
     CHThorIterateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIterateArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool needsAllocator() const { return true; }    
 
     //interface IHThorInput
@@ -438,7 +437,7 @@ public:
     CHThorRollupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorRollupArg &_arg, ThorActivityKind _kind);
     ~CHThorRollupActivity();
 
-    virtual void done();
+    virtual void stop();
     virtual void ready();
     virtual bool needsAllocator() const { return true; }    
 
@@ -465,7 +464,7 @@ public:
     CHThorGroupDedupKeepLeftActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -487,7 +486,7 @@ public:
     CHThorGroupDedupKeepRightActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -503,7 +502,7 @@ public:
     CHThorGroupDedupAllActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -587,7 +586,7 @@ class CHThorHashDedupActivity : public CHThorSimpleActivityBase
 public:
     CHThorHashDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashDedupArg & _arg, ThorActivityKind _kind);
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }    
 
@@ -628,7 +627,7 @@ public:
     CHThorNormalizeChildActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeChildArg &_arg, ThorActivityKind _kind);
     ~CHThorNormalizeChildActivity();
 
-    virtual void done();
+    virtual void stop();
     virtual void ready();
     virtual bool needsAllocator() const { return true; }    
     
@@ -652,7 +651,7 @@ public:
     CHThorNormalizeLinkedChildActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeLinkedChildArg &_arg, ThorActivityKind _kind);
     ~CHThorNormalizeLinkedChildActivity();
 
-    virtual void done();
+    virtual void stop();
     virtual void ready();
 
     //interface IHThorInput
@@ -757,7 +756,7 @@ public:
     CHThorFilterGroupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorFilterGroupArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -784,7 +783,7 @@ class CHThorSkipLimitActivity : public CHThorSimpleActivityBase
 public:
     CHThorSkipLimitActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind);
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual const void * nextRow();
 
     virtual void onLimitExceeded() { buffer->clear(); }
@@ -822,7 +821,7 @@ class CHThorSkipCatchActivity : public CHThorSimpleActivityBase
 {
 public:
     CHThorSkipCatchActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorCatchArg &_arg, ThorActivityKind _kind);
-    virtual void done();
+    virtual void stop();
     virtual const void * nextRow();
 
 protected:
@@ -844,7 +843,7 @@ public:
     virtual const void *nextRow();
     virtual void setInput(unsigned, IHThorInput *);
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorSimpleActivityBase::updateProgress(progress);
@@ -897,7 +896,7 @@ public:
     CHThorHashAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind, bool _isGroupedAggregate);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool needsAllocator() const { return true; }    
 
     //interface IHThorInput
@@ -969,7 +968,7 @@ public:
     ~CHThorChooseSetsExActivity();
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1011,7 +1010,7 @@ public:
     CHThorGroupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGroupArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1061,7 +1060,7 @@ public:
     virtual void ready();
     virtual bool needsAllocator() const { return true; }    
 
-    virtual void done();
+    virtual void stop();
     virtual const void *nextRow();
 
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
@@ -1222,7 +1221,7 @@ public:
     CHThorGroupedActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGroupedArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1238,7 +1237,7 @@ public:
     CHThorSortedActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorSortedArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1257,7 +1256,7 @@ public:
     CHThorTraceActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorTraceArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1324,7 +1323,7 @@ public:
     CHThorJoinActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool needsAllocator() const { return true; }    
     virtual void setInput(unsigned, IHThorInput *);
     IHThorInput *queryOutput(unsigned index) { return this; }
@@ -1389,7 +1388,7 @@ public:
     IHThorInput *queryOutput(unsigned index) { return this; }
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool needsAllocator() const { return true; }    
 
     //interface IHThorInput
@@ -1476,7 +1475,7 @@ public:
     CHThorLookupJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashJoinArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool needsAllocator() const { return true; }    
     virtual void setInput(unsigned index, IHThorInput * _input);
     IHThorInput * queryOutput(unsigned index) { return this; }
@@ -1530,7 +1529,7 @@ public:
     CHThorAllJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorAllJoinArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual void setInput(unsigned index, IHThorInput * _input);
     IHThorInput * queryOutput(unsigned index) { return this; }
     virtual bool needsAllocator() const { return true; }    
@@ -1677,7 +1676,7 @@ public:
     virtual void execute();
     virtual const void *nextRow();
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 };
 
 class CHThorDummyActivity : public CHThorSimpleActivityBase
@@ -1728,7 +1727,7 @@ public:
     CHThorMultiInputActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual void setInput(unsigned, IHThorInput *);
 
     //interface IHThorInput
@@ -1744,7 +1743,7 @@ public:
     CHThorCaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorCaseArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1833,7 +1832,7 @@ public:
     CHThorCombineGroupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorCombineGroupArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual void setInput(unsigned, IHThorInput *);
     virtual bool needsAllocator() const { return true; }    
 
@@ -1906,7 +1905,7 @@ public:
     void checkForDiskRead();
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool isGrouped() { return grouped; }
     virtual bool needsAllocator() const { return true; }    
 
@@ -1921,7 +1920,7 @@ public:
     ~CHThorParseActivity();
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
 //interface IMatchedAction
     unsigned onMatch(ARowBuilder & self, const void * curRecord, IMatchedResults * results, IMatchWalker * walker);
@@ -1951,7 +1950,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual const void * nextRow();
     virtual bool isGrouped() { return false; }
 
@@ -1985,7 +1984,7 @@ public:
     ~CHThorTopNActivity();
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2017,7 +2016,7 @@ public:
     ~CHThorXmlParseActivity();
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool needsAllocator() const { return true; }    
 
     //interface IHThorInput
@@ -2046,7 +2045,7 @@ public:
     CHThorWSCBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallActionArg &_arg, ThorActivityKind _kind);
     IMPLEMENT_IINTERFACE;
 
-    virtual void done();
+    virtual void stop();
 
     // IWSCRowProvider
     virtual IHThorWebServiceCallActionArg * queryActionHelper() { return &helper; };
@@ -2172,7 +2171,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool needsAllocator() const { return true; }    
 
     //interface IHThorInput
@@ -2198,7 +2197,7 @@ public:
     //interface IHThorInput
     virtual const void *nextRow();
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 };
 
 
@@ -2255,7 +2254,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 
     IHThorInput *queryOutput(unsigned index)                { return this; }
 
@@ -2331,7 +2330,7 @@ public:
     CHThorDiskReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool needsAllocator() const { return true; }    
 
     //interface IHThorInput
@@ -2348,7 +2347,7 @@ public:
     virtual const void *nextRow();
     virtual void ready();
     virtual bool needsAllocator() const { return true; }    
-    virtual void done();
+    virtual void stop();
 
 protected:
     void checkOpenNext();
@@ -2376,7 +2375,7 @@ public:
     CHThorXmlReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind);
     
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool needsAllocator() const { return true; }    
     virtual const void *nextRow();
 
@@ -2424,7 +2423,7 @@ protected:
 public:
     CHThorDiskNormalizeActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskNormalizeArg &_arg, ThorActivityKind _kind);
 
-    virtual void done();
+    virtual void stop();
     virtual void ready();
     virtual bool needsAllocator() const { return true; }    
 
@@ -2446,7 +2445,7 @@ protected:
 public:
     CHThorDiskAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskAggregateArg &_arg, ThorActivityKind _kind);
 
-    virtual void done();
+    virtual void stop();
     virtual void ready();
     virtual bool needsAllocator() const { return true; }    
 
@@ -2561,7 +2560,7 @@ public:
 
 protected:
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual bool needsAllocator() const { return true; }    
 };
 
@@ -2641,7 +2640,7 @@ public:
 
 protected:
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 };
 
 
@@ -2704,7 +2703,7 @@ public:
 
 protected:
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 };
 
 
@@ -2728,7 +2727,7 @@ public:
 
 protected:
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 };
 
 
@@ -2743,7 +2742,6 @@ public:
     virtual IOutputMetaData * queryOutputMeta() const;
 
     virtual void ready();
-    virtual void done();
     virtual void stop();
     virtual void updateProgress(IStatisticGatherer &progress) const;
 
@@ -2786,7 +2784,7 @@ protected:
 
 protected:
     virtual void ready();
-    virtual void done();
+    virtual void stop();
 };
 
 
@@ -2800,7 +2798,7 @@ public:
     CHThorNWaySelectActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorNWaySelectArg &_arg, ThorActivityKind _kind);
 
     //interface IHThorInput
-    virtual void done();
+    virtual void stop();
     virtual void ready();
     virtual const void * nextRow();
     virtual const void * nextGE(const void * seek, unsigned numFields);
@@ -2816,7 +2814,7 @@ public:
     CHThorStreamedIteratorActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorStreamedIteratorArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual const void *nextRow();
 };
 
@@ -2845,7 +2843,7 @@ public:
     CHThorExternalActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorExternalArg &_arg, ThorActivityKind _kind, IPropertyTree * _graphNode);
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     virtual void reset();
 
     virtual void execute();

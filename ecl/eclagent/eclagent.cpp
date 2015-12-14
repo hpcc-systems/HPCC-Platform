@@ -3681,10 +3681,10 @@ public:
         in->ready(); 
     }
 
-    virtual void done() 
+    virtual void stop() 
     { 
         hasStopped = true;
-        in->done(); 
+        in->stop(); 
     }
 };
 

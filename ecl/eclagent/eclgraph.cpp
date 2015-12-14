@@ -920,7 +920,7 @@ void EclSubGraph::doExecute(const byte * parentExtract, bool checkDependencies)
     ForEachItemIn(ie, sinks)
         sinks.item(ie).execute();
     ForEachItemIn(id, sinks)
-        sinks.item(id).done();
+        sinks.item(id).stop();
 
     elapsedGraphCycles += (get_cycles_now() - startGraphCycles);
     executed = true;
@@ -1226,7 +1226,7 @@ void EclGraph::abort()
             {
                 EclGraphElement & sink = graph.sinks.item(idx2);
                 if (sink.activity)
-                    sink.activity->done();
+                    sink.activity->stop();
             }
         }
     }
