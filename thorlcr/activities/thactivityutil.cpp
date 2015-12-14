@@ -303,6 +303,8 @@ public:
         // no serialization information (yet)
     }
     unsigned __int64 queryTotalCycles() const { return in->queryTotalCycles(); }
+    unsigned __int64 queryEndCycles() const { return in->queryEndCycles(); }
+    virtual void debugRequest(MemoryBuffer &msg) { return in->debugRequest(msg); }
 };
 #ifdef _MSC_VER
 #pragma warning(pop)
