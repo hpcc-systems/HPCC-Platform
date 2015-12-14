@@ -46,9 +46,9 @@ CHThorSteppedInput::CHThorSteppedInput(IHThorInput * _input)
 
 const void * CHThorSteppedInput::nextInputRow()
 {
-    const void * ret = input->nextInGroup();
+    const void * ret = input->nextRow();
     if (!ret)
-        ret = input->nextInGroup();
+        ret = input->nextRow();
     return ret;
 }
 
@@ -132,7 +132,7 @@ void CHThorNWayMergeActivity::done()
     CHThorNaryActivity::done();
 }
 
-const void * CHThorNWayMergeActivity::nextInGroup()
+const void * CHThorNWayMergeActivity::nextRow()
 {
     const void * next = merger.nextRow();
     if (next)
@@ -215,9 +215,9 @@ IInputSteppingMeta * CHThorMergeJoinBaseActivity::querySteppingMeta()
     return processor.queryInputSteppingMeta();
 }
 
-const void * CHThorMergeJoinBaseActivity::nextInGroup()
+const void * CHThorMergeJoinBaseActivity::nextRow()
 {
-    const void * next = processor.nextInGroup();
+    const void * next = processor.nextRow();
     if (next)
         processed++;
     return next;
@@ -298,9 +298,9 @@ IInputSteppingMeta * CHThorNWayJoinActivity::querySteppingMeta()
     return processor.querySteppingMeta();
 }
 
-const void * CHThorNWayJoinActivity::nextInGroup()
+const void * CHThorNWayJoinActivity::nextRow()
 {
-    const void * next = processor.nextInGroup();
+    const void * next = processor.nextRow();
     if (next)
         processed++;
     return next;

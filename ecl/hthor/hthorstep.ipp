@@ -66,7 +66,7 @@ public:
 
     virtual void ready();
     virtual void done();
-    virtual const void * nextInGroup();
+    virtual const void * nextRow();
     virtual const void * nextGE(const void * seek, unsigned numFields);
     virtual IInputSteppingMeta * querySteppingMeta();
 
@@ -86,7 +86,7 @@ public:
     //interface IHThorInput
     virtual void ready();
     virtual void done();
-    virtual const void * nextInGroup();
+    virtual const void * nextRow();
     virtual const void * nextGE(const void * seek, unsigned numFields);
     virtual IInputSteppingMeta * querySteppingMeta();
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector);
@@ -149,7 +149,7 @@ public:
     //interface IHThorInput
     virtual void ready();
     virtual void done();
-    virtual const void * nextInGroup();
+    virtual const void * nextRow();
     virtual const void * nextGE(const void * seek, unsigned numFields);
     virtual IInputSteppingMeta * querySteppingMeta();
 

@@ -5166,10 +5166,10 @@ public:
             Owned<IRoxieInput> input = remoteGraph->startOutput(0, remoteExtractBuilder.size(), remoteExtractBuilder.getbytes(), false);
             while (!aborted)
             {
-                const void * next = input->nextInGroup();
+                const void * next = input->nextRow();
                 if (!next)
                 {
-                    next = input->nextInGroup();
+                    next = input->nextRow();
                     if (!next)
                         break;
                 }

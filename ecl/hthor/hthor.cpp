@@ -119,10 +119,10 @@ bool CRowBuffer::pull(IHThorInput * input, unsigned __int64 rowLimit)
 {
     while(true)
     {
-        OwnedConstRoxieRow next(input->nextInGroup());
+        OwnedConstRoxieRow next(input->nextRow());
         if(!next)
         {
-            next.setown(input->nextInGroup());
+            next.setown(input->nextRow());
             if(!next)
                 break;
             if(grouped)
@@ -211,6 +211,11 @@ void CHThorActivityBase::done()
 {
     if (input)
         input->done();
+    // Should I call stop() ? should I rename to stop() ?
+}
+
+void CHThorActivityBase::stop()
+{
 }
 
 void CHThorActivityBase::updateProgress(IStatisticGatherer &progress) const
@@ -539,10 +544,10 @@ const void * CHThorDiskWriteActivity::getNext()
     // needs a one row lookahead to preserve group
     if (!nextrow.get()) 
     {
-        nextrow.setown(input->nextInGroup());
+        nextrow.setown(input->nextRow());
         if (!nextrow.get())
         {
-            nextrow.setown(input->nextInGroup());
+            nextrow.setown(input->nextRow());
             if (nextrow.get()&&grouped)  // only write eog if not at eof
                 outSeq->putRow(NULL);
             return NULL;
@@ -557,10 +562,10 @@ bool CHThorDiskWriteActivity::next()
 {
     if (!nextrow.get())
     {
-        OwnedConstRoxieRow row(input->nextInGroup());
+        OwnedConstRoxieRow row(input->nextRow());
         if (!row.get()) 
         {
-            row.setown(input->nextInGroup());
+            row.setown(input->nextRow());
             if (!row.get())
                 return false; // we are done        
             if (grouped)
@@ -774,7 +779,7 @@ void CHThorSpillActivity::execute()
     UNIMPLEMENTED;
 }
 
-const void *CHThorSpillActivity::nextInGroup()
+const void *CHThorSpillActivity::nextRow()
 {
     const void *nextrec = getNext();
     if (nextrec)
@@ -789,10 +794,10 @@ void CHThorSpillActivity::done()
 {
     loop 
     {
-        OwnedConstRoxieRow nextrec(nextInGroup());
+        OwnedConstRoxieRow nextrec(nextRow());
         if (!nextrec) 
         {
-            nextrec.setown(nextInGroup());
+            nextrec.setown(nextRow());
             if (!nextrec)
                 break;
         }   
@@ -822,10 +827,10 @@ void CHThorCsvWriteActivity::execute()
     numRecords = 0;
     loop
     {
-        OwnedConstRoxieRow nextrec(input->nextInGroup());
+        OwnedConstRoxieRow nextrec(input->nextRow());
         if (!nextrec)
         {
-            nextrec.setown(input->nextInGroup());
+            nextrec.setown(input->nextRow());
             if (!nextrec)
                 break;
         }
@@ -916,10 +921,10 @@ void CHThorXmlWriteActivity::execute()
 
     loop
     {
-        OwnedConstRoxieRow nextrec(input->nextInGroup());
+        OwnedConstRoxieRow nextrec(input->nextRow());
         if (!nextrec)
         {
-            nextrec.setown(input->nextInGroup());
+            nextrec.setown(input->nextRow());
             if (!nextrec)
                 break;
         }
@@ -1089,10 +1094,10 @@ void CHThorIndexWriteActivity::execute()
         } bc(builder);
         loop
         {
-            OwnedConstRoxieRow nextrec(input->nextInGroup());
+            OwnedConstRoxieRow nextrec(input->nextRow());
             if (!nextrec)
             {
-                nextrec.setown(input->nextInGroup());
+                nextrec.setown(input->nextRow());
                 if (!nextrec)
                     break;
             }
@@ -1322,7 +1327,7 @@ public:
         CHThorSimpleActivityBase::done();
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         while (!waitForPipe())
         {
@@ -1517,7 +1522,7 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         while (!waitForPipe())
         {
@@ -1575,7 +1580,7 @@ public:
 
     virtual const void *nextInput()
     {
-        return input->nextInGroup();
+        return input->nextRow();
     }
 
     virtual bool fireException(IException *e)
@@ -1680,10 +1685,10 @@ public:
     {
         loop
         {
-            const void *row = input->nextInGroup();
+            const void *row = input->nextRow();
             if (!row)
             {
-                row = input->nextInGroup();
+                row = input->nextRow();
                 if (!row)
                     break;
             }
@@ -1754,11 +1759,11 @@ void CHThorIterateActivity::ready()
     counter = 0;
 }
 
-const void *CHThorIterateActivity::nextInGroup()
+const void *CHThorIterateActivity::nextRow()
 {
     loop
     {
-        right.setown(input->nextInGroup());
+        right.setown(input->nextRow());
         if(!right)
         {
             bool skippedGroup = (!left) && (counter > 0); //we have just skipped entire group, but shouldn't output a double null
@@ -1809,13 +1814,13 @@ void CHThorProcessActivity::ready()
     counter = 0;
 }
 
-const void *CHThorProcessActivity::nextInGroup()
+const void *CHThorProcessActivity::nextRow()
 {
     try
     {
         loop
         {
-            OwnedConstRoxieRow next(input->nextInGroup());
+            OwnedConstRoxieRow next(input->nextRow());
             if (!next)
             {
                 bool eog = (curRight != initialRight);          // processed any records?
@@ -1823,7 +1828,7 @@ const void *CHThorProcessActivity::nextInGroup()
                 curRight.set(initialRight);
                 if (eog)
                     return NULL;
-                next.setown(input->nextInGroup());
+                next.setown(input->nextRow());
                 if (!next)
                     return NULL;
             }
@@ -1868,15 +1873,15 @@ void CHThorNormalizeActivity::ready()
     numProcessedLastGroup = processed;
 }
 
-const void *CHThorNormalizeActivity::nextInGroup()
+const void *CHThorNormalizeActivity::nextRow()
 {
     loop
     {
         while (curRow == numThisRow)
         {
-            inbuff.setown(input->nextInGroup());
+            inbuff.setown(input->nextRow());
             if (!inbuff && (processed == numProcessedLastGroup))
-                inbuff.setown(input->nextInGroup());
+                inbuff.setown(input->nextRow());
             if (!inbuff)
             {
                 numProcessedLastGroup = processed;
@@ -1920,9 +1925,9 @@ bool CHThorNormalizeChildActivity::advanceInput()
 {
     loop
     {
-        inbuff.setown(input->nextInGroup());
+        inbuff.setown(input->nextRow());
         if (!inbuff && (processed == numProcessedLastGroup))
-            inbuff.setown(input->nextInGroup());
+            inbuff.setown(input->nextRow());
         if (!inbuff)
         {
             numProcessedLastGroup = processed;
@@ -1953,7 +1958,7 @@ void CHThorNormalizeChildActivity::ready()
     curChildRow = NULL;
 }
 
-const void *CHThorNormalizeChildActivity::nextInGroup()
+const void *CHThorNormalizeChildActivity::nextRow()
 {
     loop
     {
@@ -1988,9 +1993,9 @@ bool CHThorNormalizeLinkedChildActivity::advanceInput()
 {
     loop
     {
-        curParent.setown(input->nextInGroup());
+        curParent.setown(input->nextRow());
         if (!curParent && (processed == numProcessedLastGroup))
-            curParent.setown(input->nextInGroup());
+            curParent.setown(input->nextRow());
         if (!curParent)
         {
             numProcessedLastGroup = processed;
@@ -2024,7 +2029,7 @@ void CHThorNormalizeLinkedChildActivity::done()
     CHThorSimpleActivityBase::done(); 
 }
 
-const void * CHThorNormalizeLinkedChildActivity::nextInGroup()
+const void * CHThorNormalizeLinkedChildActivity::nextRow()
 {
     loop
     {
@@ -2068,15 +2073,15 @@ void CHThorProjectActivity::ready()
 }
 
 
-const void * CHThorProjectActivity::nextInGroup()
+const void * CHThorProjectActivity::nextRow()
 {
     loop
     {
-        OwnedConstRoxieRow in(input->nextInGroup());
+        OwnedConstRoxieRow in(input->nextRow());
         if (!in)
         {
             if (numProcessedLastGroup == processed)
-                in.setown(input->nextInGroup());
+                in.setown(input->nextRow());
             if (!in)
             {
                 numProcessedLastGroup = processed;
@@ -2115,7 +2120,7 @@ void CHThorPrefetchProjectActivity::ready()
     child = helper.queryChild();
 }
 
-const void * CHThorPrefetchProjectActivity::nextInGroup()
+const void * CHThorPrefetchProjectActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -2123,11 +2128,11 @@ const void * CHThorPrefetchProjectActivity::nextInGroup()
     {
         try
         {
-            OwnedConstRoxieRow row(input->nextInGroup());
+            OwnedConstRoxieRow row(input->nextRow());
             if (!row)
             {
                 if (numProcessedLastGroup == processed)
-                    row.setown(input->nextInGroup());
+                    row.setown(input->nextRow());
                 if (!row)
                 {
                     numProcessedLastGroup = processed;
@@ -2178,18 +2183,18 @@ void CHThorFilterProjectActivity::ready()
 }
 
 
-const void * CHThorFilterProjectActivity::nextInGroup()
+const void * CHThorFilterProjectActivity::nextRow()
 {
     if (eof)
         return NULL;
     loop
     {
-        OwnedConstRoxieRow in = input->nextInGroup();
+        OwnedConstRoxieRow in = input->nextRow();
         if (!in)
         {
             recordCount = 0;
             if (numProcessedLastGroup == processed)
-                in.setown(input->nextInGroup());
+                in.setown(input->nextRow());
             if (!in)
             {
                 numProcessedLastGroup = processed;
@@ -2231,16 +2236,16 @@ void CHThorCountProjectActivity::ready()
 }
 
 
-const void * CHThorCountProjectActivity::nextInGroup()
+const void * CHThorCountProjectActivity::nextRow()
 {
     loop
     {
-        OwnedConstRoxieRow in = input->nextInGroup();
+        OwnedConstRoxieRow in = input->nextRow();
         if (!in)
         {
             recordCount = 0;
             if (numProcessedLastGroup == processed)
-                in.setown(input->nextInGroup());
+                in.setown(input->nextRow());
             if (!in)
             {
                 numProcessedLastGroup = processed;
@@ -2278,7 +2283,7 @@ CHThorRollupActivity::~CHThorRollupActivity()
 void CHThorRollupActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
-    left.setown(input->nextInGroup());
+    left.setown(input->nextRow());
     prev.set(left);
 }
 
@@ -2290,11 +2295,11 @@ void CHThorRollupActivity::done()
     CHThorSimpleActivityBase::done();
 }
 
-const void *CHThorRollupActivity::nextInGroup()
+const void *CHThorRollupActivity::nextRow()
 {
     loop
     {
-        right.setown(input->nextInGroup());
+        right.setown(input->nextRow());
         if(!prev || !right || !helper.matches(prev,right))
         {
             const void * ret = left.getClear();
@@ -2357,12 +2362,12 @@ void CHThorGroupDedupKeepLeftActivity::done()
     CHThorSimpleActivityBase::done();
 }
 
-const void *CHThorGroupDedupKeepLeftActivity::nextInGroup()
+const void *CHThorGroupDedupKeepLeftActivity::nextRow()
 {
     OwnedConstRoxieRow next;
     loop
     {
-        next.setown(input->nextInGroup());
+        next.setown(input->nextRow());
         if (!prev || !next || !helper.matches(prev,next))
         {
             numKept = 0;
@@ -2451,18 +2456,18 @@ void CHThorGroupDedupKeepRightActivity::done()
     CHThorGroupDedupActivity::done();
 }
 
-const void *CHThorGroupDedupKeepRightActivity::nextInGroup()
+const void *CHThorGroupDedupKeepRightActivity::nextRow()
 {
     if (!firstDone)
     {
         firstDone = true;
-        kept.setown(input->nextInGroup());
+        kept.setown(input->nextRow());
     }
 
     OwnedConstRoxieRow next;
     loop
     {
-        next.setown(input->nextInGroup());
+        next.setown(input->nextRow());
         if (!kept || !next || !helper.matches(kept,next))
         {
             numKept = 0;
@@ -2514,7 +2519,7 @@ bool CHThorGroupDedupAllActivity::calcNextDedupAll()
 
     OwnedRowArray group;
     const void * next;
-    while((next = input->nextInGroup()) != NULL)
+    while((next = input->nextRow()) != NULL)
         group.append(next);
     if(group.ordinality() == 0)
         return false;
@@ -2592,7 +2597,7 @@ void CHThorGroupDedupAllActivity::dedupRange(unsigned first, unsigned last, Owne
     }
 }
 
-const void *CHThorGroupDedupAllActivity::nextInGroup()
+const void *CHThorGroupDedupAllActivity::nextRow()
 {
     if (!firstDone)
     {
@@ -2638,11 +2643,11 @@ void CHThorHashDedupActivity::done()
     CHThorSimpleActivityBase::done();
 }
 
-const void * CHThorHashDedupActivity::nextInGroup()
+const void * CHThorHashDedupActivity::nextRow()
 {
     while(true)
     {
-        OwnedConstRoxieRow next(input->nextInGroup());
+        OwnedConstRoxieRow next(input->nextRow());
         if(!next)
         {
             table.kill();
@@ -2690,14 +2695,14 @@ void CHThorFilterActivity::ready()
     eof = !helper.canMatchAny();
 }
 
-const void * CHThorFilterActivity::nextInGroup()
+const void * CHThorFilterActivity::nextRow()
 {
     if (eof)
         return NULL;
 
     loop
     {
-        OwnedConstRoxieRow ret(input->nextInGroup());
+        OwnedConstRoxieRow ret(input->nextRow());
         if (!ret)
         {
             //stop returning two NULLs in a row.
@@ -2706,7 +2711,7 @@ const void * CHThorFilterActivity::nextInGroup()
                 anyThisGroup = false;
                 return NULL;
             }
-            ret.setown(input->nextInGroup());
+            ret.setown(input->nextRow());
             if (!ret)
                 return NULL;                // eof...
         }
@@ -2736,7 +2741,7 @@ const void * CHThorFilterActivity::nextGE(const void * seek, unsigned numFields)
         return ret.getClear();
     }
 
-    return nextUngrouped();
+    return ungroupedNextRow();
 }
 
 bool CHThorFilterActivity::gatherConjunctions(ISteppedConjunctionCollector & collector) 
@@ -2774,7 +2779,7 @@ void CHThorFilterGroupActivity::done()
     pending.clear();
 }
 
-const void * CHThorFilterGroupActivity::nextInGroup()
+const void * CHThorFilterGroupActivity::nextRow()
 {
     loop
     {
@@ -2793,11 +2798,11 @@ const void * CHThorFilterGroupActivity::nextInGroup()
             return NULL;
         }
 
-        const void * ret = input->nextInGroup();
+        const void * ret = input->nextRow();
         while (ret)
         {
             pending.append(ret);
-            ret = input->nextInGroup();
+            ret = input->nextRow();
         }
 
         unsigned num = pending.ordinality();
@@ -2835,7 +2840,7 @@ const void * CHThorFilterGroupActivity::nextGE(const void * seek, unsigned numFi
     while (ret)
     {
         pending.append(ret);
-        ret = input->nextInGroup();
+        ret = input->nextRow();
     }
 
     unsigned num = pending.ordinality();
@@ -2847,7 +2852,7 @@ const void * CHThorFilterGroupActivity::nextGE(const void * seek, unsigned numFi
     else
         eof = true;
 
-    return nextUngrouped();
+    return ungroupedNextRow();
 }
 
 
@@ -2864,9 +2869,9 @@ void CHThorLimitActivity::ready()
     numGot = 0;
 }
 
-const void * CHThorLimitActivity::nextInGroup()
+const void * CHThorLimitActivity::nextRow()
 {
-    OwnedConstRoxieRow ret(input->nextInGroup());
+    OwnedConstRoxieRow ret(input->nextRow());
     if (ret)
     {
         if (++numGot > rowLimit)
@@ -2918,7 +2923,7 @@ void CHThorSkipLimitActivity::done()
     buffer.clear();
 }
 
-const void * CHThorSkipLimitActivity::nextInGroup()
+const void * CHThorSkipLimitActivity::nextRow()
 {
     if(!buffer)
     {
@@ -2942,11 +2947,11 @@ CHThorCatchActivity::CHThorCatchActivity(IAgentContext &_agent, unsigned _activi
 {
 }
 
-const void * CHThorCatchActivity::nextInGroup()
+const void * CHThorCatchActivity::nextRow()
 {
     try
     {
-        OwnedConstRoxieRow ret(input->nextInGroup());
+        OwnedConstRoxieRow ret(input->nextRow());
         if (ret)
             processed++;
         return ret.getClear();
@@ -3011,7 +3016,7 @@ void CHThorSkipCatchActivity::onException(IException *E)
 }
 
 
-const void * CHThorSkipCatchActivity::nextInGroup()
+const void * CHThorSkipCatchActivity::nextRow()
 {
     if(!buffer)
     {
@@ -3090,12 +3095,12 @@ void CHThorIfActivity::setInput(unsigned index, IHThorInput *_input)
         CHThorActivityBase::setInput(index, _input);
 }
 
-const void * CHThorIfActivity::nextInGroup()
+const void * CHThorIfActivity::nextRow()
 {
     if (!selectedInput)
         return NULL;
 
-    const void *ret = selectedInput->nextInGroup();
+    const void *ret = selectedInput->nextRow();
     if (ret)
         processed++;
     return ret;
@@ -3125,12 +3130,12 @@ void CHThorCaseActivity::done()
         selectedInput->done();
 }
 
-const void *CHThorCaseActivity::nextInGroup()
+const void *CHThorCaseActivity::nextRow()
 {
     if (!selectedInput)
         return NULL;
 
-    const void *ret = selectedInput->nextInGroup();
+    const void *ret = selectedInput->nextRow();
     if (ret)
         processed++;
     return ret;
@@ -3152,11 +3157,11 @@ void CHThorSampleActivity::ready()
     anyThisGroup = false;
 }
 
-const void * CHThorSampleActivity::nextInGroup()
+const void * CHThorSampleActivity::nextRow()
 {
     loop
     {
-        OwnedConstRoxieRow ret(input->nextInGroup());
+        OwnedConstRoxieRow ret(input->nextRow());
         if (!ret)
         {
             //this does work with groups - may or may not be useful...
@@ -3167,7 +3172,7 @@ const void * CHThorSampleActivity::nextInGroup()
                 anyThisGroup = false;
                 return NULL;
             }
-            ret.setown(input->nextInGroup());
+            ret.setown(input->nextRow());
             if (!ret)
                 return NULL;                // eof...
         }
@@ -3195,12 +3200,12 @@ void CHThorAggregateActivity::ready()
     eof = false;
 }
 
-const void * CHThorAggregateActivity::nextInGroup()
+const void * CHThorAggregateActivity::nextRow()
 {
     if (eof)
         return NULL;
     unsigned count = 0;
-    const void * next = input->nextInGroup();
+    const void * next = input->nextRow();
     if (!next && input->isGrouped())
     {
         eof = true;
@@ -3220,7 +3225,7 @@ const void * CHThorAggregateActivity::nextInGroup()
         {
             loop
             {
-                next = input->nextInGroup();
+                next = input->nextRow();
                 if (!next)
                     break;
 
@@ -3261,7 +3266,7 @@ void CHThorHashAggregateActivity::done()
 }
 
 
-const void * CHThorHashAggregateActivity::nextInGroup()
+const void * CHThorHashAggregateActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -3272,7 +3277,7 @@ const void * CHThorHashAggregateActivity::nextInGroup()
         aggregated.start(rowAllocator);
         loop
         {
-            OwnedConstRoxieRow next(input->nextInGroup());
+            OwnedConstRoxieRow next(input->nextRow());
             if (!next)
             {
                 if (isGroupedAggregate)
@@ -3281,7 +3286,7 @@ const void * CHThorHashAggregateActivity::nextInGroup()
                         eof = true;
                     break;
                 }
-                next.setown(input->nextInGroup());
+                next.setown(input->nextRow());
                 if (!next)
                     break;
             }
@@ -3334,7 +3339,7 @@ void CHThorSelectNActivity::ready()
     finished = false;
 }
 
-const void * CHThorSelectNActivity::nextInGroup()
+const void * CHThorSelectNActivity::nextRow()
 {
     if (finished)
         return NULL;
@@ -3343,9 +3348,9 @@ const void * CHThorSelectNActivity::nextInGroup()
     unsigned __int64 index = helper.getRowToSelect();
     while (--index)
     {
-        OwnedConstRoxieRow next(input->nextInGroup());
+        OwnedConstRoxieRow next(input->nextRow());
         if (!next)
-            next.setown(input->nextInGroup());
+            next.setown(input->nextRow());
         if (!next)
         {
             processed++;
@@ -3353,9 +3358,9 @@ const void * CHThorSelectNActivity::nextInGroup()
         }
     }
 
-    OwnedConstRoxieRow next(input->nextInGroup());
+    OwnedConstRoxieRow next(input->nextRow());
     if (!next)
-        next.setown(input->nextInGroup());
+        next.setown(input->nextRow());
     if (!next)
         next.setown(defaultRow());
 
@@ -3381,7 +3386,7 @@ void CHThorFirstNActivity::ready()
         limit += skip;
 }
 
-const void * CHThorFirstNActivity::nextInGroup()
+const void * CHThorFirstNActivity::nextRow()
 {
     if (finished)
         return NULL;
@@ -3389,7 +3394,7 @@ const void * CHThorFirstNActivity::nextInGroup()
     OwnedConstRoxieRow ret;
     loop
     {
-        ret.setown(input->nextInGroup());
+        ret.setown(input->nextRow());
         if (!ret)
         {
             if (grouped)
@@ -3402,7 +3407,7 @@ const void * CHThorFirstNActivity::nextInGroup()
                 doneThisGroup = 0;
             }
 
-            ret.setown(input->nextInGroup());
+            ret.setown(input->nextRow());
             if (!ret)
             {
                 finished = true;
@@ -3423,9 +3428,9 @@ const void * CHThorFirstNActivity::nextInGroup()
 
     if (grouped)
     {
-        ret.setown(input->nextInGroup());
+        ret.setown(input->nextRow());
         while (ret)
-            ret.setown(input->nextInGroup());
+            ret.setown(input->nextRow());
         doneThisGroup = 0;
     }
     else
@@ -3454,17 +3459,17 @@ void CHThorChooseSetsActivity::ready()
     helper.setCounts(setCounts);
 }
 
-const void * CHThorChooseSetsActivity::nextInGroup()
+const void * CHThorChooseSetsActivity::nextRow()
 {
     if (finished)
         return NULL;
 
     loop
     {
-        OwnedConstRoxieRow ret(input->nextInGroup());
+        OwnedConstRoxieRow ret(input->nextRow());
         if (!ret)
         {
-            ret.setown(input->nextInGroup());
+            ret.setown(input->nextRow());
             if (!ret)
                 return NULL;
         }
@@ -3511,16 +3516,16 @@ void CHThorChooseSetsExActivity::done()
     CHThorSimpleActivityBase::done();
 }
 
-const void * CHThorChooseSetsExActivity::nextInGroup()
+const void * CHThorChooseSetsExActivity::nextRow()
 {
     if (gathered.ordinality() == 0)
     {
         curIndex = 0;
-        const void * next = input->nextInGroup();
+        const void * next = input->nextRow();
         while(next)
         {
             gathered.append(next);
-            next = input->nextInGroup();
+            next = input->nextRow();
         }
         if(gathered.ordinality() == 0)
         {
@@ -3640,9 +3645,9 @@ CHThorDegroupActivity::CHThorDegroupActivity(IAgentContext &_agent, unsigned _ac
 {
 }
 
-const void * CHThorDegroupActivity::nextInGroup()
+const void * CHThorDegroupActivity::nextRow()
 {
-    const void * ret = input->nextUngrouped();
+    const void * ret = input->ungroupedNextRow();
     if (ret)
         processed++;
     return ret;
@@ -3687,12 +3692,12 @@ void CHThorGroupActivity::done()
     next.clear();
 }
 
-const void *CHThorGroupActivity::nextInGroup()
+const void *CHThorGroupActivity::nextRow()
 {
     if (!firstDone)
     {
         firstDone = true;
-        next.setown(input->nextInGroup());
+        next.setown(input->nextRow());
     }
 
     if (endPending)
@@ -3702,9 +3707,9 @@ const void *CHThorGroupActivity::nextInGroup()
     }
 
     OwnedConstRoxieRow prev(next.getClear());
-    next.setown(input->nextInGroup());
+    next.setown(input->nextRow());
     if (!next)  // skip incoming groups. (should it sub-group??)
-        next.setown(input->nextInGroup());
+        next.setown(input->nextRow());
 
     if (next)
     {
@@ -3724,12 +3729,12 @@ const void * CHThorGroupActivity::nextGE(const void * seek, unsigned numFields)
         if (next)
         {
             if (stepCompare->docompare(next, seek, numFields) >= 0)
-                return nextInGroup();
+                return nextRow();
         }
     }
     next.setown(input->nextGE(seek, numFields));
     firstDone = true;
-    return nextInGroup();
+    return nextRow();
 }
 
 //=====================================================================================================
@@ -3760,7 +3765,7 @@ void CHThorGroupSortActivity::done()
     CHThorSimpleActivityBase::done();
 }
 
-const void *CHThorGroupSortActivity::nextInGroup()
+const void *CHThorGroupSortActivity::nextRow()
 {
     if(!gotSorted)
         getSorted();
@@ -3856,7 +3861,7 @@ void CHThorGroupSortActivity::getSorted()
     diskReader.clear();
     queryRowManager()->addRowBuffer(this);//register for OOM callbacks
     const void * next;
-    while((next = input->nextInGroup()) != NULL)
+    while((next = input->nextRow()) != NULL)
     {
         if (!sorter->addRow(next))
         {
@@ -4178,18 +4183,18 @@ void CHThorGroupedActivity::done()
     next[2].clear();
 }
 
-const void *CHThorGroupedActivity::nextInGroup()
+const void *CHThorGroupedActivity::nextRow()
 {
     if (!firstDone)
     {
-        next[0].setown(input->nextInGroup());
-        next[1].setown(input->nextInGroup());
+        next[0].setown(input->nextRow());
+        next[1].setown(input->nextRow());
         nextRowIndex = 0;
     }
 
     unsigned nextToCompare = (nextRowIndex + 1) % 3;
     unsigned nextToFill  = (nextRowIndex + 2) % 3;
-    next[nextToFill].setown(input->nextInGroup());
+    next[nextToFill].setown(input->nextRow());
 
     OwnedConstRoxieRow ret(next[nextRowIndex].getClear());
     if (ret)
@@ -4230,16 +4235,16 @@ void CHThorSortedActivity::done()
     next.clear();
 }
 
-const void *CHThorSortedActivity::nextInGroup()
+const void *CHThorSortedActivity::nextRow()
 {
     if (!firstDone)
     {
         firstDone = true;
-        next.setown(input->nextInGroup());
+        next.setown(input->nextRow());
     }
 
     OwnedConstRoxieRow prev(next.getClear());
-    next.setown(input->nextInGroup());
+    next.setown(input->nextRow());
     if (prev && next)
         if (compare->docompare(prev, next) > 0)
             throw MakeStringException(100, "SORTED(%u) detected incorrectly sorted rows  (row %" I64F "d,  %" I64F "d))", activityId, processed+1, processed+2);
@@ -4253,12 +4258,12 @@ const void * CHThorSortedActivity::nextGE(const void * seek, unsigned numFields)
     if (next)
     {
         if (stepCompare->docompare(next, seek, numFields) >= 0)
-            return nextInGroup();
+            return nextRow();
     }
 
     firstDone = true;
     next.setown(input->nextGE(seek, numFields));
-    return nextInGroup();
+    return nextRow();
 }
 
 
@@ -4297,9 +4302,9 @@ void CHThorTraceActivity::done()
     name.clear();
 }
 
-const void *CHThorTraceActivity::nextInGroup()
+const void *CHThorTraceActivity::nextRow()
 {
-    OwnedConstRoxieRow ret(input->nextInGroup());
+    OwnedConstRoxieRow ret(input->nextRow());
     if (!ret)
         return NULL;
     onTrace(ret);
@@ -4474,7 +4479,7 @@ void CHThorJoinActivity::createDefaultRight()
 void CHThorJoinActivity::fillLeft()
 {
     matchedLeft = false;
-    left.setown(sortedLeftInput->nextInGroup()); // NOTE: already degrouped
+    left.setown(sortedLeftInput->nextRow()); // NOTE: already degrouped
     if(betweenjoin && left && pendingRight && (collate->docompare(left, pendingRight) >= 0))
         fillRight();
     if (limitedhelper && 0==rightIndex)
@@ -4519,12 +4524,12 @@ void CHThorJoinActivity::fillRight()
         }
         else
         {
-            next.setown(groupedSortedRightInput->nextInGroup());
+            next.setown(groupedSortedRightInput->nextRow());
         }
         if(!rightOuterJoin && next && (!left || (collateupper->docompare(left, next) > 0))) // if right is less than left, and not right outer, can skip group
         {
             while(next) 
-                next.setown(groupedSortedRightInput->nextInGroup());
+                next.setown(groupedSortedRightInput->nextRow());
             continue;
         }
         while(next)
@@ -4551,7 +4556,7 @@ void CHThorJoinActivity::fillRight()
                 right.append(next.getClear());
                 do
                 {
-                    next.setown(groupedSortedRightInput->nextInGroup());
+                    next.setown(groupedSortedRightInput->nextRow());
                 } while(next);
                 break;
             }
@@ -4561,7 +4566,7 @@ void CHThorJoinActivity::fillRight()
                 groupCount = 0;
                 while(next) 
                 {
-                    next.setown(groupedSortedRightInput->nextInGroup());
+                    next.setown(groupedSortedRightInput->nextRow());
                 }
             }
             else
@@ -4569,13 +4574,13 @@ void CHThorJoinActivity::fillRight()
                 right.append(next.getClear());
                 groupCount++;
             }
-            next.setown(groupedSortedRightInput->nextInGroup());
+            next.setown(groupedSortedRightInput->nextRow());
             
         }
         // normally only want to read one right group, but if is between join and next right group is in window for left, need to continue
         if(betweenjoin && left)
         {
-            pendingRight.setown(groupedSortedRightInput->nextInGroup());
+            pendingRight.setown(groupedSortedRightInput->nextRow());
             if(!pendingRight || (collate->docompare(left, pendingRight) < 0))
                 break;
         }
@@ -4652,7 +4657,7 @@ void CHThorJoinActivity::failLimit()
     throw MakeStringException(0, "More than %d match candidates in join for row %s", abortLimit, xmlwrite.str());
 }
 
-const void *CHThorJoinActivity::nextInGroup()
+const void *CHThorJoinActivity::nextRow()
 {
     loop
     {
@@ -5070,7 +5075,7 @@ bool CHThorSelfJoinActivity::fillGroup()
     failingOuterAtmost = false;
     OwnedConstRoxieRow next;
     unsigned groupCount = 0;
-    next.setown(groupedInput->nextInGroup());
+    next.setown(groupedInput->nextRow());
     while(next)
     {
         if(groupCount==abortLimit)
@@ -5098,7 +5103,7 @@ bool CHThorSelfJoinActivity::fillGroup()
             group.clear();
             groupCount = 0;
             while(next) 
-                next.setown(groupedInput->nextInGroup());
+                next.setown(groupedInput->nextRow());
         }
         else if(groupCount==atmostLimit)
         {
@@ -5114,7 +5119,7 @@ bool CHThorSelfJoinActivity::fillGroup()
                 group.clear();
                 groupCount = 0;
                 while(next) 
-                    next.setown(groupedInput->nextInGroup());
+                    next.setown(groupedInput->nextRow());
             }
         }
         else
@@ -5122,7 +5127,7 @@ bool CHThorSelfJoinActivity::fillGroup()
             group.append(next.getClear());
             groupCount++;
         }
-        next.setown(groupedInput->nextInGroup());
+        next.setown(groupedInput->nextRow());
     }
     if(group.ordinality()==0)
     {
@@ -5139,14 +5144,14 @@ bool CHThorSelfJoinActivity::fillGroup()
     return true;
 }
 
-const void * CHThorSelfJoinActivity::nextInGroup()
+const void * CHThorSelfJoinActivity::nextRow()
 {
     if (limitedhelper)  {
         while(!eof) //limited match join
         {
             if (!group.isItem(rightIndex))
             {
-                lhs.setown(dualCacheInput->nextInGroup());
+                lhs.setown(dualCacheInput->nextRow());
                 if (lhs)
                 {
                     rightIndex = 0;
@@ -5210,7 +5215,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
         {
             if(failingLimit || failingOuterAtmost)
             {
-                OwnedConstRoxieRow lhs(groupedInput->nextInGroup());  // dualCache never active here
+                OwnedConstRoxieRow lhs(groupedInput->nextRow());  // dualCache never active here
                 while(lhs)
                 {
                     const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
@@ -5219,7 +5224,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
                         processed++;
                         return ret;
                     }
-                    lhs.setown(groupedInput->nextInGroup());
+                    lhs.setown(groupedInput->nextRow());
                 }
                 failingLimit.clear();
             }
@@ -5447,9 +5452,9 @@ void CHThorLookupJoinActivity::loadRight()
     const void * next;
     while(true)
     {
-        next = input1->nextInGroup();
+        next = input1->nextRow();
         if(!next)
-            next = input1->nextInGroup();
+            next = input1->nextRow();
         if(!next)
             break;
         rightset.append(next);
@@ -5525,7 +5530,7 @@ const void * CHThorLookupJoinActivity::groupDenormalizeRecords(const void * left
     }
 }
 
-const void * CHThorLookupJoinActivity::nextInGroup()
+const void * CHThorLookupJoinActivity::nextRow()
 {
     if(!table)
         loadRight();
@@ -5533,29 +5538,29 @@ const void * CHThorLookupJoinActivity::nextInGroup()
     {
     case TAKlookupjoin:
     case TAKsmartjoin:
-        return nextInGroupJoin();
+        return nextRowJoin();
     case TAKlookupdenormalize:
     case TAKlookupdenormalizegroup:
     case TAKsmartdenormalize:
     case TAKsmartdenormalizegroup:
-        return nextInGroupDenormalize();
+        return nextRowDenormalize();
     }
     throwUnexpected();
 }
 
-const void * CHThorLookupJoinActivity::nextInGroupJoin()
+const void * CHThorLookupJoinActivity::nextRowJoin()
 {
     while(true)
     {
         const void * right = NULL;
         if(!left)
         {
-            left.setown(input->nextInGroup());
+            left.setown(input->nextRow());
             keepCount = keepLimit;
             if(!left)
             {
                 if (isSmartJoin)
-                    left.setown(input->nextInGroup());
+                    left.setown(input->nextRow());
 
                 if(!left)
                 {
@@ -5619,15 +5624,15 @@ const void * CHThorLookupJoinActivity::nextInGroupJoin()
     }
 }
 
-const void * CHThorLookupJoinActivity::nextInGroupDenormalize()
+const void * CHThorLookupJoinActivity::nextRowDenormalize()
 {
     while(true)
     {
-        left.setown(input->nextInGroup());
+        left.setown(input->nextRow());
         if(!left)
         {
             if (!matchedGroup || isSmartJoin)
-                left.setown(input->nextInGroup());
+                left.setown(input->nextRow());
 
             if (!left)
             {
@@ -5833,9 +5838,9 @@ void CHThorAllJoinActivity::loadRight()
     const void * next;
     while(true)
     {
-        next = input1->nextInGroup();
+        next = input1->nextRow();
         if(!next)
-            next = input1->nextInGroup();
+            next = input1->nextRow();
         if(!next)
             break;
         rightset.append(next);
@@ -5893,12 +5898,12 @@ void CHThorAllJoinActivity::setInput(unsigned index, IHThorInput * _input)
     }
 }
 
-const void * CHThorAllJoinActivity::nextInGroup()
+const void * CHThorAllJoinActivity::nextRow()
 {
     if(!started)
     {
         started = true;
-        left.setown(input->nextInGroup());
+        left.setown(input->nextRow());
         matchedLeft = false;
         countForLeft = keepLimit;
         if(!left)
@@ -5951,7 +5956,7 @@ const void * CHThorAllJoinActivity::nextInGroup()
 
         if(!left)
         {
-            left.setown(input->nextInGroup());
+            left.setown(input->nextRow());
             matchedLeft = false;
             countForLeft = keepLimit;
         }
@@ -6128,12 +6133,12 @@ void CHThorWorkUnitWriteActivity::execute()
     {
         if ((unsigned __int64)rows >= agent.queryStopAfter())
             break;
-        OwnedConstRoxieRow nextrec(input->nextInGroup());
+        OwnedConstRoxieRow nextrec(input->nextRow());
         if (grouped && (rows != initialRows))
             rowdata.append(nextrec == NULL);
         if (!nextrec)
         {
-            nextrec.setown(input->nextInGroup());
+            nextrec.setown(input->nextRow());
             if (!nextrec)
                 break;
         }
@@ -6219,10 +6224,10 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
     RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
     loop
     {
-        const void *row = input->nextInGroup();
+        const void *row = input->nextRow();
         if (!row)
         {
-            row = input->nextInGroup();
+            row = input->nextRow();
             if (!row)
                 break;
         }
@@ -6268,7 +6273,7 @@ CHThorRemoteResultActivity::CHThorRemoteResultActivity(IAgentContext &_agent, un
 
 void CHThorRemoteResultActivity::execute()
 {
-    OwnedConstRoxieRow result(input->nextInGroup());
+    OwnedConstRoxieRow result(input->nextRow());
     helper.sendResult(result);
 }
 
@@ -6288,7 +6293,7 @@ void CHThorInlineTableActivity::ready()
 }
 
 
-const void *CHThorInlineTableActivity::nextInGroup()
+const void *CHThorInlineTableActivity::nextRow()
 {
     // Filtering empty rows, returns the next valid row
     while (curRow < numRows)
@@ -6310,7 +6315,7 @@ CHThorNullActivity::CHThorNullActivity(IAgentContext &_agent, unsigned _activity
 {
 }
 
-const void *CHThorNullActivity::nextInGroup()
+const void *CHThorNullActivity::nextRow()
 {
     return NULL;
 }
@@ -6326,7 +6331,7 @@ void CHThorActionActivity::execute()
     helper.action();
 }
 
-const void *CHThorActionActivity::nextInGroup()
+const void *CHThorActionActivity::nextRow()
 {
     return NULL;
 }
@@ -6336,7 +6341,7 @@ CHThorSideEffectActivity::CHThorSideEffectActivity(IAgentContext &_agent, unsign
 {
 }
 
-const void *CHThorSideEffectActivity::nextInGroup()
+const void *CHThorSideEffectActivity::nextRow()
 {
     try
     {
@@ -6360,9 +6365,9 @@ void CHThorDummyActivity::execute()
 {
 }
 
-const void *CHThorDummyActivity::nextInGroup()
+const void *CHThorDummyActivity::nextRow()
 {
-    return input ? input->nextInGroup() : NULL;
+    return input ? input->nextRow() : NULL;
 }
 
 //=====================================================================================================
@@ -6384,9 +6389,9 @@ void CHThorWhenActionActivity::execute()
     graphElement->executeDependentActions(agent, NULL, 1);
 }
 
-const void * CHThorWhenActionActivity::nextInGroup()
+const void * CHThorWhenActionActivity::nextRow()
 {
-    return input->nextInGroup();
+    return input->nextRow();
 }
 
 void CHThorWhenActionActivity::done()
@@ -6456,11 +6461,11 @@ void CHThorConcatActivity::ready()
     CHThorMultiInputActivity::ready();
 }
 
-const void *CHThorConcatActivity::nextInGroup()
+const void *CHThorConcatActivity::nextRow()
 {
     if (!curInput)
         return NULL;  // eof
-    const void * next = curInput->nextInGroup();
+    const void * next = curInput->nextRow();
     if (next)
     {
         anyThisGroup = true;
@@ -6479,10 +6484,10 @@ const void *CHThorConcatActivity::nextInGroup()
                 return NULL;
             }
             else
-                return nextInGroup();
+                return nextRow();
         }
         else
-            return nextInGroup();
+            return nextRow();
     }
     else if (inputIdx < inputs.length()-1)
     {
@@ -6490,7 +6495,7 @@ const void *CHThorConcatActivity::nextInGroup()
         curInput = inputs.item(inputIdx);
         eogSeen = false;
         anyThisGroup = false;
-        return nextInGroup();
+        return nextRow();
     }
     else
     {
@@ -6513,14 +6518,14 @@ void CHThorNonEmptyActivity::ready()
     CHThorMultiInputActivity::ready();
 }
 
-const void *CHThorNonEmptyActivity::nextInGroup()
+const void *CHThorNonEmptyActivity::nextRow()
 {
     if (!selectedInput)
     {
         ForEachItemIn(i, inputs)
         {
             IHThorInput * cur = inputs.item(i);
-            const void * next = cur->nextInGroup();
+            const void * next = cur->nextRow();
             if (next)
             {
                 selectedInput = cur;
@@ -6530,7 +6535,7 @@ const void *CHThorNonEmptyActivity::nextInGroup()
         }
         return NULL;
     }
-    const void * next = selectedInput->nextInGroup();
+    const void * next = selectedInput->nextRow();
     if (next)
         processed++;
     return next;
@@ -6557,7 +6562,7 @@ const void * CHThorRegroupActivity::nextFromInputs()
     unsigned initialInput = inputIndex;
     while (inputs.isItem(inputIndex))
     {
-        OwnedConstRoxieRow next(inputs.item(inputIndex)->nextInGroup());
+        OwnedConstRoxieRow next(inputs.item(inputIndex)->nextRow());
         if (next)
         {
             if ((inputIndex != initialInput) && (inputIndex != initialInput+1))
@@ -6576,7 +6581,7 @@ const void * CHThorRegroupActivity::nextFromInputs()
     return NULL;
 }
 
-const void * CHThorRegroupActivity::nextInGroup()
+const void * CHThorRegroupActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -6611,7 +6616,7 @@ void CHThorRollupGroupActivity::ready()
 }
 
 
-const void * CHThorRollupGroupActivity::nextInGroup()
+const void * CHThorRollupGroupActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -6622,7 +6627,7 @@ const void * CHThorRollupGroupActivity::nextInGroup()
 
         loop
         {
-            const void * in = input->nextInGroup();
+            const void * in = input->nextRow();
             if (!in)
                 break;
             group.append(in);
@@ -6667,14 +6672,14 @@ void CHThorCombineActivity::nextInputs(OwnedRowArray & out)
 {
     ForEachItemIn(i, inputs)
     {
-        const void * next = inputs.item(i)->nextInGroup();
+        const void * next = inputs.item(i)->nextRow();
         if (next)
             out.append(next);
     }
 }
 
 
-const void *CHThorCombineActivity::nextInGroup()
+const void *CHThorCombineActivity::nextRow()
 {
     loop
     {
@@ -6737,19 +6742,19 @@ void CHThorCombineGroupActivity::setInput(unsigned index, IHThorInput *_input)
 }
 
 
-const void *CHThorCombineGroupActivity::nextInGroup()
+const void *CHThorCombineGroupActivity::nextRow()
 {
     loop
     {
-        OwnedConstRoxieRow left(input->nextInGroup());
+        OwnedConstRoxieRow left(input->nextRow());
         if (!left && (numProcessedLastGroup == processed))
-            left.setown(input->nextInGroup());
+            left.setown(input->nextRow());
 
         if (!left)
         {
             if (numProcessedLastGroup == processed)
             {
-                OwnedConstRoxieRow nextRight(input1->nextInGroup());
+                OwnedConstRoxieRow nextRight(input1->nextRow());
                 if (nextRight)
                     throw MakeStringException(101, "Missing LEFT record for Combine group Activity(%u)", activityId);
             }
@@ -6761,7 +6766,7 @@ const void *CHThorCombineGroupActivity::nextInGroup()
         OwnedRowArray group;
         loop
         {
-            const void * in = input1->nextInGroup();
+            const void * in = input1->nextRow();
             if (!in)
                 break;
             group.append(in);
@@ -6802,10 +6807,10 @@ void CHThorApplyActivity::execute()
         helper.start();
         loop
         {
-            OwnedConstRoxieRow next(input->nextInGroup());
+            OwnedConstRoxieRow next(input->nextRow());
             if (!next)
             {
-                next.setown(input->nextInGroup());
+                next.setown(input->nextRow());
                 if (!next)
                     break;
             }
@@ -6833,17 +6838,17 @@ void CHThorDistributionActivity::execute()
     IDistributionTable * * accumulator = (IDistributionTable * *)ma.allocate(helper.queryInternalRecordSize()->getMinRecordSize());
     helper.clearAggregate(accumulator); 
 
-    OwnedConstRoxieRow nextrec(input->nextInGroup());
+    OwnedConstRoxieRow nextrec(input->nextRow());
     loop
     {
         if (!nextrec)
         {
-            nextrec.setown(input->nextInGroup());
+            nextrec.setown(input->nextRow());
             if (!nextrec)
                 break;
         }
         helper.process(accumulator, nextrec);
-        nextrec.setown(input->nextInGroup());
+        nextrec.setown(input->nextRow());
     }
     StringBuffer result;
     result.append("<XML>");
@@ -6925,11 +6930,11 @@ void CHThorWorkunitReadActivity::done()
 }
 
 
-const void *CHThorWorkunitReadActivity::nextInGroup()
+const void *CHThorWorkunitReadActivity::nextRow()
 {
     if(diskread)
     {
-        const void * ret = diskread->nextInGroup();
+        const void * ret = diskread->nextRow();
         processed = diskread->queryProcessed();
         return ret;
     }
@@ -7015,7 +7020,7 @@ unsigned CHThorParseActivity::onMatch(ARowBuilder & self, const void * curRecord
 }
 
 
-const void * CHThorParseActivity::nextInGroup()
+const void * CHThorParseActivity::nextRow()
 {
     loop
     {
@@ -7028,7 +7033,7 @@ const void * CHThorParseActivity::nextInGroup()
             return out.getClear();
         }
 
-        in.setown(input->nextInGroup());
+        in.setown(input->nextRow());
         if (!in)
         {
             if (anyThisGroup)
@@ -7036,7 +7041,7 @@ const void * CHThorParseActivity::nextInGroup()
                 anyThisGroup = false;
                 return NULL;
             }
-            in.setown(input->nextInGroup());
+            in.setown(input->nextRow());
             if (!in)
                 return NULL;
         }
@@ -7075,16 +7080,16 @@ void CHThorEnthActivity::start()
     started = true;
 }
 
-const void * CHThorEnthActivity::nextInGroup()
+const void * CHThorEnthActivity::nextRow()
 {
     if(!started)
         start();
     OwnedConstRoxieRow ret;
     loop
     {
-        ret.setown(input->nextInGroup());
+        ret.setown(input->nextRow());
         if(!ret) //end of group
-            ret.setown(input->nextInGroup());
+            ret.setown(input->nextRow());
         if(!ret) //eof
             return NULL;
         if (wanted())
@@ -7136,7 +7141,7 @@ void CHThorTopNActivity::done()
     sortedCount = 0;
 }
 
-const void * CHThorTopNActivity::nextInGroup()
+const void * CHThorTopNActivity::nextRow()
 {
     if(eof)
         return NULL;
@@ -7169,7 +7174,7 @@ bool CHThorTopNActivity::abortEarly()
                 OwnedConstRoxieRow next;
                 do
                 {
-                    next.setown(input->nextInGroup());
+                    next.setown(input->nextRow());
                 } while(next);
             }
             else
@@ -7193,7 +7198,7 @@ void CHThorTopNActivity::getSorted()
     if (eoi)
         return;
 
-    OwnedConstRoxieRow next(input->nextInGroup());
+    OwnedConstRoxieRow next(input->nextRow());
     while(next)
     {
         if(sortedCount < limit)
@@ -7214,7 +7219,7 @@ void CHThorTopNActivity::getSorted()
                     return;
             }
         }
-        next.setown(input->nextInGroup());
+        next.setown(input->nextRow());
     }
 }
 
@@ -7247,7 +7252,7 @@ void CHThorXmlParseActivity::done()
 }
 
 
-const void * CHThorXmlParseActivity::nextInGroup()
+const void * CHThorXmlParseActivity::nextRow()
 {
     loop
     {
@@ -7294,11 +7299,11 @@ const void * CHThorXmlParseActivity::nextInGroup()
                 }
             }
         }
-        in.setown(input->nextInGroup());
+        in.setown(input->nextRow());
         if(!in)
         {
             if(numProcessedLastGroup == processed)
-                in.setown(input->nextInGroup());
+                in.setown(input->nextRow());
             if(!in)
             {
                 numProcessedLastGroup = processed;
@@ -7343,7 +7348,7 @@ public:
         CHThorMultiInputActivity::done(); 
     }
 
-    virtual const void * nextInGroup()
+    virtual const void * nextRow()
     {
         const void * ret = merger.nextRow();
         if (ret)
@@ -7393,7 +7398,7 @@ CHThorWSCRowCallActivity::CHThorWSCRowCallActivity(IAgentContext &_agent, unsign
 {
 }
 
-const void *CHThorWSCRowCallActivity::nextInGroup()
+const void *CHThorWSCRowCallActivity::nextRow()
 {
     try
     {
@@ -7412,7 +7417,7 @@ const void *CHThorWSCRowCallActivity::nextInGroup()
 
 //---------------------------------------------------------------------------
 
-const void *CHThorHttpRowCallActivity::nextInGroup()
+const void *CHThorHttpRowCallActivity::nextRow()
 {
     try
     {
@@ -7421,7 +7426,7 @@ const void *CHThorHttpRowCallActivity::nextInGroup()
             WSChelper.setown(createHttpCallHelper(this, rowAllocator, authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
             WSChelper->start();
         }
-        return CHThorWSCRowCallActivity::nextInGroup();
+        return CHThorWSCRowCallActivity::nextRow();
     }
     catch(IException * e)
     {
@@ -7431,7 +7436,7 @@ const void *CHThorHttpRowCallActivity::nextInGroup()
 
 //---------------------------------------------------------------------------
 
-const void *CHThorSoapRowCallActivity::nextInGroup()
+const void *CHThorSoapRowCallActivity::nextRow()
 {
     try
     {
@@ -7440,7 +7445,7 @@ const void *CHThorSoapRowCallActivity::nextInGroup()
             WSChelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
             WSChelper->start();
         }
-        return CHThorWSCRowCallActivity::nextInGroup();
+        return CHThorWSCRowCallActivity::nextRow();
     }
     catch(IException * e)
     {
@@ -7480,7 +7485,7 @@ CHThorSoapDatasetCallActivity::CHThorSoapDatasetCallActivity(IAgentContext &_age
 }
 
 
-const void * CHThorSoapDatasetCallActivity::nextInGroup()
+const void * CHThorSoapDatasetCallActivity::nextRow()
 {
     try
     {
@@ -7505,10 +7510,10 @@ const void * CHThorSoapDatasetCallActivity::getNextRow()
 {
     CriticalBlock b(crit);
 
-    const void *nextrec = input->nextInGroup();
+    const void *nextrec = input->nextRow();
     if (!nextrec)
     {
-        nextrec = input->nextInGroup();
+        nextrec = input->nextRow();
     }
 
     return nextrec;
@@ -7541,10 +7546,10 @@ const void * CHThorSoapDatasetActionActivity::getNextRow()
 {
     CriticalBlock b(crit);
 
-    const void *nextrec = input->nextInGroup();
+    const void *nextrec = input->nextRow();
     if (!nextrec)
     {
-        nextrec = input->nextInGroup();
+        nextrec = input->nextRow();
     }
     if (nextrec)
     {
@@ -7588,10 +7593,10 @@ void CHThorDatasetResultActivity::execute()
     IRecordSize * inputMeta = input->queryOutputMeta();
     loop
     {
-        OwnedConstRoxieRow nextrec(input->nextInGroup());
+        OwnedConstRoxieRow nextrec(input->nextRow());
         if (!nextrec)
         {
-            nextrec.setown(input->nextInGroup());
+            nextrec.setown(input->nextRow());
             if (!nextrec)
                 break;
         }
@@ -7609,7 +7614,7 @@ CHThorRowResultActivity::CHThorRowResultActivity(IAgentContext &_agent, unsigned
 
 void CHThorRowResultActivity::execute()
 {
-    OwnedConstRoxieRow nextrec(input->nextInGroup());
+    OwnedConstRoxieRow nextrec(input->nextRow());
     assertex(nextrec);
     IRecordSize * inputMeta = input->queryOutputMeta();
     unsigned length = inputMeta->getRecordSize(nextrec);
@@ -7623,7 +7628,7 @@ CHThorChildIteratorActivity::CHThorChildIteratorActivity(IAgentContext &_agent, 
 }
 
 
-const void *CHThorChildIteratorActivity::nextInGroup()
+const void *CHThorChildIteratorActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -7674,7 +7679,7 @@ CHThorLinkedRawIteratorActivity::CHThorLinkedRawIteratorActivity(IAgentContext &
 {
 }
 
-const void *CHThorLinkedRawIteratorActivity::nextInGroup()
+const void *CHThorLinkedRawIteratorActivity::nextRow()
 {
     const void *ret =helper.next();
     if (ret)
@@ -7695,7 +7700,7 @@ CHThorChildNormalizeActivity::CHThorChildNormalizeActivity(IAgentContext &_agent
 }
 
 
-const void *CHThorChildNormalizeActivity::nextInGroup()
+const void *CHThorChildNormalizeActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -7749,7 +7754,7 @@ CHThorChildAggregateActivity::CHThorChildAggregateActivity(IAgentContext &_agent
 }
 
 
-const void *CHThorChildAggregateActivity::nextInGroup()
+const void *CHThorChildAggregateActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -7806,7 +7811,7 @@ void CHThorChildGroupAggregateActivity::processRow(const void * next)
 }
         
 
-const void * CHThorChildGroupAggregateActivity::nextInGroup()
+const void * CHThorChildGroupAggregateActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -7850,7 +7855,7 @@ void CHThorChildThroughNormalizeActivity::ready()
 }
 
 
-const void *CHThorChildThroughNormalizeActivity::nextInGroup()
+const void *CHThorChildThroughNormalizeActivity::nextRow()
 {
     try
     {
@@ -7861,7 +7866,7 @@ const void *CHThorChildThroughNormalizeActivity::nextInGroup()
 
             while (!ok)
             {
-                lastInput.setown(input->nextInGroup());
+                lastInput.setown(input->nextRow());
                 if (!lastInput)
                 {
                     if (numProcessedLastGroup != processed)
@@ -7869,7 +7874,7 @@ const void *CHThorChildThroughNormalizeActivity::nextInGroup()
                         numProcessedLastGroup = processed;
                         return NULL;
                     }
-                    lastInput.setown(input->nextInGroup());
+                    lastInput.setown(input->nextRow());
                     if (!lastInput)
                         return NULL;
                 }
@@ -8403,7 +8408,7 @@ void CHThorDiskReadActivity::done()
 }
 
 
-const void *CHThorDiskReadActivity::nextInGroup()
+const void *CHThorDiskReadActivity::nextRow()
 {
     if (!opened) open();
     if (eogPending && (lastGroupProcessed != processed))
@@ -8528,7 +8533,7 @@ void CHThorDiskNormalizeActivity::gatherInfo(IFileDescriptor * fd)
     assertex(!grouped);
 }
 
-const void *CHThorDiskNormalizeActivity::nextInGroup()
+const void *CHThorDiskNormalizeActivity::nextRow()
 {
     if (!opened) open();
     loop
@@ -8642,7 +8647,7 @@ void CHThorDiskAggregateActivity::gatherInfo(IFileDescriptor * fd)
 }
 
 
-const void *CHThorDiskAggregateActivity::nextInGroup()
+const void *CHThorDiskAggregateActivity::nextRow()
 {
     if (finished) return NULL;
     try
@@ -8704,7 +8709,7 @@ void CHThorDiskCountActivity::gatherInfo(IFileDescriptor * fd)
 }
 
 
-const void *CHThorDiskCountActivity::nextInGroup()
+const void *CHThorDiskCountActivity::nextRow()
 {
     if (finished) return NULL;
 
@@ -8799,7 +8804,7 @@ void CHThorDiskGroupAggregateActivity::processRow(const void * next)
 }
 
 
-const void *CHThorDiskGroupAggregateActivity::nextInGroup()
+const void *CHThorDiskGroupAggregateActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -8902,7 +8907,7 @@ void CHThorCsvReadActivity::calcFixedDiskRecordSize()
     fixedDiskRecordSize = 0;
 }
 
-const void *CHThorCsvReadActivity::nextInGroup()
+const void *CHThorCsvReadActivity::nextRow()
 {
     while (!stopAfter || (processed - initialProcessed) < stopAfter)
     {
@@ -9038,7 +9043,7 @@ void CHThorXmlReadActivity::calcFixedDiskRecordSize()
     fixedDiskRecordSize = 0;
 }
 
-const void *CHThorXmlReadActivity::nextInGroup()
+const void *CHThorXmlReadActivity::nextRow()
 {
     if(!opened) open();
     while (!eofseen && (!stopAfter  || (processed - initialProcessed) < stopAfter))
@@ -9137,7 +9142,7 @@ void CHThorLocalResultReadActivity::ready()
 }
 
 
-const void *CHThorLocalResultReadActivity::nextInGroup()
+const void *CHThorLocalResultReadActivity::nextRow()
 {
     const void * next = result->queryRow(curRow++);
     if (next)
@@ -9162,10 +9167,10 @@ void CHThorLocalResultWriteActivity::execute()
     IHThorGraphResult * result = graph->createResult(helper.querySequence(), LINK(rowAllocator));
     loop
     {
-        const void *nextrec = input->nextInGroup();
+        const void *nextrec = input->nextRow();
         if (!nextrec)
         {
-            nextrec = input->nextInGroup();
+            nextrec = input->nextRow();
             if (!nextrec)
                 break;
             result->addRowOwn(NULL);
@@ -9187,10 +9192,10 @@ void CHThorDictionaryResultWriteActivity::execute()
     RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
     loop
     {
-        const void *row = input->nextInGroup();
+        const void *row = input->nextRow();
         if (!row)
         {
-            row = input->nextInGroup();
+            row = input->nextRow();
             if (!row)
                 break;
         }
@@ -9227,9 +9232,9 @@ void CHThorLocalResultSpillActivity::ready()
 }
 
 
-const void * CHThorLocalResultSpillActivity::nextInGroup()
+const void * CHThorLocalResultSpillActivity::nextRow()
 {
-    const void * ret = input->nextInGroup();
+    const void * ret = input->nextRow();
     if (ret)
     {
         if (nullPending)
@@ -9251,7 +9256,7 @@ void CHThorLocalResultSpillActivity::done()
 {
     loop
     {
-        const void * ret = input->nextInGroup();
+        const void * ret = input->nextRow();
         if (!ret)
         {
             if (nullPending)
@@ -9303,7 +9308,7 @@ void CHThorLoopActivity::ready()
 }
 
 
-const void * CHThorLoopActivity::nextInGroup()
+const void * CHThorLoopActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -9313,10 +9318,10 @@ const void * CHThorLoopActivity::nextInGroup()
     {
         loop
         {
-            const void * ret = curInput->nextInGroup();
+            const void * ret = curInput->nextRow();
             if (!ret)
             {
-                ret = curInput->nextInGroup();      // more cope with groups somehow....
+                ret = curInput->nextRow();      // more cope with groups somehow....
                 if (!ret)
                 {
                     if (finishedLooping)
@@ -9449,7 +9454,7 @@ void CHThorGraphLoopResultReadActivity::ready()
 }
 
 
-const void *CHThorGraphLoopResultReadActivity::nextInGroup()
+const void *CHThorGraphLoopResultReadActivity::nextRow()
 {
     if (result)
     {
@@ -9477,10 +9482,10 @@ void CHThorGraphLoopResultWriteActivity::execute()
     IHThorGraphResult * result = graph->createGraphLoopResult(LINK(rowAllocator));
     loop
     {
-        const void *nextrec = input->nextInGroup();
+        const void *nextrec = input->nextRow();
         if (!nextrec)
         {
-            nextrec = input->nextInGroup();
+            nextrec = input->nextRow();
             if (!nextrec)
                 break;
             result->addRowOwn(NULL);
@@ -9538,7 +9543,7 @@ void CHThorGraphLoopActivity::ready()
 }
 
 
-const void * CHThorGraphLoopActivity::nextInGroup()
+const void * CHThorGraphLoopActivity::nextRow()
 {
     if (!executed)
     {
@@ -9547,10 +9552,10 @@ const void * CHThorGraphLoopActivity::nextInGroup()
         IHThorGraphResult * inputResult = loopResults->createResult(0, LINK(rowAllocator));
         loop
         {
-            const void * ret = input->nextInGroup();
+            const void * ret = input->nextRow();
             if (!ret)
             {
-                ret = input->nextInGroup();
+                ret = input->nextRow();
                 if (!ret)
                     break;
                 inputResult->addRowOwn(NULL);
@@ -9612,7 +9617,7 @@ void CHThorParallelGraphLoopActivity::ready()
 }
 
 
-const void * CHThorParallelGraphLoopActivity::nextInGroup()
+const void * CHThorParallelGraphLoopActivity::nextRow()
 {
     if (!executed)
     {
@@ -9621,10 +9626,10 @@ const void * CHThorParallelGraphLoopActivity::nextInGroup()
         IHThorGraphResult * inputResult = loopResults->createResult(0, LINK(rowAllocator));
         loop
         {
-            const void * ret = input->nextInGroup();
+            const void * ret = input->nextRow();
             if (!ret)
             {
-                ret = input->nextInGroup();
+                ret = input->nextRow();
                 if (!ret)
                     break;
                 inputResult->addRowOwn(NULL);
@@ -9661,7 +9666,7 @@ LibraryCallOutput::LibraryCallOutput(CHThorLibraryCallActivity * _owner, unsigne
     processed = 0;
 }
 
-const void * LibraryCallOutput::nextInGroup()
+const void * LibraryCallOutput::nextRow()
 {
     if (!gotRows)
     {
@@ -9697,6 +9702,11 @@ void LibraryCallOutput::done()
 {
     owner->done();
     result.clear();
+}
+
+void LibraryCallOutput::stop()
+{
+
 }
 
 void LibraryCallOutput::updateProgress(IStatisticGatherer &progress) const
@@ -9770,7 +9780,7 @@ void CHThorLibraryCallActivity::ready()
 }
 
 
-const void * CHThorLibraryCallActivity::nextInGroup()
+const void * CHThorLibraryCallActivity::nextRow()
 {
     throwUnexpected();
 }
@@ -9842,7 +9852,7 @@ public:
         inputs.append(_in);
     }
 
-    virtual const void * nextInGroup()
+    virtual const void * nextRow()
     {
         throwUnexpected();
     }
@@ -9917,7 +9927,7 @@ public:
         throwUnexpected();
     }
 
-    virtual const void * nextInGroup()
+    virtual const void * nextRow()
     {
         throwUnexpected();
     }
@@ -9979,11 +9989,11 @@ void CHThorNWaySelectActivity::ready()
     }
 }
 
-const void * CHThorNWaySelectActivity::nextInGroup()
+const void * CHThorNWaySelectActivity::nextRow()
 {
     if (!selectedInput)
         return NULL;
-    return selectedInput->nextInGroup();
+    return selectedInput->nextRow();
 }
 
 
@@ -10013,7 +10023,7 @@ void CHThorStreamedIteratorActivity::ready()
     rows.setown(helper.createInput());
 }
 
-const void *CHThorStreamedIteratorActivity::nextInGroup()
+const void *CHThorStreamedIteratorActivity::nextRow()
 {
     assertex(rows);
     const void * next = rows->nextRow();
@@ -10055,7 +10065,7 @@ void CHThorExternalActivity::ready()
         rows.setown(processor->createOutput(0));
 }
 
-const void *CHThorExternalActivity::nextInGroup()
+const void *CHThorExternalActivity::nextRow()
 {
     assertex(rows);
     const void * next = rows->nextRow();

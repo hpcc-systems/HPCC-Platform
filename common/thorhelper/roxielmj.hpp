@@ -105,7 +105,7 @@ public:
     public:
         IMPLEMENT_IINTERFACE;
         cOut(CRHDualCache *_parent, unsigned &_pos); 
-        const void * nextInGroup();
+        const void * nextRow();
         IOutputMetaData * queryOutputMeta() const;
     private:
         void stop();

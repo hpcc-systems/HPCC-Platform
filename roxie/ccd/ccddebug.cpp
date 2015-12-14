@@ -148,9 +148,9 @@ public:
         else
             return NULL;
     }
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
-        const void *ret = in->nextInGroup();
+        const void *ret = in->nextRow();
         if (ret)
         {
             size32_t size = inMeta->getRecordSize(ret);
@@ -243,9 +243,9 @@ public:
         // MORE - should probably only note them when wasCompleteMatch is true?
         return _next(InputProbe::nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra));
     }
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
-        return _next(InputProbe::nextInGroup());
+        return _next(InputProbe::nextRow());
     }
 
     void getNodeProgressInfo(IPropertyTree &node)
@@ -858,7 +858,7 @@ public:
         targetAct->updateTimes(debugContext->querySequence());
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         // Code is a little complex to avoid interpreting a skip on all rows in a group as EOF
         try
@@ -867,7 +867,7 @@ public:
                 return NULL;
             loop
             {
-                const void *ret = InputProbe::nextInGroup();
+                const void *ret = InputProbe::nextRow();
                 if (!ret)
                 {
                     if (EOGseen)

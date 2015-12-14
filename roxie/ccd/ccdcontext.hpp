@@ -37,7 +37,7 @@ class WorkflowMachine;
 
 interface IWorkUnitRowReader : public IInterface
 {
-    virtual const void * nextInGroup() = 0;
+    virtual const void * nextRow() = 0;
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt) = 0;
 };
 

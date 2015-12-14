@@ -3654,9 +3654,9 @@ public:
         return in->nextGE(seek, numFields);
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
-        const void *ret = in->nextInGroup();
+        const void *ret = in->nextRow();
         if (ret)
         {
             size32_t size = in->queryOutputMeta()->getRecordSize(ret);
@@ -4039,7 +4039,12 @@ public:
         return in->nextGE(seek, numFields);
     }
 
-    virtual const void *nextInGroup()
+    virtual void stop()
+    {
+        in->stop();
+    }
+
+    virtual const void *nextRow()
     {
         // Code is a little complex to avoid interpreting a skip on all rows in a group as EOF
         try
@@ -4048,7 +4053,7 @@ public:
                 return NULL;
             loop
             {
-                const void *ret = InputProbe::nextInGroup();
+                const void *ret = InputProbe::nextRow();
                 if (!ret)
                 {
                     if (EOGseen)

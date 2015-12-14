@@ -876,21 +876,26 @@ private:
             in->done();
         }
 
+        void stop()
+        {
+            in->stop();
+        }
+
         bool isGrouped() { return in->isGrouped(); }
 
         bool nextGroup(ConstPointerArray & group)
         {
             const void * next;
-            while ((next = nextInGroup()) != NULL)
+            while ((next = nextRow()) != NULL)
                 group.append(next);
             if (group.ordinality())
                 return true;
             return false;
         }
     
-        const void *nextInGroup()
+        const void *nextRow()
         {
-            const void *ret = in->nextInGroup();
+            const void *ret = in->nextRow();
             if (ret)
             {
                 size32_t size = in->queryOutputMeta()->getRecordSize(ret);

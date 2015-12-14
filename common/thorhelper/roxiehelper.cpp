@@ -133,9 +133,9 @@ void CRHRollingCache::advance()
     if (!eos) {
         if (!e)
             e = new CRHRollingCacheElem();
-        const void * nextrec = in->nextInGroup();//get row from CRHCRHDualCache::cOut, which gets from CRHCRHDualCache, which gets from input
+        const void * nextrec = in->nextRow();//get row from CRHCRHDualCache::cOut, which gets from CRHCRHDualCache, which gets from input
         if (!nextrec)
-            nextrec = in->nextInGroup();
+            nextrec = in->nextRow();
         if (nextrec) {
             e->set(nextrec);
             cache.enqueue(e);
@@ -220,9 +220,9 @@ bool CRHDualCache::get(unsigned n, CRHRollingCacheElem *&out)
     {
         if (!e)
             e = new CRHRollingCacheElem;
-        const void * nextrec = in->nextInGroup();   //get from activity
+        const void * nextrec = in->nextRow();   //get from activity
         if (!nextrec)
-            nextrec = in->nextInGroup();
+            nextrec = in->nextRow();
         if (!nextrec) {
             eos = true;
             break;
@@ -265,7 +265,7 @@ CRHDualCache::cOut::cOut(CRHDualCache *_parent, unsigned &_pos)
     stopped = false;
 }
 
-const void * CRHDualCache::cOut::nextInGroup()
+const void * CRHDualCache::cOut::nextRow()
 {
     CRHRollingCacheElem *e;
     if (stopped || !parent->get(pos,e))
@@ -418,7 +418,7 @@ bool ISimpleInputBase::nextGroup(ConstPointerArray & group)
 {
     // MORE - this should be replaced with a version that reads to a builder
     const void * next;
-    while ((next = nextInGroup()) != NULL)
+    while ((next = nextRow()) != NULL)
         group.append(next);
     if (group.ordinality())
         return true;
@@ -429,10 +429,10 @@ void ISimpleInputBase::readAll(RtlLinkedDatasetBuilder &builder)
 {
     loop
     {
-        const void *nextrec = nextInGroup();
+        const void *nextrec = nextRow();
         if (!nextrec)
         {
-            nextrec = nextInGroup();
+            nextrec = nextRow();
             if (!nextrec)
                 break;
             builder.appendEOG();
@@ -462,6 +462,11 @@ public:
     {
         return input->queryOutputMeta();
     }
+
+    virtual void stop()
+    {
+        input->stop();
+    }
 };
 
 class GroupedInputReader : public InputReaderBase
@@ -481,12 +486,12 @@ public:
         endGroupPending = false;
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (!firstRead)
         {
             firstRead = true;
-            next.setown(input->nextInGroup());
+            next.setown(input->nextRow());
         }
 
         if (eof || endGroupPending)
@@ -496,7 +501,7 @@ public:
         }
 
         OwnedConstRoxieRow prev(next.getClear());
-        next.setown(input->nextUngrouped());  // skip incoming grouping if present
+        next.setown(input->ungroupedNextRow());  // skip incoming grouping if present
 
         if (next)
         {
@@ -516,9 +521,9 @@ public:
     DegroupedInputReader(IInputBase *_input) : InputReaderBase(_input)
     {
     }
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
-        return input->nextUngrouped();
+        return input->ungroupedNextRow();
     }
 };
 
@@ -535,7 +540,7 @@ public:
         sorter->reset();
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (!firstRead)
         {
@@ -559,7 +564,7 @@ public:
     {
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (!firstRead)
         {
@@ -989,7 +994,7 @@ public:
         curBlock = new SortedBlock(blockNo++, rowManager, activityId);
         loop
         {
-            const void *next = input->nextInGroup();
+            const void *next = input->nextRow();
             if (!next)
                 break;
             if (!curBlock->insert(next, compare))
@@ -1195,7 +1200,7 @@ public:
         curIndex = 0;
         eof = false;
         assertex(sorted.ordinality()==0);
-        const void *next = input->nextInGroup();
+        const void *next = input->nextRow();
         if (!next)
         {
             eof = true;
@@ -1204,7 +1209,7 @@ public:
         loop
         {
             insertHeap(next);
-            next = input->nextInGroup();
+            next = input->nextRow();
             if (!next)
                 break;
         }
@@ -1266,7 +1271,7 @@ public:
     {
         loop
         {
-            const void * next = input->nextInGroup();
+            const void * next = input->nextRow();
             if (!next)
                 break;
             if (!rowsToSort.append(next))

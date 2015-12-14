@@ -186,7 +186,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }
 
 protected:
@@ -201,7 +201,7 @@ void CHThorNullAggregateActivity::ready()
     finished = false;
 }
 
-const void *CHThorNullAggregateActivity::nextInGroup()
+const void *CHThorNullAggregateActivity::nextRow()
 {
     if (finished) return NULL;
 
@@ -229,7 +229,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }
 
 protected:
@@ -243,7 +243,7 @@ void CHThorNullCountActivity::ready()
     finished = false;
 }
 
-const void *CHThorNullCountActivity::nextInGroup()
+const void *CHThorNullCountActivity::nextRow()
 {
     if (finished) return NULL;
 
@@ -771,7 +771,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual const void * nextGE(const void * seek, unsigned numFields);
 
     virtual IInputSteppingMeta * querySteppingMeta();
@@ -887,7 +887,7 @@ void CHThorIndexReadActivity::initPart()
     CHThorIndexReadActivityBase::initPart();
 }
 
-const void *CHThorIndexReadActivity::nextInGroup()
+const void *CHThorIndexReadActivity::nextRow()
 {
     if(keyedLimitReached)
     {
@@ -1100,7 +1100,7 @@ public:
 
     virtual void ready();
     virtual void done();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }
 
 protected:
@@ -1152,7 +1152,7 @@ void CHThorIndexNormalizeActivity::done()
     CHThorIndexReadActivityBase::done();
 }
 
-const void *CHThorIndexNormalizeActivity::nextInGroup()
+const void *CHThorIndexNormalizeActivity::nextRow()
 {
     if ((stopAfter && (processed-initialProcessed)==stopAfter) || !klManager)
         return NULL;
@@ -1283,7 +1283,7 @@ public:
     //interface IHThorInput
     virtual void done();
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }
 
 protected:
@@ -1357,7 +1357,7 @@ void CHThorIndexAggregateActivity::gather()
     }
 }
 
-const void *CHThorIndexAggregateActivity::nextInGroup()
+const void *CHThorIndexAggregateActivity::nextRow()
 {
     if (finished) return NULL;
     gather();
@@ -1398,7 +1398,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
 
 protected:
     void * createNextRow();
@@ -1424,7 +1424,7 @@ void CHThorIndexCountActivity::ready()
     choosenLimit = helper.getChooseNLimit();
 }
 
-const void *CHThorIndexCountActivity::nextInGroup()
+const void *CHThorIndexCountActivity::nextRow()
 {
     if (finished) return NULL;
 
@@ -1505,7 +1505,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }        
     virtual void processRow(const void * next);
 
@@ -1568,7 +1568,7 @@ void CHThorIndexGroupAggregateActivity::gather()
     }
 }
 
-const void *CHThorIndexGroupAggregateActivity::nextInGroup()
+const void *CHThorIndexGroupAggregateActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -2164,7 +2164,7 @@ public:
         avail.signal();
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (!started)
         {
@@ -2273,10 +2273,10 @@ public:
             {
                 if (aborting)
                     break;
-                const void *row = input->nextInGroup();
+                const void *row = input->nextRow();
                 if (!row)
                 {
-                    row = input->nextInGroup();
+                    row = input->nextRow();
                     if (!row)
                         break;
                 }
@@ -3513,7 +3513,7 @@ public:
         {
             if (aborting)
                 break;
-            const void *row = input->nextInGroup();
+            const void *row = input->nextRow();
             if (!row)
             {
                 if (eogSeen)
