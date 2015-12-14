@@ -10484,6 +10484,8 @@ public:
                 outSeq->flush(&crc);
             if (outSeq)
                 uncompressedBytesWritten = outSeq->getPosition();
+            outSeq.clear();
+            diskout.clear();  // Make sure file is properly closed or date may not match published info
             if (writer)
             {
                 updateWorkUnitResult(processed);
