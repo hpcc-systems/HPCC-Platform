@@ -655,7 +655,7 @@ public:
     {
         idx = 0;
     }
-    virtual const void * nextInGroup()
+    virtual const void * nextRow()
     {
         if (idx < count)
         {
@@ -762,7 +762,7 @@ public:
         RtlLinkedDatasetBuilder builder(rowAllocator);
         loop
         {
-            const void *ret = nextInGroup();
+            const void *ret = nextRow();
             if (!ret)
             {
                 if (atEOG || !isGrouped)
@@ -820,7 +820,7 @@ public:
         if (bufferBase)
             free(bufferBase);
     }
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (eof)
             return NULL;
@@ -996,7 +996,7 @@ public:
         rows->first();
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (rows->isValid())
         {

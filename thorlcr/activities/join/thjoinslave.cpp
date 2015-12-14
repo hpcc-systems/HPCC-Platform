@@ -632,7 +632,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        OwnedConstThorRow ret = processor.nextInGroup();
+        OwnedConstThorRow ret = processor.nextRow();
         if (ret)
         {
             dataLinkIncrement();

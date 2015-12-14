@@ -1128,7 +1128,7 @@ void CMergeJoinProcessor::queryResetEOF()
     resetEOF();
 }
 
-const void * CMergeJoinProcessor::nextInGroup()
+const void * CMergeJoinProcessor::nextRow()
 {
     if (conjunctionOptimizer)
         return conjunctionOptimizer->next();

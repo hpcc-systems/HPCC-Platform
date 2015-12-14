@@ -1280,7 +1280,7 @@ public:
         throwUnexpected();
     }
 
-    virtual const void * nextInGroup()
+    virtual const void * nextRow()
     {
         throwUnexpected();
     }

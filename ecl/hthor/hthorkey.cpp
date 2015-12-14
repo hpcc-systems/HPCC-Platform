@@ -186,7 +186,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }
 
 protected:
@@ -201,7 +201,7 @@ void CHThorNullAggregateActivity::ready()
     finished = false;
 }
 
-const void *CHThorNullAggregateActivity::nextInGroup()
+const void *CHThorNullAggregateActivity::nextRow()
 {
     if (finished) return NULL;
 
@@ -229,7 +229,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }
 
 protected:
@@ -243,7 +243,7 @@ void CHThorNullCountActivity::ready()
     finished = false;
 }
 
-const void *CHThorNullCountActivity::nextInGroup()
+const void *CHThorNullCountActivity::nextRow()
 {
     if (finished) return NULL;
 
@@ -271,7 +271,7 @@ public:
     ~CHThorIndexReadActivityBase();
 
     virtual void ready();
-    virtual void done();
+    virtual void stop();
     IHThorInput *queryOutput(unsigned index) { return this; }
     virtual bool needsAllocator() const { return true; }
 
@@ -425,10 +425,10 @@ void CHThorIndexReadActivityBase::ready()
     firstPart();
 }
 
-void CHThorIndexReadActivityBase::done()
+void CHThorIndexReadActivityBase::stop()
 { 
     killPart(); 
-    CHThorActivityBase::done(); 
+    CHThorActivityBase::stop(); 
 }
 
 bool CHThorIndexReadActivityBase::doPreopenLimit(unsigned __int64 limit)
@@ -771,7 +771,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual const void * nextGE(const void * seek, unsigned numFields);
 
     virtual IInputSteppingMeta * querySteppingMeta();
@@ -887,7 +887,7 @@ void CHThorIndexReadActivity::initPart()
     CHThorIndexReadActivityBase::initPart();
 }
 
-const void *CHThorIndexReadActivity::nextInGroup()
+const void *CHThorIndexReadActivity::nextRow()
 {
     if(keyedLimitReached)
     {
@@ -1099,8 +1099,8 @@ public:
     ~CHThorIndexNormalizeActivity();
 
     virtual void ready();
-    virtual void done();
-    virtual const void *nextInGroup();
+    virtual void stop();
+    virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }
 
 protected:
@@ -1146,13 +1146,13 @@ void CHThorIndexNormalizeActivity::ready()
     outBuilder.setAllocator(rowAllocator);
 }
 
-void CHThorIndexNormalizeActivity::done()
+void CHThorIndexNormalizeActivity::stop()
 {
     outBuilder.clear();
-    CHThorIndexReadActivityBase::done();
+    CHThorIndexReadActivityBase::stop();
 }
 
-const void *CHThorIndexNormalizeActivity::nextInGroup()
+const void *CHThorIndexNormalizeActivity::nextRow()
 {
     if ((stopAfter && (processed-initialProcessed)==stopAfter) || !klManager)
         return NULL;
@@ -1281,9 +1281,9 @@ public:
     ~CHThorIndexAggregateActivity();
 
     //interface IHThorInput
-    virtual void done();
+    virtual void stop();
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }
 
 protected:
@@ -1313,10 +1313,10 @@ void CHThorIndexAggregateActivity::ready()
     finished = false;
 }
 
-void CHThorIndexAggregateActivity::done()
+void CHThorIndexAggregateActivity::stop()
 {
     outBuilder.clear();
-    CHThorIndexReadActivityBase::done();
+    CHThorIndexReadActivityBase::stop();
 }
 
 
@@ -1357,7 +1357,7 @@ void CHThorIndexAggregateActivity::gather()
     }
 }
 
-const void *CHThorIndexAggregateActivity::nextInGroup()
+const void *CHThorIndexAggregateActivity::nextRow()
 {
     if (finished) return NULL;
     gather();
@@ -1398,7 +1398,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
 
 protected:
     void * createNextRow();
@@ -1424,7 +1424,7 @@ void CHThorIndexCountActivity::ready()
     choosenLimit = helper.getChooseNLimit();
 }
 
-const void *CHThorIndexCountActivity::nextInGroup()
+const void *CHThorIndexCountActivity::nextRow()
 {
     if (finished) return NULL;
 
@@ -1505,7 +1505,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual const void *nextInGroup();
+    virtual const void *nextRow();
     virtual bool needsAllocator() const { return true; }        
     virtual void processRow(const void * next);
 
@@ -1568,7 +1568,7 @@ void CHThorIndexGroupAggregateActivity::gather()
     }
 }
 
-const void *CHThorIndexGroupAggregateActivity::nextInGroup()
+const void *CHThorIndexGroupAggregateActivity::nextRow()
 {
     if (eof)
         return NULL;
@@ -1642,9 +1642,9 @@ public:
         }
     }
 
-    bool stop()
+    virtual bool stop()
     {
-        owner->stop();
+        owner->stopThread();
         return true;
     }
 
@@ -1692,7 +1692,7 @@ public:
         }
     }
 
-    void stop()
+    void stopThread()
     {
     }
 
@@ -2022,12 +2022,12 @@ public:
         part->addRow(new REQUEST(left, rp, seq));
     }
 
-    void stop()
+    void stopThread()
     {
         unsigned idx;
         for (idx = 0; idx < numParts; idx++)
         {
-            parts[idx]->stop();
+            parts[idx]->stopThread();
             parts[idx]->join();
         }
         if (exception)
@@ -2106,10 +2106,10 @@ public:
 
     virtual void initializeThreadPool() = 0;
 
-    virtual void done()
+    virtual void stop()
     {
         aborting = true;
-        stop();
+        stopThread();
         if (inputThread)
             inputThread->join();
 
@@ -2121,7 +2121,7 @@ public:
         clearQueue();
         waitForThreads();
         avail.reinit(0);
-        CHThorActivityBase::done(); 
+        CHThorActivityBase::stop(); 
     }
 
     virtual const void * getRow() = 0;
@@ -2159,12 +2159,12 @@ public:
         avail.signal();
     }
 
-    void stop()
+    void stopThread()
     {
         avail.signal();
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (!started)
         {
@@ -2262,7 +2262,7 @@ public:
     virtual void stopParts()
     {
         if(parts)
-            parts->stop();
+            parts->stopThread();
     }
 
     virtual void fetchAll()
@@ -2273,10 +2273,10 @@ public:
             {
                 if (aborting)
                     break;
-                const void *row = input->nextInGroup();
+                const void *row = input->nextRow();
                 if (!row)
                 {
-                    row = input->nextInGroup();
+                    row = input->nextRow();
                     if (!row)
                         break;
                 }
@@ -2284,9 +2284,9 @@ public:
                 offset_t seq = addRowPlaceholder();
                 parts->addRow(row, rp, seq);
             }
-            parts->stop();
+            parts->stopThread();
         }
-        stop();
+        stopThread();
     }
 
     // to preserve order, we enqueue NULLs onto the queue and issue sequence numbers, and we only signal avail when rows in correct sequence are available
@@ -3025,7 +3025,7 @@ private:
 interface IKeyLookupHandler : extends IInterface
 {
     virtual void addRow(const void *row) = 0;
-    virtual void stop() = 0;
+    virtual void stopThread() = 0;
 };
 
 class DistributedKeyLookupHandler : public CInterface, implements IThreadedExceptionHandler, implements IKeyLookupHandler
@@ -3140,11 +3140,11 @@ public:
         opened = true;
     }
 
-    void stop()
+    void stopThread()
     {
         ForEachItemIn(idx, parts)
         {
-            parts.item(idx).stop();
+            parts.item(idx).stopThread();
             parts.item(idx).join();
         }
         if (exception)
@@ -3275,7 +3275,7 @@ public:
         opened = true;
     }
 
-    void stop()
+    void stopThread()
     {
     }
 };
@@ -3429,10 +3429,10 @@ public:
         }
     }
 
-    virtual void done()
+    virtual void stop()
     {
         ldFile.clear();
-        CHThorThreadedActivityBase::done();
+        CHThorThreadedActivityBase::stop();
     }
 
     virtual void initializeThreadPool()
@@ -3458,7 +3458,7 @@ public:
     virtual void stopParts()
     {
         if(parts)
-            parts->stop();
+            parts->stopThread();
     }
 
     virtual bool isGrouped() { return preserveGroups; } 
@@ -3513,7 +3513,7 @@ public:
         {
             if (aborting)
                 break;
-            const void *row = input->nextInGroup();
+            const void *row = input->nextRow();
             if (!row)
             {
                 if (eogSeen)
@@ -3537,10 +3537,10 @@ public:
             }
         }
         if(lookup)
-            lookup->stop();
+            lookup->stopThread();
         if (parts)
-            parts->stop();
-        stop();
+            parts->stopThread();
+        stopThread();
     }
 
     virtual KeyedJoinFetchPartHandler * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, IOutputRowDeserializer * rowDeserializer, IEngineRowAllocator *rowAllocator)

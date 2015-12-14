@@ -21,24 +21,17 @@
 #include "thorhelper.hpp"
 #include "rtlds_imp.hpp"
 #include "jlog.hpp"
+#include "jio.hpp"
 
 extern THORHELPER_API unsigned traceLevel;
 
 //---------------------------------------------------
 // Base classes for all Roxie/HThor activities
 //---------------------------------------------------
-struct THORHELPER_API ISimpleInputBase : public IInterface //base for IInputBase and IHThorSimpleInput
+struct THORHELPER_API ISimpleInputBase : public IRowStream //base for IInputBase and IHThorSimpleInput
 {
-    virtual const void * nextInGroup() = 0;     // return NULL for eog/eof
     virtual bool nextGroup(ConstPointerArray & group);      // note: default implementation can be overridden for efficiency...
     virtual void readAll(RtlLinkedDatasetBuilder &builder); // note: default implementation can be overridden for efficiency...
-    inline const void * nextUngrouped()
-    {
-        const void * ret = nextInGroup();
-        if (!ret)
-            ret = nextInGroup();
-        return ret;
-    };
 };
 
 interface IOutputMetaData;

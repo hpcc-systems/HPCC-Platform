@@ -572,7 +572,7 @@ public:
     virtual bool candidatesExhaustEquality() { return true; }
     
     void addInput(ISteppedInput * _input);
-    const void * nextInGroup();
+    const void * nextRow();
     const void * nextGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra);
     void queryResetEOF();
 
