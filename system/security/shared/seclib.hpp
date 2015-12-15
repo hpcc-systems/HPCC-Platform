@@ -314,11 +314,6 @@ interface ISecManager : extends IInterface
     virtual const char* querySecMgrTypeName() = 0;
 };
 
-interface IExtSecurityManager
-{
-    virtual bool getExtensionTag(ISecUser & user, const char * tagName, StringBuffer & value) = 0;
-};
-
 interface IRestartHandler : extends IInterface
 {
     virtual void Restart() = 0;
@@ -329,91 +324,8 @@ interface IRestartManager : extends IInterface
     virtual void setRestartHandler(IRestartHandler * pRestartHandler) = 0;
 };
 
-const char* const sec_CompanyName       = "sec_company_name";
-const char* const sec_CompanyAddress    = "sec_company_address";
-const char* const sec_CompanyCity       = "sec_company_city";
-const char* const sec_CompanyState      = "sec_company_state";
-const char* const sec_CompanyZip        = "sec_company_zip";
-
-typedef ISecManager* (*createSecManager_t)(const char *model_name, const char *serviceName, IPropertyTree &config);
-typedef IAuthMap* (*createDefaultAuthMap_t)(IPropertyTree* config);
-typedef ISecManager* (*newLdapSecManager_t)(const char *serviceName, IPropertyTree &config);
-typedef ISecManager* (*newHtpasswdSecManager_t)(const char *serviceName, IPropertyTree &config);
-
 extern "C" SECLIB_API ISecManager *createSecManager(const char *model_name, const char *serviceName, IPropertyTree &config);
 extern "C" SECLIB_API IAuthMap *createDefaultAuthMap(IPropertyTree* config);
 
-class SecLibLoader
-{
-public:
-    static ISecManager* loadSecManager(const char* model_name, const char* servicename, IPropertyTree* cfg)
-    {
-        if(model_name && stricmp(model_name, "LdapSecurity") == 0)
-        {
-            StringBuffer realName;
-            realName.append(SharedObjectPrefix).append(LDAPSECLIB).append(SharedObjectExtension);
-
-            HINSTANCE ldapseclib = LoadSharedObject(realName.str(), true, false);
-            if(ldapseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", realName.str());
-            
-            newLdapSecManager_t xproc = NULL;
-            xproc = (newLdapSecManager_t)GetSharedProcedure(ldapseclib, "newLdapSecManager");
-
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newLdapSecManager of %s can't be loaded", realName.str());
-        }
-        else if(model_name && stricmp(model_name, "htpasswdSecurity") == 0)
-        {
-            StringBuffer realName;
-            realName.append(SharedObjectPrefix).append(HTPASSWDSECLIB).append(SharedObjectExtension);
-
-            HINSTANCE htpasswdseclib = LoadSharedObject(realName.str(), true, false);
-            if(htpasswdseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", realName.str());
-
-            newHtpasswdSecManager_t xproc = NULL;
-            xproc = (newHtpasswdSecManager_t)GetSharedProcedure(htpasswdseclib, "newHtpasswdSecManager");
-
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newHtpasswdSecManager of %s can't be loaded", realName.str());
-        }
-        else
-        {
-            StringBuffer realName;
-            realName.append(SharedObjectPrefix).append(SECLIB).append(SharedObjectExtension);
-
-            HINSTANCE seclib = LoadSharedObject(realName.str(), true, false);       // ,false,true may actually be more helpful, could delete next two lines.
-            if(seclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", realName.str());
-
-            createSecManager_t xproc = NULL;
-            xproc = (createSecManager_t)GetSharedProcedure(seclib, "createSecManager");
-
-            if (xproc)
-                return xproc(model_name, servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure createSecManager of %s can't be loaded", realName.str());
-        }
-    }   
-    static IAuthMap* loadDefaultAuthMap(IPropertyTree* cfg)
-    {
-        HINSTANCE seclib = LoadSharedObject(SECLIB, true, false);       // ,false,true may actually be more helpful.
-        if(seclib == NULL)
-            throw MakeStringException(-1, "can't load library %s", SECLIB);
-
-        createDefaultAuthMap_t xproc = NULL;
-        xproc = (createDefaultAuthMap_t)GetSharedProcedure(seclib, "createDefaultAuthMap");
-
-        if (xproc)
-            return xproc(cfg);
-        else
-            throw MakeStringException(-1, "procedure createDefaultAuthMap of %s can't be loaded", SECLIB);
-    }   
-};
 
 #endif
