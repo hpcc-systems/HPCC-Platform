@@ -2134,6 +2134,12 @@ offset_t CFileAsyncIO::appendFile(IFile *file,offset_t pos,offset_t len)
     UNIMPLEMENTED; 
 }
 
+unsigned __int64 CFileAsyncIO::getStatistic(StatisticKind kind)
+{
+    //MORE: Could implement - but I don't think this class is currently used
+    return 0;
+}
+
 #ifdef _WIN32
 
 //-- Windows implementation -------------------------------------------------
@@ -2390,12 +2396,6 @@ offset_t CFileAsyncIO::size()
     offset_t length = _llseek(file,0,SEEK_END);
     _llseek(file, savedPos, SEEK_SET);
     return length;
-}
-
-unsigned __int64 CFileAsyncIO::getStatistic(StatisticKind kind)
-{
-    //MORE: Could implement - but I don't think this class is currently used
-    return 0;
 }
 
 size32_t CFileAsyncIO::read(offset_t pos, size32_t len, void * data)
