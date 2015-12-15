@@ -137,7 +137,7 @@ StringBuffer &swapPathDrive(StringBuffer &filename,unsigned fromdrvnum,unsigned 
     }
     if (isPathSepChar(c))
         s++;
-    if (*s&&((fromdrvnum==(unsigned)-1)||(*s==(fromdrvnum+'c')))&&((s[1]==':')||(isShareChar(s[1])))) 
+    if (*s&&((fromdrvnum==(unsigned)-1)||(*s==(char) (fromdrvnum+'c')))&&((s[1]==':')||(isShareChar(s[1]))))
         filename.setCharAt((size32_t)(s-filename.str()),todrvnum+'c');
     else if (frommask&&*frommask) { // OSS
         StringBuffer tmp;
@@ -846,7 +846,7 @@ void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fro
     IFEflags tgtFlags = IFEnone;
     if (copyFlags & CFflush_write)
         tgtFlags = IFEnocache;
-    OwnedIFileIO targetIO = target->open(IFOwrite, tgtFlags);
+    OwnedIFileIO targetIO = target->open(omode, tgtFlags);
     if (!targetIO)
         throw MakeStringException(-1, "copyFile: target path '%s' could not be created", target->queryFilename());
     MemoryAttr mb;
@@ -1164,6 +1164,7 @@ MODULE_EXIT()
     passwordProvider.clear();
 }
 
+#ifdef _WIN32
 static bool parseShare(const char *filename,IpAddress &machine,StringBuffer &share)
 { // windows share parsing
     if (!filename||!isPathSepChar(filename[0])||(filename[0]!=filename[1]))
@@ -1188,7 +1189,6 @@ static bool parseShare(const char *filename,IpAddress &machine,StringBuffer &sha
         start++;
     }
     return true;
-
 }
 
 static CriticalSection connectcrit;
@@ -1198,7 +1198,6 @@ static bool connectToExternalDrive(const char * const filename)
     CriticalBlock block(connectcrit);
     if (!passwordProvider)
         return false;
-#ifdef _WIN32
 
     StringBuffer share, username, password;
     IpAddress ip;
@@ -1243,15 +1242,12 @@ static bool connectToExternalDrive(const char * const filename)
             return true;
         Sleep(retry*100);
     }
-#endif
     return false;
 }
 
 
 static void disconnectFromExternalDrive(const char * const filename)
 {
-#ifdef _WIN32
-
     CriticalBlock block(connectcrit);
     StringBuffer share;
     IpAddress ip;
@@ -1259,14 +1255,7 @@ static void disconnectFromExternalDrive(const char * const filename)
         return;
     if (share.length()&&isShareChar(share.charAt(share.length()))) 
         WNetCancelConnection2((char *)share.str(), 0, 0);
-#else
-        //TODO: fill in for linux
-#endif
 }
-
-#ifdef _WIN32
-
-
 
 class CWindowsRemoteFile : public CInterface, implements IFile
 {
@@ -5493,7 +5482,6 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
         ext = "tmp";
     filename.appendf("_%" I64F "x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
     OwnedIFile iFile = createIFile(filename.str());
-    IFileIO *iFileIO = NULL;
     unsigned attempts = 5; // max attempts
     loop
     {

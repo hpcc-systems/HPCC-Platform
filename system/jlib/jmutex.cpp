@@ -161,7 +161,6 @@ inline bool write_data(int fd, const void *buf, size_t nbytes)
 static bool lock_file(const char *lfpath) 
 {
     unsigned attempt = 0;
-    int err = 0;
     while (attempt < 3) {
         char lckcontents[12];
         int fd = open(lfpath, O_RDWR | O_CREAT | O_EXCL, S_IRWXU);
@@ -201,7 +200,6 @@ static bool lock_file(const char *lfpath)
 
 static void unlock_file(const char *lfpath) 
 {
-    unsigned attempt = 0;
     for (unsigned attempt=0;attempt<10;attempt++) {
         if (unlink(lfpath)>=0)
             return;

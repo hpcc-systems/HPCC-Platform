@@ -299,7 +299,9 @@ double getCycleToNanoScale()
 
 #else
 
+#if defined(CLOCK_MONOTONIC) && !defined(__APPLE__)
 static bool use_gettimeofday=false;
+#endif
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
 static bool useRDTSC = _USE_RDTSC;
 #endif
@@ -461,9 +463,9 @@ MTimeSection::~MTimeSection()
 class TimeSectionInfo : public MappingBase 
 {
 public:
-    TimeSectionInfo(const char * _scope, const char *_description, __int64 _cycles) : scope(_scope), description(_description), totalcycles(_cycles), count(1), maxcycles(_cycles) {};
+    TimeSectionInfo(const char * _scope, const char *_description, __int64 _cycles) : scope(_scope), description(_description), totalcycles(_cycles), maxcycles(_cycles), count(1) {};
     TimeSectionInfo(const char * _scope, const char *_description, __int64 _cycles, __int64 _maxcycles, unsigned _count)
-    : scope(_scope), description(_description), totalcycles(_cycles), count(_count), maxcycles(_maxcycles) {};
+    : scope(_scope), description(_description), totalcycles(_cycles), maxcycles(_maxcycles), count(_count) {};
     TimeSectionInfo(MemoryBuffer &mb)
     {
         mb.read(scope).read(description).read(totalcycles).read(maxcycles).read(count);
@@ -548,11 +550,11 @@ public:
         CriticalBlock b(c);
         return sections->count();
     }
-    virtual StatisticKind getTimerType(unsigned idx)
+    virtual StatisticKind getTimerType(unsigned idx __attribute__((unused)))
     {
         return StTimeElapsed;
     }
-    virtual StatisticScopeType getScopeType(unsigned idx)
+    virtual StatisticScopeType getScopeType(unsigned idx __attribute__((unused)))
     {
         return SSTsection;
     }
@@ -1115,7 +1117,6 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
         muval = 100; // !
 
 
-    unsigned sum = (unsigned)((arena+mmapmem)/1024); 
     out.appendf("MU=%3u%% MAL=%" I64F "d MMP=%" I64F "d SBK=%" I64F "d TOT=%uK RAM=%uK SWP=%uK", 
         muval, total, mmapmem, sbrkmem, (unsigned)(proctot/1024), mu, su);
 #ifdef _USE_MALLOC_HOOK
@@ -1289,17 +1290,15 @@ public:
         unsigned i = 0;
         while (*s&&(*s!=')')&&(i<15))
             cmd[i++] = *(s++);
-        if (!*s)
+        if (*s != ')')
             return false;
         cmd[i] = 0;
-        s+=2;
-
-        char state = *(s++);
+        s+=3; // Skip ") X" where X is the state
 
         //The PID of the parent process
         const char *num;
         s = skipnumfld(s,num);
-        int ppid = atoi(num);
+        //int ppid = atoi(num);
 
         // skip pgrp, session, tty_num, tpgid, flags, min_flt, cmin_flt, maj_flt, cmaj_flt
         for (i=0;i<9;i++)
@@ -2033,8 +2032,10 @@ static class CMemoryUsageReporter: public Thread
     PerfMonMode traceMode;
     IPerfMonHook * hook;
     unsigned latestCPU;
+#if defined(USE_OLD_PU) || defined(_WIN32)
     double                         dbIdleTime;
     double                         dbSystemTime;
+#endif
 #ifdef _WIN32
     LONG                           status;
     LARGE_INTEGER                  liOldIdleTime;
@@ -2367,6 +2368,7 @@ public:
 } *MemoryUsageReporter=NULL;
 
 
+#ifdef _WIN32
 static inline unsigned scaleFileTimeToMilli(unsigned __int64 nano100)
 {
     return (unsigned)(nano100 / 10000);
@@ -2374,19 +2376,21 @@ static inline unsigned scaleFileTimeToMilli(unsigned __int64 nano100)
 
 void getProcessTime(UserSystemTime_t & result)
 {
-#ifdef _WIN32
     LARGE_INTEGER startTime, exitTime, kernelTime, userTime;
     if (GetProcessTimes(GetCurrentProcess(), (FILETIME *)&startTime, (FILETIME *)&exitTime, (FILETIME *)&kernelTime, (FILETIME *)&userTime))
     {
         result.user = scaleFileTimeToMilli(userTime.QuadPart);
         result.system = scaleFileTimeToMilli(kernelTime.QuadPart);
     }
+}
 #else
+void getProcessTime(UserSystemTime_t & result)
+{
     UserStatusInfo info(GetCurrentProcessId());
     if (info.update())
         result = info.time;
-#endif
 }
+#endif
 
 
 
@@ -2632,14 +2636,14 @@ void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffe
                         dev[i++] = *(ln++);
                 dev[i] = 0;
                 skipSp(ln);
-                unsigned inode = (unsigned)readDecNum(ln);
+                unsigned inode __attribute__((unused)) = (unsigned) readDecNum(ln);
                 skipSp(ln);
                 const char *path = ln;
                 if (printbody) {
                     if (useprintf)
-                        printf("%08" I64F "x,%08" I64F "x,%" I64F "d,%08" I64F "x,%s,%s\n",start,end,(offset_t)(end-start),offset,perms,path);
+                        printf("%08" I64F "x,%08" I64F "x,%" I64F "d,%08" I64F "x,%s,%s,%s\n",start,end,(offset_t)(end-start),offset,perms,dev,path);
                     else
-                        PROGLOG("%08" I64F "x,%08" I64F "x,%" I64F "d,%08" I64F "x,%s,%s",start,end,(offset_t)(end-start),offset,perms,path);
+                        PROGLOG("%08" I64F "x,%08" I64F "x,%" I64F "d,%08" I64F "x,%s,%s,%s",start,end,(offset_t)(end-start),offset,perms,dev,path);
                 }
                 SegTypes t = segtype_data;
                 if (strcmp(perms,"---p")==0)
@@ -3383,12 +3387,12 @@ __int64 getTotalMem()
 
 #else // release
 
-unsigned jlib_decl setAllocHook(bool on)
+unsigned jlib_decl setAllocHook(bool on __attribute__((unused)))
 {
     return 0;
 }
 
-__int64 jlib_decl setAllocHook(bool on,bool clear)
+__int64 jlib_decl setAllocHook(bool on __attribute__((unused)), bool clear __attribute__((unused)))
 {
     return 0;
 }
@@ -3430,16 +3434,16 @@ public:
     }
 
     // interface ILogMsgHandler
-    virtual void handleMessage(const LogMsg & msg) const {  counter++; }
+    virtual void handleMessage(const LogMsg & msg __attribute__((unused))) const {  counter++; }
     virtual bool needsPrep() const { return false; }
     virtual void prep() {}
     virtual unsigned queryMessageFields() const { return MSGFIELD_detail; }
-    virtual void setMessageFields(unsigned _fields = MSGFIELD_all) {}
-    virtual void addToPTree(IPropertyTree * parent) const {}
+    virtual void setMessageFields(unsigned _fields __attribute__((unused)) = MSGFIELD_all) {}
+    virtual void addToPTree(IPropertyTree * parent __attribute__((unused))) const {}
     virtual int flush() { return 0; }
     virtual char const *disable() { return 0; }
     virtual void enable() {}
-    virtual bool getLogName(StringBuffer &name) const { return false; }
+    virtual bool getLogName(StringBuffer &name __attribute__((unused))) const { return false; }
 
     // interface IUserMetric
     virtual unsigned __int64 queryCount() const { return counter; }

@@ -319,7 +319,6 @@ public:
         CriticalBlock block(sect);
         if (!ptr)
             return true;
-        bool ret = false;
         if (sz>SECTIONSIZE) { // was too big, resorted to OS
             free(ptr);
             totalallocated -= sz;

@@ -530,7 +530,6 @@ inline static void readID(const char *&xxpath, bool started)
 
 inline static void readWildId(const char *&xpath, bool &wild)
 {
-    const char *start = xpath;
     wild = false;
     loop
     {
@@ -1334,7 +1333,7 @@ void PTree::addProp(const char *xpath, const char *val)
     else if ('[' == *xpath)
     {
         aindex_t pos = getChildMatchPos(xpath);
-        if (-1 == pos)
+        if ((aindex_t) -1 == pos)
             throw MakeIPTException(-1, "addProp: qualifier unmatched %s", xpath);
         addLocal((size32_t)strlen(val)+1, val, false, pos);
     }
@@ -1366,7 +1365,7 @@ void PTree::appendProp(const char *xpath, const char *val)
     else if ('[' == *xpath)
     {
         aindex_t pos = getChildMatchPos(xpath);
-        if (-1 == pos)
+        if ((aindex_t) -1 == pos)
             throw MakeIPTException(-1, "appendProp: qualifier unmatched %s", xpath);
         appendLocal((size_t)strlen(val)+1, val, false);
     }
@@ -1479,7 +1478,7 @@ void PTree::addPropInt64(const char *xpath, __int64 val)
         char buf[23];
         numtostr(buf, val);
         aindex_t pos = getChildMatchPos(xpath);
-        if (-1 == pos)
+        if ((aindex_t) -1 == pos)
             throw MakeIPTException(-1, "addPropInt64: qualifier unmatched %s", xpath);
         addLocal((size32_t)strlen(buf)+1, buf, false, pos);
     }
@@ -1660,7 +1659,7 @@ void PTree::addPropBin(const char *xpath, size32_t size, const void *data)
     else if ('[' == *xpath)
     {
         aindex_t pos = getChildMatchPos(xpath);
-        if (-1 == pos)
+        if ((aindex_t) -1 == pos)
             throw MakeIPTException(-1, "addPropBin: qualifier unmatched %s", xpath);
         addLocal(size, data, true, pos);
     }
@@ -1686,7 +1685,7 @@ void PTree::appendPropBin(const char *xpath, size32_t size, const void *data)
     else if ('[' == *xpath)
     {
         aindex_t pos = getChildMatchPos(xpath);
-        if (-1 == pos)
+        if ((aindex_t) -1 == pos)
             throw MakeIPTException(-1, "appendPropBin: qualifier unmatched %s", xpath);
         appendLocal(size, data, true);
     }
@@ -1838,7 +1837,7 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
             if (qualifier.length())
             {
                 pos = ((PTree *)child)->getChildMatchPos(qualifier);
-                if (-1 == pos)
+                if ((aindex_t) -1 == pos)
                     throw MakeIPTException(-1, "addPropTree: qualifier unmatched %s", xpath);
             }
             IPropertyTree *_val = ownPTree(val);
@@ -1853,7 +1852,7 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                 PTree *tree = static_cast<PTree *>(child);
                 if (tree->value && tree->value->isArray())
                 {
-                    if (-1 == pos)
+                    if ((aindex_t) -1 == pos)
                         tree->value->addElement(_val);
                     else
                         tree->value->setElement(pos, _val);
@@ -1862,8 +1861,8 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                 {
                     IPTArrayValue *array = new CPTArray();
                     array->addElement(LINK(child));
-                    assertex(-1 == pos || 0 == pos);
-                    if (-1 == pos)
+                    assertex((aindex_t) -1 == pos || 0 == pos);
+                    if ((aindex_t) -1 == pos)
                         array->addElement(_val);
                     else
                         array->setElement(0, _val);
@@ -2030,7 +2029,7 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
     public:
         IMPLEMENT_IINTERFACE;
 
-        CAttributeIterator(const PTree *_parent) : parent(_parent), cur(NULL) 
+        CAttributeIterator(const PTree *_parent) : cur(NULL), parent(_parent)
         {
             index = 0;
             cur = NULL;
@@ -2099,7 +2098,7 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
             return stricmp((*ll)->key->get(), (*rr)->key->get());
         };
 
-        CSortedAttributeIterator(const PTree *_parent) : parent(_parent), iter(NULL), cur(NULL)
+        CSortedAttributeIterator(const PTree *_parent) : cur(NULL), iter(NULL), parent(_parent)
         {
             unsigned i = parent->queryAttributes().count();
             if (i)
@@ -2232,7 +2231,7 @@ restart:
             if ('\0' == *xpath)
                 return new SingleIdIterator(*this);
             else if ('/' != *xpath)
-                throw MakeXPathException(xpath-1, PTreeExcpt_XPath_Unsupported, 0, "");
+                throw MakeXPathException(xpath-1, PTreeExcpt_XPath_Unsupported, 0, "\"/\" expected");
             goto restart;
         case '/':
             ++xpath;
@@ -3196,7 +3195,7 @@ bool isEmptyPTree(IPropertyTree *t)
 
 ///////////////////
 
-PTLocalIteratorBase::PTLocalIteratorBase(const PTree *_tree, const char *_id, bool _nocase, bool _sort) : tree(_tree), id(_id), nocase(_nocase), sort(_sort)
+PTLocalIteratorBase::PTLocalIteratorBase(const PTree *_tree, const char *_id, bool _nocase, bool _sort) : nocase(_nocase), sort(_sort), id(_id), tree(_tree)
 {
     class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
     {
@@ -3282,7 +3281,7 @@ bool PTIdMatchIterator::match()
 
 ////////////////////////////
 
-SingleIdIterator::SingleIdIterator(const PTree &_tree, unsigned pos, unsigned _many) : tree(_tree), many(_many), start(pos-1), whichNext(pos-1), count(0), current(NULL)
+SingleIdIterator::SingleIdIterator(const PTree &_tree, unsigned pos, unsigned _many) : many(_many), count(0), whichNext(pos-1), start(pos-1), current(NULL), tree(_tree)
 {
     tree.Link();
 }
@@ -3323,7 +3322,7 @@ bool SingleIdIterator::first()
 
 bool SingleIdIterator::next()
 {
-    if ((whichNext>=count) || (-1 != many && whichNext>start+many))
+    if ((whichNext>=count) || ((unsigned) -1 != many && whichNext>start+many))
     {
         current = NULL;
         return false;
@@ -3453,7 +3452,7 @@ bool PTStackIterator::next()
                     separator=false;
                     ++xxpath;
                     if (*xpath && '/' != *xpath)
-                        throw MakeXPathException(xpath-1, PTreeExcpt_XPath_Unsupported, 0, "");
+                        throw MakeXPathException(xpath-1, PTreeExcpt_XPath_Unsupported, 0, "\"/\" expected");
                     break;
                 case '/':
                     ++xxpath;
@@ -3791,7 +3790,7 @@ private:
 
 public:
     CommonReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _readerOptions, size32_t _bufSize=0) :
-        readerOptions(_readerOptions), iEvent(&_iEvent), bufSize(_bufSize)
+        bufSize(_bufSize), readerOptions(_readerOptions), iEvent(&_iEvent)
     {
         if (!bufSize) bufSize = 0x8000;
         buf = new byte[bufSize];
@@ -4855,7 +4854,6 @@ public:
             case tagAttributes:
             {
                 skipWS();
-                bool base64 = false;
                 if (nextChar == '>')
                     state = tagContent;
                 else
@@ -5702,7 +5700,6 @@ static void _validateXPathSyntax(const char *xpath);
 static void validateQualifier(const char *&xxpath)
 {
     const char *xpath = xxpath;
-    bool wild = true; // true by default now, introduced  ~ syntax, to denote wild string
     const char *start = xpath;
     skipWS(xpath);
     const char *lhsStart = xpath;
@@ -5748,14 +5745,13 @@ static void validateQualifier(const char *&xxpath)
         skipWS(xpath);
         if ('~' == *xpath)
         {
-            wild = true;
-            ++xpath;
+            ++xpath;  // Signifies wild (now always true but still accepted...)
         }
         skipWS(xpath);
         char qu = *xpath;
         if (qu != '\'' && qu != '\"')
             throw MakeXPathException(xpath, PTreeExcpt_XPath_ParseError, 0, "Syntax error - no opening \" or \'");
-        const char *textStart = ++xpath;
+        ++xpath;
         while (*xpath && *xpath != qu)
             xpath++;
         if (!*xpath)

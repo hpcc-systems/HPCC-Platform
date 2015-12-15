@@ -370,7 +370,13 @@ public:
     inline LogMsgClass        queryClass() const { return msgClass; }
     inline LogMsgDetail       queryDetail() const { return detail; }
     void                      serialize(MemoryBuffer & out) const { out.append(audience).append(msgClass).append(detail); }
-    void                      deserialize(MemoryBuffer & in) { in.read((unsigned &) audience).read((unsigned &) msgClass).read(detail); }
+    void                      deserialize(MemoryBuffer & in)
+    {
+        unsigned a, c, d; in.read(a).read(c).read(d);
+        audience = (LogMsgAudience) a;
+        msgClass = (LogMsgClass) c;
+        detail = (LogMsgDetail) d;
+    }
     LogMsgCategory const      operator ()(unsigned newDetail) const { return LogMsgCategory(audience, msgClass, newDetail); }
 private:
     LogMsgAudience            audience;

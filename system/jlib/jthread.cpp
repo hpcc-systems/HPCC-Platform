@@ -443,7 +443,6 @@ bool Thread::join(unsigned timeout)
         stopped.signal();
         return true;
     }
-    unsigned count = 0;
     unsigned st = 0;
     loop {                                              // this is to prevent race with destroy
                                                         // (because Thread objects are not always link counted!)
@@ -1688,7 +1687,7 @@ class CLinuxPipeProcess: public CInterface, implements IPipeProcess
         int &hError;
     public:
         cStdErrorBufferThread(size32_t maxbufsize,int &_hError,CriticalSection &_sect)
-            : hError(_hError), sect(_sect)
+            : sect(_sect), hError(_hError)
         {
             buf.allocate(maxbufsize);
             bufsize = 0;

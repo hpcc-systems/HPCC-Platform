@@ -132,7 +132,7 @@ public:
     SocketEndpoint(const char *name,unsigned short _port=0)     { set(name,_port); };
     SocketEndpoint(unsigned short _port)                        { setLocalHost(_port); };
     SocketEndpoint(unsigned short _port, const IpAddress & _ip) { set(_port,_ip); };          
-    SocketEndpoint(const SocketEndpoint &other)                 { set(other); } 
+    SocketEndpoint(const SocketEndpoint &other) : IpAddress(other) { port = other.port; }
 
     void deserialize(MemoryBuffer & in);
     void serialize(MemoryBuffer & out) const;

@@ -941,7 +941,9 @@ protected:
 #endif
 #else
 #ifdef LINUX_SIGNAL_EXCEPTION
+#ifndef NO_LINUX_SEH
 static IException *sigsegv_exc;
+#endif
 static int excsignal;
 
 class jlib_thrown_decl CSEHException: public CInterface, public ISEH_Exception
@@ -961,6 +963,7 @@ protected:
     StringAttr msg;
 };  
 
+#ifndef NO_LINUX_SEH
 static void throwSigSegV()
 {
     int childpid = fork();
@@ -976,6 +979,7 @@ static void throwSigSegV()
         return;
     throw sigsegv_exc;
 }
+#endif
 
 void excsighandler(int signum, siginfo_t *info, void *extra) 
 {
@@ -1394,7 +1398,7 @@ protected:
 };
 
 CError::CError(WarnErrorCategory _category, ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position):
-  category(_category),severity(_severity), msg(_msg), filename(_filename)
+  severity(_severity), category(_category), msg(_msg), filename(_filename)
 {
     no = _no;
     lineno = _lineno;

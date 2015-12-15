@@ -1734,13 +1734,16 @@ void CSubAllocator::freeMem(void * p)
         b->unlink();
         superallocator.freeMem(b);
     }
-    else if (wasfull) {
+    else if (wasfull)
+    {
         unsigned i;
         CSubAllocatorBlock * f = item(b->recsize,i);
-#ifdef _DEBUG
         if (!f)
+        {
+#ifdef _DEBUG
             HeapError(e_corrupt_sub_block,p);
 #endif
+        }
         b->unlink();
         blks[i].prepend(*b);
     }
@@ -1925,7 +1928,7 @@ IAllocator *createGuardedMemoryAllocator(memsize_t maxtotal, unsigned suballoc_h
 void fillPtr(IAllocator *a,void *p,size32_t sz)
 {
     size32_t us = a->usableSize(p);
-    ASSERTEX(us>=sz);
+    assertex(us>=sz);
     memset(p,sz^0xc7,us);
 }
 
@@ -1933,11 +1936,11 @@ void testFillPtr(IAllocator *a,void *p,size32_t sz)
 {
     size32_t us = a->usableSize(p);
     byte *b = (byte *)p;
-    ASSERTEX(us>=sz);
-    ASSERTEX(us<sz+OSPAGESIZE);
+    assertex(us>=sz);
+    assertex(us<sz+OSPAGESIZE);
     byte t = sz^0xc7;
     while (us--)
-        ASSERTEX(b[us]==t);
+        assertex(b[us]==t);
 }
 
 void testAllocator()

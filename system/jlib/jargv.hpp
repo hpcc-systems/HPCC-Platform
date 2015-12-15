@@ -33,7 +33,7 @@ class jlib_decl ArgvIterator
 {
 public:
     ArgvIterator(int _argc, const char* _argv[]) :
-      argc(_argc), argv(_argv)
+        argv(_argv), argc(_argc)
     {
         cur = 1;
     }

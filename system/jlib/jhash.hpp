@@ -110,7 +110,7 @@ class jlib_decl HashTable
       { return hash(fp, keysize); }
     const void * getFindParam(const void * et) const
       { return const_cast<const void *>(static_cast<const IMapping *>(et)->getKey()); }
-    bool       matchesFindParam(const void * et, const void * key, unsigned fphash) const
+    bool       matchesFindParam(const void * et, const void * key, unsigned fphash __attribute__((unused))) const
       { return keyeq(key, static_cast<const IMapping *>(et)->getKey(), keysize); }
     bool       keyeq(const void *key1, const void *key2, int ksize) const;
     unsigned   hash(const void *key, int ksize) const;
