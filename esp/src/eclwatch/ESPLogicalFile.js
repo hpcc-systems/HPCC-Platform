@@ -66,7 +66,7 @@ define([
                 case "RecordCount":
                     request.Sortby = "Records";
                     break;
-                case "Totalsize":
+                case "IntSize":
                     request.Sortby = "FileSize";
                     break;
             }
@@ -84,10 +84,15 @@ define([
             }
         },
         preProcessRow: function (item, request, query, options) {
+            var convertNull;
+            if (item.IntSize === null) {
+                convertNull = 0;
+            }
             lang.mixin(item, {
                 __hpcc_id: createID(item.NodeGroup, item.Name),
                 __hpcc_isDir: false,
-                __hpcc_displayName: item.Name
+                __hpcc_displayName: item.Name,
+                Size: convertNull //superfiles causing issues sorting by returning null
             });
         },
         mayHaveChildren: function (object) {
