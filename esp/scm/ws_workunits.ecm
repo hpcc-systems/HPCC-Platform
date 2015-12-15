@@ -1427,6 +1427,7 @@ ESPStruct QuerySuperFile
 {
     string Name;
     ESParray<string, File> SubFiles;
+    [min_ver("1.57")] ESParray<ESPstruct QuerySuperFile, SuperFile> SuperFiles;
 };
 
 ESPresponse [exceptions_inline] WUQueryDetailsResponse
@@ -1738,7 +1739,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetArchiveFileResponse
 };
 
 ESPservice [
-    version("1.56"), default_client_version("1.56"),
+    version("1.57"), default_client_version("1.57"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
