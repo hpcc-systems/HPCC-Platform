@@ -14,7 +14,6 @@
 #    limitations under the License.
 ################################################################################
 
-
 # Component: v8embed
 
 #####################################################
@@ -23,44 +22,50 @@
 #    Cmake Input File for v8embed
 #####################################################
 
-project( v8embed )
+project(v8embed)
 
-if (USE_V8)
-  ADD_PLUGIN(v8embed PACKAGES V8 OPTION MAKE_V8EMBED)
-  if ( MAKE_V8EMBED )
-    set (    SRCS
-             v8embed.cpp
-        )
+if(V8EMBED)
+    ADD_PLUGIN(v8embed PACKAGES V8 OPTION MAKE_V8EMBED)
+    if(MAKE_V8EMBED)
+        set(
+            SRCS
+            v8embed.cpp)
 
-    include_directories (
-             ${V8_INCLUDE_DIR}
-             ./../../system/include
-             ./../../rtl/eclrtl
-             ./../../rtl/nbcd
-             ./../../rtl/include
-             ./../../common/deftype
-             ./../../roxie/roxiemem
-             ./../../system/jlib
-        )
+        include_directories(
+            ${V8_INCLUDE_DIR}
+            ./../../system/include
+            ./../../rtl/eclrtl
+            ./../../rtl/nbcd
+            ./../../rtl/include
+            ./../../common/deftype
+            ./../../roxie/roxiemem
+            ./../../system/jlib)
 
-    ADD_DEFINITIONS( -D_USRDLL -DV8EMBED_EXPORTS )
+        add_definitions(-D_USRDLL -DV8EMBED_EXPORTS)
 
-    HPCC_ADD_LIBRARY( v8embed SHARED ${SRCS} )
-    if (${CMAKE_VERSION} VERSION_LESS "2.8.9")
-      message("WARNING: Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-    elseif(NOT APPLE)
-      set_target_properties( v8embed PROPERTIES NO_SONAME 1 )
+        HPCC_ADD_LIBRARY(v8embed SHARED ${SRCS})
+        if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
+            message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
+        elseif(NOT APPLE)
+            set_target_properties(v8embed PROPERTIES NO_SONAME 1)
+        endif()
+
+        install(
+            TARGETS v8embed
+            DESTINATION plugins)
+        target_link_libraries(
+            v8embed
+            ${V8_LIBRARIES}
+            roxiemem
+            eclrtl
+            jlib)
+    else()
+        message(WARNING "Cannot build v8embed plugin")
     endif()
-
-    install ( TARGETS v8embed DESTINATION plugins )
-
-    target_link_libraries ( v8embed
-        ${V8_LIBRARIES}
-        roxiemem
-        eclrtl
-        jlib
-        )
-  endif()
 endif()
-# Even if not making the V8 plugin, we want to install the header
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/javascript.ecllib DESTINATION plugins COMPONENT Runtime)
+if(PLATFORM)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/javascript.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()

@@ -86,7 +86,7 @@ target_link_libraries ( eclrtl
       roxiemem
     )
 
-if (NOT MAKE_R_ONLY)
+if (NOT PLUGIN)
   install ( TARGETS eclrtl RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
   FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/eclinclude4.hpp
