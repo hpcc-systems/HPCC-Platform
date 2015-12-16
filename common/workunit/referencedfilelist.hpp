@@ -35,6 +35,7 @@
 #define RefFileCloned         0x100
 #define RefFileInPackage      0x200
 #define RefFileNotOnSource    0x400
+#define RefFileInGraph        0x800
 
 interface IReferencedFile : extends IInterface
 {
@@ -44,6 +45,7 @@ interface IReferencedFile : extends IInterface
     virtual const char *queryPackageId() const =0;
     virtual __int64 getFileSize()=0;
     virtual unsigned getNumParts()=0;
+    virtual const StringArray &getSubFileNames() const =0;
 };
 
 interface IReferencedFileIterator : extends IIteratorOf<IReferencedFile> { };
