@@ -360,10 +360,15 @@ private:
 
         if (!isResult(lfn, ResultSequencePersist))
             errText.appendf("Building PERSIST('%s'): It hasn't been calculated before", logicalName);
-        else if (!isResult(crcName, ResultSequencePersist))
-            errText.appendf("Rebuilding PERSIST('%s'): Saved CRC isn't present", logicalName);
         else if (isFile && !fileExists(lfn))
             errText.appendf("Rebuilding PERSIST('%s'): Persistent file does not exist", logicalName);
+        else if (!item.queryPersistRefresh())
+        {
+            errText.appendf("Not rebuilding PERSIST('%s'): due to REFRESH(false)", logicalName);
+            return true;
+        }
+        else if (!isResult(crcName, ResultSequencePersist))
+            errText.appendf("Rebuilding PERSIST('%s'): Saved CRC isn't present", logicalName);
         else
         {
             unsigned savedEclCRC = (unsigned) getResultInt(eclName, ResultSequencePersist);
@@ -474,7 +479,10 @@ private:
             StringBuffer dummy;
             if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
             {
-                logctx.CTXLOG("PERSIST('%s') is up to date", logicalName);
+                if (dummy.length())
+                    logctx.CTXLOG("%s", dummy.str());
+                else
+                    logctx.CTXLOG("PERSIST('%s') is up to date", logicalName);
                 return true;
             }
 
@@ -495,7 +503,13 @@ private:
         StringBuffer errText;
         if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, errText) && !rebuildAllPersists)
         {
-            logctx.CTXLOG("PERSIST('%s') is up to date (after being calculated by another job)", logicalName);
+            if (errText.length())
+            {
+                errText.append(" (after being calculated by another job)");
+                logctx.CTXLOG("%s", errText.str());
+            }
+            else
+                logctx.CTXLOG("PERSIST('%s') is up to date (after being calculated by another job)", logicalName);
             changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
             return true;
         }

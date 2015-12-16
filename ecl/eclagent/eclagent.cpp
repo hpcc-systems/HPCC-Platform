@@ -2498,10 +2498,15 @@ bool EclAgent::checkPersistUptoDate(IRuntimeWorkflowItem & item, const char * lo
 
     if (!isResult(lfn, ResultSequencePersist))
         errText.appendf("Building PERSIST('%s'): It hasn't been calculated before", logicalName);
-    else if (!isResult(crcName, ResultSequencePersist))
-        errText.appendf("Rebuilding PERSIST('%s'): Saved CRC isn't present", logicalName);
     else if (isFile && !fileExists(logicalName))
         errText.appendf("Rebuilding PERSIST('%s'): Persistent file does not exist", logicalName);
+    else if (!item.queryPersistRefresh())
+    {
+        errText.appendf("Not rebuilding PERSIST('%s'): due to REFRESH(false)", logicalName);
+        return true;
+    }
+    else if (!isResult(crcName, ResultSequencePersist))
+        errText.appendf("Rebuilding PERSIST('%s'): Saved CRC isn't present", logicalName);
     else
     {
         unsigned savedEclCRC = (unsigned)getResultInt(eclName, ResultSequencePersist);
@@ -2613,9 +2618,14 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntime
         StringBuffer dummy;
         if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
         {
-            StringBuffer msg;
-            msg.append("PERSIST('").append(logicalName).append("') is up to date");
-            logException(SeverityInformation, 0, msg.str(), false);
+            if (dummy.length())
+                logException(SeverityInformation, 0, dummy.str(), false);
+            else
+            {
+                StringBuffer msg;
+                msg.append("PERSIST('").append(logicalName).append("') is up to date");
+                logException(SeverityInformation, 0, msg.str(), false);
+            }
             return true;
         }
 
@@ -2636,9 +2646,17 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntime
     StringBuffer errText;
     if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, errText) && !rebuildAllPersists)
     {
-        StringBuffer msg;
-        msg.append("PERSIST('").append(logicalName).append("') is up to date (after being calculated by another job)");
-        logException(SeverityInformation, 0, msg.str(), false);
+        if (errText.length())
+        {
+            errText.append(" (after being calculated by another job)");
+            logException(SeverityInformation, 0, errText.str(), false);
+        }
+        else
+        {
+            StringBuffer msg;
+            msg.append("PERSIST('").append(logicalName).append("') is up to date (after being calculated by another job)");
+            logException(SeverityInformation, 0, msg.str(), false);
+        }
         changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
         return true;
     }

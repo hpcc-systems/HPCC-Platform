@@ -132,7 +132,7 @@ IHqlExpression * getDebugValueExpr(IConstWorkUnit * wu, IHqlExpression * expr)
 struct GlobalAttributeInfo
 {
 public:
-    GlobalAttributeInfo(const char * _filePrefix, const char * _storedPrefix, IHqlExpression * _value) : value(_value)
+    GlobalAttributeInfo(const char * _filePrefix, const char * _storedPrefix, IHqlExpression * _value) : value(_value), persistRefresh(true)
     {
         setOp = no_none;
         persistOp = no_none;
@@ -150,6 +150,7 @@ public:
     void preventDiskSpill() { few = true; }
     IHqlExpression * queryCluster() const { return cluster; }
     int queryMaxPersistCopies() const { return numPersistInstances; }
+    bool queryPersistRefresh() const { return persistRefresh; }
 
 protected:
     void doSplitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
@@ -179,6 +180,7 @@ protected:
     const char * storedPrefix;
     int numPersistInstances;
     bool few;
+    bool persistRefresh;
 };
 
 
@@ -5081,6 +5083,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
             getStringValue(s, codehash);
             storedName.setown(createConstant(s.str()));
         }
+	persistRefresh = getBoolValue(queryAttributeChild(expr, refreshAtom, 0), true);
         break;
     case no_global:
         throwUnexpected();
@@ -5534,9 +5537,9 @@ void WorkflowTransformer::setWorkflowSchedule(IWorkflowItem * wf, const Schedule
     wf->setSchedulePriority(priority);
 }
 
-void WorkflowTransformer::setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int numPersistInstances)
+void WorkflowTransformer::setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int numPersistInstances, bool refresh)
 {
-    wf->setPersistInfo(persistName, persistWfid, numPersistInstances);
+    wf->setPersistInfo(persistName, persistWfid, numPersistInstances, refresh);
 }
 
 WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp)
@@ -5925,7 +5928,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             info.storedName->queryValue()->getStringValue(persistName);
             unsigned persistWfid = ++wfidCount;
             Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModePersist, queryDirectDependencies(setValue), conts, info.queryCluster());
-            setWorkflowPersist(wf, persistName.str(), persistWfid, info.queryMaxPersistCopies());
+            setWorkflowPersist(wf, persistName.str(), persistWfid, info.queryMaxPersistCopies(), info.queryPersistRefresh());
 
             DependenciesUsed dependencies(false);
             UnsignedArray visited;
