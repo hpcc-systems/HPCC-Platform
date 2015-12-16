@@ -1571,7 +1571,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
     buildSerializedLayoutMember(instance->classctx, indexRecord, "getIndexLayout", numKeyedFields);
 
     OwnedHqlExpr matchExpr = info.getMatchExpr(true);
-    assertex(!matchExpr);
+    if (matchExpr)
+        reportError(expr, ERR_MATCH_KEY_EXACTLY,"Condition on DISTRIBUTE must match the key exactly");
 
     buildInstanceSuffix(instance);
 
