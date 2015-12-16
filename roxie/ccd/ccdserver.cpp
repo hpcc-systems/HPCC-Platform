@@ -354,6 +354,8 @@ static const StatisticsMapping indexStatistics(&actStatistics, StNumServerCacheH
 static const StatisticsMapping diskStatistics(&actStatistics, StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                StNumDiskRejected, StKindNone);
 static const StatisticsMapping soapStatistics(&actStatistics, StTimeSoapcall, StKindNone);
+static const StatisticsMapping groupStatistics(&actStatistics, StNumGroups, StNumGroupMax, StKindNone);
+static const StatisticsMapping sortStatistics(&actStatistics, StTimeSortElapsed, StKindNone);
 
 //=================================================================================
 
@@ -7433,6 +7435,7 @@ public:
                 sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
             }
             sorter->prepare(input);
+            noteStatistic(StTimeSortElapsed, cycle_to_nanosec(sorter->getElapsedCycles(true)));
             readInput = true;
         }
         const void *ret = sorter->next();
@@ -7480,6 +7483,11 @@ public:
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
         return new CRoxieServerSortActivity(this, _probeManager, sortAlgorithm, sortFlags);
+    }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return sortStatistics;
     }
 };
 
@@ -16198,6 +16206,9 @@ class CRoxieServerGroupActivity : public CRoxieServerActivity
     bool endPending;
     bool eof;
     bool first;
+    unsigned numGroups;
+    unsigned numGroupMax;
+    unsigned numProcessedLastGroup;
     const void *next;
 
 public:
@@ -16208,6 +16219,9 @@ public:
         endPending = false;
         eof = false;
         first = true;
+        numGroups = 0;
+        numGroupMax = 0;
+        numProcessedLastGroup = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -16215,12 +16229,17 @@ public:
         endPending = false;
         eof = false;
         first = true;
+        numGroups = 0;
+        numGroupMax = 0;
+        numProcessedLastGroup = processed;
         assertex(next == NULL);
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()    
     { 
+        noteStatistic(StNumGroups, numGroups);
+        noteStatistic(StNumGroupMax, numGroupMax);
         ReleaseClearRoxieRow(next);
         CRoxieServerActivity::reset();
     }
@@ -16246,13 +16265,29 @@ public:
         {
             assertex(prev);
             if (!helper.isSameGroup(prev, next))
+            {
+                noteEndOfGroup();
                 endPending = true;
+            }
         }
         else
+        {
+            noteEndOfGroup();
             eof = true;
+        }
         if (prev)
             processed++;
         return prev;
+    }
+    inline void noteEndOfGroup()
+    {
+        unsigned numThisGroup = processed - numProcessedLastGroup;
+        if (numThisGroup == 0)
+            return;
+        numProcessedLastGroup = processed;
+        if (numThisGroup > numGroupMax)
+            numGroupMax = numThisGroup;
+        numGroups++;
     }
 };
 
@@ -16267,6 +16302,11 @@ public:
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
         return new CRoxieServerGroupActivity(this, _probeManager);
+    }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return groupStatistics;
     }
 };
 

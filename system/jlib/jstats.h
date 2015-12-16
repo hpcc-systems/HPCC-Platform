@@ -390,14 +390,41 @@ public:
     void deserializeMerge(MemoryBuffer& in);
 protected:
     void reportIgnoredStats() const;
-
+    const CRuntimeStatistic & queryUnknownStatistic() const { return values[mapping.numStatistics()]; }
 private:
     const StatisticsMapping & mapping;
     CRuntimeStatistic * values;
 };
 
+//---------------------------------------------------------------------------------------------------------------------
 
-extern jlib_decl void mergeStats(CRuntimeStatisticCollection & stats, IFileIO * file);
+//Some template helper classes for merging statistics from external sources.
+
+template <class INTERFACE>
+void mergeStats(CRuntimeStatisticCollection & stats, INTERFACE * source)
+{
+    if (!source)
+        return;
+
+    ForEachItemIn(iStat, stats)
+    {
+        StatisticKind kind = stats.getKind(iStat);
+        stats.mergeStatistic(kind, source->getStatistic(kind));
+    }
+}
+
+template <class INTERFACE>
+void mergeStats(CRuntimeStatisticCollection & stats, Shared<INTERFACE> source) { mergeStats(stats, source.get()); }
+
+template <class INTERFACE>
+void mergeStat(CRuntimeStatisticCollection & stats, INTERFACE * source, StatisticKind kind)
+{
+    if (source)
+        stats.mergeStatistic(kind, source->getStatistic(kind));
+}
+
+template <class INTERFACE>
+void mergeStat(CRuntimeStatisticCollection & stats, Shared<INTERFACE> source, StatisticKind kind) { mergeStat(stats, source.get(), kind); }
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -444,6 +471,9 @@ extern jlib_decl IStatisticCollection * createStatisticCollection(MemoryBuffer &
 
 inline unsigned __int64 milliToNano(unsigned __int64 value) { return value * 1000000; } // call avoids need to upcast values
 inline unsigned __int64 nanoToMilli(unsigned __int64 value) { return value / 1000000; }
+
+extern jlib_decl unsigned __int64 convertMeasure(StatisticMeasure from, StatisticMeasure to, unsigned __int64 value);
+extern jlib_decl unsigned __int64 convertMeasure(StatisticKind from, StatisticKind to, unsigned __int64 value);
 
 extern jlib_decl StatisticCreatorType queryStatisticsComponentType();
 extern jlib_decl const char * queryStatisticsComponentName();

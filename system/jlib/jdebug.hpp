@@ -121,11 +121,15 @@ public:
     {
         start_time = get_cycles_now();
     }
-    inline cycle_t elapsedCycles()
+    inline cycle_t elapsedCycles() const
     {
         return get_cycles_now() - start_time;
     }
-    inline unsigned elapsedMs()
+    inline unsigned __int64 elapsedNs() const
+    {
+        return cycle_to_nanosec(elapsedCycles());
+    }
+    inline unsigned elapsedMs() const
     {
         return static_cast<unsigned>(cycle_to_millisec(elapsedCycles()));
     }

@@ -77,7 +77,17 @@ class InternalStatisticsTest : public CppUnit::TestFixture
 
     void testMappings()
     {
-        verifyStatisticFunctions();
+        try
+        {
+            verifyStatisticFunctions();
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            fprintf(stderr, "Failure: %s", e->errorMessage(msg).str());
+            e->Release();
+            ASSERT(false);
+        }
     }
 };
 

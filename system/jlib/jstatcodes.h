@@ -157,7 +157,6 @@ enum StatisticKind
     StNumIndexRowsRead,
     StNumDiskAccepted,
     StNumDiskRejected,
-
     StTimeSoapcall,                     // Time spent waiting for soapcalls
     StTimeFirstExecute,                 // Time waiting for first record from this activity
     StTimeDiskReadIO,
@@ -168,6 +167,14 @@ enum StatisticKind
     StCycleDiskWriteIOCycles,
     StNumDiskReads,
     StNumDiskWrites,
+    StNumSpills,
+    StTimeSpillElapsed,
+    StTimeSortElapsed,
+    StNumGroups,
+    StNumGroupMax,
+    StSizeSpillFile,
+    StCycleSpillElapsedCycles,
+    StCycleSortElapsedCycles,
 
     StMax,
 

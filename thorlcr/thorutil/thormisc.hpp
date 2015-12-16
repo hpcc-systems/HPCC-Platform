@@ -484,5 +484,8 @@ extern graph_decl void logDiskSpace();
 class CJobBase;
 extern graph_decl IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int minLevel, IPerfMonHook *chain=NULL); // for passing to jdebug startPerformanceMonitor
 
+//statistics gathered by the different activities
+extern const graph_decl StatisticsMapping spillStatistics;
+
 #endif
 
