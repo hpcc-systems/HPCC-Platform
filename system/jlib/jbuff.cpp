@@ -554,6 +554,18 @@ MemoryBuffer & MemoryBuffer::append(unsigned __int64 value)
     return appendEndian(sizeof(value), &value);
 }
 
+MemoryBuffer & MemoryBuffer::appendPacked(unsigned __int64 value)
+{
+    //Append bytes with the top bit set until the value is less than 0x80
+    while (value >= 0x80)
+    {
+        byte next = ((byte)value) | 0x80;
+        append(next);
+        value >>= 7;
+    }
+    return append((byte)value);
+}
+
 MemoryBuffer & MemoryBuffer::append(const MemoryBuffer & value)
 {
     size32_t SourceLen = value.length();
@@ -734,6 +746,34 @@ const byte * MemoryBuffer::readDirect(size32_t len)
     const byte * ret = (const byte *)buffer + readPos;
     readPos += len;
     return ret;
+}
+
+unsigned __int64 MemoryBuffer::readPacked()
+{
+    unsigned __int64 value = 0;
+    unsigned shift = 0;
+    loop
+    {
+        byte next;
+        read(next);
+        value = value | (((unsigned __int64)(next & 0x7f)) << shift);
+        if (!(next & 0x80))
+            break;
+        shift += 7;
+    }
+    return value;
+}
+
+MemoryBuffer &  MemoryBuffer::readPacked(unsigned & value)
+{
+    value = (unsigned)readPacked();
+    return *this;
+}
+
+MemoryBuffer &  MemoryBuffer::readPacked(unsigned __int64 & value)
+{
+    value = readPacked();
+    return *this;
 }
 
 MemoryBuffer & MemoryBuffer::skip(unsigned len)
