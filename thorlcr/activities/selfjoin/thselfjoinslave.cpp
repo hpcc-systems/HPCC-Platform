@@ -240,7 +240,7 @@ public:
         mb.append(p);
 
         CRuntimeStatisticCollection mergedStats(spillStats);
-        mergeStats(mergedStats, sorter);
+        mergeStats(mergedStats, sorter);    // No danger of a race with reset() because that never replaces a valid sorter
         mergedStats.serialize(mb);
     }
 };

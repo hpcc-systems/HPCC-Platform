@@ -169,11 +169,12 @@ public:
     {
         rowcount_t rowsProcessed = getDataLinkGlobalCount();
         rowcount_t numThisGroup = rowsProcessed - startLastGroup;
+        if (0 == numThisGroup)
+            return;
         startLastGroup = rowsProcessed;
         if (numThisGroup > numGroupMax)
             numGroupMax = numThisGroup;
-        if (numThisGroup)
-            numGroups++;
+        numGroups++;
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {

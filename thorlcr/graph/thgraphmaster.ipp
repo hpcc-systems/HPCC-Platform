@@ -251,7 +251,6 @@ public:
     {
         for (unsigned i=0; i < mapping.numStatistics(); i++)
         {
-            bool supressIfZero = false;
             stats[i]->getStats(result, false);
         }
     }

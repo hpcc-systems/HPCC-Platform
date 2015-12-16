@@ -7366,10 +7366,7 @@ public:
     virtual void reset()
     {
         if (sorter)
-        {
-            noteStatistic(StTimeSortElapsed, cycle_to_nanosec(sorter->getElapsedCycles(true)));
             sorter->reset();
-        }
         readInput = false;
         CRoxieServerActivity::reset();
     }
@@ -7438,6 +7435,7 @@ public:
                 sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
             }
             sorter->prepare(input);
+            noteStatistic(StTimeSortElapsed, cycle_to_nanosec(sorter->getElapsedCycles(true)));
             readInput = true;
         }
         const void *ret = sorter->next();
@@ -16284,11 +16282,12 @@ public:
     inline void noteEndOfGroup()
     {
         unsigned numThisGroup = processed - numProcessedLastGroup;
+        if (numThisGroup == 0)
+            return;
         numProcessedLastGroup = processed;
         if (numThisGroup > numGroupMax)
             numGroupMax = numThisGroup;
-        if (numThisGroup)
-            numGroups++;
+        numGroups++;
     }
 };
 
