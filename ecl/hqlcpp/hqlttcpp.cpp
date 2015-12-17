@@ -1506,207 +1506,220 @@ static IHqlExpression * createArith(node_operator op, ITypeInfo * type, IHqlExpr
 }
 
 
-
-//MORE: This might be better as a class, it would reduce the number of parameters
-IHqlExpression * doNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, HqlExprArray & fields, HqlExprArray & assigns, bool & extraSelectNeeded, bool canOptimizeCasts);
-IHqlExpression * evalNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, HqlExprArray & fields, HqlExprArray & assigns, bool & extraSelectNeeded, bool canOptimizeCasts)
+class AggregateNormalizer
 {
-    switch (expr->getOperator())
+public:
+    AggregateNormalizer(IHqlExpression * _rootSelector, HqlExprArray & _fields, HqlExprArray & _assigns, bool & _extraSelectNeeded)
+       : rootSelector(_rootSelector), fields(_fields), assigns(_assigns), extraSelectNeeded(_extraSelectNeeded)
     {
-    case no_avegroup:
-        //Map this to sum(x)/count(x)
+    }
+    IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, bool canOptimizeCasts)
+    {
+        IHqlExpression * match = static_cast<IHqlExpression *>(expr->queryTransformExtra());
+        if (match)
+            return LINK(match);
+        IHqlExpression * ret = evalNormalizeAggregateExpr(selector, expr, canOptimizeCasts);
+        expr->setTransformExtra(ret);
+        return ret;
+    }
+
+
+protected:
+    IHqlExpression * evalNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, bool canOptimizeCasts)
+    {
+        if (!expr->isGroupAggregateFunction() && !expr->usesSelector(rootSelector))
+            return LINK(expr);
+
+        switch (expr->getOperator())
         {
-            IHqlExpression * arg = expr->queryChild(0);
-            IHqlExpression * cond = expr->queryChild(1);
-
-            Owned<ITypeInfo> sumType = getSumAggType(arg);
-            ITypeInfo * exprType = expr->queryType();
-            OwnedHqlExpr sum = createValue(no_sumgroup, LINK(sumType), LINK(arg), LINK(cond));
-            OwnedHqlExpr count = createValue(no_countgroup, LINK(defaultIntegralType), LINK(cond));
-
-            //average should be done as a real operation I think, possibly decimal, if argument is decimal
-            OwnedHqlExpr avg = createArith(no_div, exprType, sum, count);
-            return doNormalizeAggregateExpr(selector, avg, fields, assigns, extraSelectNeeded, false);
-        }
-    case no_vargroup:
-        //Map this to (sum(x^2)-sum(x)^2/count())/count()
-        {
-            IHqlExpression * arg = expr->queryChild(0);
-            IHqlExpression * cond = expr->queryChild(1);
-
-            ITypeInfo * exprType = expr->queryType();
-            OwnedHqlExpr xx = createArith(no_mul, exprType, arg, arg);
-            OwnedHqlExpr sumxx = createValue(no_sumgroup, LINK(exprType), LINK(xx), LINK(cond));
-            OwnedHqlExpr sumx = createValue(no_sumgroup, LINK(exprType), LINK(arg), LINK(cond));
-            OwnedHqlExpr count = createValue(no_countgroup, LINK(defaultIntegralType), LINK(cond));
-
-            //average should be done as a real operation I think, possibly decimal, if argument is decimal
-            OwnedHqlExpr n1 = createArith(no_mul, exprType, sumx, sumx);
-            OwnedHqlExpr n2 = createArith(no_div, exprType, n1, count);
-            OwnedHqlExpr n3 = createArith(no_sub, exprType, sumxx, n2);
-            OwnedHqlExpr n4 = createArith(no_div, exprType, n3, count);
-            return doNormalizeAggregateExpr(selector, n4, fields, assigns, extraSelectNeeded, false);
-        }
-    case no_covargroup:
-        //Map this to (sum(x.y)-sum(x).sum(y)/count())/count()
-        {
-            IHqlExpression * argX = expr->queryChild(0);
-            IHqlExpression * argY = expr->queryChild(1);
-            IHqlExpression * cond = expr->queryChild(2);
-
-            ITypeInfo * exprType = expr->queryType();
-            OwnedHqlExpr xy = createArith(no_mul, exprType, argX, argY);
-            OwnedHqlExpr sumxy = createValue(no_sumgroup, LINK(exprType), LINK(xy), LINK(cond));
-            OwnedHqlExpr sumx = createValue(no_sumgroup, LINK(exprType), LINK(argX), LINK(cond));
-            OwnedHqlExpr sumy = createValue(no_sumgroup, LINK(exprType), LINK(argY), LINK(cond));
-            OwnedHqlExpr count = createValue(no_countgroup, LINK(defaultIntegralType), LINK(cond));
-
-            //average should be done as a real operation I think, possibly decimal, if argument is decimal
-            OwnedHqlExpr n1 = createArith(no_mul, exprType, sumx, sumy);
-            OwnedHqlExpr n2 = createArith(no_div, exprType, n1, count);
-            OwnedHqlExpr n3 = createArith(no_sub, exprType, sumxy, n2);
-            OwnedHqlExpr n4 = createArith(no_div, exprType, n3, count);
-            return doNormalizeAggregateExpr(selector, n4, fields, assigns, extraSelectNeeded, false);
-        }
-    case no_corrgroup:
-        //Map this to (covar(x,y)/(var(x).var(y)))
-        //== (sum(x.y)*count() - sum(x).sum(y))/sqrt((sum(x.x)*count()-sum(x)^2) * (sum(y.y)*count()-sum(y)^2))
-        {
-            IHqlExpression * argX = expr->queryChild(0);
-            IHqlExpression * argY = expr->queryChild(1);
-            IHqlExpression * cond = expr->queryChild(2);
-
-            ITypeInfo * exprType = expr->queryType();
-            OwnedHqlExpr xx = createArith(no_mul, exprType, argX, argX);
-            OwnedHqlExpr sumxx = createValue(no_sumgroup, LINK(exprType), LINK(xx), LINK(cond));
-            OwnedHqlExpr xy = createArith(no_mul, exprType, argX, argY);
-            OwnedHqlExpr sumxy = createValue(no_sumgroup, LINK(exprType), LINK(xy), LINK(cond));
-            OwnedHqlExpr yy = createArith(no_mul, exprType, argY, argY);
-            OwnedHqlExpr sumyy = createValue(no_sumgroup, LINK(exprType), LINK(yy), LINK(cond));
-            OwnedHqlExpr sumx = createValue(no_sumgroup, LINK(exprType), LINK(argX), LINK(cond));
-            OwnedHqlExpr sumy = createValue(no_sumgroup, LINK(exprType), LINK(argY), LINK(cond));
-            OwnedHqlExpr count = createValue(no_countgroup, LINK(defaultIntegralType), LINK(cond));
-
-            OwnedHqlExpr n1 = createArith(no_mul, exprType, sumxy, count);
-            OwnedHqlExpr n2 = createArith(no_mul, exprType, sumx, sumy);
-            OwnedHqlExpr n3 = createArith(no_sub, exprType, n1, n2);
-
-            OwnedHqlExpr n4 = createArith(no_mul, exprType, sumxx, count);
-            OwnedHqlExpr n5 = createArith(no_mul, exprType, sumx, sumx);
-            OwnedHqlExpr n6 = createArith(no_sub, exprType, n4, n5);
-
-            OwnedHqlExpr n7 = createArith(no_mul, exprType, sumyy, count);
-            OwnedHqlExpr n8 = createArith(no_mul, exprType, sumy, sumy);
-            OwnedHqlExpr n9 = createArith(no_sub, exprType, n7, n8);
-
-            OwnedHqlExpr n10 = createArith(no_mul, exprType, n6, n9);
-            OwnedHqlExpr n11 = createValue(no_sqrt, LINK(exprType), LINK(n10));
-            OwnedHqlExpr n12 = createArith(no_div, exprType, n3, n11);
-            return doNormalizeAggregateExpr(selector, n12, fields, assigns, extraSelectNeeded, false);
-        }
-        throwUnexpected();
-
-    case no_variance:
-    case no_covariance:
-    case no_correlation:
-        throwUnexpectedOp(expr->getOperator());
-
-    case no_count:
-    case no_sum:
-    case no_max:
-    case no_min:
-    case no_ave:
-    case no_select:
-    case no_exists:
-    case no_field:
-        // a count on a child dataset or something else - add it as it is...
-        //goes wrong for count(group)*
-        return LINK(expr);
-    case no_countgroup:
-    case no_sumgroup:
-    case no_maxgroup:
-    case no_mingroup:
-    case no_existsgroup:
-        {
-            ForEachItemIn(idx, assigns)
+        case no_avegroup:
+            //Map this to sum(x)/count(x)
             {
-                IHqlExpression & cur = assigns.item(idx);
-                if (cur.queryChild(1) == expr)
+                IHqlExpression * arg = expr->queryChild(0);
+                IHqlExpression * cond = expr->queryChild(1);
+
+                Owned<ITypeInfo> sumType = getSumAggType(arg);
+                ITypeInfo * exprType = expr->queryType();
+                OwnedHqlExpr sum = createValue(no_sumgroup, LINK(sumType), LINK(arg), LINK(cond));
+                OwnedHqlExpr count = createValue(no_countgroup, LINK(defaultIntegralType), LINK(cond));
+
+                //average should be done as a real operation I think, possibly decimal, if argument is decimal
+                OwnedHqlExpr avg = createArith(no_div, exprType, sum, count);
+                return normalizeAggregateExpr(selector, avg, false);
+            }
+        case no_vargroup:
+            //Map this to (sum(x^2)-sum(x)^2/count())/count()
+            {
+                IHqlExpression * arg = expr->queryChild(0);
+                IHqlExpression * cond = expr->queryChild(1);
+
+                ITypeInfo * exprType = expr->queryType();
+                OwnedHqlExpr xx = createArith(no_mul, exprType, arg, arg);
+                OwnedHqlExpr sumxx = createValue(no_sumgroup, LINK(exprType), LINK(xx), LINK(cond));
+                OwnedHqlExpr sumx = createValue(no_sumgroup, LINK(exprType), LINK(arg), LINK(cond));
+                OwnedHqlExpr count = createValue(no_countgroup, LINK(defaultIntegralType), LINK(cond));
+
+                //average should be done as a real operation I think, possibly decimal, if argument is decimal
+                OwnedHqlExpr n1 = createArith(no_mul, exprType, sumx, sumx);
+                OwnedHqlExpr n2 = createArith(no_div, exprType, n1, count);
+                OwnedHqlExpr n3 = createArith(no_sub, exprType, sumxx, n2);
+                OwnedHqlExpr n4 = createArith(no_div, exprType, n3, count);
+                return normalizeAggregateExpr(selector, n4, false);
+            }
+        case no_covargroup:
+            //Map this to (sum(x.y)-sum(x).sum(y)/count())/count()
+            {
+                IHqlExpression * argX = expr->queryChild(0);
+                IHqlExpression * argY = expr->queryChild(1);
+                IHqlExpression * cond = expr->queryChild(2);
+
+                ITypeInfo * exprType = expr->queryType();
+                OwnedHqlExpr xy = createArith(no_mul, exprType, argX, argY);
+                OwnedHqlExpr sumxy = createValue(no_sumgroup, LINK(exprType), LINK(xy), LINK(cond));
+                OwnedHqlExpr sumx = createValue(no_sumgroup, LINK(exprType), LINK(argX), LINK(cond));
+                OwnedHqlExpr sumy = createValue(no_sumgroup, LINK(exprType), LINK(argY), LINK(cond));
+                OwnedHqlExpr count = createValue(no_countgroup, LINK(defaultIntegralType), LINK(cond));
+
+                //average should be done as a real operation I think, possibly decimal, if argument is decimal
+                OwnedHqlExpr n1 = createArith(no_mul, exprType, sumx, sumy);
+                OwnedHqlExpr n2 = createArith(no_div, exprType, n1, count);
+                OwnedHqlExpr n3 = createArith(no_sub, exprType, sumxy, n2);
+                OwnedHqlExpr n4 = createArith(no_div, exprType, n3, count);
+                return normalizeAggregateExpr(selector, n4, false);
+            }
+        case no_corrgroup:
+            //Map this to (covar(x,y)/(var(x).var(y)))
+            //== (sum(x.y)*count() - sum(x).sum(y))/sqrt((sum(x.x)*count()-sum(x)^2) * (sum(y.y)*count()-sum(y)^2))
+            {
+                IHqlExpression * argX = expr->queryChild(0);
+                IHqlExpression * argY = expr->queryChild(1);
+                IHqlExpression * cond = expr->queryChild(2);
+
+                ITypeInfo * exprType = expr->queryType();
+                OwnedHqlExpr xx = createArith(no_mul, exprType, argX, argX);
+                OwnedHqlExpr sumxx = createValue(no_sumgroup, LINK(exprType), LINK(xx), LINK(cond));
+                OwnedHqlExpr xy = createArith(no_mul, exprType, argX, argY);
+                OwnedHqlExpr sumxy = createValue(no_sumgroup, LINK(exprType), LINK(xy), LINK(cond));
+                OwnedHqlExpr yy = createArith(no_mul, exprType, argY, argY);
+                OwnedHqlExpr sumyy = createValue(no_sumgroup, LINK(exprType), LINK(yy), LINK(cond));
+                OwnedHqlExpr sumx = createValue(no_sumgroup, LINK(exprType), LINK(argX), LINK(cond));
+                OwnedHqlExpr sumy = createValue(no_sumgroup, LINK(exprType), LINK(argY), LINK(cond));
+                OwnedHqlExpr count = createValue(no_countgroup, LINK(defaultIntegralType), LINK(cond));
+
+                OwnedHqlExpr n1 = createArith(no_mul, exprType, sumxy, count);
+                OwnedHqlExpr n2 = createArith(no_mul, exprType, sumx, sumy);
+                OwnedHqlExpr n3 = createArith(no_sub, exprType, n1, n2);
+
+                OwnedHqlExpr n4 = createArith(no_mul, exprType, sumxx, count);
+                OwnedHqlExpr n5 = createArith(no_mul, exprType, sumx, sumx);
+                OwnedHqlExpr n6 = createArith(no_sub, exprType, n4, n5);
+
+                OwnedHqlExpr n7 = createArith(no_mul, exprType, sumyy, count);
+                OwnedHqlExpr n8 = createArith(no_mul, exprType, sumy, sumy);
+                OwnedHqlExpr n9 = createArith(no_sub, exprType, n7, n8);
+
+                OwnedHqlExpr n10 = createArith(no_mul, exprType, n6, n9);
+                OwnedHqlExpr n11 = createValue(no_sqrt, LINK(exprType), LINK(n10));
+                OwnedHqlExpr n12 = createArith(no_div, exprType, n3, n11);
+                return normalizeAggregateExpr(selector, n12, false);
+            }
+            throwUnexpected();
+
+        case no_variance:
+        case no_covariance:
+        case no_correlation:
+            throwUnexpectedOp(expr->getOperator());
+
+        case no_select:
+        case no_count:
+        case no_sum:
+        case no_max:
+        case no_min:
+        case no_ave:
+        case no_exists:
+            //Fall through - and add the expression as a field in the resulting aggregate which is later projected
+        case no_countgroup:
+        case no_sumgroup:
+        case no_maxgroup:
+        case no_mingroup:
+        case no_existsgroup:
+            {
+                ForEachItemIn(idx, assigns)
                 {
+                    IHqlExpression & cur = assigns.item(idx);
+                    if (cur.queryChild(1) == expr)
+                    {
+                        extraSelectNeeded = true;
+                        return LINK(cur.queryChild(0)); //replaceSelector(cur.queryChild(0), querySelf(), queryActiveTableSelector());
+                    }
+                }
+                IHqlExpression * targetField;
+                if (selector)
+                {
+                    targetField = LINK(selector->queryChild(1));
+                }
+                else
+                {
+                    StringBuffer temp;
+                    temp.append("_agg_").append(assigns.ordinality());
+                    targetField = createField(createIdAtom(temp.str()), expr->getType(), NULL);
                     extraSelectNeeded = true;
-                    return LINK(cur.queryChild(0)); //replaceSelector(cur.queryChild(0), querySelf(), queryActiveTableSelector());
+                }
+                fields.append(*targetField);
+                assigns.append(*createAssign(createSelectExpr(getActiveTableSelector(), LINK(targetField)), LINK(expr)));
+                return createSelectExpr(getActiveTableSelector(), LINK(targetField));
+            }
+        case no_cast:
+        case no_implicitcast:
+            if (selector && canOptimizeCasts)
+            {
+                IHqlExpression * child = expr->queryChild(0);
+                if (expr->queryType()->getTypeCode() == child->queryType()->getTypeCode())
+                {
+                    IHqlExpression * ret = normalizeAggregateExpr(selector, child, false);
+                    //This should be ret==child
+                    if (ret == selector)
+                        return ret;
+                    HqlExprArray args;
+                    args.append(*ret);
+                    return expr->clone(args);
                 }
             }
-            IHqlExpression * targetField;
-            if (selector)
+            //fallthrough...
+        default:
             {
-                targetField = LINK(selector->queryChild(1));
-            }
-            else
-            {
-                StringBuffer temp;
-                temp.append("_agg_").append(assigns.ordinality());
-                targetField = createField(createIdAtom(temp.str()), expr->getType(), NULL);
-                extraSelectNeeded = true;
-            }
-            fields.append(*targetField);
-            assigns.append(*createAssign(createSelectExpr(getActiveTableSelector(), LINK(targetField)), LINK(expr)));
-            return createSelectExpr(getActiveTableSelector(), LINK(targetField));
-        }
-    case no_cast:
-    case no_implicitcast:
-        if (selector && canOptimizeCasts)
-        {
-            IHqlExpression * child = expr->queryChild(0);
-            if (expr->queryType()->getTypeCode() == child->queryType()->getTypeCode())
-            {
-                IHqlExpression * ret = doNormalizeAggregateExpr(selector, child, fields, assigns, extraSelectNeeded, false);
-                //This should be ret==child
-                if (ret == selector)
-                    return ret;
                 HqlExprArray args;
-                args.append(*ret);
-                return expr->clone(args);
+                unsigned max = expr->numChildren();
+                unsigned idx;
+                bool diff = false;
+                args.ensure(max);
+                for (idx = 0; idx < max; idx++)
+                {
+                    IHqlExpression * child = expr->queryChild(idx);
+                    IHqlExpression * changed = normalizeAggregateExpr(NULL, child, false);
+                    args.append(*changed);
+                    if (child != changed)
+                        diff = true;
+                }
+                if (diff)
+                    return expr->clone(args);
+                return LINK(expr);
             }
-        }
-        //fallthrough...
-    default:
-        {
-            HqlExprArray args;
-            unsigned max = expr->numChildren();
-            unsigned idx;
-            bool diff = false;
-            args.ensure(max);
-            for (idx = 0; idx < max; idx++)
-            {
-                IHqlExpression * child = expr->queryChild(idx);
-                IHqlExpression * changed = doNormalizeAggregateExpr(NULL, child, fields, assigns, extraSelectNeeded, false);
-                args.append(*changed);
-                if (child != changed)
-                    diff = true;
-            }
-            if (diff)
-                return expr->clone(args);
-            return LINK(expr);
         }
     }
-}
 
-IHqlExpression * doNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, HqlExprArray & fields, HqlExprArray & assigns, bool & extraSelectNeeded, bool canOptimizeCasts)
-{
-    IHqlExpression * match = static_cast<IHqlExpression *>(expr->queryTransformExtra());
-    if (match)
-        return LINK(match);
-    IHqlExpression * ret = evalNormalizeAggregateExpr(selector, expr, fields, assigns, extraSelectNeeded, canOptimizeCasts);
-    expr->setTransformExtra(ret);
-    return ret;
-}
-
-
-IHqlExpression * normalizeAggregateExpr(IHqlExpression * selector, IHqlExpression * expr, HqlExprArray & fields, HqlExprArray & assigns, bool & extraSelectNeeded, bool canOptimizeCasts)
-{
+protected:
     TransformMutexBlock block;
-    return doNormalizeAggregateExpr(selector, expr, fields, assigns, extraSelectNeeded, canOptimizeCasts);
+    IHqlExpression * rootSelector;
+    HqlExprArray & fields;
+    HqlExprArray & assigns;
+    bool & extraSelectNeeded;
+};
+
+IHqlExpression * normalizeAggregateExpr(IHqlExpression * tableSelector, IHqlExpression * selector, IHqlExpression * expr, HqlExprArray & fields, HqlExprArray & assigns, bool & extraSelectNeeded, bool canOptimizeCasts)
+{
+    AggregateNormalizer normalizer(tableSelector, fields, assigns, extraSelectNeeded);
+    return normalizer.normalizeAggregateExpr(selector, expr, canOptimizeCasts);
 }
 
 
@@ -3535,11 +3548,13 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
         IHqlExpression * assign=transform->queryChild(idx);
         IHqlExpression * cur = assign->queryChild(0);
         IHqlExpression * src = assign->queryChild(1);
-        IHqlExpression * mapped = normalizeAggregateExpr(cur, src, aggregateFields, aggregateAssigns, extraSelectNeeded, canOptimizeCasts);
-
-        if (mapped == src)
+        IHqlExpression * mapped;
+        if (src->isGroupAggregateFunction())
         {
-            mapped->Release();
+            mapped = normalizeAggregateExpr(dataset->queryNormalizedSelector(), cur, src, aggregateFields, aggregateAssigns, extraSelectNeeded, canOptimizeCasts);
+        }
+        else
+        {
             mapped = replaceSelector(cur, self, queryActiveTableSelector());
 
             // Not an aggregate - must be an expression that is used in the grouping

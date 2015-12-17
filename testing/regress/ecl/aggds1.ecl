@@ -47,4 +47,5 @@ sq := setup.sq(multiPart);
     output(exists(sq.SimplePersonBookDs));
     output(exists(sq.SimplePersonBookDs(forename = 'Gavin')));
     output(exists(sq.SimplePersonBookDs(forename = 'Joshua')));
+    output(sort(table(sq.SimplePersonBookDs, { aage, scale := count(group, (forename != 'Gavin')) / aage }, aage), aage));
 );
