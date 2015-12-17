@@ -40,10 +40,7 @@
   <para>The <emphasis role="bold">SEQUENTIAL </emphasis>action executes the
   items in the <emphasis>actionlist</emphasis> in the order in which they
   appear in the <emphasis>actionlist</emphasis>. This is useful when a
-  subsequent action requires the output of a precedent action. By definition,
-  PERSIST on an attribute means the attribute is evaluated outside of any
-  given evaluation order. Therefore, SEQUENTIAL has no effect on PERSISTed
-  attributes.</para>
+  subsequent action requires the output of a precedent action.</para>
 
   <para>Example:</para>
 
@@ -61,6 +58,5 @@ SEQUENTIAL(Act1,PARALLEL(Act2,Act3));
           Act2 and Act3 together
 </programlisting>
 
-  <para>See Also: <link linkend="PARALLEL_function">PARALLEL</link>, <link
-  linkend="PERSIST">PERSIST</link></para>
+  <para>See Also: <link linkend="PARALLEL_function">PARALLEL</link></para>
 </sect1>
