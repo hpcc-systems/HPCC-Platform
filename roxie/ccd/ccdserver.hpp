@@ -90,10 +90,10 @@ interface IRoxieServerContext;
 interface IRoxieSlaveContext;
 class ClusterWriteHandler;
 
-interface IRoxieInput : extends IInterface, extends IInputBase
+interface IRoxieInput : extends IInputBase
 {
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
-    virtual void stop(bool aborting) = 0;
+    virtual void stop() = 0;
     virtual void reset() = 0;
     virtual void checkAbort() = 0;
     virtual unsigned queryId() const = 0;
@@ -148,7 +148,8 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void execute(unsigned parentExtractSize, const byte *parentExtract) = 0;
     virtual void onCreate(IRoxieSlaveContext *ctx, IHThorArg *colocalArg) = 0;
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
-    virtual void stop(bool aborting) = 0;
+    virtual void stop() = 0;
+    virtual void abort() = 0;
     virtual void reset() = 0;
     virtual void addDependency(IRoxieServerActivity &source, unsigned sourceIdx, int controlId) = 0;
     virtual unsigned queryId() const = 0;

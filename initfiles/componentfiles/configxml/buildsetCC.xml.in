@@ -189,6 +189,10 @@
                           path="EclDirectAccess"
                           resource="EclDirectAccess"
                           service="ecldirect"/>
+    <AuthenticateFeature description="Access to ESDL configuration service"
+                          path="ESDLConfigAccess"
+                          resource="ESDLConfigAccess"
+                          service="ws_esdlconfig"/>
      <ProcessFilters>
       <Platform name="Windows">
        <ProcessFilter name="any">

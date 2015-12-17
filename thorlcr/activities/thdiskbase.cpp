@@ -29,7 +29,7 @@
 #include "eclhelper.hpp" // tmp for IHThorArg interface
 #include "thdiskbase.ipp"
 
-CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
+CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(diskWriteRemoteStatistics)
 {
     hash = NULL;
     inputProgress.setown(new ProgressInfo);
@@ -120,6 +120,14 @@ void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
     rowcount_t progress;
     mb.read(progress);
     inputProgress->set(node, progress);
+
+    diskStats.deserializeMerge(node, mb);
+}
+
+void CDiskReadMasterBase::getActivityStats(IStatisticGatherer & stats)
+{
+    CMasterActivity::getActivityStats(stats);
+    diskStats.getStats(stats);
 }
 
 void CDiskReadMasterBase::getEdgeStats(IStatisticGatherer & stats, unsigned idx)
@@ -230,10 +238,11 @@ void CWriteMasterBase::publish()
         queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc, NULL, targetOffset);
 }
 
-CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
+CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(diskWriteRemoteStatistics)
 {
     publishReplicatedDone = !globals->getPropBool("@replicateAsync", true);
     replicateProgress.setown(new ProgressInfo);
+
     diskHelperBase = (IHThorDiskWriteArg *)queryHelper();
     targetOffset = 0;
 }
@@ -244,6 +253,8 @@ void CWriteMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
     unsigned repPerc;
     mb.read(repPerc);
     replicateProgress->set(node, repPerc);
+
+    diskStats.deserializeMerge(node, mb);
 }
 
 void CWriteMasterBase::getActivityStats(IStatisticGatherer & stats)
@@ -254,6 +265,7 @@ void CWriteMasterBase::getActivityStats(IStatisticGatherer & stats)
         replicateProgress->processInfo();
         stats.addStatistic(StPerReplicated, replicateProgress->queryAverage() * 10000);
     }
+    diskStats.getStats(stats);
 }
 
 void CWriteMasterBase::preStart(size32_t parentExtractSz, const byte *parentExtract)

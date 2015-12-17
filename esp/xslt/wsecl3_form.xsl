@@ -1080,6 +1080,20 @@ function switchInputForm()
         <xsl:param name="field_len"/>
         <xsl:param name="maxoccurs"/>
         <xsl:choose>
+            <xsl:when test="$annot/select/option">
+                <xsl:text disable-output-escaping="yes"><![CDATA[<select ]]></xsl:text>
+                    <xsl:text disable-output-escaping="yes"><![CDATA[name=']]></xsl:text>
+                    <xsl:value-of select="$fieldId"/>
+                    <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
+                    <xsl:value-of select="$fieldId"/>
+                    <xsl:text disable-output-escaping="yes"><![CDATA['>]]></xsl:text>
+                    <xsl:for-each select="$annot/select/option">
+                        <xsl:text disable-output-escaping="yes"><![CDATA[<option value=']]></xsl:text>
+                        <xsl:value-of select="@value"/><xsl:if test="@selected"><xsl:text disable-output-escaping="yes"><![CDATA[' selected='true]]></xsl:text></xsl:if>
+                        <xsl:text disable-output-escaping="yes"><![CDATA['>]]></xsl:text><xsl:value-of select="@name"/><xsl:text disable-output-escaping="yes"><![CDATA[</option>]]></xsl:text>
+                    </xsl:for-each>
+                <xsl:text disable-output-escaping="yes"><![CDATA[</select>]]></xsl:text>
+            </xsl:when>
             <!-- string -->
             <xsl:when test="$typeName='string'">
                 <xsl:variable name="inputRows">

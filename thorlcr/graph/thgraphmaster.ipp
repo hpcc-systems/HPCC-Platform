@@ -210,12 +210,54 @@ public:
     unsigned queryMaxNode() { return maxNode; }
     unsigned queryMinNode() { return minNode; }
 
+    void extract(unsigned node, const CRuntimeStatisticCollection & stats);
     void set(unsigned node, unsigned __int64 count);
     void getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual);
 
 protected:
     void calculateSkew();
     void tallyValue(unsigned __int64 value, unsigned node);
+};
+
+class graphmaster_decl CThorStatsCollection : public CInterface
+{
+public:
+    CThorStatsCollection(const StatisticsMapping & _mapping) : mapping(_mapping)
+    {
+        unsigned num = mapping.numStatistics();
+        stats = new Owned<CThorStats>[num];
+        for (unsigned i=0; i < num; i++)
+            stats[i].setown(new CThorStats(mapping.getKind(i)));
+    }
+    ~CThorStatsCollection()
+    {
+        delete [] stats;
+    }
+
+    void deserializeMerge(unsigned node, MemoryBuffer & mb)
+    {
+        CRuntimeStatisticCollection nodeStats(mapping);
+        nodeStats.deserialize(mb);
+        extract(node, nodeStats);
+    }
+
+    void extract(unsigned node, const CRuntimeStatisticCollection & source)
+    {
+        for (unsigned i=0; i < mapping.numStatistics(); i++)
+            stats[i]->extract(node, source);
+    }
+
+    void getStats(IStatisticGatherer & result)
+    {
+        for (unsigned i=0; i < mapping.numStatistics(); i++)
+        {
+            stats[i]->getStats(result, false);
+        }
+    }
+
+private:
+    Owned<CThorStats> * stats;
+    const StatisticsMapping & mapping;
 };
 
 class graphmaster_decl CTimingInfo : public CThorStats

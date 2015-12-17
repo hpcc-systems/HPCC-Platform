@@ -356,10 +356,10 @@ class CSpillableStream : public CSpillableStreamBase, implements IRowStream
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSpillableStream(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority)
+    CSpillableStream(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority, bool _compressSpills)
         : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls, _spillPriority)
     {
-        useCompression = activity.getOptBool(THOROPT_COMPRESS_SPILLS, true);
+        useCompression = _compressSpills;
         pos = numReadRows = 0;
         granularity = 500; // JCSMORE - rows
 
@@ -1453,10 +1453,10 @@ void CThorSpillableRowArray::transferRowsCopy(const void **outRows, bool takeOwn
     }
 }
 
-IRowStream *CThorSpillableRowArray::createRowStream(unsigned spillPriority)
+IRowStream *CThorSpillableRowArray::createRowStream(unsigned spillPriority, bool compressSpills)
 {
     assertex(rowIf);
-    return new CSpillableStream(activity, *this, rowIf, allowNulls, spillPriority);
+    return new CSpillableStream(activity, *this, rowIf, allowNulls, spillPriority, compressSpills);
 }
 
 
@@ -1474,6 +1474,7 @@ protected:
     unsigned overflowCount;
     unsigned maxCores;
     unsigned outStreams;
+    offset_t sizeSpill;
     ICompare *iCompare;
     StableSortFlag stableSort;
     bool preserveGrouping;
@@ -1482,6 +1483,9 @@ protected:
     bool mmRegistered;
     Owned<CSharedSpillableRowSet> spillableRowSet;
     unsigned options;
+    bool compressSpills;
+    __uint64 spillCycles;
+    __uint64 sortCycles;
 
     bool spillRows()
     {
@@ -1490,6 +1494,7 @@ protected:
         if (numRows == 0)
             return false;
 
+        CCycleTimer spillTimer;
         totalRows += numRows;
         StringBuffer tempPrefix, tempName;
         if (iCompare)
@@ -1497,6 +1502,7 @@ protected:
             ActPrintLog(&activity, "Sorting %" RIPF "d rows", spillableRows.numCommitted());
             CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores); // sorts committed rows
+            sortCycles += timer.elapsedCycles();
             ActPrintLog(&activity, "Sort took: %f", ((float)timer.elapsedMs())/1000);
             tempPrefix.append("srt");
         }
@@ -1504,10 +1510,11 @@ protected:
         GetTempName(tempName, tempPrefix.str(), true);
         Owned<IFile> iFile = createIFile(tempName.str());
         VStringBuffer spillPrefixStr("RowCollector(%d)", spillPriority);
-        spillableRows.save(*iFile, activity.getOptBool(THOROPT_COMPRESS_SPILLS, true), spillPrefixStr.str()); // saves committed rows
+        spillableRows.save(*iFile, compressSpills, spillPrefixStr.str()); // saves committed rows
         spillFiles.append(new CFileOwner(iFile.getLink()));
         ++overflowCount;
-
+        sizeSpill += iFile->size();
+        spillCycles += spillTimer.elapsedCycles();
         return true;
     }
     void setPreserveGrouping(bool _preserveGrouping)
@@ -1583,7 +1590,7 @@ protected:
         // NB: CStreamFileOwner links CFileOwner - last usage will auto delete file
         // which may be one of these streams or CThorRowCollectorBase itself
         unsigned rwFlags = DEFAULT_RWFLAGS;
-        if (activity.getOptBool(THOROPT_COMPRESS_SPILLS, true))
+        if (compressSpills)
             rwFlags |= rw_compress;
         if (preserveGrouping)
             rwFlags |= rw_grouped;
@@ -1605,7 +1612,11 @@ protected:
                 {
                     // Option(rcflag_noAllInMemSort) - avoid sorting allMemRows
                     if ((NULL == allMemRows) || (0 == (options & rcflag_noAllInMemSort)))
+                    {
+                        CCycleTimer timer;
                         spillableRows.sort(*iCompare, maxCores);
+                        sortCycles += timer.elapsedCycles();
+                    }
                 }
 
                 if ((rc_allDiskOrAllMem == diskMemMix) || // must supply allMemRows, only here if no spilling (see above)
@@ -1622,7 +1633,7 @@ protected:
                     return NULL;
                 }
                 if (!shared)
-                    instrms.append(*spillableRows.createRowStream(spillPriority)); // NB: stream will take ownership of rows in spillableRows
+                    instrms.append(*spillableRows.createRowStream(spillPriority, compressSpills)); // NB: stream will take ownership of rows in spillableRows
                 else
                 {
                     spillableRowSet.setown(new CSharedSpillableRowSet(activity, spillableRows, rowIf, preserveGrouping, spillPriority));
@@ -1654,6 +1665,7 @@ protected:
         spillFiles.kill();
         totalRows = 0;
         overflowCount = outStreams = 0;
+        sizeSpill = 0;
     }
     inline bool spillingEnabled() const { return SPILL_PRIORITY_DISABLE != spillPriority; }
     void clearSpillingCallback()
@@ -1681,6 +1693,7 @@ public:
         preserveGrouping = false;
         totalRows = 0;
         overflowCount = outStreams = 0;
+        sizeSpill = 0;
         mmRegistered = false;
         if (rc_allMem == diskMemMix)
             spillPriority = SPILL_PRIORITY_DISABLE; // all mem, implies no spilling
@@ -1689,6 +1702,9 @@ public:
         maxCores = activity.queryMaxCores();
         options = 0;
         spillableRows.setup(rowIf, false, stableSort);
+        compressSpills = activity.getOptBool(THOROPT_COMPRESS_SPILLS, true);
+        spillCycles = 0;
+        sortCycles = 0;
     }
     ~CThorRowCollectorBase()
     {
@@ -1701,7 +1717,11 @@ public:
         spillableRows.flush();
         totalRows += spillableRows.numCommitted();
         if (sort && iCompare)
+        {
+            CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores);
+            sortCycles += timer.elapsedCycles();
+        }
         out.transferFrom(spillableRows);
     }
 // IThorRowCollectorCommon
@@ -1771,6 +1791,25 @@ public:
         CThorArrayLockBlock block(spillableRows);
         return spillRows();
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        switch (kind)
+        {
+        case StCycleSpillElapsedCycles:
+            return spillCycles;
+        case StCycleSortElapsedCycles:
+            return sortCycles;
+        case StTimeSpillElapsed:
+            return cycle_to_nanosec(spillCycles);
+        case StTimeSortElapsed:
+            return cycle_to_nanosec(sortCycles);
+        case StNumSpills:
+            return overflowCount;
+        case StSizeSpillFile:
+            return sizeSpill;
+        }
+        return 0;
+    }
 };
 
 enum TRLGroupFlag { trl_ungroup, trl_preserveGrouping, trl_stopAtEog };
@@ -1823,6 +1862,7 @@ public:
     }
     virtual void resize(rowidx_t max) { CThorRowCollectorBase::resize(max); }
     virtual void setOptions(unsigned options)  { CThorRowCollectorBase::setOptions(options); }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) { return CThorRowCollectorBase::getStatistic(kind); }
 // IThorRowLoader
     virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping, CThorExpandingRowArray *allMemRows, memsize_t *memUsage, bool doReset)
     {
@@ -1874,6 +1914,7 @@ public:
     }
     virtual void resize(rowidx_t max) { CThorRowCollectorBase::resize(max); }
     virtual void setOptions(unsigned options) { CThorRowCollectorBase::setOptions(options); }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) { return CThorRowCollectorBase::getStatistic(kind); }
 // IThorRowCollector
     virtual IRowWriter *getWriter()
     {

@@ -40,6 +40,7 @@ class JoinActivityMaster : public CMasterActivity
     mptag_t mpTagRPC, barrierMpTag;
     Owned<IBarrier> barrier;
     Owned<ProgressInfo> lhsProgress, rhsProgress;
+    CThorStatsCollection extraStats;
 
     bool nosortPrimary()
     {
@@ -77,7 +78,7 @@ class JoinActivityMaster : public CMasterActivity
         }
     } *climitedcmp;
 public:
-    JoinActivityMaster(CMasterGraphElement * info, bool local) : CMasterActivity(info)
+    JoinActivityMaster(CMasterGraphElement * info, bool local) : CMasterActivity(info), extraStats(spillStatistics)
     {
         ActPrintLog("JoinActivityMaster");
         lhsProgress.setown(new ProgressInfo);
@@ -97,6 +98,11 @@ public:
         container.queryJob().freeMPTag(mpTagRPC);
         container.queryJob().freeMPTag(barrierMpTag);
         delete climitedcmp;
+    }
+    virtual void getActivityStats(IStatisticGatherer & stats)
+    {
+        CMasterActivity::getActivityStats(stats);
+        extraStats.getStats(stats);
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
@@ -341,6 +347,8 @@ public:
             mb.read(rhsProgressCount);
             rhsProgress->set(node, rhsProgressCount);
         }
+
+        extraStats.deserializeMerge(node, mb);
     }
     virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
     {

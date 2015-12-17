@@ -49,6 +49,7 @@ private:
     CriticalSection joinHelperCrit;
     Owned<IBarrier> barrier;
     SocketEndpoint server;
+    CRuntimeStatisticCollection spillStats;
 
     bool isUnstable()
     {
@@ -65,6 +66,7 @@ private:
 #endif
         Owned<IThorRowLoader> iLoader = createThorRowLoader(*this, ::queryRowInterfaces(input), compare, isUnstable() ? stableSort_none : stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_SELFJOIN);
         Owned<IRowStream> rs = iLoader->load(input, abortSoon);
+        mergeStats(spillStats, iLoader);  // Not sure of the best policy if rs spills later on.
         stopInput(input);
         input = NULL;
         return rs.getClear();
@@ -102,7 +104,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     SelfJoinSlaveActivity(CGraphElementBase *_container, bool _isLocal, bool _isLightweight)
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container), CThorDataLink(this), spillStats(spillStatistics)
     {
         isLocal = _isLocal||_isLightweight;
         isLightweight = _isLightweight;
@@ -236,6 +238,10 @@ public:
         CriticalBlock b(joinHelperCrit);
         rowcount_t p = joinhelper?joinhelper->getLhsProgress():0;
         mb.append(p);
+
+        CRuntimeStatisticCollection mergedStats(spillStats);
+        mergeStats(mergedStats, sorter);    // No danger of a race with reset() because that never replaces a valid sorter
+        mergedStats.serialize(mb);
     }
 };
 

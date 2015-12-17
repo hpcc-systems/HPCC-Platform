@@ -238,6 +238,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
 
     IPropertyTree *vips = serviceTree->queryPropTree("VIPS");
     Owned<IStringIterator> roxieTargets = getTargetClusters("RoxieCluster", NULL);
+
     ForEach(*roxieTargets)
     {
         SCMStringBuffer target;
@@ -260,6 +261,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
             {
                 vip = pc->queryProp("@vip");
                 includeTargetInURL = pc->getPropBool("@includeTargetInURL", true);
+
             }
         }
         StringBuffer list;
@@ -282,8 +284,11 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         }
         if (list.length())
         {
-            Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(list.str(), !loadBalanced, includeTargetInURL);
+            StringAttr alias(clusterInfo->getAlias());
+            Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(list.str(), !loadBalanced, includeTargetInURL, loadBalanced ? alias.str() : NULL);
             connMap.setValue(target.str(), sf.get());
+            if (alias.length() && !connMap.getValue(alias.str())) //only need one vip per alias for routing purposes
+                connMap.setValue(alias.str(), sf.get());
         }
     }
 
@@ -1176,7 +1181,7 @@ void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wuinfo, IPropertyTree *parmTre
             }
 
             schema.appendf("<xsd:element minOccurs=\"0\" maxOccurs=\"1\" name=\"%s\" type=\"%s\"", name, type.str());
-            if (part.hasProp("@width") || part.hasProp("@height") || part.hasProp("@password"))
+            if (part.hasProp("@width") || part.hasProp("@height") || part.hasProp("@password") || part.hasProp("select"))
             {
                 schema.append("><xsd:annotation><xsd:appinfo><form");
                 unsigned rows = part.getPropInt("@height");
@@ -1187,7 +1192,10 @@ void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wuinfo, IPropertyTree *parmTre
                     schema.appendf(" formCols='%u'", cols);
                 if (part.hasProp("@password"))
                     schema.appendf(" password='%s'", part.queryProp("@password"));
-                schema.appendf("/></xsd:appinfo></xsd:annotation></xsd:element>");
+                schema.appendf(">");
+                if (part.hasProp("select"))
+                    toXML(part.queryPropTree("select"), schema);
+                schema.appendf("</form></xsd:appinfo></xsd:annotation></xsd:element>");
             }
             else
                 schema.append("/>");
@@ -1915,8 +1923,9 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
         StringBuffer url("http://");
         ep.getIpText(url).append(':').append(ep.port ? ep.port : 9876).append('/');
-        if (static_cast<RoxieSocketFactory*>(conn)->includeTargetInURL)
-            url.append(target);
+        RoxieSocketFactory *roxieConn = static_cast<RoxieSocketFactory*>(conn);
+        if (roxieConn->includeTargetInURL)
+            url.append(roxieConn->alias.isEmpty() ? target : roxieConn->alias.str());
         if (!trim)
             url.append("?.trim=0");
 

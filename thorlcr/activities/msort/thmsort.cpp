@@ -32,14 +32,33 @@
 //
 
 
-class CGroupSortActivityMaster : public CMasterActivity
+class CSortBaseActivityMaster : public CMasterActivity
+{
+    CThorStatsCollection extraStats;
+public:
+    CSortBaseActivityMaster(CMasterGraphElement * info) : CMasterActivity(info), extraStats(spillStatistics) { }
+
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
+    {
+        CMasterActivity::deserializeStats(node, mb);
+
+        extraStats.deserializeMerge(node, mb);
+    }
+    virtual void getActivityStats(IStatisticGatherer & stats)
+    {
+        CMasterActivity::getActivityStats(stats);
+        extraStats.getStats(stats);
+    }
+};
+
+class CGroupSortActivityMaster : public CSortBaseActivityMaster
 {
 public:
-    CGroupSortActivityMaster(CMasterGraphElement * info) : CMasterActivity(info) { }
+    CGroupSortActivityMaster(CMasterGraphElement * info) : CSortBaseActivityMaster(info) { }
 
     virtual void init()
     {
-        CMasterActivity::init();
+        CSortBaseActivityMaster::init();
         IHThorSortArg *helper = (IHThorSortArg *)queryHelper();
         IHThorAlgorithm *algo = static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1));
         OwnedRoxieString algoname = algo->getAlgorithm();
@@ -52,7 +71,7 @@ public:
     }
 };
 
-class CMSortActivityMaster : public CMasterActivity
+class CMSortActivityMaster : public CSortBaseActivityMaster
 {
     IThorSorterMaster *imaster;
     mptag_t mpTagRPC, barrierMpTag;
@@ -61,7 +80,7 @@ class CMSortActivityMaster : public CMasterActivity
 
 public:
     CMSortActivityMaster(CMasterGraphElement *info)
-      : CMasterActivity(info)
+      : CSortBaseActivityMaster(info)
     {
         mpTagRPC = container.queryJob().allocateMPTag();
         barrierMpTag = container.queryJob().allocateMPTag();
@@ -76,7 +95,7 @@ public:
 protected:
     virtual void init()
     {
-        CMasterActivity::init();
+        CSortBaseActivityMaster::init();
         IHThorSortArg *helper = (IHThorSortArg *)queryHelper();
         IHThorAlgorithm *algo = static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1));
         OwnedRoxieString algoname(algo->getAlgorithm());
@@ -111,7 +130,7 @@ protected:
     }   
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {
-        CMasterActivity::preStart(parentExtractSz, parentExtract);
+        CSortBaseActivityMaster::preStart(parentExtractSz, parentExtract);
         ActPrintLog("preStart");
         imaster = CreateThorSorterMaster(this);
         unsigned s=0;
@@ -126,7 +145,7 @@ protected:
     {
         ActPrintLog("process");
 
-        CMasterActivity::process();
+        CSortBaseActivityMaster::process();
 
         IHThorSortArg *helper = (IHThorSortArg *)queryHelper();
         StringBuffer skewV;

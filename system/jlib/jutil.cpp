@@ -15,8 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#ifdef _WIN32
 #pragma warning(disable: 4996)
-#ifdef _WIN32 
 #include "winprocess.hpp"
 #include <conio.h>
 #endif
@@ -1573,29 +1573,6 @@ int make_daemon(bool printpid)
 
 }
 
-#ifndef _WIN32 
-static int exec(const char* _command)
-{
-    const char* tok=" \t";
-    size32_t sz=16, count=0;
-    char* command = strdup(_command);
-    char **args=(char**)malloc(sz*sizeof(char*));
-    
-    for(char *temp, *p=strtok_r(command,tok,&temp);;p=strtok_r(NULL,tok,&temp))
-    {
-        if(count>=sz)
-            args=(char**)realloc(args,(sz*=2)*sizeof(char*));
-        args[count++]=p;
-        if(!p)
-            break;
-    }
-    int ret=execv(*args,args);
-    free(args);
-    free(command);
-    return ret;
-}
-#endif 
-
 //Calculate the greatest common divisor using Euclid's method
 unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 right)
 {
@@ -1628,7 +1605,7 @@ void doStackProbe()
 {
     byte local;
     const volatile byte * x = (const byte *)&local;
-    byte forceload = x[-4096];
+    byte forceload __attribute__((unused)) = x[-4096];
 }
 
 #ifdef __GNUC__

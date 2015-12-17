@@ -47,6 +47,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
         Owned<ICrcIOStream> crcStream;
         Owned<IXMLParse> xmlParser;
         CRC32 inputCRC;
+        OwnedIFileIO iFileIO;
         Owned<IIOStream> inputIOstream;
         offset_t localOffset;  // not sure what this is for 
         Linked<IEngineRowAllocator> allocator;
@@ -64,16 +65,20 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
         virtual void open() 
         {
             CDiskPartHandlerBase::open();
-            OwnedIFileIO iFileIO;
-            if (compressed)
+
             {
-                iFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
-                if (!iFileIO)
-                    throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
-                checkFileCrc = false;
+                CriticalBlock block(statsCs);
+                if (compressed)
+                {
+                    iFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
+                    if (!iFileIO)
+                        throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
+                    checkFileCrc = false;
+                }
+                else
+                    iFileIO.setown(iFile->open(IFOread));
             }
-            else
-                iFileIO.setown(iFile->open(IFOread));
+
             Owned<IIOStream> stream = createIOStream(iFileIO);
             if (stream && checkFileCrc)
             {
@@ -89,10 +94,13 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
         }
         virtual void close(CRC32 &fileCRC)
         {
+            CriticalBlock block(statsCs);
             xmlParser.clear();
             inputIOstream.clear();
             if (checkFileCrc)
                 fileCRC.reset(~crcStream->queryCrc()); // MORE should prob. change stream to use CRC32
+            mergeStats(fileStats, iFileIO);
+            iFileIO.clear();
         }
 
         const void *nextRow()
@@ -177,6 +185,12 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             return localOffset; // NH->JCS is this what is wanted? (or should it be stream position relative?
         }
     
+        virtual void gatherStats(CRuntimeStatisticCollection & merged)
+        {
+            CriticalBlock block(statsCs);
+            CDiskPartHandlerBase::gatherStats(merged);
+            mergeStats(merged, iFileIO);
+        }
     };
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);

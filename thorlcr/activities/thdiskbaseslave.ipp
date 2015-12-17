@@ -38,8 +38,9 @@ protected:
     StringAttr filename, logicalFilename;
     unsigned __int64 fileBaseOffset;
     const char *kindStr;
-
+    CRuntimeStatisticCollection fileStats;
     CDiskReadSlaveActivityBase &activity;
+    CriticalSection statsCs;
 
     bool eoi;
 public:
@@ -51,6 +52,10 @@ public:
 
     virtual void stop();
     virtual const void *nextRow() = 0;
+    virtual void gatherStats(CRuntimeStatisticCollection & merged)
+    {
+        merged.merge(fileStats);
+    }
 
 // IThorDiskCallback
     virtual offset_t getFilePosition(const void * row);
@@ -101,6 +106,7 @@ class CDiskWriteSlaveActivityBase : public ProcessSlaveActivity, implements ICop
 {
 protected:
     IHThorDiskWriteArg *diskHelperBase;
+    Owned<IFileIO> outputIO;
     Owned<IExtRowWriter> out;
     Owned<IFileIOStream> outraw;
     Owned<IPartDescriptor> partDesc;
@@ -114,6 +120,8 @@ protected:
     unsigned usageCount;
     CDfsLogicalFileName dlfn;
     StringBuffer tempExternalName;
+    CRuntimeStatisticCollection fileStats;
+    CriticalSection statsCs;
 
     void open();
     void removeFiles();

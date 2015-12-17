@@ -46,9 +46,9 @@ CHThorSteppedInput::CHThorSteppedInput(IHThorInput * _input)
 
 const void * CHThorSteppedInput::nextInputRow()
 {
-    const void * ret = input->nextInGroup();
+    const void * ret = input->nextRow();
     if (!ret)
-        ret = input->nextInGroup();
+        ret = input->nextRow();
     return ret;
 }
 
@@ -76,12 +76,12 @@ CHThorNaryActivity::CHThorNaryActivity(IAgentContext & _agent, unsigned _activit
 {
 }
 
-void CHThorNaryActivity::done()
+void CHThorNaryActivity::stop()
 {
     ForEachItemIn(i, expandedInputs)
-        expandedInputs.item(i)->done();
+        expandedInputs.item(i)->stop();
     expandedInputs.kill();
-    CHThorMultiInputActivity::done();
+    CHThorMultiInputActivity::stop();
 }
 
 void CHThorNaryActivity::ready()
@@ -126,13 +126,13 @@ CHThorNWayMergeActivity::~CHThorNWayMergeActivity()
     merger.cleanup();
 }
 
-void CHThorNWayMergeActivity::done()    
+void CHThorNWayMergeActivity::stop()    
 {
     merger.done();
-    CHThorNaryActivity::done();
+    CHThorNaryActivity::stop();
 }
 
-const void * CHThorNWayMergeActivity::nextInGroup()
+const void * CHThorNWayMergeActivity::nextRow()
 {
     const void * next = merger.nextRow();
     if (next)
@@ -180,10 +180,10 @@ CHThorMergeJoinBaseActivity::CHThorMergeJoinBaseActivity(IAgentContext & _agent,
 {
 }
 
-void CHThorMergeJoinBaseActivity::done()
+void CHThorMergeJoinBaseActivity::stop()
 {
     processor.afterProcessing();
-    CHThorNaryActivity::done();
+    CHThorNaryActivity::stop();
 }
 
 
@@ -215,9 +215,9 @@ IInputSteppingMeta * CHThorMergeJoinBaseActivity::querySteppingMeta()
     return processor.queryInputSteppingMeta();
 }
 
-const void * CHThorMergeJoinBaseActivity::nextInGroup()
+const void * CHThorMergeJoinBaseActivity::nextRow()
 {
-    const void * next = processor.nextInGroup();
+    const void * next = processor.nextRow();
     if (next)
         processed++;
     return next;
@@ -271,10 +271,10 @@ CHThorNWayJoinActivity::CHThorNWayJoinActivity(IAgentContext & _agent, unsigned 
 {
 }
 
-void CHThorNWayJoinActivity::done()
+void CHThorNWayJoinActivity::stop()
 {
     processor.afterProcessing();
-    CHThorNaryActivity::done();
+    CHThorNaryActivity::stop();
 }
 
 void CHThorNWayJoinActivity::ready()
@@ -298,9 +298,9 @@ IInputSteppingMeta * CHThorNWayJoinActivity::querySteppingMeta()
     return processor.querySteppingMeta();
 }
 
-const void * CHThorNWayJoinActivity::nextInGroup()
+const void * CHThorNWayJoinActivity::nextRow()
 {
-    const void * next = processor.nextInGroup();
+    const void * next = processor.nextRow();
     if (next)
         processed++;
     return next;

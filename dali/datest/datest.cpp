@@ -2591,6 +2591,7 @@ NULL
                 verifyex(sz == iFileIOs.item(i).write(pos, len, data));
             return sz;
         }
+        virtual unsigned __int64 getStatistic(StatisticKind kind) { return 0; }
         virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=-1) { UNIMPLEMENTED; return 0; }
         virtual void setSize(offset_t size) { UNIMPLEMENTED; }
         virtual void flush() { }

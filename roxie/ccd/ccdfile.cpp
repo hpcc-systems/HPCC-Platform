@@ -71,6 +71,7 @@ public:
     virtual void setSize(offset_t size) { UNIMPLEMENTED; }
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; return 0; }
     virtual void close() { }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) { return 0; }
 } failure;
 
 class CLazyFileIO : public CInterface, implements ILazyFileIO, implements IDelayedFile
@@ -90,6 +91,7 @@ protected:
     bool copying;
     bool isCompressed;
     const IRoxieFileCache *cached;
+    CRuntimeStatisticCollection fileStats;
 
 #ifdef FAIL_20_READ
     unsigned readCount;
@@ -99,7 +101,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, unsigned _crc, bool _isCompressed)
-        : logical(_logical), fileSize(size), crc(_crc), isCompressed(_isCompressed)
+        : logical(_logical), fileSize(size), crc(_crc), isCompressed(_isCompressed), fileStats(diskLocalStatistics)
     {
         fileDate.set(_date);
         currentIdx = 0;
@@ -186,7 +188,10 @@ public:
         try
         {
             if (current.get()!=&failure)
+            {
                 atomic_dec(&numFilesOpen[remote]);
+                mergeStats(fileStats, current);
+            }
             current.set(&failure); 
         }
         catch (IException *E) 
@@ -359,6 +364,13 @@ public:
         _checkOpen();
         lastAccess = msTick();
         return current->size();
+    }
+
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        CriticalBlock b(crit);
+        unsigned __int64 openValue = current->getStatistic(kind);
+        return openValue + fileStats.getStatisticValue(kind);
     }
 
     virtual size32_t write(offset_t pos, size32_t len, const void * data) { throwUnexpected(); }

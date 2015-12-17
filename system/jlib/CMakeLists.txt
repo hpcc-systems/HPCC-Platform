@@ -30,6 +30,10 @@ CHECK_LIBRARY_EXISTS(dl dlopen "" HAVE_LIBDL)
 CHECK_LIBRARY_EXISTS(crypt crypt "" HAVE_LIBCRYPT) 
 endif ()
 
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror")
+endif()
+
 set (    SRCS 
     ${SCM_GENERATED_INCLUDES}
          jargv.cpp 
@@ -137,6 +141,8 @@ set (    INCLUDES
         jsocket.hpp
         jsort.hpp
         jsorta.hpp
+        jstatcodes.h
+        jstats.h
         jstream.hpp
         jstream.ipp
         jstring.hpp
@@ -150,7 +156,11 @@ set (    INCLUDES
         )
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    set_source_files_properties (jmalloc.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
+    set_property (SOURCE jmalloc.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -fno-strict-aliasing")
+    set_property (SOURCE jencrypt.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -fno-strict-aliasing")
+endif ()
+if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0.0)
+    set_property (SOURCE jencrypt.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-array-bounds")   # Compiler erroneously reports array bounds errors in some cases
 endif ()
 
 include_directories ( 

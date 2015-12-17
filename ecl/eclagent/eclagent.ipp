@@ -699,7 +699,7 @@ public:
 
     void ready() { if (!alreadyUpdated) activity->ready(); }
     void execute() { if (!alreadyUpdated) activity->execute(); }
-    void done() { if (!alreadyUpdated) activity->done(); }
+    void stop() { if (!alreadyUpdated) activity->stop(); }
 
     IHThorException * makeWrappedException(IException * e);
 
@@ -845,7 +845,7 @@ class EclSubGraph : public CInterface, implements ILocalEclGraphResults, public 
     friend class EclGraphElement;
 private:
 
-    class LegacyInputProbe : public CInterface, implements IHThorInput, implements IInterface
+    class LegacyInputProbe : public CInterfaceOf<IHThorInput>
     {
         IHThorInput  *in;
         EclSubGraph  *owner;
@@ -856,8 +856,6 @@ private:
         StringAttr edgeId;
 
     public:
-        IMPLEMENT_IINTERFACE;
-
         LegacyInputProbe(IHThorInput *_in, EclSubGraph *_owner, unsigned _sourceId, int outputidx)
             : in(_in), owner(_owner), sourceId(_sourceId), outputIndex(outputidx)
         {
@@ -873,9 +871,9 @@ private:
             in->ready();
         }
         
-        void done() 
+        void stop() 
         {
-            in->done();
+            in->stop();
         }
 
         bool isGrouped() { return in->isGrouped(); }
@@ -883,16 +881,16 @@ private:
         bool nextGroup(ConstPointerArray & group)
         {
             const void * next;
-            while ((next = nextInGroup()) != NULL)
+            while ((next = nextRow()) != NULL)
                 group.append(next);
             if (group.ordinality())
                 return true;
             return false;
         }
     
-        const void *nextInGroup()
+        const void *nextRow()
         {
-            const void *ret = in->nextInGroup();
+            const void *ret = in->nextRow();
             if (ret)
             {
                 size32_t size = in->queryOutputMeta()->getRecordSize(ret);

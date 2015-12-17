@@ -2764,11 +2764,31 @@ IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowIn
 
 ///////////////////////////////////////////////////
 
+static bool suppressStatisticIfZero(StatisticKind kind)
+{
+    switch (kind)
+    {
+    case StNumSpills:
+    case StSizeSpillFile:
+    case StTimeSpillElapsed:
+        return true;
+    }
+    return false;
+}
+
+
+///////////////////////////////////////////////////
+
 CThorStats::CThorStats(StatisticKind _kind) : kind(_kind)
 {
     unsigned c = queryClusterWidth();
     while (c--) counts.append(0);
     reset();
+}
+
+void CThorStats::extract(unsigned node, const CRuntimeStatisticCollection & stats)
+{
+    set(node, stats.getStatisticValue(kind));
 }
 
 void CThorStats::set(unsigned node, unsigned __int64 count)
@@ -2828,6 +2848,9 @@ void CThorStats::processInfo()
 void CThorStats::getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual)
 {
     processInfo();
+    if ((0 == tot) && suppressStatisticIfZero(kind))
+        return;
+
     //MORE: For most measures (not time stamps etc.) it would be sensible to output the total here....
     if (!suppressMinMaxWhenEqual || (maxSkew != minSkew))
     {

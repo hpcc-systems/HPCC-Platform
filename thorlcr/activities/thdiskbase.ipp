@@ -32,6 +32,7 @@ protected:
     Owned<CSlavePartMapping> mapping;
     IHash *hash;
     Owned<ProgressInfo> inputProgress;
+    CThorStatsCollection diskStats;
     StringAttr fileName;
 
 public:
@@ -40,6 +41,7 @@ public:
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave);
     virtual void validateFile(IDistributedFile *file) { }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb);
+    virtual void getActivityStats(IStatisticGatherer & stats);
     virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx);
 };
 
@@ -47,6 +49,7 @@ class CWriteMasterBase : public CMasterActivity
 {
     bool publishReplicatedDone;
     Owned<ProgressInfo> replicateProgress;
+    CThorStatsCollection diskStats;
     __int64 recordsProcessed;
     bool published;
     StringAttr fileName;

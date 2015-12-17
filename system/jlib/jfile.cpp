@@ -137,7 +137,7 @@ StringBuffer &swapPathDrive(StringBuffer &filename,unsigned fromdrvnum,unsigned 
     }
     if (isPathSepChar(c))
         s++;
-    if (*s&&((fromdrvnum==(unsigned)-1)||(*s==(fromdrvnum+'c')))&&((s[1]==':')||(isShareChar(s[1])))) 
+    if (*s&&((fromdrvnum==(unsigned)-1)||(*s==(char) (fromdrvnum+'c')))&&((s[1]==':')||(isShareChar(s[1]))))
         filename.setCharAt((size32_t)(s-filename.str()),todrvnum+'c');
     else if (frommask&&*frommask) { // OSS
         StringBuffer tmp;
@@ -846,7 +846,7 @@ void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fro
     IFEflags tgtFlags = IFEnone;
     if (copyFlags & CFflush_write)
         tgtFlags = IFEnocache;
-    OwnedIFileIO targetIO = target->open(IFOwrite, tgtFlags);
+    OwnedIFileIO targetIO = target->open(omode, tgtFlags);
     if (!targetIO)
         throw MakeStringException(-1, "copyFile: target path '%s' could not be created", target->queryFilename());
     MemoryAttr mb;
@@ -1164,6 +1164,7 @@ MODULE_EXIT()
     passwordProvider.clear();
 }
 
+#ifdef _WIN32
 static bool parseShare(const char *filename,IpAddress &machine,StringBuffer &share)
 { // windows share parsing
     if (!filename||!isPathSepChar(filename[0])||(filename[0]!=filename[1]))
@@ -1188,7 +1189,6 @@ static bool parseShare(const char *filename,IpAddress &machine,StringBuffer &sha
         start++;
     }
     return true;
-
 }
 
 static CriticalSection connectcrit;
@@ -1198,7 +1198,6 @@ static bool connectToExternalDrive(const char * const filename)
     CriticalBlock block(connectcrit);
     if (!passwordProvider)
         return false;
-#ifdef _WIN32
 
     StringBuffer share, username, password;
     IpAddress ip;
@@ -1243,15 +1242,12 @@ static bool connectToExternalDrive(const char * const filename)
             return true;
         Sleep(retry*100);
     }
-#endif
     return false;
 }
 
 
 static void disconnectFromExternalDrive(const char * const filename)
 {
-#ifdef _WIN32
-
     CriticalBlock block(connectcrit);
     StringBuffer share;
     IpAddress ip;
@@ -1259,14 +1255,7 @@ static void disconnectFromExternalDrive(const char * const filename)
         return;
     if (share.length()&&isShareChar(share.charAt(share.length()))) 
         WNetCancelConnection2((char *)share.str(), 0, 0);
-#else
-        //TODO: fill in for linux
-#endif
 }
-
-#ifdef _WIN32
-
-
 
 class CWindowsRemoteFile : public CInterface, implements IFile
 {
@@ -1582,6 +1571,10 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         }
         virtual void flush() {}
         virtual void close() {}
+        virtual unsigned __int64 getStatistic(StatisticKind kind)
+        {
+            return 0;
+        }
         virtual void setSize(offset_t size)
         {
             if (size > mb.length())
@@ -1761,11 +1754,36 @@ offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
     return ret;
 }
 
+unsigned __int64 CFileIO::getStatistic(StatisticKind kind)
+{
+    switch (kind)
+    {
+    case StCycleDiskReadIOCycles:
+        return ioReadCycles.load(std::memory_order_relaxed);
+    case StCycleDiskWriteIOCycles:
+        return ioWriteCycles.load(std::memory_order_relaxed);
+    case StTimeDiskReadIO:
+        return cycle_to_nanosec(ioReadCycles.load(std::memory_order_relaxed));
+    case StTimeDiskWriteIO:
+        return cycle_to_nanosec(ioWriteCycles.load(std::memory_order_relaxed));
+    case StSizeDiskRead:
+        return ioReadBytes.load(std::memory_order_relaxed);
+    case StSizeDiskWrite:
+        return ioWriteBytes.load(std::memory_order_relaxed);
+    case StNumDiskReads:
+        return ioReads.load(std::memory_order_relaxed);
+    case StNumDiskWrites:
+        return ioWrites.load(std::memory_order_relaxed);
+    }
+    return 0;
+}
+
 #ifdef _WIN32
 
 //-- Windows implementation -------------------------------------------------
 
 CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
+    : ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0)
 {
     assertex(handle != NULLFILE);
     throwOnError = false;
@@ -1828,10 +1846,14 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 {
     CriticalBlock procedure(cs);
 
+    CCycleTimer timer;
     DWORD numRead;
     setPos(pos);
     if (ReadFile(file,data,len,&numRead,NULL) == 0)
         throw makeOsException(GetLastError(),"CFileIO::read");
+    ioReadCycles.fetch_add(timer.elapsedCycles());
+    ioReadBytes.fetch_add(numRead);
+    ++ioReads;
     return (size32_t)numRead;
 }
 
@@ -1846,12 +1868,16 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 {
     CriticalBlock procedure(cs);
 
+    CCycleTimer timer;
     DWORD numWritten;
     setPos(pos);
     if (!WriteFile(file,data,len,&numWritten,NULL))
         throw makeOsException(GetLastError(),"CFileIO::write");
     if (numWritten != len)
         throw makeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::write");
+    ioWriteCycles.fetch_add(timer.elapsedCycles());
+    ioWriteBytes.fetch_add(numWritten);
+    ++ioWrites;
     return (size32_t)numWritten;
 }
 
@@ -1870,6 +1896,8 @@ void CFileIO::setSize(offset_t pos)
 
 // More errorno checking TBD
 CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
+    : ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0)
+
 {
     assertex(handle != NULLFILE);
     throwOnError = false;
@@ -1882,7 +1910,6 @@ CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags
             extraFlags = static_cast<IFEflags>(extraFlags & ~IFEnocache);
     atomic_set(&bytesRead, 0);
     atomic_set(&bytesWritten, 0);
-
 #ifdef CFILEIOTRACE
     DBGLOG("CFileIO::CfileIO(%d,%d,%d,%d)", handle, _openmode, _sharemode, _extraFlags);
 #endif
@@ -1956,7 +1983,13 @@ offset_t CFileIO::size()
 size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 {
     if (0==len) return 0;
+
+    CCycleTimer timer;
     size32_t ret = checked_pread(file, data, len, pos);
+    ioReadCycles.fetch_add(timer.elapsedCycles());
+    ioReadBytes.fetch_add(ret);
+    ++ioReads;
+
     if ( (extraFlags & IFEnocache) && (ret > 0) )
     {
         if (atomic_add_and_read(&bytesRead, ret) >= PGCFLUSH_BLKSIZE)
@@ -1990,7 +2023,12 @@ static void sync_file_region(int fd, offset_t offset, offset_t nbytes)
 
 size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 {
+    CCycleTimer timer;
     size32_t ret = pwrite(file,data,len,pos);
+    ioWriteCycles.fetch_add(timer.elapsedCycles());
+    ioWriteBytes.fetch_add(ret);
+    ++ioWrites;
+
     if (ret==(size32_t)-1)
         throw makeErrnoException(errno, "CFileIO::write");
     if (ret<len)
@@ -2083,6 +2121,12 @@ offset_t CFileAsyncIO::appendFile(IFile *file,offset_t pos,offset_t len)
 {
     // will implemented if needed
     UNIMPLEMENTED; 
+}
+
+unsigned __int64 CFileAsyncIO::getStatistic(StatisticKind kind)
+{
+    //MORE: Could implement - but I don't think this class is currently used
+    return 0;
 }
 
 #ifdef _WIN32
@@ -2409,7 +2453,6 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
 
 
 #endif
-
 
 //---------------------------------------------------------------------------
 
@@ -5439,7 +5482,6 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
         ext = "tmp";
     filename.appendf("_%" I64F "x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
     OwnedIFile iFile = createIFile(filename.str());
-    IFileIO *iFileIO = NULL;
     unsigned attempts = 5; // max attempts
     loop
     {
@@ -6397,6 +6439,7 @@ class CCachedFileIO: public CInterface, implements IFileIO
     CLazyFileIOCache &owner;
     RemoteFilename filename;
     CriticalSection &sect;
+    CRuntimeStatisticCollection fileStats;
     IFOmode mode;
 
     void writeNotSupported(const char *s)
@@ -6411,16 +6454,23 @@ public:
 
 
     CCachedFileIO(CLazyFileIOCache &_owner, CriticalSection &_sect, RemoteFilename &_filename, IFOmode _mode)
-        : owner(_owner), sect(_sect)
+        : owner(_owner), sect(_sect), fileStats(diskLocalStatistics)
     {
         filename.set(_filename);
         mode = _mode;
+        accesst = 0;
     }
 
     virtual void Link(void) const       { CInterface::Link(); }                     \
 
     virtual bool Release(void) const;
     
+    unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        CriticalBlock block(sect);
+        unsigned __int64 openValue = cachedio ? cachedio->getStatistic(kind) : 0;
+        return openValue + fileStats.getStatisticValue(kind);
+    }
 
     IFileIO *open();
 
@@ -6452,10 +6502,7 @@ public:
     {
         CriticalBlock block(sect);
         if (cachedio)
-        {
-            cachedio->close();
-            cachedio.clear();
-        }
+            forceClose();
     }
     offset_t appendFile(IFile *file,offset_t pos,offset_t len)
     {
@@ -6470,6 +6517,12 @@ public:
         io->setSize(size);
     }
 
+    void forceClose()
+    {
+        cachedio->close();
+        mergeStats(fileStats, cachedio);
+        cachedio.clear();
+    }
 };
 
 class CLazyFileIOCache: public CInterface, implements IFileIOCache
@@ -6524,7 +6577,7 @@ public:
                 break;
             if (!oldest)
                 break;
-            oldest->cachedio.clear();
+            oldest->forceClose();
             //If previously had max ios then we now have space.
             if (n == max)
                 break;

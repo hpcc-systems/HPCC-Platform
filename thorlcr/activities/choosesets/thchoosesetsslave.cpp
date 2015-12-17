@@ -250,7 +250,8 @@ public:
     virtual CActivityBase *queryFromActivity();
     virtual void dataLinkSerialize(MemoryBuffer &mb);
     unsigned __int64 queryTotalCycles() const;
-
+    unsigned __int64 queryEndCycles() const;
+    virtual void debugRequest(MemoryBuffer &msg);
     ChooseSetsPlusActivity & activity;
     IEngineRowAllocator *queryRowAllocator();
 };
@@ -559,6 +560,8 @@ void InputCounter::getMetaInfo(ThorDataLinkMetaInfo &info)  { activity.inputs.it
 CActivityBase *InputCounter::queryFromActivity()            { return activity.inputs.item(0)->queryFromActivity(); }
 void InputCounter::dataLinkSerialize(MemoryBuffer &mb)      { activity.inputs.item(0)->dataLinkSerialize(mb); }
 unsigned __int64 InputCounter::queryTotalCycles() const     { return activity.inputs.item(0)->queryTotalCycles(); }
+unsigned __int64 InputCounter::queryEndCycles() const       { return activity.inputs.item(0)->queryEndCycles(); }
+void InputCounter::debugRequest(MemoryBuffer &msg)          { return activity.inputs.item(0)->debugRequest(msg); }
 
 
 //---------------------------------------------------------------------------

@@ -52,7 +52,7 @@ private:
         return static_cast<const ELEMENT *>(et)->getHash(); 
     }
     inline const void * getFindParam(const void * et) const { return et; }
-    inline bool matchesFindParam(const void * et, const void * key, unsigned fphash) const
+    inline bool matchesFindParam(const void * et, const void * key, unsigned fphash __attribute__((unused))) const
     { 
         return static_cast<const ELEMENT *>(et)->equals(*static_cast<const ELEMENT *>(key)); 
     }

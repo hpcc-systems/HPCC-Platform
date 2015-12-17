@@ -38,12 +38,14 @@ class CLocalSortSlaveActivity : public CSlaveActivity, public CThorDataLink
     Owned<IThorRowLoader> iLoader;
     Owned<IRowStream> out;
     bool unstable, eoi;
+    CriticalSection statsCs;
+    CRuntimeStatisticCollection spillStats;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CLocalSortSlaveActivity(CGraphElementBase *_container)
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container), CThorDataLink(this), spillStats(spillStatistics)
     {
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -51,7 +53,7 @@ public:
         helper = (IHThorSortArg *)queryHelper();
         iCompare = helper->queryCompare();
         IHThorAlgorithm * algo = helper?(static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1))):NULL;
-        unstable = (algo&&algo->getAlgorithmFlags()&TAFunstable);
+        unstable = (algo&&(algo->getAlgorithmFlags()&TAFunstable));
         appendOutputLinked(this);
     }
     void start()
@@ -70,12 +72,28 @@ public:
         if (0 == iLoader->numRows())
             eoi = true;
     }
+    void serializeStats(MemoryBuffer &mb)
+    {
+        CSlaveActivity::serializeStats(mb);
+
+        CriticalBlock block(statsCs);
+        CRuntimeStatisticCollection mergedStats(spillStats);
+        mergeStats(mergedStats, iLoader);
+        mergedStats.serialize(mb);
+    }
+
     void stop()
     {
         out.clear();
         stopInput(input);
         dataLinkStop();
-        iLoader.clear();
+
+        //Critical block
+        {
+            CriticalBlock block(statsCs);
+            mergeStats(spillStats, iLoader);
+            iLoader.clear();
+        }
     }
     CATCH_NEXTROW()
     {

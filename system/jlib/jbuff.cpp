@@ -444,7 +444,7 @@ MemoryBuffer::MemoryBuffer(size_t initial)
     _realloc((size32_t)initial);
 }
 
-MemoryBuffer::MemoryBuffer(MemoryBuffer & value)
+MemoryBuffer::MemoryBuffer(MemoryBuffer & value __attribute__((unused)))
 {
     assertex(!"This should never be used");
 }

@@ -42,9 +42,8 @@ void jlib_decl display_time(const char * title, cycle_t diff);
 inline cycle_t getTSC() { __asm { __asm _emit 0x0f __asm _emit 0x31 } }
 #pragma warning(pop)
 #elif !defined(_WIN32)
-inline volatile __int64 getTSC()
+inline __int64 getTSC()
 {
-   cycle_t x;
    unsigned a, d;
    __asm__ volatile("rdtsc" : "=a" (a), "=d" (d));
    return ((cycle_t)a)|(((cycle_t)d) << 32);
@@ -114,7 +113,7 @@ class CCycleTimer
 {
     cycle_t start_time;
 public:
-    CCycleTimer()
+    inline CCycleTimer()
     {
         reset();
     }
@@ -122,11 +121,15 @@ public:
     {
         start_time = get_cycles_now();
     }
-    inline cycle_t elapsedCycles()
+    inline cycle_t elapsedCycles() const
     {
         return get_cycles_now() - start_time;
     }
-    inline unsigned elapsedMs()
+    inline unsigned __int64 elapsedNs() const
+    {
+        return cycle_to_nanosec(elapsedCycles());
+    }
+    inline unsigned elapsedMs() const
     {
         return static_cast<unsigned>(cycle_to_millisec(elapsedCycles()));
     }

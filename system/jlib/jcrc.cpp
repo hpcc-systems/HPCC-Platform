@@ -159,7 +159,6 @@ unsigned crc32(const char *buf, unsigned len, unsigned crc)
 # include <stdint.h>
 #endif
 
-const uint32_t Polynomial = 0xEDB88320;
 
 const static uint32_t Crc32Lookup[8][256] =
 {

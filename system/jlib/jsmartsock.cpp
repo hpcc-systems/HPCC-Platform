@@ -346,7 +346,6 @@ ISmartSocket *CSmartSocketFactory::connect()
 
 ISmartSocket *CSmartSocketFactory::connectNextAvailableSocket()
 {
-    int numsockets = sockArray.ordinality();
     while(1)
     {
         try 
@@ -362,7 +361,6 @@ ISmartSocket *CSmartSocketFactory::connectNextAvailableSocket()
             e->Release();   //keep trying
         }
     }
-
     return NULL;  // should never get here, but make the compiler happy
 }
 

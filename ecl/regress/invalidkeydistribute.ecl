@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,22 +15,14 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef SLWATCHDOG_HPP
-#define SLWATCHDOG_HPP
+namesRecord :=
+            RECORD
+string10        id1;
+string10        id2;
+            END;
 
-#include "jiface.hpp"
-#include "thwatchdog.hpp"
+namesTable := dataset('x',namesRecord,FLAT);
 
-class CGraphBase;
-interface ISlaveWatchdog : extends IInterface
-{
-    virtual void startGraph(CGraphBase &graph) = 0;
-    virtual void stopGraph(CGraphBase &graph, MemoryBuffer *mb=NULL) = 0;
-    virtual void stop() = 0;
-    virtual void debugRequest(CMessageBuffer &msg, const char *request) const = 0;
-};
+indexKey := INDEX(namesTable, { id1 }, { id2 }, 'i1');
 
-ISlaveWatchdog *createProgressHandler(bool udp=false);
-
-#endif
-
+DISTRIBUTE(namesTable, indexKey, LEFT.id2 = RIGHT.id2);

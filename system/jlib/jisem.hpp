@@ -125,7 +125,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     TokenBucket(unsigned _tokensPerPeriod, unsigned _period, unsigned _maxBucketSize)
-        : tokensPerPeriod(_tokensPerPeriod), period(_period), maxBucketSize(_maxBucketSize), tokens(_maxBucketSize)
+        : tokens(_maxBucketSize), maxBucketSize(_maxBucketSize), tokensPerPeriod(_tokensPerPeriod), period(_period)
     {
         tokensAvailable = _maxBucketSize;
         then = msTick();

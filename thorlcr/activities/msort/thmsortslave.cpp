@@ -47,6 +47,8 @@ class MSortSlaveActivity : public CSlaveActivity, public CThorDataLink
     mptag_t mpTagRPC;
     Owned<IBarrier> barrier;
     SocketEndpoint server;
+    CriticalSection statsCs;
+    CRuntimeStatisticCollection spillStats;
 
     bool isUnstable()
     {
@@ -57,7 +59,7 @@ class MSortSlaveActivity : public CSlaveActivity, public CThorDataLink
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    MSortSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    MSortSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this), spillStats(spillStatistics)
     {
         input = NULL;
         portbase = 0;
@@ -171,10 +173,24 @@ public:
     void kill()
     {
         ActPrintLog("MSortSlaveActivity::kill");
-        sorter.clear();
+
+        {
+            CriticalBlock block(statsCs);
+            mergeStats(spillStats, sorter);
+            sorter.clear();
+        }
+
         CSlaveActivity::kill();
     }
+    void serializeStats(MemoryBuffer &mb)
+    {
+        CSlaveActivity::serializeStats(mb);
 
+        CriticalBlock block(statsCs);
+        CRuntimeStatisticCollection mergedStats(spillStats);
+        mergeStats(mergedStats, sorter);
+        mergedStats.serialize(mb);
+    }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);

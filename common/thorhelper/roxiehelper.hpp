@@ -144,7 +144,7 @@ extern THORHELPER_API ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm alg
 
 //=========================================================================================
 
-interface IGroupedInput : extends IInterface, extends IInputBase
+interface IGroupedInput : extends IInputBase
 {
 };
 

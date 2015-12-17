@@ -226,7 +226,7 @@ class CCompilerThreadParam : CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CCompilerThreadParam(const StringBuffer & _cmdline, Semaphore & _finishedCompiling, const StringBuffer & _logfile) : cmdline(_cmdline), finishedCompiling(_finishedCompiling), logfile(_logfile) {};
+    CCompilerThreadParam(const StringBuffer & _cmdline, Semaphore & _finishedCompiling, const StringBuffer & _logfile) : cmdline(_cmdline), logfile(_logfile), finishedCompiling(_finishedCompiling) {};
 
     StringBuffer        cmdline;
     StringBuffer        logfile;

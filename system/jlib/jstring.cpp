@@ -2001,7 +2001,6 @@ const char *decodeXML(const char *x, StringBuffer &ret, const char **errMark, IE
                 default:
                     if (entityHelper)
                     {
-                        bool error = false;
                         const char *start=x+1;
                         const char *finger=start;
                         while (*finger && *finger != ';')

@@ -43,7 +43,7 @@
 */
 
 
-#if !defined(FASTLZ__COMPRESSOR) && !defined(FASTLZ_DECOMPRESSOR)
+#if !defined(FASTLZ_COMPRESSOR) && !defined(FASTLZ_DECOMPRESSOR)
 
 // adapted for jlib
 #include "platform.h"
@@ -152,7 +152,7 @@ static FASTLZ_INLINE int FASTLZ_DECOMPRESSOR(const void* input, int length, void
 #undef FASTLZ_DECOMPRESSOR
 #define FASTLZ_COMPRESSOR fastlz2_compress
 #define FASTLZ_DECOMPRESSOR fastlz2_decompress
-static FASTLZ_INLINE int FASTLZ_COMPRESSOR(const void* input, int length, void* output);
+static FASTLZ_INLINE int FASTLZ_COMPRESSOR(const void* input, int length, void* output, HTAB_T &htab);
 static FASTLZ_INLINE int FASTLZ_DECOMPRESSOR(const void* input, int length, void* output, int maxout);
 #include "jflz.cpp"
 
@@ -1001,14 +1001,13 @@ IExpander *createFastLZExpander()
 
 #define FLZ_BUFFER_SIZE (0x100000)
 
-#define FLZCOMPRESSEDFILEFLAG (I64C(0xc3518de42f15da57))
-
+static const __uint64 FLZCOMPRESSEDFILEFLAG = U64C(0xc3518de42f15da57);
 
 struct FlzCompressedFileTrailer
 {
     offset_t        zfill1;             // must be first
     offset_t        expandedSize;
-    __int64         compressedType;
+    __uint64        compressedType;
     unsigned        zfill2;             // must be last
 };
 

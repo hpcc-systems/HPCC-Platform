@@ -108,6 +108,18 @@ friend class CDiskRecordPartHandler;
 
 /////////////////////////////////////////////////
 
+void mergeStats(CRuntimeStatisticCollection & stats, IExtRowStream * in)
+{
+    if (in)
+    {
+        ForEachItemIn(iStat, stats)
+        {
+            StatisticKind kind = stats.getKind(iStat);
+            stats.mergeStatistic(kind, in->getStatistic(kind));
+        }
+    }
+}
+
 class CDiskRecordPartHandler : public CDiskPartHandlerBase
 {
     Owned<IExtRowStream> in;
@@ -149,6 +161,13 @@ public:
     {
         in->prefetchDone();
     }
+    virtual void gatherStats(CRuntimeStatisticCollection & merged)
+    {
+        CriticalBlock block(statsCs);
+        CDiskPartHandlerBase::gatherStats(merged);
+        mergeStats(merged, in);
+    }
+
 };
 
 /////////////////////////////////////////////////
@@ -205,20 +224,25 @@ void CDiskRecordPartHandler::open()
         rwFlags |= rw_crc;
     if (activity.grouped)
         rwFlags |= rw_grouped;
-    if (compressed)
+
     {
-        rwFlags |= rw_compress;
-        in.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags, activity.eexp));
-        if (!in.get())
+        CriticalBlock block(statsCs);
+        if (compressed)
         {
-            if (!blockCompressed)
-                throw MakeStringException(-1,"Unsupported compressed file format: %s", filename.get());
-            else 
-                throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
+            rwFlags |= rw_compress;
+            in.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags, activity.eexp));
+            if (!in.get())
+            {
+                if (!blockCompressed)
+                    throw MakeStringException(-1,"Unsupported compressed file format: %s", filename.get());
+                else
+                    throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
+            }
         }
+        else
+            in.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags));
     }
-    else
-        in.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags));
+
     if (!in)
         throw MakeActivityException(&activity, 0, "Failed to open file '%s'", filename.get());
     ActPrintLog(&activity, "%s[part=%d]: %s (%s)", kindStr, which, activity.isFixedDiskWidth ? "fixed" : "variable", filename.get());
@@ -239,8 +263,10 @@ void CDiskRecordPartHandler::open()
 
 void CDiskRecordPartHandler::close(CRC32 &fileCRC)
 {
+    CriticalBlock block(statsCs);
     if (in) 
         in->stop(&fileCRC);
+    mergeStats(fileStats, in);
     in.clear();
 }
 
@@ -617,6 +643,7 @@ public:
     {
         if (out)
         {
+            out->stop();
             out->Release();
             out = NULL;
         }
@@ -741,6 +768,8 @@ public:
 // IRowStream
     virtual void stop()
     {
+        if (partHandler)
+            partHandler->stop();
         dataLinkStop();
     }
     CATCH_NEXTROW()
@@ -864,6 +893,8 @@ public:
 // IRowStream
     virtual void stop()
     {
+        if (partHandler)
+            partHandler->stop();
         dataLinkStop();
     }
     CATCH_NEXTROW()
@@ -982,7 +1013,8 @@ public:
 // IRowStream
     virtual void stop()
     {
-        partHandler.clear();
+        if (partHandler)
+            partHandler->stop();
         dataLinkStop();
     }
     CATCH_NEXTROW()

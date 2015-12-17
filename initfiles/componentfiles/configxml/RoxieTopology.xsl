@@ -92,6 +92,11 @@
                     <xsl:with-param name="roxie" select="@name"/>
                 </xsl:call-template>
             </xsl:attribute>
+            <xsl:attribute name="targetAliases">
+                <xsl:call-template name="GetTargetAliases">
+                    <xsl:with-param name="roxie" select="@name"/>
+                </xsl:call-template>
+            </xsl:attribute>
             <xsl:attribute name="pluginDirectory">
                 <xsl:variable name="path" select="translate(@pluginsPath, '/$', '\:')"/>
                 <xsl:variable name="path2">
@@ -237,5 +242,14 @@
    <xsl:if test="position() != last()">,</xsl:if>
   </xsl:for-each>
 </xsl:template>
+
+<xsl:template name="GetTargetAliases">
+  <xsl:param name="roxie"/>
+  <xsl:for-each select="/Environment/Software/Topology/Cluster[@alias]/RoxieCluster[@process=$roxie]">
+   <xsl:value-of select="../@alias"/>=<xsl:value-of select="../@name"/>
+   <xsl:if test="position() != last()">,</xsl:if>
+  </xsl:for-each>
+</xsl:template>
+
 
 </xsl:stylesheet>

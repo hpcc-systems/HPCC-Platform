@@ -25,6 +25,9 @@ class GroupSlaveActivity : public CSlaveActivity, public CThorDataLink
     IHThorGroupArg * helper;
     bool eogNext, prevEog, eof;
     bool rolloverEnabled, useRollover;
+    rowcount_t numGroups;
+    rowcount_t numGroupMax;
+    rowcount_t startLastGroup;
     IThorDataLink *input;
     Owned<IRowStream> stream, nextNodeStream;
     OwnedConstThorRow next;
@@ -56,6 +59,9 @@ public:
         helper = static_cast <IHThorGroupArg *> (queryHelper());
         rolloverEnabled = false;
         useRollover = false;
+        numGroups = 0;
+        numGroupMax = 0;
+        startLastGroup = 0;
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -83,7 +89,7 @@ public:
         stream.set(input);
         startInput(input);
         dataLinkStart();
-
+        startLastGroup = getDataLinkGlobalCount();
         next.setown(getNext());
 
         if (rolloverEnabled && !firstNode())  // 1st node can have nothing to send
@@ -142,16 +148,33 @@ public:
         OwnedConstThorRow prev = next.getClear();
         next.setown(getNext());
         if (next && !helper->isSameGroup(prev, next))
+        {
+            noteEndOfGroup();
             eogNext = true;
+        }
         if (prev)
         {
             dataLinkIncrement();
             return prev.getClear();
         }
         if (prevEog)
+        {
+            noteEndOfGroup();
             eof = true;
+        }
         prevEog = true;
         return NULL;
+    }
+    inline void noteEndOfGroup()
+    {
+        rowcount_t rowsProcessed = getDataLinkGlobalCount();
+        rowcount_t numThisGroup = rowsProcessed - startLastGroup;
+        if (0 == numThisGroup)
+            return;
+        startLastGroup = rowsProcessed;
+        if (numThisGroup > numGroupMax)
+            numGroupMax = numThisGroup;
+        numGroups++;
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
@@ -164,6 +187,12 @@ public:
         calcMetaInfoSize(info,inputs.item(0));
     }
     virtual bool isGrouped() { return true; }
+    void serializeStats(MemoryBuffer &mb)
+    {
+        CSlaveActivity::serializeStats(mb);
+        mb.append(numGroups);
+        mb.append(numGroupMax);
+    }
 };
 
 
