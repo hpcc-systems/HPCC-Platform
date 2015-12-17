@@ -95,6 +95,8 @@ class ReaderWriterQueue
     const static state_t dequeueMask = (sequenceMask << dequeueShift);
     const static unsigned maxSlots = (1U << maxSlotBits) - 1;
     const static unsigned initialSpinsBeforeWait = 2000;
+    const static unsigned slotUnavailableSpins = 50;    // If not available for a short time then the thread must have been rescheduled
+
     const static state_t fixedSlotMask = (1U << fixedSlotBits) - 1;
 
 public:
@@ -207,10 +209,16 @@ public:
                     //MORE: Another producer has been interrupted while writing to the same slot
                     //or the consumer has not yet read from the slot.
                     //spin until that has been consumed.
+                    unsigned spins = 0;
                     while (cur.sequence.load(std::memory_order_acquire) != curEnqueueSeq)
                     {
-                        spinPause();
-                        //more: option to back off and yield.
+                        if (slotUnavailableSpins != 0 && ++spins == slotUnavailableSpins)
+                        {
+                            ThreadYield();
+                            spins = 0;
+                        }
+                        else
+                            spinPause();
                     }
 
                     //enqueue takes ownership of the object -> use std::move
@@ -303,13 +311,20 @@ public:
                     unsigned expectedSeq = (curDequeueSeq + 1) & sequenceMask;
                     unsigned curDequeueSlot = (curDequeueSeq & slotMask);
                     BufferElement & cur = values[curDequeueSlot];
+                    unsigned spins = 0;
                     loop
                     {
                         unsigned sequence = cur.sequence.load(std::memory_order_acquire);
                         if (sequence == expectedSeq)
                             break;
                         //possibly yield every n iterations?
-                        spinPause();
+                        if (slotUnavailableSpins != 0 && ++spins == slotUnavailableSpins)
+                        {
+                            ThreadYield();
+                            spins = 0;
+                        }
+                        else
+                            spinPause();
                     }
 
                     result = std::move(cur.value);

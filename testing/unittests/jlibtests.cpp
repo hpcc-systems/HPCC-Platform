@@ -710,6 +710,8 @@ class JlibReaderWriterTest : public CppUnit::TestFixture
         }
     };
 public:
+    JlibReaderWriterTest() { unitWorkTimeMs = 0; }
+
     const static size_t bufferSize = 0x100000;//0x100000*64;
     void testQueue(IRowQueue & queue, unsigned numProducers, unsigned numConsumers, unsigned queueElements, unsigned readerWork, unsigned writerWork)
     {
@@ -776,14 +778,16 @@ public:
         }
 
         unsigned timeMs = cycle_to_nanosec(stopTime - startTime) / 1000000;
+        unsigned expectedReadWorkTime = (unsigned)(((double)unitWorkTimeMs * readerWork) / numConsumers);
+        unsigned expectedWriteWorkTime = (unsigned)(((double)unitWorkTimeMs * writerWork) / numProducers);
+        unsigned expectedWorkTime = std::max(expectedReadWorkTime, expectedWriteWorkTime);
         if (failures)
         {
             printf("Fail: Test %u producers %u consumers %u queueItems %u(%u) mismatches fail(@%u=%u)\n", numProducers, numConsumers, queueElements, failures, numClear, (unsigned)failPos, failValue);
             ASSERT(failures == 0);
         }
         else
-            printf("Pass: Test %u(@%u) producers %u(@%u) consumers %u queueItems in %ums\n", numProducers, writerWork, numConsumers, readerWork, queueElements, timeMs);
-
+            printf("Pass: Test %u(@%u) producers %u(@%u) consumers %u queueItems in %ums [%dms]\n", numProducers, writerWork, numConsumers, readerWork, queueElements, timeMs, timeMs-expectedWorkTime);
 
         for (unsigned i4 = 0; i4 < numConsumers; i4++)
         {
@@ -836,19 +840,22 @@ public:
         testQueue(5, 1, 10);
         testQueue(127, 1, 127);
 
+        cycle_t startTime = get_cycles_now();
+        volatile unsigned value = 0;
+        for (unsigned pass = 0; pass < 10; pass++)
+        {
+            for (unsigned i2 = 0; i2 < bufferSize; i2++)
+                value = spinCalculation(value, 1);
+        }
+        cycle_t stopTime = get_cycles_now();
+        unitWorkTimeMs = cycle_to_nanosec(stopTime - startTime) / (1000000 * 10);
+        printf("Work(1) takes %ums\n", unitWorkTimeMs);
+
         //How does it scale with number of queue elements?
         for (unsigned elem = 16; elem < 256; elem *= 2)
         {
             testQueue(16, 1, elem, 1, 1);
         }
-
-        cycle_t startTime = get_cycles_now();
-        volatile unsigned value = 0;
-        for (unsigned i2 = 0; i2 < bufferSize; i2++)
-            value = spinCalculation(value, 1);
-        cycle_t stopTime = get_cycles_now();
-        unsigned timeMs = cycle_to_nanosec(stopTime - startTime) / 1000000;
-        printf("Work(1) takes %ums\n", timeMs);
 
 #if 1
         //Many to Many
@@ -869,6 +876,12 @@ public:
                 testQueue(2, 2, 63, readWork, writeWork);
                 testQueue(4, 4, 63, readWork, writeWork);
                 testQueue(8, 8, 63, readWork, writeWork);
+                testQueue(16, 8, 63, readWork, writeWork);
+                testQueue(16, 16, 63, readWork, writeWork);
+                testQueue(32, 1, 63, readWork, writeWork);
+                testQueue(64, 1, 63, readWork, writeWork);
+                testQueue(1, 32, 63, readWork, writeWork);
+                testQueue(1, 64, 63, readWork, writeWork);
             }
 
         }
@@ -896,6 +909,8 @@ public:
         testQueue(2, 2, 100);
     }
 
+protected:
+    unsigned unitWorkTimeMs;
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(JlibReaderWriterTest);
