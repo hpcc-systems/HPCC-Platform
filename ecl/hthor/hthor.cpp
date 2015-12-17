@@ -2383,12 +2383,12 @@ const void *CHThorGroupDedupKeepLeftActivity::nextRow()
     return ret;
 }
 
-const void * CHThorGroupDedupKeepLeftActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorGroupDedupKeepLeftActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
     OwnedConstRoxieRow next;
     loop
     {
-        next.setown(input->nextGE(seek, numFields));
+        next.setown(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
         if (!prev || !next || !helper.matches(prev,next))
         {
             numKept = 0;
@@ -2720,12 +2720,12 @@ const void * CHThorFilterActivity::nextRow()
     }
 }
 
-const void * CHThorFilterActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorFilterActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
     if (eof)
         return NULL;
 
-    OwnedConstRoxieRow ret(input->nextGE(seek, numFields));
+    OwnedConstRoxieRow ret(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
     if (!ret)
         return NULL;
 
@@ -2811,7 +2811,7 @@ const void * CHThorFilterGroupActivity::nextRow()
     }
 }
 
-const void * CHThorFilterGroupActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorFilterGroupActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
     if (eof)
         return NULL;
@@ -2831,7 +2831,7 @@ const void * CHThorFilterGroupActivity::nextGE(const void * seek, unsigned numFi
         pending.clear();
     }
 
-    const void * ret = input->nextGE(seek, numFields);
+    const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     while (ret)
     {
         pending.append(ret);
@@ -2882,9 +2882,9 @@ const void * CHThorLimitActivity::nextRow()
     return ret.getClear();
 }
 
-const void * CHThorLimitActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorLimitActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
-    OwnedConstRoxieRow ret(input->nextGE(seek, numFields));
+    OwnedConstRoxieRow ret(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
     if (ret)
     {
         if (++numGot > rowLimit)
@@ -2963,11 +2963,11 @@ const void * CHThorCatchActivity::nextRow()
     throwUnexpected(); // onExceptionCaught should have thrown something
 }
 
-const void * CHThorCatchActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorCatchActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
     try
     {
-        OwnedConstRoxieRow ret(input->nextGE(seek, numFields));
+        OwnedConstRoxieRow ret(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
         if (ret)
             processed++;
         return ret.getClear();
@@ -3648,9 +3648,9 @@ const void * CHThorDegroupActivity::nextRow()
     return ret;
 }
 
-const void * CHThorDegroupActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorDegroupActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
-    const void * ret = input->nextGE(seek, numFields);
+    const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     if (ret)
         processed++;
     return ret;
@@ -3717,7 +3717,7 @@ const void *CHThorGroupActivity::nextRow()
     return prev.getClear();
 }
 
-const void * CHThorGroupActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorGroupActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
     if (firstDone)
     {
@@ -3727,7 +3727,7 @@ const void * CHThorGroupActivity::nextGE(const void * seek, unsigned numFields)
                 return nextRow();
         }
     }
-    next.setown(input->nextGE(seek, numFields));
+    next.setown(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
     firstDone = true;
     return nextRow();
 }
@@ -4248,7 +4248,7 @@ const void *CHThorSortedActivity::nextRow()
     return prev.getClear();
 }
 
-const void * CHThorSortedActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorSortedActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
     if (next)
     {
@@ -4257,7 +4257,7 @@ const void * CHThorSortedActivity::nextGE(const void * seek, unsigned numFields)
     }
 
     firstDone = true;
-    next.setown(input->nextGE(seek, numFields));
+    next.setown(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
     return nextRow();
 }
 
@@ -4307,9 +4307,9 @@ const void *CHThorTraceActivity::nextRow()
     return ret.getClear();
 }
 
-const void * CHThorTraceActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorTraceActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
-    OwnedConstRoxieRow ret(input->nextGE(seek, numFields));
+    OwnedConstRoxieRow ret(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
     if (ret)
     {
         onTrace(ret);
@@ -9987,11 +9987,11 @@ const void * CHThorNWaySelectActivity::nextRow()
 }
 
 
-const void * CHThorNWaySelectActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorNWaySelectActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
     if (!selectedInput)
         return NULL;
-    return selectedInput->nextGE(seek, numFields);
+    return selectedInput->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 }
 
 IInputSteppingMeta * CHThorNWaySelectActivity::querySteppingMeta()

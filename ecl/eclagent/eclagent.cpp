@@ -3667,9 +3667,9 @@ public:
             return NULL;
     }
 
-    virtual const void * nextGE(const void * seek, unsigned numFields)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        return in->nextGE(seek, numFields);
+        return in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     virtual const void *nextRow()
@@ -4052,9 +4052,9 @@ public:
         InputProbe::ready();
     }
 
-    virtual const void * nextGE(const void * seek, unsigned numFields)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        return in->nextGE(seek, numFields);
+        return in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     virtual void stop()

@@ -122,7 +122,8 @@ public:
         if (seek)
         {
             //MORE: Should think about implementing isCompleteMatch in hthor
-            next = inputArray[i]->nextGE(seek, numFields);      // , inputIsCompleteMatch
+            bool inputIsCompleteMatch;
+            next = inputArray[i]->nextRowGE(seek, numFields, inputIsCompleteMatch, *stepExtra);
         }
         else
         {
@@ -469,7 +470,7 @@ public:
     //interface IHThorInput
     virtual const void *nextRow();
 
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector);
     virtual void resetEOF();
@@ -740,7 +741,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector);
     virtual void resetEOF();
@@ -760,7 +761,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 };
 
 class CHThorLimitActivity : public CHThorSteppableActivityBase
@@ -775,7 +776,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 };
 
 class CHThorSkipLimitActivity : public CHThorSimpleActivityBase
@@ -814,7 +815,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 };
 
 class CHThorSkipCatchActivity : public CHThorSimpleActivityBase
@@ -1014,7 +1015,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
     virtual bool isGrouped();
 };
 
@@ -1026,7 +1027,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
     virtual bool isGrouped();
 };
 
@@ -1241,7 +1242,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 };
 
 class CHThorTraceActivity : public CHThorSteppableActivityBase
@@ -1260,7 +1261,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 protected:
     void onTrace(const void *row);
 };
@@ -2801,7 +2802,7 @@ public:
     virtual void stop();
     virtual void ready();
     virtual const void * nextRow();
-    virtual const void * nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
     virtual IInputSteppingMeta * querySteppingMeta();
 };
 
