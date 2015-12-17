@@ -253,6 +253,8 @@ define({root:
     Logs: "Logs",
     log_analysis_1: "log_analysis_1*",
     Low: "Low",
+    ManagedBy: "Managed By",
+    ManagedByPlaceholder: "CN=HPCCAdmin,OU=users,OU=hpcc,DC=MyCo,DC=local",
     ManualCopy: "Press Ctrl+C",
     ManualOverviewSelection: "(Manual overview selection will be required)",
     ManualTreeSelection: "(Manual tree selection will be required)",
