@@ -161,18 +161,20 @@ public:
     virtual IStringVal & getPersistName(IStringVal & val) const { val.set(tree->queryProp("@persistName")); return val; }
     virtual unsigned     queryPersistWfid() const { return tree->getPropInt("@persistWfid", 0); }
     virtual int          queryPersistCopies() const { return tree->getPropInt("@persistCopies", 0); }
+    virtual bool         queryPersistRefresh() const { return tree->getPropBool("@persistRefresh", true); }
     virtual IStringVal & queryCluster(IStringVal & val) const { val.set(tree->queryProp("@cluster")); return val; }
     virtual void         setScheduledNow() { tree->setPropTree("Schedule", createPTree()); setEnum(tree, "@state", WFStateReqd, wfstates); }
     virtual void         setScheduledOn(char const * name, char const * text) { IPropertyTree * stree = createPTree(); stree->setProp("@name", name); stree->setProp("@text", text); tree->setPropTree("Schedule", createPTree())->setPropTree("Event", stree); setEnum(tree, "@state", WFStateWait, wfstates); }
     virtual void         setSchedulePriority(unsigned priority) { assertex(tree->hasProp("Schedule")); tree->setPropInt("Schedule/@priority", priority); }
     virtual void         setScheduleCount(unsigned count) { assertex(tree->hasProp("Schedule")); tree->setPropInt("Schedule/@count", count); tree->setPropInt("Schedule/@countRemaining", count); }
     virtual void         addDependency(unsigned wfid) { tree->addPropTree("Dependency", createPTree())->setPropInt("@wfid", wfid); }
-    virtual void         setPersistInfo(char const * name, unsigned wfid, int numPersistInstances)
+    virtual void         setPersistInfo(char const * name, unsigned wfid, int numPersistInstances, bool refresh)
     {
         tree->setProp("@persistName", name);
         tree->setPropInt("@persistWfid", wfid);
         if (numPersistInstances != 0)
             tree->setPropInt("@persistCopies", (int)numPersistInstances);
+        tree->setPropBool("@persistRefresh", refresh);
     }
     virtual void         setCluster(const char * cluster) { tree->setProp("@cluster", cluster); }
     //info set at run time
@@ -349,11 +351,12 @@ private:
     SCMStringBuffer clusterName;
     unsigned persistWfid;
     int persistCopies;
+    bool persistRefresh;
     StringAttr eventName;
     StringAttr eventExtra;
 
 public:
-    CCloneWorkflowItem() {}
+    CCloneWorkflowItem() : persistRefresh(true) {}
     IMPLEMENT_IINTERFACE;
     void copy(IConstWorkflowItem const * other)
     {
@@ -383,6 +386,7 @@ public:
         persistWfid = other->queryPersistWfid();
         scheduledWfid = other->queryScheduledWfid();
         persistCopies = other->queryPersistCopies();
+        persistRefresh = other->queryPersistRefresh();
         other->queryCluster(clusterName);
     }
     //info set at compile time
@@ -404,6 +408,7 @@ public:
     virtual IStringVal & getPersistName(IStringVal & val) const { val.set(persistName.str()); return val; }
     virtual unsigned     queryPersistWfid() const { return persistWfid; }
     virtual int          queryPersistCopies() const { return persistCopies; }
+    virtual bool         queryPersistRefresh() const { return persistRefresh; }
     virtual IStringVal & queryCluster(IStringVal & val) const { val.set(clusterName.str()); return val; }
     //info set at run time
     virtual unsigned     queryScheduleCountRemaining() const { return schedule ? schedule->queryCountRemaining() : 0; }
