@@ -11,8 +11,10 @@
     </indexterm>( </emphasis><emphasis> storedname </emphasis><emphasis
   role="bold">[, FEW<indexterm>
       <primary>FEW</primary>
-    </indexterm> ][</emphasis>, <emphasis
-  role="bold">FORMAT</emphasis>(<emphasis
+    </indexterm> ][</emphasis>, <emphasis role="bold">FORMAT</emphasis>(
+  <emphasis
+  role="bold">[SELECT(</emphasis><emphasis>valuestring</emphasis>)<emphasis
+  role="bold">] </emphasis><emphasis
   role="bold">[FIELDWIDTH(</emphasis><emphasis>widthvalue</emphasis>)<emphasis
   role="bold">]<emphasis
   role="bold">[,FIELDHEIGHT(</emphasis><emphasis>heightvalue</emphasis>)][,SEQUENCE</emphasis>(<emphasis>sequencevalue</emphasis>)<emphasis
@@ -69,6 +71,23 @@
           </row>
 
           <row>
+            <entry><emphasis role="bold">SELECT</emphasis></entry>
+
+            <entry>Optional. SELECT specifies a droplist input control on a
+            Web form in WsECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>valuestring</emphasis></entry>
+
+            <entry>An string containing the possible values for the droplist.
+            An asterisk (*) denotes the default value. A expression in the
+            form of 'apple=1' within the string allows text to display and a
+            different value to be stored. In that example, apple would display
+            but a value of 1 is stored if the user selects apple.</entry>
+          </row>
+
+          <row>
             <entry><emphasis role="bold">FIELDWIDTH</emphasis></entry>
 
             <entry>Optional. FIELDWIDTH specifies the width of the input box
@@ -115,7 +134,7 @@
             <entry><emphasis role="bold">NOINPUT</emphasis></entry>
 
             <entry>Optional. If NOINPUT is specified, the field is not
-            displayed on the Web form in WsECL. </entry>
+            displayed on the Web form in WsECL.</entry>
           </row>
 
           <row>
@@ -163,6 +182,14 @@
   TextField1 :='Fill in description' :Stored('Description',
                                       FORMAT(FIELDWIDTH(25),FIELDHEIGHT(2),
                                       SEQUENCE(5))); //Creates 25 character wide, 2 row high input box
+
+//SELECT options
+
+  UNSIGNED8 u8 := 0   : STORED('u8', FORMAT(fieldwidth(8), SEQUENCE(18), SELECT('one=1,two=2,three=3,*four=4')));
+  STRING ch1 := 'ban' : STORED('ch1', FORMAT(SELECT('apple=app,pear,*banana=ban,orange=or'))); //banana is default
+  STRING ch2 := ''    : STORED('ch2', FORMAT(SELECT(',apple=app,pear,banana=ban,orange=or'))); //starts empty, no specified default
+  STRING ch3 := ''    : STORED('ch3', FORMAT(SELECT('apple=app,pear,*,banana=ban,orange')));   //empty in middle, empty is default
+
 </programlisting>
 
   <para>See Also: <link linkend="STORED">STORED function</link>, <link
