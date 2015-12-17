@@ -201,7 +201,7 @@
       </listitem>
     </orderedlist>
 
-    <sect2 id="Expected_Results_Data_refinery">
+    <sect2 id="Expected_Results_TargetClusters">
       <title>EXPECTED RESULTS:</title>
 
       <para>After pressing <emphasis role="bold">Submit</emphasis>, a screen
@@ -295,7 +295,7 @@
       </listitem>
     </orderedlist>
 
-    <sect2 id="Expected_Results_Data_refinery">
+    <sect2 id="Expected_Results_Data_Refinery">
       <title>EXPECTED RESULTS:</title>
 
       <para>After pressing Submit, a screen similar to the following should
