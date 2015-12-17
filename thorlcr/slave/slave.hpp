@@ -36,6 +36,7 @@
 #include "eclhelper.hpp"        // for IRecordSize
 #include "thgraph.hpp"
 #include "thorstep.hpp"
+#include "roxiestream.hpp"
 
 
 /* ---- To implement IThorDataLink you need ----
@@ -73,7 +74,7 @@ struct ThorDataLinkMetaInfo
 #endif
 class CActivityBase;
 
-interface IThorDataLink : extends IRowStream
+interface IThorDataLink : extends IEngineRowStream
 {
     virtual void start() = 0;
     virtual bool isGrouped() = 0;

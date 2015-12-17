@@ -2565,7 +2565,7 @@ protected:
 };
 
 
-class LocalResultInput : public CInterfaceOf<ISimpleInputBase>
+class LocalResultInput : public CInterfaceOf<IEngineRowStream>
 {
 public:
     void init(IHThorGraphResult * _result)      
@@ -2590,7 +2590,7 @@ protected:
 
 
 
-class ConstPointerArrayInput : public CInterfaceOf<ISimpleInputBase>
+class ConstPointerArrayInput : public CInterfaceOf<IEngineRowStream>
 {
 public:
     void init(ConstPointerArray * _array)       { array = _array; curRow = 0; }
@@ -2619,7 +2619,7 @@ protected:
 class CHThorLoopActivity : public CHThorSimpleActivityBase
 {
     IHThorLoopArg &helper;
-    ISimpleInputBase * curInput;
+    IEngineRowStream * curInput;
     ConstPointerArray loopPending; //MORE: would be safer and neater to use an OwnedRowArray, but would need to change prototype of IHThorBoundLoopGraph::execute
     ConstPointerArrayInput arrayInput;
     LocalResultInput resultInput; 

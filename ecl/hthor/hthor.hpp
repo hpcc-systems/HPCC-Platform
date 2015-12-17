@@ -39,7 +39,7 @@ void HTHOR_API setHThorRowManager(roxiemem::IRowManager * manager); // do not ca
 class PointerArray;
 class EclGraphElement;
 
-inline const void * ungroupedNextRow(ISimpleInputBase * input)
+inline const void * ungroupedNextRow(IEngineRowStream * input)
 {
     const void * ret = input->nextRow();
     if (!ret)

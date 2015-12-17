@@ -414,7 +414,7 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
 //=========================================================================================
 
 // default implementations - can be overridden for efficiency...
-bool ISimpleInputBase::nextGroup(ConstPointerArray & group)
+bool IEngineRowStream::nextGroup(ConstPointerArray & group)
 {
     // MORE - this should be replaced with a version that reads to a builder
     const void * next;
@@ -425,7 +425,7 @@ bool ISimpleInputBase::nextGroup(ConstPointerArray & group)
     return false;
 }
 
-void ISimpleInputBase::readAll(RtlLinkedDatasetBuilder &builder)
+void IEngineRowStream::readAll(RtlLinkedDatasetBuilder &builder)
 {
     loop
     {

@@ -19,23 +19,12 @@
 #define ROXIEHELPER_IPP
 
 #include "thorhelper.hpp"
-#include "rtlds_imp.hpp"
+#include "roxiestream.hpp"
 #include "jlog.hpp"
-#include "jio.hpp"
 
 extern THORHELPER_API unsigned traceLevel;
-
-//---------------------------------------------------
-// Base classes for all Roxie/HThor activities
-//---------------------------------------------------
-struct THORHELPER_API ISimpleInputBase : public IRowStream //base for IInputBase and IHThorSimpleInput
-{
-    virtual bool nextGroup(ConstPointerArray & group);      // note: default implementation can be overridden for efficiency...
-    virtual void readAll(RtlLinkedDatasetBuilder &builder); // note: default implementation can be overridden for efficiency...
-};
-
 interface IOutputMetaData;
-struct IInputBase : public ISimpleInputBase  //base for IRoxieInput and IHThorInput
+struct IInputBase : public IEngineRowStream  //base for IRoxieInput and IHThorInput
 {
     virtual IOutputMetaData * queryOutputMeta() const = 0;
 };
