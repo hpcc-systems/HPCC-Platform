@@ -2932,7 +2932,7 @@ class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implement
             return skipped;
         }
 
-        const void * nextSteppedGE(const void * seek, const void *rawSeek, unsigned numFields, unsigned seeklen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+        const void * nextRowGE(const void * seek, const void *rawSeek, unsigned numFields, unsigned seeklen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
         {
             // We discard all rows < seekval from all entries in heap
             // If this results in additional slave requests, we return NULL so that we can wait for them
@@ -3826,7 +3826,7 @@ public:
         return owner->queryInput(idx);
     }
 
-    const void * nextSteppedGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seekLen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    const void * nextRowGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seekLen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         if (activity.queryLogCtx().queryTraceLevel() > 20)
         {
@@ -3836,7 +3836,7 @@ public:
             {
                 recstr.appendf("%02x ", ((unsigned char *) rawSeek)[i]);
             }
-            activity.queryLogCtx().CTXLOG("CRemoteResultAdaptor::nextSteppedGE(rawSeek=%s numFields=%d, seeklen=%d, returnMismatches=%d)", recstr.str(), numFields, seekLen, stepExtra.returnMismatches());
+            activity.queryLogCtx().CTXLOG("CRemoteResultAdaptor::nextRowGE(rawSeek=%s numFields=%d, seeklen=%d, returnMismatches=%d)", recstr.str(), numFields, seekLen, stepExtra.returnMismatches());
         }
         assertex(mergeOrder);
         if (deferredStart)
@@ -3849,7 +3849,7 @@ public:
                 {
                     p.setDelayed(false);
                     if (activity.queryLogCtx().queryTraceLevel() > 10)
-                        activity.queryLogCtx().CTXLOG("About to send deferred start from nextSteppedGE, setting requireExact to %d", !stepExtra.returnMismatches());
+                        activity.queryLogCtx().CTXLOG("About to send deferred start from nextRowGE, setting requireExact to %d", !stepExtra.returnMismatches());
                     MemoryBuffer serializedSkip;
                     activity.serializeSkipInfo(serializedSkip, seekLen, rawSeek, numFields, seek, stepExtra);
                     p.setPacket(p.queryPacket()->insertSkipData(serializedSkip.length(), serializedSkip.toByteArray()));
@@ -3868,7 +3868,7 @@ public:
         {
             if (merger.ready())
             {
-                const void *got = merger.nextSteppedGE(seek, rawSeek, numFields, seekLen, wasCompleteMatch, stepExtra);
+                const void *got = merger.nextRowGE(seek, rawSeek, numFields, seekLen, wasCompleteMatch, stepExtra);
                 if (got)
                 {
                     processRow(got);
@@ -4405,12 +4405,12 @@ public:
         CRemoteResultAdaptor::onStart(_parentExtractSize, _parentExtract);
     }
 
-    virtual const void * nextSteppedGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seeklen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seeklen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         // MORE - not sure what we need to do about the skip case... but we need at least this to prevent issues with exception getting lost
         if (exception)
             throw exception.getClear();
-        return CRemoteResultAdaptor::nextSteppedGE(seek, rawSeek, numFields, seeklen, wasCompleteMatch, stepExtra);
+        return CRemoteResultAdaptor::nextRowGE(seek, rawSeek, numFields, seeklen, wasCompleteMatch, stepExtra);
     }
 
     virtual const void *nextRow()
@@ -4568,10 +4568,10 @@ public:
         return true;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * next = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * next = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
         return next;
@@ -5528,9 +5528,9 @@ public:
         return input->nextRow();
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        return input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     virtual unsigned __int64 queryTotalCycles() const
@@ -6151,10 +6151,10 @@ public:
         return iter->querySteppingMeta();
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         assertex(iter);
-        return iter->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return iter->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 };
 
@@ -6274,10 +6274,10 @@ public:
         return true;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * next = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * next = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
         return next;
@@ -6405,13 +6405,13 @@ public:
         return next;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         const void * next;
         loop
         {
-            next = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+            next = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 
             //If the record was an in-exact match from the index then return it immediately
             //and don't cause it to dedup following legal records.
@@ -7811,10 +7811,10 @@ public:
         return ret;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void *ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void *ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret && prev && compare->docompare(prev, ret) > 0)
         {
             // MORE - better to give mismatching rows that indexes?
@@ -9014,17 +9014,17 @@ public:
         }
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         //Could assert that this isn't grouped
-        // MORE - will need rethinking once we rethink the nextSteppedGE interface for global smart-stepping.
+        // MORE - will need rethinking once we rethink the nextRowGE interface for global smart-stepping.
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
         loop
         {
-            const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+            const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
             if (!ret)
             {
                 eof = true;
@@ -9186,7 +9186,7 @@ public:
         }
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
@@ -9206,7 +9206,7 @@ public:
             }
             curIndex = 0;
             gathered.kill();
-            //nextSteppedGE never returns an end of group marker.
+            //nextRowGE never returns an end of group marker.
         }
 
         //Not completely sure about this - it could lead the the start of a group being skipped, 
@@ -9221,15 +9221,15 @@ public:
             if (stepExtra.returnMismatches())
             {
                 bool matchedCompletely = true;
-                ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+                ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
                 if (!wasCompleteMatch)
                     return ret;
             }
             else
-                ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+                ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 #endif
 
-        const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         while (ret)
         {
             gathered.append(ret);
@@ -10125,12 +10125,12 @@ public:
         return ret;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
-        const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
             processed++;
         else
@@ -15453,7 +15453,7 @@ protected:
     inline const void * doNextInputRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         assertex(wasCompleteMatch);
-        return input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
 
@@ -15518,7 +15518,7 @@ public:
         const void * next;
         bool matches = true;
         if (seek)
-            next = inputArray[i]->nextSteppedGE(seek, numFields, matches, *stepExtra);
+            next = inputArray[i]->nextRowGE(seek, numFields, matches, *stepExtra);
         else
             next = inputArray[i]->ungroupedNextRow();
         pending[i] = next;
@@ -15575,7 +15575,7 @@ public:
         return next;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         const void * next = merger.nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -15689,7 +15689,7 @@ public:
         return next;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         const void * next = processor.nextGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -15858,12 +15858,12 @@ public:
             selectedInput->resetEOF(); 
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (!selectedInput)
             return NULL;
-        return selectedInput->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return selectedInput->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     IInputSteppingMeta * querySteppingMeta()
@@ -18299,10 +18299,10 @@ public:
         }
         return ret;
     }
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
         {
             if (wasCompleteMatch)
@@ -18495,12 +18495,12 @@ public:
         throwUnexpected(); // onExceptionCaught should have thrown something
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         try
         {
             ActivityTimer t(totalCycles, timeActivities);
-            const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+            const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
             if (ret && wasCompleteMatch)
                 processed++;
             return ret;
@@ -18816,11 +18816,11 @@ public:
         }
         return row;
     }
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        // MORE - will need rethinking once we rethink the nextSteppedGE interface for global smart-stepping.
+        // MORE - will need rethinking once we rethink the nextRowGE interface for global smart-stepping.
         ActivityTimer t(totalCycles, timeActivities);
-        const void * row = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * row = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (row)
         {
             onTrace(row);
@@ -21848,7 +21848,7 @@ public:
 
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         try
@@ -21867,7 +21867,7 @@ public:
                     rawSeek = (byte *)temp;
                 }
             }
-            const void *ret = remote.nextSteppedGE(seek, rawSeek, numFields, seeklen, wasCompleteMatch, stepExtra);
+            const void *ret = remote.nextRowGE(seek, rawSeek, numFields, seeklen, wasCompleteMatch, stepExtra);
             if (ret && wasCompleteMatch) // GH pleas confirm the wasCompleteMatch I just added here is right
                 processed++;
             return ret;
@@ -22101,7 +22101,7 @@ public:
     const void *nextRow()
     {
         bool matched = true;
-        return nextSteppedGE(NULL, 0, matched, dummySmartStepExtra);
+        return nextRowGE(NULL, 0, matched, dummySmartStepExtra);
     }
 
     unsigned __int64 checkCount(unsigned __int64 limit)
@@ -22121,7 +22121,7 @@ public:
         return result;
     }
 
-    virtual const void *nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
@@ -22211,7 +22211,7 @@ public:
 //          {
 //              seekStr.appendf("%02x ", ((unsigned char *) rawSeek)[i]);
 //          }
-//          DBGLOG("nextSteppedGE can skip offset %d size %d value %s", seekGEOffset, seekSize, seekStr.str());
+//          DBGLOG("nextRowGE can skip offset %d size %d value %s", seekGEOffset, seekSize, seekStr.str());
 #endif
         }
         const byte * originalRawSeek = rawSeek;
@@ -22234,7 +22234,7 @@ public:
 //          {
 //              recstr.appendf("%02x ", ((unsigned char *) keyRow)[i]);
 //          }
-//          DBGLOG("nextSteppedGE Got %s", recstr.str());
+//          DBGLOG("nextRowGE Got %s", recstr.str());
             if (originalRawSeek && memcmp(keyRow + seekGEOffset, originalRawSeek, seekSize) < 0)
                 assertex(!"smart seek failure");
 #endif

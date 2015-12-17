@@ -78,7 +78,6 @@ interface IThorDataLink : extends IEngineRowStream
 {
     virtual void start() = 0;
     virtual bool isGrouped() = 0;
-    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) { throwUnexpected(); }    // can only be called on stepping fields.
     virtual IInputSteppingMeta *querySteppingMeta() { return NULL; }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual void resetEOF() { }
