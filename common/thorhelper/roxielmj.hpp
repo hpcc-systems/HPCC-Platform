@@ -49,11 +49,11 @@ class CRHRollingCache: extends CInterface
 {
     unsigned max; // max cache size
     QueueOf<CRHRollingCacheElem,true> cache;
-    IInputBase * in;
+    IRowStream * in;
     bool eos;
 public:
     ~CRHRollingCache();
-    void init(IInputBase *_in, unsigned _max);
+    void init(IRowStream *_in, unsigned _max);
     
 #ifdef TRACEROLLING
     void PrintCache();
@@ -64,12 +64,14 @@ public:
 };
 
 //===================================================================================
-//CRHDualCache copied from THOR CDualCache, and modified to get input from IInputBase instead 
+//CRHDualCache copied from THOR CDualCache, and modified to get input from IRowStream instead
 //of IReadSeqVar and to manage rows as OwnedRoxieRow types
-class THORHELPER_API CRHDualCache: public CInterface, public IRecordSize
+// Could probably be combined with CDualCache now ?
+
+class THORHELPER_API CRHDualCache: public CInterface
 {
     // similar to rolling cache - should be combined really
-    IInputBase * in;
+    IRowStream * in;
     MemoryAttr varbuf;
     bool eos;
     unsigned base;
@@ -82,8 +84,8 @@ public:
 
     CRHDualCache();
     ~CRHDualCache();
-    void init(IInputBase * _in);
-    inline IInputBase * input() {return in;}
+    void init(IRowStream * _in);
+    inline IRowStream * input() { return in; }
 
 #ifdef TRACEROLLING
     void PrintCache();
@@ -91,12 +93,7 @@ public:
 
     bool get(unsigned n, CRHRollingCacheElem *&out);
 
-    //interface IRecordSize:
-    virtual size32_t getRecordSize(const void *ptr);
-    virtual size32_t getFixedSize() const;
-    virtual size32_t getMinRecordSize() const;
-
-    class cOut: public CInterface, public IInputBase
+    class cOut: public CInterface, public IRowStream
     {
     private:
         CRHDualCache *parent;
@@ -106,14 +103,12 @@ public:
         IMPLEMENT_IINTERFACE;
         cOut(CRHDualCache *_parent, unsigned &_pos); 
         const void * nextRow();
-        IOutputMetaData * queryOutputMeta() const;
     private:
         void stop();
-        virtual IRecordSize * queryRecordSize() { return parent; }
     } *strm1, *strm2;
 
-    IInputBase *queryOut1() { return strm1; }
-    IInputBase *queryOut2() { return strm2; }
+    IRowStream *queryOut1() { return strm1; }
+    IRowStream *queryOut2() { return strm2; }
 
 };
 
@@ -134,7 +129,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     void init( unsigned _atmost,
-               IInputBase *_in,
+               IRowStream *_in,
                ICompare * _cmp,
                ICompare * _limitedcmp );
 

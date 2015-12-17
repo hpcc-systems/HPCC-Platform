@@ -16523,7 +16523,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
     Owned<IGroupedInput> groupedInput;
-    IInputBase *dualCacheInput;
+    IRowStream *dualCacheInput;
 
     bool fillGroup()
     {

@@ -85,13 +85,14 @@ interface IRoxieContextLogger : extends IContextLogger
 //===================================================================================
 
 //IRHLimitedCompareHelper copied from THOR ILimitedCompareHelper, and modified to get input from IHThorInput instead of IReadSeqVar
+// Can probably common back up now
 class OwnedRowArray;
 interface ICompare;
 interface IRHLimitedCompareHelper: public IInterface
 {
     virtual void init(
             unsigned atmost,
-            IInputBase *strm,
+            IRowStream *strm,
             ICompare *compare,
             ICompare *limcompare
         )=0;

@@ -82,7 +82,7 @@ CRHRollingCache::~CRHRollingCache()
     }  
 }
 
-void CRHRollingCache::init(IInputBase *_in, unsigned _max)
+void CRHRollingCache::init(IRowStream *_in, unsigned _max)
 {
     max = _max;
     in =_in;
@@ -177,7 +177,7 @@ CRHDualCache::~CRHDualCache()
     }  
 }
 
-void CRHDualCache::init(IInputBase * _in)
+void CRHDualCache::init(IRowStream * _in)
 {
     in = _in;
     cache.clear();
@@ -243,21 +243,6 @@ bool CRHDualCache::get(unsigned n, CRHRollingCacheElem *&out)
     return true;
 }
 
-size32_t CRHDualCache::getRecordSize(const void *ptr)
-{
-    return in->queryOutputMeta()->getRecordSize(ptr);
-}
-
-size32_t CRHDualCache::getFixedSize() const
-{
-    return in->queryOutputMeta()->getFixedSize();
-}
-
-size32_t CRHDualCache::getMinRecordSize() const
-{
-    return in->queryOutputMeta()->getMinRecordSize();
-}
-
 CRHDualCache::cOut::cOut(CRHDualCache *_parent, unsigned &_pos) 
 : pos(_pos)
 {
@@ -275,11 +260,6 @@ const void * CRHDualCache::cOut::nextRow()
     return e->row;
 }
 
-IOutputMetaData * CRHDualCache::cOut::queryOutputMeta() const
-{
-    return parent->input()->queryOutputMeta();
-}
-
 void CRHDualCache::cOut::stop()
 {
     pos = (unsigned)-1;
@@ -295,7 +275,7 @@ IRHLimitedCompareHelper *createRHLimitedCompareHelper()
 
 //CRHLimitedCompareHelper
 void CRHLimitedCompareHelper::init( unsigned _atmost,
-                                 IInputBase *_in,
+                                 IRowStream *_in,
                                  ICompare * _cmp,
                                  ICompare * _limitedcmp )
 {

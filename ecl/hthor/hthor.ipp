@@ -1377,7 +1377,7 @@ class CHThorSelfJoinActivity : public CHThorActivityBase
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
     Owned<IGroupedInput> groupedInput;
-    IInputBase *dualCacheInput;
+    IRowStream *dualCacheInput;
 private:
     bool fillGroup();
     const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except);
