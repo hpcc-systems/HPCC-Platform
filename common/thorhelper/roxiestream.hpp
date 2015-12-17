@@ -30,7 +30,6 @@ class SmartStepExtra;
 
 interface THORHELPER_API IEngineRowStream : public IRowStream
 {
-//    virtual IRowStream &queryStream() const = 0;
     virtual bool nextGroup(ConstPointerArray & group);      // note: default implementation can be overridden for efficiency...
     virtual void readAll(RtlLinkedDatasetBuilder &builder); // note: default implementation can be overridden for efficiency...
     virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) { throwUnexpected(); }    // can only be called on stepping fields.

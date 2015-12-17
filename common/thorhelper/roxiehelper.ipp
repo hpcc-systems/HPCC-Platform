@@ -24,8 +24,9 @@
 
 extern THORHELPER_API unsigned traceLevel;
 interface IOutputMetaData;
-struct IInputBase : public IEngineRowStream  //base for IRoxieInput and IHThorInput
+struct IInputBase : public IEngineRowStream // Should be derived from IInterface  //base for IRoxieInput and IHThorInput
 {
+    virtual IEngineRowStream &queryInput() const { UNIMPLEMENTED; };
     virtual IOutputMetaData * queryOutputMeta() const = 0;
 };
 
