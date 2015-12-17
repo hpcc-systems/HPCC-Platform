@@ -68,6 +68,8 @@
                             <div id="${id}AddGroupForm" onsubmit="return false;" style="width:400px" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="hpcc.TableContainer">
                                     <input id="${id}AddGroupName" title="${i18n.GroupName}:" name="groupname" data-dojo-props="trim: true, required: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input id="${id}AddGroupOwner" placeholder="${i18n.ManagedByPlaceholder}:" title="${i18n.ManagedBy}:" name="groupOwner" data-dojo-props="trim: true, required: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input id="${id}AddGroupDescription" title="${i18n.Description}:" name="groupDesc" data-dojo-props="trim: true, required: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
                                     <button type="submit" data-dojo-attach-event="onClick:_onAddGroupSubmit" data-dojo-type="dijit.form.Button">${i18n.Add}</button>
