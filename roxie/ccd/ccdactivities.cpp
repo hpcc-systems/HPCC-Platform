@@ -4746,7 +4746,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
 {
     MTIME_SECTION(queryActiveTimer(), "CRoxieKeyedJoinIndexActivity::process");
     Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
-    IOutputMetaData *joinFieldsMeta = helper->queryJoinFieldsRecordSize();
+    CachedOutputMetaData joinFieldsMeta(helper->queryJoinFieldsRecordSize());
     Owned<IEngineRowAllocator> joinFieldsAllocator = getRowAllocator(joinFieldsMeta, basefactory->queryId());
     OptimizedKJRowBuilder rowBuilder(joinFieldsAllocator, joinFieldsMeta, output);
 
@@ -5035,7 +5035,7 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
     Owned<IEngineRowAllocator> diskAllocator = getRowAllocator(helper->queryDiskRecordSize(), basefactory->queryId());
     RtlDynamicRowBuilder diskRowBuilder(diskAllocator);
 
-    IOutputMetaData *joinFieldsMeta = helper->queryJoinFieldsRecordSize();
+    CachedOutputMetaData joinFieldsMeta(helper->queryJoinFieldsRecordSize());
     Owned<IEngineRowAllocator> joinFieldsAllocator = getRowAllocator(joinFieldsMeta, basefactory->queryId());
     OptimizedKJRowBuilder jfRowBuilder(joinFieldsAllocator, joinFieldsMeta, output);
     CachedOutputMetaData inputFields(helper->queryFetchInputRecordSize());
