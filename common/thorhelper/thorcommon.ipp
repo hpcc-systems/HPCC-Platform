@@ -42,7 +42,7 @@
 class THORHELPER_API CachedOutputMetaData
 {
 public:
-    inline CachedOutputMetaData(IOutputMetaData * _rs = NULL) { set(_rs); }
+    explicit inline CachedOutputMetaData(IOutputMetaData * _rs = NULL) { set(_rs); }
 
     inline void set(IOutputMetaData * _meta)
     {
