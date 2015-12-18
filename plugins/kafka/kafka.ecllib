@@ -214,7 +214,7 @@ EXPORT Consumer(VARSTRING topic, VARSTRING brokers = 'localhost', VARSTRING cons
         // Set the offset for each partition on each node
         result := PROJECT
             (
-                distOffsets,
+                NOFOLD(distOffsets),
                 TRANSFORM
                     (
                         ResultLayout,
