@@ -30,7 +30,7 @@ using roxiemem::IRowManager;
 
 //=======================================================================================================================
 
-class InputProbe : public CInterface, implements IRoxieInput // base class for the edge probes used for tracing and debugging....
+class InputProbe : public CInterface, implements IRoxieInput, implements IEngineRowStream // base class for the edge probes used for tracing and debugging....
 {
 protected:
     IRoxieInput *in;
@@ -103,6 +103,10 @@ public:
     virtual IOutputMetaData * queryOutputMeta() const
     {
         return in->queryOutputMeta();
+    }
+    IEngineRowStream &queryStream()
+    {
+        return *this;
     }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
@@ -278,7 +282,7 @@ public:
 
 class CProbeManager : public CInterface, implements IProbeManager
 {
-    IArrayOf<TraceProbe> probes; // May want to replace with hash table at some point....
+    IArrayOf<IRoxieInput> probes; // May want to replace with hash table at some point....
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -302,7 +306,7 @@ public:
         {
             idx++;
             if (idx>=probeCount) idx = 0;
-            TraceProbe &p = probes.item(idx);
+            TraceProbe &p = static_cast<TraceProbe &> (probes.item(idx));
             if (p.matches(edge, forNode))
             {
                 startat = idx;

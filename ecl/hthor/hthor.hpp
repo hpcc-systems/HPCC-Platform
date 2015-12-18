@@ -52,11 +52,9 @@ interface IInputSteppingMeta;
 struct IHThorInput : public IInputBase
 {
     virtual bool isGrouped() = 0;
-    virtual IOutputMetaData * queryOutputMeta() const = 0;
 
     virtual void ready() = 0;
     virtual void updateProgress(IStatisticGatherer &progress) const = 0;
-    virtual IInputSteppingMeta * querySteppingMeta() { return NULL; }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual void resetEOF() { }
 };

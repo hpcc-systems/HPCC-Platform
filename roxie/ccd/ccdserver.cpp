@@ -847,7 +847,7 @@ private:
     IRoxieServerActivityCopyArray & activities;
 };
 
-class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IRoxieInput, implements IRoxieContextLogger
+class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
 {
 protected:
     IRoxieInput *input;
@@ -952,6 +952,11 @@ public:
     }
 
     virtual const IRoxieContextLogger &queryLogCtx()const
+    {
+        return *this;
+    }
+
+    virtual IEngineRowStream &queryStream()
     {
         return *this;
     }
@@ -1697,7 +1702,7 @@ public:
 
 // MORE - this code copied from ThreadedConcat code - may be able to common up some.
 
-class CRoxieServerReadAheadInput : public CInterface, implements IRoxieInput, implements IRecordPullerCallback
+class CRoxieServerReadAheadInput : public CInterface, implements IRoxieInput, implements IRecordPullerCallback, implements IEngineRowStream
 {
     QueueOf<const void, true> buffer;
     InterruptableSemaphore ready;
@@ -1728,6 +1733,11 @@ public:
         disabled = (ctx->queryDebugContext() != NULL);
         if (ctx)
             timeActivities = ctx->queryOptions().timeActivities;
+    }
+
+    IEngineRowStream &queryStream()
+    {
+        return *this;
     }
 
     virtual IRoxieServerActivity *queryActivity()
@@ -2613,7 +2623,7 @@ void throwRemoteException(IMessageUnpackCursor *extra)
     throwUnexpected();
 }
 
-class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implements IExceptionHandler
+class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implements IExceptionHandler, implements IEngineRowStream
 {
     friend class CRemoteResultMerger;
     class CRemoteResultMerger
@@ -3492,6 +3502,11 @@ public:
             delete(buffers[channel]);
         }
         delete [] buffers;
+    }
+
+    IEngineRowStream &queryStream()
+    {
+        return *this;
     }
 
     void setMeta(IOutputMetaData *newmeta)
@@ -5379,12 +5394,16 @@ public:
 };
 
 
-class CSafeRoxieInput : public CInterface, implements IRoxieInput
+class CSafeRoxieInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
 {
 public:
     CSafeRoxieInput(IRoxieInput * _input) : input(_input) {}
     IMPLEMENT_IINTERFACE
 
+    IEngineRowStream &queryStream()
+    {
+        return *this;
+    }
     virtual IOutputMetaData * queryOutputMeta() const
     {
         return input->queryOutputMeta();
@@ -5457,7 +5476,7 @@ private:
 
 //=================================================================================
 
-class CPseudoRoxieInput : public CInterface, implements IRoxieInput
+class CPseudoRoxieInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -5488,6 +5507,10 @@ public:
     virtual IIndexReadActivityInfo *queryIndexReadActivity()
     {
         throwUnexpected();
+    }
+    IEngineRowStream &queryStream()
+    {
+        return *this;
     }
 
     virtual IOutputMetaData * queryOutputMeta() const { throwUnexpected(); }
@@ -7434,7 +7457,7 @@ public:
                 sortAlgorithm = useAlgorithm(algorithmName, sortFlags);
                 sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
             }
-            sorter->prepare(input);
+            sorter->prepare(&input->queryStream());
             noteStatistic(StTimeSortElapsed, cycle_to_nanosec(sorter->getElapsedCycles(true)));
             readInput = true;
         }
@@ -7622,7 +7645,7 @@ public:
                 }
                 else
                 {
-                    sorter->prepare(input);
+                    sorter->prepare(&input->queryStream());
                     sorter->getSortedGroup(sorted);
                 }
 
@@ -7898,7 +7921,7 @@ public:
     unsigned headIdx;
     Owned<IException> error;
 
-    class OutputAdaptor : public CInterface, implements IRoxieInput
+    class OutputAdaptor : public CInterface, implements IRoxieInput, implements IEngineRowStream
     {
         bool eof, eofpending, stopped;
 
@@ -8043,6 +8066,11 @@ public:
         virtual void checkAbort()
         {
             parent->checkAbort();
+        }
+
+        IEngineRowStream &queryStream()
+        {
+            return *this;
         }
 
     } *adaptors;
@@ -9245,7 +9273,7 @@ public:
         else
             eof = true;
 
-        return ungroupedNextRow();
+        return IEngineRowStream::ungroupedNextRow();
     }
 
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) 
@@ -11333,14 +11361,14 @@ public:
         else
             sortAlgorithm = isStable ? stableQuickSortAlgorithm : quickSortAlgorithm;
         if (helper.isLeftAlreadySorted())
-            sortedLeft.setown(createDegroupedInputReader(input));
+            sortedLeft.setown(createDegroupedInputReader(&input->queryStream()));
         else
-            sortedLeft.setown(createSortedInputReader(input, createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            sortedLeft.setown(createSortedInputReader(&input->queryStream(), createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
         ICompare *compareRight = helper.queryCompareRight();
         if (helper.isRightAlreadySorted())
-            groupedSortedRight.setown(createGroupedInputReader(input1, compareRight));
+            groupedSortedRight.setown(createGroupedInputReader(&input1->queryStream(), compareRight));
         else
-            groupedSortedRight.setown(createSortedGroupedInputReader(input1, compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            groupedSortedRight.setown(createSortedGroupedInputReader(&input1->queryStream(), compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit())
         {   //limited match join (s[1..n])
             limitedhelper.setown(createRHLimitedCompareHelper());
@@ -16722,7 +16750,7 @@ public:
             createDefaultRight();
         ICompare *compareLeft = helper.queryCompareLeft();
         if (helper.isLeftAlreadySorted())
-            groupedInput.setown(createGroupedInputReader(input, compareLeft));
+            groupedInput.setown(createGroupedInputReader(&input->queryStream(), compareLeft));
         else
         {
             bool isStable = (helper.getJoinFlags() & JFunstable) == 0;
@@ -16731,7 +16759,7 @@ public:
                 sortAlgorithm = isStable ? stableSpillingQuickSortAlgorithm : spillingQuickSortAlgorithm;
             else
                 sortAlgorithm = isStable ? stableQuickSortAlgorithm : quickSortAlgorithm;
-            groupedInput.setown(createSortedGroupedInputReader(input, compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            groupedInput.setown(createSortedGroupedInputReader(&input->queryStream(), compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
         }
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
         {   //limited match join (s[1..n])
@@ -26255,7 +26283,7 @@ public:
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 } testMeta;
 
-class TestInput : public CInterface, implements IRoxieInput
+class TestInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
 {
     char const * const *input;
     IRoxieSlaveContext *ctx;
@@ -26293,6 +26321,10 @@ public:
     {
         ASSERT(state == STATEreset);
         state = STATEstarted; 
+    }
+    IEngineRowStream &queryStream()
+    {
+        return *this;
     }
     virtual IRoxieServerActivity *queryActivity()
     {

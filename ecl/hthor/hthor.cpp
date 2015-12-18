@@ -4369,14 +4369,14 @@ void CHThorJoinActivity::ready()
     StringBuffer tempBase;
     agent.getTempfileBase(tempBase);
     if (helper.isLeftAlreadySorted())
-        sortedLeftInput.setown(createDegroupedInputReader(input));
+        sortedLeftInput.setown(createDegroupedInputReader(&input->queryStream()));
     else
-        sortedLeftInput.setown(createSortedInputReader(input, createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), *queryRowManager(), input->queryOutputMeta(), agent.queryCodeContext(), tempBase, activityId)));
+        sortedLeftInput.setown(createSortedInputReader(&input->queryStream(), createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), *queryRowManager(), input->queryOutputMeta(), agent.queryCodeContext(), tempBase, activityId)));
     ICompare *compareRight = helper.queryCompareRight();
     if (helper.isRightAlreadySorted())
-        groupedSortedRightInput.setown(createGroupedInputReader(input1, compareRight));
+        groupedSortedRightInput.setown(createGroupedInputReader(&input1->queryStream(), compareRight));
     else
-        groupedSortedRightInput.setown(createSortedGroupedInputReader(input1, compareRight, createSortAlgorithm(sortAlgorithm, compareRight, *queryRowManager(), input1->queryOutputMeta(), agent.queryCodeContext(), tempBase, activityId)));
+        groupedSortedRightInput.setown(createSortedGroupedInputReader(&input1->queryStream(), compareRight, createSortAlgorithm(sortAlgorithm, compareRight, *queryRowManager(), input1->queryOutputMeta(), agent.queryCodeContext(), tempBase, activityId)));
     outBuilder.setAllocator(rowAllocator);
     leftOuterJoin = (helper.getJoinFlags() & JFleftouter) != 0;
     rightOuterJoin = (helper.getJoinFlags() & JFrightouter) != 0;
@@ -4985,14 +4985,14 @@ void CHThorSelfJoinActivity::ready()
     outBuilder.setAllocator(rowAllocator);
     ICompare *compareLeft = helper.queryCompareLeft();
     if (helper.isLeftAlreadySorted())
-        groupedInput.setown(createGroupedInputReader(input, compareLeft));
+        groupedInput.setown(createGroupedInputReader(&input->queryStream(), compareLeft));
     else
     {
         bool isStable = (helper.getJoinFlags() & JFunstable) == 0;
         RoxieSortAlgorithm sortAlgorithm = isStable ? stableSpillingQuickSortAlgorithm : spillingQuickSortAlgorithm;
         StringBuffer tempBase;
         agent.getTempfileBase(tempBase);
-        groupedInput.setown(createSortedGroupedInputReader(input, compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, *queryRowManager(), input->queryOutputMeta(), agent.queryCodeContext(), tempBase, activityId)));
+        groupedInput.setown(createSortedGroupedInputReader(&input->queryStream(), compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, *queryRowManager(), input->queryOutputMeta(), agent.queryCodeContext(), tempBase, activityId)));
     }
     leftOuterJoin = (helper.getJoinFlags() & JFleftouter) != 0;
     rightOuterJoin = (helper.getJoinFlags() & JFrightouter) != 0;
@@ -9289,7 +9289,7 @@ CHThorLoopActivity::~CHThorLoopActivity()
 
 void CHThorLoopActivity::ready()
 {
-    curInput = input;
+    curInput = &input->queryStream();
     eof = false;
     loopCounter = 1;
     CHThorSimpleActivityBase::ready(); 
