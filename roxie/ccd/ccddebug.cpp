@@ -161,9 +161,9 @@ public:
         }
         return ret;
     }
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        const void *ret = in->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void *ret = in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret && wasCompleteMatch)  // GH is this test right?
         {
             size32_t size = inMeta->getRecordSize(ret);
@@ -238,10 +238,10 @@ public:
         return ret;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         // MORE - should probably only note them when wasCompleteMatch is true?
-        return _next(InputProbe::nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra));
+        return _next(InputProbe::nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
     }
     virtual const void *nextRow()
     {
@@ -919,7 +919,7 @@ public:
         }
     }
 
-    virtual const void *nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         // MORE - not sure that skip is safe here? Should the incomplete matches even be returned?
         // Code is a little complex to avoid interpreting a skip on all rows in a group as EOF
@@ -930,7 +930,7 @@ public:
                 return NULL;
             loop
             {
-                const void *ret = InputProbe::nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+                const void *ret = InputProbe::nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
                 if (!ret)
                 {
                     if (EOGseen)

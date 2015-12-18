@@ -36,6 +36,7 @@
 #include "eclhelper.hpp"        // for IRecordSize
 #include "thgraph.hpp"
 #include "thorstep.hpp"
+#include "roxiestream.hpp"
 
 
 /* ---- To implement IThorDataLink you need ----
@@ -73,11 +74,10 @@ struct ThorDataLinkMetaInfo
 #endif
 class CActivityBase;
 
-interface IThorDataLink : extends IRowStream
+interface IThorDataLink : extends IEngineRowStream
 {
     virtual void start() = 0;
     virtual bool isGrouped() = 0;
-    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) { throwUnexpected(); }    // can only be called on stepping fields.
     virtual IInputSteppingMeta *querySteppingMeta() { return NULL; }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual void resetEOF() { }

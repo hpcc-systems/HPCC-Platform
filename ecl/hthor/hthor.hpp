@@ -39,7 +39,7 @@ void HTHOR_API setHThorRowManager(roxiemem::IRowManager * manager); // do not ca
 class PointerArray;
 class EclGraphElement;
 
-inline const void * ungroupedNextRow(ISimpleInputBase * input)
+inline const void * ungroupedNextRow(IEngineRowStream * input)
 {
     const void * ret = input->nextRow();
     if (!ret)
@@ -56,7 +56,6 @@ struct IHThorInput : public IInputBase
 
     virtual void ready() = 0;
     virtual void updateProgress(IStatisticGatherer &progress) const = 0;
-    virtual const void * nextGE(const void * seek, unsigned numFields) { throwUnexpected(); }   // can only be called on stepping fields.
     virtual IInputSteppingMeta * querySteppingMeta() { return NULL; }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual void resetEOF() { }

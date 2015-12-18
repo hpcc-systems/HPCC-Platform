@@ -100,7 +100,6 @@ interface IRoxieInput : extends IInputBase
 
     virtual unsigned __int64 queryTotalCycles() const = 0;
     virtual unsigned __int64 queryLocalCycles() const = 0;
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra) { throwUnexpected(); }  // can only be called on stepping fields.
     virtual IInputSteppingMeta * querySteppingMeta() { return NULL; }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual unsigned numConcreteOutputs() const { return 1; }

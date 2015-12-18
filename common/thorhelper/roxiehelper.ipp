@@ -19,24 +19,14 @@
 #define ROXIEHELPER_IPP
 
 #include "thorhelper.hpp"
-#include "rtlds_imp.hpp"
+#include "roxiestream.hpp"
 #include "jlog.hpp"
-#include "jio.hpp"
 
 extern THORHELPER_API unsigned traceLevel;
-
-//---------------------------------------------------
-// Base classes for all Roxie/HThor activities
-//---------------------------------------------------
-struct THORHELPER_API ISimpleInputBase : public IRowStream //base for IInputBase and IHThorSimpleInput
-{
-    virtual bool nextGroup(ConstPointerArray & group);      // note: default implementation can be overridden for efficiency...
-    virtual void readAll(RtlLinkedDatasetBuilder &builder); // note: default implementation can be overridden for efficiency...
-};
-
 interface IOutputMetaData;
-struct IInputBase : public ISimpleInputBase  //base for IRoxieInput and IHThorInput
+struct IInputBase : public IEngineRowStream // Should be derived from IInterface  //base for IRoxieInput and IHThorInput
 {
+    virtual IEngineRowStream &queryInput() const { UNIMPLEMENTED; };
     virtual IOutputMetaData * queryOutputMeta() const = 0;
 };
 
@@ -96,13 +86,14 @@ interface IRoxieContextLogger : extends IContextLogger
 //===================================================================================
 
 //IRHLimitedCompareHelper copied from THOR ILimitedCompareHelper, and modified to get input from IHThorInput instead of IReadSeqVar
+// Can probably common back up now
 class OwnedRowArray;
 interface ICompare;
 interface IRHLimitedCompareHelper: public IInterface
 {
     virtual void init(
             unsigned atmost,
-            IInputBase *strm,
+            IRowStream *strm,
             ICompare *compare,
             ICompare *limcompare
         )=0;
