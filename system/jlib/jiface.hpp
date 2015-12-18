@@ -34,19 +34,19 @@ void jlib_decl raiseAssertCore(const char *assertion, const char *file, unsigned
 
 #ifdef _PREFAST_
  #pragma warning (disable : 6244)   // generates too much noise at the moment
- #define assertex(p) ((p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__), __analysis_assume(p))))
- #define assert(p) ((p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__), __analysis_assume(p))))
+ #define assertex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__), __analysis_assume(p))))
+ #define assert(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__), __analysis_assume(p))))
 #elif defined(_DEBUG)||defined(_TESTING)
- #define assertex(p) ((p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
- #define assert(p) ((p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
+ #define assertex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
+ #define assert(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
 #else
  #define assertex(p)
  #define assert(p)
 #endif
 
 #if defined(_DEBUG)||defined(_TESTING)
-#define verifyex(p) ((p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
-#define verify(p) ((p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
+#define verifyex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
+#define verify(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
 #else
 #define verifyex(p) ((void) (p))
 #define verify(p) ((void) (p))
