@@ -44,19 +44,48 @@
 
   <para>Example:</para>
 
-  <programlisting>Act1 :=
-        OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
-Act2 :=
-        OUTPUT(Person,{Person.per_first_name,Person.per_last_name})
-Act2 := OUTPUT(Person,{Person.per_last_name})));
-//by naming these actions, they become inactive
-        attributes
-//that only execute when the attribute names are called as
-        actions
+  <programlisting>
+Act1 := OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
+Act2 := OUTPUT(Person,{Person.per_first_name,Person.per_last_name})
+Act3 := OUTPUT(Person,{Person.per_last_name})));
+//by naming these actions, they become inactive attributes
+//that only execute when the attribute names are called as actions.
+
 SEQUENTIAL(Act1,PARALLEL(Act2,Act3));
-//executes Act1 alone, and only when it's finished, // executes
-          Act2 and Act3 together
+//executes Act1 alone, and only when it's finished
+//does it execute Act2 and Act3 together.
 </programlisting>
 
-  <para>See Also: <link linkend="PARALLEL_function">PARALLEL</link></para>
+  <para>It should be noted that when a workflow service operation is present within
+  multiple SEQUENTIAL statements only the first instance will be evaluated.</para>
+
+  <para>Example:</para>
+
+  <programlisting>
+Chesney := OUTPUT('"I am the one and only!" said Chesney')
+        : SUCCESS(OUTPUT('"Oh yeah, prove it?"'));
+
+SEQUENTIAL(
+              OUTPUT('"I am Spartacus" said one from the mob'),
+              Chesney
+          );
+
+SEQUENTIAL(
+              OUTPUT('"No, I am Spartacus" confessed another'),
+              Chesney,
+              OUTPUT('"Ok, so you are!"')
+          );
+  </programlisting>
+
+  <para>yields:</para>
+  <programlisting>
+"I am Spartacus" said one from the mob
+"I am the one and only!" said Chesney
+"Oh yeah, prove it?"
+"No, I am Spartacus" confessed another
+"Ok, so you are!"
+  </programlisting>
+
+  <para>See Also: <link linkend="PARALLEL_function">PARALLEL</link>,
+  <link linkend="Workflow_Overview">Workflow Services</link></para>
 </sect1>

@@ -15,4 +15,37 @@
   scope from the code to which it is attached. Therefore, any values from the
   code to which it is attached (such as loop counters) are unavailable to the
   workflow service.</para>
+
+  <para>It should also be noted that when a workflow operation is present within
+  multiple SEQUENTIAL statements only the first instance will be evaluated.</para>
+
+  <para>Example:</para>
+
+  <programlisting>
+Chesney := OUTPUT('"I am the one and only!" said Chesney')
+        : SUCCESS(OUTPUT('"Oh yeah, prove it?"'));
+
+SEQUENTIAL(
+              OUTPUT('"I am Spartacus" said one from the mob'),
+              Chesney
+          );
+
+SEQUENTIAL(
+              OUTPUT('"No, I am Spartacus" confessed another'),
+              Chesney,
+              OUTPUT('"Ok, so you are!"')
+          );
+  </programlisting>
+
+  <para>yields:</para>
+  <programlisting>
+"I am Spartacus" said one from the mob
+"I am the one and only!" said Chesney
+"Oh yeah, prove it?"
+"No, I am Spartacus" confessed another
+"Ok, so you are!"
+  </programlisting>
+
+  <para>See Also: <link linkend="SEQUENTIAL">SEQUENTIAL</link></para>
+
 </sect1>
