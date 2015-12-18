@@ -191,7 +191,7 @@ static bool verifyFormatCrcSuper(unsigned helperCrc, IDistributedFile * df, bool
     virtual bool isGrouped() { throwUnexpected(); } \
     virtual IOutputMetaData * queryOutputMeta() const   { throwUnexpected(); } 
 
-class CHThorActivityBase : public CInterface, implements IHThorActivity, implements IHThorInput
+class CHThorActivityBase : public CInterface, implements IHThorActivity, implements IHThorInput, implements IEngineRowStream
 {
 protected:
     enum ActivityState { StateCreated, StateReady, StateDone };
@@ -230,6 +230,8 @@ public:
     virtual bool needsAllocator() const { return false; }       
     void createRowAllocator();                                  
     virtual bool isPassThrough();
+    virtual IEngineRowStream &queryStream() { return *this; }
+    inline const void *ungroupedNextRow() { return IEngineRowStream::ungroupedNextRow(); }
 
 protected:
     void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const;
@@ -2733,7 +2735,7 @@ protected:
 
 
 class CHThorLibraryCallActivity;
-class LibraryCallOutput : public CInterface, public IHThorInput
+class LibraryCallOutput : public CInterface, public IHThorInput, public IEngineRowStream
 {
 public:
     LibraryCallOutput(CHThorLibraryCallActivity * _owner, unsigned _output, IOutputMetaData * _meta);
@@ -2744,6 +2746,7 @@ public:
 
     virtual void ready();
     virtual void stop();
+    virtual IEngineRowStream &queryStream() { return *this; }
     virtual void updateProgress(IStatisticGatherer &progress) const;
 
 protected:
