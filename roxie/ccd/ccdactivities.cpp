@@ -1632,7 +1632,11 @@ public:
 #endif
         Linked<IXmlToRowTransformer> rowTransformer = helper->queryTransformer();
         OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
-        Owned<IXMLParse> xmlParser = createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0);
+        Owned<IXMLParse> xmlParser;
+        if (owner.basefactory->getKind() == TAKjsonread)
+            xmlParser.setown(createJSONParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
+        else
+            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
         while (!aborted)
         {
             //call to next() will callback on the IXmlSelect interface
@@ -4495,7 +4499,7 @@ public:
         try
         {
             while(!lastMatch)
-            if(!parser->next())
+            if(!parser->next() && !lastMatch) //unfortunately json parser next() has slightly different behavior, tricky, may fix later
                 throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %" I64F "d", pos);
             IHThorXmlFetchArg *h = (IHThorXmlFetchArg *) helper;
             unsigned thisSize = h->transform(rowBuilder, lastMatch, inputData, rawpos);
@@ -4519,7 +4523,7 @@ public:
     {
         CRoxieFetchActivityBase::setPartNo(filechanged);
         rawStreamX.setown(createBufferedIOStream(rawFile, streamBufferSize));
-        parser.setown(createXMLParse(*rawStreamX, "/", *this));
+        parser.setown((factory->getKind()==TAKjsonfetch) ? createJSONParse(*rawStreamX, "/", *this) : createXMLParse(*rawStreamX, "/", *this));
     }
 };
 

@@ -326,6 +326,7 @@ public:
                 ret = createCsvFetchActivityMaster(this);
                 break;
             case TAKxmlfetch:
+            case TAKjsonfetch:
                 ret = createXmlFetchActivityMaster(this);
                 break;
             case TAKworkunitread:

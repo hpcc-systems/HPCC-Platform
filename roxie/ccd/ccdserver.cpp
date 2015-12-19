@@ -11049,7 +11049,7 @@ public:
                     break;
                 try
                 {
-                    unsigned __int64 fpos;
+                    unsigned __int64 fpos=0;
                     RtlStaticRowBuilder rowBuilder(rowBuffer, maxDiskRecordSize);
                     size32_t thisSize = helper.transform(rowBuilder, nextrec, &bc, fpos);
                     builder->processKeyData(rowBuffer, fpos, thisSize);
@@ -20546,7 +20546,7 @@ public:
     }
 };
 
-class CRoxieServerXmlReadActivity : public CRoxieServerDiskReadBaseActivity, implements IXMLSelect
+class CRoxieServerXmlReadActivity : public CRoxieServerDiskReadBaseActivity, implements IXMLSelect, implements IThorDiskCallback
 {
     IHThorXmlReadArg * readHelper;
     Owned<IXmlToRowTransformer> rowTransformer;
@@ -20594,6 +20594,20 @@ public:
         lastMatch.set(&entry);
     }
 
+    //interface IThorDiskCallback
+    virtual unsigned __int64 getFilePosition(const void * row)
+    {
+        return localOffset;
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row)
+    {
+        return localOffset;
+    }
+    virtual const char * queryLogicalFilename(const void * row)
+    {
+        return varFileInfo ? varFileInfo->queryFileName() : NULL;
+    }
+
     virtual const void *nextRow()
     {
         if (eof)
@@ -20608,12 +20622,10 @@ public:
                 //call to next() will callback on the IXmlSelect interface
                 bool gotNext = false;
                 gotNext = xmlParser->next();
-                if(!gotNext)
-                    eof = true;
-                else if (lastMatch)
+                if (lastMatch)
                 {
                     RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    unsigned sizeGot = rowTransformer->transform(rowBuilder, lastMatch, reader->queryThorDiskCallback());
+                    unsigned sizeGot = rowTransformer->transform(rowBuilder, lastMatch, this);
                     lastMatch.clear();
                     localOffset = 0;
                     if (sizeGot)
@@ -20635,6 +20647,8 @@ public:
                         return ret.getClear();
                     }
                 }
+                if(!gotNext) //currently slightly different behavior for json
+                    eof = true;
             }
             return NULL;
         }

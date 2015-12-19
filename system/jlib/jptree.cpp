@@ -3952,6 +3952,12 @@ protected:
         curOffset++;
         return true;
     }
+    inline bool checkStartReadNext()
+    {
+        if (curOffset || nextChar) //not at starting state
+            return true;
+        return readNextToken();
+    }
     inline bool readNextToken();
     inline bool checkSkipWS()
     {
@@ -6290,6 +6296,9 @@ public:
     typedef CommonReaderBase<X> PARENT;
     using PARENT::reset;
     using PARENT::nextChar;
+    using PARENT::readNextToken;
+    using PARENT::checkReadNext;
+    using PARENT::checkStartReadNext;
     using PARENT::readNext;
     using PARENT::expecting;
     using PARENT::match;
@@ -6447,6 +6456,7 @@ class CJSONReader : public CJSONReaderBase<X>, implements IPTreeReader
     using PARENT::readName;
     using PARENT::checkReadNext;
     using PARENT::checkSkipWS;
+    using PARENT::checkStartReadNext;
     using PARENT::expecting;
     using PARENT::error;
     using PARENT::eos;
@@ -6478,6 +6488,7 @@ public:
     }
     void readValueNotify(const char *name, bool skipAttributes)
     {
+        offset_t startOffset = curOffset;
         StringBuffer value;
         if (readValue(value)==elementTypeNull)
             return;
@@ -6489,7 +6500,7 @@ public:
             return;
         }
 
-        iEvent->beginNode(name, curOffset);
+        iEvent->beginNode(name, startOffset);
         iEvent->beginNodeContent(name);
         iEvent->endNode(name, value.length(), value.str(), false, curOffset);
 
@@ -6576,9 +6587,10 @@ public:
         }
         iEvent->endNode(name, 0, "", false, curOffset);
     }
+
     void loadJSON()
     {
-        if (!checkReadNext())
+        if (!checkStartReadNext())
             return;
         if (checkBOM() && !checkReadNext())
             return;
@@ -6656,6 +6668,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
     using PARENT::readName;
     using PARENT::checkReadNext;
     using PARENT::checkSkipWS;
+    using PARENT::checkStartReadNext;
     using PARENT::expecting;
     using PARENT::error;
     using PARENT::eos;
@@ -6938,6 +6951,7 @@ public:
 
     virtual bool next()
     {
+        checkStartReadNext();
         checkSkipWS();
         switch (state)
         {

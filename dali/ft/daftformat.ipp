@@ -359,10 +359,11 @@ protected:
 
 class DALIFT_API JsonSplitter : public CInterface, implements IPTreeNotifyEvent
 {
+    friend class CJsonInputPartitioner;
 public:
     IMPLEMENT_IINTERFACE;
 
-    JsonSplitter(const FileFormat & format, IFileIOStream &stream) : headerLength(0), pathPos(0), tangent(0), rowDepth(0), rowStart(0), rowEnd(0), footerLength(0), newRowSet(true), hasRootArray(false)
+    JsonSplitter(const FileFormat & format, IFileIOStream &stream) : headerLength(0), pathPos(0), tangent(0), rowDepth(0), rowStart((offset_t)-1), rowEnd(0), footerLength((offset_t)-1), newRowSet(true), hasRootArray(false)
     {
         LOG(MCdebugProgressDetail, unknownJob, "JsonSplitter::JsonSplitter(format.type :'%s', rowPath:'%s')", format.getFileFormatTypeString(), format.rowTag.get());
 
@@ -473,27 +474,32 @@ public:
         }
         return true;
     }
+    bool checkFoundRowStart()
+    {
+        return (rowStart!=(offset_t)-1);
+    }
     offset_t getHeaderLength()
     {
         if (!headerLength)
         {
-            while (!rowStart && reader->next());
-            if (!rowStart)
+            while (!checkFoundRowStart() && reader->next());
+            if (!checkFoundRowStart())
                 throw MakeStringException(DFTERR_CannotFindFirstJsonRecord, "Could not find first json record (check path)");
             else
-                headerLength = rowStart-1;
+                headerLength = rowStart;
         }
         return headerLength;
     }
     offset_t getFooterLength()
     {
-        if (!footerLength)
+        if (footerLength==(offset_t)-1)
         {
+            footerLength = 0;
             while (reader->next());
             if (rowEnd)
             {
                 footerLength = isRootless() ? 0 : 1; //account for parser using ] as offset unless rootless
-                footerLength = footerLength + size - rowEnd;
+                footerLength = footerLength + size - rowEnd - 1;
             }
         }
         return footerLength;
@@ -502,12 +508,12 @@ public:
     {
         if (rowStart <= headerLength)
             return 0;
-        return rowStart - headerLength - 1;
+        return rowStart - headerLength;
     }
 
     bool isRootless(){return (noPath && !hasRootArray);}
 
-public:
+private:
     Owned<IFileIOStream> inStream;
     Owned<IPullPTreeReader> reader;
     StringArray pathNodes;
@@ -540,7 +546,7 @@ protected:
 
         offset_t prevRowEnd;
         json->findRowEnd(splitOffset-thisOffset + thisHeaderSize, prevRowEnd);
-        if (!json->rowStart)
+        if (!json->checkFoundRowStart())
             return;
         if (!json->newRowSet) //get rid of extra delimiter if we haven't closed and reopened in the meantime
         {

@@ -1784,6 +1784,7 @@ inline bool useDescriptiveGraphLabel(ThorActivityKind kind)
     {
     case TAKcsvfetch:
     case TAKxmlfetch:
+    case TAKjsonfetch:
     case TAKfetch:
         return false;
     }
@@ -7278,6 +7279,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFetch(BuildCtx & ctx, IHqlExpr
         return info.buildActivity(ctx, expr, TAKcsvfetch, "CsvFetch", childActivity);
     case no_xml:
         return info.buildActivity(ctx, expr, TAKxmlfetch, "XmlFetch", childActivity);
+    case no_json:
+        //Note use of "XmlFetch" because we want the code generator to leverage existing xml classes
+        return info.buildActivity(ctx, expr, TAKjsonfetch, "XmlFetch", childActivity);
     case no_flat:
     case no_thor:
         return info.buildActivity(ctx, expr, TAKfetch, "Fetch", childActivity);

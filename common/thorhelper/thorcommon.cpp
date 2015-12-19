@@ -665,6 +665,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKtopn:                   return "Top N";
     case TAKmerge:                  return "Merge";
     case TAKxmlfetch:               return "Xml Fetch";
+    case TAKjsonfetch:              return "Json Fetch";
     case TAKxmlparse:               return "Parse Xml";
     case TAKkeyeddistribute:        return "Keyed Distribute";
     case TAKjoinlight:              return "Lightweight Join";

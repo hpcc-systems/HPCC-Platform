@@ -634,7 +634,10 @@ public:
             streams[f].setown(createBufferedIOStream(fetchStream->queryPartIO(f)));
             // NB: the index is based on path iteration matches, so on lookup the elements start at positioned stream
             // i.e. getXmlIteratorPath not used (or supplied) here.
-            parsers[f].setown(createXMLParse(*streams[f], "/", *xmlSelect, ptr_none, ((IHThorXmlFetchArg *)fetchBaseHelper)->requiresContents()));
+            if (container.getKind()==TAKjsonfetch)
+                parsers[f].setown(createJSONParse(*streams[f], "/", *xmlSelect, ptr_none, ((IHThorXmlFetchArg *)fetchBaseHelper)->requiresContents()));
+            else
+                parsers[f].setown(createXMLParse(*streams[f], "/", *xmlSelect, ptr_none, ((IHThorXmlFetchArg *)fetchBaseHelper)->requiresContents()));
         }
     }
     virtual size32_t fetch(ARowBuilder & rowBuilder, const void *keyRow, unsigned filePartIndex, unsigned __int64 localFpos, unsigned __int64 fpos)
@@ -644,7 +647,7 @@ public:
         lastMatch = &lastMatches[filePartIndex];
         while (!lastMatch->get())
         {
-            if (!parser->next())
+            if (!parser->next() && !lastMatch)
             {
                 StringBuffer tmpStr;
                 throw MakeActivityException(this, 0, "%s", fetchStream->getPartName(filePartIndex, tmpStr).str());

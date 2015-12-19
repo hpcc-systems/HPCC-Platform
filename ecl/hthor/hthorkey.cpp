@@ -2571,10 +2571,11 @@ class XmlFetchPartHandler : public SimpleFetchPartHandlerBase, public IXMLSelect
 public:
     IMPLEMENT_IINTERFACE;
 
-    XmlFetchPartHandler(IXmlFetchHandlerCallback & _owner, IDistributedFilePart * _part, offset_t _base, offset_t _size, IThreadedExceptionHandler * _handler, unsigned _streamBufferSize, IThreadPool * _threadPool, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta)
+    XmlFetchPartHandler(IXmlFetchHandlerCallback & _owner, IDistributedFilePart * _part, offset_t _base, offset_t _size, IThreadedExceptionHandler * _handler, unsigned _streamBufferSize, IThreadPool * _threadPool, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta, bool _jsonFormat)
         : SimpleFetchPartHandlerBase(_part, _base, _size, _handler, _threadPool, _blockcompressed, _encryptionkey, _activityId, _outputMeta, NULL, NULL),
           owner(_owner),
-          streamBufferSize(_streamBufferSize)
+          streamBufferSize(_streamBufferSize),
+          jsonFormat(_jsonFormat)
     {
     }
 
@@ -2597,7 +2598,7 @@ public:
                 part->getFilename(rfn).getPath(fname);
                 throw owner.makeWrappedException(e, fname.str());
             }
-            if(!gotNext)
+            if(!gotNext && !lastMatch) //unfortunately json parser next() has slightly different behavior, tricky, may fix later
             {
                 StringBuffer fname;
                 RemoteFilename rfn;
@@ -2606,6 +2607,7 @@ public:
             }
         }
         owner.processFetched(fetch, lastMatch);
+        lastMatch.clear();
         parser->reset();
     }
 
@@ -2615,7 +2617,7 @@ public:
             return;
         FetchPartHandlerBase::openPart();
         rawStream.setown(createBufferedIOStream(rawFile, streamBufferSize));
-        parser.setown(createXMLParse(*rawStream, "/", *this));
+        parser.setown(jsonFormat ? createJSONParse(*rawStream, "/", *this) : createXMLParse(*rawStream, "/", *this));
     }
 
     //iface IXMLSelect
@@ -2630,6 +2632,7 @@ protected:
     Owned<IXMLParse> parser;
     Owned<IColumnProvider> lastMatch;
     unsigned streamBufferSize;
+    bool jsonFormat;
 };
 
 class CHThorXmlFetchActivity : public CHThorFetchActivityBase, public IXmlFetchHandlerCallback
@@ -2687,7 +2690,7 @@ public:
 
     virtual SimpleFetchPartHandlerBase * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, IOutputRowDeserializer * rowDeserializer, IEngineRowAllocator *rowAllocator)
     {
-        return new XmlFetchPartHandler(*this, part, base, size, handler, 4096, threadPool, blockcompressed, encryptionkey, activityId, outputMeta); //MORE: need to put correct stream buffer size here, when Gavin provides it
+        return new XmlFetchPartHandler(*this, part, base, size, handler, 4096, threadPool, blockcompressed, encryptionkey, activityId, outputMeta, kind==TAKjsonfetch); //MORE: need to put correct stream buffer size here, when Gavin provides it
     }
 
 protected:

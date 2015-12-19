@@ -95,6 +95,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKtopn] = "topn";
     kindArray[TAKmerge] = "merge";
     kindArray[TAKxmlfetch] = "xmlfetch";
+    kindArray[TAKjsonfetch] = "jsonfetch";
     kindArray[TAKxmlparse] = "xmlparse";
     kindArray[TAKkeyeddistribute] = "keyeddistribute";
     kindArray[TAKjoinlight] = "joinlight";

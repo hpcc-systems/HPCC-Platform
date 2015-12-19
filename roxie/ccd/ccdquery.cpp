@@ -590,6 +590,7 @@ protected:
         case TAKfetch:
         case TAKcsvfetch:
         case TAKxmlfetch:
+        case TAKjsonfetch:
             {
                 RemoteActivityId remoteId(id, hashValue);
                 return createRoxieServerFetchActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
@@ -1737,6 +1738,7 @@ class CSlaveQueryFactory : public CQueryFactory
         case TAKfetch:
         case TAKcsvfetch:
         case TAKxmlfetch:
+        case TAKjsonfetch:
         case TAKremotegraph:
             break;
         case TAKsubgraph:
@@ -1806,6 +1808,7 @@ class CSlaveQueryFactory : public CQueryFactory
                     newAct = createRoxieCSVFetchActivityFactory(node, subgraphId, *this, helperFactory);
                     break;
                 case TAKxmlfetch:
+                case TAKjsonfetch:
                     newAct = createRoxieXMLFetchActivityFactory(node, subgraphId, *this, helperFactory);
                     break;
                 case TAKkeyedjoin:
