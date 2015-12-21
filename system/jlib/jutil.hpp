@@ -293,7 +293,7 @@ VALUE * binsearch(KEY key, VALUE * * values, unsigned num, COMPARE * cmp)
     unsigned u = num;
     while(l<u)
     {
-        unsigned i = (l+u)/2;
+        unsigned i = l+(u-l)/2;
         int c = cmp->compare(key, values[i]);
         if(c == 0)
         {

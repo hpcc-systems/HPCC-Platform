@@ -59,7 +59,7 @@ class PtrToOffsetMapper
         int rc;
         while ((int)a<b)
         {
-            int i = (a+b+1)/2;
+            int i = a+(b+1-a)/2;
             rc = ptr - fragments[i-1].base;
             if (rc>=0)
                 a = i;
@@ -1238,7 +1238,7 @@ public:
         int b = numTracked;
         while (a<b)
         {
-            int i = (a+b)/2;
+            int i = a+(b-a)/2;
             SegMonitorArray *m = tracked[i];
             int rc = compare(&perfect, m);
             if (rc==0)
@@ -1488,7 +1488,7 @@ class InMemoryIndexCursor : public CInterface, implements IInMemoryIndexCursor
         int b = postFilter.length();
         while (a<b)
         {
-            int i = (a+b)/2;
+            int i = a+(b-a)/2;
             IKeySegmentMonitor *k = &postFilter.item(i);
             int rc = offset-k->getOffset();
             if (rc==0)
@@ -1647,7 +1647,7 @@ class InMemoryIndexCursor : public CInterface, implements IInMemoryIndexCursor
             int rc;
             while ((int)a<b)
             {
-                int i = (a+b)/2;
+                int i = a+(b-a)/2;
                 rc = docompare(keyBuffer, GETROW(i));
                 if (rc>0)
                     a = i+1;
@@ -1688,7 +1688,7 @@ class InMemoryIndexCursor : public CInterface, implements IInMemoryIndexCursor
         unsigned a = start;
         while ((int)a<b)
         {
-            int i = (a+b+1)/2;
+            int i = a+(b+1-a)/2;
             rc = docompare(keyBuffer, GETROW(i-1));
             if (rc>=0)
                 a = i;
