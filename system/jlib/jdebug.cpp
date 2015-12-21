@@ -2076,8 +2076,11 @@ public:
             matched = fscanf(procfp, "%lf %lf\n", &OldSystemTime, &OldIdleTime);
             fclose(procfp);
         }
-        if (!procfp || matched == 0 || matched == EOF)
+        if (!procfp || matched != 2)
+        {
             OldSystemTime = 0;
+            OldIdleTime = 0;
+        }
         primaryfs.append("/");
 #endif
     }
@@ -2246,14 +2249,19 @@ public:
         bool outofhandles = false;
 #ifdef USE_OLD_PU
         FILE* procfp = fopen("/proc/uptime", "r");
+        int matched = 0;
+        OldSystemTime = 0;
         if (procfp) {
-            fscanf(procfp, "%lf %lf\n", &dbSystemTime, &dbIdleTime);
+            matched = fscanf(procfp, "%lf %lf\n", &dbSystemTime, &dbIdleTime);
             fclose(procfp);
             outofhandles = false;
         }
         latestCPU = unsigned(100.0 - (dbIdleTime - OldIdleTime)*100.0/(dbSystemTime - OldSystemTime) + 0.5);
-        OldSystemTime = dbSystemTime;
-        OldIdleTime = dbIdleTime;
+        if (procfp && matched == 2)
+        {
+            OldSystemTime = dbSystemTime;
+            OldIdleTime = dbIdleTime;
+        }
 #else
         latestCPU = extstats.getCPU();
         if (latestCPU==(unsigned)-1) {
