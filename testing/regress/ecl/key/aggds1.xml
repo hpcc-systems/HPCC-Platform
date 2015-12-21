@@ -22,3 +22,14 @@
 <Dataset name='Result 8'>
  <Row><Result_8>false</Result_8></Row>
 </Dataset>
+<Dataset name='Result 9'>
+ <Row><aage>5</aage><scale>0.2</scale></Row>
+ <Row><aage>34</aage><scale>0.02941176470588235</scale></Row>
+ <Row><aage>35</aage><scale>0.0</scale></Row>
+ <Row><aage>49</aage><scale>0.02040816326530612</scale></Row>
+ <Row><aage>50</aage><scale>0.02</scale></Row>
+ <Row><aage>68</aage><scale>0.01470588235294118</scale></Row>
+ <Row><aage>78</aage><scale>0.01282051282051282</scale></Row>
+ <Row><aage>83</aage><scale>0.01204819277108434</scale></Row>
+ <Row><aage>99</aage><scale>0.0202020202020202</scale></Row>
+</Dataset>
