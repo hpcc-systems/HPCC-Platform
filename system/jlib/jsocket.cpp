@@ -5720,7 +5720,8 @@ void SocketEndpointArray::fromText(const char *text,unsigned defport)
     // this is quite complicated with (mixed) IPv4 and IPv6
     // only support 'full' IPv6 and no ranges
 
-
+    if (!text)
+        return;
     char *str = strdup(text);
     char *s = str;
     SocketEndpoint ep;

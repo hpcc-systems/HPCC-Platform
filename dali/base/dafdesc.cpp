@@ -1975,7 +1975,6 @@ public:
         subfilecounts = NULL;
     }
 
-
     virtual ~CSuperFileDescriptor()
     {
         delete subfilecounts;
@@ -2330,7 +2329,6 @@ IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tree, INamedGroupS
 {
     return new CFileDescriptor(tree, resolver, flags);
 }
-
 
 inline bool validFNameChar(char c)
 {

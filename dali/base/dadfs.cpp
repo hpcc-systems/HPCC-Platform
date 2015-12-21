@@ -1000,6 +1000,7 @@ public:
     IDistributedFile *createNew(IFileDescriptor * fdesc, bool includeports=false);
     IDistributedFile *createExternal(IFileDescriptor *desc, const char *name, bool includeports=false);
     IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction=NULL);
+    IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree);
     void removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction);
 
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user);
@@ -1047,7 +1048,7 @@ public:
 
     GetFileClusterNamesType getFileClusterNames(const char *logicalname,StringArray &out); // returns 0 for normal file, 1 for
 
-    bool isSuperFile( const char *logicalname, IUserDescriptor *user, INode *foreigndali, unsigned timeout);
+    bool isSuperFile( const char *logicalname, IUserDescriptor *user=NULL, INode *foreigndali=NULL, unsigned timeout=0);
 
     void promoteSuperFiles(unsigned numsf,const char **sfnames,const char *addsubnames,bool delsub,bool createonlyonesuperfile,IUserDescriptor *user, unsigned timeout, StringArray &outunlinked);
     ISimpleSuperFileEnquiry * getSimpleSuperFileEnquiry(const char *logicalname,const char *title,IUserDescriptor *udesc,unsigned timeout);
@@ -3113,7 +3114,6 @@ public:
         return true;
     }
 
-
     virtual const char *queryDefaultDir() = 0;
     virtual unsigned numParts() = 0;
     virtual IDistributedFilePart &queryPart(unsigned idx) = 0;
@@ -4533,6 +4533,15 @@ public:
         dt.setNow();
         setAccessedTime(dt);
     }
+
+    virtual void validate()
+    {
+        if (!existsPhysicalPartFiles(0))
+        {
+            const char * logicalName = queryLogicalName();
+            throw MakeStringException(-1, "Some physical parts do not exists, for logical file : %s",(isEmptyString(logicalName) ? "[unattached]" : logicalName));
+        }
+    }
 };
 
 static unsigned findSubFileOrd(const char *name)
@@ -4952,7 +4961,7 @@ protected:
         return path.append("SubFile[@num=\"").append(idx+1).append("\"]");
     }
 
-    void loadSubFiles(IDistributedFileTransaction *transaction, unsigned timeout)
+    void loadSubFiles(IDistributedFileTransaction *transaction, unsigned timeout, bool link=false)
     {
         partscache.kill();
         StringBuffer path;
@@ -5011,6 +5020,8 @@ protected:
                         ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile file '%s' cannot be found", logicalName.get(), subname.str());
                 }
                 subfiles.append(*subfile.getClear());
+                if (link)
+                    linkSubFile(f);
             }
             // This is *only* due to foreign files
             if (subfiles.ordinality() != n)
@@ -5190,11 +5201,8 @@ public:
 
     IMPLEMENT_IINTERFACE;
 
-    void init(CDistributedFileDirectory *_parent, IPropertyTree *_root, const CDfsLogicalFileName &_name, IUserDescriptor* user, IDistributedFileTransaction *transaction, unsigned timeout=INFINITE)
+    void commonInit(CDistributedFileDirectory *_parent, IPropertyTree *_root)
     {
-        assertex(_name.isSet());
-        setUserDescriptor(udesc,user);
-        logicalName.set(_name);
         parent = _parent;
         root.set(_root);
         const char *val = root->queryProp("@interleaved");
@@ -5202,6 +5210,14 @@ public:
             interleaved = atoi(val);
         else
             interleaved = strToBool(val)?1:0;
+    }
+
+    void init(CDistributedFileDirectory *_parent, IPropertyTree *_root, const CDfsLogicalFileName &_name, IUserDescriptor* user, IDistributedFileTransaction *transaction, unsigned timeout=INFINITE)
+    {
+        assertex(_name.isSet());
+        setUserDescriptor(udesc,user);
+        logicalName.set(_name);
+        commonInit(_parent, _root);
         loadSubFiles(transaction,timeout);
     }
 
@@ -5224,6 +5240,11 @@ public:
             _name.expand(user);//expand wildcards
         Owned<IPropertyTree> tree = _name.createSuperTree();
         init(_parent,tree,_name,user,transaction);
+    }
+
+    CDistributedSuperFile(CDistributedFileDirectory *_parent, IPropertyTree *_root)
+    {
+        commonInit(_parent, _root);
     }
 
     ~CDistributedSuperFile()
@@ -5491,6 +5512,7 @@ public:
         conn.setown(fcl.detach());
         assertex(conn.get()); // must have been attached
         root.setown(conn->getRoot());
+        loadSubFiles(NULL, 0, true);
     }
 
     void detach(unsigned timeoutMs=INFINITE)
@@ -5880,6 +5902,34 @@ public:
             checkFormatAttr(sub,"addSubFile");
         if (NotFound!=findSubFile(sub->queryLogicalName()))
             throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", sub->queryLogicalName(),queryLogicalName());
+    }
+
+    void validate()
+    {
+        unsigned numSubfiles = root->getPropInt("@numsubfiles",0);
+        if (numSubfiles)
+        {
+            Owned<IPropertyTreeIterator> treeIter = root->getElements("SubFile");
+            unsigned subFileCount = 0;
+            ForEach(*treeIter)
+            {
+                IPropertyTree & st = treeIter->query();
+                StringBuffer subfilename;
+                st.getProp("@name", subfilename);
+                if (!parent->exists(subfilename.str(), NULL))
+                    throw MakeStringException(-1, "Logical subfile '%s' doesn't exists!", subfilename.str());
+
+                if (!parent->isSuperFile(subfilename.str()))
+                    if (!parent->existsPhysical(subfilename.str(), NULL))
+                    {
+                        const char * logicalName = queryLogicalName();
+                        throw MakeStringException(-1, "Some physical parts do not exists, for logical file : %s",(isEmptyString(logicalName) ? "[unattached]" : logicalName));
+                    }
+                subFileCount++;
+            }
+            if (numSubfiles != subFileCount)
+                throw MakeStringException(-1, "The value of @numsubfiles (%d) is not equal to the number of SubFile items (%d)!",numSubfiles, subFileCount);
+        }
     }
 
 private:
@@ -7930,6 +7980,12 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
     localtrans->addAction(action.getLink()); // takes ownership
     localtrans->autoCommit();
     return action->getSuper();
+}
+
+// MORE: This should be implemented in DFSAccess later on
+IDistributedSuperFile *CDistributedFileDirectory::createNewSuperFile(IPropertyTree *tree)
+{
+    return new CDistributedSuperFile(this, tree);
 }
 
 // MORE: This should be implemented in DFSAccess later on
