@@ -4468,9 +4468,13 @@ void RemoteFilename::setExtension(const char * newext)
     const char * dot = NULL;
     const char * start = tailpath;
     const char * cur = start;
+    const char pathSep=getPathSeparator();
     while (*cur)
     {
-        if (*cur == '.')
+        // if it is a "." inside the path then skip it.
+        if (dot && (*cur == pathSep))
+            dot = NULL;
+        else if (*cur == '.')
             dot = cur;
         cur++;
     }
