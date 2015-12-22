@@ -43,6 +43,11 @@ public:
         CloseHandle(hSem);
     }
 
+    bool tryWait()
+    {
+        return (WaitForSingleObject(hSem, 0) == WAIT_OBJECT_0);
+    }
+
     void wait()
     {
         WaitForSingleObject(hSem, INFINITE);
@@ -131,6 +136,7 @@ class jlib_decl Semaphore
 public:
     Semaphore(unsigned initialCount=0U);
     ~Semaphore();
+    bool tryWait();
     void wait();
     bool wait(unsigned timeout); // in msecs
     void signal();
