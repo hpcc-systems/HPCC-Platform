@@ -1212,11 +1212,11 @@ int CDfuPlusHelper::superfile(const char* action)
 
         if(stricmp(action, "add") == 0)
         {
-            info("Addsuper successfully finished");
+            info("Addsuper successfully finished\n");
         }
         else if(stricmp(action, "remove") == 0)
         {
-            info("Removesuper successfully finished");
+            info("Removesuper successfully finished\n");
         }
     }
     else if(stricmp(action, "list") == 0)
@@ -1353,7 +1353,7 @@ int CDfuPlusHelper::add()
         }
     }
 
-    info("%s successfully added", lfn);
+    info("%s successfully added\n", lfn);
     return 0;
 }
 
@@ -1399,7 +1399,7 @@ int CDfuPlusHelper::status()
             return -1;
 
         case DFUstate_failed:
-            info("%s status: failed - %s", wuid, dfuwu.getSummaryMessage());
+            info("%s status: failed - %s\n", wuid, dfuwu.getSummaryMessage());
             return -1;
 
         case DFUstate_finished:

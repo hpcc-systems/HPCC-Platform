@@ -838,15 +838,15 @@ public:
         }
     }
 
-    StringBuffer &getFileXML(const char *lfn,StringBuffer &out, IUserDescriptor *user)
+    StringBuffer &getFileXML(const char *lfn, StringBuffer &out, IUserDescriptor *user)
     {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn,user);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user);
         if (!file) {
             INamedGroupStore  &grpstore= queryNamedGroupStore();
             Owned<IGroup> grp = grpstore.lookup(lfn);
             if (grp) {
                 out.append("<Group name=\"").append(lfn).append("\">\n");
-                ForEachNodeInGroup(i,*grp) {
+                ForEachNodeInGroup(i, *grp) {
                     StringBuffer ip;
                     grp->getNode(i)->endpoint().getIpText(ip);
                     out.append("  <Node ip=\"").append(ip).append("\">\n");
@@ -857,21 +857,43 @@ public:
             else
                 throwError1(DFUERR_DFileNotFound, lfn);
         }
-        else {
-            Owned<IFileDescriptor> fdesc = file->getFileDescriptor();
-            Owned<IPropertyTree> t = fdesc->getFileTree();
+        else
+        {
+            Owned<IPropertyTree> t = queryDistributedFileDirectory().getFileTree(lfn, user);
             toXML(t, out, true);
         }
         return out;
     }
 
-    void addFileXML(const char *lfn,const StringBuffer &xml,IUserDescriptor *user)
+    void addFileXML(const char *lfn, const StringBuffer &xml, IUserDescriptor *user)
     {
         Owned<IPropertyTree> t = createPTreeFromXMLString(xml);
-        Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(t,&queryNamedGroupStore(),0);
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc,true);
-        if (file)
-            file->attach(lfn,user);
+        IDistributedFileDirectory &dfd = queryDistributedFileDirectory();
+
+        if (dfd.exists(lfn, user))
+            throw MakeStringException(-1, "Destination file '%s' already exists!", lfn);
+
+        // Check if this XML is a superfile map
+        Owned<IDistributedFile> file;
+        const char * nodeName = t->queryName();
+        if (0 == strcmp(nodeName, queryDfsXmlBranchName(DXB_SuperFile)))
+        {
+            // It seems XML is a super file
+            file.setown(dfd.createNewSuperFile(t));
+        }
+        else if (0 == strcmp(nodeName, queryDfsXmlBranchName(DXB_File)))
+        {
+            // Logical file map
+
+            Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(t, &queryNamedGroupStore(), 0);
+            file.setown(dfd.createNew(fdesc, true));
+        }
+        else
+            throw MakeStringException(-1, "Unrecognised file XML root tag detected: '%s'", nodeName);
+
+        file->validate();
+        PROGLOG("Adding %s file %s.", file->querySuperFile()?"super":"logical", lfn);
+        file->attach(lfn,user);
     }
 
     void addFileRemote(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *user,IUserDescriptor *srcuser=NULL)

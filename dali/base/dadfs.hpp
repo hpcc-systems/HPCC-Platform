@@ -395,6 +395,8 @@ interface IDistributedFile: extends IInterface
     
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                // sets default timeout for SDS connections and locking
                                                                                             // returns previous value
+
+    virtual void validate() = 0;
 };
 
 
@@ -409,6 +411,7 @@ interface IDistributedFile: extends IInterface
  */
 interface IDistributedSuperFile: extends IDistributedFile
 {
+
     virtual IDistributedFileIterator *getSubFileIterator(bool supersub=false)=0;    // if supersub true recurse through sub-superfiles and only return normal files
     virtual void addSubFile(const char *subfile,
                             bool before=false,              // if true before other
@@ -432,7 +435,7 @@ interface IDistributedSuperFile: extends IDistributedFile
     virtual IDistributedFile *querySubFileNamed(const char *name,bool sub=true)=0;
     virtual unsigned numSubFiles(bool sub=false)=0;
 
-    // useful part funtions
+    // useful part functions
     virtual bool isInterleaved()=0;
     virtual IDistributedFile *querySubPart(unsigned partidx,                // superfile part index
                                            unsigned &subfilepartidx)=0;     // part index in subfile
@@ -580,6 +583,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IFileDescriptor *getFileDescriptor(const char *lname,IUserDescriptor *user,const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
 
     virtual IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist=false,IDistributedFileTransaction *transaction=NULL) = 0;
+    virtual IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree) = 0;
     virtual IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,
                                                     IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up sub files
                                                     unsigned timeout=INFINITE) = 0;  // NB lookup will also return superfiles
