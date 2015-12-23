@@ -161,9 +161,11 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     set_property (SOURCE jmalloc.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -fno-strict-aliasing")
     set_property (SOURCE jencrypt.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -fno-strict-aliasing")
 endif ()
-if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0.0)
-    set_property (SOURCE jencrypt.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-array-bounds")   # Compiler erroneously reports array bounds errors in some cases
+if (CMAKE_COMPILER_IS_GNUCC)
     set_property (SOURCE jlzw.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-array-bounds")   # Compiler erroneously reports array bounds errors in some cases
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0.0)
+        set_property (SOURCE jencrypt.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-array-bounds")   # Compiler erroneously reports array bounds errors in some cases
+    endif ()
 endif ()
 
 include_directories ( 
