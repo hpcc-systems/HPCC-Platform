@@ -4981,6 +4981,7 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
     {
       pNode->addProp(XML_ATTR_NAME, "");
       pNode->addProp(XML_ATTR_PREFIX, "");
+      pNode->addProp(XML_ATTR_ALIAS, "");
     }
 
     IPropertyTree* pTopology = pEnvRoot->queryPropTree(buf.str());
