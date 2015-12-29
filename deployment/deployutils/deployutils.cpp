@@ -2141,6 +2141,7 @@ bool generateHeaderForTopology(const IPropertyTree* pEnv, StringBuffer& sbDefn, 
   addTopologyType(jsStrBuf, pEnv, XML_TAG_ROXIECLUSTER,  TAG_PROCESS, "", 0, 1, XML_TAG_SOFTWARE"/RoxieCluster", 4);
   addTopologyType(jsStrBuf, pEnv, XML_TAG_CLUSTER,  TAG_NAME, "", 0, 1, "", 1);
   addTopologyType(jsStrBuf, pEnv, XML_TAG_CLUSTER,  TAG_PREFIX, "", 0, 1, "", 1);
+  addTopologyType(jsStrBuf, pEnv, XML_TAG_CLUSTER,  TAG_ALIAS, "", 0, 1, "", 1);
   jsStrBuf.append("compTabs['Topology'][compTabs['Topology'].length]= 'Topology';");
   jsStrBuf.append("var colIndex = new Array();");
   jsStrBuf.appendf("colIndex['nameTopology']=%d;", index++);
