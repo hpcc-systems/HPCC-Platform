@@ -54,6 +54,8 @@
  #endif
 #endif
 
+#define CACHE_LINE_SIZE 64
+
 // **** START OF X-PLATFORM SECTION ****
 
 #if defined(_ARCH_X86_64_) || defined(_ARCH_ARM64_) || defined(_ARCH_PPC64EL_) || __WORDSIZE==64
