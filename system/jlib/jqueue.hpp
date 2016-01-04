@@ -375,13 +375,10 @@ protected:
     unsigned maxWriters;
     std::atomic<int> activeWriters;
     std::atomic<bool> aborted;
-    char pad1[64];
-    Semaphore readers;
-    char pad2[64-sizeof(Semaphore)];
-    Semaphore writers;
-    char pad3[64-sizeof(Semaphore)];
+    Semaphore readers __attribute__((aligned(CACHE_LINE_SIZE)));
+    Semaphore writers __attribute__((aligned(CACHE_LINE_SIZE)));
     //Ensure the state is not on the same cache line as anything else, especially anything that is modified.
-    std::atomic<state_t> state;
+    std::atomic<state_t> state __attribute__((aligned(CACHE_LINE_SIZE)));
 };
 
 #endif
