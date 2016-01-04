@@ -424,7 +424,7 @@ private:
             StringBuffer text;
             e->errorMessage(text);
             parent.fatalAbort(false,text.str());
-            return true; // won't return hopefully!
+            return false; // It returns to excsighandler() to abort!
         }
     } *abortmonitor;
 

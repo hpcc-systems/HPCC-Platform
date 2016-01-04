@@ -374,7 +374,7 @@ public:
         {
             socketListeners.item(idx).stopListening();
         }
-        return false;
+        return false; // It returns to excsighandler() to abort!
     }
 } abortHandler;
 
@@ -1004,6 +1004,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         tmpFlag |= _CRTDBG_CHECK_ALWAYS_DF;
         _CrtSetDbgFlag( tmpFlag );
 #endif
+        EnableSEHtoExceptionMapping();
         setSEHtoExceptionHandler(&abortHandler);
         if (runOnce)
         {
