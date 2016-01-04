@@ -766,7 +766,9 @@ unsigned __int64 MemoryBuffer::readPacked()
 
 MemoryBuffer &  MemoryBuffer::readPacked(unsigned & value)
 {
-    value = (unsigned)readPacked();
+    unsigned __int64 serializedValue = readPacked();
+    dbgassertex((unsigned)serializedValue == serializedValue);
+    value = (unsigned)serializedValue;
     return *this;
 }
 
