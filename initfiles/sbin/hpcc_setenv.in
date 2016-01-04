@@ -73,10 +73,12 @@ HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
 #SECTION=${1:-DEFAULT}
 SECTION="DEFAULT"
 
+OUMASK=$(umask)
 OIFS="${IFS}"
 unset IFS
 source /etc/profile
 IFS="${OIFS}"
+umask ${OUMASK}
 
 PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path *= *" | sed -e 's/^path *= *//'`
 
