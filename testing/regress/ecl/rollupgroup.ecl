@@ -63,7 +63,7 @@ j3 := join(dsg, i3, left.did = right.did, transform(outrec, self := left; self :
 //perform 3 soap calls in parallel
 combined := regroup(j1, j2, j3);
 
-finalRec doRollup(outRec l, dataset(outRec) allRows) := transform
+finalRec doRollup(outRec l, dataset(outRec) allRows) := transform,skip(l.did=1)
     self.did  := l.did;
     self.names := project(allRows(score != 0), transform(nameRec, self := left));
     self.secondName := allRows(score != 0)[2].name;
