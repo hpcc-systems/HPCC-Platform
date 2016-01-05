@@ -129,10 +129,6 @@ public:
         hasStarted = false;
         in->reset();
     }
-    virtual void checkAbort()
-    {
-        in->checkAbort();
-    }
     virtual unsigned queryId() const
     {
         return in->queryId();
@@ -140,10 +136,6 @@ public:
     virtual unsigned __int64 queryTotalCycles() const
     {
         return in->queryTotalCycles();
-    }
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return in->queryLocalCycles();
     }
     virtual IRoxieInput *queryInput(unsigned idx) const
     {
@@ -264,7 +256,7 @@ public:
             totalTime += 10; // Fudge factor - I don't really know the times but this makes the graph more useable than not supplying a totalTime value
         if (totalTime)
             putStatsValue(&node, "totalTime", "sum", totalTime);
-        unsigned localTime = isOutput ? 10 : (unsigned) (cycle_to_nanosec(in->queryLocalCycles())/1000); // Fudge factor - I don't really know the times but this makes the graph more useable than not supplying a localTime value
+        unsigned localTime = isOutput ? 10 : (unsigned) (cycle_to_nanosec(in->queryActivity()->queryLocalCycles())/1000); // Fudge factor - I don't really know the times but this makes the graph more useable than not supplying a localTime value
         if (localTime)
             putStatsValue(&node, "localTime", "sum", localTime);
     }
