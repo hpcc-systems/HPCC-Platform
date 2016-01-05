@@ -295,7 +295,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = dojoConfig.getImageHTML("suspended.png", context.i18n.Suspended);
                         },
-                        width: 25,
+                        width: 15,
                         sortable: false,
                         formatter: function (suspended) {
                             if (suspended == true) {
@@ -308,7 +308,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = dojoConfig.getImageHTML("errwarn.png", context.i18n.ErrorWarnings);
                         },
-                        width: 25,
+                        width: 15,
                         sortable: false,
                         formatter: function (error) {
                             if (error > 0) {
@@ -321,7 +321,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = dojoConfig.getImageHTML("mixwarn.png", context.i18n.MixedNodeStates);
                         },
-                        width: 25,
+                        width: 15,
                         sortable: false,
                         formatter: function (mixed) {
                             if (mixed === true) {
@@ -334,7 +334,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = dojoConfig.getImageHTML("active.png", context.i18n.Active);
                         },
-                        width: 25,
+                        width: 15,
                         formatter: function (activated) {
                             if (activated == true) {
                                 return dojoConfig.getImageHTML("active.png");
@@ -344,12 +344,12 @@ define([
                     },
                     Id: {
                         label: this.i18n.ID,
+                        width: 480,
                         formatter: function (Id, idx) {
                             return "<a href='#' class='dgrid-row-url'>" + Id + "</a>";
                         }
                     },
                     Name: {
-                        width: 180,
                         label: this.i18n.Name
                     },
                     QuerySetId:{
@@ -358,7 +358,7 @@ define([
                         sortable: true
                     },
                     Wuid: {
-                        width: 180,
+                        width: 90,
                         label: this.i18n.WUID,
                         formatter: function (Wuid, idx) {
                             return "<a href='#' class='dgrid-row-url2'>" + Wuid + "</a>";
