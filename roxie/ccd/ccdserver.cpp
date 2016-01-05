@@ -3328,7 +3328,6 @@ private:
 
 protected:
     IRowManager *rowManager;
-    IRoxieInput *owner;
     unsigned __int64 rowLimit;
     unsigned __int64 keyedLimit;
     IRoxieServerErrorHandler *errorHandler;
@@ -3467,7 +3466,6 @@ public:
         parentExtractSize = 0;
         parentExtract = NULL;
         debugContext = NULL;
-        owner = NULL;
         mergeOrder = NULL;
         deferredStart = false;
         processed = 0;
@@ -3661,9 +3659,8 @@ public:
         return true;
     }
 
-    virtual void onCreate(IRoxieInput *_owner, IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
+    virtual void onCreate(IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
     {
-        owner = _owner;
         errorHandler = _errorHandler;
         ctx = _ctx;
         debugContext = ctx->queryDebugContext();
@@ -3681,7 +3678,7 @@ public:
 
     virtual unsigned queryId() const
     {
-        return owner->queryId();
+        return activity.queryId();
     }
 
     virtual void onStart(unsigned _parentExtractSize, const byte * _parentExtract)
@@ -3722,7 +3719,7 @@ public:
         if (traceStartStop)
             activity.queryLogCtx().CTXLOG("RRAstart");
 #endif
-        owner->start(parentExtractSize, parentExtract, paused);
+        activity.start(parentExtractSize, parentExtract, paused);
     }
 
     void setLimits(unsigned __int64 _rowLimit, unsigned __int64 _keyedLimit, unsigned __int64 _stopAfter)
@@ -3757,7 +3754,7 @@ public:
             activity.queryLogCtx().CTXLOG("RRAstop");
 #endif
         onStop();
-        owner->stop();
+        activity.stop();
     }
 
     void onStop()
@@ -3779,7 +3776,7 @@ public:
         if (traceStartStop)
             activity.queryLogCtx().CTXLOG("RRAreset");
 #endif
-        owner->reset();
+        activity.reset();
         onReset();
     }
 
@@ -15920,7 +15917,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -20205,7 +20202,7 @@ public:
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
         if (remote)
-            remote->onCreate(this, this, _ctx, _colocalParent);
+            remote->onCreate(this, _ctx, _colocalParent);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -21385,7 +21382,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -23245,7 +23242,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
@@ -23774,9 +23771,9 @@ public:
         eof = false;
     }
 
-    virtual void onCreate(IRoxieInput *_owner, IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
+    virtual void onCreate(IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
     {
-        CRemoteResultAdaptor::onCreate(_owner, _errorHandler, _ctx, _colocalArg);
+        CRemoteResultAdaptor::onCreate(_errorHandler, _ctx, _colocalArg);
         ccdRecordAllocator.setown(ctx->queryCodeContext()->getRowAllocator(QUERYINTERFACE(helper.queryJoinFieldsRecordSize(), IOutputMetaData), activityId));
     }
 
@@ -23815,11 +23812,6 @@ public:
     virtual unsigned __int64 queryTotalCycles() const
     {
         return totalCycles.totalCycles;
-    }
-
-    virtual IOutputMetaData * queryOutputMeta() const
-    {
-        return owner->queryOutputMeta();
     }
 
     virtual const void *nextRow()
@@ -23940,7 +23932,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
         indexReadAllocator.setown(ctx->queryCodeContext()->getRowAllocator(indexReadMeta, activityId));
     }
 
@@ -24284,7 +24276,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
