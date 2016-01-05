@@ -94,11 +94,9 @@ interface IRoxieInput : extends IInputBase
 {
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
     virtual void reset() = 0;
-    virtual void checkAbort() = 0;
     virtual unsigned queryId() const = 0;
 
     virtual unsigned __int64 queryTotalCycles() const = 0;
-    virtual unsigned __int64 queryLocalCycles() const = 0;
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual unsigned numConcreteOutputs() const { return 1; }
     virtual IRoxieInput * queryConcreteInput(unsigned idx) { assertex(idx==0); return this; }

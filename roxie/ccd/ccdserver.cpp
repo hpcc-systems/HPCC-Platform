@@ -1798,11 +1798,6 @@ public:
         return puller.queryInput()->queryOutputMeta(); 
     }
 
-    virtual void checkAbort() 
-    {
-        puller.queryInput()->checkAbort();
-    }
-
     void setInput(unsigned idx, IRoxieInput *_in)
     {
         assertex(!idx);
@@ -1812,13 +1807,6 @@ public:
     virtual unsigned __int64 queryTotalCycles() const
     {
         return totalCycles;
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        __int64 ret = totalCycles - puller.queryInput()->queryTotalCycles();
-        if (ret < 0) ret = 0;
-        return ret;
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -3735,11 +3723,6 @@ public:
         owner->start(parentExtractSize, parentExtract, paused);
     }
 
-    void checkAbort()
-    {
-        owner->checkAbort();
-    }
-
     void setLimits(unsigned __int64 _rowLimit, unsigned __int64 _keyedLimit, unsigned __int64 _stopAfter)
     {
         if (ctx->queryProbeManager())
@@ -3829,11 +3812,6 @@ public:
     virtual unsigned __int64 queryTotalCycles() const
     {
         return totalCycles;
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return owner->queryLocalCycles();
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -4001,14 +3979,14 @@ public:
         {
             checkDelayed();
             unsigned timeout = remoteId.isSLAPriority() ? slaTimeout : (remoteId.isHighPriority() ? highTimeout : lowTimeout);
-            owner->checkAbort();
+            activity.queryContext()->checkAbort();
             bool anyActivity;
             if (ctxTraceLevel > 5)
                 activity.queryLogCtx().CTXLOG("Calling getNextUnpacker(%d)", timeout);
             mr.setown(mc->getNextResult(timeout, anyActivity));
             if (ctxTraceLevel > 6)
                 activity.queryLogCtx().CTXLOG("Called getNextUnpacker(%d), activity=%d", timeout, anyActivity);
-            owner->checkAbort();
+            activity.queryContext()->checkAbort();
             if (mr)
             {
                 unsigned roxieHeaderLen;
@@ -5416,10 +5394,6 @@ public:
     {
         return input->queryTotalCycles();
     }
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return input->queryLocalCycles();
-    }
     virtual IRoxieInput *queryInput(unsigned idx) const
     {
         return input->queryInput(idx);
@@ -5451,11 +5425,6 @@ public:
     {
         CriticalBlock procedure(cs);
         input->resetEOF();
-    }
-    virtual void checkAbort()
-    {
-        CriticalBlock procedure(cs);
-        input->checkAbort();
     }
     virtual const void *nextRow()
     {
@@ -5541,10 +5510,6 @@ public:
     { 
         input->reset();
     }
-    virtual void checkAbort() 
-    {
-        input->checkAbort();
-    }
 
     virtual const void * nextRow()
     {
@@ -5559,11 +5524,6 @@ public:
     virtual unsigned __int64 queryTotalCycles() const
     {
         return input->queryTotalCycles();
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return input->queryLocalCycles();
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -13938,11 +13898,6 @@ public:
         ctx = NULL;
         savedParentExtract = NULL;
         savedParentExtractSize = 0;
-    }
-
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return safeInput->queryInput(idx);
     }
 
     void setInput(CRoxieServerParallelLoopActivity * _activity, IRoxieInput *_input, unsigned _flags)
