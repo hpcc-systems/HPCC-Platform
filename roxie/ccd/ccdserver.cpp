@@ -1842,8 +1842,6 @@ public:
         }
     }
 
-    virtual unsigned queryId() const { throwUnexpected(); }
-
     virtual bool fireException(IException *e)
     {
         // called from puller thread on failure
@@ -3176,7 +3174,7 @@ class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implement
                     if (!i->queryHeader().retry())
                     {
                         StringBuffer s;
-                        IException *E = MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to get response from slave(s) for %s in activity %d", i->queryHeader().toString(s).str(), queryId());
+                        IException *E = MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to get response from slave(s) for %s in activity %d", i->queryHeader().toString(s).str(), activity.queryId());
                         activity.queryLogCtx().logOperatorException(E, __FILE__, __LINE__, "CRemoteResultAdaptor::retry");
                         throw E;
                     }
@@ -3674,11 +3672,6 @@ public:
             deferredStart = true;
         if (ctx)
             timeActivities = ctx->queryOptions().timeActivities;
-    }
-
-    virtual unsigned queryId() const
-    {
-        return activity.queryId();
     }
 
     virtual void onStart(unsigned _parentExtractSize, const byte * _parentExtract)
@@ -5378,10 +5371,6 @@ public:
     {
         return input->queryOutputMeta();
     }
-    virtual unsigned queryId() const
-    {
-        return input->queryId();
-    }
     virtual unsigned __int64 queryTotalCycles() const
     {
         return input->queryTotalCycles();
@@ -5465,7 +5454,6 @@ public:
     virtual void stop() { }
     virtual void reset() { }
     virtual void checkAbort() { }
-    virtual unsigned queryId() const { throwUnexpected(); }
     virtual void resetEOF() { }
 };
 
@@ -5502,11 +5490,6 @@ public:
     virtual unsigned __int64 queryTotalCycles() const
     {
         return input->queryTotalCycles();
-    }
-
-    virtual unsigned queryId() const 
-    { 
-        return input->queryId();
     }
 
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector)
@@ -7903,11 +7886,6 @@ public:
             eofpending = false;
             eof = false;
             stopped = false;
-        }
-
-        virtual unsigned queryId() const
-        {
-            return parent->queryId();
         }
 
         virtual IRoxieServerActivity *queryActivity()
@@ -14770,11 +14748,6 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         {
             processed = 0;
             stopped = false;
-        }
-
-        virtual unsigned queryId() const
-        {
-            return parent->queryId();
         }
 
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)

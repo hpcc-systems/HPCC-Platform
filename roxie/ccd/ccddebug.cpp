@@ -129,10 +129,6 @@ public:
         hasStarted = false;
         in->reset();
     }
-    virtual unsigned queryId() const
-    {
-        return in->queryId();
-    }
     virtual unsigned __int64 queryTotalCycles() const
     {
         return in->queryTotalCycles();
@@ -601,12 +597,7 @@ public:
         EOGsent = false;
         InputProbe::resetEOF();
     }
-#if 0
-    virtual unsigned queryId() const
-    {
-        return sourceId;
-    }
-#endif
+
     virtual const char *queryEdgeId() const
     {
         return edgeId.get();
