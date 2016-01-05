@@ -100,7 +100,6 @@ interface IRoxieInput : extends IInputBase
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual unsigned numConcreteOutputs() const { return 1; }
     virtual IRoxieInput * queryConcreteInput(unsigned idx) { assertex(idx==0); return this; }
-    virtual IRoxieInput *queryInput(unsigned idx) const = 0;
     virtual IRoxieServerActivity *queryActivity() = 0;
     virtual IIndexReadActivityInfo *queryIndexReadActivity() = 0;
 };
@@ -138,6 +137,7 @@ interface IRoxieServerActivity : extends IActivityBase
 {
     virtual void setInput(unsigned idx, IRoxieInput *in) = 0;
     virtual IRoxieInput *queryOutput(unsigned idx) = 0;
+    virtual IRoxieInput *queryInput(unsigned idx) const = 0;
     virtual void execute(unsigned parentExtractSize, const byte *parentExtract) = 0;
     virtual void onCreate(IRoxieSlaveContext *ctx, IHThorArg *colocalArg) = 0;
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;

@@ -1447,7 +1447,6 @@ public:
         assertex(!idx);
         input = _in;
     }
-
 };
 
 //=====================================================================================================
@@ -1804,14 +1803,17 @@ public:
         puller.setInput(this, _in);
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
+    }
+
     virtual unsigned __int64 queryTotalCycles() const
     {
         return totalCycles;
-    }
-
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return puller.queryInput()->queryInput(idx);
     }
 
     virtual const void * nextRow()
@@ -3814,11 +3816,6 @@ public:
         return totalCycles;
     }
 
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return owner->queryInput(idx);
-    }
-
     const void * nextRowGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seekLen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         if (activity.queryLogCtx().queryTraceLevel() > 20)
@@ -5244,7 +5241,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerInlineTableActivityFactory : public CRoxieServerActivityFactory
@@ -5333,7 +5329,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerWorkUnitReadActivityFactory : public CRoxieServerActivityFactory
@@ -5393,10 +5388,6 @@ public:
     virtual unsigned __int64 queryTotalCycles() const
     {
         return input->queryTotalCycles();
-    }
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return input->queryInput(idx);
     }
     virtual IRoxieServerActivity *queryActivity()
     {
@@ -5459,16 +5450,6 @@ public:
         return 0;
     }
 
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return 0;
-    }
-
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return NULL;
-    }
-
     virtual IRoxieServerActivity *queryActivity()
     {
         throwUnexpected();
@@ -5526,11 +5507,6 @@ public:
         return input->queryTotalCycles();
     }
 
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return input->queryInput(idx);
-    }
-
     virtual unsigned queryId() const 
     { 
         return input->queryId();
@@ -5565,11 +5541,15 @@ public:
     {
         return input->queryActivity();
     }
-    void setInput(IRoxieInput * _input)
+
+    inline void setInput(IRoxieInput * _input)
     {
         input = _input;
     }
-
+    inline IRoxieInput *queryInput() const
+    {
+        return input;
+    }
 protected:
     IRoxieInput * input;
 };
@@ -5758,7 +5738,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerLocalResultReadActivityFactory : public CRoxieServerActivityFactory
@@ -5852,7 +5831,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerLocalResultStreamReadActivityFactory : public CRoxieServerActivityFactory
@@ -7950,16 +7928,6 @@ public:
             return totalCycles;
         }
 
-        virtual unsigned __int64 queryLocalCycles() const
-        {
-            return 0;  // Should never be called
-        }
-
-        virtual IRoxieInput *queryInput(unsigned idx) const
-        {
-            return parent->queryInput(idx);
-        }
-
         virtual const void * nextRow()
         {
             SimpleActivityTimer t(totalCycles, parent->timeActivities);
@@ -8574,6 +8542,14 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
         puller.setInput(this, _in);
         inputMeta.set(_in->queryOutputMeta());
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
     }
 
     virtual void stop()
@@ -12647,6 +12623,14 @@ public:
         inputArray[idx] = _in;
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx < numInputs)
+            return inputArray[idx];
+        else
+            return NULL;
+    }
+
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -13394,6 +13378,14 @@ public:
         puller.setInput(this, _in);
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
+    }
+
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = 0;
@@ -13991,6 +13983,14 @@ public:
         if (idx)
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
         executor.setInput(this, _in, flags);
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return executor.queryInput();
+        else
+            return NULL;
     }
 
     virtual void stop()
@@ -14597,6 +14597,14 @@ public:
         inputExtractMapper->setInput(_in);
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return inputExtractMapper->queryInput();
+        else
+            return NULL;
+    }
+
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerGraphLoopActivity::start(parentExtractSize, parentExtract, paused);         // initialises GraphExtractBuilder
@@ -14976,6 +14984,14 @@ public:
     virtual void setInput(unsigned idx, IRoxieInput *_in)
     {
         inputAdaptors[idx]->setInput(_in);
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx < numInputs && inputAdaptors[idx])
+            return inputAdaptors[idx]->queryInput();
+        else
+            return NULL;
     }
 
 public:
@@ -18945,6 +18961,15 @@ public:
         inputs[idx] = _in;
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx < numInputs)
+            return inputs[idx];
+        else
+            return NULL;
+    }
+
+
     virtual const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -19214,7 +19239,7 @@ public:
 
     virtual IRoxieInput *queryInput(unsigned idx) const
     {
-        throwUnexpected(); // I am nobody's input
+        return NULL;
     }
 
 };
@@ -23230,6 +23255,15 @@ public:
         puller.setInput(this, _in);
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
+    }
+
+
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
@@ -23918,7 +23952,19 @@ public:
             indexReadInput = _in;
         else
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+    }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        switch (idx)
+        {
+        case 0:
+            return puller.queryInput();
+        case 1:
+            return indexReadInput;
+        default:
+            return NULL;
+        }
     }
 
     virtual void serializeExtra(MemoryBuffer &out)
@@ -24294,7 +24340,7 @@ public:
         return localCycles;
     }
 
-    virtual IRoxieInput *queryInput(unsigned idx)
+    virtual IRoxieInput *queryInput(unsigned idx) const
     {
         if (idx==0)
             return puller.queryInput();
@@ -24637,6 +24683,11 @@ public:
     virtual void setInput(unsigned idx, IRoxieInput *in)
     {
         head.setInput(idx, in);
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        return head.queryInput(idx);
     }
 
     virtual void processRow(const void *_rhs)

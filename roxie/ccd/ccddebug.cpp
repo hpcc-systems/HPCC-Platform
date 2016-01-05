@@ -137,13 +137,6 @@ public:
     {
         return in->queryTotalCycles();
     }
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        if (!idx)
-            return in;
-        else
-            return NULL;
-    }
     virtual const void *nextRow()
     {
         const void *ret = in->nextRow();
@@ -712,7 +705,7 @@ public:
     {
         IRoxieInput *x = in;
         while (x && QUERYINTERFACE(x->queryConcreteInput(0), IActivityDebugContext)==NULL)
-            x = x->queryConcreteInput(0)->queryInput(0);
+            x = x->queryConcreteInput(0)->queryActivity()->queryInput(0);
         return x ? QUERYINTERFACE(x->queryConcreteInput(0), IActivityDebugContext) : NULL;
     }
 
