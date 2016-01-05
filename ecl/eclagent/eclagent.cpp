@@ -3113,7 +3113,10 @@ void EclAgent::fatalAbort(bool userabort,const char *excepttext)
 #ifdef _WIN32
     TerminateProcess(GetCurrentProcess(), 1);
 #else
-    kill(getpid(), SIGKILL);
+    if (userabort)
+        kill(getpid(), SIGKILL);
+    else
+        kill(getpid(), SIGABRT);
 #endif
 }
 
