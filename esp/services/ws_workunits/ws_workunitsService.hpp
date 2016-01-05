@@ -264,6 +264,7 @@ private:
     void addProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, const char* path);
     void createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
     void createZAPWUXMLFile(WsWuInfo &winfo, const char* pathNameStr);
+    void createZAPWUGraphProgressFile(const char* wuid, const char* pathNameStr);
     void createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
     void createZAPFile(const char* fileName, size32_t len, const void* data);
     void cleanZAPFolder(IFile* zipDir, bool removeFolder);

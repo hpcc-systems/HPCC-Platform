@@ -4265,6 +4265,19 @@ void CWsWorkunitsEx::createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, c
     }
 }
 
+void CWsWorkunitsEx::createZAPWUGraphProgressFile(const char* wuid, const char* pathNameStr)
+{
+    Owned<IPropertyTree> graphProgress = getWUGraphProgress(wuid, true);
+    if (graphProgress)
+    {
+        StringBuffer graphProgressXML;
+        toXML(graphProgress, graphProgressXML, 1, XML_Format);
+
+        VStringBuffer fileName("%s.graphprogress", pathNameStr);
+        createZAPFile(fileName.str(), graphProgressXML.length(), graphProgressXML.str());
+    }
+}
+
 bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfoRequest &req, IEspWUCreateZAPInfoResponse &resp)
 {
     try
@@ -4296,6 +4309,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
 
         WsWuInfo winfo(context, cwu);
         createZAPWUXMLFile(winfo, pathNameStr.str());
+        createZAPWUGraphProgressFile(req.getWuid(), pathNameStr.str());
         addProcessLogfile(cwu, winfo, "EclAgent", folderToZIP.str());
         addProcessLogfile(cwu, winfo, "Thor", folderToZIP.str());
 
