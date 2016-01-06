@@ -30,6 +30,14 @@
 
 unsigned traceLevel = 0;
 
+const void * IEngineRowStream::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
+{
+    // can only be called on stepping fields.
+    throwUnexpected();
+}
+
+//=========================================================================================
+
 //OwnedRowArray
 void OwnedRowArray::clear()
 {
