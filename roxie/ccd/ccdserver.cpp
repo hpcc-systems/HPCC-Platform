@@ -1447,7 +1447,6 @@ public:
         assertex(!idx);
         input = _in;
     }
-
 };
 
 //=====================================================================================================
@@ -1804,14 +1803,17 @@ public:
         puller.setInput(this, _in);
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
+    }
+
     virtual unsigned __int64 queryTotalCycles() const
     {
         return totalCycles;
-    }
-
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return puller.queryInput()->queryInput(idx);
     }
 
     virtual const void * nextRow()
@@ -1839,8 +1841,6 @@ public:
             }
         }
     }
-
-    virtual unsigned queryId() const { throwUnexpected(); }
 
     virtual bool fireException(IException *e)
     {
@@ -3174,7 +3174,7 @@ class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implement
                     if (!i->queryHeader().retry())
                     {
                         StringBuffer s;
-                        IException *E = MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to get response from slave(s) for %s in activity %d", i->queryHeader().toString(s).str(), queryId());
+                        IException *E = MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to get response from slave(s) for %s in activity %d", i->queryHeader().toString(s).str(), activity.queryId());
                         activity.queryLogCtx().logOperatorException(E, __FILE__, __LINE__, "CRemoteResultAdaptor::retry");
                         throw E;
                     }
@@ -3326,7 +3326,6 @@ private:
 
 protected:
     IRowManager *rowManager;
-    IRoxieInput *owner;
     unsigned __int64 rowLimit;
     unsigned __int64 keyedLimit;
     IRoxieServerErrorHandler *errorHandler;
@@ -3465,7 +3464,6 @@ public:
         parentExtractSize = 0;
         parentExtract = NULL;
         debugContext = NULL;
-        owner = NULL;
         mergeOrder = NULL;
         deferredStart = false;
         processed = 0;
@@ -3659,9 +3657,8 @@ public:
         return true;
     }
 
-    virtual void onCreate(IRoxieInput *_owner, IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
+    virtual void onCreate(IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
     {
-        owner = _owner;
         errorHandler = _errorHandler;
         ctx = _ctx;
         debugContext = ctx->queryDebugContext();
@@ -3675,11 +3672,6 @@ public:
             deferredStart = true;
         if (ctx)
             timeActivities = ctx->queryOptions().timeActivities;
-    }
-
-    virtual unsigned queryId() const
-    {
-        return owner->queryId();
     }
 
     virtual void onStart(unsigned _parentExtractSize, const byte * _parentExtract)
@@ -3720,7 +3712,7 @@ public:
         if (traceStartStop)
             activity.queryLogCtx().CTXLOG("RRAstart");
 #endif
-        owner->start(parentExtractSize, parentExtract, paused);
+        activity.start(parentExtractSize, parentExtract, paused);
     }
 
     void setLimits(unsigned __int64 _rowLimit, unsigned __int64 _keyedLimit, unsigned __int64 _stopAfter)
@@ -3755,7 +3747,7 @@ public:
             activity.queryLogCtx().CTXLOG("RRAstop");
 #endif
         onStop();
-        owner->stop();
+        activity.stop();
     }
 
     void onStop()
@@ -3777,7 +3769,7 @@ public:
         if (traceStartStop)
             activity.queryLogCtx().CTXLOG("RRAreset");
 #endif
-        owner->reset();
+        activity.reset();
         onReset();
     }
 
@@ -3812,11 +3804,6 @@ public:
     virtual unsigned __int64 queryTotalCycles() const
     {
         return totalCycles;
-    }
-
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return owner->queryInput(idx);
     }
 
     const void * nextRowGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seekLen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
@@ -5244,7 +5231,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerInlineTableActivityFactory : public CRoxieServerActivityFactory
@@ -5333,7 +5319,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerWorkUnitReadActivityFactory : public CRoxieServerActivityFactory
@@ -5386,17 +5371,9 @@ public:
     {
         return input->queryOutputMeta();
     }
-    virtual unsigned queryId() const
-    {
-        return input->queryId();
-    }
     virtual unsigned __int64 queryTotalCycles() const
     {
         return input->queryTotalCycles();
-    }
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return input->queryInput(idx);
     }
     virtual IRoxieServerActivity *queryActivity()
     {
@@ -5459,16 +5436,6 @@ public:
         return 0;
     }
 
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return 0;
-    }
-
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return NULL;
-    }
-
     virtual IRoxieServerActivity *queryActivity()
     {
         throwUnexpected();
@@ -5487,7 +5454,6 @@ public:
     virtual void stop() { }
     virtual void reset() { }
     virtual void checkAbort() { }
-    virtual unsigned queryId() const { throwUnexpected(); }
     virtual void resetEOF() { }
 };
 
@@ -5526,16 +5492,6 @@ public:
         return input->queryTotalCycles();
     }
 
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return input->queryInput(idx);
-    }
-
-    virtual unsigned queryId() const 
-    { 
-        return input->queryId();
-    }
-
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector)
     { 
         return input->gatherConjunctions(collector);
@@ -5565,11 +5521,15 @@ public:
     {
         return input->queryActivity();
     }
-    void setInput(IRoxieInput * _input)
+
+    inline void setInput(IRoxieInput * _input)
     {
         input = _input;
     }
-
+    inline IRoxieInput *queryInput() const
+    {
+        return input;
+    }
 protected:
     IRoxieInput * input;
 };
@@ -5758,7 +5718,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerLocalResultReadActivityFactory : public CRoxieServerActivityFactory
@@ -5852,7 +5811,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerLocalResultStreamReadActivityFactory : public CRoxieServerActivityFactory
@@ -7930,11 +7888,6 @@ public:
             stopped = false;
         }
 
-        virtual unsigned queryId() const
-        {
-            return parent->queryId();
-        }
-
         virtual IRoxieServerActivity *queryActivity()
         {
             return parent;
@@ -7948,16 +7901,6 @@ public:
         virtual unsigned __int64 queryTotalCycles() const
         {
             return totalCycles;
-        }
-
-        virtual unsigned __int64 queryLocalCycles() const
-        {
-            return 0;  // Should never be called
-        }
-
-        virtual IRoxieInput *queryInput(unsigned idx) const
-        {
-            return parent->queryInput(idx);
         }
 
         virtual const void * nextRow()
@@ -8574,6 +8517,14 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
         puller.setInput(this, _in);
         inputMeta.set(_in->queryOutputMeta());
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
     }
 
     virtual void stop()
@@ -12647,6 +12598,14 @@ public:
         inputArray[idx] = _in;
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx < numInputs)
+            return inputArray[idx];
+        else
+            return NULL;
+    }
+
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -13394,6 +13353,14 @@ public:
         puller.setInput(this, _in);
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
+    }
+
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = 0;
@@ -13991,6 +13958,14 @@ public:
         if (idx)
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
         executor.setInput(this, _in, flags);
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return executor.queryInput();
+        else
+            return NULL;
     }
 
     virtual void stop()
@@ -14597,6 +14572,14 @@ public:
         inputExtractMapper->setInput(_in);
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return inputExtractMapper->queryInput();
+        else
+            return NULL;
+    }
+
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerGraphLoopActivity::start(parentExtractSize, parentExtract, paused);         // initialises GraphExtractBuilder
@@ -14765,11 +14748,6 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         {
             processed = 0;
             stopped = false;
-        }
-
-        virtual unsigned queryId() const
-        {
-            return parent->queryId();
         }
 
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -14976,6 +14954,14 @@ public:
     virtual void setInput(unsigned idx, IRoxieInput *_in)
     {
         inputAdaptors[idx]->setInput(_in);
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx < numInputs && inputAdaptors[idx])
+            return inputAdaptors[idx]->queryInput();
+        else
+            return NULL;
     }
 
 public:
@@ -15904,7 +15890,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -18945,6 +18931,15 @@ public:
         inputs[idx] = _in;
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx < numInputs)
+            return inputs[idx];
+        else
+            return NULL;
+    }
+
+
     virtual const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -19214,7 +19209,7 @@ public:
 
     virtual IRoxieInput *queryInput(unsigned idx) const
     {
-        throwUnexpected(); // I am nobody's input
+        return NULL;
     }
 
 };
@@ -20180,7 +20175,7 @@ public:
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
         if (remote)
-            remote->onCreate(this, this, _ctx, _colocalParent);
+            remote->onCreate(this, _ctx, _colocalParent);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -21360,7 +21355,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -23220,7 +23215,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
@@ -23229,6 +23224,15 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
         puller.setInput(this, _in);
     }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
+    }
+
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
@@ -23740,9 +23744,9 @@ public:
         eof = false;
     }
 
-    virtual void onCreate(IRoxieInput *_owner, IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
+    virtual void onCreate(IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
     {
-        CRemoteResultAdaptor::onCreate(_owner, _errorHandler, _ctx, _colocalArg);
+        CRemoteResultAdaptor::onCreate(_errorHandler, _ctx, _colocalArg);
         ccdRecordAllocator.setown(ctx->queryCodeContext()->getRowAllocator(QUERYINTERFACE(helper.queryJoinFieldsRecordSize(), IOutputMetaData), activityId));
     }
 
@@ -23781,11 +23785,6 @@ public:
     virtual unsigned __int64 queryTotalCycles() const
     {
         return totalCycles.totalCycles;
-    }
-
-    virtual IOutputMetaData * queryOutputMeta() const
-    {
-        return owner->queryOutputMeta();
     }
 
     virtual const void *nextRow()
@@ -23906,7 +23905,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
         indexReadAllocator.setown(ctx->queryCodeContext()->getRowAllocator(indexReadMeta, activityId));
     }
 
@@ -23918,7 +23917,19 @@ public:
             indexReadInput = _in;
         else
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+    }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        switch (idx)
+        {
+        case 0:
+            return puller.queryInput();
+        case 1:
+            return indexReadInput;
+        default:
+            return NULL;
+        }
     }
 
     virtual void serializeExtra(MemoryBuffer &out)
@@ -24238,7 +24249,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
@@ -24294,7 +24305,7 @@ public:
         return localCycles;
     }
 
-    virtual IRoxieInput *queryInput(unsigned idx)
+    virtual IRoxieInput *queryInput(unsigned idx) const
     {
         if (idx==0)
             return puller.queryInput();
@@ -24637,6 +24648,11 @@ public:
     virtual void setInput(unsigned idx, IRoxieInput *in)
     {
         head.setInput(idx, in);
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        return head.queryInput(idx);
     }
 
     virtual void processRow(const void *_rhs)

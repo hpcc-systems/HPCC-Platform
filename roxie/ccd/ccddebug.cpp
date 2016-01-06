@@ -129,20 +129,9 @@ public:
         hasStarted = false;
         in->reset();
     }
-    virtual unsigned queryId() const
-    {
-        return in->queryId();
-    }
     virtual unsigned __int64 queryTotalCycles() const
     {
         return in->queryTotalCycles();
-    }
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        if (!idx)
-            return in;
-        else
-            return NULL;
     }
     virtual const void *nextRow()
     {
@@ -608,12 +597,7 @@ public:
         EOGsent = false;
         InputProbe::resetEOF();
     }
-#if 0
-    virtual unsigned queryId() const
-    {
-        return sourceId;
-    }
-#endif
+
     virtual const char *queryEdgeId() const
     {
         return edgeId.get();
@@ -712,7 +696,7 @@ public:
     {
         IRoxieInput *x = in;
         while (x && QUERYINTERFACE(x->queryConcreteInput(0), IActivityDebugContext)==NULL)
-            x = x->queryConcreteInput(0)->queryInput(0);
+            x = x->queryConcreteInput(0)->queryActivity()->queryInput(0);
         return x ? QUERYINTERFACE(x->queryConcreteInput(0), IActivityDebugContext) : NULL;
     }
 
