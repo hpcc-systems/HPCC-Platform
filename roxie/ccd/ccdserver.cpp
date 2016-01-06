@@ -14478,12 +14478,13 @@ private:
     unsigned sourceIdx;
     Linked<IRoxieServerActivity> sourceAct;
     Linked<IRoxieInput> sourceInput;
+    Linked<IEngineRowStream> sourceStream;
     unsigned numUses;
     unsigned iteration;
 
 public:
-    CGraphIterationInfo(IRoxieServerActivity * _sourceAct, IRoxieInput *_input, unsigned _sourceIdx, unsigned _iteration)
-        : sourceAct(_sourceAct), sourceInput(_input), sourceIdx(_sourceIdx), iteration(_iteration)
+    CGraphIterationInfo(IRoxieServerActivity * _sourceAct, IRoxieInput *_input, IEngineRowStream *_stream, unsigned _sourceIdx, unsigned _iteration)
+        : sourceAct(_sourceAct), sourceInput(_input), sourceStream(_stream),  sourceIdx(_sourceIdx), iteration(_iteration)
     {
         numUses = 0;
     }
@@ -14503,7 +14504,7 @@ public:
             IRoxieInput *input = sourceAct->queryOutput(sourceIdx);
             if (probeManager)
             {
-                IInputBase * inputBase = probeManager->createProbe(static_cast<IInputBase*>(input), sourceAct, splitter, sourceIdx, 0, iteration);
+                IInputBase * inputBase = probeManager->createProbe(static_cast<IInputBase*>(input), sourceStream, sourceAct, splitter, sourceIdx, 0, iteration);
                 input = static_cast<IRoxieInput*>(inputBase);
                 // MORE - shouldn't this be added to probes?
             }
@@ -14511,6 +14512,7 @@ public:
             sourceAct->setInput(0, input);
             sourceIdx = 0;
             sourceInput.clear();
+            sourceStream.clear();
         }
     }
 
@@ -14518,11 +14520,14 @@ public:
     {
         // MORE - not really necessary to create splitters in separate pass, is it?
         if (factory) // we created a splitter....
+        {
             sourceInput.set(sourceAct->queryOutput(sourceIdx));
+            sourceStream.set(&sourceInput->queryStream());
+        }
         IRoxieInput *ret = sourceInput;
         if (probeManager)
         {
-            IInputBase *inputBase = probeManager->createProbe(ret, sourceAct, targetAct, sourceIdx, targetIdx, iteration);
+            IInputBase *inputBase = probeManager->createProbe(sourceInput, sourceStream, sourceAct, targetAct, sourceIdx, targetIdx, iteration);
             ret = static_cast<IRoxieInput *>(inputBase);
             probes.append(*LINK(ret));
         }
@@ -14625,7 +14630,7 @@ public:
     {
         //result(0) is the input to the graph.
         resultInput = inputExtractMapper;
-        outputs.append(* new CGraphIterationInfo(resultInput->queryActivity(), resultInput, 0, 1));
+        outputs.append(* new CGraphIterationInfo(resultInput->queryActivity(), resultInput, &resultInput->queryStream(), 0, 1));
 
         for (createLoopCounter=1; createLoopCounter <= maxIterations; createLoopCounter++)
         {
@@ -25695,7 +25700,7 @@ public:
         IRoxieInput * output = sourceActivity.queryOutput(sourceIdx);
         if (probeManager)
         {
-            IInputBase * inputBase = probeManager->createProbe(static_cast<IInputBase*>(output), &sourceActivity, &targetActivity, sourceIdx, targetIdx, iteration);
+            IInputBase * inputBase = probeManager->createProbe(static_cast<IInputBase*>(output), &output->queryStream(), &sourceActivity, &targetActivity, sourceIdx, targetIdx, iteration);
             output = static_cast<IRoxieInput*>(inputBase);
             probes.append(*LINK(output));
         }
@@ -26136,7 +26141,9 @@ public:
     virtual CGraphIterationInfo *selectGraphLoopOutput()
     {
         IRoxieServerActivity &sourceActivity = activities.item(graphOutputActivityIndex);
-        return new CGraphIterationInfo(&sourceActivity, sourceActivity.queryOutput(0), 0, loopCounter);
+        IRoxieInput *sourceInput = sourceActivity.queryOutput(0);
+        IEngineRowStream *sourceStream = &sourceInput->queryStream();
+        return new CGraphIterationInfo(&sourceActivity, sourceInput, sourceStream, 0, loopCounter);
     }
 
     virtual void gatherIterationUsage(IRoxieServerLoopResultProcessor & processor)

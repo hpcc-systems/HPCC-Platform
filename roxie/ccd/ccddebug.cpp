@@ -34,6 +34,7 @@ class InputProbe : public CInterface, implements IRoxieInput, implements IEngine
 {
 protected:
     IRoxieInput *in;
+    IEngineRowStream *inStream;
     unsigned sourceId;
     unsigned sourceIdx;
     unsigned targetId;
@@ -51,9 +52,9 @@ protected:
     bool hasStopped;
 
 public:
-    InputProbe(IRoxieInput *_in, IDebuggableContext *_debugContext,
+    InputProbe(IRoxieInput *_in, IEngineRowStream *_inStream, IDebuggableContext *_debugContext,
         unsigned _sourceId, unsigned _sourceIdx, unsigned _targetId, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
-        : in(_in),  debugContext(_debugContext),
+        : in(_in),  inStream(_inStream), debugContext(_debugContext),
           sourceId(_sourceId), sourceIdx(_sourceIdx), targetId(_targetId), targetIdx(_targetIdx), iteration(_iteration), channel(_channel)
     {
         hasStarted = false;
@@ -75,7 +76,7 @@ public:
     }
     virtual void resetEOF()
     {
-        in->resetEOF();
+        inStream->resetEOF();
     }
     virtual unsigned numConcreteOutputs() const
     {
@@ -122,7 +123,7 @@ public:
     virtual void stop()
     {
         hasStopped = true;
-        in->stop();
+        inStream->stop();
     }
     virtual void reset()
     {
@@ -135,7 +136,7 @@ public:
     }
     virtual const void *nextRow()
     {
-        const void *ret = in->nextRow();
+        const void *ret = inStream->nextRow();
         if (ret)
         {
             size32_t size = inMeta->getRecordSize(ret);
@@ -148,7 +149,7 @@ public:
     }
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        const void *ret = in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void *ret = inStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret && wasCompleteMatch)  // GH is this test right?
         {
             size32_t size = inMeta->getRecordSize(ret);
@@ -167,8 +168,8 @@ class TraceProbe : public InputProbe
 public:
     IMPLEMENT_IINTERFACE;
 
-    TraceProbe(IRoxieInput *_in, unsigned _sourceId, unsigned _targetId, unsigned _sourceIdx, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
-        : InputProbe(_in, NULL, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel)
+    TraceProbe(IRoxieInput *_in, IEngineRowStream *_inStream, unsigned _sourceId, unsigned _targetId, unsigned _sourceIdx, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
+        : InputProbe(_in, _inStream, NULL, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel)
     {
     }
 
@@ -267,11 +268,11 @@ class CProbeManager : public CInterface, implements IProbeManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    IInputBase *createProbe(IInputBase *in, IActivityBase *inAct, IActivityBase *outAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
+    IInputBase *createProbe(IInputBase *in, IEngineRowStream *_inStream, IActivityBase *inAct, IActivityBase *outAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
     {
         unsigned idIn = inAct->queryId();
         unsigned idOut = outAct->queryId();
-        TraceProbe *probe = new TraceProbe(static_cast<IRoxieInput*>(in), idIn, idOut, sourceIdx, targetIdx, iteration, 0);
+        TraceProbe *probe = new TraceProbe(static_cast<IRoxieInput*>(in), _inStream, idIn, idOut, sourceIdx, targetIdx, iteration, 0);
         probes.append(*probe);
         return probe;
     }
@@ -521,8 +522,8 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
     }
 
 public:
-    DebugProbe(IInputBase *_in, unsigned _sourceId, unsigned _sourceIdx, DebugActivityRecord *_sourceAct, unsigned _targetId, unsigned _targetIdx, DebugActivityRecord *_targetAct, unsigned _iteration, unsigned _channel, IDebuggableContext *_debugContext)
-        : InputProbe(static_cast<IRoxieInput*>(_in), _debugContext, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
+    DebugProbe(IInputBase *_in, IEngineRowStream *_inStream, unsigned _sourceId, unsigned _sourceIdx, DebugActivityRecord *_sourceAct, unsigned _targetId, unsigned _targetIdx, DebugActivityRecord *_targetAct, unsigned _iteration, unsigned _channel, IDebuggableContext *_debugContext)
+        : InputProbe(static_cast<IRoxieInput*>(_in), _inStream, _debugContext, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
           sourceAct(_sourceAct), targetAct(_targetAct)
     {
         historyCapacity = debugContext->getDefaultHistoryCapacity();
@@ -1006,7 +1007,7 @@ public:
         return CInterface::Release();
     }
 
-    virtual IInputBase *createProbe(IInputBase *in, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
+    virtual IInputBase *createProbe(IInputBase *in, IEngineRowStream *inStream, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
     {
         CriticalBlock b(crit);
         if (!iteration)
@@ -1016,7 +1017,7 @@ public:
         unsigned targetId = targetAct->queryId();
         DebugActivityRecord *sourceActRecord = noteActivity(sourceAct, iteration, channel, debugContext->querySequence());
         DebugActivityRecord *targetActRecord = noteActivity(targetAct, iteration, channel, debugContext->querySequence());
-        DebugProbe *probe = new DebugProbe(in, sourceId, sourceIdx, sourceActRecord, targetId, targetIdx, targetActRecord, iteration, channel, debugContext);
+        DebugProbe *probe = new DebugProbe(in, inStream, sourceId, sourceIdx, sourceActRecord, targetId, targetIdx, targetActRecord, iteration, channel, debugContext);
 #ifdef _DEBUG
         DBGLOG("Creating probe for edge id %s in graphManager %p", probe->queryEdgeId(), this);
 #endif
