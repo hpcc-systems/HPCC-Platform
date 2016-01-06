@@ -33,6 +33,10 @@ interface THORHELPER_API IEngineRowStream : public IRowStream
     virtual bool nextGroup(ConstPointerArray & group);      // note: default implementation can be overridden for efficiency...
     virtual void readAll(RtlLinkedDatasetBuilder &builder); // note: default implementation can be overridden for efficiency...
     virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
+
+    // Reinitialize the stream - called when smart-stepping potentially jumps forward in one of the inputs feeding into
+    // a join - other inputs may need to discard current state such as eof indicators, partially-delivered groups etc.
+    virtual void resetEOF() = 0;
 };
 
 #endif // ROXIESTREAM_HPP

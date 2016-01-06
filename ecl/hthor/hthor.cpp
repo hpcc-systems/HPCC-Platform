@@ -213,6 +213,12 @@ void CHThorActivityBase::stop()
         input->stop();
 }
 
+void CHThorActivityBase::resetEOF()
+{
+    if (input)
+        input->resetEOF();
+}
+
 void CHThorActivityBase::updateProgress(IStatisticGatherer &progress) const
 {
     updateProgressForOther(progress, activityId, subgraphId);
@@ -6415,6 +6421,13 @@ void CHThorMultiInputActivity::stop()
         inputs.item(idx)->stop();
 }
 
+void CHThorMultiInputActivity::resetEOF()
+{
+    CHThorSimpleActivityBase::resetEOF();
+    ForEachItemIn(idx, inputs)
+        inputs.item(idx)->resetEOF();
+}
+
 void CHThorMultiInputActivity::setInput(unsigned index, IHThorInput *_input)
 {
     if (index==inputs.length())
@@ -9697,6 +9710,11 @@ void LibraryCallOutput::stop()
 {
     owner->stop();
     result.clear();
+}
+
+void LibraryCallOutput::resetEOF()
+{
+    throwUnexpected();
 }
 
 void LibraryCallOutput::updateProgress(IStatisticGatherer &progress) const

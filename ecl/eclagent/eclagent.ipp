@@ -878,6 +878,11 @@ private:
             in->stop();
         }
 
+        virtual void resetEOF()
+        {
+            in->resetEOF();
+        }
+
         IEngineRowStream &queryStream()
         {
             return *this;

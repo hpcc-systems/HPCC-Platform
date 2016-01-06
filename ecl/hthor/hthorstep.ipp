@@ -86,6 +86,7 @@ public:
     //interface IHThorInput
     virtual void ready();
     virtual void stop();
+    virtual void resetEOF();
     virtual const void * nextRow();
     virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
     virtual IInputSteppingMeta * querySteppingMeta();

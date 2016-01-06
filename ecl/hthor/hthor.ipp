@@ -218,6 +218,7 @@ public:
     virtual void execute();
     virtual void extractResult(unsigned & len, void * & ret);
     virtual void stop();
+    virtual void resetEOF();
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { UNIMPLEMENTED; }
     virtual __int64 getCount();
     virtual unsigned queryOutputs() { return 1; }
@@ -1731,6 +1732,7 @@ public:
 
     virtual void ready();
     virtual void stop();
+    virtual void resetEOF();
     virtual void setInput(unsigned, IHThorInput *);
 
     //interface IHThorInput
@@ -2586,6 +2588,11 @@ public:
     {
     }
 
+    virtual void resetEOF()
+    {
+        throwUnexpected();  // Should never be called on a source stream
+    }
+
 protected:
     Owned<IHThorGraphResult> result;
     unsigned curRow;
@@ -2612,6 +2619,10 @@ public:
 
     virtual void stop()
     {
+    }
+    virtual void resetEOF()
+    {
+        throwUnexpected();  // Should never be called on a source stream
     }
 
 protected:
@@ -2746,6 +2757,7 @@ public:
 
     virtual void ready();
     virtual void stop();
+    virtual void resetEOF();
     virtual IEngineRowStream &queryStream() { return *this; }
     virtual void updateProgress(IStatisticGatherer &progress) const;
 

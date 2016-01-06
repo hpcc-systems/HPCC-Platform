@@ -185,6 +185,10 @@ void CHThorMergeJoinBaseActivity::stop()
     CHThorNaryActivity::stop();
 }
 
+void CHThorMergeJoinBaseActivity::resetEOF()
+{
+    processor.queryResetEOF();
+}
 
 bool CHThorMergeJoinBaseActivity::gatherConjunctions(ISteppedConjunctionCollector & collector)
 {
