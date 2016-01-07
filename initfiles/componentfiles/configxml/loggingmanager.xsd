@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+################################################################################
+#    Copyright (C) 2014 HPCC Systems.
+#
+#    All rights reserved.
+################################################################################
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:include schemaLocation="environment.xsd"/>
+  <xs:element name="LoggingManager">
+    <xs:complexType>
+      <xs:annotation>
+        <xs:appinfo>
+            <title>Logging Manager</title>
+        </xs:appinfo>
+      </xs:annotation>
+      <xs:attribute name="build" type="buildType" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="buildSet" type="buildSetType" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Name for this Logging Manager</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="description" type="xs:string" use="optional" default="Logging Manager">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Description for this process</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:sequence>
+        <xs:element name="ESPLoggingAgent" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <title>ESP Logging Agents</title>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:attribute name="ESPLoggingAgent" type="esploggingagentType" use="required">
+                <xs:annotation>
+                  <xs:appinfo>
+                    <tooltip>Specifies the ESP Logging Agent.</tooltip>
+                  </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+     </xs:sequence>
+
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

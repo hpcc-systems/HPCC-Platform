@@ -96,6 +96,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_MEMCACHED "Enable Memcached support" ON)
   option(USE_REDIS "Enable Redis support" ON)
   option(USE_KAFKA "Enable Kafka support" ON)
+  option(LOGGING_SERVICE "Configure use of logging service" ON)
 
   if (APPLE OR WIN32)
       option(USE_TBB "Enable Threading Building Block support" OFF)
