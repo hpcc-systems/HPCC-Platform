@@ -102,6 +102,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       option(USE_TBB "Enable Threading Building Block support" ON)
   endif()
 
+  option(LOGGING_SERVICE "Configure use of logging service" ON)
+
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
 

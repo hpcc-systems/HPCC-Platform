@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,22 +13,4 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-include_directories (${SCM_GENERATED_DIR})
-HPCC_ADD_SUBDIRECTORY (bindings)
-HPCC_ADD_SUBDIRECTORY (clients "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (eclwatch "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (files "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (src "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (platform "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (protocols)
-HPCC_ADD_SUBDIRECTORY (scm)
-HPCC_ADD_SUBDIRECTORY (services "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (smc "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (test "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (tools "CLIENTTOOLS")
-HPCC_ADD_SUBDIRECTORY (xslt)
-HPCC_ADD_SUBDIRECTORY (esdllib)
-if (LOGGING_SERVICE)
-HPCC_ADD_SUBDIRECTORY (logging)
-endif()
-
+HPCC_ADD_SUBDIRECTORY (espserverloggingagent)
