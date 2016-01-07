@@ -311,6 +311,9 @@ static double cycleToMilliScale;
 
 void calibrate_timing()
 {
+    cycleToNanoScale = 1.0;
+    cycleToMicroScale = 1.0;
+    cycleToMilliScale = 1.0;
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
     if (useRDTSC) {
         unsigned long eax;
