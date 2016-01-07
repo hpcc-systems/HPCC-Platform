@@ -986,6 +986,8 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     static byte nested=0;
     if (nested++)
         return;
+
+    excsignal = 0;
 #ifdef NO_LINUX_SEH
     signal(SIGSEGV, SIG_DFL);
     signal(SIGBUS, SIG_DFL);
