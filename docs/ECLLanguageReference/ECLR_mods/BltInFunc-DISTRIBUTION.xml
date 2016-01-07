@@ -62,7 +62,9 @@
 
   <para><programlisting>&lt;XML&gt;
   &lt;Field name="seqnum" estimate="4000000"/&gt;
-&lt;/XML&gt;</programlisting>The DECIMAL data type is not supported by this
+&lt;/XML&gt;</programlisting></para>
+
+<para>The DECIMAL data type is not supported by this
   action. You can use a REAL data type instead.</para>
 
   <para>Example:</para>
