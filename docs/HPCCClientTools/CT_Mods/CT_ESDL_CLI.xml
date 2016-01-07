@@ -191,8 +191,8 @@
       <sect2 id="CT_ESDL_CLI_esdl_ecl" role="brk">
         <title>esdl ecl</title>
 
-        <para><emphasis role="bold">esdl ecl [options] filename.ecm
-        [&lt;outdir&gt;] </emphasis></para>
+        <para><emphasis role="bold">esdl ecl filename.ecm [&lt;outdir&gt;]
+        [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -204,25 +204,48 @@
               <row>
                 <entry><emphasis>filename.ecm</emphasis></entry>
 
-                <entry>The file containing the ESDL definitions</entry>
+                <entry>The file containing the ESDL definitions.</entry>
               </row>
 
               <row>
-                <entry><emphasis>-r|--recursive</emphasis></entry>
+                <entry><emphasis>-x, --expandedxml</emphasis></entry>
 
-                <entry>process all includes</entry>
+                <entry>Output expanded XML files.</entry>
               </row>
 
               <row>
-                <entry><emphasis>-v|--verbose</emphasis></entry>
+                <entry><emphasis>--includes</emphasis></entry>
 
-                <entry>display verbose information</entry>
+                <entry>If present, process all included files.</entry>
               </row>
 
               <row>
-                <entry><emphasis>-?/-h/--help</emphasis></entry>
+                <entry><emphasis>--rollup</emphasis></entry>
 
-                <entry>show usage page</entry>
+                <entry>If present, rollup all processed includes to a single
+                ECL output file.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-cde </emphasis></entry>
+
+                <entry>Specifies the HPCC Component files directory (location
+                of xslt files).</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--ecl-imports </emphasis></entry>
+
+                <entry>Comma-delimited import list to be attached to the
+                output ECL. Each entry generates a corresponding IMPORT
+                statement.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--ecl-header</emphasis></entry>
+
+                <entry>Text to include in header or target (generated) file
+                (must be valid ECL).</entry>
               </row>
 
               <row>
