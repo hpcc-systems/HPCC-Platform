@@ -12890,7 +12890,6 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
 
         BuildCtx condctx(ctx);
         node_operator srcOp = src->getOperator();
-        bool isAggregateOp = true;
         switch (srcOp)
         {
         case no_countgroup:
@@ -12970,7 +12969,6 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
             }
             break;
         default:
-            isAggregateOp = false;
             if (!src->isConstant() || isVariableOffset)
             {
                 if (!alwaysNextRow)
@@ -12983,13 +12981,13 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
             break;
         }
 
-        if (isAggregateOp && isDynamicOffset)
-            throwError1(HQLERR_AggregateDyanmicOffset, str(target->queryChild(1)->queryId()));
+        if (isDynamicOffset)
+            throwError1(HQLERR_AggregateDynamicOffset, str(target->queryChild(1)->queryId()));
 
         if (target->queryType()->getSize() == UNKNOWN_LENGTH)
         {
            isVariableOffset = true;
-           if (isAggregateOp)
+           if (src->isGroupAggregateFunction())
                isDynamicOffset = true;
         }
     }

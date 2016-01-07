@@ -219,7 +219,7 @@
 #define HQLERR_EmbedParamNotSupportedInOptions  4199
 #define HQLERR_InvalidXmlnsPrefix               4200
 #define HQLERR_ConditionalAggregateVarOffset    4201
-#define HQLERR_AggregateDyanmicOffset           4202
+#define HQLERR_AggregateDynamicOffset           4202
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -514,7 +514,7 @@
 #define HQLERR_EmbedParamNotSupportedInOptions_Text   "Cannot use bound parameter in embed options - try adding a FUNCTION wrapper"
 #define HQLERR_InvalidXmlnsPrefix_Text          "Invalid XMLNS prefix: %s"
 #define HQLERR_ConditionalAggregateVarOffset_Text "Conditional aggregate '%s' cannot follow a variable length field"
-#define HQLERR_AggregateDyanmicOffset_Text      "Aggregate assignment to '%s' cannot follow variable size aggregate"
+#define HQLERR_AggregateDynamicOffset_Text      "Aggregate assignment to '%s' cannot follow variable size aggregate"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"

@@ -3531,24 +3531,19 @@ IHqlExpression * ThorHqlTransformer::normalizeMergeAggregate(IHqlExpression * ex
 static bool reorderAggregateFields(HqlExprArray & aggregateFields, HqlExprArray & aggregateAssigns)
 {
     bool needToReorder = false;
-    bool variableOffset = false;
-    bool dynamicOffset = false;
+    bool dynamicOffset = false; // Will the offset of the next field vary with each row processed?
     ForEachItemIn(i, aggregateFields)
     {
         IHqlExpression & cur = aggregateFields.item(i);
         IHqlExpression * value = aggregateAssigns.item(i).queryChild(1);
-        if (value->isGroupAggregateFunction())
-        {
-            if (dynamicOffset)
-                needToReorder = true;
-        }
+        //If any field follows a dynamic sized aggregate then the record needs to be reordered
+        if (dynamicOffset)
+            needToReorder = true;
 
         if (isUnknownSize(&cur))
         {
             if (value->isGroupAggregateFunction())
                 dynamicOffset = true;
-            else
-                variableOffset = true;
         }
     }
 
@@ -3567,14 +3562,19 @@ static bool reorderAggregateFields(HqlExprArray & aggregateFields, HqlExprArray 
             bool copy = false;
             if (!isUnknownSize(&cur))
             {
+                //Place all fixed size fields first
                 copy = (pass == 0);
             }
-            else if (assign.queryChild(1)->isGroupAggregateFunction())
+            else if (!assign.queryChild(1)->isGroupAggregateFunction())
             {
-                copy = (pass == 2);
+                //Then any variable size fields that are only assigned once
+                copy = (pass == 1);
             }
             else
-                copy = (pass == 1);
+            {
+                //Finally any variable size aggregates
+                copy = (pass == 2);
+            }
 
             if (copy)
             {

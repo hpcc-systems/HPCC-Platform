@@ -1024,6 +1024,7 @@ void CHqlBoundTarget::validate() const
         type_t tc = type->getTypeCode();
         if (tc == type_row || type->isReference())
         {
+            //No checks to apply in these cases.
         }
         else if (type->getSize() != UNKNOWN_LENGTH)
         {
