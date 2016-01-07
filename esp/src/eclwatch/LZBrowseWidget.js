@@ -579,7 +579,14 @@ define([
                             return img + "&nbsp;" + name;
                         }
                     }),
-                    filesize: { label: this.i18n.Size, width: 108, sortable: false },
+                    filesize: { label: this.i18n.Size, width: 108, sortable: false,
+                        formatter: function (fsize, row) {
+                            if (!fsize || fsize === -1) {
+                                return ""
+                            }
+                            return fsize.toLocaleString();
+                        }
+                    },
                     modifiedtime: { label: this.i18n.Date, width: 180, sortable: false }
                 },
                 getSelected: function () {
