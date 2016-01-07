@@ -778,7 +778,7 @@ public:
         dfile->getClusterNames(clusterNames);
         return clusterNames.find(cluster1)!=NotFound;
     }
-    bool checkIsKey(IPropertyTree *ftree)
+    inline bool checkIsKey(IPropertyTree *ftree)
     {
         const char * kind = ftree->queryProp("Attr/@kind");
         return kind && streq(kind, "key");

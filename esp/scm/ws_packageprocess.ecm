@@ -29,7 +29,7 @@ ESPrequest AddPackageRequest
 {
     string Info;
     boolean Activate;
-    boolean OverWrite; //deprecated, use flags below
+    boolean OverWrite; //use flags below unless you really want to overwrite the actual file metadata and packagemap
     string Target;
     string PackageMap;
     string Process;
