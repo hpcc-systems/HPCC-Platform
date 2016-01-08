@@ -505,7 +505,7 @@ define([
                     IntSize: { label: this.i18n.Size, width: 72,
                         formatter: function (intsize, row) {
                             if (intsize === null) {
-                                return 0
+                                return ""
                             } else {
                                 return intsize.toLocaleString();
                             }
