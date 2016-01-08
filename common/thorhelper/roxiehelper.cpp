@@ -450,6 +450,11 @@ public:
     {
         input->stop();
     }
+
+    virtual void resetEOF()
+    {
+        input->resetEOF();
+    }
 };
 
 class GroupedInputReader : public InputReaderBase
