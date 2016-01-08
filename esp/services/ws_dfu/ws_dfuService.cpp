@@ -3165,7 +3165,7 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
         buf.append("|");
         if (sizeTo > 0)
             buf.append(sizeTo);
-        filterBuf.append(DFUQFTintegerRange).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFattrsize));
+        filterBuf.append(DFUQFTinteger64Range).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFattrsize));
         filterBuf.append(DFUQFilterSeparator).append(buf.str()).append(DFUQFilterSeparator);
     }
     const char* startDate = req.getStartDate();
