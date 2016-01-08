@@ -139,7 +139,7 @@ void cloneFileInfoToDali(StringArray &notFound, IPropertyTree *packageMap, const
     wufiles->addFilesFromPackageMap(packageMap);
     SCMStringBuffer processName;
     dstInfo->getRoxieProcess(processName);
-    wufiles->resolveFiles(processName.str(), lookupDaliIp, remotePrefix, srcCluster, !overWrite, false);
+    wufiles->resolveFiles(processName.str(), lookupDaliIp, remotePrefix, srcCluster, !overWrite, false, false);
 
     StringBuffer defReplicateFolder;
     getConfigurationDirectory(NULL, "data2", "roxie", processName.str(), defReplicateFolder);
@@ -813,7 +813,7 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
     {
         Owned<IReferencedFileList> pmfiles = createReferencedFileList(context.queryUserId(), context.queryPassword(), true, false);
         pmfiles->addFilesFromPackageMap(mapTree);
-        pmfiles->resolveFiles(process.str(), NULL, NULL, NULL, true, false);
+        pmfiles->resolveFiles(process.str(), NULL, NULL, NULL, true, false, false);
         Owned<IReferencedFileIterator> files = pmfiles->getFiles();
         StringArray notInDFS;
         ForEach(*files)
