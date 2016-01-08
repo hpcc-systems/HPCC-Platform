@@ -4,34 +4,30 @@
 <sect1 id="WorkunitList">
   <title>WorkunitList</title>
 
-  <para><emphasis role="bold">STD.System.Workunit.WorkunitList    <indexterm>
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitList <indexterm>
       <primary>STD.System.Workunit.WorkunitList</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>System.Workunit.WorkunitList</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>Workunit.WorkunitList</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>WorkunitList</primary>
-    </indexterm>
-(</emphasis>
-  <emphasis> lowwuid </emphasis> <emphasis role="bold">[</emphasis>
-  <emphasis>, highwuid </emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>, username </emphasis> <emphasis role="bold">]</emphasis>
-  <emphasis role="bold"> [</emphasis> <emphasis>, cluster </emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>, jobname </emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>, state </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, priority </emphasis> <emphasis
+    </indexterm> (</emphasis> <emphasis> lowwuid </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, highwuid </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, username </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis role="bold"> [</emphasis> <emphasis>,
-  fileread </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,
-  filewritten </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,
-  roxiecluster </emphasis> <emphasis role="bold">]</emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis>, eclcontains </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, online </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, archived </emphasis> <emphasis
-  role="bold">])</emphasis></para>
+  cluster </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, jobname
+  </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, state
+  </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, priority
+  </emphasis> <emphasis role="bold">]</emphasis> <emphasis role="bold">
+  [</emphasis> <emphasis>, fileread </emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>, filewritten </emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>, roxiecluster </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis> <emphasis>,
+  eclcontains </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,
+  online </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, archived
+  </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, appvalues
+  </emphasis> <emphasis role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -132,6 +128,14 @@
         </row>
 
         <row>
+          <entry><emphasis>appvalues</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing application
+          values to search for. Use a string of the form appname/key=value or
+          appname/*=value.</entry>
+        </row>
+
+        <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>WorkunitList returns a DATASET.</entry>
@@ -170,5 +174,13 @@ END;</programlisting>
 OUTPUT(STD.System.Workunit.WorkunitList('',
        NAMED eclcontains := 'COUNT'));
  //list only those where the ECL code contains the word 'COUNT'
- //this search is case insensitive and does include comments</programlisting>
+ //this search is case insensitive and does include comments
+
+STD.System.Workunit.SetWorkunitAppValue('MyApp','FirstName','Jim',TRUE);
+OUTPUT(STD.System.Workunit.WorkunitList(appvalues := 'MyApp/FirstName='Jim'));
+//returns a list of workunits with app values where FirstName='Jim'
+</programlisting>
+
+  <para>See Also: <link
+  linkend="SetWorkunitAppValue">SetWorkunitAppValue</link></para>
 </sect1>

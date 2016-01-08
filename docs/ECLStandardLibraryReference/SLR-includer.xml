@@ -535,6 +535,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WorkunitList.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/SetWorkunitAppValue.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WUIDonDate.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
