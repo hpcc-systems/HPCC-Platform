@@ -56,7 +56,6 @@ private:
     size_t len;
 };
 
-
 //--------------------------------------------------------------------------------------------------------------------
 
 interface IMemoryBlock
@@ -159,6 +158,7 @@ public:
     MemoryBuffer &  appendEndian(size32_t len, const void * value);
     MemoryBuffer &  appendFile(const char *fileName);
     MemoryBuffer &  appendSwap(size32_t len, const void * value);
+    MemoryBuffer &  appendPacked(unsigned __int64 value); // compatible with any unsigned size
     inline MemoryBuffer &  appendMemSize(memsize_t  value) { __int64 val=(__int64)value; append(val); return *this; }
     
     
@@ -182,6 +182,9 @@ public:
     MemoryBuffer &  readFile(StringAttr &fileName);
     MemoryBuffer &  readSwap(size32_t len, void * value);
     const byte *    readDirect(size32_t len);                                       // for efficiency
+    MemoryBuffer &  readPacked(unsigned & value);
+    MemoryBuffer &  readPacked(unsigned __int64 & value);
+
     inline MemoryBuffer &  readMemSize(memsize_t & value) { __int64 val; read(val); value = (memsize_t)val; assertex(val == (__int64) value); return *this; }
     MemoryBuffer &  skip(unsigned len);
     void            writeDirect(size32_t pos,size32_t len,const void *buf);         // NB does not extend buffer
@@ -229,6 +232,7 @@ private:
     void _insert(unsigned offset, size32_t len);
     void init();
     void kill();
+    unsigned __int64 readPacked();
     void _realloc(size32_t max);
     void _reallocExact(size32_t max);
     MemoryBuffer & _remove(unsigned start, unsigned len);
