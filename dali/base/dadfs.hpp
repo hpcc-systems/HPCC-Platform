@@ -290,12 +290,12 @@ interface IDistributedSuperFileIterator: extends IIteratorOf<IDistributedSuperFi
     virtual const char *queryName() = 0;
 };
 
+interface ICodeContext;
 /**
  * A distributed file, composed of one or more DistributedFileParts.
  */
 interface IDistributedFile: extends IInterface
 {
-
     virtual unsigned numParts() = 0;
     virtual IDistributedFilePart &queryPart(unsigned idx) = 0;
     virtual IDistributedFilePart* getPart(unsigned idx) = 0;
@@ -314,7 +314,7 @@ interface IDistributedFile: extends IInterface
     virtual const char *queryPartMask() = 0;                                    // default part name mask
 
     virtual void attach(const char *logicalname,IUserDescriptor *user) = 0;     // attach to name in DFS
-    virtual void detach(unsigned timeoutms=INFINITE) = 0;                       // no longer attached to name in DFS
+    virtual void detach(unsigned timeoutms=INFINITE, ICodeContext *ctx=NULL) = 0; // no longer attached to name in DFS
 
     virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 
@@ -762,7 +762,7 @@ extern da_decl bool removeClusterSpares(const char *clusterName, const char *typ
 extern da_decl StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupName);
 extern da_decl StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, StringBuffer &groupName);
 
-extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user);
+extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user, ICodeContext *ctx=NULL);
 
 extern da_decl const char *normalizeLFN(const char *s, StringBuffer &normalized);
 

@@ -3750,7 +3750,7 @@ public:
     {
         CriticalBlock b(contextCrit);
         if (!superfileTransaction.get())
-            superfileTransaction.setown(createDistributedFileTransaction(queryUserDescriptor()));
+            superfileTransaction.setown(createDistributedFileTransaction(queryUserDescriptor(), queryCodeContext()));
         return superfileTransaction.get();
     }
     virtual void flush(unsigned seqNo) { throwUnexpected(); }
