@@ -47,11 +47,14 @@
    </xsl:variable>
 
     <xsl:variable name="espProcess" select="/Environment/Software/EspProcess[@name=$process]"/>
+    <xsl:variable name="espBindingProtocol" select="/Environment/Software/EspProcess[@name=$process]/EspBinding/@protocol"/>
     <xsl:variable name="controlPortSetting" select="/Environment/Software/EspProcess[@name=$process]/@controlPort"/>
     <xsl:variable name="controlPort">
         <xsl:choose>
-            <xsl:when test="string($controlPortSetting) = ''">8010</xsl:when>
-            <xsl:otherwise><xsl:value-of select="$controlPortSetting"/></xsl:otherwise>
+            <xsl:when test="string($controlPortSetting) != ''"><xsl:value-of select="$controlPortSetting"/></xsl:when>
+            <xsl:when test="string($espBindingProtocol) = 'https'">18010</xsl:when>
+            <xsl:when test="string($espBindingProtocol) = 'http'">8010</xsl:when>
+            <xsl:otherwise>0</xsl:otherwise><!-- the WSESPControl will not be in esp.xml if controlPort = 0-->
         </xsl:choose>
     </xsl:variable>
 
@@ -152,7 +155,7 @@
                 </xsl:variable>
                 <xsl:variable name="bindName" select="concat('WSESPControl_Binding_', $process)"/>
                 <EspService name="{$serviceName}" type="WSESPControl" plugin="{$servicePlugin}"/>
-                <EspBinding name="{$bindName}" service="{$serviceName}" protocol="http" type="ws_espcontrolSoapBinding" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$controlPort}"/>
+                <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$espBindingProtocol}" type="ws_espcontrolSoapBinding" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$controlPort}"/>
             </xsl:if>
             <xsl:variable name="importedServiceDefinitionFiles">
                 <xsl:call-template name="importServiceDefinitionFiles">
