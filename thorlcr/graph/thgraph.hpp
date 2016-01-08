@@ -342,7 +342,7 @@ public:
     }
     virtual bool prepareContext(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async);
 //
-    virtual CActivityBase *queryActivity() { return activity; }
+    virtual CActivityBase *queryActivity(bool checkNull=false) { return activity; }
     virtual void initActivity();
     virtual CActivityBase *factory(ThorActivityKind kind) { assertex(false); return NULL; }
     virtual CActivityBase *factory() { return factory(getKind()); }

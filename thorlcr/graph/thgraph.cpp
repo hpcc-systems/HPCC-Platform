@@ -326,7 +326,7 @@ bool isDiskInput(ThorActivityKind kind)
 
 void CIOConnection::connect(unsigned which, CActivityBase *destActivity)
 {
-    destActivity->setInput(which, activity->queryActivity(), index);
+    destActivity->setInput(which, activity->queryActivity(true), index);
 }
 
 /////////////////////////////////// 
