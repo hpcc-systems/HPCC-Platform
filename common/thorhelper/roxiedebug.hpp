@@ -401,7 +401,7 @@ public:
     virtual IDebugGraphManager *queryDebugManager();
     virtual const char *queryIdString() const;
     virtual unsigned queryId() const;
-    virtual IInputBase *createProbe(IInputBase *in, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
+    virtual IRoxieProbe *createProbe(IInputBase *in, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
     {
         UNIMPLEMENTED;
     }

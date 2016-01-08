@@ -30,7 +30,7 @@ using roxiemem::IRowManager;
 
 //=======================================================================================================================
 
-class InputProbe : public CInterface, implements IRoxieInput, implements IEngineRowStream // base class for the edge probes used for tracing and debugging....
+class InputProbe : public CInterface, implements IRoxieInput, implements IEngineRowStream, implements IRoxieProbe // base class for the edge probes used for tracing and debugging....
 {
 protected:
     IRoxieInput *in;
@@ -106,6 +106,10 @@ public:
         return in->queryOutputMeta();
     }
     IEngineRowStream &queryStream()
+    {
+        return *this;
+    }
+    IInputBase &queryInput()
     {
         return *this;
     }
@@ -268,7 +272,7 @@ class CProbeManager : public CInterface, implements IProbeManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    IInputBase *createProbe(IInputBase *in, IEngineRowStream *_inStream, IActivityBase *inAct, IActivityBase *outAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
+    IRoxieProbe *createProbe(IInputBase *in, IEngineRowStream *_inStream, IActivityBase *inAct, IActivityBase *outAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
     {
         unsigned idIn = inAct->queryId();
         unsigned idOut = outAct->queryId();
@@ -1007,7 +1011,7 @@ public:
         return CInterface::Release();
     }
 
-    virtual IInputBase *createProbe(IInputBase *in, IEngineRowStream *inStream, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
+    virtual IRoxieProbe *createProbe(IInputBase *in, IEngineRowStream *inStream, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
     {
         CriticalBlock b(crit);
         if (!iteration)

@@ -160,10 +160,15 @@ interface IDebugGraphManager : extends IInterface
 };
 
 //==============================================================================================================
+interface IRoxieProbe : public IInterface
+{
+    virtual IInputBase &queryInput() = 0;
+    virtual IEngineRowStream &queryStream() = 0;
+};
 
 interface IProbeManager : public IInterface
 {
-    virtual IInputBase *createProbe(IInputBase *in, IEngineRowStream *_inStream, IActivityBase *inAct, IActivityBase *outAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration) = 0;
+    virtual IRoxieProbe *createProbe(IInputBase *in, IEngineRowStream *_inStream, IActivityBase *inAct, IActivityBase *outAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration) = 0;
     virtual void getProbeResponse(IPropertyTree *query) = 0;
     virtual void noteSink(IActivityBase *sink) = 0;
     virtual void noteDependency(IActivityBase *sourceActivity, unsigned sourceIndex, unsigned controlId, const char *edgeId, IActivityBase *targetActivity) = 0;

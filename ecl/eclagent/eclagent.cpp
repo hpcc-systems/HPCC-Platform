@@ -3605,7 +3605,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
 //=======================================================================================
 //copied/modified from ccdserver
-class InputProbe : public CInterface, implements IHThorInput, implements IEngineRowStream // base class for the edge probes used for tracing and debugging....
+class InputProbe : public CInterface, implements IHThorInput, implements IEngineRowStream, implements IRoxieProbe // base class for the edge probes used for tracing and debugging....
 {
 protected:
     IHThorInput *in;
@@ -3704,6 +3704,14 @@ public:
     { 
         hasStopped = true;
         stream->stop();
+    }
+    virtual IEngineRowStream &queryStream()
+    {
+        return *this;
+    }
+    virtual IInputBase &queryInput()
+    {
+        return *this;
     }
 };
 
@@ -4162,7 +4170,7 @@ public:
     {
     }
 
-    IInputBase *createProbe(IInputBase *in, IEngineRowStream *stream, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
+    IRoxieProbe *createProbe(IInputBase *in, IEngineRowStream *stream, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
     {
         CriticalBlock b(crit);
         unsigned channel = debugContext->queryChannel();
