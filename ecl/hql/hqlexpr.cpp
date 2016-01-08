@@ -12719,7 +12719,7 @@ static IHqlExpression * createComma(const HqlExprArray & exprs, unsigned first, 
 {
     if (first +1 == last)
         return &OLINK(exprs.item(first));
-    unsigned mid = (first+last)/2;
+    unsigned mid = first+(last-first)/2;
     return createComma(createComma(exprs, first, mid), createComma(exprs, mid, last));
 }
 
@@ -12740,7 +12740,7 @@ IHqlExpression * createBalanced(node_operator op, ITypeInfo * type, const HqlExp
 {
     if (first +1 == last)
         return &OLINK(exprs.item(first));
-    unsigned mid = (first+last)/2;
+    unsigned mid = first+(last-first)/2;
     IHqlExpression * left = createBalanced(op, type, exprs, first, mid);
     IHqlExpression * right = createBalanced(op, type, exprs, mid, last);
     return createValue(op, LINK(type), left, right);

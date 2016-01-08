@@ -864,7 +864,7 @@ public:
             unsigned int a = 0;
             while ((int)a<b)
             {
-                int i = (a+b)/2;
+                int i = (a+b)/2; // cannot overflow
                 int rc = _compare->docompare(next, rows[i]);
                 if (rc>=0)
                     a = i+1;

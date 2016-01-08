@@ -1860,7 +1860,7 @@ void CStringSet::addRange(const void *loval, const void *hival)
         int rc;
         while ((int)a<b)
         {
-            int i = (a+b+1)/2;
+            int i = a+(b+1-a)/2;
             rc = memcmp(loval, transitions.item(i-1).getValue(), size);
             if (rc>0)
                 a = i;
@@ -2020,7 +2020,7 @@ bool CStringSet::inRange(const void *val, unsigned &nextTransition) const
         int rc;
         while ((int)a<b)
         {
-            int i = (a+b+1)/2;
+            int i = a+(b+1-a)/2;
             rc = memcmp(val, transitions.item(i-1).getValue(), size);
             if (rc>=0)
                 a = i;
