@@ -41,7 +41,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DNBCD_EXPORTS )
 
 HPCC_ADD_LIBRARY( nbcd SHARED ${SRCS} )
-if (NOT MAKE_R_ONLY)
+if (NOT PLUGIN)
   install ( TARGETS nbcd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
 endif()
 target_link_libraries ( nbcd 

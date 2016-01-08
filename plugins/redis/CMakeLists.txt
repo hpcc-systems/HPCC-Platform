@@ -22,43 +22,48 @@
 #    Cmake Input File for redis
 #####################################################
 
-project( redis )
+project(redis)
 
-if (USE_REDIS)
-  ADD_PLUGIN(redis PACKAGES REDIS OPTION MAKE_REDIS)
-  if ( MAKE_REDIS )
-    set (    SRCS
-             redis.hpp
-             redis.cpp
-        )
+if(REDISEMBED)
+    ADD_PLUGIN(redis PACKAGES REDIS OPTION MAKE_REDIS)
+    if(MAKE_REDIS)
+        set(
+            SRCS
+            redis.hpp
+            redis.cpp)
 
-    include_directories (
-             ./../../system/include
-             ./../../rtl/eclrtl
-             ./../../rtl/include
-             ./../../common/deftype
-             ./../../system/jlib
-             ${LIBHIREDIS_INCLUDE_DIR}
-        )
+        include_directories(
+            ./../../system/include
+            ./../../rtl/eclrtl
+            ./../../rtl/include
+            ./../../common/deftype
+            ./../../system/jlib
+            ${LIBHIREDIS_INCLUDE_DIR})
 
-    ADD_DEFINITIONS( -D_USRDLL -DECL_REDIS_EXPORTS)
+        add_definitions(-D_USRDLL -DECL_REDIS_EXPORTS)
 
-    HPCC_ADD_LIBRARY( redis SHARED ${SRCS} )
-    if (${CMAKE_VERSION} VERSION_LESS "2.8.9")
-      message("WARNING: Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-    elseif(NOT APPLE)
-      set_target_properties( redis PROPERTIES NO_SONAME 1 )
+        HPCC_ADD_LIBRARY(redis SHARED ${SRCS})
+        if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
+            message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
+        elseif(NOT APPLE)
+            set_target_properties(redis PROPERTIES NO_SONAME 1)
+        endif()
+
+        install(
+            TARGETS redis
+            DESTINATION plugins)
+
+        target_link_libraries(
+            redis
+            eclrtl
+            jlib
+            ${LIBHIREDIS_LIBRARY})
     endif()
-
-    install ( TARGETS redis DESTINATION plugins)
-
-    target_link_libraries ( redis
-        eclrtl
-        jlib
-        ${LIBHIREDIS_LIBRARY}
-        )
-  endif()
 endif()
 
-#Even if not making the redis plugin, we want to install the header
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_redis.ecllib DESTINATION plugins COMPONENT Runtime)
+if(PLATFORM)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_redis.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()
