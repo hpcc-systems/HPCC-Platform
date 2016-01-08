@@ -1,4 +1,4 @@
-################################################################################
+﻿################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,5 +14,5 @@
 #    limitations under the License.
 ################################################################################
 
-DOCBOOK_TO_PDF( ${FO_XSL} RDDERef.xml "RDDERef")
+DOCBOOK_TO_PDF( ${FO_XSL} RoxieReference.xml "RoxieReference" "RoxieRefMods" )
 
