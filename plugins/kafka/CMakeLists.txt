@@ -24,7 +24,7 @@
 
 project(kafka)
 
-if(KAFKAEMBED)
+if(KAFKA)
     ADD_PLUGIN(kafka PACKAGES OPTION MAKE_KAFKA)
     if(MAKE_KAFKA)
 
