@@ -1092,7 +1092,7 @@
         </xsl:if>
 
         <xsl:value-of select="Code"/>:
-        <xsl:value-of select="Message"/>
+        <xsl:value-of select="Message" disable-output-escaping="yes"/>
       </td>
     </tr>
   </xsl:template>
