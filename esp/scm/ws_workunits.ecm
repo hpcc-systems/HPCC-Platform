@@ -20,6 +20,7 @@
 
 EspInclude(common);
 
+//The ESPenum ECLWUActions has to be matched by the ECLWUActionNames[] in ws_workunitsService.cpp.
 ESPenum ECLWUActions : string
 {
     Abort("Abort"),
@@ -382,10 +383,10 @@ ESPrequest [nil_remove] WUQueryRequest
     string LogicalFile;
     string LogicalFileSearchType("");
 
-    [depr_ver("1.55")] string ApplicationName;
-    [depr_ver("1.55")] string ApplicationKey;
-    [depr_ver("1.55")] string ApplicationData;
-    [min_ver("1.55")] ESParray<ESPstruct ApplicationValue> ApplicationValues;
+    [depr_ver("1.57")] string ApplicationName;
+    [depr_ver("1.57")] string ApplicationKey;
+    [depr_ver("1.57")] string ApplicationData;
+    [min_ver("1.57")] ESParray<ESPstruct ApplicationValue> ApplicationValues;
 
     string After;
     string Before;
@@ -517,7 +518,8 @@ ESPresponse [exceptions_inline] WUDeleteResponse
 ESPrequest [nil_remove] WUActionRequest
 {
     ESParray<string> Wuids;
-    ESPenum ECLWUActions ActionType;
+    [depr_ver("1.57")] string ActionType;
+    [min_ver("1.57")] ESPenum ECLWUActions WUActionType;
 
     string Cluster;
     string Owner;
@@ -980,7 +982,7 @@ ESPrequest WUExportRequest
     string State;
     string StartDate;
     string EndDate;
-    [max_ver("1.55")] string ECL;
+    [max_ver("1.57")] string ECL;
     string Jobname;
 };
 ESPresponse [exceptions_inline] WUExportResponse
@@ -1317,7 +1319,7 @@ ESPrequest WUQuerySetDetailsRequest
     string  Filter;
     string  ClusterName;
     ESPenum WUQuerySetFilterType FilterType("All");
-    bool CheckAllNodes(true);
+    [min_ver("1.57")] bool CheckAllNodes(true);
 };
 
 ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
@@ -1357,7 +1359,7 @@ ESPrequest [nil_remove] WUListQueriesRequest
     bool Descending(false);
     int64 CacheHint;
     string FileName;
-    bool CheckAllNodes(true);
+    [min_ver("1.57")] bool CheckAllNodes(true);
 };
 
 ESPresponse [exceptions_inline] WUListQueriesResponse
@@ -1420,7 +1422,7 @@ ESPrequest WUQueryDetailsRequest
     bool IncludeStateOnClusters(false);
     bool IncludeSuperFiles(false);
     bool IncludeWsEclAddresses(false);
-    bool CheckAllNodes(true);
+    [min_ver("1.57")] bool CheckAllNodes(true);
 };
 
 ESPStruct QuerySuperFile
@@ -1463,7 +1465,7 @@ ESPrequest WUMultiQuerySetDetailsRequest
     string  QuerySetName;
     string  Filter;
     ESPenum WUQuerySetFilterType FilterType("All");
-    bool CheckAllNodes(true);
+    [min_ver("1.57")] bool CheckAllNodes(true);
 };
 
 ESPstruct WUQuerySetDetail
@@ -1743,7 +1745,7 @@ ESPservice [
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
-    ESPmethod WULightWeightQuery(WULightWeightQueryRequest, WULightWeightQueryResponse);
+    ESPmethod [min_ver("1.57")] WULightWeightQuery(WULightWeightQueryRequest, WULightWeightQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUInfo(WUInfoRequest, WUInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuiddetails.xslt")]     WUInfoDetails(WUInfoRequest, WUInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUGraphTiming(WUGraphTimingRequest, WUGraphTimingResponse);
@@ -1789,7 +1791,7 @@ ESPservice [
     //ESPmethod WUAction(WUActionRequest, WUActionResponse); 
     ESPmethod WUFile(WULogFileRequest, WULogFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse); 
-    ESPmethod WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
+    ESPmethod [min_ver("1.57")] WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
     ESPmethod WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
     ESPmethod WUQueryGetGraph(WUQueryGetGraphRequest, WUQueryGetGraphResponse);
     ESPmethod WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
@@ -1817,8 +1819,8 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
     ESPmethod WUCheckFeatures(WUCheckFeaturesRequest, WUCheckFeaturesResponse);
     ESPmethod WUGetStats(WUGetStatsRequest, WUGetStatsResponse);
-    ESPmethod WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
-    ESPmethod WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
+    ESPmethod [min_ver("1.57")] WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
+    ESPmethod [min_ver("1.57")] WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
 };
 
 
