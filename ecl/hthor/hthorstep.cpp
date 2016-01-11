@@ -54,8 +54,8 @@ const void * CHThorSteppedInput::nextInputRow()
 
 const void * CHThorSteppedInput::nextInputRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
 {
-    //Currently isCompleteMatch is not handled by hthor
-    return input->nextGE(seek, numFields);
+    //Currently isCompleteMatch is not properly handled by hthor
+    return input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 }
 
 IInputSteppingMeta * CHThorSteppedInput::queryInputSteppingMeta()
@@ -163,9 +163,8 @@ IInputSteppingMeta * CHThorNWayMergeActivity::querySteppingMeta()
     return &meta;
 }
 
-const void * CHThorNWayMergeActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorNWayMergeActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
-    SmartStepExtra stepExtra(SSEFreadAhead, NULL);
     bool matched = true;
     const void * next = merger.nextRowGE(seek, numFields, matched, stepExtra);
     if (next)
@@ -186,6 +185,10 @@ void CHThorMergeJoinBaseActivity::stop()
     CHThorNaryActivity::stop();
 }
 
+void CHThorMergeJoinBaseActivity::resetEOF()
+{
+    processor.queryResetEOF();
+}
 
 bool CHThorMergeJoinBaseActivity::gatherConjunctions(ISteppedConjunctionCollector & collector)
 {
@@ -223,9 +226,8 @@ const void * CHThorMergeJoinBaseActivity::nextRow()
     return next;
 }
 
-const void * CHThorMergeJoinBaseActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorMergeJoinBaseActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
-    SmartStepExtra stepExtra(SSEFreadAhead, NULL);
     bool matched = true;
     const void * next = processor.nextGE(seek, numFields, matched, stepExtra);
     if (next)
@@ -264,60 +266,6 @@ CHThorProximityJoinActivity::CHThorProximityJoinActivity(IAgentContext & _agent,
 
 
 //---------------------------------------------------------------------------
-
-#ifdef archived_old_code
-
-CHThorNWayJoinActivity::CHThorNWayJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator) : CHThorNaryActivity(_agent, _activityId, _subgraphId, _arg), helper(_arg), processor(_inputAllocator, _outputAllocator, _arg)
-{
-}
-
-void CHThorNWayJoinActivity::stop()
-{
-    processor.afterProcessing();
-    CHThorNaryActivity::stop();
-}
-
-void CHThorNWayJoinActivity::ready()
-{
-    CHThorNaryActivity::ready();
-
-    UnsignedArray inputValues;
-    ForEachItemIn(i1, expandedInputs)
-    {
-        IHThorInput * cur = expandedInputs.item(i1);
-        Owned<CHThorSteppedInput> stepInput = new CHThorSteppedInput(cur);
-        inputValues.append(processor.addInput(stepInput, cur->querySteppingMeta()));
-    }
-    processor.addJoin(helper, inputValues);
-    processor.beforeProcessing();
-}
-
-
-IInputSteppingMeta * CHThorNWayJoinActivity::querySteppingMeta() 
-{ 
-    return processor.querySteppingMeta();
-}
-
-const void * CHThorNWayJoinActivity::nextRow()
-{
-    const void * next = processor.nextRow();
-    if (next)
-        processed++;
-    return next;
-}
-
-const void * CHThorNWayJoinActivity::nextGE(const void * seek, unsigned numFields)
-{
-    const void * next = processor.nextGE(seek, numFields);
-    if (next)
-        processed++;
-    return next;
-}
-
-#endif
-
-//---------------------------------------------------------------------------
-
 
 extern HTHOR_API IHThorActivity *createNWayMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind)
 {

@@ -49,6 +49,11 @@ void Semaphore::wait()
     sem_wait(&sem);
 }
 
+bool Semaphore::tryWait()
+{
+    return sem_trywait(&sem);
+}
+
 bool Semaphore::wait(unsigned timeout)
 {
     if (timeout==(unsigned)-1) {
@@ -116,6 +121,19 @@ void Semaphore::reinit(unsigned initialCount)
     pthread_mutex_lock(&mx);
     count = initialCount;
     pthread_mutex_unlock(&mx);
+}
+
+bool Semaphore::tryWait()
+{
+    bool signalled = false;
+    pthread_mutex_lock(&mx);
+    if (count > 0)
+    {
+        count--;
+        signalled = true;
+    }
+    pthread_mutex_unlock(&mx);
+    return signalled;
 }
 
 void Semaphore::wait()

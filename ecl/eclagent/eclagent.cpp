@@ -3605,7 +3605,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
 //=======================================================================================
 //copied/modified from ccdserver
-class InputProbe : public CInterface, implements IHThorInput // base class for the edge probes used for tracing and debugging....
+class InputProbe : public CInterface, implements IHThorInput, implements IEngineRowStream // base class for the edge probes used for tracing and debugging....
 {
 protected:
     IHThorInput *in;
@@ -3667,9 +3667,9 @@ public:
             return NULL;
     }
 
-    virtual const void * nextGE(const void * seek, unsigned numFields)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        return in->nextGE(seek, numFields);
+        return in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     virtual const void *nextRow()
@@ -4052,9 +4052,11 @@ public:
         InputProbe::ready();
     }
 
-    virtual const void * nextGE(const void * seek, unsigned numFields)
+    virtual IEngineRowStream &queryStream() { return *this; }
+
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        return in->nextGE(seek, numFields);
+        return in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     virtual void stop()

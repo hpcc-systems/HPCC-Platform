@@ -122,7 +122,8 @@ public:
         if (seek)
         {
             //MORE: Should think about implementing isCompleteMatch in hthor
-            next = inputArray[i]->nextGE(seek, numFields);      // , inputIsCompleteMatch
+            bool inputIsCompleteMatch;
+            next = inputArray[i]->nextRowGE(seek, numFields, inputIsCompleteMatch, *stepExtra);
         }
         else
         {
@@ -190,7 +191,7 @@ static bool verifyFormatCrcSuper(unsigned helperCrc, IDistributedFile * df, bool
     virtual bool isGrouped() { throwUnexpected(); } \
     virtual IOutputMetaData * queryOutputMeta() const   { throwUnexpected(); } 
 
-class CHThorActivityBase : public CInterface, implements IHThorActivity, implements IHThorInput
+class CHThorActivityBase : public CInterface, implements IHThorActivity, implements IHThorInput, implements IEngineRowStream
 {
 protected:
     enum ActivityState { StateCreated, StateReady, StateDone };
@@ -217,6 +218,7 @@ public:
     virtual void execute();
     virtual void extractResult(unsigned & len, void * & ret);
     virtual void stop();
+    virtual void resetEOF();
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { UNIMPLEMENTED; }
     virtual __int64 getCount();
     virtual unsigned queryOutputs() { return 1; }
@@ -229,6 +231,8 @@ public:
     virtual bool needsAllocator() const { return false; }       
     void createRowAllocator();                                  
     virtual bool isPassThrough();
+    virtual IEngineRowStream &queryStream() { return *this; }
+    inline const void *ungroupedNextRow() { return IEngineRowStream::ungroupedNextRow(); }
 
 protected:
     void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const;
@@ -469,7 +473,7 @@ public:
     //interface IHThorInput
     virtual const void *nextRow();
 
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector);
     virtual void resetEOF();
@@ -740,7 +744,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector);
     virtual void resetEOF();
@@ -760,7 +764,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 };
 
 class CHThorLimitActivity : public CHThorSteppableActivityBase
@@ -775,7 +779,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 };
 
 class CHThorSkipLimitActivity : public CHThorSimpleActivityBase
@@ -814,7 +818,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 };
 
 class CHThorSkipCatchActivity : public CHThorSimpleActivityBase
@@ -1014,7 +1018,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
     virtual bool isGrouped();
 };
 
@@ -1026,7 +1030,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
     virtual bool isGrouped();
 };
 
@@ -1241,7 +1245,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 };
 
 class CHThorTraceActivity : public CHThorSteppableActivityBase
@@ -1260,7 +1264,7 @@ public:
 
     //interface IHThorInput
     virtual const void *nextRow();
-    virtual const void *nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 protected:
     void onTrace(const void *row);
 };
@@ -1376,7 +1380,7 @@ class CHThorSelfJoinActivity : public CHThorActivityBase
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
     Owned<IGroupedInput> groupedInput;
-    IInputBase *dualCacheInput;
+    IRowStream *dualCacheInput;
 private:
     bool fillGroup();
     const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except);
@@ -1728,6 +1732,7 @@ public:
 
     virtual void ready();
     virtual void stop();
+    virtual void resetEOF();
     virtual void setInput(unsigned, IHThorInput *);
 
     //interface IHThorInput
@@ -2565,7 +2570,7 @@ protected:
 };
 
 
-class LocalResultInput : public CInterfaceOf<ISimpleInputBase>
+class LocalResultInput : public CInterfaceOf<IEngineRowStream>
 {
 public:
     void init(IHThorGraphResult * _result)      
@@ -2583,6 +2588,11 @@ public:
     {
     }
 
+    virtual void resetEOF()
+    {
+        throwUnexpected();  // Should never be called on a source stream
+    }
+
 protected:
     Owned<IHThorGraphResult> result;
     unsigned curRow;
@@ -2590,7 +2600,7 @@ protected:
 
 
 
-class ConstPointerArrayInput : public CInterfaceOf<ISimpleInputBase>
+class ConstPointerArrayInput : public CInterfaceOf<IEngineRowStream>
 {
 public:
     void init(ConstPointerArray * _array)       { array = _array; curRow = 0; }
@@ -2610,6 +2620,10 @@ public:
     virtual void stop()
     {
     }
+    virtual void resetEOF()
+    {
+        throwUnexpected();  // Should never be called on a source stream
+    }
 
 protected:
     ConstPointerArray * array;
@@ -2619,7 +2633,7 @@ protected:
 class CHThorLoopActivity : public CHThorSimpleActivityBase
 {
     IHThorLoopArg &helper;
-    ISimpleInputBase * curInput;
+    IEngineRowStream * curInput;
     ConstPointerArray loopPending; //MORE: would be safer and neater to use an OwnedRowArray, but would need to change prototype of IHThorBoundLoopGraph::execute
     ConstPointerArrayInput arrayInput;
     LocalResultInput resultInput; 
@@ -2732,7 +2746,7 @@ protected:
 
 
 class CHThorLibraryCallActivity;
-class LibraryCallOutput : public CInterface, public IHThorInput
+class LibraryCallOutput : public CInterface, public IHThorInput, public IEngineRowStream
 {
 public:
     LibraryCallOutput(CHThorLibraryCallActivity * _owner, unsigned _output, IOutputMetaData * _meta);
@@ -2743,6 +2757,8 @@ public:
 
     virtual void ready();
     virtual void stop();
+    virtual void resetEOF();
+    virtual IEngineRowStream &queryStream() { return *this; }
     virtual void updateProgress(IStatisticGatherer &progress) const;
 
 protected:
@@ -2801,7 +2817,7 @@ public:
     virtual void stop();
     virtual void ready();
     virtual const void * nextRow();
-    virtual const void * nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
     virtual IInputSteppingMeta * querySteppingMeta();
 };
 

@@ -567,7 +567,7 @@ void resetUniqueId()
 //-----------------------------------------------------------------------
 
 #define make_numtostr(VTYPE)                                    \
-    int numtostr(char *dst, VTYPE _value)                    \
+    int numtostr(char *dst, signed VTYPE _value)                    \
 {                                                                \
     int c;                                                        \
     unsigned VTYPE value;                                        \
@@ -2245,7 +2245,7 @@ StringBuffer jlib_decl passwordInput(const char* prompt, StringBuffer& passwd)
     tcsetattr(termfd, TCSAFLUSH, &set_term);
     char c = EOF;
     int rd = ::read(termfd,&c,1);
-    while ((rd==1)&&(c!='\r')&&(c!='\n')&&(c!=EOF)) {
+    while ((rd==1)&&(c!='\r')&&(c!='\n')) {
         passwd.append(c);
         rd = ::read(termfd,&c,1);
     }

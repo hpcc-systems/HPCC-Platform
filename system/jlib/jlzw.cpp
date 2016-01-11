@@ -1935,7 +1935,7 @@ class CCompressedFile : public CInterface, implements ICompressedFileIO
         unsigned b = indexNum();
         index = (const offset_t *)indexbuf.toByteArray();
         while (b>a) {
-            unsigned m = (a+b)/2;
+            unsigned m = a+(b-a)/2;
             __int64 dif = (__int64)pos-index[m];
             if (dif==0) {
                 b = m+1;

@@ -845,7 +845,7 @@ class EclSubGraph : public CInterface, implements ILocalEclGraphResults, public 
     friend class EclGraphElement;
 private:
 
-    class LegacyInputProbe : public CInterfaceOf<IHThorInput>
+    class LegacyInputProbe : public CInterface, implements IHThorInput, implements IEngineRowStream
     {
         IHThorInput  *in;
         EclSubGraph  *owner;
@@ -856,6 +856,8 @@ private:
         StringAttr edgeId;
 
     public:
+        IMPLEMENT_IINTERFACE;
+
         LegacyInputProbe(IHThorInput *_in, EclSubGraph *_owner, unsigned _sourceId, int outputidx)
             : in(_in), owner(_owner), sourceId(_sourceId), outputIndex(outputidx)
         {
@@ -874,6 +876,16 @@ private:
         void stop() 
         {
             in->stop();
+        }
+
+        virtual void resetEOF()
+        {
+            in->resetEOF();
+        }
+
+        IEngineRowStream &queryStream()
+        {
+            return *this;
         }
 
         bool isGrouped() { return in->isGrouped(); }
@@ -1004,7 +1016,7 @@ public:
     unsigned numResults;
     CIArrayOf<EclGraphElement> elements;
 
-    IArrayOf<LegacyInputProbe> probes;
+    IArrayOf<IHThorInput> probes;
     CIArrayOf<EclSubGraph> subgraphs;
     Owned<IHThorGraphResults> localResults;
     Owned<IHThorGraphResults> graphLoopResults;

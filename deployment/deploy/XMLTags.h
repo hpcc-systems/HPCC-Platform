@@ -92,6 +92,7 @@
 #define XML_TAG_LOCALCONFFILE          "LocalConfFile"
 #define XML_TAG_LOCALENVCONFFILE       "LocalEnvConfFile"
 
+#define XML_ATTR_ALIAS                 "@alias"
 #define XML_ATTR_AGENTPORT             "@agentPort"
 #define XML_ATTR_ATTRIB                "@attrib"
 #define XML_ATTR_ATTRSERVER            "@attrServer"
@@ -244,6 +245,7 @@
 #define UI_FIELD_ATTR_VALUE             "@Value"
 #define UI_FIELD_ATTR_DEFAULTVALUE      "@DefaultValue"
 
+#define TAG_ALIAS                       "alias"
 #define TAG_SUBNET                      "subnet"
 #define TAG_MASK                        "mask"
 #define TAG_TRACE                       "trace"

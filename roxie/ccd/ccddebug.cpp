@@ -30,7 +30,7 @@ using roxiemem::IRowManager;
 
 //=======================================================================================================================
 
-class InputProbe : public CInterface, implements IRoxieInput // base class for the edge probes used for tracing and debugging....
+class InputProbe : public CInterface, implements IRoxieInput, implements IEngineRowStream // base class for the edge probes used for tracing and debugging....
 {
 protected:
     IRoxieInput *in;
@@ -104,6 +104,10 @@ public:
     {
         return in->queryOutputMeta();
     }
+    IEngineRowStream &queryStream()
+    {
+        return *this;
+    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         // NOTE: totalRowCount/maxRowSize not reset, as we want them cumulative when working in a child query.
@@ -125,28 +129,9 @@ public:
         hasStarted = false;
         in->reset();
     }
-    virtual void checkAbort()
-    {
-        in->checkAbort();
-    }
-    virtual unsigned queryId() const
-    {
-        return in->queryId();
-    }
     virtual unsigned __int64 queryTotalCycles() const
     {
         return in->queryTotalCycles();
-    }
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return in->queryLocalCycles();
-    }
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        if (!idx)
-            return in;
-        else
-            return NULL;
     }
     virtual const void *nextRow()
     {
@@ -161,9 +146,9 @@ public:
         }
         return ret;
     }
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        const void *ret = in->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void *ret = in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret && wasCompleteMatch)  // GH is this test right?
         {
             size32_t size = inMeta->getRecordSize(ret);
@@ -238,10 +223,10 @@ public:
         return ret;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         // MORE - should probably only note them when wasCompleteMatch is true?
-        return _next(InputProbe::nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra));
+        return _next(InputProbe::nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
     }
     virtual const void *nextRow()
     {
@@ -260,7 +245,7 @@ public:
             totalTime += 10; // Fudge factor - I don't really know the times but this makes the graph more useable than not supplying a totalTime value
         if (totalTime)
             putStatsValue(&node, "totalTime", "sum", totalTime);
-        unsigned localTime = isOutput ? 10 : (unsigned) (cycle_to_nanosec(in->queryLocalCycles())/1000); // Fudge factor - I don't really know the times but this makes the graph more useable than not supplying a localTime value
+        unsigned localTime = isOutput ? 10 : (unsigned) (cycle_to_nanosec(in->queryActivity()->queryLocalCycles())/1000); // Fudge factor - I don't really know the times but this makes the graph more useable than not supplying a localTime value
         if (localTime)
             putStatsValue(&node, "localTime", "sum", localTime);
     }
@@ -278,7 +263,7 @@ public:
 
 class CProbeManager : public CInterface, implements IProbeManager
 {
-    IArrayOf<TraceProbe> probes; // May want to replace with hash table at some point....
+    IArrayOf<IRoxieInput> probes; // May want to replace with hash table at some point....
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -302,7 +287,7 @@ public:
         {
             idx++;
             if (idx>=probeCount) idx = 0;
-            TraceProbe &p = probes.item(idx);
+            TraceProbe &p = static_cast<TraceProbe &> (probes.item(idx));
             if (p.matches(edge, forNode))
             {
                 startat = idx;
@@ -612,12 +597,7 @@ public:
         EOGsent = false;
         InputProbe::resetEOF();
     }
-#if 0
-    virtual unsigned queryId() const
-    {
-        return sourceId;
-    }
-#endif
+
     virtual const char *queryEdgeId() const
     {
         return edgeId.get();
@@ -716,7 +696,7 @@ public:
     {
         IRoxieInput *x = in;
         while (x && QUERYINTERFACE(x->queryConcreteInput(0), IActivityDebugContext)==NULL)
-            x = x->queryConcreteInput(0)->queryInput(0);
+            x = x->queryConcreteInput(0)->queryActivity()->queryInput(0);
         return x ? QUERYINTERFACE(x->queryConcreteInput(0), IActivityDebugContext) : NULL;
     }
 
@@ -919,7 +899,7 @@ public:
         }
     }
 
-    virtual const void *nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         // MORE - not sure that skip is safe here? Should the incomplete matches even be returned?
         // Code is a little complex to avoid interpreting a skip on all rows in a group as EOF
@@ -930,7 +910,7 @@ public:
                 return NULL;
             loop
             {
-                const void *ret = InputProbe::nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+                const void *ret = InputProbe::nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
                 if (!ret)
                 {
                     if (EOGseen)

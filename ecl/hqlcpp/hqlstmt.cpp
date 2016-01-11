@@ -1091,7 +1091,7 @@ void HqlStmts::appendStmt(HqlStmt & stmt)
         unsigned left = 0;
         while (right - left >= 2)
         {
-            unsigned mid = (left + right - 1) / 2;
+            unsigned mid = left + (right - 1 - left) / 2;
             HqlStmt & cur = item(mid);
             if (newPrio >= cur.queryPriority())
                 left = mid+1;

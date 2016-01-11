@@ -67,7 +67,7 @@ public:
     virtual void ready();
     virtual void stop();
     virtual const void * nextRow();
-    virtual const void * nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
     virtual IInputSteppingMeta * querySteppingMeta();
 
 protected:
@@ -86,8 +86,9 @@ public:
     //interface IHThorInput
     virtual void ready();
     virtual void stop();
+    virtual void resetEOF();
     virtual const void * nextRow();
-    virtual const void * nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
     virtual IInputSteppingMeta * querySteppingMeta();
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector);
 
@@ -137,31 +138,5 @@ public:
 protected:
     CProximityJoinProcessor proximityProcessor;
 };
-
-
-#ifdef archived_old_code
-
-class CHThorNWayJoinActivity : public CHThorNaryActivity
-{
-public:
-    CHThorNWayJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator);
-
-    //interface IHThorInput
-    virtual void ready();
-    virtual void stop();
-    virtual const void * nextRow();
-    virtual const void * nextGE(const void * seek, unsigned numFields);
-    virtual IInputSteppingMeta * querySteppingMeta();
-
-protected:
-    void afterProcessing();
-    void beforeProcessing();
-
-protected:
-    IHThorNWayMergeJoinArg & helper;
-    CNaryJoinProcessor processor;
-};
-
-#endif
 
 #endif

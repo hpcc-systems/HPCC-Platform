@@ -57,8 +57,15 @@
   in the <emphasis>recordset</emphasis> for each value in each field in the
   <emphasis>recordset</emphasis>.</para>
 
-  <para>The DECIMAL data type is not supported by this action. You can use a
-  REAL data type instead. </para>
+  <para>When there is an excessively large number of distinct values, it
+  returns an estimate in this form:</para>
+
+  <para><programlisting>&lt;XML&gt;
+  &lt;Field name="seqnum" estimate="4000000"/&gt;
+&lt;/XML&gt;</programlisting></para>
+
+<para>The DECIMAL data type is not supported by this
+  action. You can use a REAL data type instead.</para>
 
   <para>Example:</para>
 

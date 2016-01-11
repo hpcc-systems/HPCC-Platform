@@ -353,7 +353,7 @@ try {
 #endif
     while (a<b)
     {
-        unsigned m = (a+b)/2;
+        unsigned m = a+(b-a)/2;
         cmp = keyRowCompare((unsigned)m,row);
         if (cmp>0) 
             b = m;

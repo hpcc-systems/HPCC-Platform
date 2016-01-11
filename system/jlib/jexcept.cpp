@@ -986,6 +986,8 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     static byte nested=0;
     if (nested++)
         return;
+
+    excsignal = 0;
 #ifdef NO_LINUX_SEH
     signal(SIGSEGV, SIG_DFL);
     signal(SIGBUS, SIG_DFL);
@@ -1050,7 +1052,7 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     PROGLOG("================================================");
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
     PROGLOG("Fault IP:  %08X", ip);
-    PROGLOG("Accessing: %08X", info->si_addr);
+    PROGLOG("Accessing: %08X", (unsigned) info->si_addr);
     PROGLOG("Registers:" );
     PROGLOG("EAX:%08X  EBX:%08X  ECX:%08X  EDX:%08X  ESI:%08X  EDI:%08X",
         uc->uc_mcontext.gregs[REG_EAX], uc->uc_mcontext.gregs[REG_EBX], 

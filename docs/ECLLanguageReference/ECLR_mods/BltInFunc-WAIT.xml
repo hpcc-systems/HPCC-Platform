@@ -44,5 +44,5 @@
 
  </informalexample>
   <para>See Also: <link linkend="EVENT">EVENT</link>, <link
-  linkend="NOTIFY">NOTIFY</link>, <link linkend="WHEN">WHEN</link></para>
+  linkend="NOTIFY">NOTIFY</link>, <link linkend="WHEN">WHEN</link>, <link linkend="CRON">CRON</link></para>
 </sect1>

@@ -153,10 +153,6 @@
   <emphasis>attribute</emphasis> is used in the computation. This gives a kind
   of "compute in anticipation" capability.</para>
 
-  <para>By definition, PERSIST on an attribute means the attribute is
-  evaluated outside of any given evaluation order. Therefore, SEQUENTIAL has
-  no effect on PERSISTed attributes.</para>
-
   <para>Example:</para>
 
   <programlisting>  CountPeople := COUNT(Person) : PERSIST('PeopleCount');

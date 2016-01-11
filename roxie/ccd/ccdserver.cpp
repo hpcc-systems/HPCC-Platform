@@ -847,7 +847,7 @@ private:
     IRoxieServerActivityCopyArray & activities;
 };
 
-class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IRoxieInput, implements IRoxieContextLogger
+class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
 {
 protected:
     IRoxieInput *input;
@@ -952,6 +952,11 @@ public:
     }
 
     virtual const IRoxieContextLogger &queryLogCtx()const
+    {
+        return *this;
+    }
+
+    virtual IEngineRowStream &queryStream()
     {
         return *this;
     }
@@ -1442,7 +1447,6 @@ public:
         assertex(!idx);
         input = _in;
     }
-
 };
 
 //=====================================================================================================
@@ -1697,7 +1701,7 @@ public:
 
 // MORE - this code copied from ThreadedConcat code - may be able to common up some.
 
-class CRoxieServerReadAheadInput : public CInterface, implements IRoxieInput, implements IRecordPullerCallback
+class CRoxieServerReadAheadInput : public CInterface, implements IRoxieInput, implements IRecordPullerCallback, implements IEngineRowStream
 {
     QueueOf<const void, true> buffer;
     InterruptableSemaphore ready;
@@ -1728,6 +1732,11 @@ public:
         disabled = (ctx->queryDebugContext() != NULL);
         if (ctx)
             timeActivities = ctx->queryOptions().timeActivities;
+    }
+
+    IEngineRowStream &queryStream()
+    {
+        return *this;
     }
 
     virtual IRoxieServerActivity *queryActivity()
@@ -1788,32 +1797,23 @@ public:
         return puller.queryInput()->queryOutputMeta(); 
     }
 
-    virtual void checkAbort() 
-    {
-        puller.queryInput()->checkAbort();
-    }
-
     void setInput(unsigned idx, IRoxieInput *_in)
     {
         assertex(!idx);
         puller.setInput(this, _in);
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
+    }
+
     virtual unsigned __int64 queryTotalCycles() const
     {
         return totalCycles;
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        __int64 ret = totalCycles - puller.queryInput()->queryTotalCycles();
-        if (ret < 0) ret = 0;
-        return ret;
-    }
-
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return puller.queryInput()->queryInput(idx);
     }
 
     virtual const void * nextRow()
@@ -1841,8 +1841,6 @@ public:
             }
         }
     }
-
-    virtual unsigned queryId() const { throwUnexpected(); }
 
     virtual bool fireException(IException *e)
     {
@@ -2613,7 +2611,7 @@ void throwRemoteException(IMessageUnpackCursor *extra)
     throwUnexpected();
 }
 
-class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implements IExceptionHandler
+class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implements IExceptionHandler, implements IEngineRowStream
 {
     friend class CRemoteResultMerger;
     class CRemoteResultMerger
@@ -2932,7 +2930,7 @@ class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implement
             return skipped;
         }
 
-        const void * nextSteppedGE(const void * seek, const void *rawSeek, unsigned numFields, unsigned seeklen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+        const void * nextRowGE(const void * seek, const void *rawSeek, unsigned numFields, unsigned seeklen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
         {
             // We discard all rows < seekval from all entries in heap
             // If this results in additional slave requests, we return NULL so that we can wait for them
@@ -3176,7 +3174,7 @@ class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implement
                     if (!i->queryHeader().retry())
                     {
                         StringBuffer s;
-                        IException *E = MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to get response from slave(s) for %s in activity %d", i->queryHeader().toString(s).str(), queryId());
+                        IException *E = MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to get response from slave(s) for %s in activity %d", i->queryHeader().toString(s).str(), activity.queryId());
                         activity.queryLogCtx().logOperatorException(E, __FILE__, __LINE__, "CRemoteResultAdaptor::retry");
                         throw E;
                     }
@@ -3328,7 +3326,6 @@ private:
 
 protected:
     IRowManager *rowManager;
-    IRoxieInput *owner;
     unsigned __int64 rowLimit;
     unsigned __int64 keyedLimit;
     IRoxieServerErrorHandler *errorHandler;
@@ -3467,7 +3464,6 @@ public:
         parentExtractSize = 0;
         parentExtract = NULL;
         debugContext = NULL;
-        owner = NULL;
         mergeOrder = NULL;
         deferredStart = false;
         processed = 0;
@@ -3492,6 +3488,11 @@ public:
             delete(buffers[channel]);
         }
         delete [] buffers;
+    }
+
+    IEngineRowStream &queryStream()
+    {
+        return *this;
     }
 
     void setMeta(IOutputMetaData *newmeta)
@@ -3656,9 +3657,8 @@ public:
         return true;
     }
 
-    virtual void onCreate(IRoxieInput *_owner, IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
+    virtual void onCreate(IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
     {
-        owner = _owner;
         errorHandler = _errorHandler;
         ctx = _ctx;
         debugContext = ctx->queryDebugContext();
@@ -3672,11 +3672,6 @@ public:
             deferredStart = true;
         if (ctx)
             timeActivities = ctx->queryOptions().timeActivities;
-    }
-
-    virtual unsigned queryId() const
-    {
-        return owner->queryId();
     }
 
     virtual void onStart(unsigned _parentExtractSize, const byte * _parentExtract)
@@ -3717,12 +3712,7 @@ public:
         if (traceStartStop)
             activity.queryLogCtx().CTXLOG("RRAstart");
 #endif
-        owner->start(parentExtractSize, parentExtract, paused);
-    }
-
-    void checkAbort()
-    {
-        owner->checkAbort();
+        activity.start(parentExtractSize, parentExtract, paused);
     }
 
     void setLimits(unsigned __int64 _rowLimit, unsigned __int64 _keyedLimit, unsigned __int64 _stopAfter)
@@ -3757,7 +3747,7 @@ public:
             activity.queryLogCtx().CTXLOG("RRAstop");
 #endif
         onStop();
-        owner->stop();
+        activity.stop();
     }
 
     void onStop()
@@ -3779,7 +3769,7 @@ public:
         if (traceStartStop)
             activity.queryLogCtx().CTXLOG("RRAreset");
 #endif
-        owner->reset();
+        activity.reset();
         onReset();
     }
 
@@ -3816,17 +3806,7 @@ public:
         return totalCycles;
     }
 
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return owner->queryLocalCycles();
-    }
-
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return owner->queryInput(idx);
-    }
-
-    const void * nextSteppedGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seekLen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    const void * nextRowGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seekLen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         if (activity.queryLogCtx().queryTraceLevel() > 20)
         {
@@ -3836,7 +3816,7 @@ public:
             {
                 recstr.appendf("%02x ", ((unsigned char *) rawSeek)[i]);
             }
-            activity.queryLogCtx().CTXLOG("CRemoteResultAdaptor::nextSteppedGE(rawSeek=%s numFields=%d, seeklen=%d, returnMismatches=%d)", recstr.str(), numFields, seekLen, stepExtra.returnMismatches());
+            activity.queryLogCtx().CTXLOG("CRemoteResultAdaptor::nextRowGE(rawSeek=%s numFields=%d, seeklen=%d, returnMismatches=%d)", recstr.str(), numFields, seekLen, stepExtra.returnMismatches());
         }
         assertex(mergeOrder);
         if (deferredStart)
@@ -3849,7 +3829,7 @@ public:
                 {
                     p.setDelayed(false);
                     if (activity.queryLogCtx().queryTraceLevel() > 10)
-                        activity.queryLogCtx().CTXLOG("About to send deferred start from nextSteppedGE, setting requireExact to %d", !stepExtra.returnMismatches());
+                        activity.queryLogCtx().CTXLOG("About to send deferred start from nextRowGE, setting requireExact to %d", !stepExtra.returnMismatches());
                     MemoryBuffer serializedSkip;
                     activity.serializeSkipInfo(serializedSkip, seekLen, rawSeek, numFields, seek, stepExtra);
                     p.setPacket(p.queryPacket()->insertSkipData(serializedSkip.length(), serializedSkip.toByteArray()));
@@ -3868,7 +3848,7 @@ public:
         {
             if (merger.ready())
             {
-                const void *got = merger.nextSteppedGE(seek, rawSeek, numFields, seekLen, wasCompleteMatch, stepExtra);
+                const void *got = merger.nextRowGE(seek, rawSeek, numFields, seekLen, wasCompleteMatch, stepExtra);
                 if (got)
                 {
                     processRow(got);
@@ -3986,14 +3966,14 @@ public:
         {
             checkDelayed();
             unsigned timeout = remoteId.isSLAPriority() ? slaTimeout : (remoteId.isHighPriority() ? highTimeout : lowTimeout);
-            owner->checkAbort();
+            activity.queryContext()->checkAbort();
             bool anyActivity;
             if (ctxTraceLevel > 5)
                 activity.queryLogCtx().CTXLOG("Calling getNextUnpacker(%d)", timeout);
             mr.setown(mc->getNextResult(timeout, anyActivity));
             if (ctxTraceLevel > 6)
                 activity.queryLogCtx().CTXLOG("Called getNextUnpacker(%d), activity=%d", timeout, anyActivity);
-            owner->checkAbort();
+            activity.queryContext()->checkAbort();
             if (mr)
             {
                 unsigned roxieHeaderLen;
@@ -4405,12 +4385,12 @@ public:
         CRemoteResultAdaptor::onStart(_parentExtractSize, _parentExtract);
     }
 
-    virtual const void * nextSteppedGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seeklen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seeklen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         // MORE - not sure what we need to do about the skip case... but we need at least this to prevent issues with exception getting lost
         if (exception)
             throw exception.getClear();
-        return CRemoteResultAdaptor::nextSteppedGE(seek, rawSeek, numFields, seeklen, wasCompleteMatch, stepExtra);
+        return CRemoteResultAdaptor::nextRowGE(seek, rawSeek, numFields, seeklen, wasCompleteMatch, stepExtra);
     }
 
     virtual const void *nextRow()
@@ -4568,10 +4548,10 @@ public:
         return true;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * next = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * next = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
         return next;
@@ -5251,7 +5231,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerInlineTableActivityFactory : public CRoxieServerActivityFactory
@@ -5340,7 +5319,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerWorkUnitReadActivityFactory : public CRoxieServerActivityFactory
@@ -5379,31 +5357,23 @@ public:
 };
 
 
-class CSafeRoxieInput : public CInterface, implements IRoxieInput
+class CSafeRoxieInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
 {
 public:
     CSafeRoxieInput(IRoxieInput * _input) : input(_input) {}
     IMPLEMENT_IINTERFACE
 
+    IEngineRowStream &queryStream()
+    {
+        return *this;
+    }
     virtual IOutputMetaData * queryOutputMeta() const
     {
         return input->queryOutputMeta();
     }
-    virtual unsigned queryId() const
-    {
-        return input->queryId();
-    }
     virtual unsigned __int64 queryTotalCycles() const
     {
         return input->queryTotalCycles();
-    }
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return input->queryLocalCycles();
-    }
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return input->queryInput(idx);
     }
     virtual IRoxieServerActivity *queryActivity()
     {
@@ -5433,11 +5403,6 @@ public:
         CriticalBlock procedure(cs);
         input->resetEOF();
     }
-    virtual void checkAbort()
-    {
-        CriticalBlock procedure(cs);
-        input->checkAbort();
-    }
     virtual const void *nextRow()
     {
         CriticalBlock procedure(cs);
@@ -5457,7 +5422,7 @@ private:
 
 //=================================================================================
 
-class CPseudoRoxieInput : public CInterface, implements IRoxieInput
+class CPseudoRoxieInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -5471,16 +5436,6 @@ public:
         return 0;
     }
 
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return 0;
-    }
-
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return NULL;
-    }
-
     virtual IRoxieServerActivity *queryActivity()
     {
         throwUnexpected();
@@ -5489,13 +5444,16 @@ public:
     {
         throwUnexpected();
     }
+    IEngineRowStream &queryStream()
+    {
+        return *this;
+    }
 
     virtual IOutputMetaData * queryOutputMeta() const { throwUnexpected(); }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) { }
     virtual void stop() { }
     virtual void reset() { }
     virtual void checkAbort() { }
-    virtual unsigned queryId() const { throwUnexpected(); }
     virtual void resetEOF() { }
 };
 
@@ -5518,39 +5476,20 @@ public:
     { 
         input->reset();
     }
-    virtual void checkAbort() 
-    {
-        input->checkAbort();
-    }
 
     virtual const void * nextRow()
     {
         return input->nextRow();
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        return input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     virtual unsigned __int64 queryTotalCycles() const
     {
         return input->queryTotalCycles();
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return input->queryLocalCycles();
-    }
-
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return input->queryInput(idx);
-    }
-
-    virtual unsigned queryId() const 
-    { 
-        return input->queryId();
     }
 
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector)
@@ -5582,11 +5521,15 @@ public:
     {
         return input->queryActivity();
     }
-    void setInput(IRoxieInput * _input)
+
+    inline void setInput(IRoxieInput * _input)
     {
         input = _input;
     }
-
+    inline IRoxieInput *queryInput() const
+    {
+        return input;
+    }
 protected:
     IRoxieInput * input;
 };
@@ -5775,7 +5718,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerLocalResultReadActivityFactory : public CRoxieServerActivityFactory
@@ -5869,7 +5811,6 @@ public:
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
-
 };
 
 class CRoxieServerLocalResultStreamReadActivityFactory : public CRoxieServerActivityFactory
@@ -6151,10 +6092,10 @@ public:
         return iter->querySteppingMeta();
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         assertex(iter);
-        return iter->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return iter->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 };
 
@@ -6274,10 +6215,10 @@ public:
         return true;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * next = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * next = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
         return next;
@@ -6405,13 +6346,13 @@ public:
         return next;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         const void * next;
         loop
         {
-            next = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+            next = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 
             //If the record was an in-exact match from the index then return it immediately
             //and don't cause it to dedup following legal records.
@@ -7434,7 +7375,7 @@ public:
                 sortAlgorithm = useAlgorithm(algorithmName, sortFlags);
                 sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
             }
-            sorter->prepare(input);
+            sorter->prepare(&input->queryStream());
             noteStatistic(StTimeSortElapsed, cycle_to_nanosec(sorter->getElapsedCycles(true)));
             readInput = true;
         }
@@ -7622,7 +7563,7 @@ public:
                 }
                 else
                 {
-                    sorter->prepare(input);
+                    sorter->prepare(&input->queryStream());
                     sorter->getSortedGroup(sorted);
                 }
 
@@ -7811,10 +7752,10 @@ public:
         return ret;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void *ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void *ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret && prev && compare->docompare(prev, ret) > 0)
         {
             // MORE - better to give mismatching rows that indexes?
@@ -7898,7 +7839,7 @@ public:
     unsigned headIdx;
     Owned<IException> error;
 
-    class OutputAdaptor : public CInterface, implements IRoxieInput
+    class OutputAdaptor : public CInterface, implements IRoxieInput, implements IEngineRowStream
     {
         bool eof, eofpending, stopped;
 
@@ -7947,11 +7888,6 @@ public:
             stopped = false;
         }
 
-        virtual unsigned queryId() const
-        {
-            return parent->queryId();
-        }
-
         virtual IRoxieServerActivity *queryActivity()
         {
             return parent;
@@ -7965,16 +7901,6 @@ public:
         virtual unsigned __int64 queryTotalCycles() const
         {
             return totalCycles;
-        }
-
-        virtual unsigned __int64 queryLocalCycles() const
-        {
-            return 0;  // Should never be called
-        }
-
-        virtual IRoxieInput *queryInput(unsigned idx) const
-        {
-            return parent->queryInput(idx);
         }
 
         virtual const void * nextRow()
@@ -8043,6 +7969,11 @@ public:
         virtual void checkAbort()
         {
             parent->checkAbort();
+        }
+
+        IEngineRowStream &queryStream()
+        {
+            return *this;
         }
 
     } *adaptors;
@@ -8588,6 +8519,14 @@ public:
         inputMeta.set(_in->queryOutputMeta());
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
+    }
+
     virtual void stop()
     {
         pipeVerified.interrupt(NULL);
@@ -9014,17 +8953,17 @@ public:
         }
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         //Could assert that this isn't grouped
-        // MORE - will need rethinking once we rethink the nextSteppedGE interface for global smart-stepping.
+        // MORE - will need rethinking once we rethink the nextRowGE interface for global smart-stepping.
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
         loop
         {
-            const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+            const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
             if (!ret)
             {
                 eof = true;
@@ -9186,7 +9125,7 @@ public:
         }
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
@@ -9206,7 +9145,7 @@ public:
             }
             curIndex = 0;
             gathered.kill();
-            //nextSteppedGE never returns an end of group marker.
+            //nextRowGE never returns an end of group marker.
         }
 
         //Not completely sure about this - it could lead the the start of a group being skipped, 
@@ -9221,15 +9160,15 @@ public:
             if (stepExtra.returnMismatches())
             {
                 bool matchedCompletely = true;
-                ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+                ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
                 if (!wasCompleteMatch)
                     return ret;
             }
             else
-                ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+                ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 #endif
 
-        const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         while (ret)
         {
             gathered.append(ret);
@@ -9245,7 +9184,7 @@ public:
         else
             eof = true;
 
-        return ungroupedNextRow();
+        return IEngineRowStream::ungroupedNextRow();
     }
 
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) 
@@ -10125,12 +10064,12 @@ public:
         return ret;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
-        const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
             processed++;
         else
@@ -11333,14 +11272,14 @@ public:
         else
             sortAlgorithm = isStable ? stableQuickSortAlgorithm : quickSortAlgorithm;
         if (helper.isLeftAlreadySorted())
-            sortedLeft.setown(createDegroupedInputReader(input));
+            sortedLeft.setown(createDegroupedInputReader(&input->queryStream()));
         else
-            sortedLeft.setown(createSortedInputReader(input, createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            sortedLeft.setown(createSortedInputReader(&input->queryStream(), createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
         ICompare *compareRight = helper.queryCompareRight();
         if (helper.isRightAlreadySorted())
-            groupedSortedRight.setown(createGroupedInputReader(input1, compareRight));
+            groupedSortedRight.setown(createGroupedInputReader(&input1->queryStream(), compareRight));
         else
-            groupedSortedRight.setown(createSortedGroupedInputReader(input1, compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            groupedSortedRight.setown(createSortedGroupedInputReader(&input1->queryStream(), compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit())
         {   //limited match join (s[1..n])
             limitedhelper.setown(createRHLimitedCompareHelper());
@@ -12659,6 +12598,14 @@ public:
         inputArray[idx] = _in;
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx < numInputs)
+            return inputArray[idx];
+        else
+            return NULL;
+    }
+
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -13406,6 +13353,14 @@ public:
         puller.setInput(this, _in);
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
+    }
+
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = 0;
@@ -13912,11 +13867,6 @@ public:
         savedParentExtractSize = 0;
     }
 
-    virtual IRoxieInput *queryInput(unsigned idx) const
-    {
-        return safeInput->queryInput(idx);
-    }
-
     void setInput(CRoxieServerParallelLoopActivity * _activity, IRoxieInput *_input, unsigned _flags)
     {
         activity = _activity;
@@ -14008,6 +13958,14 @@ public:
         if (idx)
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
         executor.setInput(this, _in, flags);
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return executor.queryInput();
+        else
+            return NULL;
     }
 
     virtual void stop()
@@ -14614,6 +14572,14 @@ public:
         inputExtractMapper->setInput(_in);
     }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return inputExtractMapper->queryInput();
+        else
+            return NULL;
+    }
+
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerGraphLoopActivity::start(parentExtractSize, parentExtract, paused);         // initialises GraphExtractBuilder
@@ -14782,11 +14748,6 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         {
             processed = 0;
             stopped = false;
-        }
-
-        virtual unsigned queryId() const
-        {
-            return parent->queryId();
         }
 
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -14993,6 +14954,14 @@ public:
     virtual void setInput(unsigned idx, IRoxieInput *_in)
     {
         inputAdaptors[idx]->setInput(_in);
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx < numInputs && inputAdaptors[idx])
+            return inputAdaptors[idx]->queryInput();
+        else
+            return NULL;
     }
 
 public:
@@ -15453,7 +15422,7 @@ protected:
     inline const void * doNextInputRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         assertex(wasCompleteMatch);
-        return input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
 
@@ -15518,7 +15487,7 @@ public:
         const void * next;
         bool matches = true;
         if (seek)
-            next = inputArray[i]->nextSteppedGE(seek, numFields, matches, *stepExtra);
+            next = inputArray[i]->nextRowGE(seek, numFields, matches, *stepExtra);
         else
             next = inputArray[i]->ungroupedNextRow();
         pending[i] = next;
@@ -15575,7 +15544,7 @@ public:
         return next;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         const void * next = merger.nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -15689,7 +15658,7 @@ public:
         return next;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         const void * next = processor.nextGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -15858,12 +15827,12 @@ public:
             selectedInput->resetEOF(); 
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (!selectedInput)
             return NULL;
-        return selectedInput->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return selectedInput->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     IInputSteppingMeta * querySteppingMeta()
@@ -15921,7 +15890,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -16523,7 +16492,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
     Owned<IGroupedInput> groupedInput;
-    IInputBase *dualCacheInput;
+    IRowStream *dualCacheInput;
 
     bool fillGroup()
     {
@@ -16722,7 +16691,7 @@ public:
             createDefaultRight();
         ICompare *compareLeft = helper.queryCompareLeft();
         if (helper.isLeftAlreadySorted())
-            groupedInput.setown(createGroupedInputReader(input, compareLeft));
+            groupedInput.setown(createGroupedInputReader(&input->queryStream(), compareLeft));
         else
         {
             bool isStable = (helper.getJoinFlags() & JFunstable) == 0;
@@ -16731,7 +16700,7 @@ public:
                 sortAlgorithm = isStable ? stableSpillingQuickSortAlgorithm : spillingQuickSortAlgorithm;
             else
                 sortAlgorithm = isStable ? stableQuickSortAlgorithm : quickSortAlgorithm;
-            groupedInput.setown(createSortedGroupedInputReader(input, compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            groupedInput.setown(createSortedGroupedInputReader(&input->queryStream(), compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
         }
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
         {   //limited match join (s[1..n])
@@ -18299,10 +18268,10 @@ public:
         }
         return ret;
     }
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
         {
             if (wasCompleteMatch)
@@ -18495,12 +18464,12 @@ public:
         throwUnexpected(); // onExceptionCaught should have thrown something
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         try
         {
             ActivityTimer t(totalCycles, timeActivities);
-            const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+            const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
             if (ret && wasCompleteMatch)
                 processed++;
             return ret;
@@ -18816,11 +18785,11 @@ public:
         }
         return row;
     }
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        // MORE - will need rethinking once we rethink the nextSteppedGE interface for global smart-stepping.
+        // MORE - will need rethinking once we rethink the nextRowGE interface for global smart-stepping.
         ActivityTimer t(totalCycles, timeActivities);
-        const void * row = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * row = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (row)
         {
             onTrace(row);
@@ -18961,6 +18930,15 @@ public:
         assertex(idx < numInputs);
         inputs[idx] = _in;
     }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx < numInputs)
+            return inputs[idx];
+        else
+            return NULL;
+    }
+
 
     virtual const void *nextRow()
     {
@@ -19231,7 +19209,7 @@ public:
 
     virtual IRoxieInput *queryInput(unsigned idx) const
     {
-        throwUnexpected(); // I am nobody's input
+        return NULL;
     }
 
 };
@@ -20197,7 +20175,7 @@ public:
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
         if (remote)
-            remote->onCreate(this, this, _ctx, _colocalParent);
+            remote->onCreate(this, _ctx, _colocalParent);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -21377,7 +21355,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -21848,7 +21826,7 @@ public:
 
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         try
@@ -21867,7 +21845,7 @@ public:
                     rawSeek = (byte *)temp;
                 }
             }
-            const void *ret = remote.nextSteppedGE(seek, rawSeek, numFields, seeklen, wasCompleteMatch, stepExtra);
+            const void *ret = remote.nextRowGE(seek, rawSeek, numFields, seeklen, wasCompleteMatch, stepExtra);
             if (ret && wasCompleteMatch) // GH pleas confirm the wasCompleteMatch I just added here is right
                 processed++;
             return ret;
@@ -22101,7 +22079,7 @@ public:
     const void *nextRow()
     {
         bool matched = true;
-        return nextSteppedGE(NULL, 0, matched, dummySmartStepExtra);
+        return nextRowGE(NULL, 0, matched, dummySmartStepExtra);
     }
 
     unsigned __int64 checkCount(unsigned __int64 limit)
@@ -22121,7 +22099,7 @@ public:
         return result;
     }
 
-    virtual const void *nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
@@ -22211,7 +22189,7 @@ public:
 //          {
 //              seekStr.appendf("%02x ", ((unsigned char *) rawSeek)[i]);
 //          }
-//          DBGLOG("nextSteppedGE can skip offset %d size %d value %s", seekGEOffset, seekSize, seekStr.str());
+//          DBGLOG("nextRowGE can skip offset %d size %d value %s", seekGEOffset, seekSize, seekStr.str());
 #endif
         }
         const byte * originalRawSeek = rawSeek;
@@ -22234,7 +22212,7 @@ public:
 //          {
 //              recstr.appendf("%02x ", ((unsigned char *) keyRow)[i]);
 //          }
-//          DBGLOG("nextSteppedGE Got %s", recstr.str());
+//          DBGLOG("nextRowGE Got %s", recstr.str());
             if (originalRawSeek && memcmp(keyRow + seekGEOffset, originalRawSeek, seekSize) < 0)
                 assertex(!"smart seek failure");
 #endif
@@ -23237,7 +23215,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
@@ -23246,6 +23224,15 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
         puller.setInput(this, _in);
     }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        if (idx==0)
+            return puller.queryInput();
+        else
+            return NULL;
+    }
+
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
@@ -23757,9 +23744,9 @@ public:
         eof = false;
     }
 
-    virtual void onCreate(IRoxieInput *_owner, IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
+    virtual void onCreate(IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
     {
-        CRemoteResultAdaptor::onCreate(_owner, _errorHandler, _ctx, _colocalArg);
+        CRemoteResultAdaptor::onCreate(_errorHandler, _ctx, _colocalArg);
         ccdRecordAllocator.setown(ctx->queryCodeContext()->getRowAllocator(QUERYINTERFACE(helper.queryJoinFieldsRecordSize(), IOutputMetaData), activityId));
     }
 
@@ -23798,11 +23785,6 @@ public:
     virtual unsigned __int64 queryTotalCycles() const
     {
         return totalCycles.totalCycles;
-    }
-
-    virtual IOutputMetaData * queryOutputMeta() const
-    {
-        return owner->queryOutputMeta();
     }
 
     virtual const void *nextRow()
@@ -23923,7 +23905,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
         indexReadAllocator.setown(ctx->queryCodeContext()->getRowAllocator(indexReadMeta, activityId));
     }
 
@@ -23935,7 +23917,19 @@ public:
             indexReadInput = _in;
         else
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+    }
 
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        switch (idx)
+        {
+        case 0:
+            return puller.queryInput();
+        case 1:
+            return indexReadInput;
+        default:
+            return NULL;
+        }
     }
 
     virtual void serializeExtra(MemoryBuffer &out)
@@ -24255,7 +24249,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, this, _ctx, _colocalParent);
+        remote.onCreate(this, _ctx, _colocalParent);
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
@@ -24311,7 +24305,7 @@ public:
         return localCycles;
     }
 
-    virtual IRoxieInput *queryInput(unsigned idx)
+    virtual IRoxieInput *queryInput(unsigned idx) const
     {
         if (idx==0)
             return puller.queryInput();
@@ -24654,6 +24648,11 @@ public:
     virtual void setInput(unsigned idx, IRoxieInput *in)
     {
         head.setInput(idx, in);
+    }
+
+    virtual IRoxieInput *queryInput(unsigned idx) const
+    {
+        return head.queryInput(idx);
     }
 
     virtual void processRow(const void *_rhs)
@@ -26255,7 +26254,7 @@ public:
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 } testMeta;
 
-class TestInput : public CInterface, implements IRoxieInput
+class TestInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
 {
     char const * const *input;
     IRoxieSlaveContext *ctx;
@@ -26293,6 +26292,10 @@ public:
     {
         ASSERT(state == STATEreset);
         state = STATEstarted; 
+    }
+    IEngineRowStream &queryStream()
+    {
+        return *this;
     }
     virtual IRoxieServerActivity *queryActivity()
     {

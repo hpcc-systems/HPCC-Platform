@@ -8593,7 +8593,7 @@ class CIterateFileFilterContainer : public CInterface
 
     bool isValidInteger(const char *s)
     {
-        if (!s)
+        if (!s || !*s)
             return false;
         while (*s)
         {

@@ -121,7 +121,7 @@ typedef enum {
 
 interface ISortAlgorithm : extends IInterface
 {
-    virtual void prepare(IInputBase *input) = 0;
+    virtual void prepare(IEngineRowStream *input) = 0;
     virtual const void *next() = 0;
     virtual void reset() = 0;
     virtual void getSortedGroup(ConstPointerArray & result) = 0;
@@ -144,14 +144,14 @@ extern THORHELPER_API ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm alg
 
 //=========================================================================================
 
-interface IGroupedInput : extends IInputBase
+interface IGroupedInput : extends IEngineRowStream  // MORE rename to IGroupedRowStream
 {
 };
 
-extern THORHELPER_API IGroupedInput *createGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare);
-extern THORHELPER_API IGroupedInput *createDegroupedInputReader(IInputBase *_input);
-extern THORHELPER_API IGroupedInput *createSortedInputReader(IInputBase *_input, ISortAlgorithm *_sorter);
-extern THORHELPER_API IGroupedInput *createSortedGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter);
+extern THORHELPER_API IGroupedInput *createGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare);
+extern THORHELPER_API IGroupedInput *createDegroupedInputReader(IEngineRowStream *_input);
+extern THORHELPER_API IGroupedInput *createSortedInputReader(IEngineRowStream *_input, ISortAlgorithm *_sorter);
+extern THORHELPER_API IGroupedInput *createSortedGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter);
 
 //=========================================================================================
 

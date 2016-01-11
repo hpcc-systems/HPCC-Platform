@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter>
-  <title><emphasis role="bold">Packages and Packagemaps</emphasis></title>
+  <title>Packages and Packagemaps</title>
 
   <para>A Roxie query has one or more data files associated with it. At times,
   you may want to update data without changing the query.</para>
@@ -130,7 +130,7 @@
   </sect1>
 
   <sect1>
-    <title><emphasis role="bold">Updating Data</emphasis></title>
+    <title>Updating Data</title>
 
     <para>This section details the typical steps a query developer and a data
     developer follow once a query is ready for production.</para>
@@ -225,7 +225,7 @@
   </sect1>
 
   <sect1>
-    <title><emphasis role="bold">Package File Syntax</emphasis></title>
+    <title>Package File Syntax</title>
 
     <para>Package files are formatted in XML using the conventions detailed in
     this section.</para>
@@ -303,8 +303,8 @@
   </sect1>
 
   <sect1>
-    <title><emphasis role="bold">Working with Packages using the ecl command
-    line tool</emphasis></title>
+    <title>Working with Packages using the ecl command
+    line tool</title>
 
     <para>This section contains details about the actions and options used to
     work with packages. The ECL command line tool is fully documented in the

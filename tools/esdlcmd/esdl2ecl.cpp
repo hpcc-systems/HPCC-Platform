@@ -380,7 +380,7 @@ public:
                 "      --includes            Process all included files\n"
                 "      --rollup              Roll-up all processed includes to single ecl output file\n"
                 "      -cde                  HPCC Component files directory (xslt files)\n"
-                "      --ecl-imports         Coma-delimited import list to be attached to output ECL\n"
+                "      --ecl-imports         Comma-delimited import list to be attached to output ECL\n"
                 "                            each entry generates a corresponding import *.<entry>\n"
                 "      --ecl-header          Text included in target header (must be valid ECL) \n"
                 ,stdout);

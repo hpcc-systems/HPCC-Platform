@@ -772,7 +772,7 @@ public:
     //interface IHThorInput
     virtual void ready();
     virtual const void *nextRow();
-    virtual const void * nextGE(const void * seek, unsigned numFields);
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra);
 
     virtual IInputSteppingMeta * querySteppingMeta();
 
@@ -974,8 +974,9 @@ const void *CHThorIndexReadActivity::nextRow()
 }
 
 
-const void *CHThorIndexReadActivity::nextGE(const void * seek, unsigned numFields)
+const void *CHThorIndexReadActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    // MORE - should set wasCompleteMatch
     if(keyedLimitReached && !keyedLimitSkips)
         helper.onKeyedLimitExceeded(); // should throw exception
 

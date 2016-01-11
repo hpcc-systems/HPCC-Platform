@@ -14,5 +14,5 @@
 #    limitations under the License.
 ################################################################################
 
-DOCBOOK_TO_PDF( ${FO_XSL} RDDERef.xml "RDDERef")
+DOCBOOK_TO_PDF( ${FO_XSL} RoxieReference.xml "RoxieReference" "RoxieRefMods" )
 

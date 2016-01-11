@@ -296,6 +296,9 @@ void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasur
 {
     switch (measure)
     {
+    case SMeasureNone: // Unknown stat - e.g, on old esp accessing a new workunit
+        out.append(value);
+        break;
     case SMeasureTimeNs:
         formatTime(out, value);
         break;
@@ -591,17 +594,19 @@ StatisticMeasure queryMeasure(StatisticKind kind)
     }
 
     StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
-    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
-    return statsMetaData[rawkind].measure;
+    if (rawkind >= StKindNone && rawkind < StMax)
+        return statsMetaData[rawkind].measure;
+    return SMeasureNone;
 }
 
 const char * queryStatisticName(StatisticKind kind)
 {
     StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
     unsigned variant = (kind / StVariantScale);
-    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
     dbgassertex(variant < (StNextModifier/StVariantScale));
-    return statsMetaData[rawkind].names[variant];
+    if (rawkind >= StKindNone && rawkind < StMax)
+        return statsMetaData[rawkind].names[variant];
+    return "Unknown";
 }
 
 
@@ -635,9 +640,10 @@ const char * queryTreeTag(StatisticKind kind)
 {
     StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
     unsigned variant = (kind / StVariantScale);
-    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
     dbgassertex(variant < (StNextModifier/StVariantScale));
-    return statsMetaData[rawkind].tags[variant];
+    if (rawkind >= StKindNone && rawkind < StMax)
+        return statsMetaData[rawkind].tags[variant];
+    return "@Unknown";
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -1474,12 +1480,12 @@ StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
 void CRuntimeStatisticCollection::deserialize(MemoryBuffer& in)
 {
     unsigned numValid;
-    in.read(numValid);
+    in.readPacked(numValid);
     for (unsigned i=0; i < numValid; i++)
     {
         unsigned kindVal;
         unsigned __int64 value;
-        in.read(kindVal).read(value);
+        in.readPacked(kindVal).readPacked(value);
         StatisticKind kind = (StatisticKind)kindVal;
         setStatistic(kind, value);
     }
@@ -1488,12 +1494,12 @@ void CRuntimeStatisticCollection::deserialize(MemoryBuffer& in)
 void CRuntimeStatisticCollection::deserializeMerge(MemoryBuffer& in)
 {
     unsigned numValid;
-    in.read(numValid);
+    in.readPacked(numValid);
     for (unsigned i=0; i < numValid; i++)
     {
         unsigned kindVal;
         unsigned __int64 value;
-        in.read(kindVal).read(value);
+        in.readPacked(kindVal).readPacked(value);
         StatisticKind kind = (StatisticKind)kindVal;
         StatsMergeAction mergeAction = queryMergeMode(kind);
         mergeStatistic(kind, value, mergeAction);
@@ -1508,15 +1514,15 @@ bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
         if (values[i1].get())
             numValid++;
     }
-    //out.ensure(sizeof(unsigned)+numValid*(sizeof(unsigned)+sizeof(unsigned __int64)));
-    out.append(numValid);
+
+    out.appendPacked(numValid);
     ForEachItem(i2)
     {
         unsigned __int64 value = values[i2].get();
         if (value)
         {
-            out.append((unsigned)mapping.getKind(i2));
-            out.append(value);
+            out.appendPacked((unsigned)mapping.getKind(i2));
+            out.appendPacked(value);
         }
     }
     return numValid != 0;

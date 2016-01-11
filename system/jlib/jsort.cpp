@@ -1207,7 +1207,7 @@ class TbbParallelMergeSorter
                 return low;
             while (high - low > 1)
             {
-                size_t mid = (low + high) / 2;
+                size_t mid = low + (high - low) / 2;
                 if (compare.docompare(rows[mid], seek) < 0)
                     low = mid;
                 else
@@ -1224,7 +1224,7 @@ class TbbParallelMergeSorter
                 return low;
             while (high - low > 1)
             {
-                size_t mid = (low + high) / 2;
+                size_t mid = low + (high - low) / 2;
                 if (compare.docompare(rows[mid], seek) <= 0)
                     low = mid;
                 else

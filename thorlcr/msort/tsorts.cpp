@@ -693,7 +693,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
         ICompare* icmp=queryCmpFn(cmpfn);
         while (l<r)
         {
-            rowidx_t m = (l+r)/2;
+            rowidx_t m = l+(r-l)/2;
             int cmp = icmp->docompare(key, rowArray.query(m));
             if (cmp < 0)
                 r = m;
@@ -880,7 +880,7 @@ public:
                     p2 = rowArray.ordinality()-1;
                 if (p1<=p2)
                 {
-                    unsigned pm=(p1+p2+1)/2;
+                    unsigned pm=p1+(p2+1-p1)/2;
                     OwnedConstThorRow kp = rowArray.get(pm);
                     if ((keyRowCompare->docompare(low.query(i), kp)<=0)&&
                         (keyRowCompare->docompare(high.query(i), kp)>=0)) // paranoia

@@ -389,6 +389,12 @@ define([
                     }, "checkbox"),
                     name: {
                         label: this.i18n.GroupName
+                    },
+                    groupOwner: {
+                        label: this.i18n.ManagedBy
+                    },
+                    groupDesc: {
+                        label: this.i18n.Description
                     }
                 }
             }, this.id + "GroupsGrid");

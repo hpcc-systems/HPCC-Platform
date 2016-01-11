@@ -266,7 +266,7 @@ void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & targe
         buildChop2Map(ctx, target, test, start, end);
     else
     {
-        unsigned mid = (start + end) / 2;
+        unsigned mid = start + (end - start) / 2;
         generateCompareVar(ctx, temp, test, queryCompare(mid));
         OwnedHqlExpr test1 = createValue(no_eq, LINK(temp), getZero());
         OwnedHqlExpr test2 = createValue(no_lt, LINK(temp), getZero());
@@ -348,7 +348,7 @@ void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, const CHqlBoundTarget & targe
     }
     else
     {
-        unsigned mid = (start + end) / 2;
+        unsigned mid = start + (end - start) / 2;
         
         IHqlExpression * compare = queryCompare(mid);
         OwnedHqlExpr cond  = createCompareExpr(no_lt, test.getTranslatedExpr(), LINK(compare));

@@ -44,6 +44,7 @@ interface IReferencedFile : extends IInterface
     virtual const char *queryPackageId() const =0;
     virtual __int64 getFileSize()=0;
     virtual unsigned getNumParts()=0;
+    virtual const StringArray &getSubFileNames() const =0;
 };
 
 interface IReferencedFileIterator : extends IIteratorOf<IReferencedFile> { };
@@ -59,7 +60,7 @@ interface IReferencedFileList : extends IInterface
     virtual void addFiles(StringArray &files)=0;
 
     virtual IReferencedFileIterator *getFiles()=0;
-    virtual void resolveFiles(const char *process, const char *remoteIP, const char * remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool resolveForeign=false)=0;
+    virtual void resolveFiles(const char *process, const char *remoteIP, const char * remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool trackSubFiles, bool resolveForeign=false)=0;
     virtual void cloneAllInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder)=0;
     virtual void cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder)=0;
     virtual void cloneRelationships()=0;

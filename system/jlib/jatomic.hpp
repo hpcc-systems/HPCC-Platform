@@ -21,6 +21,26 @@
 #include "platform.h"
 
 #ifdef _WIN32
+inline static void spinPause() { YieldProcessor(); }
+#elif defined(_ARCH_X86_64_) || defined(_ARCH_X86_)
+# include "x86intrin.h"
+# if defined(_ARCH_X86_)
+inline static void spinPause() { __pause(); }
+  // or could use
+  // __asm__ __volatile__ ("rep; nop" ::: "memory");
+  // __asm__ __volatile__ ("pause" ::: "memory");
+# else
+inline static void spinPause() { _mm_pause(); }
+# endif
+#else
+// _ARCH_ARM64_ || _ARCH_ARM32_
+// inline static void spinPause() { __nop(); }
+// _ARCH_PPC64EL_
+// __asm__ __volatile__ ("or 0,0,0");
+inline static void spinPause() { }
+#endif
+
+#ifdef _WIN32
 
 #include <intrin.h>
 

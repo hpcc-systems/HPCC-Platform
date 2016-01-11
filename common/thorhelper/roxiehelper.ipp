@@ -19,25 +19,28 @@
 #define ROXIEHELPER_IPP
 
 #include "thorhelper.hpp"
-#include "rtlds_imp.hpp"
+#include "roxiestream.hpp"
 #include "jlog.hpp"
-#include "jio.hpp"
 
 extern THORHELPER_API unsigned traceLevel;
-
-//---------------------------------------------------
-// Base classes for all Roxie/HThor activities
-//---------------------------------------------------
-struct THORHELPER_API ISimpleInputBase : public IRowStream //base for IInputBase and IHThorSimpleInput
-{
-    virtual bool nextGroup(ConstPointerArray & group);      // note: default implementation can be overridden for efficiency...
-    virtual void readAll(RtlLinkedDatasetBuilder &builder); // note: default implementation can be overridden for efficiency...
-};
-
 interface IOutputMetaData;
-struct IInputBase : public ISimpleInputBase  //base for IRoxieInput and IHThorInput
+interface IInputSteppingMeta;
+
+struct IInputBase : public IInterface //base for IRoxieInput and IHThorInput
 {
     virtual IOutputMetaData * queryOutputMeta() const = 0;
+    virtual IInputSteppingMeta * querySteppingMeta() { return NULL; }
+
+    // These will need some thought
+    virtual IEngineRowStream &queryStream() = 0;
+    inline void resetEOF() { queryStream().resetEOF(); }
+    inline bool nextGroup(ConstPointerArray & group) { return queryStream().nextGroup(group); }
+    inline void readAll(RtlLinkedDatasetBuilder &builder) { return queryStream().readAll(builder); }
+    inline const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) { return queryStream().nextRowGE(seek, numFields, wasCompleteMatch, stepExtra); }
+    inline const void *nextRow() { return queryStream().nextRow(); }
+    inline void stop() { queryStream().stop(); }
+    inline const void *ungroupedNextRow() { return queryStream().ungroupedNextRow(); }
+
 };
 
 //---------------------------------------------------
@@ -96,13 +99,14 @@ interface IRoxieContextLogger : extends IContextLogger
 //===================================================================================
 
 //IRHLimitedCompareHelper copied from THOR ILimitedCompareHelper, and modified to get input from IHThorInput instead of IReadSeqVar
+// Can probably common back up now
 class OwnedRowArray;
 interface ICompare;
 interface IRHLimitedCompareHelper: public IInterface
 {
     virtual void init(
             unsigned atmost,
-            IInputBase *strm,
+            IRowStream *strm,
             ICompare *compare,
             ICompare *limcompare
         )=0;

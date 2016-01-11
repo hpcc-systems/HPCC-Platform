@@ -1775,7 +1775,7 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, bool seekForward)
         // first search for first GTE entry (result in b(<),a(>=))
         while ((int)a<b)
         {
-            int i = (a+b)/2;
+            int i = a+(b-a)/2;
             int rc = node->compareValueAt(src, i);
             if (rc>0)
                 a = i+1;
@@ -1848,7 +1848,7 @@ bool CKeyCursor::ltEqual(const char *src, char *dst, bool seekForward)
         // Locate first record greater than src
         while ((int)a<b)
         {
-            int i = (a+b+1)/2;
+            int i = a+(b+1-a)/2;
             int rc = node->compareValueAt(src, i-1);
             if (rc>=0)
                 a = i;
