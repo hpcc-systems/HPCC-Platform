@@ -2711,6 +2711,8 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
 
         double version = context.getClientVersion();
         const char* netaddr = req.getNetaddr();
+        if (!netaddr || !*netaddr)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Network address not specified.");
         const char* mask = req.getMask();
         bool directoryOnly = req.getDirectoryOnly();
 
