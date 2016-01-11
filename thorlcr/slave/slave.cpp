@@ -290,9 +290,9 @@ public:
         }
         haveCreateCtx = true;
     }
-    virtual CActivityBase *queryActivity()
+    virtual CActivityBase *queryActivity(bool checkNull)
     {
-        if (hasNullInput)
+        if (checkNull && hasNullInput)
         {
             CriticalBlock b(nullActivityCs);
             if (!nullActivity)

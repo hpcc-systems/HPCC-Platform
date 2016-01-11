@@ -296,6 +296,9 @@ void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasur
 {
     switch (measure)
     {
+    case SMeasureNone: // Unknown stat - e.g, on old esp accessing a new workunit
+        out.append(value);
+        break;
     case SMeasureTimeNs:
         formatTime(out, value);
         break;
@@ -591,17 +594,19 @@ StatisticMeasure queryMeasure(StatisticKind kind)
     }
 
     StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
-    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
-    return statsMetaData[rawkind].measure;
+    if (rawkind >= StKindNone && rawkind < StMax)
+        return statsMetaData[rawkind].measure;
+    return SMeasureNone;
 }
 
 const char * queryStatisticName(StatisticKind kind)
 {
     StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
     unsigned variant = (kind / StVariantScale);
-    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
     dbgassertex(variant < (StNextModifier/StVariantScale));
-    return statsMetaData[rawkind].names[variant];
+    if (rawkind >= StKindNone && rawkind < StMax)
+        return statsMetaData[rawkind].names[variant];
+    return "Unknown";
 }
 
 
@@ -635,9 +640,10 @@ const char * queryTreeTag(StatisticKind kind)
 {
     StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
     unsigned variant = (kind / StVariantScale);
-    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
     dbgassertex(variant < (StNextModifier/StVariantScale));
-    return statsMetaData[rawkind].tags[variant];
+    if (rawkind >= StKindNone && rawkind < StMax)
+        return statsMetaData[rawkind].tags[variant];
+    return "@Unknown";
 }
 
 //--------------------------------------------------------------------------------------------------------------------
