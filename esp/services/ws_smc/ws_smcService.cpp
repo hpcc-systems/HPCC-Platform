@@ -323,7 +323,7 @@ void CActivityInfo::readTargetClusterInfo(IConstWUClusterInfo& cluster, IPropert
     {
         smcQueue->foundQueueInStatusServer = findQueueInStatusServer(serverStatusRoot, statusServerName.str(), targetCluster->queueName.get());
         if (!smcQueue->foundQueueInStatusServer)
-            targetCluster->clusterStatusDetails.appendf("Cluster %s not attached; ", clusterName.str());
+            targetCluster->clusterStatusDetails.appendf("Cluster %s not listening for workunits; ", clusterName.str());
     }
 
     readJobQueue(targetCluster->serverQueue.queueName.str(), targetCluster->wuidsOnServerQueue, targetCluster->serverQueue.queueState, targetCluster->serverQueue.queueStateDetails);
@@ -1044,9 +1044,9 @@ void CWsSMCEx::setClusterStatus(IEspContext& context, const CWsSMCTargetCluster&
     returnCluster->setClusterStatus(queueStatusType);
     //Set 'Warning' which may be displayed beside cluster name
     if (queueStatusType == QueueRunningNotFound)
-        returnCluster->setWarning("Cluster not attached");
+        returnCluster->setWarning("Cluster not listening for workunits");
     else if (queueStatusType == QueuePausedOrStoppedNotFound)
-        returnCluster->setWarning("Queue paused or stopped - Cluster not attached");
+        returnCluster->setWarning("Queue paused or stopped - Cluster not listening for workunits");
     else if (queueStatusType != RunningNormal)
         returnCluster->setWarning("Queue paused or stopped");
     //Set 'StatusDetails' which may be displayed when a mouse is moved over cluster icon
