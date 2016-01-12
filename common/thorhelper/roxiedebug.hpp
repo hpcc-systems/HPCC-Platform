@@ -39,7 +39,13 @@ class THORHELPER_API CDebugCommandHandler : public CInterface, implements IInter
 public:
     IMPLEMENT_IINTERFACE;
     static bool checkCommand(IXmlWriter &out, const char *&supplied, const char *expected);
-    void doDebugCommand(IPropertyTree *query, IDebuggerContext *debugContext, FlushingStringBuffer &output);
+    void doDebugCommand(IPropertyTree *query, IDebuggerContext *debugContext, IXmlWriter &out);
+    void doDebugCommand(IPropertyTree *query, IDebuggerContext *debugContext, FlushingStringBuffer &output)
+    {
+        CommonXmlWriter out(0, 1);
+        doDebugCommand(query, debugContext, out);
+        output.append(out.str());
+    }
 };
 
 //=======================================================================================

@@ -35,6 +35,7 @@ set (   SRCS
         ccdfile.cpp 
         ccdkey.cpp 
         ccdlistener.cpp
+        ccdprotocol.cpp
         ccdmain.cpp
         ccdquery.cpp
         ccdqueue.cpp
@@ -50,6 +51,7 @@ set (   SRCS
         ccdfile.hpp
         ccdkey.hpp
         ccdlistener.hpp
+        ccdprotocol.hpp
         ccdquery.hpp
         ccdqueue.ipp
         ccdsnmp.hpp

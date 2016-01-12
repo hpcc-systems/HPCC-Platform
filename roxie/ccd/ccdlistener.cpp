@@ -58,72 +58,6 @@ static void controlException(StringBuffer &response, IException *E, const IRoxie
 
 //================================================================================================================
 
-class CHttpRequestAsyncFor : public CInterface, public CAsyncFor
-{
-private:
-    const char *queryName, *queryText, *querySetName;
-    const ContextLogger &logctx;
-    IArrayOf<IPropertyTree> &requestArray;
-    Linked<IQueryFactory> f;
-    SafeSocket &client;
-    HttpHelper &httpHelper;
-    PTreeReaderOptions xmlReadFlags;
-    unsigned &memused;
-    unsigned &slaveReplyLen;
-    CriticalSection crit;
-
-public:
-    CHttpRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused,
-                            unsigned &_slaveReplyLen, const char *_queryText, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
-    : f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused),
-      slaveReplyLen(_slaveReplyLen), logctx(_logctx), xmlReadFlags(_xmlReadFlags), querySetName(_querySetName)
-    {
-        queryName = _queryName;
-        queryText = _queryText;
-    }
-
-    IMPLEMENT_IINTERFACE;
-
-    void onException(IException *E)
-    {
-        if (!logctx.isBlind())
-            logctx.CTXLOG("FAILED: %s", queryText);
-        StringBuffer error("EXCEPTION: ");
-        E->errorMessage(error);
-        DBGLOG("%s", error.str());
-        client.checkSendHttpException(httpHelper, E, queryName);
-        E->Release();
-    }
-
-    void Do(unsigned idx)
-    {
-        try
-        {
-            IPropertyTree &request = requestArray.item(idx);
-            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, httpHelper.queryContentFormat(), false, false, httpHelper, httpHelper.getTrim(), logctx, xmlReadFlags, querySetName);
-            ctx->process();
-            ctx->flush(idx);
-            CriticalBlock b(crit);
-            memused += ctx->getMemoryUsage();
-            slaveReplyLen += ctx->getSlavesReplyLen();
-        }
-        catch (WorkflowException * E)
-        {
-            onException(E);
-        }
-        catch (IException * E)
-        {
-            onException(E);
-        }
-        catch (...)
-        {
-            onException(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception"));
-        }
-    }
-};
-
-//================================================================================================================
-
 class CascadeManager : public CInterface
 {
     static Semaphore globalLock;
@@ -365,12 +299,11 @@ public:
         logctx.Release();
     }
 
-    void doLockChild(const char *queryText, StringBuffer &reply)
+    void doLockChild(IPropertyTree *xml, const char *logText, StringBuffer &reply)
     {
         if (traceLevel > 5)
-            DBGLOG("doLockChild: %s", queryText);
+            DBGLOG("doLockChild: %s", logText);
         isMaster = false;
-        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText);
         bool unlock = xml->getPropBool("@unlock", false);
         if (unlock)
         {
@@ -403,6 +336,12 @@ public:
                 reply.append("<Lock>0</Lock>");
             }
         }
+    }
+
+    void doLockChild(const char *queryText, StringBuffer &reply)
+    {
+        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText);
+        doLockChild(xml, queryText, reply);
     }
 
     bool doLockGlobal(StringBuffer &reply, bool lockAll)
@@ -456,14 +395,21 @@ public:
 
     void doControlQuery(SocketEndpoint &ep, const char *queryText, StringBuffer &reply)
     {
+        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText); // control queries are case sensitive
+        doControlQuery(ep, xml, queryText, reply);
+    }
+
+    void doControlQuery(SocketEndpoint &ep, IPropertyTree *xml, const char *queryText, StringBuffer &reply)
+    {
         if (logctx.queryTraceLevel() > 5)
             logctx.CTXLOG("doControlQuery (%d): %.80s", isMaster, queryText);
         // By this point we should have cascade-connected thanks to a prior <control:lock>
         // So do the query ourselves and in all child threads;
+        const char *name = xml->queryName();
         CascadeMergeType mergeType=CascadeMergeNone;
-        if (strstr(queryText, "querystats"))
+        if (strstr(name, "querystats"))
             mergeType=CascadeMergeStats;
-        else if (strstr(queryText, ":queries"))
+        else if (strstr(name, "queries"))
             mergeType=CascadeMergeQueries;
         Owned<IPropertyTree> mergedReply;
         if (mergeType!=CascadeMergeNone)
@@ -480,11 +426,12 @@ public:
             SocketEndpoint &ep;
             unsigned numChildren;
             const IRoxieContextLogger &logctx;
+            IPropertyTree *xml;
 
         public:
-            casyncfor(const char *_queryText, CascadeManager *_parent, IPropertyTree *_mergedReply, CascadeMergeType _mergeType,
+            casyncfor(IPropertyTree *_xml, const char *_queryText, CascadeManager *_parent, IPropertyTree *_mergedReply, CascadeMergeType _mergeType,
                       StringBuffer &_reply, SocketEndpoint &_ep, unsigned _numChildren, const IRoxieContextLogger &_logctx)
-                : queryText(_queryText), parent(_parent), mergedReply(_mergedReply), mergeType(_mergeType), reply(_reply), ep(_ep), numChildren(_numChildren), logctx(_logctx)
+                : xml(_xml), queryText(_queryText), parent(_parent), mergedReply(_mergedReply), mergeType(_mergeType), reply(_reply), ep(_ep), numChildren(_numChildren), logctx(_logctx)
             {
             }
             void Do(unsigned i)
@@ -497,15 +444,15 @@ public:
                 {
                     StringBuffer childReply;
                     parent->doChildQuery(i, queryText, childReply);
-                    Owned<IPropertyTree> xml = createPTreeFromXMLString(childReply);
-                    if (!xml)
+                    Owned<IPropertyTree> replyXML = createPTreeFromXMLString(childReply);
+                    if (!replyXML)
                     {
                         StringBuffer err;
                         err.appendf("doControlQuery::do (%d of %d): %.80s received invalid response %s", i, numChildren, queryText, childReply.str());
                         logctx.CTXLOG("%s", err.str());
                         throw MakeStringException(ROXIE_INTERNAL_ERROR, "%s", err.str());
                     }
-                    Owned<IPropertyTreeIterator> meat = xml->getElements("Endpoint");
+                    Owned<IPropertyTreeIterator> meat = replyXML->getElements("Endpoint");
                     ForEach(*meat)
                     {
                         CriticalBlock cb(crit);
@@ -529,7 +476,6 @@ public:
                 myReply.append("'>\n");
                 try
                 {
-                    Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText); // control queries are case sensitive
                     globalPackageSetManager->doControlMessage(xml, myReply, logctx);
                 }
                 catch(IException *E)
@@ -544,16 +490,16 @@ public:
                 CriticalBlock cb(crit);
                 if (mergedReply)
                 {
-                    Owned<IPropertyTree> xml = createPTreeFromXMLString(myReply);
+                    Owned<IPropertyTree> replyXML = createPTreeFromXMLString(myReply);
                     if (mergeType == CascadeMergeStats)
-                        mergeStats(mergedReply, xml);
+                        mergeStats(mergedReply, replyXML);
                     else if (mergeType == CascadeMergeQueries)
-                        mergeQueries(mergedReply, xml);
+                        mergeQueries(mergedReply, replyXML);
                 }
                 else
                     reply.append(myReply);
             }
-        } afor(queryText, this, mergedReply, mergeType, reply, ep, activeChildren.ordinality(), logctx);
+        } afor(xml, queryText, this, mergedReply, mergeType, reply, ep, activeChildren.ordinality(), logctx);
         afor.For(activeChildren.ordinality()+(isMaster ? 0 : 1), 10);
         activeChildren.kill();
         if (mergedReply)
@@ -644,6 +590,53 @@ public:
 
 //================================================================================================================================
 
+//ADF TODO consider moving where these values are stored inside core roxie, even for pluggable protocols
+class ActiveQueryLimiter : public CInterface, implements IActiveQueryLimiter
+{
+    IRoxieListener *parent;
+    bool accepted;
+public:
+    IMPLEMENT_IINTERFACE;
+    ActiveQueryLimiter(IRoxieListener *_parent) : parent(_parent)
+    {
+        CriticalBlock b(parent->getActiveCrit());
+        if (parent->getIsSuspended())
+        {
+            accepted = false;
+            if (traceLevel > 1)
+                DBGLOG("Rejecting query since Roxie server pool %d is suspended ", parent->queryPort());
+        }
+        else
+        {
+            unsigned threadsActive = parent->getActiveThreadCount();
+            unsigned poolSize = parent->getPoolSize();
+            accepted = (threadsActive < poolSize);
+            if (accepted && threadsActive > parent->getMaxActiveThreads())
+            {
+                parent->setMaxActiveThreads(threadsActive);
+                if (traceLevel > 1)
+                    DBGLOG("Maximum queries active %d of %d for pool %d", threadsActive, poolSize, parent->queryPort());
+            }
+            if (!accepted && traceLevel > 5)
+                DBGLOG("Too many active queries (%d >= %d)", threadsActive, poolSize);
+        }
+        parent->incActiveThreadCount();
+    }
+    ~ActiveQueryLimiter()
+    {
+        CriticalBlock b(parent->getActiveCrit());
+        parent->decActiveThreadCount();
+    }
+    virtual bool isAccepted(){return accepted;}
+};
+
+IActiveQueryLimiter *createActiveQueryLimiter(IRoxieListener *listener)
+{
+    return new ActiveQueryLimiter(listener);
+}
+
+//================================================================================================================================
+
 class RoxieListener : public Thread, implements IRoxieListener, implements IThreadFactory
 {
 public:
@@ -655,6 +648,38 @@ public:
         poolSize = _poolSize;
         threadsActive = 0;
         maxThreadsActive = 0;
+    }
+    virtual CriticalSection &getActiveCrit()
+    {
+        return activeCrit;
+    }
+    virtual bool getIsSuspended()
+    {
+        return suspended;
+    }
+    virtual unsigned getActiveThreadCount()
+    {
+        return threadsActive;
+    }
+    virtual unsigned getPoolSize()
+    {
+        return poolSize;
+    }
+    virtual unsigned getMaxActiveThreads()
+    {
+        return maxThreadsActive;
+    }
+    virtual void setMaxActiveThreads(unsigned val)
+    {
+        maxThreadsActive=val;
+    }
+    virtual void incActiveThreadCount()
+    {
+        threadsActive++;
+    }
+    virtual void decActiveThreadCount()
+    {
+        threadsActive--;
     }
 
     static void updateAffinity()
@@ -825,7 +850,6 @@ protected:
     unsigned threadsActive;
     unsigned maxThreadsActive;
     CriticalSection activeCrit;
-    friend class ActiveQueryLimiter;
 
 #ifdef CPU_ZERO
     static cpu_set_t cpuMask;
@@ -986,117 +1010,6 @@ public:
     virtual IPooledThread* createNew();
 };
 
-class RoxieSocketListener : public RoxieListener
-{
-    unsigned port;
-    unsigned listenQueue;
-    Owned<ISocket> socket;
-    SocketEndpoint ep;
-
-public:
-    RoxieSocketListener(unsigned _port, unsigned _poolSize, unsigned _listenQueue, bool _suspended)
-      : RoxieListener(_poolSize, _suspended)
-    {
-        port = _port;
-        listenQueue = _listenQueue;
-        ep.set(port, queryHostIP());
-    }
-
-    virtual bool stop(unsigned timeout)
-    {
-        if (socket)
-            socket->cancel_accept();
-        return RoxieListener::stop(timeout);
-    }
-
-    virtual void disconnectQueue()
-    {
-        // This is for dali queues only
-    }
-
-    virtual void stopListening()
-    {
-        // Not threadsafe, but we only call this when generating a core file... what's the worst that can happen?
-        try
-        {
-            DBGLOG("Closing listening socket %d", port);
-            socket.clear();
-            DBGLOG("Closed listening socket %d", port);
-        }
-        catch(...)
-        {
-        }
-    }
-
-    virtual void runOnce(const char *query);
-
-    virtual int run()
-    {
-        DBGLOG("RoxieSocketListener (%d threads) listening to socket on port %d", poolSize, port);
-        socket.setown(ISocket::create(port, listenQueue));
-        running = true;
-        started.signal();
-        while (running)
-        {
-            ISocket *client = socket->accept(true);
-            if (client)
-            {
-                client->set_linger(-1);
-                pool->start(client);
-            }
-        }
-        DBGLOG("RoxieSocketListener closed query socket");
-        return 0;
-    }
-
-    virtual IPooledThread *createNew();
-
-    virtual const SocketEndpoint &queryEndpoint() const
-    {
-        return ep;
-    }
-
-    virtual unsigned queryPort() const
-    {
-        return port;
-    }
-};
-
-class ActiveQueryLimiter
-{
-    RoxieListener *parent;
-public:
-    bool accepted;
-    ActiveQueryLimiter(RoxieListener *_parent) : parent(_parent)
-    {
-        CriticalBlock b(parent->activeCrit);
-        if (parent->suspended)
-        {
-            accepted = false;
-            if (traceLevel > 1)
-                DBGLOG("Rejecting query since Roxie server pool %d is suspended ", parent->queryPort());
-        }
-        else
-        {
-            accepted = (parent->threadsActive < parent->poolSize);
-            if (accepted && parent->threadsActive > parent->maxThreadsActive)
-            {
-                parent->maxThreadsActive = parent->threadsActive;
-                if (traceLevel > 1)
-                    DBGLOG("Maximum queries active %d of %d for pool %d", parent->threadsActive, parent->poolSize, parent->queryPort());
-            }
-            if (!accepted && traceLevel > 5)
-                DBGLOG("Too many active queries (%d >= %d)", parent->threadsActive, parent->poolSize);
-        }
-        parent->threadsActive++;
-    }
-
-    ~ActiveQueryLimiter()
-    {
-        CriticalBlock b(parent->activeCrit);
-        parent->threadsActive--;
-    }
-};
 
 class RoxieQueryWorker : public CInterface, implements IPooledThread
 {
@@ -1230,8 +1143,8 @@ public:
             if (pool)
             {
                 pool->checkWuAccess(isBlind);
-                ActiveQueryLimiter l(pool);
-                if (!l.accepted)
+                Owned<IActiveQueryLimiter> l = createActiveQueryLimiter(pool);
+                if (!l->isAccepted())
                 {
                     IException *e = MakeStringException(ROXIE_TOO_MANY_QUERIES, "Too many active queries");
                     if (trapTooManyActiveQueries)
@@ -1318,681 +1231,396 @@ private:
     StringAttr wuid;
 };
 
-class RoxieSocketWorker : public RoxieQueryWorker
+class RoxieProtocolMsgContext : public CInterface, implements IHpccProtocolMsgContext
 {
-    Owned<SafeSocket> client;
-    Owned<CDebugCommandHandler> debugCmdHandler;
-    SocketEndpoint ep;
-
 public:
-    RoxieSocketWorker(RoxieListener *_pool, SocketEndpoint &_ep)
-        : RoxieQueryWorker(_pool), ep(_ep)
+    StringAttr queryName;
+    StringAttr uid;
+    Owned<CascadeManager> cascade;
+    Owned<IDebuggerContext> debuggerContext;
+    Owned<CDebugCommandHandler> debugCmdHandler;
+    Owned<StringContextLogger> logctx;
+    Owned<IQueryFactory> queryFactory;
+
+    SocketEndpoint ep;
+    time_t startTime;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    RoxieProtocolMsgContext(const SocketEndpoint &_ep, time_t _startTime) : startTime(_startTime)
     {
+        ep.set(_ep);
+        unknownQueryStats.noteActive(); //adf provide interface for stats
+        atomic_inc(&queryCount);
     }
 
-    //  interface IPooledThread
-    virtual void init(void *_r)
+    inline ContextLogger &ensureContextLogger()
     {
-        client.setown(new CSafeSocket((ISocket *) _r));
-        RoxieQueryWorker::init(_r);
+        if (!logctx)
+        {
+            unsigned instanceId = getNextInstanceId();
+            StringBuffer ctxstr;
+            logctx.setown(new StringContextLogger(ep.getIpText(ctxstr).appendf(":%u{%u}", ep.port, instanceId).str()));
+        }
+        return *logctx;
+    }
+    virtual bool initQuery(StringBuffer &target, const char *name)
+    {
+        queryName.set(name);
+        queryFactory.setown(globalPackageSetManager->getQuery(name, &target, NULL, *logctx));
+        if (!queryFactory)
+            return false;
+        queryFactory->checkSuspended();
+        return true;
+    }
+    virtual void noteQueryActive()
+    {
+        unsigned priority = getQueryPriority(); //adf move
+        switch (priority)
+        {
+        case 0: loQueryStats.noteActive(); break;
+        case 1: hiQueryStats.noteActive(); break;
+        case 2: slaQueryStats.noteActive(); break;
+        }
+        unknownQueryStats.noteComplete();
+        combinedQueryStats.noteActive();
+    }
+    IQueryFactory *queryQueryFactory(){return queryFactory;}
+    virtual IContextLogger *queryLogContext()
+    {
+        return &ensureContextLogger();
+    }
+    inline CascadeManager &ensureCascadeManager()
+    {
+        if (!cascade)
+            cascade.setown(new CascadeManager(ensureContextLogger()));
+        return *cascade;
     }
 
-    virtual void main()
+    inline IDebuggerContext &ensureDebuggerContext(const char *id)
     {
-        doMain("");
+        if (!debuggerContext)
+        {
+            if (!id)
+    #ifdef _DEBUG
+                id="*";
+    #else
+                throw MakeStringException(ROXIE_DEBUG_ERROR, "Debug id not specified");
+    #endif
+            uid.set(id);
+            debuggerContext.setown(queryRoxieDebugSessionManager().lookupDebuggerContext(id));
+            if (!debuggerContext)
+                throw MakeStringException(ROXIE_DEBUG_ERROR, "No active query matching context %s found", id);
+        }
+        return *debuggerContext;
+    }
+    inline CDebugCommandHandler &ensureDebugCommandHandler()
+    {
+        if (!debugCmdHandler.get())
+            debugCmdHandler.setown(new CDebugCommandHandler);
+        return *debugCmdHandler;
     }
 
-    virtual void runOnce(const char *query)
+    virtual bool checkSetBlind(bool blind)
     {
-        doMain(query);
+        blind = blind || blindLogging;
+        ensureContextLogger().setBlind(blind);
+        return blind;
+    }
+    virtual void verifyAllowDebug()
+    {
+        if (!debugPermitted || !ep.port)
+            throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug queries are not permitted on this system");
+    }
+    virtual bool logFullQueries()
+    {
+        return ::logFullQueries;
+    }
+    virtual bool trapTooManyActiveQueries()
+    {
+        return ::trapTooManyActiveQueries;
+    }
+    virtual bool getStripWhitespace()
+    {
+        return queryFactory ? queryFactory->queryOptions().stripWhitespaceFromStoredDataset : (defaultXmlReadFlags & ptr_ignoreWhiteSpace);
+    }
+    virtual int getBindCores()
+    {
+        return queryFactory ? queryFactory->queryOptions().bindCores : 0;
+    }
+    virtual void setTraceLevel(unsigned traceLevel)
+    {
+        if (logctx)
+            logctx->setTraceLevel(traceLevel);
+    }
+    virtual void setIntercept(bool intercept)
+    {
+        if (logctx)
+            logctx->setIntercept(intercept);
+    }
+    virtual bool getIntercept()
+    {
+        return (logctx) ? logctx->intercept : false;
+    }
+    virtual void outputLogXML(IXmlStreamFlusher &out)
+    {
+        if (logctx)
+            logctx->outputXML(out);
     }
 
-private:
-    static void sendHttpServerTooBusy(SafeSocket &client, const IRoxieContextLogger &logctx)
+    virtual unsigned getQueryPriority()
     {
-        StringBuffer message;
-
-        message.append("HTTP/1.0 503 Server Too Busy\r\n\r\n");
-        message.append("Server too busy, please try again later");
-
-        StringBuffer err("Too many active queries");  // write out Too many active queries - make searching for this error consistent
-        if (!trapTooManyActiveQueries)
-        {
-            err.appendf("  %s", message.str());
-            logctx.CTXLOG("%s", err.str());
-        }
-        else
-        {
-            IException *E = MakeStringException(ROXIE_TOO_MANY_QUERIES, "%s", err.str());
-            logctx.logOperatorException(E, __FILE__, __LINE__, "%s", message.str());
-            E->Release();
-        }
-
-        try
-        {
-            client.write(message.str(), message.length());
-        }
-        catch (IException *E)
-        {
-            logctx.logOperatorException(E, __FILE__, __LINE__, "Exception caught in sendHttpServerTooBusy");
-            E->Release();
-        }
-        catch (...)
-        {
-            logctx.logOperatorException(NULL, __FILE__, __LINE__, "sendHttpServerTooBusy write failed (Unknown exception)");
-        }
+        return queryFactory ? queryFactory->queryOptions().priority : (unsigned) -2;
     }
-
-    void sanitizeQuery(Owned<IPropertyTree> &queryXML, StringAttr &queryName, StringBuffer &saniText, HttpHelper &httpHelper, const char *&uid, bool &isRequest, bool &isRequestArray, bool &isBlind, bool &isDebug)
+    void noteQueryStats(bool failed, unsigned elapsedTime, unsigned priority)
     {
-        if (queryXML)
+        Owned <IJlibDateTime> now = createDateTimeNow();
+        unsigned y,mo,d,h,m,s,n;
+        now->getLocalTime(h, m, s, n);
+        now->getLocalDate(y, mo, d);
+        lastQueryTime = h*10000 + m * 100 + s;
+        lastQueryDate = y*10000 + mo * 100 + d;
+
+        switch(priority)
         {
-            queryName.set(queryXML->queryName());
-            isRequest = false;
-            isRequestArray = false;
-            if (httpHelper.isHttp())
-            {
-                if (httpHelper.queryContentFormat()==MarkupFmt_JSON)
-                {
-                    if (strieq(queryName, "__object__"))
-                    {
-                        queryXML.setown(queryXML->getPropTree("*[1]"));
-                        queryName.set(queryXML->queryName());
-                        isRequest = true;
-                        if (!queryXML)
-                            throw MakeStringException(ROXIE_DATA_ERROR, "Malformed JSON request (missing Body)");
-                    }
-                    else if (strieq(queryName, "__array__"))
-                        throw MakeStringException(ROXIE_DATA_ERROR, "JSON request array not implemented");
-                    else
-                        throw MakeStringException(ROXIE_DATA_ERROR, "Malformed JSON request");
-                }
-                else
-                {
-                    if (strieq(queryName, "envelope"))
-                        queryXML.setown(queryXML->getPropTree("Body/*"));
-                    else if (!strnicmp(httpHelper.queryContentType(), "application/soap", strlen("application/soap")))
-                        throw MakeStringException(ROXIE_DATA_ERROR, "Malformed SOAP request");
-                    else
-                        httpHelper.setUseEnvelope(false);
-                    if (!queryXML)
-                        throw MakeStringException(ROXIE_DATA_ERROR, "Malformed SOAP request (missing Body)");
-                    String reqName(queryXML->queryName());
-                    queryXML->removeProp("@xmlns:m");
-
-                    // following code is moved from main() - should be no performance hit
-                    String requestString("Request");
-                    String requestArrayString("RequestArray");
-
-                    if (reqName.endsWith(requestArrayString))
-                    {
-                        isRequestArray = true;
-                        queryName.set(reqName.str(), reqName.length() - requestArrayString.length());
-                    }
-                    else if (reqName.endsWith(requestString))
-                    {
-                        isRequest = true;
-                        queryName.set(reqName.str(), reqName.length() - requestString.length());
-                    }
-                    else
-                        queryName.set(reqName.str());
-
-                    queryXML->renameProp("/", queryName.get());  // reset the name of the tree
-                }
-            }
-
-            // convert to XML with attribute values in single quotes - makes replaying queries easier
-            uid = queryXML->queryProp("@uid");
-            if (!uid)
-                uid = "-";
-            isBlind = queryXML->getPropBool("@blind", false) || queryXML->getPropBool("_blind", false);
-            isDebug = queryXML->getPropBool("@debug") || queryXML->getPropBool("_Probe", false);
-            toXML(queryXML, saniText, 0, isBlind ? (XML_SingleQuoteAttributeValues | XML_Sanitize) : XML_SingleQuoteAttributeValues);
+        case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
+        case 1: hiQueryStats.noteQuery(failed, elapsedTime); break;
+        case 2: slaQueryStats.noteQuery(failed, elapsedTime); break;
+        default: unknownQueryStats.noteQuery(failed, elapsedTime); return; // Don't include unknown in the combined stats
         }
-        else
-            throw MakeStringException(ROXIE_DATA_ERROR, "Malformed request");
+        combinedQueryStats.noteQuery(failed, elapsedTime);
     }
-    void parseQueryPTFromString(Owned<IPropertyTree> &queryPT, HttpHelper &httpHelper, const char *text, PTreeReaderOptions options)
+    void noteQuery(const char *peer, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut, unsigned priority, bool continuationNeeded)
     {
-        if (strieq(httpHelper.queryContentType(), "application/json"))
-            queryPT.setown(createPTreeFromJSONString(text, ipt_caseInsensitive, options));
-        else
-            queryPT.setown(createPTreeFromXMLString(text, ipt_caseInsensitive, options));
-    }
-    void doMain(const char *runQuery)
-    {
-        StringBuffer rawText(runQuery);
-        unsigned priority = (unsigned) -2;
-        unsigned memused = 0;
-        Owned<CascadeManager> cascade;
-        IpAddress peer;
-        bool continuationNeeded = false;
-        bool isStatus = false;
-readAnother:
-        Owned<IDebuggerContext> debuggerContext;
-        unsigned slavesReplyLen = 0;
-        HttpHelper httpHelper(&allQuerySetNames);
-        try
-        {
-            if (client)
-            {
-                client->querySocket()->getPeerAddress(peer);
-                if (!client->readBlock(rawText, WAIT_FOREVER, &httpHelper, continuationNeeded, isStatus, maxBlockSize))
-                {
-                    if (traceLevel > 8)
-                    {
-                        StringBuffer b;
-                        DBGLOG("No data reading query from socket");
-                    }
-                    client.clear();
-                    return;
-                }
-            }
-            if (continuationNeeded)
-            {
-                qstart = msTick();
-                time(&startTime);
-            }
-            unknownQueryStats.noteActive();
-            atomic_inc(&queryCount);
-        }
-        catch (IException * E)
-        {
-            if (traceLevel > 0)
-            {
-                StringBuffer b;
-                DBGLOG("Error reading query from socket: %s", E->errorMessage(b).str());
-            }
-            E->Release();
-            client.clear();
-            return;
-        }
-
-        TextMarkupFormat mlFmt = MarkupFmt_XML;
-        bool isRaw = false;
-        bool isHTTP = httpHelper.isHttp();
-        bool isBlocked = false;
-        bool trim = false;
-        bool failed = false;
-        Owned<IPropertyTree> queryXml;
-        Owned<IQueryFactory> queryFactory;
-        StringBuffer sanitizedText;
-        StringAttr queryName;
-        StringBuffer peerStr;
-        peer.getIpText(peerStr);
-        const char *uid = "-";
-        unsigned instanceId = getNextInstanceId();
-        StringBuffer ctxstr;
-        Owned<StringContextLogger> _logctx = new StringContextLogger(ep.getIpText(ctxstr).appendf(":%u{%u}", ep.port, instanceId).str());
-        StringContextLogger &logctx = *_logctx.get();
-        try
-        {
-            // Note - control queries have to be formatted without spaces..
-            if (strnicmp(rawText.str(), "<control:lock", 13)==0 && !isalpha(rawText.charAt(13)))
-            {
-                if (logctx.queryTraceLevel() > 8)
-                    logctx.CTXLOG("Got lock request %s", rawText.str());
-                FlushingStringBuffer response(client, false, MarkupFmt_XML, false, false, logctx);
-                response.startDataset("Control", NULL, (unsigned) -1);
-                if (!cascade)
-                    cascade.setown(new CascadeManager(logctx));
-                StringBuffer s;
-                cascade->doLockGlobal(s, false);
-                response.append(s);
-                if (logctx.queryTraceLevel() > 8)
-                    logctx.CTXLOG("lock reply %s", s.str());
-                response.flush(true);
-                unsigned replyLen = 0;
-                client->write(&replyLen, sizeof(replyLen));
-                rawText.clear();
-                unknownQueryStats.noteComplete();
-                goto readAnother;
-            }
-            else if (strnicmp(rawText.str(), "<control:childlock", 18)==0 && !isalpha(rawText.charAt(18)))
-            {
-                if (logctx.queryTraceLevel() > 8)
-                    logctx.CTXLOG("Got childlock request %s", rawText.str());
-                FlushingStringBuffer response(client, false, MarkupFmt_XML, false, false, logctx);
-                response.startDataset("Control", NULL, (unsigned) -1);
-                if (!cascade)
-                    cascade.setown(new CascadeManager(logctx));
-                StringBuffer s;
-                cascade->doLockChild(rawText.str(), s);
-                response.append(s);
-                if (logctx.queryTraceLevel() > 8)
-                    logctx.CTXLOG("childlock reply %s", s.str());
-                response.flush(true);
-                unsigned replyLen = 0;
-                client->write(&replyLen, sizeof(replyLen));
-                rawText.clear();
-                unknownQueryStats.noteComplete();
-                goto readAnother;
-            }
-            else if (strnicmp(rawText.str(), "<control:", 9)==0)
-            {
-                Owned<IPropertyTree> queryXML = createPTreeFromXMLString(rawText.str()); // This is just done to check it is valid XML and make error reporting better...
-                queryXML.clear();
-                bool doControlQuery = true;
-
-                FlushingStringBuffer response(client, false, MarkupFmt_XML, false, isHTTP, logctx);
-                response.startDataset("Control", NULL, (unsigned) -1);
-
-                if (strnicmp(rawText.str(), "<control:aclupdate", 18)==0 && !isalpha(rawText.charAt(18)))
-                {
-                    queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces)));
-                    IPropertyTree *aclTree = queryXml->queryPropTree("ACL");
-                    if (aclTree)
-                    {
-                        Owned<IPropertyTreeIterator> accesses = aclTree->getElements("Access");
-                        ForEach(*accesses)
-                        {
-                            IPropertyTree &access = accesses->query();
-                            try
-                            {
-                                pool->addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode", -1));
-                            }
-                            catch (IException *E)
-                            {
-                                StringBuffer s, x;
-                                E->errorMessage(s);
-                                E->Release();
-                                toXML(&access, x, 0, 0);
-                                throw MakeStringException(ROXIE_ACL_ERROR, "Error in access statement %s: %s", x.str(), s.str());
-                            }
-                        }
-
-                    }
-                }
-                else if (strnicmp(rawText.str(), "<control:queryaclinfo", 21)==0 && !isalpha(rawText.charAt(21)))
-                {
-                    StringBuffer info;
-                    info.append("<Endpoint ep='");
-                    ep.getUrlStr(info);
-                    info.append("'>\n");
-
-                    pool->queryAccessInfo(info);
-                    info.append("</Endpoint>\n");
-                    response.append(info.str());
-                    doControlQuery = false;
-                }
-
-                if (doControlQuery)
-                {
-                    if(!cascade)
-                        cascade.setown(new CascadeManager(logctx));
-                    StringBuffer s;
-                    cascade->doControlQuery(ep, rawText, s);
-                    response.append(s);
-                }
-            }
-            else if (isStatus)
-            {
-                client->write("OK", 2);
-            }
-            else
-            {
-                try
-                {
-                    parseQueryPTFromString(queryXml, httpHelper, rawText.str(), (PTreeReaderOptions)(defaultXmlReadFlags | ptr_ignoreNameSpaces));
-                }
-                catch (IException *E)
-                {
-                    logctx.logOperatorException(E, __FILE__, __LINE__, "Invalid XML received from %s:%d - %s", peerStr.str(), pool->queryPort(), rawText.str());
-                    logctx.CTXLOG("ERROR: Invalid XML received from %s:%d - %s", peerStr.str(), pool->queryPort(), rawText.str());
-                    throw;
-                }
-                bool isRequest = false;
-                bool isRequestArray = false;
-                bool isBlind = false;
-                bool isDebug = false;
-
-                sanitizeQuery(queryXml, queryName, sanitizedText, httpHelper, uid, isRequest, isRequestArray, isBlind, isDebug);
-                pool->checkAccess(peer, queryName, sanitizedText, isBlind);
-                if (isDebug)
-                {
-                    if (!debugPermitted || !ownEP.port)
-                        throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug queries are not permitted on this system");
-                }
-                isBlind = isBlind || blindLogging;
-                logctx.setBlind(isBlind);
-                if (logFullQueries)
-                {
-                    StringBuffer soapStr;
-                    (isRequest) ? soapStr.append("SoapRequest") : (isRequestArray) ? soapStr.append("SoapRequest") : soapStr.clear();
-                    logctx.CTXLOG("%s %s:%d %s %s %s", isBlind ? "BLIND:" : "QUERY:", peerStr.str(), pool->queryPort(), uid, soapStr.str(), sanitizedText.str());
-                }
-                if (strnicmp(rawText.str(), "<debug:", 7)==0)
-                {
-                    if (!debugPermitted || !ownEP.port)
-                        throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug queries are not permitted on this system");
-                    if (!debuggerContext)
-                    {
-                        if (!uid)
-#ifdef _DEBUG
-                            uid="*";
-#else
-                            throw MakeStringException(ROXIE_DEBUG_ERROR, "Debug id not specified");
-#endif
-                        debuggerContext.setown(queryRoxieDebugSessionManager().lookupDebuggerContext(uid));
-                        if (!debuggerContext)
-                            throw MakeStringException(ROXIE_DEBUG_ERROR, "No active query matching context %s found", uid);
-                        if (!debugCmdHandler.get())
-                            debugCmdHandler.setown(new CDebugCommandHandler);
-                    }
-                    FlushingStringBuffer response(client, false, MarkupFmt_XML, false, isHTTP, logctx);
-                    response.startDataset("Debug", NULL, (unsigned) -1);
-                    debugCmdHandler->doDebugCommand(queryXml, debuggerContext, response);
-                }
-                else
-                {
-                    ActiveQueryLimiter l(pool);
-                    if (!l.accepted)
-                    {
-                        if (isHTTP)
-                        {
-                            sendHttpServerTooBusy(*client, logctx);
-                            logctx.CTXLOG("FAILED: %s", sanitizedText.str());
-                            logctx.CTXLOG("EXCEPTION: Too many active queries");
-                        }
-                        else
-                        {
-                            IException *e = MakeStringException(ROXIE_TOO_MANY_QUERIES, "Too many active queries");
-                            if (trapTooManyActiveQueries)
-                                logctx.logOperatorException(e, __FILE__, __LINE__, NULL);
-                            throw e;
-                        }
-                    }
-                    else
-                    {
-                        StringBuffer querySetName;
-                        if (isHTTP)
-                        {
-                            client->setHttpMode(queryName, isRequestArray, httpHelper);
-                            querySetName.set(httpHelper.queryTarget());
-                            if (querySetName.length())
-                            {
-                                const char *target = targetAliases->queryProp(querySetName.str());
-                                if (target)
-                                    querySetName.set(target);
-                            }
-                        }
-                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, NULL, logctx));
-                        if (queryFactory)
-                        {
-                            queryFactory->checkSuspended();
-                            int bindCores = queryFactory->queryOptions().bindCores;
-                            bindCores = queryXml->getPropInt("@bindCores", bindCores);
-                            if (bindCores > 0)
-                                pool->setThreadAffinity(bindCores);
-                            bool stripWhitespace = queryFactory->queryOptions().stripWhitespaceFromStoredDataset;
-                            stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
-                            PTreeReaderOptions xmlReadFlags = (PTreeReaderOptions)((defaultXmlReadFlags & ~ptr_ignoreWhiteSpace) |
-                                                                               (stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none));
-                            if (xmlReadFlags != defaultXmlReadFlags)
-                            {
-                                // we need to reparse input xml, as global whitespace setting has been overridden
-                                parseQueryPTFromString(queryXml, httpHelper, rawText.str(), (PTreeReaderOptions)(xmlReadFlags | ptr_ignoreNameSpaces));
-                                sanitizeQuery(queryXml, queryName, sanitizedText, httpHelper, uid, isRequest, isRequestArray, isBlind, isDebug);
-                            }
-                            IArrayOf<IPropertyTree> requestArray;
-                            if (isHTTP)
-                            {
-                                if (isRequestArray)
-                                {
-                                    StringBuffer reqIterString;
-                                    reqIterString.append(queryName).append("Request");
-
-                                    Owned<IPropertyTreeIterator> reqIter = queryXml->getElements(reqIterString.str());
-                                    ForEach(*reqIter)
-                                    {
-                                        IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
-                                        Owned<IPropertyTreeIterator> iter = reqIter->query().getElements("*");
-                                        ForEach(*iter)
-                                        {
-                                            fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
-                                        }
-                                        requestArray.append(*fixedreq);
-                                    }
-                                }
-                                else
-                                {
-                                    IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
-                                    Owned<IPropertyTreeIterator> iter = queryXml->getElements("*");
-                                    ForEach(*iter)
-                                    {
-                                        fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
-                                    }
-                                    requestArray.append(*fixedreq);
-                                }
-                                trim = true;
-                            }
-                            else
-                            {
-                                const char *format = queryXml->queryProp("@format");
-                                if (format)
-                                {
-                                    if (stricmp(format, "raw") == 0)
-                                    {
-                                        isRaw = true;
-                                        mlFmt = MarkupFmt_Unknown;
-                                        isBlocked = (client != NULL);
-                                    }
-                                    else if (stricmp(format, "bxml") == 0)
-                                    {
-                                        isBlocked = true;
-                                    }
-                                    else if (stricmp(format, "ascii") == 0)
-                                    {
-                                        isRaw = false;
-                                        mlFmt = MarkupFmt_Unknown;
-                                    }
-                                    else if (stricmp(format, "xml") != 0) // xml is the default
-                                        throw MakeStringException(ROXIE_INVALID_INPUT, "Unsupported format specified: %s", format);
-                                }
-                                trim = queryXml->getPropBool("@trim", false);;
-                                logctx.setIntercept(queryXml->getPropBool("@log", false));
-                                logctx.setTraceLevel(queryXml->getPropInt("@traceLevel", traceLevel));
-                            }
-
-                            priority = queryFactory->queryOptions().priority;
-                            switch (priority)
-                            {
-                            case 0: loQueryStats.noteActive(); break;
-                            case 1: hiQueryStats.noteActive(); break;
-                            case 2: slaQueryStats.noteActive(); break;
-                            }
-                            unknownQueryStats.noteComplete();
-                            combinedQueryStats.noteActive();
-                            if (isHTTP)
-                            {
-                                CHttpRequestAsyncFor af(queryName, queryFactory, requestArray, *client, httpHelper, memused, slavesReplyLen, sanitizedText, logctx, xmlReadFlags, querySetName);
-                                af.For(requestArray.length(), numRequestArrayThreads);
-                            }
-                            else
-                            {
-                                Owned<IRoxieServerContext> ctx = queryFactory->createContext(queryXml, *client, mlFmt, isRaw, isBlocked, httpHelper, trim, logctx, xmlReadFlags, querySetName);
-                                if (client && !ctx->outputResultsToSocket())
-                                {
-                                    unsigned replyLen = 0;
-                                    client->write(&replyLen, sizeof(replyLen));
-                                    client.clear();
-                                }
-                                try
-                                {
-                                    ctx->process();
-                                    memused = ctx->getMemoryUsage();
-                                    slavesReplyLen = ctx->getSlavesReplyLen();
-                                    ctx->done(false);
-                                }
-                                catch(...)
-                                {
-                                    memused = ctx->getMemoryUsage();
-                                    slavesReplyLen = ctx->getSlavesReplyLen();
-                                    ctx->done(true);
-                                    throw;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            pool->reportBadQuery(queryName.get(), logctx);
-                            if (globalPackageSetManager->getActivePackageCount())
-                            {
-                                StringBuffer targetMsg;
-                                const char *target = httpHelper.queryTarget();
-                                if (target && *target)
-                                    targetMsg.append(", in target ").append(target);
-                                throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s%s", queryName.get(), targetMsg.str());
-                            }
-                            else
-                                throw MakeStringException(ROXIE_NO_PACKAGES_ACTIVE, "Unknown query %s (no packages active)", queryName.get());
-                        }
-                    }
-                }
-            }
-        }
-        catch (WorkflowException * E)
-        {
-            failed = true;
-            logctx.CTXLOG("FAILED: %s", sanitizedText.str());
-            StringBuffer error;
-            E->errorMessage(error);
-            logctx.CTXLOG("EXCEPTION: %s", error.str());
-            unsigned code = E->errorCode();
-            if (QUERYINTERFACE(E, ISEH_Exception))
-                code = ROXIE_INTERNAL_ERROR;
-            else if (QUERYINTERFACE(E, IOutOfMemException))
-                code = ROXIE_MEMORY_ERROR;
-            if (client)
-            {
-                if (isHTTP)
-                    client->checkSendHttpException(httpHelper, E, queryName);
-                else
-                    client->sendException("Roxie", code, error.str(), isBlocked, logctx);
-            }
-            else
-            {
-                fprintf(stderr, "EXCEPTION: %s", error.str());
-            }
-            E->Release();
-        }
-        catch (IException * E)
-        {
-            failed = true;
-            logctx.CTXLOG("FAILED: %s", sanitizedText.str());
-            StringBuffer error;
-            E->errorMessage(error);
-            logctx.CTXLOG("EXCEPTION: %s", error.str());
-            unsigned code = E->errorCode();
-            if (QUERYINTERFACE(E, ISEH_Exception))
-                code = ROXIE_INTERNAL_ERROR;
-            else if (QUERYINTERFACE(E, IOutOfMemException))
-                code = ROXIE_MEMORY_ERROR;
-            if (client)
-            {
-                if (isHTTP)
-                    client->checkSendHttpException(httpHelper, E, queryName);
-                else
-                    client->sendException("Roxie", code, error.str(), isBlocked, logctx);
-            }
-            else
-            {
-                fprintf(stderr, "EXCEPTION: %s\n", error.str());
-            }
-            E->Release();
-        }
-#ifndef _DEBUG
-        catch(...)
-        {
-            failed = true;
-            logctx.CTXLOG("FAILED: %s", sanitizedText.str());
-            logctx.CTXLOG("EXCEPTION: Unknown exception");
-            {
-                if (isHTTP)
-                {
-                    Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception");
-                    client->checkSendHttpException(httpHelper, E, queryName);
-                }
-                else
-                    client->sendException("Roxie", ROXIE_INTERNAL_ERROR, "Unknown exception", isBlocked, logctx);
-            }
-        }
-#endif
-        if (isHTTP)
-        {
-            try
-            {
-                client->flush();
-            }
-            catch (IException * E)
-            {
-                StringBuffer error("RoxieSocketWorker failed to write to socket ");
-                E->errorMessage(error);
-                logctx.CTXLOG("%s", error.str());
-                E->Release();
-
-            }
-//#ifndef _DEBUG
-            catch(...)
-            {
-                logctx.CTXLOG("RoxieSocketWorker failed to write to socket (Unknown exception)");
-            }
-//#endif
-        }
-        unsigned bytesOut = client? client->bytesOut() : 0;
-        unsigned elapsed = msTick() - qstart;
-        noteQuery(failed, elapsed, priority);
+        noteQueryStats(failed, elapsed, priority);
         if (queryFactory)
         {
             queryFactory->noteQuery(startTime, failed, elapsed, memused, slavesReplyLen, bytesOut);
             queryFactory.clear();
         }
-        if (logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 2 || logFullQueries || logctx.intercept))
+        if (logctx && logctx->queryTraceLevel() && (logctx->queryTraceLevel() > 2 || logFullQueries() || logctx->intercept))
+        {
             if (queryName.get())
             {
                 StringBuffer s;
-                logctx.getStats(s);
-                logctx.CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid, peerStr.str(), elapsed, memused, priority, slavesReplyLen, bytesOut, continuationNeeded, s.str());
+                logctx->getStats(s);
+                logctx->CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid.get(), peer, elapsed, memused, priority, slavesReplyLen, bytesOut, continuationNeeded, s.str());
             }
-        if (continuationNeeded)
+        }
+    }
+};
+
+
+class RoxieProtocolMsgSink : public CInterface, implements IHpccProtocolMsgSink
+{
+    SocketEndpoint ep;
+    CIArrayOf<AccessTableEntry> accessTable;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    RoxieProtocolMsgSink(const SocketEndpoint &_ep)
+    {
+        ep.set(_ep);
+    }
+
+    virtual void addAccess(bool allow, bool allowBlind, const char *ip, const char *mask, const char *query, const char *errorMsg, int errorCode)
+    {
+        accessTable.append(*new AccessTableEntry(allow, allowBlind, ip, mask, query, errorMsg, errorCode));
+    }
+
+    virtual void checkAccess(IpAddress &peer, const char *queryName, const char *queryText, bool isBlind)
+    {
+        bool allowed = true;
+        StringBuffer errorMsg;
+        int errorCode = -1;
+        ForEachItemIn(idx, accessTable)
         {
-            rawText.clear();
-            goto readAnother;
+            AccessTableEntry &item = accessTable.item(idx);
+            item.match(peer, queryName, isBlind, allowed, errorMsg, errorCode);
+            item.match(peer, queryText, isBlind, allowed, errorMsg, errorCode);
+        }
+        if (!allowed)
+        {
+            StringBuffer peerStr;
+            peer.getIpText(peerStr);
+            StringBuffer qText;
+            if (queryText && *queryText)
+                decodeXML(queryText, qText);
+
+            StringBuffer errText;
+            if (errorCode != -1)
+                errText.appendf("errorCode = %d : ", errorCode);
+            else
+                errorCode = ROXIE_ACCESS_ERROR;
+
+            if (errorMsg.length())
+                throw MakeStringException(errorCode, "Cannot run %s : %s from host %s because %s %s", queryName, qText.str(), peerStr.str(), errText.str(), errorMsg.str());
+            else
+                throw MakeStringException(errorCode, "Access to %s : %s from host %s is not allowed %s", queryName, qText.str(), peerStr.str(), errText.str());
+        }
+    }
+
+    virtual void queryAccessInfo(StringBuffer &info)
+    {
+        info.append("<ACCESSINFO>\n");
+        ForEachItemIn(idx, accessTable)
+        {
+            AccessTableEntry &item = accessTable.item(idx);
+            item.queryAccessTableEntryInfo(info);
+        }
+        info.append("</ACCESSINFO>\n");
+    }
+
+    IHpccProtocolMsgContext *createMsgContext(time_t startTime)
+    {
+        return new RoxieProtocolMsgContext(ep, startTime);
+    }
+    virtual StringArray &getTargetNames(StringArray &targets)
+    {
+        CloneArray(targets, allQuerySetNames);
+        return targets;
+    }
+
+    inline RoxieProtocolMsgContext * checkGetRoxieMsgContext(IHpccProtocolMsgContext *msgctx)
+    {
+        if (!msgctx)
+            throw MakeStringExceptionDirect(ROXIE_INTERNAL_ERROR, "Protocol message context cannot be null"); //if protocols become plugins have to be cautious
+        RoxieProtocolMsgContext *roxieMsgCtx = dynamic_cast<RoxieProtocolMsgContext*>(msgctx);
+        if (!roxieMsgCtx)
+            throw MakeStringExceptionDirect(ROXIE_INTERNAL_ERROR, "Invalid protocol message context");
+        return roxieMsgCtx;
+    }
+
+    inline RoxieProtocolMsgContext * checkGetRoxieMsgContext(IHpccProtocolMsgContext *msgctx, IPropertyTree *msg)
+    {
+        if (!msg)
+            throw MakeStringExceptionDirect(ROXIE_INTERNAL_ERROR, "Protocol message cannot be null"); //if protocols become plugins have to be cautious
+        return checkGetRoxieMsgContext(msgctx);
+    }
+
+    virtual void query(IHpccProtocolMsgContext *msgctx, IPropertyTree *msg, IHpccProtocolResponse *protocol, unsigned flags, PTreeReaderOptions xmlReadFlags, const char *target, unsigned idx, unsigned &memused, unsigned &slavesReplyLen)
+    {
+        RoxieProtocolMsgContext *roxieMsgCtx = checkGetRoxieMsgContext(msgctx, msg);
+        IQueryFactory *f = roxieMsgCtx->queryQueryFactory();
+        Owned<IRoxieServerContext> ctx = f->createContext(msg, protocol, flags, *roxieMsgCtx->logctx, xmlReadFlags, target);
+        if (!(flags & HPCC_PROTOCOL_NATIVE))
+        {
+            ctx->process();
+            protocol->finalize(idx);
+            memused += ctx->getMemoryUsage();
+            slavesReplyLen += ctx->getSlavesReplyLen();
         }
         else
         {
             try
             {
-                if (client && !isHTTP && !isStatus)
-                {
-                    if (logctx.intercept)
-                    {
-                        FlushingStringBuffer response(client, isBlocked, mlFmt, isRaw, false, logctx);
-                        response.startDataset("Tracing", NULL, (unsigned) -1);
-                        logctx.outputXML(response);
-                    }
-                    unsigned replyLen = 0;
-                    client->write(&replyLen, sizeof(replyLen));
-                }
-                client.clear();
+                ctx->process();
+                memused = ctx->getMemoryUsage();
+                slavesReplyLen = ctx->getSlavesReplyLen();
+                ctx->done(false);
             }
-            catch (IException * E)
-            {
-                StringBuffer error("RoxieSocketWorker failed to close socket ");
-                E->errorMessage(error);
-                logctx.CTXLOG("%s", error.str()); // MORE - audience?
-                E->Release();
-
-            }
-//#ifndef _DEBUG
             catch(...)
             {
-                logctx.CTXLOG("RoxieSocketWorker failed to close socket (Unknown exception)"); // MORE - audience?
+                memused = ctx->getMemoryUsage();
+                slavesReplyLen = ctx->getSlavesReplyLen();
+                ctx->done(true);
+                throw;
             }
-//#endif
         }
     }
+    virtual void control(IHpccProtocolMsgContext *msgctx, IPropertyTree *msg, const char *xmltext, IHpccProtocolResponse *protocol)
+    {
+        StringBuffer reply;
+        RoxieProtocolMsgContext *roxieMsgCtx = checkGetRoxieMsgContext(msgctx, msg);
+        const char *name = msg->queryName();
+        IContextLogger &logctx = *msgctx->queryLogContext();
+
+        if (strieq(name, "control:lock"))
+        {
+            if (logctx.queryTraceLevel() > 8)
+                logctx.CTXLOG("Got lock request %s", xmltext);
+            roxieMsgCtx->ensureCascadeManager().doLockGlobal(reply, false);
+            if (logctx.queryTraceLevel() > 8)
+                logctx.CTXLOG("lock reply %s", reply.str());
+            unknownQueryStats.noteComplete();
+        }
+        else if (strieq(name, "control:childlock"))
+        {
+            if (logctx.queryTraceLevel() > 8)
+                logctx.CTXLOG("Got childlock request %s", xmltext);
+            roxieMsgCtx->ensureCascadeManager().doLockChild(msg, xmltext, reply);
+            if (logctx.queryTraceLevel() > 8)
+                logctx.CTXLOG("childlock reply %s", reply.str());
+            unknownQueryStats.noteComplete();
+        }
+        else
+        {
+            bool doControlQuery = true;
+            if (strieq(name, "control:aclupdate"))
+            {
+                IPropertyTree *aclTree = msg->queryPropTree("ACL");
+                if (aclTree)
+                {
+                    Owned<IPropertyTreeIterator> accesses = aclTree->getElements("Access");
+                    ForEach(*accesses)
+                    {
+                        IPropertyTree &access = accesses->query();
+                        try
+                        {
+                            addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode", -1));
+                        }
+                        catch (IException *E)
+                        {
+                            StringBuffer s, x;
+                            E->errorMessage(s);
+                            E->Release();
+                            toXML(&access, x, 0, 0);
+                            throw MakeStringException(ROXIE_ACL_ERROR, "Error in access statement %s: %s", x.str(), s.str());
+                        }
+                    }
+                }
+            }
+            else if (strieq(name, "control:queryaclinfo"))
+            {
+                reply.append("<Endpoint ep='");
+                ep.getUrlStr(reply);
+                reply.append("'>\n");
+
+                queryAccessInfo(reply);
+                reply.append("</Endpoint>\n");
+                doControlQuery = false;
+            }
+
+            if (doControlQuery)
+            {
+                roxieMsgCtx->ensureCascadeManager().doControlQuery(ep, msg, xmltext, reply);
+            }
+        }
+        if (reply.length())
+            protocol->appendContent(MarkupFmt_XML, reply.str(), "control"); //will be transformed if necessary
+
+    }
+
+    virtual void debug(IHpccProtocolMsgContext *msgctx, const char *uid, IPropertyTree *msg, const char *logtext, IXmlWriter &out)
+    {
+        RoxieProtocolMsgContext *roxieMsgCtx = checkGetRoxieMsgContext(msgctx, msg);
+        roxieMsgCtx->ensureDebugCommandHandler().doDebugCommand(msg, &roxieMsgCtx->ensureDebuggerContext(uid), out);
+    }
+
+    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned priority, unsigned memused, unsigned slavesReplyLen, bool continuationNeeded)
+    {
+        RoxieProtocolMsgContext *roxieMsgCtx = checkGetRoxieMsgContext(msgctx);
+        roxieMsgCtx->noteQuery(peer, failed, elapsed, memused, slavesReplyLen, bytesOut, priority, continuationNeeded);
+    }
+
 };
+
+extern IHpccProtocolMsgSink *createRoxieProtocolMsgSink(const IpAddress &ip, unsigned short port)
+{
+    SocketEndpoint ep(port, ip);
+    return new RoxieProtocolMsgSink(ep);
+}
 
 //=================================================================================
 
@@ -2009,24 +1637,6 @@ extern void disconnectRoxieQueues()
 IPooledThread *RoxieWorkUnitListener::createNew()
 {
     return new RoxieWorkUnitWorker(this);
-}
-
-IPooledThread *RoxieSocketListener::createNew()
-{
-    return new RoxieSocketWorker(this, ep);
-}
-
-void RoxieSocketListener::runOnce(const char *query)
-{
-    Owned<RoxieSocketWorker> p = new RoxieSocketWorker(this, ep);
-    p->runOnce(query);
-}
-
-IRoxieListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsigned listenQueue, bool suspended)
-{
-    if (traceLevel)
-        DBGLOG("Creating Roxie socket listener, pool size %d, listen queue %d%s", poolSize, listenQueue, suspended?" SUSPENDED":"");
-    return new RoxieSocketListener(port, poolSize, listenQueue, suspended);
 }
 
 IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended)
