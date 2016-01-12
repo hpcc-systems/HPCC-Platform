@@ -1035,26 +1035,38 @@ int CDfuPlusHelper::remove()
         return -1;
     }
 
-    const char* result = resp->getDFUArrayActionResult();
     StringBuffer resultbuf;
-    if(result != NULL && *result != '\0')
+    IArrayOf<IConstDFUActionInfo>& actionResults = resp->getActionResults();
+    if (actionResults.ordinality())
     {
-        if(*result != '<')
-            resultbuf.append(result);
-        else
+        ForEachItemIn(i, actionResults)
         {
-            bool intag = false;
-            int i = 0;
-            char c;
-            while((c = result[i]) != '\0')
+            IConstDFUActionInfo& actionResult = actionResults.item(i);
+            resultbuf.append(actionResult.getActionResult()).append("\n");
+        }
+    }
+    else
+    {
+        const char* result = resp->getDFUArrayActionResult();
+        if(result != NULL && *result != '\0')
+        {
+            if(*result != '<')
+                resultbuf.append(result);
+            else
             {
-                if(c == '<')
-                    intag = true;
-                else if(c == '>')
-                    intag = false;
-                else if(!intag)
-                    resultbuf.append(c);
-                i++;
+                bool intag = false;
+                int i = 0;
+                char c;
+                while((c = result[i]) != '\0')
+                {
+                    if(c == '<')
+                        intag = true;
+                    else if(c == '>')
+                        intag = false;
+                    else if(!intag)
+                        resultbuf.append(c);
+                    i++;
+                }
             }
         }
     }
