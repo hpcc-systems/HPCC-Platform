@@ -293,7 +293,7 @@ endif()
 message("-- Base build tag is '${BASE_BUILD_TAG}'")
 configure_file(${HPCC_SOURCE_DIR}/build-config.h.cmake "build-config.h")
 
-#set( CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON )
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 #set( CPACK_DEB_PACKAGE_COMPONENT ON )
 
 if(TOP_LEVEL_PROJECT)
@@ -413,5 +413,18 @@ endif(TOP_LEVEL_PROJECT)
 ###
 if(PLATFORM OR CLIENTTOOLS OR REMBED)
     install(FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION "." COMPONENT Runtime)
+endif()
+
+if("${packageManagement}" STREQUAL "DEB")
+    install(CODE "
+            execute_process(COMMAND mkdir -p ${INSTALL_DIR}
+                            WORKING_DIRECTORY ${PREFIX})
+            if(EXISTS \"${INSTALL_DIR}/lib\")
+                execute_process(COMMAND rm -f lib
+                                WORKING_DIRECTORY ${INSTALL_DIR})
+            endif()
+            execute_process(COMMAND ln -sf ${CMAKE_BINARY_DIR}/_CPack_Packages/${CPACK_SYSTEM_NAME}/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}${INSTALL_DIR}/lib lib
+                            WORKING_DIRECTORY ${INSTALL_DIR})"
+    COMPONENT Runtime)
 endif()
 include(CPack)
