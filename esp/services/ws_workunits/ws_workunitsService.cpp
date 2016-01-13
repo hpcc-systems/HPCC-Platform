@@ -70,9 +70,17 @@ public:
     StringAttr query;
 };
 
+//The ECLWUActionNames[] has to match with the ESPenum ECLWUActions in the ecm file.
 static unsigned NumOfECLWUActionNames = 11;
-static const char *ECLWUActionNames[] = { "Abort", "Delete", "EventDeschedule", "Pause", "PauseNow" ,
-        "Protect" , "Unprotect" , "EventReschedule" , "Restore" , "Resume" , "SetToFailed" };
+static const char *ECLWUActionNames[] = { "Abort", "Delete", "Deschedule", "Reschedule", "Pause",
+    "PauseNow", "Protect", "Unprotect", "Restore", "Resume", "SetToFailed", NULL };
+
+class CECLWUActionsEx : public SoapEnumParamNew<CECLWUActions>
+{
+public:
+    CECLWUActionsEx() : SoapEnumParamNew<CECLWUActions>() { init("ECLWUActions","string", ECLWUActionNames); }
+};
+static CECLWUActionsEx eclWUActionType;
 
 void setActionResult(const char* wuid, CECLWUActions action, const char* result, StringBuffer& strAction, IArrayOf<IConstWUActionResult>* results)
 {
@@ -616,7 +624,12 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
 {
     try
     {
-        CECLWUActions action = req.getActionType();
+        CECLWUActions action;
+        double version = context.getClientVersion();
+        if (version >= 1.57)
+            action = req.getWUActionType();
+        else
+            action = eclWUActionType.toEnum(req.getActionType());
         if (action == ECLWUActions_Undefined)
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"Action not defined.");
 
