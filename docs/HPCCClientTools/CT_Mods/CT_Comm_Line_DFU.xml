@@ -35,7 +35,7 @@
 
         <para></para>
 
-        <informaltable colsep="0" frame="none" rowsep="0">
+        <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
             <colspec align="left" colwidth="85.40pt" />
 
@@ -134,7 +134,7 @@
           <para>The following <emphasis>options </emphasis>are common to every
           <emphasis>operation</emphasis>:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.40pt" />
 
@@ -330,7 +330,7 @@ replicate=1</programlisting>
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">spray</emphasis> <emphasis>operation</emphasis>:</para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.50pt" />
 
@@ -421,23 +421,21 @@ replicate=1</programlisting>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">fixed</emphasis>
-                    <emphasis>format</emphasis> options:</entry>
+                    <entry><programlisting role="tab">  <emphasis role="bold">fixed</emphasis> format options:</programlisting></entry>
                   </row>
 
                   <row>
-                    <entry><emphasis>recordsize</emphasis></entry>
+                    <entry><programlisting role="tab">    recordsize</programlisting></entry>
 
                     <entry>The fixed size of each record, in bytes.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">csv/delimited</emphasis>
-                    <emphasis>format </emphasis>options:</entry>
+                    <entry><programlisting role="tab">  <emphasis role="bold">csv/delimited</emphasis> options:</programlisting></entry>
                   </row>
 
                   <row>
-                    <entry><emphasis>encoding</emphasis></entry>
+                    <entry><programlisting role="tab">    encoding</programlisting></entry>
 
                     <entry>Optional. One of the following: ascii, utf8, utf8n,
                     utf16, utf16le, utf16be, utf32, utf32le, utf32be ; If
@@ -445,21 +443,21 @@ replicate=1</programlisting>
                   </row>
 
                   <row>
-                    <entry><emphasis>maxrecordsize</emphasis></entry>
+                    <entry><programlisting role="tab">    maxrecordsize</programlisting></entry>
 
                     <entry>Optional. The maximum size of each record, in
                     bytes. If omitted, the default is 8192.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis>separator</emphasis></entry>
+                    <entry><programlisting role="tab">    separator</programlisting></entry>
 
                     <entry>Optional. The field delimiter. If omitted, the
                     default is a comma (\,).</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis>terminator</emphasis></entry>
+                    <entry><programlisting role="tab">    terminator</programlisting></entry>
 
                     <entry>Optional. The record delimiter. If omitted, the
                     default is line feed or carriage return line feed
@@ -467,25 +465,24 @@ replicate=1</programlisting>
                   </row>
 
                   <row>
-                    <entry><emphasis>quote</emphasis></entry>
+                    <entry><programlisting role="tab">    quote</programlisting></entry>
 
                     <entry>Optional. The string quote character. If omitted,
                     the default is single quote (’).</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">xml</emphasis>
-                    <emphasis>format </emphasis>options:</entry>
+                    <entry><programlisting role="tab"><emphasis role="bold">  xml</emphasis> format options:</programlisting></entry>
                   </row>
 
                   <row>
-                    <entry><emphasis>rowtag</emphasis></entry>
+                    <entry><programlisting role="tab">    rowtag</programlisting></entry>
 
                     <entry>The XML tag identifying each record.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis>encoding</emphasis></entry>
+                    <entry><programlisting role="tab">    encoding</programlisting></entry>
 
                     <entry>Optional. One of the following: utf8 utf8n utf16
                     utf16le utf16be utf32 utf32le utf32beIf omitted, the
@@ -493,7 +490,7 @@ replicate=1</programlisting>
                   </row>
 
                   <row>
-                    <entry><emphasis>maxrecordsize</emphasis></entry>
+                    <entry><programlisting role="tab">    maxrecordsize</programlisting></entry>
 
                     <entry>Optional. The maximum size of each record, in
                     bytes. If omitted, the default is 8192.</entry>
@@ -578,7 +575,7 @@ END;</programlisting>
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">despray</emphasis> operation:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.50pt" />
 
@@ -720,7 +717,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">copy</emphasis> <emphasis>operation</emphasis>:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -799,7 +796,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">remove</emphasis> <emphasis>operation</emphasis>:</para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -829,7 +826,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">rename</emphasis> <emphasis>operation</emphasis>:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -865,7 +862,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">list</emphasis> <emphasis>operation</emphasis>:</para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -896,7 +893,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">add</emphasis> <emphasis>operation</emphasis>:</para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec colwidth="122.40pt" />
 
@@ -924,7 +921,7 @@ dfuplus action=dspray srcname=le::imagedb
           role="bold">add</emphasis> <emphasis>operation </emphasis>to add
           files from a remote Dali:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -989,7 +986,7 @@ dfuplus action=dspray srcname=le::imagedb
           role="bold">addsuper</emphasis>
           <emphasis>operation</emphasis>:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -1039,7 +1036,7 @@ dfuplus action=dspray srcname=le::imagedb
           role="bold">removesuper</emphasis>
           <emphasis>operation</emphasis>:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -1091,7 +1088,7 @@ dfuplus action=dspray srcname=le::imagedb
           role="bold">listsuper</emphasis>
           <emphasis>operation</emphasis>:</para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec colwidth="122.40pt" />
 
@@ -1122,7 +1119,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">status</emphasis> <emphasis>operation</emphasis>:</para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec colwidth="122.40pt" />
 
@@ -1153,7 +1150,7 @@ dfuplus action=dspray srcname=le::imagedb
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">abort</emphasis> <emphasis>operation</emphasis>:</para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec colwidth="122.40pt" />
 
@@ -1187,7 +1184,7 @@ dfuplus action=dspray srcname=le::imagedb
           role="bold">resubmit</emphasis>
           <emphasis>operation</emphasis>:</para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec colwidth="122.40pt" />
 
@@ -1226,7 +1223,7 @@ dfuplus action=dspray srcname=le::imagedb
 
           <para></para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec colwidth="122.40pt" />
 
@@ -1294,7 +1291,7 @@ dfuplus action=dspray srcname=le::imagedb
           role="bold">monitor</emphasis>
           <emphasis>operation</emphasis>:</para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec colwidth="85.55pt" />
 

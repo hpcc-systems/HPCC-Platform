@@ -7,7 +7,7 @@
   <para>This manual contains documentation for the set of Client Tools for use
   with the LexisNexis HPCC. These tools include:</para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 
