@@ -66,7 +66,7 @@ define([
                 case "RecordCount":
                     request.Sortby = "Records";
                     break;
-                case "Totalsize":
+                case "IntSize":
                     request.Sortby = "FileSize";
                     break;
             }
