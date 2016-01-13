@@ -76,7 +76,7 @@ public:
                 }
             }
             if (optVerbose)
-                fprintf(stdout, "Finished processing ESDL definition\n");
+                fprintf(stdout, "Finished processing ESDL definition: %s\n", source);
         }
         else if (optVerbose)
             fprintf(stdout, "ESDL definition: %s has already been loaded!\n", source);
