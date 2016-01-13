@@ -1350,7 +1350,7 @@ public:
     {
     }
 
-    virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes)
+    virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes)
     {
     }
 
@@ -5351,9 +5351,9 @@ interface ILocalGraphEx : public IEclGraphResults
 {
 public:
     virtual void setResult(unsigned id, IGraphResult * result) = 0;
-    virtual IRoxieInput * createResultIterator(unsigned id) = 0;
+    virtual IEngineRowStream * createResultIterator(unsigned id) = 0;
     virtual void setGraphLoopResult(IGraphResult * result) = 0;
-    virtual IRoxieInput * createGraphLoopResultIterator(unsigned id) = 0;
+    virtual IEngineRowStream * createGraphLoopResultIterator(unsigned id) = 0;
 };
 
 
@@ -5595,7 +5595,7 @@ public:
     }
 
 // interface IGraphResult
-    virtual IRoxieInput * createIterator()
+    virtual IEngineRowStream * createIterator()
     {
         if (!complete)
             throw MakeStringException(ROXIE_GRAPH_PROCESSING_ERROR, "Internal Error: Reading uninitialised graph result"); 
@@ -5635,21 +5635,27 @@ public:
     }
 
 protected:
-    class CGraphResultIterator : public CPseudoRoxieInput
+    class CGraphResultIterator : public CInterfaceOf<IEngineRowStream>
     {
         unsigned i;
         Linked<CGraphResult> result;
 
     public:
         CGraphResultIterator(CGraphResult * _result) : result(_result) { i = 0; }
-        IMPLEMENT_IINTERFACE
-
 
     public:
         virtual const void * nextRow()
         {
             return result->getRow(i++);
         }
+        virtual void stop()
+        {
+        }
+        virtual void resetEOF()
+        {
+            throwUnexpected();
+        }
+
     };
 };
 
@@ -5660,7 +5666,7 @@ class CRoxieServerLocalResultReadActivity : public CRoxieServerActivity
 {
     IHThorLocalResultReadArg &helper;
     CriticalSection iterCrit;
-    Owned<IRoxieInput> iter;
+    Owned<IEngineRowStream> iter;
     ILocalGraphEx * graph;
     unsigned graphId;
     unsigned sequence;
@@ -5698,7 +5704,7 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        Linked<IRoxieInput> useIter;
+        Linked<IEngineRowStream> useIter;
         {
             CriticalBlock b(iterCrit);
             if (!iter)
@@ -5990,7 +5996,8 @@ class CRoxieServerGraphLoopResultReadActivity : public CRoxieServerActivity
 protected:
     IHThorGraphLoopResultReadArg &helper;
     CriticalSection iterCrit;
-    Owned<IRoxieInput> iter;
+    Owned<IRoxieInput> iterInput;
+    Owned<IEngineRowStream> iterStream;
     ILocalGraphEx * graph;
     unsigned graphId;
     unsigned sequence;
@@ -6012,8 +6019,8 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        if (iter)
-            iter->start(parentExtractSize, parentExtract, paused);
+        if (iterInput)
+            iterInput->start(parentExtractSize, parentExtract, paused);
         else
         {
             sequence = helper.querySequence();
@@ -6021,7 +6028,8 @@ public:
             {
                 try
                 {
-                    iter.setown(graph->createGraphLoopResultIterator(sequence));
+                    iterStream.setown(graph->createGraphLoopResultIterator(sequence));
+                    iterInput.clear();
                 }
                 catch (IException * E)
                 {
@@ -6033,8 +6041,8 @@ public:
 
     virtual void stop()
     {
-        if (iter)
-            iter->stop();
+        if (iterStream)
+            iterStream->stop();
         CRoxieServerActivity::stop();
     }
 
@@ -6042,9 +6050,10 @@ public:
     {
         {
             CriticalBlock b(iterCrit);
-            if (iter)
-                iter->reset();
-            iter.clear();
+            if (iterInput)
+                iterInput->reset();
+            iterInput.clear();
+            iterStream.clear();
         }
         CRoxieServerActivity::reset(); 
     };
@@ -6052,14 +6061,14 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        Linked<IRoxieInput> useIter;
+        Linked<IEngineRowStream> useStream;
         {
             CriticalBlock b(iterCrit);
-            if (!iter)
+            if (!iterStream)
                 return NULL;
-            useIter.set(iter);
+            useStream.set(iterStream);
         }
-        const void * next = useIter->nextRow();
+        const void * next = useStream->nextRow();
         if (next)
         {
             processed++;
@@ -6080,22 +6089,26 @@ public:
         processor.noteUseIteration(helper.querySequence());
     }
 
-    virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes)
+    virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes)
     {
-        //helper already initialised from the gratherIterationUsage() call.
-        iter.set(processor.connectIterationOutput(helper.querySequence(), probeManager, probes, this, 0));
+        //helper already initialised from the gatherIterationUsage() call.
+        iterInput.set(processor.connectIterationOutput(helper.querySequence(), probeManager, probes, this, 0));
+        if (iterInput)
+            iterStream.set(&iterInput->queryStream());
+        else
+            iterStream.clear();
     }
 
     virtual IInputSteppingMeta * querySteppingMeta()
     {
-        assertex(iter);
-        return iter->querySteppingMeta();
+        assertex(iterInput);
+        return iterInput->querySteppingMeta();
     }
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        assertex(iter);
-        return iter->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        assertex(iterStream);
+        return iterStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 };
 
@@ -6117,7 +6130,8 @@ public:
         {
             try
             {
-                iter.setown(graph->createGraphLoopResultIterator(sequence));
+                iterStream.setown(graph->createGraphLoopResultIterator(sequence));
+                iterInput.clear();
             }
             catch (IException * E)
             {
@@ -13623,17 +13637,17 @@ class CRoxieServerSequentialLoopActivity : public CRoxieServerLoopActivity
 {
     Owned<IActivityGraph> loopQuery;
     Owned<IRoxieServerChildGraph> loopGraph;
-    IRoxieInput * curInput;
+    IEngineRowStream * curStream;
     RtlLinkedDatasetBuilder *loopInputBuilder;
     CPointerArrayRoxieInput arrayInput;
-    Linked<IRoxieInput> resultInput; 
+    Linked<IEngineRowStream> resultStream;
     unsigned loopCounter;
 
 public:
     CRoxieServerSequentialLoopActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _loopGraphId, IOutputMetaData * _counterMeta)
         : CRoxieServerLoopActivity(_factory, _probeManager, _loopGraphId, _counterMeta)
     {
-        curInput = NULL;
+        curStream = NULL;
         loopCounter = 0;
         loopInputBuilder = NULL;
     }
@@ -13648,7 +13662,7 @@ public:
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        curInput = input;
+        curStream = &input->queryStream();
         loopCounter = 1;
         CRoxieServerLoopActivity::start(parentExtractSize, parentExtract, paused);
 
@@ -13674,10 +13688,10 @@ public:
         {
             loop
             {
-                const void * ret = curInput->nextRow();
+                const void * ret = curStream->nextRow();
                 if (!ret)
                 {
-                    ret = curInput->nextRow();      // more cope with groups somehow....
+                    ret = curStream->nextRow();      // more cope with groups somehow....
                     if (!ret)
                     {
                         if (finishedLooping)
@@ -13713,7 +13727,7 @@ public:
                             }
                             arrayInput.init(loopInputBuilder->getcount(), loopInputBuilder->linkrows());
                             // MORE - should builder be cleared here?
-                            curInput = &arrayInput;
+                            curStream = &arrayInput;
                             finishedLooping = true;
                             continue;       // back to the input loop again
                         }
@@ -13746,11 +13760,11 @@ public:
             try 
             {
                 Owned<IRoxieGraphResults> results = executeIteration(loopExtractBuilder.size(), loopExtractBuilder.getbytes(), loopCounter);
-                resultInput.setown(results->createIterator(0));
+                resultStream.setown(results->createIterator(0));
 
                 if (flags & IHThorLoopArg::LFnewloopagain)
                 {
-                    Owned<IRoxieInput> againResult = results->createIterator(helper.loopAgainResult());
+                    Owned<IEngineRowStream> againResult = results->createIterator(helper.loopAgainResult());
                     OwnedConstRoxieRow row  = againResult->nextRow();
                     assertex(row);
                     //Result is a row which contains a single boolean field.
@@ -13763,7 +13777,7 @@ public:
                 throw makeWrappedException(E);
             }
 
-            curInput = resultInput.get();
+            curStream = resultStream.get();
 
             loopCounter++;
             if ((activityKind == TAKloopcount) && (loopCounter > maxIterations))
@@ -14367,7 +14381,7 @@ class CRoxieServerSequentialGraphLoopActivity : public CRoxieServerGraphLoopActi
 {
     Owned<IActivityGraph> GraphQuery;
     Owned<IRoxieServerChildGraph> loopGraph;
-    Linked<IRoxieInput> resultInput; 
+    Linked<IEngineRowStream> resultStream;
     bool evaluated;
 
 public:
@@ -14408,7 +14422,7 @@ public:
             evaluated = true;
         }
 
-        const void * ret = resultInput->nextRow();
+        const void * ret = resultStream->nextRow();
         if (ret)
             processed++;
         return ret;
@@ -14450,7 +14464,7 @@ public:
             executeIteration(GraphExtractBuilder.size(), GraphExtractBuilder.getbytes(), loopCounter);
         }
 
-        resultInput.setown(loopGraph->getGraphLoopResult(maxIterations));
+        resultStream.setown(loopGraph->getGraphLoopResult(maxIterations));
     }
 };
 
@@ -14478,12 +14492,13 @@ private:
     unsigned sourceIdx;
     Linked<IRoxieServerActivity> sourceAct;
     Linked<IRoxieInput> sourceInput;
+    Linked<IEngineRowStream> sourceStream;
     unsigned numUses;
     unsigned iteration;
 
 public:
-    CGraphIterationInfo(IRoxieServerActivity * _sourceAct, IRoxieInput *_input, unsigned _sourceIdx, unsigned _iteration)
-        : sourceAct(_sourceAct), sourceInput(_input), sourceIdx(_sourceIdx), iteration(_iteration)
+    CGraphIterationInfo(IRoxieServerActivity * _sourceAct, IRoxieInput *_input, IEngineRowStream *_stream, unsigned _sourceIdx, unsigned _iteration)
+        : sourceAct(_sourceAct), sourceInput(_input), sourceStream(_stream),  sourceIdx(_sourceIdx), iteration(_iteration)
     {
         numUses = 0;
     }
@@ -14493,7 +14508,7 @@ public:
         numUses++;
     }
 
-    void createSplitter(IRoxieSlaveContext *ctx, IProbeManager *probeManager)
+    void createSplitter(IRoxieSlaveContext *ctx, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes)
     {
         if (numUses > 1)
         {
@@ -14503,28 +14518,32 @@ public:
             IRoxieInput *input = sourceAct->queryOutput(sourceIdx);
             if (probeManager)
             {
-                IInputBase * inputBase = probeManager->createProbe(static_cast<IInputBase*>(input), sourceAct, splitter, sourceIdx, 0, iteration);
-                input = static_cast<IRoxieInput*>(inputBase);
-                // MORE - shouldn't this be added to probes?
+                IRoxieProbe * inputProbe = probeManager->createProbe(static_cast<IInputBase*>(input), sourceStream, sourceAct, splitter, sourceIdx, 0, iteration);
+                probes.append(*LINK(inputProbe));
+                input = &dynamic_cast<IRoxieInput &>(inputProbe->queryInput());
             }
             sourceAct.setown(splitter);
             sourceAct->setInput(0, input);
             sourceIdx = 0;
             sourceInput.clear();
+            sourceStream.clear();
         }
     }
 
-    IRoxieInput *connectOutput(IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx)
+    IRoxieInput *connectOutput(IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx)
     {
         // MORE - not really necessary to create splitters in separate pass, is it?
         if (factory) // we created a splitter....
+        {
             sourceInput.set(sourceAct->queryOutput(sourceIdx));
+            sourceStream.set(&sourceInput->queryStream());
+        }
         IRoxieInput *ret = sourceInput;
         if (probeManager)
         {
-            IInputBase *inputBase = probeManager->createProbe(ret, sourceAct, targetAct, sourceIdx, targetIdx, iteration);
-            ret = static_cast<IRoxieInput *>(inputBase);
-            probes.append(*LINK(ret));
+            IRoxieProbe * inputProbe = probeManager->createProbe(sourceInput, sourceStream, sourceAct, targetAct, sourceIdx, targetIdx, iteration);
+            probes.append(*LINK(inputProbe));
+            ret = &dynamic_cast<IRoxieInput &>(inputProbe->queryInput());
         }
         if (factory) // we created a splitter....
             sourceIdx++;
@@ -14537,14 +14556,14 @@ public:
 class CRoxieServerParallelGraphLoopActivity : public CRoxieServerGraphLoopActivity, implements IRoxieServerLoopResultProcessor
 {
     Owned<IActivityGraph> childGraph;
-    IRoxieInput * resultInput; 
+    IRoxieInput * resultInput;
     CIArrayOf<CGraphIterationInfo> outputs;
     IArrayOf<IRoxieServerChildGraph> iterationGraphs;
     Owned<CExtractMapperInput> inputExtractMapper;
     IProbeManager *probeManager;
     unsigned createLoopCounter;
 
-    IArrayOf<IRoxieInput> probes;
+    IArrayOf<IRoxieProbe> probes;
 
 public:
     CRoxieServerParallelGraphLoopActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _GraphGraphId, IOutputMetaData * _counterMeta)
@@ -14625,7 +14644,7 @@ public:
     {
         //result(0) is the input to the graph.
         resultInput = inputExtractMapper;
-        outputs.append(* new CGraphIterationInfo(resultInput->queryActivity(), resultInput, 0, 1));
+        outputs.append(* new CGraphIterationInfo(resultInput->queryActivity(), resultInput, &resultInput->queryStream(), 0, 1));
 
         for (createLoopCounter=1; createLoopCounter <= maxIterations; createLoopCounter++)
         {
@@ -14638,19 +14657,19 @@ public:
         }
         createLoopCounter = 0;
 
-        createSplitters(probeManager);
+        createSplitters(probeManager, probes);
 
         ForEachItemIn(i2, iterationGraphs)
             iterationGraphs.item(i2).associateIterationOutputs(*this);
         resultInput = outputs.tos().connectOutput(probeManager, probes, this, 0);
     }
 
-    void createSplitters(IProbeManager *probeManager)
+    void createSplitters(IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes)
     {
         ForEachItemIn(i, outputs)
         {
             CGraphIterationInfo & next = outputs.item(i);
-            next.createSplitter(ctx, probeManager);
+            next.createSplitter(ctx, probeManager, probes);
         }
     }
 
@@ -14666,7 +14685,7 @@ public:
         }
     }
 
-    virtual IRoxieInput * connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx)
+    virtual IRoxieInput* connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx)
     {
         if (outputs.isItem(whichIteration))
         {
@@ -15294,9 +15313,9 @@ public:
             processor.noteUseIteration(selections[i]);
     }
 
-    virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes)
+    virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes)
     {
-        //selection  etc. already initialised from the gratherIterationUsage() call.
+        //selection  etc. already initialised from the gatherIterationUsage() call.
         unsigned max = selectionLen / sizeof(size32_t);
         const size32_t * selections = (const size32_t *)selection.getdata();
         for (unsigned i = 0; i < max; i++)
@@ -25436,7 +25455,7 @@ public:
         results.kill();
     }
 
-    IRoxieInput * createIterator(unsigned id)
+    virtual IEngineRowStream * createIterator(unsigned id)
     {
         return select(id).createIterator();
     }
@@ -25606,7 +25625,7 @@ protected:
     // NOTE - destructor order is significant - need to destroy graphCodeContext and graphSlaveContext last
 
     IArrayOf<IRoxieServerActivity> activities;
-    IArrayOf<IRoxieInput> probes;
+    IArrayOf<IRoxieProbe> probes;
     IRoxieServerActivityCopyArray sinks;
     StringAttr graphName;
     Owned<CGraphResults> results;
@@ -25695,9 +25714,9 @@ public:
         IRoxieInput * output = sourceActivity.queryOutput(sourceIdx);
         if (probeManager)
         {
-            IInputBase * inputBase = probeManager->createProbe(static_cast<IInputBase*>(output), &sourceActivity, &targetActivity, sourceIdx, targetIdx, iteration);
-            output = static_cast<IRoxieInput*>(inputBase);
-            probes.append(*LINK(output));
+            IRoxieProbe * inputProbe = probeManager->createProbe(static_cast<IInputBase*>(output), &output->queryStream(), &sourceActivity, &targetActivity, sourceIdx, targetIdx, iteration);
+            probes.append(*LINK(inputProbe));
+            output = &dynamic_cast<IRoxieInput &>(inputProbe->queryInput());
         }
         targetActivity.setInput(targetIdx, output);
     }
@@ -25933,7 +25952,7 @@ public:
     {
         results->setResult(id, result);
     }
-    virtual IRoxieInput * createResultIterator(unsigned id)
+    virtual IEngineRowStream * createResultIterator(unsigned id)
     {
         return results->createIterator(id);
     }
@@ -25941,7 +25960,7 @@ public:
     {
         graphLoopResults.appendResult(result);
     }
-    virtual IRoxieInput * createGraphLoopResultIterator(unsigned id)
+    virtual IEngineRowStream * createGraphLoopResultIterator(unsigned id)
     {
         try
         {
@@ -25965,7 +25984,7 @@ public:
     {
         graphLoopResults.setResult(id, result);
     }
-    virtual IRoxieInput * getGraphLoopResult(unsigned id)
+    virtual IEngineRowStream * getGraphLoopResult(unsigned id)
     {
         return graphLoopResults.createIterator(id);
     }
@@ -26136,7 +26155,9 @@ public:
     virtual CGraphIterationInfo *selectGraphLoopOutput()
     {
         IRoxieServerActivity &sourceActivity = activities.item(graphOutputActivityIndex);
-        return new CGraphIterationInfo(&sourceActivity, sourceActivity.queryOutput(0), 0, loopCounter);
+        IRoxieInput *sourceInput = sourceActivity.queryOutput(0);
+        IEngineRowStream *sourceStream = &sourceInput->queryStream();
+        return new CGraphIterationInfo(&sourceActivity, sourceInput, sourceStream, 0, loopCounter);
     }
 
     virtual void gatherIterationUsage(IRoxieServerLoopResultProcessor & processor)

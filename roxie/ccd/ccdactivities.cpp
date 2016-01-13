@@ -5164,15 +5164,12 @@ public:
         {
             remoteGraph->beforeExecute();
             Owned<IRoxieInput> input = remoteGraph->startOutput(0, remoteExtractBuilder.size(), remoteExtractBuilder.getbytes(), false);
+            IEngineRowStream &stream = input->queryStream();
             while (!aborted)
             {
-                const void * next = input->nextRow();
+                const void * next = stream.ungroupedNextRow();
                 if (!next)
-                {
-                    next = input->nextRow();
-                    if (!next)
-                        break;
-                }
+                    break;
 
                 size32_t nextSize = meta.getRecordSize(next);
                 //MORE - what about grouping?

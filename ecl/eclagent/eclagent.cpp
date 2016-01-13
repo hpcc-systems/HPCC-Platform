@@ -3605,10 +3605,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
 //=======================================================================================
 //copied/modified from ccdserver
-class InputProbe : public CInterface, implements IHThorInput, implements IEngineRowStream // base class for the edge probes used for tracing and debugging....
+class InputProbe : public CInterface, implements IHThorInput, implements IEngineRowStream, implements IRoxieProbe // base class for the edge probes used for tracing and debugging....
 {
 protected:
     IHThorInput *in;
+    IEngineRowStream *stream;
     unsigned sourceId;
     unsigned sourceIdx;
     unsigned targetId;
@@ -3625,8 +3626,8 @@ protected:
     bool everStarted;
         
 public:
-    InputProbe(IHThorInput *_in, unsigned _sourceId, unsigned _sourceIdx, unsigned _targetId, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
-        : in(_in), sourceId(_sourceId), sourceIdx(_sourceIdx), targetId(_targetId), targetIdx(_targetIdx), iteration(_iteration), channel(_channel)
+    InputProbe(IHThorInput *_in, IEngineRowStream *_stream, unsigned _sourceId, unsigned _sourceIdx, unsigned _targetId, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
+        : in(_in), stream(_stream), sourceId(_sourceId), sourceIdx(_sourceIdx), targetId(_targetId), targetIdx(_targetIdx), iteration(_iteration), channel(_channel)
     {
         hasStarted = false;
         hasStopped = false;
@@ -3669,12 +3670,12 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        return in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return stream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     virtual const void *nextRow()
     {
-        const void *ret = in->nextRow();
+        const void *ret = stream->nextRow();
         if (ret)
         {
             size32_t size = in->queryOutputMeta()->getRecordSize(ret);
@@ -3702,7 +3703,15 @@ public:
     virtual void stop() 
     { 
         hasStopped = true;
-        in->stop(); 
+        stream->stop();
+    }
+    virtual IEngineRowStream &queryStream()
+    {
+        return *this;
+    }
+    virtual IInputBase &queryInput()
+    {
+        return *this;
     }
 };
 
@@ -3760,8 +3769,8 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
     }
 
 public:
-    DebugProbe(IHThorInput *_in, unsigned _sourceId, unsigned _sourceIdx, DebugActivityRecord *_sourceAct, unsigned _targetId, unsigned _targetIdx, DebugActivityRecord *_targetAct, unsigned _iteration, unsigned _channel, IDebuggableContext *_debugContext)
-        : InputProbe(_in, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
+    DebugProbe(IHThorInput *_in, IEngineRowStream *_stream, unsigned _sourceId, unsigned _sourceIdx, DebugActivityRecord *_sourceAct, unsigned _targetId, unsigned _targetIdx, DebugActivityRecord *_targetAct, unsigned _iteration, unsigned _channel, IDebuggableContext *_debugContext)
+        : InputProbe(_in, _stream, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
           sourceAct(_sourceAct), targetAct(_targetAct), debugContext(_debugContext)
     {
         historyCapacity = debugContext->getDefaultHistoryCapacity();
@@ -4056,12 +4065,12 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        return in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return stream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     virtual void stop()
     {
-        in->stop();
+        stream->stop();
     }
 
     virtual const void *nextRow()
@@ -4161,7 +4170,7 @@ public:
     {
     }
 
-    IInputBase *createProbe(IInputBase *in, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
+    IRoxieProbe *createProbe(IInputBase *in, IEngineRowStream *stream, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
     {
         CriticalBlock b(crit);
         unsigned channel = debugContext->queryChannel();
@@ -4169,7 +4178,7 @@ public:
         unsigned targetId = targetAct->queryId();
         DebugActivityRecord *sourceActRecord = noteActivity(sourceAct, iteration, channel, debugContext->querySequence());
         DebugActivityRecord *targetActRecord = noteActivity(targetAct, iteration, channel, debugContext->querySequence());
-        DebugProbe *probe = new DebugProbe(dynamic_cast<IHThorInput*>(in), sourceId, sourceIdx, sourceActRecord, targetId, targetIdx, targetActRecord, iteration, channel, debugContext);
+        DebugProbe *probe = new DebugProbe(dynamic_cast<IHThorInput*>(in), stream, sourceId, sourceIdx, sourceActRecord, targetId, targetIdx, targetActRecord, iteration, channel, debugContext);
     #ifdef _DEBUG
         DBGLOG("Creating probe for edge id %s in graphManager %p", probe->queryEdgeId(), this);
     #endif

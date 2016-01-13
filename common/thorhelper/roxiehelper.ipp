@@ -33,6 +33,7 @@ struct IInputBase : public IInterface //base for IRoxieInput and IHThorInput
 
     // These will need some thought
     virtual IEngineRowStream &queryStream() = 0;
+
     inline void resetEOF() { queryStream().resetEOF(); }
     inline bool nextGroup(ConstPointerArray & group) { return queryStream().nextGroup(group); }
     inline void readAll(RtlLinkedDatasetBuilder &builder) { return queryStream().readAll(builder); }
