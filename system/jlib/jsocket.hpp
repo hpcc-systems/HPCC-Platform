@@ -534,6 +534,7 @@ extern jlib_decl bool catchWriteBuffer(ISocket * socket, MemoryBuffer & buffer);
 interface IConversation: extends IInterface
 {
     virtual bool accept(unsigned timeoutms)=0;                      // one side accepts
+    virtual void set_keep_alive(bool keepalive)=0;                  // enable keepalive for socket
     virtual bool connect(unsigned timeoutms)=0;                     // other side connects
     virtual bool send(MemoryBuffer &mb)=0;                          // 0 length buffer can be sent
     virtual bool recv(MemoryBuffer &mb, unsigned timeoutms)=0;      // up to protocol to terminate conversation (e.g. by zero length buffer)
