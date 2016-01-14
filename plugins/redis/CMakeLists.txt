@@ -24,7 +24,7 @@
 
 project(redis)
 
-if(REDISEMBED)
+if(REDIS)
     ADD_PLUGIN(redis PACKAGES REDIS OPTION MAKE_REDIS)
     if(MAKE_REDIS)
         set(
