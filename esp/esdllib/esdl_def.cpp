@@ -1862,12 +1862,9 @@ public:
                             if(type == XmlPullParser::START_TAG)
                             {
                                 xpp->readStartTag(stag);
+                                //we're loading from buffer, no need to load includes from file
                                 if(!stricmp(stag.getLocalName(), "EsdlInclude"))
-                                {
-                                    const char *incname = stag.getValue("file");
-                                    loadfile(path, incname, indent+3);
                                     xpp->skipSubTree();
-                                }
                                 else if(!stricmp(stag.getLocalName(), "EsdlStruct"))
                                     loadStruct(xpp.get(), stag, EsdlTypeStruct);
                                 else if(!stricmp(stag.getLocalName(), "EsdlRequest"))
