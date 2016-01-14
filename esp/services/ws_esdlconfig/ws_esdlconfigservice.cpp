@@ -621,15 +621,15 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
 
         StringBuffer esdlDefinitionName;
 
-        int esdlver = 1;
+        int esdlver = 0;
         const char * esdlDefId = esdlDefIdSTR.str();
         if (esdlDefId && *esdlDefId)
         {
-            while(esdlDefId && *esdlDefId &&*esdlDefId != '.')
+            while(esdlDefId && *esdlDefId && *esdlDefId != '.')
                 esdlDefinitionName.append(*esdlDefId++);
 
-            if (!esdlDefId || !*esdlDefId || *esdlDefId != '.')
-                throw MakeStringException(-1, "Invalid ESDL Definition ID format detected <esdldefname>.<ver>");
+            if (!esdlDefId || !*esdlDefId)
+                throw MakeStringException(-1, "Invalid ESDL Definition ID format detected: '%s'. Expected format: <esdldefname>.<ver>", esdlDefIdSTR.str());
 
             esdlDefId++;
 
@@ -827,14 +827,15 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
         bool override = req.getOverwrite();
 
         StringBuffer esdlDefinitionName;
-        int esdlver = 1;
+        int esdlver = 0;
         const char * esdlDefId = esdlDefIdSTR.str();
         if (esdlDefId && *esdlDefId)
         {
             while (esdlDefId && *esdlDefId != '.')
                 esdlDefinitionName.append(*esdlDefId++);
-            if (!esdlDefId || !*esdlDefId || *esdlDefId != '.')
-                throw MakeStringException(-1, "Invalid ESDL Definition ID format detected <esdldefname>.<ver>");
+
+            if (!esdlDefId || !*esdlDefId)
+                throw MakeStringException(-1, "Invalid ESDL Definition ID format detected: '%s'. Expected format: <esdldefname>.<ver>", esdlDefIdSTR.str());
 
             esdlDefId++;
 
