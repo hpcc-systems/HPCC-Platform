@@ -141,7 +141,7 @@
 
       <para>General options:</para>
 
-      <para><informaltable colsep="0" frame="none" rowsep="0">
+      <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
@@ -241,7 +241,7 @@
 
       <para>Output control options:</para>
 
-      <para><informaltable colsep="0" frame="none" rowsep="0">
+      <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
@@ -296,7 +296,7 @@
 
       <para>C++ options:</para>
 
-      <para><informaltable colsep="0" frame="none" rowsep="0">
+      <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
@@ -332,8 +332,8 @@
               <row>
                 <entry>-D<emphasis>name</emphasis>=<emphasis>value</emphasis></entry>
 
-                <entry>Override the definition of a global attribute 'name'
-                </entry>
+                <entry>Override the definition of a global attribute
+                'name'</entry>
               </row>
 
               <row>
@@ -375,7 +375,7 @@
 
       <para>Other options:</para>
 
-      <para><informaltable colsep="0" frame="none" rowsep="0">
+      <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
@@ -518,7 +518,7 @@
 
       <para>Usage: a.out &lt;options&gt;</para>
 
-      <para><informaltable colsep="0" frame="none" rowsep="0">
+      <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
