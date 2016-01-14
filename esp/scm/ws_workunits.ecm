@@ -1215,6 +1215,9 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     string SourceProcess;
     bool AllowForeignFiles(false);
     bool UpdateDfs(false);
+    bool UpdateSuperFiles(false); //update content of superfiles if changed
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -1579,6 +1582,9 @@ ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
     string SourceProcess;
     string DestName;
     bool AllowForeignFiles(true);
+    bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
@@ -1598,6 +1604,9 @@ ESPrequest [nil_remove] WUCopyQuerySetRequest
     bool CopyFiles(true);
     bool OverwriteDfs(false);
     string SourceProcess;
+    bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
 };
 
 ESPresponse [exceptions_inline] WUCopyQuerySetResponse

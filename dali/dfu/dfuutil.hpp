@@ -29,6 +29,14 @@ interface IDfuFileCopier: extends IInterface
     virtual bool wait()=0; // waits for all outstanding copies to complete
 };
 
+#define DALI_UPDATEF_REPLACE_FILE   0x0001
+#define DALI_UPDATEF_CLONE_FROM     0x0002
+#define DALI_UPDATEF_APPEND_CLUSTER 0x0004
+#define DALI_UPDATEF_SUPERFILES     0x0008
+#define DALI_UPDATEF_PACKAGEMAP     0x0100
+
+#define DALI_UPDATEF_SUBFILE_MASK (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_APPEND_CLUSTER)
+#define DALI_UPDATEF_MASK (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_APPEND_CLUSTER | DALI_UPDATEF_SUPERFILES | DALI_UPDATEF_PACKAGEMAP)
 
 interface IDFUhelper: extends IInterface
 {
@@ -82,7 +90,7 @@ interface IDFUhelper: extends IInterface
                          const char *defReplicateFolder,
                          IUserDescriptor *userdesc,                // user desc for local dali
                          const char *foreigndali,                  // can be omitted if srcname foreign or local
-                         bool overwrite                            // overwrite destination if exists
+                         unsigned overwriteFlags                   // overwrite destination options
                          ) = 0;
 
     virtual void cloneFileRelationships(

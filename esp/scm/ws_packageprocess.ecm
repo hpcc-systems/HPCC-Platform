@@ -29,7 +29,7 @@ ESPrequest AddPackageRequest
 {
     string Info;
     boolean Activate;
-    boolean OverWrite;
+    boolean OverWrite; //use flags below unless you really want to overwrite the actual file metadata and packagemap
     string Target;
     string PackageMap;
     string Process;
@@ -38,6 +38,10 @@ ESPrequest AddPackageRequest
     string SourceProcess;
     bool AllowForeignFiles(true);
     [min_ver("1.02")] bool PreloadAllPackages(false);
+    bool ReplacePackageMap(false);
+    bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
+    bool UpdateCloneFrom(false); //explicitly wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
 };
 
 

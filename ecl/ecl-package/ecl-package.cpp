@@ -481,7 +481,8 @@ private:
 class EclCmdPackageAdd : public EclCmdCommon
 {
 public:
-    EclCmdPackageAdd() : optActivate(false), optOverWrite(false), optGlobalScope(false), optAllowForeign(false), optPreloadAll(false)
+    EclCmdPackageAdd() : optActivate(false), optOverWrite(false), optGlobalScope(false), optAllowForeign(false), optPreloadAll(false),
+        optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false), optReplacePackagemap(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -514,6 +515,14 @@ public:
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
                 continue;
             if (iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE_S))
+                continue;
+            if (iter.matchFlag(optReplacePackagemap, ECLOPT_REPLACE))
+                continue;
+            if (iter.matchFlag(optUpdateSuperfiles, ECLOPT_UPDATE_SUPER_FILES))
+                continue;
+            if (iter.matchFlag(optUpdateCloneFrom, ECLOPT_UPDATE_CLONE_FROM))
+                continue;
+            if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
             if (iter.matchFlag(optGlobalScope, ECLOPT_GLOBAL_SCOPE))
                 continue;
@@ -577,6 +586,10 @@ public:
         request->setSourceProcess(optSourceProcess);
         request->setAllowForeignFiles(optAllowForeign);
         request->setPreloadAllPackages(optPreloadAll);
+        request->setReplacePackageMap(optReplacePackagemap);
+        request->setUpdateSuperFiles(optUpdateSuperfiles);
+        request->setUpdateCloneFrom(optUpdateCloneFrom);
+        request->setAppendCluster(!optDontAppendCluster);
 
         Owned<IClientAddPackageResponse> resp = packageProcessClient->AddPackage(request);
         if (resp->getExceptions().ordinality())
@@ -601,17 +614,21 @@ public:
                     "The 'add' command will add the package map information to dali \n"
                     "\n"
                     "ecl packagemap add [options] <target> <filename>\n"
+                    "   <target>                 Name of target to use when adding package map information\n"
+                    "   <filename>               Name of file containing package map information\n"
                     " Options:\n"
-                    "   -O, --overwrite             Overwrite existing information\n"
-                    "   -A, --activate              Activate the package information\n"
-                    "   --daliip=<ip>               IP of the remote dali to use for logical file lookups\n"
-                    "   --pmid                      Identifier of package map - defaults to filename if not specified\n"
-                    "   --global-scope              The specified packagemap can be shared across multiple targets\n"
-                    "   --source-process            Process cluster to copy files from\n"
-                    "   --allow-foreign             Do not fail if foreign files are used in packagemap\n"
-                    "   --preload-all               Set preload files option for all packages\n"
-                    "   <target>                    Name of target to use when adding package map information\n"
-                    "   <filename>                  Name of file containing package map information\n",
+                    "   -O, --overwrite          Replace existing packagemap and file information (dangerous)\n"
+                    "   -A, --activate           Activate the package information\n"
+                    "   --daliip=<ip>            IP of the remote dali to use for logical file lookups\n"
+                    "   --pmid                   Identifier of package map - defaults to filename if not specified\n"
+                    "   --global-scope           The specified packagemap can be shared across multiple targets\n"
+                    "   --source-process         Process cluster to copy files from\n"
+                    "   --allow-foreign          Do not fail if foreign files are used in packagemap\n"
+                    "   --preload-all            Set preload files option for all packages\n"
+                    "   --replace                Replace existing packagmap"
+                    "   --update-super-files     Update local DFS super-files if remote DALI has changed\n"
+                    "   --update-clone-from      Update local clone from location if remote DALI has changed\n"
+                    "   --dont-append-cluster    Only use to avoid locking issues due to adding cluster to file\n",
                     stdout);
 
         EclCmdCommon::usage();
@@ -626,6 +643,10 @@ private:
     StringAttr optSourceProcess;
     bool optActivate;
     bool optOverWrite;
+    bool optReplacePackagemap;
+    bool optUpdateSuperfiles;
+    bool optUpdateCloneFrom;
+    bool optDontAppendCluster; //Undesirable but here temporarily because DALI may have locking issues
     bool optGlobalScope;
     bool optAllowForeign;
     bool optPreloadAll;
