@@ -331,6 +331,7 @@ define([
                 domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
                 domAttr.set(this.id + "Name", "innerHTML", this.logicalFile.Name + (this.logicalFile.isDeleted() ? " (" + this.i18n.Deleted + ")" : "" ));
             } else if (name === "Superfiles") {
+                this.fileBelongsToWidget.set("title", this.i18n.Superfile + " (" + newValue.DFULogicalFile.length + ")");
             } else if (name === "__hpcc_changedCount" && newValue > 0) {
                 this.refreshActionState();
                 //  Force Icon to Show (I suspect its not working due to Circular Reference Loading)
