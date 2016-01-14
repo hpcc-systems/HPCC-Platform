@@ -3865,21 +3865,31 @@ class CHashAggregateSlave : public CSlaveActivity, public CThorDataLink, impleme
 
     bool doNextGroup()
     {
-        localAggTable->start(queryRowAllocator());
-        while (!abortSoon)
+        try
         {
-            OwnedConstThorRow row = input->nextRow();
-            if (!row)
+            localAggTable->start(queryRowAllocator());
+            while (!abortSoon)
             {
-                if (container.queryGrouped())
-                    break;
-                row.setown(input->nextRow());
+                OwnedConstThorRow row = input->nextRow();
                 if (!row)
-                    break;
+                {
+                    if (container.queryGrouped())
+                        break;
+                    row.setown(input->nextRow());
+                    if (!row)
+                        break;
+                }
+                localAggTable->addRow(row);
             }
-            localAggTable->addRow(row);
+            return 0 != localAggTable->elementCount();
         }
-        return 0 != localAggTable->elementCount();
+        catch (IException *e)
+        {
+            if (!isOOMException(e))
+                throw e;
+            IOutputMetaData *inputOutputMeta = input->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta();
+            throw checkAndCreateOOMContextException(this, e, "aggregating using hash table", localAggTable->elementCount(), inputOutputMeta, NULL);
+        }
     }
 
 public:

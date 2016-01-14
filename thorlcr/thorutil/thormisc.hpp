@@ -307,18 +307,18 @@ extern graph_decl IBarrierException *createBarrierAbortException();
 
 interface IThorException : extends IException
 {
-    virtual ThorExceptionAction queryAction() = 0;
-    virtual ThorActivityKind queryActivityKind() = 0;
-    virtual activity_id queryActivityId() = 0;
-    virtual graph_id queryGraphId() = 0;
-    virtual const char *queryJobId() = 0;
-    virtual void getAssert(StringAttr &file, unsigned &line, unsigned &column) = 0;
-    virtual const char *queryOrigin() = 0;
-    virtual ErrorSeverity querySeverity() = 0;
-    virtual const char *queryMessage() = 0;
-    virtual bool queryNotified() const = 0;
+    virtual ThorExceptionAction queryAction() const = 0;
+    virtual ThorActivityKind queryActivityKind() const = 0;
+    virtual activity_id queryActivityId() const = 0;
+    virtual graph_id queryGraphId() const = 0;
+    virtual const char *queryJobId() const = 0;
+    virtual unsigned querySlave() const = 0;
+    virtual void getAssert(StringAttr &file, unsigned &line, unsigned &column) const = 0;
+    virtual const char *queryOrigin() const = 0;
+    virtual ErrorSeverity querySeverity() const = 0;
+    virtual const char *queryMessage() const = 0;
     virtual MemoryBuffer &queryData() = 0;
-    virtual void setNotified() = 0;
+    virtual IException *queryOriginalException() const = 0;
     virtual void setAction(ThorExceptionAction _action) = 0;
     virtual void setActivityKind(ThorActivityKind _kind) = 0;
     virtual void setActivityId(activity_id id) = 0;
@@ -330,6 +330,7 @@ interface IThorException : extends IException
     virtual void setAssert(const char *file, unsigned line, unsigned column) = 0;
     virtual void setOrigin(const char *origin) = 0;
     virtual void setSeverity(ErrorSeverity severity) = 0;
+    virtual void setOriginalException(IException *e) = 0;
 };
 
 class CGraphElementBase;
@@ -486,6 +487,9 @@ extern graph_decl IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int
 
 //statistics gathered by the different activities
 extern const graph_decl StatisticsMapping spillStatistics;
+
+extern graph_decl bool isOOMException(IException *e);
+extern graph_decl IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IException *e, const char *msg, unsigned numRows, IOutputMetaData *meta, const void *row);
 
 #endif
 

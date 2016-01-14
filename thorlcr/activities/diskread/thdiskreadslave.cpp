@@ -1024,27 +1024,36 @@ public:
             return NULL;
         if (!gathered)
         {
-            unsigned part = 0;
-            while (!abortSoon && part<partDescs.ordinality())
+            try
             {
-                partHandler->setPart(&partDescs.item(part), part);
-                ++part;
-                loop
+                unsigned part = 0;
+                while (!abortSoon && part<partDescs.ordinality())
                 {
-                    OwnedConstThorRow nextrow = partHandler->nextRow();
-                    if (!nextrow)
-                        break;
-                    helper->processRow(nextrow, this);
+                    partHandler->setPart(&partDescs.item(part), part);
+                    ++part;
+                    loop
+                    {
+                        OwnedConstThorRow nextrow = partHandler->nextRow();
+                        if (!nextrow)
+                            break;
+                        helper->processRow(nextrow, this);
+                    }
+                }
+                gathered = true;
+                ActPrintLog("DISKGROUPAGGREGATE: Local aggregate table contains %d entries", localAggTable->elementCount());
+
+                if (!container.queryLocalOrGrouped() && container.queryJob().querySlaves()>1)
+                {
+                    BooleanOnOff onOff(merging);
+                    bool ordered = 0 != (TDRorderedmerge & helper->getFlags());
+                    localAggTable.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggTable, mpTag, ordered));
                 }
             }
-            gathered = true;
-            ActPrintLog("DISKGROUPAGGREGATE: Local aggregate table contains %d entries", localAggTable->elementCount());
-
-            if (!container.queryLocalOrGrouped() && container.queryJob().querySlaves()>1)
+            catch (IException *e)
             {
-                BooleanOnOff onOff(merging);
-                bool ordered = 0 != (TDRorderedmerge & helper->getFlags());
-                localAggTable.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggTable, mpTag, ordered));
+                if (!isOOMException(e))
+                    throw e;
+                throw checkAndCreateOOMContextException(this, e, "aggregating using hash table", localAggTable->elementCount(), queryDiskRowInterfaces()->queryRowMetaData(), NULL);
             }
         }
         Owned<AggregateRowBuilder> next = localAggTable->nextResult();

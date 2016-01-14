@@ -32,7 +32,7 @@ interface IRangeCompare;
 class ProcessSlaveActivity : public CSlaveActivity, implements IThreaded
 {
 protected:
-    Owned<IException> exception;
+    Owned<IThorException> exception;
     CThreadedPersistent threaded;
     rowcount_t processed;
     unsigned __int64 lastCycles;

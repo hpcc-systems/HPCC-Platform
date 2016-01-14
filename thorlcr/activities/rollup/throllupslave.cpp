@@ -117,7 +117,18 @@ public:
         rows.kill();
 
         // JCSMORE - could do in chunks and merge if > mem
-        Owned<IRowStream> rowStream = groupOp ? rowLoader->loadGroup(in, activity->queryAbortSoon(), &rows) : rowLoader->load(in, activity->queryAbortSoon(), false, &rows);
+        Owned<IRowStream> rowStream;
+        try
+        {
+            rowStream.setown(groupOp ? rowLoader->loadGroup(in, activity->queryAbortSoon(), &rows) : rowLoader->load(in, activity->queryAbortSoon(), false, &rows));
+        }
+        catch (IException *e)
+        {
+            if (!isOOMException(e))
+                throw e;
+            IOutputMetaData *inputOutputMeta = in->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta();
+            throw checkAndCreateOOMContextException(activity, e, "loading group for dedup all", rowLoader->numRows(), inputOutputMeta, rowLoader->probeRow(0));
+        }
         dedupCount = rows.ordinality();
         ActPrintLog(activity, "DEDUP: rows loaded = %d",dedupCount);
 
@@ -566,11 +577,12 @@ class CRollupGroupSlaveActivity : public CSlaveActivity, public CThorDataLink
     Owned<IThorRowLoader> groupLoader;
     bool eoi;
     IThorDataLink *input;
+    CThorExpandingRowArray rows;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRollupGroupSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    CRollupGroupSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this), rows(*this, NULL)
     {
         eoi = false;
         input = NULL;
@@ -601,25 +613,34 @@ public:
         if (eoi)
             return NULL;
 
-        loop
+        try
         {
-            CThorExpandingRowArray rows(*this, queryRowInterfaces(input));
-            Owned<IRowStream> rowStream = groupLoader->loadGroup(input, abortSoon, &rows);
-            unsigned count = rows.ordinality();
-            if (0 == count)
+            loop
             {
-                eoi = true;
-                return NULL;
-            }
+                Owned<IRowStream> rowStream = groupLoader->loadGroup(input, abortSoon, &rows);
+                unsigned count = rows.ordinality();
+                if (0 == count)
+                {
+                    eoi = true;
+                    return NULL;
+                }
 
-            RtlDynamicRowBuilder row(queryRowAllocator());
-            size32_t sz = helper->transform(row, count, rows.getRowArray());
-            rows.kill();
-            if (sz)
-            {
-                dataLinkIncrement();
-                return row.finalizeRowClear(sz);
+                RtlDynamicRowBuilder row(queryRowAllocator());
+                size32_t sz = helper->transform(row, count, rows.getRowArray());
+                rows.kill();
+                if (sz)
+                {
+                    dataLinkIncrement();
+                    return row.finalizeRowClear(sz);
+                }
             }
+        }
+        catch (IException *e)
+        {
+            if (!isOOMException(e))
+                throw e;
+            IOutputMetaData *inputOutputMeta = input->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta();
+            throw checkAndCreateOOMContextException(this, e, "loading group for rollup group", groupLoader->numRows(), inputOutputMeta, groupLoader->probeRow(0));
         }
     }
     virtual bool isGrouped() { return false; }
