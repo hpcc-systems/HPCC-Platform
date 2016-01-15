@@ -400,7 +400,7 @@ public:
             }
             if (cmdline.length()==0) {
                 // ssh
-                cmdline.appendf("%s -n -o LogLevel=QUIET -o StrictHostKeyChecking=%s ",usepssh?"pssh":"ssh",strict?"yes":"no");
+                cmdline.appendf("%s -n -o LogLevel=QUIET -o StrictHostKeyChecking=%s ",usepssh?"pssh":"ssh",strict?"yes":"no -o UserKnownHostsFile=/dev/null");
                 if (!usepssh)
                     cmdline.append("-o BatchMode=yes ");
                 if (!identityfile.isEmpty())
