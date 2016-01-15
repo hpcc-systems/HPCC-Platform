@@ -90,7 +90,7 @@ interface IRoxieServerContext;
 interface IRoxieSlaveContext;
 class ClusterWriteHandler;
 
-interface IRoxieInput : extends IInputBase
+interface IFinalRoxieInput : extends IInputBase
 {
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
     virtual void reset() = 0;
@@ -98,10 +98,24 @@ interface IRoxieInput : extends IInputBase
     virtual unsigned __int64 queryTotalCycles() const = 0;
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual unsigned numConcreteOutputs() const { return 1; }
-    virtual IRoxieInput * queryConcreteInput(unsigned idx) { assertex(idx==0); return this; }
+    virtual IFinalRoxieInput * queryConcreteInput(unsigned idx) { assertex(idx==0); return this; }
     virtual IRoxieServerActivity *queryActivity() = 0;
     virtual IIndexReadActivityInfo *queryIndexReadActivity() = 0;
 };
+
+interface IRoxieInput : extends IFinalRoxieInput
+{
+
+    // To be removed once everyting switched to IFinalRoxieInput
+    inline void resetEOF() { queryStream().resetEOF(); }
+    inline bool nextGroup(ConstPointerArray & group) { return queryStream().nextGroup(group); }
+    inline void readAll(RtlLinkedDatasetBuilder &builder) { return queryStream().readAll(builder); }
+    inline const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) { return queryStream().nextRowGE(seek, numFields, wasCompleteMatch, stepExtra); }
+    inline const void *nextRow() { return queryStream().nextRow(); }
+    inline void stop() { queryStream().stop(); }
+    inline const void *ungroupedNextRow() { return queryStream().ungroupedNextRow(); }
+};
+
 
 
 interface ISteppedConjunctionCollector;
@@ -136,7 +150,7 @@ interface IRoxieServerActivity : extends IActivityBase
 {
     virtual void setInput(unsigned idx, IRoxieInput *in) = 0;
     virtual IRoxieInput *queryOutput(unsigned idx) = 0;
-    virtual IRoxieInput *queryInput(unsigned idx) const = 0;
+    virtual IFinalRoxieInput *queryInput(unsigned idx) const = 0;
     virtual void execute(unsigned parentExtractSize, const byte *parentExtract) = 0;
     virtual void onCreate(IRoxieSlaveContext *ctx, IHThorArg *colocalArg) = 0;
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
