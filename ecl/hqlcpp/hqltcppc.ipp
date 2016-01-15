@@ -446,6 +446,21 @@ private:
     bool                isLastBitfield;
 };
 
+class HQLCPP_API CRowReferenceColumnInfo : public CColumnInfo
+{
+public:
+    CRowReferenceColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column)
+    : CColumnInfo(_container, _prior, _column)
+    {
+    }
+
+//AColumnInfo
+    virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
+
+    virtual void gatherSize(SizeStruct & target);
+    virtual bool isFixedSize()              { return true; }
+};
+
 class HQLCPP_API CVirtualColumnInfo : public CColumnInfo
 {
 public:

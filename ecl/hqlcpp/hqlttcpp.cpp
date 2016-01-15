@@ -3528,6 +3528,68 @@ IHqlExpression * ThorHqlTransformer::normalizeMergeAggregate(IHqlExpression * ex
 }
 
 
+static bool reorderAggregateFields(HqlExprArray & aggregateFields, HqlExprArray & aggregateAssigns)
+{
+    bool needToReorder = false;
+    bool dynamicOffset = false; // Will the offset of the next field vary with each row processed?
+    ForEachItemIn(i, aggregateFields)
+    {
+        IHqlExpression & cur = aggregateFields.item(i);
+        IHqlExpression * value = aggregateAssigns.item(i).queryChild(1);
+        //If any field follows a dynamic sized aggregate then the record needs to be reordered
+        if (dynamicOffset)
+            needToReorder = true;
+
+        if (isUnknownSize(&cur))
+        {
+            if (value->isGroupAggregateFunction())
+                dynamicOffset = true;
+        }
+    }
+
+    if (!needToReorder)
+        return false;
+
+    HqlExprArray newFields;
+    HqlExprArray newAssigns;
+    for (unsigned pass = 0; pass < 3; pass++)
+    {
+        //Fixed size fields first, then non aggregates, then aggregates
+        ForEachItemIn(i1, aggregateFields)
+        {
+            IHqlExpression & cur = aggregateFields.item(i1);
+            IHqlExpression & assign = aggregateAssigns.item(i1);
+            bool copy = false;
+            if (!isUnknownSize(&cur))
+            {
+                //Place all fixed size fields first
+                copy = (pass == 0);
+            }
+            else if (!assign.queryChild(1)->isGroupAggregateFunction())
+            {
+                //Then any variable size fields that are only assigned once
+                copy = (pass == 1);
+            }
+            else
+            {
+                //Finally any variable size aggregates
+                copy = (pass == 2);
+            }
+
+            if (copy)
+            {
+                newFields.append(OLINK(cur));
+                newAssigns.append(OLINK(assign));
+            }
+        }
+    }
+
+    aggregateFields.swapWith(newFields);
+    aggregateAssigns.swapWith(newAssigns);
+    return true;
+}
+
+
 IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * expr, bool canOptimizeCasts)
 {
     IHqlExpression * dataset = expr->queryChild(0);
@@ -3535,7 +3597,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
     IHqlExpression * transform = expr->queryChild(2);
     IHqlExpression * groupBy = expr->queryChild(3);
 
-    if (!isAggregateDataset(expr))
+    if (!isAggregateDataset(expr) || expr->hasAttribute(_normalized_Atom))
         return NULL;
 
     //MORE: Should fail if asked to group by variable length field, or do max/min on variable length field.
@@ -3604,17 +3666,26 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
         newGroupBy = createSortList(newGroupElement);
     }
 
+    if (reorderAggregateFields(aggregateFields, aggregateAssigns))
+        extraSelectNeeded = true;
+
     IHqlExpression * aggregateRecord = extraSelectNeeded ? createRecord(aggregateFields) : LINK(record);
     OwnedHqlExpr aggregateSelf = getSelf(aggregateRecord);
     replaceAssignSelector(aggregateAssigns, aggregateSelf);
     IHqlExpression * aggregateTransform = createValue(no_newtransform, makeTransformType(aggregateRecord->getType()), aggregateAssigns);
 
-    HqlExprArray aggregateAttrs;
-    unwindAttributes(aggregateAttrs, expr);
+    HqlExprArray newAggregateArgs;
+    newAggregateArgs.append(*LINK(dataset));
+    newAggregateArgs.append(*aggregateRecord);
+    newAggregateArgs.append(*aggregateTransform);
+    if (newGroupBy)
+        newAggregateArgs.append(*newGroupBy);
+    unwindAttributes(newAggregateArgs, expr);
     if (!expr->hasAttribute(localAtom) && newGroupBy && !isGrouped(dataset) && isPartitionedForGroup(dataset, newGroupBy, true))
-        aggregateAttrs.append(*createLocalAttribute());
+        newAggregateArgs.append(*createLocalAttribute());
+    newAggregateArgs.append(*createAttribute(_normalized_Atom));
 
-    OwnedHqlExpr ret = createDataset(no_newaggregate, LINK(dataset), createComma(aggregateRecord, aggregateTransform, newGroupBy, createComma(aggregateAttrs)));
+    OwnedHqlExpr ret = createDataset(no_newaggregate, newAggregateArgs);
     if (extraSelectNeeded)
         ret.setown(cloneInheritedAnnotations(expr, ret));
     else

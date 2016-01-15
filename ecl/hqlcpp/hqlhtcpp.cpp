@@ -12874,6 +12874,7 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
     unsigned numAggregates = transform->numChildren();
     unsigned idx;
     bool isVariableOffset = false;
+    bool isDynamicOffset = false;
     OwnedHqlExpr self = getSelf(expr->queryChild(1));
     for (idx = 0; idx < numAggregates; idx++)
     {
@@ -12893,7 +12894,9 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
         {
         case no_countgroup:
             {
-                assertex(!(arg && isVariableOffset));
+                //This could be supported in more situations - e.g. if always/neverFirstRow.
+                if (arg && isVariableOffset)
+                    throwError1(HQLERR_ConditionalAggregateVarOffset, str(target->queryChild(1)->queryId()));
                 if (arg)
                     buildFilter(condctx, arg);
                 OwnedHqlExpr one = createConstant(createIntValue(1,8,true));
@@ -12915,7 +12918,8 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
             break;
         case no_sumgroup:
             {
-                assertex(!(cond && isVariableOffset));
+                if (cond && isVariableOffset)
+                    throwError1(HQLERR_ConditionalAggregateVarOffset, str(target->queryChild(1)->queryId()));
                 if (cond)
                     buildFilter(condctx, cond);
                 if (alwaysFirstRow)
@@ -12953,7 +12957,8 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
             }
             break;
         case no_existsgroup:
-            assertex(!(arg && isVariableOffset));
+            if (arg && isVariableOffset)
+                throwError1(HQLERR_ConditionalAggregateVarOffset, str(target->queryChild(1)->queryId()));
             cond = arg;
             if (cond || !alwaysNextRow)
             {
@@ -12975,8 +12980,16 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
             }
             break;
         }
+
+        if (isDynamicOffset)
+            throwError1(HQLERR_AggregateDynamicOffset, str(target->queryChild(1)->queryId()));
+
         if (target->queryType()->getSize() == UNKNOWN_LENGTH)
+        {
            isVariableOffset = true;
+           if (src->isGroupAggregateFunction())
+               isDynamicOffset = true;
+        }
     }
 }
 

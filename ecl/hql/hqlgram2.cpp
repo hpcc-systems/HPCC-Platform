@@ -7709,7 +7709,6 @@ void HqlGram::checkProjectedFields(IHqlExpression * e, attribute & errpos)
                         hadVariableAggregate = true;
                 }
 
-                
                 if (isVariableOffset)
                     checkConditionalAggregates(id, value, errpos);
 
