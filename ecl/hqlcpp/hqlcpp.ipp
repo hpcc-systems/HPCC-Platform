@@ -37,7 +37,6 @@
 
 #define MAX_RECORD_SIZE     4096                // default value
 
-enum { HintSpeed = 1, HintSize = 2 };
 enum GraphLocalisation {
     GraphNeverAccess,  // This variant of an activity never accesses the parent
     GraphNoAccess,  // This activity would normally access the parent, but doesn't here
@@ -944,7 +943,6 @@ public:
     void finalizeResources();
     void generateStatistics(const char * targetDir, const char * variant);
 
-            unsigned getHints()                             { return hints; }
     inline bool queryEvaluateCoLocalRowInvariantInExtract() const { return options.evaluateCoLocalRowInvariantInExtract; }
     inline byte notifyOptimizedProjectsLevel()              { return options.notifyOptimizedProjects; }
     inline bool generateAsserts() const                     { return options.checkAsserts; }
@@ -1550,7 +1548,6 @@ public:
     IHqlExpression * getConstWuid(IHqlExpression * expr);
     IHqlExpression * getFirstCharacter(IHqlExpression * source);
     bool hasAddress(BuildCtx & ctx, IHqlExpression * expr);
-    unsigned processHint(IHqlExpression * expr);
 
     IHqlExpression * convertOrToAnd(IHqlExpression * expr);
     bool childrenRequireTemp(BuildCtx & ctx, IHqlExpression * expr, bool includeChildren);
@@ -1930,7 +1927,6 @@ public:
 protected:
     HqlCppInstance *    code;
     IHqlScope *         internalScope;
-    unsigned            hints;
     RecordOffsetMap     recordMap;      // no_record -> offset information
     ExprExprMap         physicalIndexCache;
     unsigned            litno;
