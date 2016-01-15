@@ -1077,14 +1077,46 @@ margin-left:-20px;
     fill: white;
 }
 
-.claro .graph_Graph .graphVertex > .common_Shape rect.common_Shape {
-    stroke: black;
+.claro .graph_Graph .graphVertex > .subgraph rect {
     fill: none;
 }
 
-.claro .graph_Graph .graphVertex > .common_Shape .common_Shape {
+.claro .graph_Graph .graphVertex > .subgraph.selected rect {
+    stroke:red !important;
 }
 
-.claro .graph_Graph .graphVertex > .common_Shape.selected .common_Shape {
-    stroke: red
+.claro .graph_Graph .graphVertex .graph_Vertex.selected .common_Shape {
+    stroke:red !important;
+}
+
+.claro .graph_Graph .graphEdge .graph_Edge {
+    stroke:lightgray;
+}
+
+.claro .graph_Graph .graphEdge .graph_Edge .common_Text {
+    fill:lightgray;
+}
+
+.claro .graph_Graph .graphEdge .graph_Edge.active {
+    stroke:green;
+}
+
+.claro .graph_Graph .graphEdge .graph_Edge.active .common_Text {
+    fill:green;
+}
+
+.claro .graph_Graph .graphEdge .graph_Edge.finished {
+    stroke:black;
+}
+
+.claro .graph_Graph .graphEdge .graph_Edge.finished .common_Text {
+    fill:black;
+}
+
+.claro .graph_Graph .graphEdge .graph_Edge.selected {
+    stroke:red !important;
+}
+
+.claro .graph_Graph .graphEdge .graph_Edge.selected .common_Text {
+    fill:red !important;
 }
