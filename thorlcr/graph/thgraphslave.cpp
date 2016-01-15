@@ -439,6 +439,17 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             if (!queryJob().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
                 throwUnexpected();
             replyTag = job.deserializeMPTag(msg);
+            bool error;
+            msg.read(error);
+            if (error)
+            {
+                Owned<IException> e = deserializeException(msg);
+                EXCLOG(e, "Master hit exception");
+                msg.clear();
+                if (!job.queryJobComm().send(msg, 0, replyTag, LONGTIMEOUT))
+                    throw MakeStringException(0, "Timeout sending init data back to master");
+                throw e.getClear();
+            }
             msg.read(len);
         }
         try

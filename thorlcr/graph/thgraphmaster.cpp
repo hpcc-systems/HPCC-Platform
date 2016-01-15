@@ -219,6 +219,7 @@ void CSlaveMessageHandler::main()
                         DBGLOG("%s", msg.str());
                         parentExtract = graph->setParentCtx(parentExtractSz, parentExtract);
                     }
+                    Owned<IException> exception;
                     loop
                     {
                         activity_id id;
@@ -227,23 +228,41 @@ void CSlaveMessageHandler::main()
                             break;
                         CMasterGraphElement *element = (CMasterGraphElement *)graph->queryElement(id);
                         assertex(element);
-                        element->deserializeStartContext(msg);
-                        element->doCreateActivity(parentExtractSz, parentExtract);
+                        try
+                        {
+                            element->deserializeStartContext(msg);
+                            element->doCreateActivity(parentExtractSz, parentExtract);
+                        }
+                        catch (IException *e)
+                        {
+                            EXCLOG(e, NULL);
+                            exception.setown(e);
+                            break;
+                        }
                         CActivityBase *activity = element->queryActivity();
                         if (activity && activity->needReInit())
                             element->sentActInitData->set(slave, 0); // clear to permit serializeActivityInitData to resend
                         toSerialize.append(*LINK(element));
                     }
                     msg.clear();
-                    CMessageBuffer replyMsg;
                     mptag_t replyTag = createReplyTag();
                     msg.append(replyTag); // second reply
-                    replyMsg.setReplyTag(replyTag);
-                    CGraphElementArrayIterator iter(toSerialize);
-                    graph->serializeActivityInitData(((unsigned)sender)-1, msg, iter);
+                    if (exception)
+                    {
+                        msg.append(true);
+                        serializeException(exception, msg);
+                    }
+                    else
+                    {
+                        msg.append(false);
+                        CGraphElementArrayIterator iter(toSerialize);
+                        graph->serializeActivityInitData(((unsigned)sender)-1, msg, iter);
+                    }
                     job.queryJobComm().reply(msg);
                     if (!job.queryJobComm().recv(msg, sender, replyTag, NULL, MEDIUMTIMEOUT))
                         throwUnexpected();
+                    if (exception)
+                        throw exception.getClear();
                     bool error;
                     msg.read(error);
                     if (error)
