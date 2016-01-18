@@ -179,7 +179,7 @@ bool HqlCppCaseInfo::buildAssign(BuildCtx & ctx, const CHqlBoundTarget & target)
 
         if (complexCompare)
         {
-            if ((pairs.ordinality() > INLINE_COMPARE_THRESHOLD) || (translator.getHints() & HintSize))
+            if (pairs.ordinality() > INLINE_COMPARE_THRESHOLD)
             {
                 if (okToAlwaysEvaluateDefault() || hasLibraryChop())
                     buildLoopChopMap(subctx, target, test);

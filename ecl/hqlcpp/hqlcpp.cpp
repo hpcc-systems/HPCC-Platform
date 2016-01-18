@@ -1416,7 +1416,6 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
     #endif
         }
     }
-    hints = 0;
     litno = 0;
     soName.set(_soName);
     HqlDummyLookupContext dummyctx(NULL);
@@ -2772,7 +2771,7 @@ void HqlCppTranslator::buildFilter(BuildCtx & ctx, IHqlExpression * expr)
         }
         break;
     case no_or:
-        if (!(hints & HintSize) && requiresTempAfterFirst(ctx, expr))
+        if (requiresTempAfterFirst(ctx, expr))
         {
             OwnedHqlExpr inverted = convertOrToAnd(expr);
             buildFilter(ctx, inverted);
@@ -12248,17 +12247,6 @@ IHqlExpression * HqlCppTranslator::needFunction(IIdAtom * name)
     return internalScope->lookupSymbol(name, LSFsharedOK, dummyctx);
 }
 
-
-unsigned HqlCppTranslator::processHint(IHqlExpression * expr)
-{
-    unsigned oldHints = hints;
-    IAtom * hint = NULL; // MORE how do I get this?
-    if (hint == sizeAtom)
-        hints = (hints & ~(HintSpeed|HintSize)) | HintSize;
-    else if (hint == speedAtom)
-        hints = (hints & ~(HintSize|HintSpeed)) | HintSpeed;
-    return oldHints;
-}
 
 bool HqlCppTranslator::childrenRequireTemp(BuildCtx & ctx, IHqlExpression * expr, bool includeChildren)
 {
