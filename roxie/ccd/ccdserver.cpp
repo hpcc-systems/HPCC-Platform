@@ -12156,85 +12156,40 @@ public:
 
 };
 
-class CRoxieServerOrderedConcatActivity : public CRoxieServerActivity
+class CRoxieServerOrderedConcatActivity : public CRoxieServerMultiInputActivity
 {
-    IRoxieInput *curInput;
+    IEngineRowStream *curStream;
     bool eogSeen;
     bool anyThisGroup;
     bool grouped;
-    unsigned numInputs;
-    unsigned inputIdx;
-    IRoxieInput **inputArray;
+    unsigned streamIdx;
 
 public:
     CRoxieServerOrderedConcatActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _grouped, unsigned _numInputs)
-        : CRoxieServerActivity(_factory, _probeManager)
+        : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs)
     {
         eogSeen = false;
         anyThisGroup = false;
         grouped = _grouped;
-        numInputs = _numInputs;
-        inputIdx = 0;
-        inputArray = new IRoxieInput*[numInputs];
-        for (unsigned i = 0; i < numInputs; i++)
-            inputArray[i] = NULL;
-        curInput = NULL;
-    }
-
-    ~CRoxieServerOrderedConcatActivity()
-    {
-        delete [] inputArray;
+        streamIdx = 0;
+        curStream = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        inputIdx = 0;
-        curInput = inputArray[inputIdx];
+        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
+        streamIdx = 0;
+        curStream = streamArray[streamIdx];
         eogSeen = false;
         anyThisGroup = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        for (unsigned i = 0; i < numInputs; i++)
-            inputArray[i]->start(parentExtractSize, parentExtract, paused);
-    }
-
-    virtual void stop()
-    {
-        for (unsigned i = 0; i < numInputs; i++)
-            inputArray[i]->stop();
-        CRoxieServerActivity::stop();
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return 0;
-    }
-
-    virtual IFinalRoxieInput *queryInput(unsigned idx) const
-    {
-        if (idx < numInputs)
-            return inputArray[idx];
-        else
-            return NULL;
-    }
-
-    virtual void reset()    
-    {
-        CRoxieServerActivity::reset(); 
-        for (unsigned i = 0; i < numInputs; i++)
-            inputArray[i]->reset();
-    }
-
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        inputArray[idx] = _in;
     }
 
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (!curInput)
+        if (!curStream)
             return NULL;  // eof
-        const void * next = curInput->nextRow();
+        const void * next = curStream->nextRow();
         if (next)
         {
             anyThisGroup = true;
@@ -12258,16 +12213,16 @@ public:
             else
                 return nextRow();
         }
-        else if (inputIdx < numInputs-1)
+        else if (streamIdx < numStreams-1)
         {
-            inputIdx++;
-            curInput = inputArray[inputIdx];
+            streamIdx++;
+            curStream = streamArray[streamIdx];
             eogSeen = false;
             return nextRow();
         }
         else
         {
-            curInput = NULL;
+            curStream = NULL;
             return NULL;
         }
     }
