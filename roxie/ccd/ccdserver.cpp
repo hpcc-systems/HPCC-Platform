@@ -5780,7 +5780,6 @@ IRoxieServerActivityFactory *createRoxieServerLocalResultReadActivityFactory(uns
 class CRoxieServerLocalResultStreamReadActivity : public CRoxieServerActivity
 {
     IHThorLocalResultReadArg &helper;
-    Owned<IRoxieInput> streamInput;
     unsigned sequence;
 
 public:
@@ -5796,29 +5795,10 @@ public:
         sequence = helper.querySequence();
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        assertex(streamInput != NULL);
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        streamInput->start(parentExtractSize, parentExtract, paused);
-    }
-
-    virtual void stop()
-    {
-        CRoxieServerActivity::stop();
-        streamInput->stop();
-    }
-
-    virtual void reset() 
-    {
-        streamInput->reset();
-        CRoxieServerActivity::reset(); 
-    };
-
     virtual const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * next = streamInput->nextRow();
+        const void * next = inputStream->nextRow();
         if (next)
         {
             processed++;
@@ -5831,7 +5811,7 @@ public:
     {
         if (id == sequence)
         {
-            streamInput.set(_input);
+            CRoxieServerActivity::setInput(0, _input);
             return true;
         }
         return false;
