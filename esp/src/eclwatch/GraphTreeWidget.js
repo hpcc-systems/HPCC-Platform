@@ -98,6 +98,7 @@ define([
             this.inherited(arguments);
             this._initGraphControls();
             this._initTimings();
+            this._initActivitiesMap();
             this._initDialogs();
         },
 
@@ -159,9 +160,12 @@ define([
             this.widget.TimingsTreeMap.onClick = function (value) {
                 context.syncSelectionFrom(context.widget.TimingsTreeMap);
             }
-            this.widget.TimingsTreeMap.onDblClick = function (value) {
-                var mainItem = context.main.getItem(value.SubGraphId);
-                context.main.centerOnItem(mainItem, true);
+        },
+
+        _initActivitiesMap: function () {
+            var context = this;
+            this.widget.ActivitiesTreeMap.onClick = function (value) {
+                context.syncSelectionFrom(context.widget.ActivitiesTreeMap);
             }
         },
 
@@ -442,6 +446,15 @@ define([
                 },
                 hideHelp: true
             }, params));
+
+            this.widget.ActivitiesTreeMap.init(lang.mixin({
+                query: {
+                    activitiesOnly: true,
+                    graphName: this.graphName,
+                    subGraphId: "*"
+                },
+                hideHelp: true
+            }, params));
         },
 
         refreshData: function () {
@@ -628,6 +641,7 @@ define([
             this.verticesStore.appendColumns(columns, ["name"], ["ecl", "definition"]);
             this.verticesGrid.set("columns", columns);
             this.verticesGrid.refresh();
+            this.widget.ActivitiesTreeMap.setActivities(vertices);
         },
 
         loadEdges: function () {
@@ -660,6 +674,13 @@ define([
                         selectedGlobalIDs.push(items[i].SubGraphId);
                     }
                 }
+            } else if (sourceControl == this.widget.ActivitiesTreeMap) {
+                    var items = sourceControl.getSelected();
+                    for (var i = 0; i < items.length; ++i) {
+                        if (items[i].ActivityID) {
+                            selectedGlobalIDs.push(items[i].ActivityID);
+                        }
+                    }
             } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid || sourceControl == this.subgraphsGrid || sourceControl == this.treeGrid) {
                 var items = sourceControl.getSelected();
                 for (var i = 0; i < items.length; ++i) {
@@ -679,6 +700,9 @@ define([
             }
             if (sourceControl != this.widget.TimingsTreeMap) {
                 this.widget.TimingsTreeMap.setSelectedAsGlobalID(selectedGlobalIDs);
+            }
+            if (sourceControl != this.widget.ActivitiesTreeMap) {
+                this.widget.ActivitiesTreeMap.setSelectedAsGlobalID(selectedGlobalIDs);
             }
             if (sourceControl != this.subgraphsGrid && this.subgraphsGrid.store) {
                 this.subgraphsGrid.setSelection(selectedGlobalIDs);

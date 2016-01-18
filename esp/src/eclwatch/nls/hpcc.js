@@ -12,6 +12,7 @@ define({root:
     ActiveWorkunit: "Active Workunit",
     Activities: "Activities",
     Activity: "Activity",
+    ActivityMap: "Activity Map",
     ActualSize: "Actual Size",
     Add: "Add",
     AddFile: "Add File",
