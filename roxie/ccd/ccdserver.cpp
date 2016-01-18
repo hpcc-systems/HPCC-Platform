@@ -1908,7 +1908,8 @@ public:
 class CRoxieServerTwoInputActivity : public CRoxieServerActivity
 {
 protected:
-    IRoxieInput *input1;
+    IFinalRoxieInput *input1;
+    IEngineRowStream *inputStream1;
     Owned<CRoxieServerReadAheadInput> puller;
 
 public:
@@ -1916,6 +1917,7 @@ public:
         : CRoxieServerActivity(_factory, _probeManager)
     {
         input1 = NULL;
+        inputStream1 = NULL;
     }
 
     ~CRoxieServerTwoInputActivity()
@@ -1937,7 +1939,7 @@ public:
 
     virtual void stop()
     {
-        input1->stop();
+        inputStream1->stop();
         CRoxieServerActivity::stop();
     }
 
@@ -1984,6 +1986,7 @@ public:
             break;
         case 1:
             input1 = _in;
+            inputStream1 = &_in->queryStream();
             break;
         default:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
@@ -1998,20 +2001,27 @@ class CRoxieServerMultiInputBaseActivity : public CRoxieServerActivity
 {
 protected:
     unsigned numInputs;
-    IRoxieInput **inputArray;
+    unsigned numStreams;
+    IFinalRoxieInput **inputArray;
+    IEngineRowStream **streamArray;
 
 public:
     CRoxieServerMultiInputBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
         : CRoxieServerActivity(_factory, _probeManager), numInputs(_numInputs)
     {
-        inputArray = new IRoxieInput*[numInputs];
-        for (unsigned i = 0; i < numInputs; i++)
-            inputArray[i] = NULL;
+        numStreams = numInputs;
+        inputArray = new IFinalRoxieInput*[numInputs];
+        streamArray = new IEngineRowStream*[numStreams];
+        for (unsigned i1 = 0; i1 < numInputs; i1++)
+            inputArray[i1] = NULL;
+        for (unsigned i2 = 0; i2 < numStreams; i2++)
+            streamArray[i2] = NULL;
     }
 
     ~CRoxieServerMultiInputBaseActivity()
     {
         delete [] inputArray;
+        delete [] streamArray;
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -2041,7 +2051,9 @@ public:
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
     {
+        assertex(idx < numInputs && idx < numStreams);
         inputArray[idx] = _in;
+        streamArray[idx] = &_in->queryStream();
     }
 
 };
@@ -2067,9 +2079,9 @@ public:
 
     virtual void stop()
     {
-        for (unsigned i = 0; i < numInputs; i++)
+        for (unsigned i = 0; i < numStreams; i++)
         {
-            inputArray[i]->stop();
+            streamArray[i]->stop();
         }
         CRoxieServerMultiInputBaseActivity::stop();
     }
@@ -11303,9 +11315,9 @@ public:
             sortedLeft.setown(createSortedInputReader(&input->queryStream(), createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), ctx->queryRowManager(), input->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
         ICompare *compareRight = helper.queryCompareRight();
         if (helper.isRightAlreadySorted())
-            groupedSortedRight.setown(createGroupedInputReader(&input1->queryStream(), compareRight));
+            groupedSortedRight.setown(createGroupedInputReader(inputStream1, compareRight));
         else
-            groupedSortedRight.setown(createSortedGroupedInputReader(&input1->queryStream(), compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
+            groupedSortedRight.setown(createSortedGroupedInputReader(inputStream1, compareRight, createSortAlgorithm(sortAlgorithm, compareRight, ctx->queryRowManager(), input1->queryOutputMeta(), ctx->queryCodeContext(), tempDirectory, activityId)));
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit())
         {   //limited match join (s[1..n])
             limitedhelper.setown(createRHLimitedCompareHelper());
@@ -11329,23 +11341,13 @@ public:
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
     {
-        switch(idx)
+        if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
-        case 0:
-            if ((helper.getJoinFlags() & JFparallel) != 0)
-            {
-                puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - cant ask context for parallelJoinPreload as context is not yet set up.
-                puller->setInput(0, _in);
-                _in = puller;
-            }
-            CRoxieServerActivity::setInput(idx, _in);
-            break;
-        case 1:
-            input1 = _in;
-            break;
-        default:
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
-        }   
+            puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - can't ask context for parallelJoinPreload as context is not yet set up.
+            puller->setInput(0, _in);
+            _in = puller;
+        }
+        CRoxieServerTwoInputActivity::setInput(idx, _in);
     }
 
     virtual IRoxieInput *queryOutput(unsigned idx)
@@ -12303,7 +12305,7 @@ IRoxieServerActivityFactory *createRoxieServerConcatActivityFactory(unsigned _id
 
 class CRoxieServerNonEmptyActivity : public CRoxieServerMultiInputBaseActivity
 {
-    IRoxieInput * selectedInput;
+    IEngineRowStream* selectedStream;
     unsigned savedParentExtractSize;
     const byte * savedParentExtract;
     bool foundInput;
@@ -12313,7 +12315,7 @@ public:
         : CRoxieServerMultiInputBaseActivity(_factory, _probeManager, _numInputs)
     {
         foundInput = false;
-        selectedInput = NULL;
+        selectedStream = NULL;
         savedParentExtractSize = 0;;
         savedParentExtract = NULL;
     }
@@ -12330,13 +12332,13 @@ public:
     {
         if (foundInput)
         {
-            if (selectedInput)
-                selectedInput->stop();
+            if (selectedStream)
+                selectedStream->stop();
         }
         else
         {
-            for (unsigned i = 0; i < numInputs; i++)
-                inputArray[i]->stop();
+            for (unsigned i = 0; i < numStreams; i++)
+                streamArray[i]->stop();
         }
         CRoxieServerMultiInputBaseActivity::stop();
     }
@@ -12345,12 +12347,12 @@ public:
     {
         CRoxieServerMultiInputBaseActivity::reset(); 
         foundInput = false;
-        selectedInput = NULL;
+        selectedStream = NULL;
     }
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        return 0; // Can't easily calcuate anything reliable but local processing is negligible
+        return 0; // Can't easily calculate anything reliable but local processing is negligible
     }
 
     virtual const void * nextRow()
@@ -12359,28 +12361,29 @@ public:
         if (!foundInput)
         {
             foundInput = true;
+            assertex(numInputs == numStreams);   // If this ceases to be true we will need to rethink some of this
             //If we get an exception in this loop then stop() will stop any started inputs
-            for (unsigned i=0; i < numInputs; i++)
+            for (unsigned i=0; i < numStreams; i++)
             {
-                selectedInput = inputArray[i];
-                selectedInput->start(savedParentExtractSize, savedParentExtract, false);
-                const void * next = selectedInput->nextRow();
+                selectedStream = streamArray[i];
+                inputArray[i]->start(savedParentExtractSize, savedParentExtract, false);  // Assumes 1:1 mapping streams to inputs
+                const void * next = selectedStream->nextRow();
                 if (next)
                 {
                     //Found a row so stop remaining
                     for (unsigned j=i+1; j < numInputs; j++)
-                        inputArray[j]->stop();
+                        streamArray[j]->stop();
                     processed++;
                     return next;
                 }
-                selectedInput->stop();
+                selectedStream->stop();
             }
-            selectedInput = NULL;
+            selectedStream = NULL;
             return NULL;
         }
-        if (!selectedInput)
+        if (!selectedStream)
             return NULL;
-        const void * next = selectedInput->nextRow();
+        const void * next = selectedStream->nextRow();
         if (next)
             processed++;
         return next;
@@ -12677,7 +12680,7 @@ IRoxieServerActivityFactory *createRoxieServerMergeActivityFactory(unsigned _id,
 class CRoxieServerRegroupActivity : public CRoxieServerMultiInputActivity
 {
     IHThorRegroupArg &helper;
-    unsigned inputIndex;
+    unsigned streamIndex;
     bool eof;
     unsigned __int64 numProcessedLastGroup;
 
@@ -12685,14 +12688,14 @@ public:
     CRoxieServerRegroupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
         : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs), helper((IHThorRegroupArg &)basehelper)
     {
-        inputIndex = 0;
+        streamIndex = 0;
         eof = false;
         numProcessedLastGroup = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        inputIndex = 0;
+        streamIndex = 0;
         eof = false;
         numProcessedLastGroup = processed;
         CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
@@ -12700,26 +12703,26 @@ public:
 
     const void * nextFromInputs()
     {
-        unsigned initialInput = inputIndex;
-        while (inputIndex < numInputs)
+        unsigned initialStream = streamIndex;
+        while (streamIndex < numStreams)
         {
-            const void * next = inputArray[inputIndex]->nextRow();
+            const void * next = streamArray[streamIndex]->nextRow();
             if (next)
             {
-                if ((inputIndex != initialInput) && (inputIndex != initialInput+1))
+                if ((streamIndex != initialStream) && (streamIndex != initialStream+1))
                 {
                     ReleaseRoxieRow(next);
                     throw MakeStringException(ROXIE_MISMATCH_GROUP_ERROR, "Mismatched groups supplied to Regroup (%d)", factory->queryId());
                 }
                 return next;
             }
-            inputIndex++;
+            streamIndex++;
         }
 
-        if ((initialInput != 0) && (initialInput+1 != numInputs))
+        if ((initialStream != 0) && (initialStream+1 != numStreams))
             throw MakeStringException(ROXIE_MISMATCH_GROUP_ERROR, "Mismatched groups supplied to Regroup (%d)", factory->queryId());
 
-        inputIndex = 0;
+        streamIndex = 0;
         return NULL;
     }
 
@@ -12745,22 +12748,6 @@ public:
         eof = true;
         return NULL;
     }
-
-#if 0
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        //MORE: RKC: Do we want to do this i) always ii) conditionally iii) never
-        if (idx)
-        {
-            puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - cant ask context for parallelJoinPreload as context is not yet set up.
-            puller->setInput(0, _in);
-            CRoxieServerMultiInputActivity::setInput(idx, puller);
-        }
-        else
-            CRoxieServerMultiInputActivity::setInput(idx, _in);
-    }
-#endif
-
 };
 
 class CRoxieServerRegroupActivityFactory : public CRoxieServerMultiInputFactory
@@ -12808,9 +12795,9 @@ public:
 
     void nextInputs(ConstPointerArray & out)
     {
-        for (unsigned i=0; i < numInputs; i++)
+        for (unsigned i=0; i < numStreams; i++)
         {
-            const void * next = inputArray[i]->nextRow();
+            const void * next = streamArray[i]->nextRow();
             if (next)
                 out.append(next);
         }
@@ -12901,27 +12888,6 @@ public:
         CRoxieServerTwoInputActivity::start(parentExtractSize, parentExtract, paused);
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        switch(idx)
-        {
-        case 0:
-#if 0
-            //MORE: RKC: Do we want to do this i) always ii) conditionally iii) never
-            puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - cant ask context for parallelJoinPreload as context is not yet set up.
-            puller->setInput(0, _in);
-            _in = puller;
-#endif
-            CRoxieServerActivity::setInput(idx, _in);
-            break;
-        case 1:
-            input1 = _in;
-            break;
-        default:
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
-        }   
-    }
-
     virtual IRoxieInput *queryOutput(unsigned idx)
     {
         if (idx==(unsigned)-1)
@@ -12944,7 +12910,7 @@ public:
             {
                 if (numProcessedLastGroup == processed)
                 {
-                    const void * nextRight = input1->nextRow();
+                    const void * nextRight = inputStream1->nextRow();
                     if (nextRight)
                     {
                         ReleaseRoxieRow(nextRight);
@@ -12959,7 +12925,7 @@ public:
             ConstPointerArray group;
             loop
             {
-                const void * in = input1->nextRow();
+                const void * in = inputStream1->nextRow();
                 if (!in)
                     break;
                 group.append(in);
@@ -15477,7 +15443,7 @@ public:
         CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
         for (unsigned i=0; i < numInputs; i++)
         {
-            IRoxieInput * cur = inputArray[i];
+            IFinalRoxieInput * cur = inputArray[i];
             unsigned numRealInputs = cur->numConcreteOutputs();
             for (unsigned j = 0; j < numRealInputs; j++)
             {
@@ -15824,7 +15790,7 @@ public:
         {
             for (unsigned i=0; i < numInputs; i++)
             {
-                IRoxieInput * cur = inputArray[i];
+                IFinalRoxieInput * cur = inputArray[i];
                 unsigned numRealInputs = cur->numConcreteOutputs();
                 if (whichInput < numRealInputs)
                 {
@@ -17272,7 +17238,7 @@ public:
             const void * next;
             while(true)
             {
-                next = input1->ungroupedNextRow();
+                next = inputStream1->ungroupedNextRow();
                 if(!next)
                     break;
                 rightset.append(next);
@@ -17358,18 +17324,13 @@ public:
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
     {
-        if (idx==1)
-            input1 = _in;
-        else
+        if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
-            if ((helper.getJoinFlags() & JFparallel) != 0)
-            {
-                puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - cant ask context for parallelJoinPreload as context is not yet set up.
-                puller->setInput(0, _in);
-                _in = puller;
-            }
-            CRoxieServerActivity::setInput(idx, _in);
+            puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - can't ask context for parallelJoinPreload as context is not yet set up.
+            puller->setInput(0, _in);
+            _in = puller;
         }
+        CRoxieServerTwoInputActivity::setInput(idx, _in);
     }
 
     virtual const void * nextRow()
@@ -17836,7 +17797,7 @@ public:
         const void * next;
         while(true)
         {
-            next = input1->ungroupedNextRow();
+            next = inputStream1->ungroupedNextRow();
             if(!next)
                 break;
             rightset.append(next);
@@ -17849,18 +17810,13 @@ public:
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
     {
-        if (idx==1)
-            input1 = _in;
-        else
+        if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
-            if ((helper.getJoinFlags() & JFparallel) != 0)
-            {
-                puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - cant ask context for parallelJoinPreload as context is not yet set up.
-                puller->setInput(0, _in);
-                _in = puller;
-            }
-            CRoxieServerActivity::setInput(idx, _in);
+            puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - can't ask context for parallelJoinPreload as context is not yet set up.
+            puller->setInput(0, _in);
+            _in = puller;
         }
+        CRoxieServerTwoInputActivity::setInput(idx, _in);
     }
 
     const void * joinRecords(const void * left, const void * right, unsigned counter)
