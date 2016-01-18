@@ -14985,46 +14985,38 @@ IRoxieServerActivityFactory *createRoxieServerLibraryCallActivityFactory(unsigne
 
 //=====================================================================================================
 
-class CRoxieServerNWayInputActivity : public CRoxieServerActivity
+class CRoxieServerNWayInputActivity : public CRoxieServerMultiInputBaseActivity
 {
     IHThorNWayInputArg & helper;
-    IRoxieInput ** inputs;
-    PointerArrayOf<IRoxieInput> selectedInputs;
-    unsigned numInputs;
+    PointerArrayOf<IFinalRoxieInput> selectedInputs;
 
 public:
     CRoxieServerNWayInputActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorNWayInputArg &)basehelper), numInputs(_numInputs)
+        : CRoxieServerMultiInputBaseActivity(_factory, _probeManager, _numInputs), helper((IHThorNWayInputArg &)basehelper)
     {
-        inputs = new IRoxieInput*[numInputs];
-        for (unsigned i = 0; i < numInputs; i++)
-            inputs[i] = NULL;
     }
 
     ~CRoxieServerNWayInputActivity()
     {
-        delete [] inputs;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputBaseActivity::start(parentExtractSize, parentExtract, paused);
 
         bool selectionIsAll;
         size32_t selectionLen;
         rtlDataAttr selection;
         helper.getInputSelection(selectionIsAll, selectionLen, selection.refdata());
 
-        selectedInputs.kill();
-        if (selectionIsAll)
+        if (!selectionIsAll)
         {
-            for (unsigned i=0; i < numInputs; i++)
-                selectedInputs.append(inputs[i]);
-        }
-        else
-        {
+            assertex(numInputs==numStreams);
             const size32_t * selections = (const size32_t *)selection.getdata();
             unsigned max = selectionLen/sizeof(size32_t);
+
+            IFinalRoxieInput **newInputArray = new IFinalRoxieInput*[max];
+            IEngineRowStream **newStreamArray = new IEngineRowStream*[max];
             for (unsigned i = 0; i < max; i++)
             {
                 unsigned nextIndex = selections[i];
@@ -15037,54 +15029,15 @@ public:
                 if (nextIndex > numInputs)
                     throw MakeStringException(ROXIE_NWAY_INPUT_ERROR, "Index %d in RANGE selection list is out of range", nextIndex);
 
-                selectedInputs.append(inputs[nextIndex-1]);
+                newInputArray[i] = inputArray[nextIndex-1];
+                newStreamArray[i] = streamArray[nextIndex-1];
             }
+            delete [] inputArray;
+            delete [] streamArray;
+            inputArray = newInputArray;
+            streamArray = newStreamArray;
+            numInputs = numStreams = max;
         }
-
-        ForEachItemIn(i2, selectedInputs)
-            selectedInputs.item(i2)->start(parentExtractSize, parentExtract, paused);
-    }
-
-    virtual void stop()
-    {
-        ForEachItemIn(i2, selectedInputs)
-            selectedInputs.item(i2)->stop();
-
-        CRoxieServerActivity::stop();
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        __int64 localCycles = totalCycles.totalCycles;
-        ForEachItemIn(i, selectedInputs)
-        {
-            localCycles -= selectedInputs.item(i)->queryTotalCycles();
-        }
-        if (localCycles < 0)
-            localCycles = 0;
-        return localCycles;
-    }
-
-    virtual IFinalRoxieInput *queryInput(unsigned idx) const
-    {
-        if (selectedInputs.isItem(idx))
-            return selectedInputs.item(idx);
-        else
-            return NULL;
-    }
-
-    virtual void reset()    
-    {
-        ForEachItemIn(i, selectedInputs)
-            selectedInputs.item(i)->reset();
-        selectedInputs.kill();
-        CRoxieServerActivity::reset(); 
-    }
-
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        assertex(idx < numInputs);
-        inputs[idx] = _in;
     }
 
     virtual const void * nextRow()
@@ -15094,13 +15047,13 @@ public:
 
     virtual unsigned numConcreteOutputs() const
     {
-        return selectedInputs.ordinality();
+        return numInputs;   // MORE - should this be in base class?
     }
 
     virtual IFinalRoxieInput * queryConcreteInput(unsigned idx)
     {
-        if (selectedInputs.isItem(idx))
-            return selectedInputs.item(idx);
+        if (idx < numInputs)   // MORE - should this be in base class?
+            return inputArray[idx];
         return NULL;
     }
 };
