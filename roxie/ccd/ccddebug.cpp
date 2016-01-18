@@ -82,7 +82,7 @@ public:
     {
         return in->numConcreteOutputs();
     }
-    virtual IRoxieInput * queryConcreteInput(unsigned idx)
+    virtual IFinalRoxieInput * queryConcreteInput(unsigned idx)
     {
         // MORE - not sure what is right here!
         if (in->queryConcreteInput(idx) == in)
@@ -699,7 +699,7 @@ public:
 
     virtual IActivityDebugContext *queryInputActivity() const
     {
-        IRoxieInput *x = in;
+        IFinalRoxieInput *x = in;
         while (x && QUERYINTERFACE(x->queryConcreteInput(0), IActivityDebugContext)==NULL)
             x = x->queryConcreteInput(0)->queryActivity()->queryInput(0);
         return x ? QUERYINTERFACE(x->queryConcreteInput(0), IActivityDebugContext) : NULL;
