@@ -5144,6 +5144,10 @@ public:
 
     void checkFormatAttr(IDistributedFile *sub, const char* exprefix="")
     {
+        IDistributedSuperFile *superSub = sub->querySuperFile();
+        if (superSub && (0 == superSub->numSubFiles(true)))
+            return;
+
         // only check sub files not siblings, which is excessive (format checking is really only debug aid)
         checkSubFormatAttr(sub,exprefix);
     }
