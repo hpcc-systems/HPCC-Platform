@@ -4213,6 +4213,22 @@ void HqlCppTranslator::doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelec
 {
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * transform = expr->queryChild(2);
+
+    OwnedHqlExpr simpleAggregate = convertToSimpleAggregate(expr);
+    CHqlBoundExpr optimized;
+    if (simpleAggregate && canBuildOptimizedCount(ctx, dataset, optimized))
+    {
+        node_operator aggOp = simpleAggregate->getOperator();
+        if (aggOp == no_exists || aggOp == no_count)
+        {
+            IHqlExpression * assign = transform->queryChild(0);
+            IHqlExpression * lhs = assign->queryChild(0);
+            Owned<IReferenceSelector> selected = target->select(ctx, lhs);
+            selected->set(ctx, simpleAggregate);
+            return;
+        }
+    }
+
     unsigned numAggregates = transform->numChildren();
 
     if (isKeyedCountAggregate(expr))
@@ -4609,15 +4625,20 @@ BoundRow * HqlCppTranslator::buildOptimizeSelectFirstRow(BuildCtx & ctx, IHqlExp
         //fall through
     case no_newaggregate:
         {
-            Owned<BoundRow> tempRow = declareTempAnonRow(ctx, ctx, expr);
+            OwnedHqlExpr selectRow = createRow(no_selectnth, LINK(expr), getSizetConstant(1));
+            BoundRow * match = static_cast<BoundRow *>(ctx.queryAssociation(selectRow, AssocRow, NULL));
+            if (match)
+                return LINK(match);
+
+            Owned<BoundRow> tempRow = declareTempRow(ctx, ctx, selectRow);
             Owned<BoundRow> rowBuilder = createRowBuilder(ctx, tempRow);
 
             Owned<IReferenceSelector> createdRef = createReferenceSelector(rowBuilder);
 
             BuildCtx subctx(ctx);
-            subctx.addGroup();
             if (parentRow)
             {
+                subctx.addGroup();
                 if (op == no_hqlproject)
                     bindTableCursor(ctx, expr->queryChild(0), tempRow->queryBound(), no_left, querySelSeq(expr));
                 else
@@ -4626,6 +4647,7 @@ BoundRow * HqlCppTranslator::buildOptimizeSelectFirstRow(BuildCtx & ctx, IHqlExp
                 
             doBuildRowAssignAggregate(subctx, createdRef, expr);
             finalizeTempRow(ctx, tempRow, rowBuilder);
+            ctx.associate(*tempRow);
 
             return tempRow;
         }
@@ -4908,6 +4930,9 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
 //          if (canIterateInline(&ctx, dataset))
 //              row = buildOptimizeSelectFirstRow(ctx, dataset);
 #endif
+        if ((dataset->getOperator() == no_newaggregate) && canProcessInline(&ctx, dataset))
+            row = buildOptimizeSelectFirstRow(ctx, dataset);
+
         if (!row)
         {
             CHqlBoundExpr bound;
