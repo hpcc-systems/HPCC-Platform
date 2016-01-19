@@ -1392,7 +1392,8 @@ class CRoxieServerLateStartActivity : public CRoxieServerActivity
 {
 
 protected:
-    IRoxieInput *input; // Don't use base class input field as we want to delay starts
+    IFinalRoxieInput *input;       // Don't use base class input fields as we want to delay starts
+    IEngineRowStream *inputStream;
     bool prefiltered;
     bool eof;
 
@@ -1406,7 +1407,7 @@ protected:
         {
             if (traceStartStop)
                 CTXLOG("lateStart activity stopping input early as prefiltered");
-            input->stop();
+            inputStream->stop();
         }
     }
 
@@ -1416,6 +1417,7 @@ public:
         : CRoxieServerActivity(_factory, _probeManager)
     {
         input = NULL;
+        inputStream = NULL;
         prefiltered = false;
         eof = false;
     }
@@ -1424,7 +1426,7 @@ public:
     {
         if (!prefiltered)
         {
-            input->stop();
+            inputStream->stop();
         }
         else if (traceStartStop)
             CTXLOG("lateStart activity NOT stopping input late as prefiltered");
@@ -1450,6 +1452,7 @@ public:
     {
         assertex(!idx);
         input = _in;
+        inputStream = &_in->queryStream();
     }
 };
 
@@ -8944,7 +8947,7 @@ public:
             return NULL;
         loop
         {
-            const void * ret = input->nextRow();
+            const void * ret = inputStream->nextRow();
             if (!ret)
             {
                 //stop returning two NULLs in a row.
@@ -8953,7 +8956,7 @@ public:
                     anyThisGroup = false;
                     return NULL;
                 }
-                ret = input->nextRow();
+                ret = inputStream->nextRow();
                 if (!ret)
                 {
                     eof = true;
@@ -8981,7 +8984,7 @@ public:
 
         loop
         {
-            const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+            const void * ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
             if (!ret)
             {
                 eof = true;
@@ -9029,7 +9032,7 @@ public:
     { 
         eof = prefiltered;
         anyThisGroup = false;
-        input->resetEOF(); 
+        inputStream->resetEOF();
     }
 
     IInputSteppingMeta * querySteppingMeta()
@@ -9125,11 +9128,11 @@ public:
                 return NULL;
             }
 
-            const void * ret = input->nextRow();
+            const void * ret = inputStream->nextRow();
             while (ret)
             {
                 gathered.append(ret);
-                ret = input->nextRow();
+                ret = inputStream->nextRow();
             }
 
             unsigned num = gathered.ordinality();
@@ -9186,11 +9189,11 @@ public:
                 ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 #endif
 
-        const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         while (ret)
         {
             gathered.append(ret);
-            ret = input->nextRow();
+            ret = inputStream->nextRow();
         }
 
         unsigned num = gathered.ordinality();
@@ -9214,7 +9217,7 @@ public:
     { 
         eof = false;
         releaseGathered();
-        input->resetEOF(); 
+        inputStream->resetEOF();
     }
 
     IInputSteppingMeta * querySteppingMeta()
@@ -13074,12 +13077,12 @@ public:
             return NULL;
         loop
         {
-            const void * in = input->nextRow();
+            const void * in = inputStream->nextRow();
             if (!in)
             {
                 recordCount = 0;
                 if (numProcessedLastGroup == processed)
-                    in = input->nextRow();
+                    in = inputStream->nextRow();
                 if (!in)
                 {
                     numProcessedLastGroup = processed;
@@ -16237,7 +16240,7 @@ public:
         const void *ret;
         loop
         {
-            ret = input->nextRow();
+            ret = inputStream->nextRow();
             if (!ret)
             {
                 if (meta.isGrouped())
@@ -16249,7 +16252,7 @@ public:
                     }
                     doneThisGroup = 0;
                 }
-                ret = input->nextRow();
+                ret = inputStream->nextRow();
                 if (!ret)
                 {
                     eof = true;
@@ -16271,7 +16274,7 @@ public:
         ReleaseRoxieRow(ret);
         if (meta.isGrouped())
         {
-            while ((ret = input->nextRow()) != NULL)
+            while ((ret = inputStream->nextRow()) != NULL)
                 ReleaseRoxieRow(ret);
             doneThisGroup = 0;
         }
@@ -18046,7 +18049,7 @@ public:
                 {
                     //MORE: This would be more efficient if we had a away of skipping to the end of the incoming group.
                     const void * next;
-                    while ((next = input->nextRow()) != NULL)
+                    while ((next = inputStream->nextRow()) != NULL)
                         ReleaseRoxieRow(next);
                 }
                 else
@@ -18068,7 +18071,7 @@ public:
         if(eoi)
             return;
         const void * next;
-        while ((next = input->nextRow()) != NULL)
+        while ((next = inputStream->nextRow()) != NULL)
         {
             if (sortedCount < limit)
             {
