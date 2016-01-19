@@ -847,7 +847,7 @@ private:
     IRoxieServerActivityCopyArray & activities;
 };
 
-class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
+class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IFinalRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
 {
 protected:
     IFinalRoxieInput *input;
@@ -1295,7 +1295,7 @@ public:
         throw MakeStringException(ROXIE_SINK, "Internal error: evaluate() requires a function");
     }
 
-    virtual IRoxieInput * querySelectOutput(unsigned id)
+    virtual IFinalRoxieInput * querySelectOutput(unsigned id)
     {
         return NULL;
     }
@@ -1716,7 +1716,7 @@ public:
 
 // MORE - this code copied from ThreadedConcat code - may be able to common up some.
 
-class CRoxieServerReadAheadInput : public CInterface, implements IRoxieInput, implements IRecordPullerCallback, implements IEngineRowStream
+class CRoxieServerReadAheadInput : public CInterface, implements IFinalRoxieInput, implements IRecordPullerCallback, implements IEngineRowStream
 {
     QueueOf<const void, true> buffer;
     InterruptableSemaphore ready;
@@ -5290,7 +5290,7 @@ class CRoxieServerWorkUnitReadActivity : public CRoxieServerActivity
 {
     IHThorWorkunitReadArg &helper;
     CriticalSection readerCrit;
-    Owned<IWorkUnitRowReader> wuReader; // MORE - can we use IRoxieInput instead?
+    Owned<IWorkUnitRowReader> wuReader;
 public:
     CRoxieServerWorkUnitReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorWorkunitReadArg &)basehelper)
@@ -5450,7 +5450,7 @@ private:
 
 //=================================================================================
 
-class CPseudoRoxieInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
+class CPseudoRoxieInput : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -5574,7 +5574,7 @@ class CExtractMapperInput : public CIndirectRoxieInput
     unsigned savedParentExtractSize;
     const byte * savedParentExtract;
 public:
-    CExtractMapperInput(IRoxieInput * _input = NULL) : CIndirectRoxieInput(_input)
+    CExtractMapperInput(IFinalRoxieInput * _input = NULL) : CIndirectRoxieInput(_input)
     {
         savedParentExtractSize = 0;
         savedParentExtract = NULL;
@@ -5892,7 +5892,7 @@ public:
         return inputStream->nextRow(); // I can act as a passthrough input
     }
 
-    IRoxieInput * querySelectOutput(unsigned id)
+    IFinalRoxieInput * querySelectOutput(unsigned id)
     {
         if (id == helper.querySequence())
         {
@@ -5971,7 +5971,7 @@ public:
         return inputStream->nextRow(); // I can act as a passthrough input
     }
 
-    IRoxieInput * querySelectOutput(unsigned id)
+    IFinalRoxieInput * querySelectOutput(unsigned id)
     {
         if (id == helper.querySequence())
         {
@@ -7867,7 +7867,7 @@ public:
     unsigned headIdx;
     Owned<IException> error;
 
-    class OutputAdaptor : public CInterface, implements IRoxieInput, implements IEngineRowStream
+    class OutputAdaptor : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
     {
         bool eof, eofpending, stopped;
 
@@ -14407,7 +14407,7 @@ public:
             {
                 IRoxieProbe * inputProbe = probeManager->createProbe(static_cast<IInputBase*>(input), sourceStream, sourceAct, splitter, sourceIdx, 0, iteration);
                 probes.append(*LINK(inputProbe));
-                input = &dynamic_cast<IRoxieInput &>(inputProbe->queryInput());
+                input = &dynamic_cast<IFinalRoxieInput &>(inputProbe->queryInput());
             }
             sourceAct.setown(splitter);
             sourceAct->setInput(0, input);
@@ -14430,7 +14430,7 @@ public:
         {
             IRoxieProbe * inputProbe = probeManager->createProbe(sourceInput, sourceStream, sourceAct, targetAct, sourceIdx, targetIdx, iteration);
             probes.append(*LINK(inputProbe));
-            ret = &dynamic_cast<IRoxieInput &>(inputProbe->queryInput());
+            ret = &dynamic_cast<IFinalRoxieInput &>(inputProbe->queryInput());
         }
         if (factory) // we created a splitter....
             sourceIdx++;
@@ -14755,7 +14755,7 @@ public:
         for (unsigned i2=0; i2<numOutputs; i2++)
         {
             unsigned outputIndex = extra.outputs.item(i2);
-            Owned<IRoxieInput> output = graph->selectOutput(numInputs+outputIndex);
+            Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+outputIndex);
             outputAdaptors[i2].setInput(output);
         }
     }
@@ -14814,8 +14814,8 @@ public:
             graph->beforeExecute();
             ForEachItemIn(i3, extra.unusedOutputs)
             {
-                Owned<IRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
-                output->stop();
+                Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
+                output->queryStream().stop();
             }
         }
     }
@@ -14830,8 +14830,8 @@ public:
             graph->beforeExecute();
             ForEachItemIn(i3, extra.unusedOutputs)
             {
-                Owned<IRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
-                output->stop();
+                Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
+                output->queryStream().stop();
             }
             CRoxieServerActivity::stop();
         }
@@ -14855,7 +14855,7 @@ public:
             IRoxieServerChildGraph * graph = libraryGraph->queryLoopGraph();
             ForEachItemIn(i3, extra.unusedOutputs)
             {
-                Owned<IRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
+                Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
                 output->reset();
             }
         }
@@ -25561,7 +25561,7 @@ public:
         {
             IRoxieProbe * inputProbe = probeManager->createProbe(static_cast<IInputBase*>(output), &output->queryStream(), &sourceActivity, &targetActivity, sourceIdx, targetIdx, iteration);
             probes.append(*LINK(inputProbe));
-            output = &dynamic_cast<IRoxieInput &>(inputProbe->queryInput());
+            output = &dynamic_cast<IFinalRoxieInput &>(inputProbe->queryInput());
         }
         targetActivity.setInput(targetIdx, output);
     }
@@ -25724,18 +25724,18 @@ public:
         results.setown(new CGraphResults);
     }
 
-    virtual IRoxieInput * startOutput(unsigned id, unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual IFinalRoxieInput * startOutput(unsigned id, unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        IRoxieInput * ret = selectOutput(id);
+        IFinalRoxieInput * ret = selectOutput(id);
         ret->start(parentExtractSize, parentExtract, paused);
         return ret;
     }
 
-    virtual IRoxieInput * selectOutput(unsigned id)
+    virtual IFinalRoxieInput * selectOutput(unsigned id)
     {
         ForEachItemIn(i, sinks)
         {
-            IRoxieInput * ret = sinks.item(i).querySelectOutput(id);
+            IFinalRoxieInput * ret = sinks.item(i).querySelectOutput(id);
             if (ret)
                 return ret;
         }
@@ -26120,7 +26120,7 @@ public:
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 } testMeta;
 
-class TestInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
+class TestInput : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
 {
     char const * const *input;
     IRoxieSlaveContext *ctx;

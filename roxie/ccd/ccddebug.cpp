@@ -30,10 +30,10 @@ using roxiemem::IRowManager;
 
 //=======================================================================================================================
 
-class InputProbe : public CInterface, implements IRoxieInput, implements IEngineRowStream, implements IRoxieProbe // base class for the edge probes used for tracing and debugging....
+class InputProbe : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream, implements IRoxieProbe // base class for the edge probes used for tracing and debugging....
 {
 protected:
-    IRoxieInput *in;
+    IFinalRoxieInput *in;
     IEngineRowStream *inStream;
     unsigned sourceId;
     unsigned sourceIdx;
@@ -52,7 +52,7 @@ protected:
     bool hasStopped;
 
 public:
-    InputProbe(IRoxieInput *_in, IEngineRowStream *_inStream, IDebuggableContext *_debugContext,
+    InputProbe(IFinalRoxieInput *_in, IEngineRowStream *_inStream, IDebuggableContext *_debugContext,
         unsigned _sourceId, unsigned _sourceIdx, unsigned _targetId, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
         : in(_in),  inStream(_inStream), debugContext(_debugContext),
           sourceId(_sourceId), sourceIdx(_sourceIdx), targetId(_targetId), targetIdx(_targetIdx), iteration(_iteration), channel(_channel)
@@ -172,7 +172,7 @@ class TraceProbe : public InputProbe
 public:
     IMPLEMENT_IINTERFACE;
 
-    TraceProbe(IRoxieInput *_in, IEngineRowStream *_inStream, unsigned _sourceId, unsigned _targetId, unsigned _sourceIdx, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
+    TraceProbe(IFinalRoxieInput *_in, IEngineRowStream *_inStream, unsigned _sourceId, unsigned _targetId, unsigned _sourceIdx, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
         : InputProbe(_in, _inStream, NULL, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel)
     {
     }
@@ -268,7 +268,7 @@ public:
 
 class CProbeManager : public CInterface, implements IProbeManager
 {
-    IArrayOf<IRoxieInput> probes; // May want to replace with hash table at some point....
+    IArrayOf<IFinalRoxieInput> probes; // May want to replace with hash table at some point....
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -276,7 +276,7 @@ public:
     {
         unsigned idIn = inAct->queryId();
         unsigned idOut = outAct->queryId();
-        TraceProbe *probe = new TraceProbe(static_cast<IRoxieInput*>(in), _inStream, idIn, idOut, sourceIdx, targetIdx, iteration, 0);
+        TraceProbe *probe = new TraceProbe(static_cast<IFinalRoxieInput*>(in), _inStream, idIn, idOut, sourceIdx, targetIdx, iteration, 0);
         probes.append(*probe);
         return probe;
     }
@@ -527,7 +527,7 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
 
 public:
     DebugProbe(IInputBase *_in, IEngineRowStream *_inStream, unsigned _sourceId, unsigned _sourceIdx, DebugActivityRecord *_sourceAct, unsigned _targetId, unsigned _targetIdx, DebugActivityRecord *_targetAct, unsigned _iteration, unsigned _channel, IDebuggableContext *_debugContext)
-        : InputProbe(static_cast<IRoxieInput*>(_in), _inStream, _debugContext, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
+        : InputProbe(static_cast<IFinalRoxieInput*>(_in), _inStream, _debugContext, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
           sourceAct(_sourceAct), targetAct(_targetAct)
     {
         historyCapacity = debugContext->getDefaultHistoryCapacity();
@@ -1111,7 +1111,7 @@ public:
         }
         if (probes)
         {
-            IArrayOf<IRoxieInput>* fprobes = (IArrayOf<IRoxieInput>*)(probes);
+            IArrayOf<IFinalRoxieInput>* fprobes = (IArrayOf<IFinalRoxieInput>*)(probes);
             ForEachItemIn(probeIdx, *fprobes)
             {
                 DebugProbe &probe = (DebugProbe &) fprobes->item(probeIdx);

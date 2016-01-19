@@ -5163,7 +5163,7 @@ public:
         try
         {
             remoteGraph->beforeExecute();
-            Owned<IRoxieInput> input = remoteGraph->startOutput(0, remoteExtractBuilder.size(), remoteExtractBuilder.getbytes(), false);
+            Owned<IFinalRoxieInput> input = remoteGraph->startOutput(0, remoteExtractBuilder.size(), remoteExtractBuilder.getbytes(), false);
             IEngineRowStream &stream = input->queryStream();
             while (!aborted)
             {
