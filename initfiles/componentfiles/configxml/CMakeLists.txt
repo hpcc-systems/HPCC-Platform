@@ -83,6 +83,9 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/eclcc.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/validateAll.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esdlsvcengine.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/loggingmanager.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/esploggingagent.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/wslogging.xsd
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/configxml COMPONENT Runtime)
 ENDFOREACH ( iFILES )
