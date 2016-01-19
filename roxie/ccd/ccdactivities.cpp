@@ -4621,7 +4621,7 @@ public:
         m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
         activityMeta.setown(deserializeRecordMeta(m, true));
         layoutTranslators.setown(new TranslatorArray);
-        bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
+        bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
         if (!variableFileName)
         {
             bool isOpt = (helper->getJoinFlags() & JFindexoptional) != 0;
@@ -4662,7 +4662,7 @@ public:
         : factory(_aFactory), CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory)
     {
         helper = (IHThorKeyedJoinArg *) basehelper;
-        variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
+        variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
         inputDone = 0;
         processed = 0;
         candidateCount = 0;
