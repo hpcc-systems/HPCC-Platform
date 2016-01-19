@@ -148,8 +148,8 @@ interface IRoxiePackage;
 
 interface IRoxieServerActivity : extends IActivityBase
 {
-    virtual void setInput(unsigned idx, IRoxieInput *in) = 0;
-    virtual IRoxieInput *queryOutput(unsigned idx) = 0;
+    virtual void setInput(unsigned idx, IFinalRoxieInput *in) = 0;
+    virtual IFinalRoxieInput *queryOutput(unsigned idx) = 0;
     virtual IFinalRoxieInput *queryInput(unsigned idx) const = 0;
     virtual void execute(unsigned parentExtractSize, const byte *parentExtract) = 0;
     virtual void onCreate(IRoxieSlaveContext *ctx, IHThorArg *colocalArg) = 0;
@@ -168,7 +168,7 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void stopSink(unsigned idx) = 0;
 //Functions to support result streaming between parallel loop/graphloop/library implementations
     virtual IRoxieInput * querySelectOutput(unsigned id) = 0;
-    virtual bool querySetStreamInput(unsigned id, IRoxieInput * _input) = 0;
+    virtual bool querySetStreamInput(unsigned id, IFinalRoxieInput * _input) = 0;
     virtual void gatherIterationUsage(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract) = 0;
     virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes) = 0;
     virtual void resetOutputsUsed() = 0;        // use for adjusting correct number of uses for a splitter
@@ -230,7 +230,7 @@ interface IGraphResult : public IInterface
 interface IRoxieServerLoopResultProcessor
 {
     virtual void noteUseIteration(unsigned whichIteration) = 0;
-    virtual IRoxieInput * connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx) = 0;
+    virtual IFinalRoxieInput * connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx) = 0;
 };
 
 interface IRoxieGraphResults : extends IEclGraphResults
@@ -247,7 +247,7 @@ interface IRoxieServerChildGraph : public IInterface
     virtual IRoxieInput * startOutput(unsigned id, unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
     virtual IRoxieInput * selectOutput(unsigned id) = 0;
     virtual void setInputResult(unsigned id, IGraphResult * result) = 0;
-    virtual bool querySetInputResult(unsigned id, IRoxieInput * result) = 0;
+    virtual bool querySetInputResult(unsigned id, IFinalRoxieInput * result) = 0;
     virtual void stopUnusedOutputs() = 0;
     virtual IRoxieGraphResults * execute(size32_t parentExtractSize, const byte *parentExtract) = 0;
     virtual void afterExecute() = 0;
