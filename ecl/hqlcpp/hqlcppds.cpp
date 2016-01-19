@@ -4279,7 +4279,10 @@ void HqlCppTranslator::doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelec
         guard.setown(ctx.getTempDeclare(boolType, queryBoolExpr(false)));
     }
 
-    doBuildRowAssignAggregateClear(ctx, target, expr);
+    //NB: The clear must occur inside a group, otherwise afterwards sizeof(target) will be bound to fixed values
+    BuildCtx clearctx(ctx);
+    clearctx.addGroup();
+    doBuildRowAssignAggregateClear(clearctx, target, expr);
     BuildCtx condctx(ctx);
     buildDatasetIterate(condctx, dataset, isSingleExists);
     doBuildRowAssignAggregateNext(condctx, target, expr, isSingleExists, guard);
