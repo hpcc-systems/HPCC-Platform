@@ -1027,7 +1027,7 @@ public:
     {
         // NB: shouldn't really have fileservice being called on slaves
         if (!superfiletransaction.get())
-            superfiletransaction.setown(createDistributedFileTransaction(userDesc));
+            superfiletransaction.setown(createDistributedFileTransaction(userDesc, this));
         return superfiletransaction.get();
     }
     virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) { throwUnexpected(); }

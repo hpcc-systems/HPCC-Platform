@@ -3013,7 +3013,7 @@ void EclAgent::reportProgress(const char *progress, unsigned flags)
 IDistributedFileTransaction *EclAgent::querySuperFileTransaction()
 {
     if (!superfiletransaction.get())
-        superfiletransaction.setown(createDistributedFileTransaction(queryUserDescriptor()));
+        superfiletransaction.setown(createDistributedFileTransaction(queryUserDescriptor(), this));
     return superfiletransaction.get();
 }
 
