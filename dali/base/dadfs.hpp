@@ -295,7 +295,6 @@ interface IDistributedSuperFileIterator: extends IIteratorOf<IDistributedSuperFi
  */
 interface IDistributedFile: extends IInterface
 {
-
     virtual unsigned numParts() = 0;
     virtual IDistributedFilePart &queryPart(unsigned idx) = 0;
     virtual IDistributedFilePart* getPart(unsigned idx) = 0;
