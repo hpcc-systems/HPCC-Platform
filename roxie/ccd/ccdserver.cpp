@@ -2010,12 +2010,20 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), numInputs(_numInputs)
     {
         numStreams = numInputs;
-        inputArray = new IFinalRoxieInput*[numInputs];
-        streamArray = new IEngineRowStream*[numStreams];
-        for (unsigned i1 = 0; i1 < numInputs; i1++)
-            inputArray[i1] = NULL;
-        for (unsigned i2 = 0; i2 < numStreams; i2++)
-            streamArray[i2] = NULL;
+        if (numInputs)
+        {
+            inputArray = new IFinalRoxieInput*[numInputs];
+            streamArray = new IEngineRowStream*[numStreams];
+            for (unsigned i1 = 0; i1 < numInputs; i1++)
+                inputArray[i1] = NULL;
+            for (unsigned i2 = 0; i2 < numStreams; i2++)
+                streamArray[i2] = NULL;
+        }
+        else
+        {
+            inputArray = NULL;
+            streamArray = NULL;
+        }
     }
 
     ~CRoxieServerMultiInputBaseActivity()
@@ -5780,7 +5788,6 @@ IRoxieServerActivityFactory *createRoxieServerLocalResultReadActivityFactory(uns
 class CRoxieServerLocalResultStreamReadActivity : public CRoxieServerActivity
 {
     IHThorLocalResultReadArg &helper;
-    Owned<IRoxieInput> streamInput;
     unsigned sequence;
 
 public:
@@ -5796,29 +5803,10 @@ public:
         sequence = helper.querySequence();
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        assertex(streamInput != NULL);
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        streamInput->start(parentExtractSize, parentExtract, paused);
-    }
-
-    virtual void stop()
-    {
-        CRoxieServerActivity::stop();
-        streamInput->stop();
-    }
-
-    virtual void reset() 
-    {
-        streamInput->reset();
-        CRoxieServerActivity::reset(); 
-    };
-
     virtual const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * next = streamInput->nextRow();
+        const void * next = inputStream->nextRow();
         if (next)
         {
             processed++;
@@ -5831,7 +5819,7 @@ public:
     {
         if (id == sequence)
         {
-            streamInput.set(_input);
+            CRoxieServerActivity::setInput(0, _input);
             return true;
         }
         return false;
@@ -12156,85 +12144,40 @@ public:
 
 };
 
-class CRoxieServerOrderedConcatActivity : public CRoxieServerActivity
+class CRoxieServerOrderedConcatActivity : public CRoxieServerMultiInputActivity
 {
-    IRoxieInput *curInput;
+    IEngineRowStream *curStream;
     bool eogSeen;
     bool anyThisGroup;
     bool grouped;
-    unsigned numInputs;
-    unsigned inputIdx;
-    IRoxieInput **inputArray;
+    unsigned streamIdx;
 
 public:
     CRoxieServerOrderedConcatActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _grouped, unsigned _numInputs)
-        : CRoxieServerActivity(_factory, _probeManager)
+        : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs)
     {
         eogSeen = false;
         anyThisGroup = false;
         grouped = _grouped;
-        numInputs = _numInputs;
-        inputIdx = 0;
-        inputArray = new IRoxieInput*[numInputs];
-        for (unsigned i = 0; i < numInputs; i++)
-            inputArray[i] = NULL;
-        curInput = NULL;
-    }
-
-    ~CRoxieServerOrderedConcatActivity()
-    {
-        delete [] inputArray;
+        streamIdx = 0;
+        curStream = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        inputIdx = 0;
-        curInput = inputArray[inputIdx];
+        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
+        streamIdx = 0;
+        curStream = streamArray[streamIdx];
         eogSeen = false;
         anyThisGroup = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        for (unsigned i = 0; i < numInputs; i++)
-            inputArray[i]->start(parentExtractSize, parentExtract, paused);
-    }
-
-    virtual void stop()
-    {
-        for (unsigned i = 0; i < numInputs; i++)
-            inputArray[i]->stop();
-        CRoxieServerActivity::stop();
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return 0;
-    }
-
-    virtual IFinalRoxieInput *queryInput(unsigned idx) const
-    {
-        if (idx < numInputs)
-            return inputArray[idx];
-        else
-            return NULL;
-    }
-
-    virtual void reset()    
-    {
-        CRoxieServerActivity::reset(); 
-        for (unsigned i = 0; i < numInputs; i++)
-            inputArray[i]->reset();
-    }
-
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        inputArray[idx] = _in;
     }
 
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (!curInput)
+        if (!curStream)
             return NULL;  // eof
-        const void * next = curInput->nextRow();
+        const void * next = curStream->nextRow();
         if (next)
         {
             anyThisGroup = true;
@@ -12258,16 +12201,16 @@ public:
             else
                 return nextRow();
         }
-        else if (inputIdx < numInputs-1)
+        else if (streamIdx < numStreams-1)
         {
-            inputIdx++;
-            curInput = inputArray[inputIdx];
+            streamIdx++;
+            curStream = streamArray[streamIdx];
             eogSeen = false;
             return nextRow();
         }
         else
         {
-            curInput = NULL;
+            curStream = NULL;
             return NULL;
         }
     }
@@ -15050,46 +14993,41 @@ IRoxieServerActivityFactory *createRoxieServerLibraryCallActivityFactory(unsigne
 
 //=====================================================================================================
 
-class CRoxieServerNWayInputActivity : public CRoxieServerActivity
+// CRoxieServerNWayInputActivity is a multi-input, multi-output activity, where the outputs are a subset of the inputs
+// Used to implement RANGE(<rowset-expression>, [set-of-indices])
+
+class CRoxieServerNWayInputActivity : public CRoxieServerMultiInputBaseActivity
 {
     IHThorNWayInputArg & helper;
-    IRoxieInput ** inputs;
-    PointerArrayOf<IRoxieInput> selectedInputs;
-    unsigned numInputs;
+    PointerArrayOf<IFinalRoxieInput> selectedInputs;
 
 public:
     CRoxieServerNWayInputActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorNWayInputArg &)basehelper), numInputs(_numInputs)
+        : CRoxieServerMultiInputBaseActivity(_factory, _probeManager, _numInputs), helper((IHThorNWayInputArg &)basehelper)
     {
-        inputs = new IRoxieInput*[numInputs];
-        for (unsigned i = 0; i < numInputs; i++)
-            inputs[i] = NULL;
     }
 
     ~CRoxieServerNWayInputActivity()
     {
-        delete [] inputs;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputBaseActivity::start(parentExtractSize, parentExtract, paused);
 
         bool selectionIsAll;
         size32_t selectionLen;
         rtlDataAttr selection;
         helper.getInputSelection(selectionIsAll, selectionLen, selection.refdata());
 
-        selectedInputs.kill();
-        if (selectionIsAll)
+        if (!selectionIsAll)
         {
-            for (unsigned i=0; i < numInputs; i++)
-                selectedInputs.append(inputs[i]);
-        }
-        else
-        {
+            assertex(numInputs==numStreams);
             const size32_t * selections = (const size32_t *)selection.getdata();
             unsigned max = selectionLen/sizeof(size32_t);
+
+            IFinalRoxieInput **newInputArray = new IFinalRoxieInput*[max];
+            IEngineRowStream **newStreamArray = new IEngineRowStream*[max];
             for (unsigned i = 0; i < max; i++)
             {
                 unsigned nextIndex = selections[i];
@@ -15102,54 +15040,15 @@ public:
                 if (nextIndex > numInputs)
                     throw MakeStringException(ROXIE_NWAY_INPUT_ERROR, "Index %d in RANGE selection list is out of range", nextIndex);
 
-                selectedInputs.append(inputs[nextIndex-1]);
+                newInputArray[i] = inputArray[nextIndex-1];
+                newStreamArray[i] = streamArray[nextIndex-1];
             }
+            delete [] inputArray;
+            delete [] streamArray;
+            inputArray = newInputArray;
+            streamArray = newStreamArray;
+            numInputs = numStreams = max;
         }
-
-        ForEachItemIn(i2, selectedInputs)
-            selectedInputs.item(i2)->start(parentExtractSize, parentExtract, paused);
-    }
-
-    virtual void stop()
-    {
-        ForEachItemIn(i2, selectedInputs)
-            selectedInputs.item(i2)->stop();
-
-        CRoxieServerActivity::stop();
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        __int64 localCycles = totalCycles.totalCycles;
-        ForEachItemIn(i, selectedInputs)
-        {
-            localCycles -= selectedInputs.item(i)->queryTotalCycles();
-        }
-        if (localCycles < 0)
-            localCycles = 0;
-        return localCycles;
-    }
-
-    virtual IFinalRoxieInput *queryInput(unsigned idx) const
-    {
-        if (selectedInputs.isItem(idx))
-            return selectedInputs.item(idx);
-        else
-            return NULL;
-    }
-
-    virtual void reset()    
-    {
-        ForEachItemIn(i, selectedInputs)
-            selectedInputs.item(i)->reset();
-        selectedInputs.kill();
-        CRoxieServerActivity::reset(); 
-    }
-
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        assertex(idx < numInputs);
-        inputs[idx] = _in;
     }
 
     virtual const void * nextRow()
@@ -15159,20 +15058,20 @@ public:
 
     virtual unsigned numConcreteOutputs() const
     {
-        return selectedInputs.ordinality();
+        return numInputs;   // NOTE - in case anyone is wondering why base class does not implement this, it's because in
+                            // general multi-input activities have a single output, but this is a multi-input activity with multiple outputs
     }
 
     virtual IFinalRoxieInput * queryConcreteInput(unsigned idx)
     {
-        if (selectedInputs.isItem(idx))
-            return selectedInputs.item(idx);
+        if (idx < numInputs)   // NOTE - as above
+            return inputArray[idx];
         return NULL;
     }
 };
 
 class CRoxieServerNWayInputActivityFactory : public CRoxieServerMultiInputFactory
 {
-//    bool ordered;
 public:
     CRoxieServerNWayInputActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
         : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
@@ -15192,11 +15091,10 @@ IRoxieServerActivityFactory *createRoxieServerNWayInputActivityFactory(unsigned 
 
 //=====================================================================================================
 
-class CRoxieServerNWayGraphLoopResultReadActivity : public CRoxieServerActivity
+class CRoxieServerNWayGraphLoopResultReadActivity : public CRoxieServerMultiInputActivity
 {
     IHThorNWayGraphLoopResultReadArg & helper;
     CIArrayOf<CRoxieServerActivity> resultReaders;
-    PointerArrayOf<IRoxieInput> inputs;
     unsigned graphId;
     bool grouped;
     bool selectionIsAll;
@@ -15205,7 +15103,7 @@ class CRoxieServerNWayGraphLoopResultReadActivity : public CRoxieServerActivity
 
 public:
     CRoxieServerNWayGraphLoopResultReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorNWayGraphLoopResultReadArg &)basehelper)
+        : CRoxieServerMultiInputActivity(_factory, _probeManager, 0), helper((IHThorNWayGraphLoopResultReadArg &)basehelper)
     {
         grouped = helper.isGrouped();
         graphId = _graphId;
@@ -15215,46 +15113,40 @@ public:
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
 
-        if (inputs.ordinality() == 0)
+        if (numInputs == 0)
         {
             initInputSelection();
 
             unsigned max = selectionLen / sizeof(size32_t);
             const size32_t * selections = (const size32_t *)selection.getdata();
             IProbeManager * probeManager = NULL;        // MORE!!
+
+            inputArray = new IFinalRoxieInput*[max];
+            streamArray = new IEngineRowStream*[max];
             for (unsigned i = 0; i < max; i++)
             {
-                CRoxieServerActivity * resultInput = new CRoxieServerInternalGraphLoopResultReadActivity(factory, probeManager, graphId, selections[i]);
+                CRoxieServerInternalGraphLoopResultReadActivity * resultInput = new CRoxieServerInternalGraphLoopResultReadActivity(factory, probeManager, graphId, selections[i]);
                 resultReaders.append(*resultInput);
-                inputs.append(resultInput->queryOutput(0));
+                inputArray[i] = resultInput;
+                streamArray[i] = &resultInput->queryStream();
                 resultInput->onCreate(ctx, colocalParent);
                 resultInput->start(parentExtractSize, parentExtract, paused);
             }
+            numInputs = numStreams = max;
         }
-        else
-        {
-            ForEachItemIn(i, inputs)
-                inputs.item(i)->start(parentExtractSize, parentExtract, paused);
-        }
-    }
-
-    virtual void stop()
-    {
-        ForEachItemIn(i, inputs)
-            inputs.item(i)->stop();
-
-        CRoxieServerActivity::stop();
     }
 
     virtual void reset()    
     {
-        ForEachItemIn(i, inputs)
-            inputs.item(i)->reset();
-        inputs.kill();
+        CRoxieServerMultiInputActivity::reset();
+        delete [] inputArray;
+        delete [] streamArray;
+        inputArray = NULL;
+        streamArray = NULL;
+        numInputs = numStreams = 0;
         resultReaders.kill();
-        CRoxieServerActivity::reset(); 
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
@@ -15269,13 +15161,14 @@ public:
 
     virtual unsigned numConcreteOutputs() const
     {
-        return inputs.ordinality();
+        return numInputs;   // NOTE - in case anyone is wondering why base class does not implement this, it's because in
+                            // general multi-input activities have a single output, but this is a multi-input activity with multiple outputs
     }
 
     virtual IFinalRoxieInput * queryConcreteInput(unsigned idx)
     {
-        if (inputs.isItem(idx))
-            return inputs.item(idx);
+        if (idx < numInputs)   // NOTE - as above
+            return inputArray[idx];
         return NULL;
     }
 
@@ -15296,8 +15189,14 @@ public:
         //selection  etc. already initialised from the gatherIterationUsage() call.
         unsigned max = selectionLen / sizeof(size32_t);
         const size32_t * selections = (const size32_t *)selection.getdata();
+        inputArray = new IFinalRoxieInput*[max];
+        streamArray = new IEngineRowStream*[max];
         for (unsigned i = 0; i < max; i++)
-            inputs.append(processor.connectIterationOutput(selections[i], probeManager, probes, this, i));
+        {
+            inputArray[i] = processor.connectIterationOutput(selections[i], probeManager, probes, this, i);
+            streamArray[i] = &inputArray[i]->queryStream();
+        }
+        numInputs = numStreams = max;
     }
 
 protected:
