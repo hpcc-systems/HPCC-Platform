@@ -232,9 +232,9 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     sourcePaths = new KeptAtomTable;
     blank = createStringValue("",(unsigned)0);
     cachedActiveTableExpr = createValue(no_activetable);
-    cachedSelfExpr = createValue(no_self, makeRowType(NULL));
     cachedSelfReferenceExpr = createValue(no_selfref);
     cachedNullRecord = createRecord()->closeExpr();
+    cachedSelfExpr = createValue(no_self, makeRowType(cachedNullRecord->getType()));
     OwnedHqlExpr nonEmptyAttr = createAttribute(_nonEmpty_Atom);
     cachedNullRowRecord = createRecord(nonEmptyAttr);
     cachedOne = createConstant(1);

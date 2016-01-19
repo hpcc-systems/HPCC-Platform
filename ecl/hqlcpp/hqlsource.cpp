@@ -1184,9 +1184,8 @@ void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression *
         }
         else
         {
-            OwnedHqlExpr boundSrc = createVariable("left", makeRowReferenceType(NULL));
-        //  OwnedHqlExpr boundSrc = createVariable("left", makeRowReferenceType(tableExpr));
-            //slightly different because may have virtuals removed.
+            //NOTE: The source is not link counted - it comes from a prefetched row, and does not include any virtual file position field.
+            OwnedHqlExpr boundSrc = createVariable("left", makeRowReferenceType(physicalRecord));
             transformCtx.associateOwn(*new BoundRow(tableExpr->queryNormalizedSelector(), boundSrc, translator.queryRecordOffsetMap(physicalRecord), no_none, NULL));
         }
     }
