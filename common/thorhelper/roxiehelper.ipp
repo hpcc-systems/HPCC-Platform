@@ -26,7 +26,7 @@ extern THORHELPER_API unsigned traceLevel;
 interface IOutputMetaData;
 interface IInputSteppingMeta;
 
-struct IInputBase : public IInterface //base for IRoxieInput and IHThorInput
+struct IInputBase : public IInterface //base for IFinalRoxieInput and IHThorInput
 {
     virtual IOutputMetaData * queryOutputMeta() const = 0;
     virtual IInputSteppingMeta * querySteppingMeta() { return NULL; }

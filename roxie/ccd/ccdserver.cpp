@@ -847,7 +847,7 @@ private:
     IRoxieServerActivityCopyArray & activities;
 };
 
-class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
+class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IFinalRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
 {
 protected:
     IFinalRoxieInput *input;
@@ -1295,24 +1295,24 @@ public:
         throw MakeStringException(ROXIE_SINK, "Internal error: evaluate() requires a function");
     }
 
-    virtual IRoxieInput * querySelectOutput(unsigned id)
+    virtual IFinalRoxieInput * querySelectOutput(unsigned id)
     {
         return NULL;
     }
 
-    virtual bool querySetStreamInput(unsigned id, IRoxieInput * _input)
+    virtual bool querySetStreamInput(unsigned id, IFinalRoxieInput * _input)
     {
         return false;
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         assertex(!idx);
         input = _in;
         inputStream = &input->queryStream();
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         if (idx == (unsigned) -1)
             idx = 0;
@@ -1392,7 +1392,8 @@ class CRoxieServerLateStartActivity : public CRoxieServerActivity
 {
 
 protected:
-    IRoxieInput *input; // Don't use base class input field as we want to delay starts
+    IFinalRoxieInput *input;       // Don't use base class input fields as we want to delay starts
+    IEngineRowStream *inputStream;
     bool prefiltered;
     bool eof;
 
@@ -1406,7 +1407,7 @@ protected:
         {
             if (traceStartStop)
                 CTXLOG("lateStart activity stopping input early as prefiltered");
-            input->stop();
+            inputStream->stop();
         }
     }
 
@@ -1416,6 +1417,7 @@ public:
         : CRoxieServerActivity(_factory, _probeManager)
     {
         input = NULL;
+        inputStream = NULL;
         prefiltered = false;
         eof = false;
     }
@@ -1424,7 +1426,7 @@ public:
     {
         if (!prefiltered)
         {
-            input->stop();
+            inputStream->stop();
         }
         else if (traceStartStop)
             CTXLOG("lateStart activity NOT stopping input late as prefiltered");
@@ -1446,10 +1448,11 @@ public:
         prefiltered = false;
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         assertex(!idx);
         input = _in;
+        inputStream = &_in->queryStream();
     }
 };
 
@@ -1532,7 +1535,7 @@ public:
         return input->queryTotalCycles();
     }
 
-    void setInput(IRecordPullerCallback *_helper, IRoxieInput *_input)
+    void setInput(IRecordPullerCallback *_helper, IFinalRoxieInput *_input)
     {
         helper = _helper;
         input = _input;
@@ -1713,7 +1716,7 @@ public:
 
 // MORE - this code copied from ThreadedConcat code - may be able to common up some.
 
-class CRoxieServerReadAheadInput : public CInterface, implements IRoxieInput, implements IRecordPullerCallback, implements IEngineRowStream
+class CRoxieServerReadAheadInput : public CInterface, implements IFinalRoxieInput, implements IRecordPullerCallback, implements IEngineRowStream
 {
     QueueOf<const void, true> buffer;
     InterruptableSemaphore ready;
@@ -1809,7 +1812,7 @@ public:
         return puller.queryInput()->queryOutputMeta(); 
     }
 
-    void setInput(unsigned idx, IRoxieInput *_in)
+    void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         assertex(!idx);
         puller.setInput(this, _in);
@@ -1977,7 +1980,7 @@ public:
             input1->reset();
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         switch(idx)
         {
@@ -2049,7 +2052,7 @@ public:
         CRoxieServerActivity::reset(); 
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         assertex(idx < numInputs && idx < numStreams);
         inputArray[idx] = _in;
@@ -2123,7 +2126,7 @@ public:
         CRoxieServerActivity::reset();
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         return NULL;
     }
@@ -2635,7 +2638,7 @@ void throwRemoteException(IMessageUnpackCursor *extra)
     throwUnexpected();
 }
 
-class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implements IExceptionHandler, implements IEngineRowStream
+class CRemoteResultAdaptor :public CInterface, implements IFinalRoxieInput, implements IExceptionHandler, implements IEngineRowStream
 {
     friend class CRemoteResultMerger;
     class CRemoteResultMerger
@@ -5251,7 +5254,7 @@ public:
         return NULL;
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
@@ -5287,7 +5290,7 @@ class CRoxieServerWorkUnitReadActivity : public CRoxieServerActivity
 {
     IHThorWorkunitReadArg &helper;
     CriticalSection readerCrit;
-    Owned<IWorkUnitRowReader> wuReader; // MORE - can we use IRoxieInput instead?
+    Owned<IWorkUnitRowReader> wuReader;
 public:
     CRoxieServerWorkUnitReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorWorkunitReadArg &)basehelper)
@@ -5339,7 +5342,7 @@ public:
         return ret;
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
@@ -5381,10 +5384,10 @@ public:
 };
 
 
-class CSafeRoxieInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
+class CSafeRoxieInput : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
 {
 public:
-    CSafeRoxieInput(IRoxieInput * _input) : input(_input) {}
+    CSafeRoxieInput(IFinalRoxieInput * _input) : input(_input), inputStream(&_input->queryStream()) {}
     IMPLEMENT_IINTERFACE
 
     IEngineRowStream &queryStream()
@@ -5415,7 +5418,7 @@ public:
     virtual void stop()
     {
         CriticalBlock procedure(cs);
-        input->stop();
+        inputStream->stop();
     }
     virtual void reset()
     {
@@ -5425,28 +5428,29 @@ public:
     virtual void resetEOF()
     {
         CriticalBlock procedure(cs);
-        input->resetEOF();
+        inputStream->resetEOF();
     }
     virtual const void *nextRow()
     {
         CriticalBlock procedure(cs);
-        return input->nextRow();
+        return inputStream->nextRow();
     }
     virtual bool nextGroup(ConstPointerArray & group)
     {
         CriticalBlock procedure(cs);
-        return input->nextGroup(group);
+        return inputStream->nextGroup(group);
     }
 
 private:
     CriticalSection cs;
-    Linked<IRoxieInput> input;
+    Linked<IFinalRoxieInput> input;
+    Linked<IEngineRowStream> inputStream;
 };
 
 
 //=================================================================================
 
-class CPseudoRoxieInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
+class CPseudoRoxieInput : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -5485,8 +5489,12 @@ public:
 class CIndirectRoxieInput : public CPseudoRoxieInput
 {
 public:
-    CIndirectRoxieInput(IRoxieInput * _input = NULL) : input(_input)
+    CIndirectRoxieInput(IFinalRoxieInput * _input = NULL) : input(_input)
     {
+        if (input)
+            stream = &input->queryStream();
+        else
+            stream = NULL;
     }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) 
     {
@@ -5494,7 +5502,7 @@ public:
     }
     virtual void stop()
     {
-        input->stop();
+        stream->stop();
     }
     virtual void reset()
     { 
@@ -5503,12 +5511,12 @@ public:
 
     virtual const void * nextRow()
     {
-        return input->nextRow();
+        return stream->nextRow();
     }
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        return input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return stream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
     virtual unsigned __int64 queryTotalCycles() const
@@ -5523,7 +5531,7 @@ public:
 
     virtual void resetEOF() 
     { 
-        input->resetEOF(); 
+        stream->resetEOF();
     }
 
     virtual unsigned numConcreteOutputs() const 
@@ -5546,16 +5554,18 @@ public:
         return input->queryActivity();
     }
 
-    inline void setInput(IRoxieInput * _input)
+    inline void setInput(IFinalRoxieInput * _input)
     {
         input = _input;
+        stream = &_input->queryStream();
     }
     inline IFinalRoxieInput *queryInput() const
     {
         return input;
     }
 protected:
-    IRoxieInput * input;
+    IFinalRoxieInput *input;
+    IEngineRowStream *stream;
 };
 
 
@@ -5564,7 +5574,7 @@ class CExtractMapperInput : public CIndirectRoxieInput
     unsigned savedParentExtractSize;
     const byte * savedParentExtract;
 public:
-    CExtractMapperInput(IRoxieInput * _input = NULL) : CIndirectRoxieInput(_input)
+    CExtractMapperInput(IFinalRoxieInput * _input = NULL) : CIndirectRoxieInput(_input)
     {
         savedParentExtractSize = 0;
         savedParentExtract = NULL;
@@ -5744,7 +5754,7 @@ public:
         return next;
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
@@ -5807,7 +5817,7 @@ public:
         return next;
     }
 
-    virtual bool querySetStreamInput(unsigned id, IRoxieInput * _input)
+    virtual bool querySetStreamInput(unsigned id, IFinalRoxieInput * _input)
     {
         if (id == sequence)
         {
@@ -5817,7 +5827,7 @@ public:
         return false;
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
@@ -5882,7 +5892,7 @@ public:
         return inputStream->nextRow(); // I can act as a passthrough input
     }
 
-    IRoxieInput * querySelectOutput(unsigned id)
+    IFinalRoxieInput * querySelectOutput(unsigned id)
     {
         if (id == helper.querySequence())
         {
@@ -5961,7 +5971,7 @@ public:
         return inputStream->nextRow(); // I can act as a passthrough input
     }
 
-    IRoxieInput * querySelectOutput(unsigned id)
+    IFinalRoxieInput * querySelectOutput(unsigned id)
     {
         if (id == helper.querySequence())
         {
@@ -6000,7 +6010,7 @@ class CRoxieServerGraphLoopResultReadActivity : public CRoxieServerActivity
 protected:
     IHThorGraphLoopResultReadArg &helper;
     CriticalSection iterCrit;
-    Owned<IRoxieInput> iterInput;
+    Owned<IFinalRoxieInput> iterInput;
     Owned<IEngineRowStream> iterStream;
     ILocalGraphEx * graph;
     unsigned graphId;
@@ -6081,7 +6091,7 @@ public:
         return next;
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
@@ -6202,7 +6212,7 @@ public:
         graph->setGraphLoopResult(result);
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         if (idx==0)
             return this;
@@ -7857,7 +7867,7 @@ public:
     unsigned headIdx;
     Owned<IException> error;
 
-    class OutputAdaptor : public CInterface, implements IRoxieInput, implements IEngineRowStream
+    class OutputAdaptor : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
     {
         bool eof, eofpending, stopped;
 
@@ -8253,7 +8263,7 @@ public:
             return input->queryOutputMeta(); // not always known (e.g. disk write - though Gavin _could_ fill it in)
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         if (idx==(unsigned)-1)
             idx = nextFreeOutput(); // MORE - what is this used for?
@@ -8529,7 +8539,7 @@ public:
         puller.start(parentExtractSize, parentExtract, paused, 0, false, ctx);  // Pipe does not support preload presently - locks up
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (idx)
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
@@ -8944,7 +8954,7 @@ public:
             return NULL;
         loop
         {
-            const void * ret = input->nextRow();
+            const void * ret = inputStream->nextRow();
             if (!ret)
             {
                 //stop returning two NULLs in a row.
@@ -8953,7 +8963,7 @@ public:
                     anyThisGroup = false;
                     return NULL;
                 }
-                ret = input->nextRow();
+                ret = inputStream->nextRow();
                 if (!ret)
                 {
                     eof = true;
@@ -8981,7 +8991,7 @@ public:
 
         loop
         {
-            const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+            const void * ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
             if (!ret)
             {
                 eof = true;
@@ -9029,7 +9039,7 @@ public:
     { 
         eof = prefiltered;
         anyThisGroup = false;
-        input->resetEOF(); 
+        inputStream->resetEOF();
     }
 
     IInputSteppingMeta * querySteppingMeta()
@@ -9125,11 +9135,11 @@ public:
                 return NULL;
             }
 
-            const void * ret = input->nextRow();
+            const void * ret = inputStream->nextRow();
             while (ret)
             {
                 gathered.append(ret);
-                ret = input->nextRow();
+                ret = inputStream->nextRow();
             }
 
             unsigned num = gathered.ordinality();
@@ -9186,11 +9196,11 @@ public:
                 ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 #endif
 
-        const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void * ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         while (ret)
         {
             gathered.append(ret);
-            ret = input->nextRow();
+            ret = inputStream->nextRow();
         }
 
         unsigned num = gathered.ordinality();
@@ -9214,7 +9224,7 @@ public:
     { 
         eof = false;
         releaseGathered();
-        input->resetEOF(); 
+        inputStream->resetEOF();
     }
 
     IInputSteppingMeta * querySteppingMeta()
@@ -11319,7 +11329,7 @@ public:
         CRoxieServerTwoInputActivity::reset();
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
@@ -11330,7 +11340,7 @@ public:
         CRoxieServerTwoInputActivity::setInput(idx, _in);
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         if (idx==(unsigned)-1)
             idx = 0;
@@ -11925,7 +11935,7 @@ public:
         atEog = true;
     }
 
-    void setInput(IRoxieInput *_in)
+    void setInput(IFinalRoxieInput *_in)
     {
         puller.setInput(this, _in);
     }
@@ -12081,7 +12091,7 @@ public:
         readyPending = 0;
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (pullers.isItem(idx))
             pullers.item(idx).setInput(_in);
@@ -12347,13 +12357,11 @@ IRoxieServerActivityFactory *createRoxieServerNonEmptyActivityFactory(unsigned _
 
 //=================================================================================
 
-class CRoxieServerMergeActivity : public CRoxieServerActivity
+class CRoxieServerMergeActivity : public CRoxieServerMultiInputActivity
 {
     IHThorMergeArg &helper;
     unsigned *mergeheap;
     unsigned activeInputs;
-    unsigned numInputs;
-    IRoxieInput **inputArray;
     const void **pending;
     bool first;
     ICompare *compare;
@@ -12362,7 +12370,7 @@ class CRoxieServerMergeActivity : public CRoxieServerActivity
     void permute()
     {
         assertex(activeInputs == 0);
-        for(unsigned i = 0; i < numInputs; i++)
+        for(unsigned i = 0; i < numStreams; i++)
             if(pullInput(i))
                 mergeheap[activeInputs++] = i;
         // the tree structure: element p has children p*2+1 and p*2+2, or element c has parent (unsigned)(c-1)/2
@@ -12392,7 +12400,7 @@ class CRoxieServerMergeActivity : public CRoxieServerActivity
 
     bool pullInput(unsigned i)
     {
-        const void *next = inputArray[i]->ungroupedNextRow();
+        const void *next = streamArray[i]->ungroupedNextRow();
         pending[i] = next;
         return (next != NULL);
     }
@@ -12408,7 +12416,7 @@ class CRoxieServerMergeActivity : public CRoxieServerActivity
 
     bool siftDown(unsigned p)
     {
-        // assumimg that all descendents of p form a heap, sift p down to its correct position, and so include it in the heap
+        // assuming that all descendants of p form a heap, sift p down to its correct position, and so include it in the heap
         bool nochange = true;
         while(1)
         {
@@ -12503,26 +12511,21 @@ class CRoxieServerMergeActivity : public CRoxieServerActivity
 
 public:
     CRoxieServerMergeActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorMergeArg &)basehelper), numInputs(_numInputs)
+        : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs), helper((IHThorMergeArg &)basehelper)
     {
         activeInputs = 0;
         first = true;
         mergeheap = new unsigned[numInputs];
-        inputArray = new IRoxieInput*[numInputs];
-        pending = new const void *[numInputs];
+        pending = new const void *[numStreams];
         compare = helper.queryCompare();
         dedup = helper.dedup();
-        for (unsigned i = 0; i < numInputs; i++)
-        {
-            inputArray[i] = NULL;
+        for (unsigned i = 0; i < numStreams; i++)
             pending[i] = NULL;
-        }
     }
 
     ~CRoxieServerMergeActivity()
     {
         delete [] mergeheap;
-        delete [] inputArray;
         delete [] pending;
     }
 
@@ -12530,44 +12533,14 @@ public:
     {
         activeInputs = 0;
         first = true;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        for (unsigned i = 0; i < numInputs; i++)
-        {
-            inputArray[i]->start(parentExtractSize, parentExtract, paused);
-        }
-
-    }
-
-    virtual void stop()
-    {
-        for (unsigned i = 0; i < numInputs; i++)
-        {
-            inputArray[i]->stop();
-        }
-        CRoxieServerActivity::stop();
+        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()    
     {
-        for (unsigned i = 0; i < numInputs; i++)
-        {
+        for (unsigned i = 0; i < numStreams; i++)
             ReleaseClearRoxieRow(pending[i]);
-            inputArray[i]->reset();
-        }
-        CRoxieServerActivity::reset(); 
-    }
-
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        inputArray[idx] = _in;
-    }
-
-    virtual IFinalRoxieInput *queryInput(unsigned idx) const
-    {
-        if (idx < numInputs)
-            return inputArray[idx];
-        else
-            return NULL;
+        CRoxieServerMultiInputActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -12823,7 +12796,7 @@ public:
         CRoxieServerTwoInputActivity::start(parentExtractSize, parentExtract, paused);
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         if (idx==(unsigned)-1)
             idx = 0;
@@ -13074,12 +13047,12 @@ public:
             return NULL;
         loop
         {
-            const void * in = input->nextRow();
+            const void * in = inputStream->nextRow();
             if (!in)
             {
                 recordCount = 0;
                 if (numProcessedLastGroup == processed)
-                    in = input->nextRow();
+                    in = inputStream->nextRow();
                 if (!in)
                 {
                     numProcessedLastGroup = processed;
@@ -13273,7 +13246,7 @@ public:
             ::Release(pulled.dequeue());
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (idx)
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
@@ -13756,7 +13729,7 @@ class CRoxieServerParallelLoopActivity;
 class LoopFilterPseudoInput : public CIndirectRoxieInput
 {
 public:
-    LoopFilterPseudoInput(CRoxieServerParallelLoopActivity * _activity, IRoxieInput * _input, unsigned _counter) : 
+    LoopFilterPseudoInput(CRoxieServerParallelLoopActivity * _activity, IFinalRoxieInput * _input, unsigned _counter) :
         CIndirectRoxieInput(_input), activity(_activity), counter(_counter)
     {
     }
@@ -13771,7 +13744,7 @@ protected:
 class LoopExecutorThread : public RestartableThread
 {
 protected:
-    Owned<IRoxieInput> safeInput;
+    Owned<CSafeRoxieInput> safeInput;
     CRoxieServerParallelLoopActivity * activity;
     bool eof;
     CriticalSection crit;
@@ -13794,7 +13767,7 @@ public:
         savedParentExtractSize = 0;
     }
 
-    void setInput(CRoxieServerParallelLoopActivity * _activity, IRoxieInput *_input, unsigned _flags)
+    void setInput(CRoxieServerParallelLoopActivity * _activity, IFinalRoxieInput *_input, unsigned _flags)
     {
         activity = _activity;
         flags = _flags;
@@ -13817,8 +13790,8 @@ public:
 
 protected:
     void executeLoop();
-    void executeLoopInstance(unsigned counter, unsigned numIterations, IRoxieInput * input, SafeRowQueue * spillOutput);
-    IRoxieInput * createLoopIterationGraph(unsigned i, IRoxieInput * input, unsigned counter);
+    void executeLoopInstance(unsigned counter, unsigned numIterations, IFinalRoxieInput * input, SafeRowQueue * spillOutput);
+    IFinalRoxieInput * createLoopIterationGraph(unsigned i, IFinalRoxieInput * input, unsigned counter);
 };
 
 
@@ -13880,7 +13853,7 @@ public:
         executor.start(parentExtractSize, parentExtract, paused);
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (idx)
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
@@ -13991,7 +13964,7 @@ const void * LoopFilterPseudoInput::nextRow()
 {
     loop
     {
-        const void * next = input->nextRow();
+        const void * next = stream->nextRow();
         if (!next || activity->includeInLoop(counter, next))
             return next;
         activity->enqueueResult(next);
@@ -14068,7 +14041,7 @@ void LoopExecutorThread::executeLoop()
         }
 
         unsigned numParallel = activity->getNumParallel(iterations);
-        Linked<IRoxieInput> curInput;
+        Linked<IFinalRoxieInput> curInput;
         if (iterations == 0)
             curInput.set(safeInput);
         else
@@ -14100,15 +14073,15 @@ void LoopExecutorThread::executeLoop()
     activity->finishResults();
 }
 
-void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numIterations, IRoxieInput * input, SafeRowQueue * spillOutput)
+void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numIterations, IFinalRoxieInput * input, SafeRowQueue * spillOutput)
 {
-    IArrayOf<IRoxieInput> savedInputs;              // activities don't link their inputs, so this list keeps filters alive.
-    Linked<IRoxieInput> curInput = input;
+    IArrayOf<IFinalRoxieInput> savedInputs;              // activities don't link their inputs, so this list keeps filters alive.
+    Linked<IFinalRoxieInput> curInput = input;
     unsigned i;
     for (i= 0; i != numIterations; i++)
     {
         unsigned thisCounter = counter+i+1;
-        IRoxieInput * filtered = curInput;
+        IFinalRoxieInput * filtered = curInput;
         if (flags & IHThorLoopArg::LFfiltered)
         {
             filtered = new LoopFilterPseudoInput(activity, curInput, thisCounter);
@@ -14118,6 +14091,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
         curInput.setown(createLoopIterationGraph(i, filtered, thisCounter));
     }
 
+    IEngineRowStream *curStream = &curInput->queryStream();
     try
     {
         curInput->start(savedParentExtractSize, savedParentExtract, false);
@@ -14125,7 +14099,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
         {
             loop
             {
-                const void * next = curInput->nextRow();
+                const void * next = curStream->nextRow();
                 if (!next)
                     break;
                 spillOutput->enqueue(next);
@@ -14135,7 +14109,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
         {
             loop
             {
-                const void * next = curInput->nextRow();
+                const void * next = curStream->nextRow();
                 if (!next)
                     break;
                 activity->enqueueResult(next);
@@ -14149,7 +14123,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
         {
             cachedGraphs.item(i).queryLoopGraph()->afterExecute();
         }
-        curInput->stop();
+        curStream->stop();
         curInput->reset();
         throw;
     }
@@ -14157,11 +14131,11 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
     {
         cachedGraphs.item(i).queryLoopGraph()->afterExecute();
     }
-    curInput->stop();
+    curStream->stop();
     curInput->reset();
 }
 
-IRoxieInput * LoopExecutorThread::createLoopIterationGraph(unsigned i, IRoxieInput * input, unsigned counter)
+IFinalRoxieInput * LoopExecutorThread::createLoopIterationGraph(unsigned i, IFinalRoxieInput * input, unsigned counter)
 {
     if (!cachedGraphs.isItem(i))
         cachedGraphs.append(*activity->createChildGraphInstance());
@@ -14404,13 +14378,13 @@ private:
     Owned<IRoxieServerActivityFactory> factory;     // Note - before sourceAct, so destroyed last
     unsigned sourceIdx;
     Linked<IRoxieServerActivity> sourceAct;
-    Linked<IRoxieInput> sourceInput;
+    Linked<IFinalRoxieInput> sourceInput;
     Linked<IEngineRowStream> sourceStream;
     unsigned numUses;
     unsigned iteration;
 
 public:
-    CGraphIterationInfo(IRoxieServerActivity * _sourceAct, IRoxieInput *_input, IEngineRowStream *_stream, unsigned _sourceIdx, unsigned _iteration)
+    CGraphIterationInfo(IRoxieServerActivity * _sourceAct, IFinalRoxieInput *_input, IEngineRowStream *_stream, unsigned _sourceIdx, unsigned _iteration)
         : sourceAct(_sourceAct), sourceInput(_input), sourceStream(_stream),  sourceIdx(_sourceIdx), iteration(_iteration)
     {
         numUses = 0;
@@ -14428,12 +14402,12 @@ public:
             factory.setown(createRoxieServerThroughSpillActivityFactory(sourceAct->queryFactory()->queryQueryFactory(), createGraphOutputSplitter, numUses));
             IRoxieServerActivity *splitter =  factory->createActivity(NULL);
             splitter->onCreate(ctx, NULL);
-            IRoxieInput *input = sourceAct->queryOutput(sourceIdx);
+            IFinalRoxieInput *input = sourceAct->queryOutput(sourceIdx);
             if (probeManager)
             {
                 IRoxieProbe * inputProbe = probeManager->createProbe(static_cast<IInputBase*>(input), sourceStream, sourceAct, splitter, sourceIdx, 0, iteration);
                 probes.append(*LINK(inputProbe));
-                input = &dynamic_cast<IRoxieInput &>(inputProbe->queryInput());
+                input = &dynamic_cast<IFinalRoxieInput &>(inputProbe->queryInput());
             }
             sourceAct.setown(splitter);
             sourceAct->setInput(0, input);
@@ -14443,7 +14417,7 @@ public:
         }
     }
 
-    IRoxieInput *connectOutput(IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx)
+    IFinalRoxieInput *connectOutput(IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx)
     {
         // MORE - not really necessary to create splitters in separate pass, is it?
         if (factory) // we created a splitter....
@@ -14451,12 +14425,12 @@ public:
             sourceInput.set(sourceAct->queryOutput(sourceIdx));
             sourceStream.set(&sourceInput->queryStream());
         }
-        IRoxieInput *ret = sourceInput;
+        IFinalRoxieInput *ret = sourceInput;
         if (probeManager)
         {
             IRoxieProbe * inputProbe = probeManager->createProbe(sourceInput, sourceStream, sourceAct, targetAct, sourceIdx, targetIdx, iteration);
             probes.append(*LINK(inputProbe));
-            ret = &dynamic_cast<IRoxieInput &>(inputProbe->queryInput());
+            ret = &dynamic_cast<IFinalRoxieInput &>(inputProbe->queryInput());
         }
         if (factory) // we created a splitter....
             sourceIdx++;
@@ -14469,7 +14443,8 @@ public:
 class CRoxieServerParallelGraphLoopActivity : public CRoxieServerGraphLoopActivity, implements IRoxieServerLoopResultProcessor
 {
     Owned<IActivityGraph> childGraph;
-    IRoxieInput * resultInput;
+    IFinalRoxieInput * resultInput;
+    IEngineRowStream * resultStream;
     CIArrayOf<CGraphIterationInfo> outputs;
     IArrayOf<IRoxieServerChildGraph> iterationGraphs;
     Owned<CExtractMapperInput> inputExtractMapper;
@@ -14484,6 +14459,7 @@ public:
     {
         inputExtractMapper.setown(new CExtractMapperInput);
         resultInput = NULL;
+        resultStream = NULL;
         createLoopCounter = 0;
     }
 
@@ -14493,7 +14469,7 @@ public:
         childGraph.set(_ctx->queryChildGraph(loopGraphId));
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         //Input needs to be handled very carefully.....
         //We don't want to call onStart on the input unless it is actually used, so don't use the base CRoxieServerActivity implementation.
@@ -14523,8 +14499,8 @@ public:
 
     virtual void stop()
     {
-        if (resultInput)
-            resultInput->stop();
+        if (resultStream)
+            resultStream->stop();
         CRoxieServerGraphLoopActivity::stop();
     }
 
@@ -14533,6 +14509,7 @@ public:
         if (resultInput)
             resultInput->reset();
         resultInput = NULL;
+        resultStream = NULL;
         outputs.kill();
         iterationGraphs.kill(); // must be done after all activities killed
         if (probeManager)
@@ -14547,7 +14524,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        const void * ret = resultInput->nextRow();
+        const void * ret = resultStream->nextRow();
         if (ret)
             processed++;
         return ret;
@@ -14575,6 +14552,7 @@ public:
         ForEachItemIn(i2, iterationGraphs)
             iterationGraphs.item(i2).associateIterationOutputs(*this);
         resultInput = outputs.tos().connectOutput(probeManager, probes, this, 0);
+        resultStream = &resultInput->queryStream();
     }
 
     void createSplitters(IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes)
@@ -14598,7 +14576,7 @@ public:
         }
     }
 
-    virtual IRoxieInput* connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx)
+    virtual IFinalRoxieInput* connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx)
     {
         if (outputs.isItem(whichIteration))
         {
@@ -14777,7 +14755,7 @@ public:
         for (unsigned i2=0; i2<numOutputs; i2++)
         {
             unsigned outputIndex = extra.outputs.item(i2);
-            Owned<IRoxieInput> output = graph->selectOutput(numInputs+outputIndex);
+            Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+outputIndex);
             outputAdaptors[i2].setInput(output);
         }
     }
@@ -14836,8 +14814,8 @@ public:
             graph->beforeExecute();
             ForEachItemIn(i3, extra.unusedOutputs)
             {
-                Owned<IRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
-                output->stop();
+                Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
+                output->queryStream().stop();
             }
         }
     }
@@ -14852,8 +14830,8 @@ public:
             graph->beforeExecute();
             ForEachItemIn(i3, extra.unusedOutputs)
             {
-                Owned<IRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
-                output->stop();
+                Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
+                output->queryStream().stop();
             }
             CRoxieServerActivity::stop();
         }
@@ -14877,13 +14855,13 @@ public:
             IRoxieServerChildGraph * graph = libraryGraph->queryLoopGraph();
             ForEachItemIn(i3, extra.unusedOutputs)
             {
-                Owned<IRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
+                Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
                 output->reset();
             }
         }
     };
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         inputAdaptors[idx]->setInput(_in);
     }
@@ -14908,7 +14886,7 @@ public:
         throwUnexpected();      // should be called on outputs instead
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         assertex(idx!=(unsigned)-1);
         assertex(!outputUsed[idx]);
@@ -14985,72 +14963,27 @@ IRoxieServerActivityFactory *createRoxieServerLibraryCallActivityFactory(unsigne
 
 //=====================================================================================================
 
-class CRoxieServerNWayInputActivity : public CRoxieServerActivity
+// CRoxieServerNWayInputActivity is a multi-input, multi-output activity, where the outputs are a subset of the inputs
+// Used to implement RANGE(<rowset-expression>, [set-of-indices])
+
+class CRoxieServerNWayInputBaseActivity : public CRoxieServerMultiInputBaseActivity
 {
-    IHThorNWayInputArg & helper;
-    IRoxieInput ** inputs;
-    PointerArrayOf<IRoxieInput> selectedInputs;
-    unsigned numInputs;
+protected:
+    PointerArrayOf<IFinalRoxieInput> selectedInputs;
+    PointerArrayOf<IEngineRowStream> selectedStreams;
 
 public:
-    CRoxieServerNWayInputActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorNWayInputArg &)basehelper), numInputs(_numInputs)
+    CRoxieServerNWayInputBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputBaseActivity(_factory, _probeManager, _numInputs)
     {
-        inputs = new IRoxieInput*[numInputs];
-        for (unsigned i = 0; i < numInputs; i++)
-            inputs[i] = NULL;
-    }
-
-    ~CRoxieServerNWayInputActivity()
-    {
-        delete [] inputs;
-    }
-
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-
-        bool selectionIsAll;
-        size32_t selectionLen;
-        rtlDataAttr selection;
-        helper.getInputSelection(selectionIsAll, selectionLen, selection.refdata());
-
-        selectedInputs.kill();
-        if (selectionIsAll)
-        {
-            for (unsigned i=0; i < numInputs; i++)
-                selectedInputs.append(inputs[i]);
-        }
-        else
-        {
-            const size32_t * selections = (const size32_t *)selection.getdata();
-            unsigned max = selectionLen/sizeof(size32_t);
-            for (unsigned i = 0; i < max; i++)
-            {
-                unsigned nextIndex = selections[i];
-                //Check there are no duplicates.....  Assumes there are a fairly small number of inputs, so n^2 search is ok.
-                for (unsigned j=i+1; j < max; j++)
-                {
-                    if (nextIndex == selections[j])
-                        throw MakeStringException(ROXIE_NWAY_INPUT_ERROR, "Selection list for nway input can not contain duplicates");
-                }
-                if (nextIndex > numInputs)
-                    throw MakeStringException(ROXIE_NWAY_INPUT_ERROR, "Index %d in RANGE selection list is out of range", nextIndex);
-
-                selectedInputs.append(inputs[nextIndex-1]);
-            }
-        }
-
-        ForEachItemIn(i2, selectedInputs)
-            selectedInputs.item(i2)->start(parentExtractSize, parentExtract, paused);
     }
 
     virtual void stop()
     {
-        ForEachItemIn(i2, selectedInputs)
-            selectedInputs.item(i2)->stop();
+        ForEachItemIn(i2, selectedStreams)
+            selectedStreams.item(i2)->stop();
 
-        CRoxieServerActivity::stop();
+        CRoxieServerMultiInputBaseActivity::stop();
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -15078,14 +15011,10 @@ public:
         ForEachItemIn(i, selectedInputs)
             selectedInputs.item(i)->reset();
         selectedInputs.kill();
-        CRoxieServerActivity::reset(); 
+        selectedStreams.kill();
+        CRoxieServerMultiInputBaseActivity::reset(); 
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        assertex(idx < numInputs);
-        inputs[idx] = _in;
-    }
 
     virtual const void * nextRow()
     {
@@ -15105,9 +15034,63 @@ public:
     }
 };
 
+class CRoxieServerNWayInputActivity : public CRoxieServerNWayInputBaseActivity
+{
+    IHThorNWayInputArg & helper;
+public:
+    CRoxieServerNWayInputActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerNWayInputBaseActivity(_factory, _probeManager, _numInputs), helper((IHThorNWayInputArg &)basehelper)
+    {
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerNWayInputBaseActivity::start(parentExtractSize, parentExtract, paused);
+
+        bool selectionIsAll;
+        size32_t selectionLen;
+        rtlDataAttr selection;
+        helper.getInputSelection(selectionIsAll, selectionLen, selection.refdata());
+
+        selectedInputs.kill();
+        assertex(numInputs==numStreams); // Will need refactoring when that ceases to be true
+        if (selectionIsAll)
+        {
+            for (unsigned i=0; i < numInputs; i++)
+            {
+                selectedInputs.append(inputArray[i]);
+                selectedStreams.append(streamArray[i]);    // Assumes 1:1 relationship - is that good?
+            }
+        }
+        else
+        {
+            const size32_t * selections = (const size32_t *)selection.getdata();
+            unsigned max = selectionLen/sizeof(size32_t);
+            for (unsigned i = 0; i < max; i++)
+            {
+                unsigned nextIndex = selections[i];
+                //Check there are no duplicates.....  Assumes there are a fairly small number of inputs, so n^2 search is ok.
+                for (unsigned j=i+1; j < max; j++)
+                {
+                    if (nextIndex == selections[j])
+                        throw MakeStringException(ROXIE_NWAY_INPUT_ERROR, "Selection list for nway input can not contain duplicates");
+                }
+                if (nextIndex > numInputs || nextIndex > numStreams)
+                    throw MakeStringException(ROXIE_NWAY_INPUT_ERROR, "Index %d in RANGE selection list is out of range", nextIndex);
+
+                selectedInputs.append(inputArray[nextIndex-1]);
+                selectedStreams.append(streamArray[nextIndex-1]);    // Assumes 1:1 relationship - is that good?
+            }
+        }
+
+        ForEachItemIn(i2, selectedInputs)
+            selectedInputs.item(i2)->start(parentExtractSize, parentExtract, paused);
+    }
+
+};
+
 class CRoxieServerNWayInputActivityFactory : public CRoxieServerMultiInputFactory
 {
-//    bool ordered;
 public:
     CRoxieServerNWayInputActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
         : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
@@ -15127,11 +15110,10 @@ IRoxieServerActivityFactory *createRoxieServerNWayInputActivityFactory(unsigned 
 
 //=====================================================================================================
 
-class CRoxieServerNWayGraphLoopResultReadActivity : public CRoxieServerActivity
+class CRoxieServerNWayGraphLoopResultReadActivity : public CRoxieServerNWayInputBaseActivity
 {
     IHThorNWayGraphLoopResultReadArg & helper;
     CIArrayOf<CRoxieServerActivity> resultReaders;
-    PointerArrayOf<IRoxieInput> inputs;
     unsigned graphId;
     bool grouped;
     bool selectionIsAll;
@@ -15140,7 +15122,7 @@ class CRoxieServerNWayGraphLoopResultReadActivity : public CRoxieServerActivity
 
 public:
     CRoxieServerNWayGraphLoopResultReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorNWayGraphLoopResultReadArg &)basehelper)
+        : CRoxieServerNWayInputBaseActivity(_factory, _probeManager, 0), helper((IHThorNWayGraphLoopResultReadArg &)basehelper)
     {
         grouped = helper.isGrouped();
         graphId = _graphId;
@@ -15152,7 +15134,7 @@ public:
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
 
-        if (inputs.ordinality() == 0)
+        if (selectedInputs.ordinality() == 0)
         {
             initInputSelection();
 
@@ -15163,55 +15145,23 @@ public:
             {
                 CRoxieServerActivity * resultInput = new CRoxieServerInternalGraphLoopResultReadActivity(factory, probeManager, graphId, selections[i]);
                 resultReaders.append(*resultInput);
-                inputs.append(resultInput->queryOutput(0));
+                selectedInputs.append(resultInput);
                 resultInput->onCreate(ctx, colocalParent);
                 resultInput->start(parentExtractSize, parentExtract, paused);
+                selectedStreams.append(&resultInput->queryStream());
             }
         }
         else
         {
-            ForEachItemIn(i, inputs)
-                inputs.item(i)->start(parentExtractSize, parentExtract, paused);
+            ForEachItemIn(i, selectedInputs)
+                selectedInputs.item(i)->start(parentExtractSize, parentExtract, paused);
         }
-    }
-
-    virtual void stop()
-    {
-        ForEachItemIn(i, inputs)
-            inputs.item(i)->stop();
-
-        CRoxieServerActivity::stop();
     }
 
     virtual void reset()    
     {
-        ForEachItemIn(i, inputs)
-            inputs.item(i)->reset();
-        inputs.kill();
         resultReaders.kill();
-        CRoxieServerActivity::reset(); 
-    }
-
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for nway graph result read");
-    }
-
-    virtual const void * nextRow()
-    {
-        throwUnexpected();
-    }
-
-    virtual unsigned numConcreteOutputs() const
-    {
-        return inputs.ordinality();
-    }
-
-    virtual IFinalRoxieInput * queryConcreteInput(unsigned idx)
-    {
-        if (inputs.isItem(idx))
-            return inputs.item(idx);
-        return NULL;
+        CRoxieServerNWayInputBaseActivity::reset();
     }
 
     virtual void gatherIterationUsage(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract)
@@ -15232,7 +15182,11 @@ public:
         unsigned max = selectionLen / sizeof(size32_t);
         const size32_t * selections = (const size32_t *)selection.getdata();
         for (unsigned i = 0; i < max; i++)
-            inputs.append(processor.connectIterationOutput(selections[i], probeManager, probes, this, i));
+        {
+            IFinalRoxieInput *in = processor.connectIterationOutput(selections[i], probeManager, probes, this, i);
+            selectedInputs.append(in);
+            selectedStreams.append(&in->queryStream());  // Should this be done in the start method instead, I wonder?
+        }
     }
 
 protected:
@@ -15846,12 +15800,12 @@ public:
         remote.senddone();
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         if (idx==(unsigned)-1)
             idx = 0;
@@ -16261,7 +16215,7 @@ public:
         const void *ret;
         loop
         {
-            ret = input->nextRow();
+            ret = inputStream->nextRow();
             if (!ret)
             {
                 if (meta.isGrouped())
@@ -16273,7 +16227,7 @@ public:
                     }
                     doneThisGroup = 0;
                 }
-                ret = input->nextRow();
+                ret = inputStream->nextRow();
                 if (!ret)
                 {
                     eof = true;
@@ -16295,7 +16249,7 @@ public:
         ReleaseRoxieRow(ret);
         if (meta.isGrouped())
         {
-            while ((ret = input->nextRow()) != NULL)
+            while ((ret = inputStream->nextRow()) != NULL)
                 ReleaseRoxieRow(ret);
             doneThisGroup = 0;
         }
@@ -17257,7 +17211,7 @@ public:
             createDefaultRight();
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
@@ -17743,7 +17697,7 @@ public:
         rightOrdinality = rightset.ordinality();
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
@@ -18070,7 +18024,7 @@ public:
                 {
                     //MORE: This would be more efficient if we had a away of skipping to the end of the incoming group.
                     const void * next;
-                    while ((next = input->nextRow()) != NULL)
+                    while ((next = inputStream->nextRow()) != NULL)
                         ReleaseRoxieRow(next);
                 }
                 else
@@ -18092,7 +18046,7 @@ public:
         if(eoi)
             return;
         const void * next;
-        while ((next = input->nextRow()) != NULL)
+        while ((next = inputStream->nextRow()) != NULL)
         {
             if (sortedCount < limit)
             {
@@ -18791,91 +18745,63 @@ IRoxieServerActivityFactory *createRoxieServerTraceActivityFactory(unsigned _id,
 
 //=================================================================================
 
-class CRoxieServerCaseActivity : public CRoxieServerActivity
+class CRoxieServerCaseActivity : public CRoxieServerMultiInputBaseActivity
 {
     IHThorCaseArg &helper;
-    IRoxieInput **inputs;
     unsigned cond;
     bool unusedStopped;
-    IRoxieInput *in;
-    unsigned numInputs;
+    IEngineRowStream *active;
 
 public:
     CRoxieServerCaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorCaseArg &)basehelper), numInputs(_numInputs)
+        : CRoxieServerMultiInputBaseActivity(_factory, _probeManager, _numInputs), helper((IHThorCaseArg &)basehelper)
     {
         unusedStopped = false;
         cond = 0;
-        inputs = new IRoxieInput*[numInputs];
-        for (unsigned i = 0; i < numInputs; i++)
-            inputs[i] = NULL;
-        in = NULL;
-    }
-
-    ~CRoxieServerCaseActivity()
-    {
-        delete [] inputs;
+        active = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputBaseActivity::start(parentExtractSize, parentExtract, paused);
         cond = helper.getBranch();
         //CHOOSE defaults to the last argument if out of range.
         if (cond >= numInputs)
             cond = numInputs - 1;
-        inputs[cond]->start(parentExtractSize, parentExtract, paused);
-        for (unsigned idx = 0; idx < numInputs; idx++)
+        inputArray[cond]->start(parentExtractSize, parentExtract, paused);
+        assertex(numInputs==numStreams);
+        for (unsigned idx = 0; idx < numStreams; idx++)
         {
             if (idx!=cond)
-                inputs[idx]->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
+                streamArray[idx]->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
         }
-        in = inputs[cond];
+        active = streamArray[cond];
         unusedStopped = true;
     }
 
     virtual void stop()
     {
-        for (unsigned idx = 0; idx < numInputs; idx++)
+        for (unsigned idx = 0; idx < numStreams; idx++)
         {
             if (idx==cond || !unusedStopped)
-                inputs[idx]->stop();
+                streamArray[idx]->stop();
         }
-        CRoxieServerActivity::stop();
+        CRoxieServerMultiInputBaseActivity::stop();
     }
 
     virtual void reset()
     {
-        for (unsigned idx = 0; idx < numInputs; idx++)
-        {
-            inputs[idx]->reset();
-        }
         unusedStopped = false;
-        in = NULL;
-        CRoxieServerActivity::reset();
+        active = NULL;
+        CRoxieServerMultiInputBaseActivity::reset();
     }
-
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        assertex(idx < numInputs);
-        inputs[idx] = _in;
-    }
-
-    virtual IFinalRoxieInput *queryInput(unsigned idx) const
-    {
-        if (idx < numInputs)
-            return inputs[idx];
-        else
-            return NULL;
-    }
-
 
     virtual const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (in)
+        if (active)
         {
-            const void *ret = in->nextRow();
+            const void *ret = active->nextRow();
             if (ret)
                 processed++;
             return ret;
@@ -18915,8 +18841,10 @@ IRoxieServerActivityFactory *createRoxieServerCaseActivityFactory(unsigned _id, 
 class CRoxieServerIfActivity : public CRoxieServerActivity
 {
     IHThorIfArg &helper;
-    IRoxieInput *inputTrue;
-    IRoxieInput *inputFalse;
+    IFinalRoxieInput *inputTrue;
+    IFinalRoxieInput *inputFalse;
+    IEngineRowStream *streamTrue;
+    IEngineRowStream *streamFalse;
     bool cond;
     bool unusedStopped;
 
@@ -18926,6 +18854,8 @@ public:
     {
         inputFalse = NULL;
         inputTrue = NULL;
+        streamTrue = NULL;
+        streamFalse = NULL;
         unusedStopped = false;
         cond = false;
     }
@@ -18937,14 +18867,14 @@ public:
         if (cond)
         {
             inputTrue->start(parentExtractSize, parentExtract, paused);
-            if (inputFalse)
-                inputFalse->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
+            if (streamFalse)
+                streamFalse->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
         }
         else 
         {
             if (inputFalse)
                 inputFalse->start(parentExtractSize, parentExtract, paused);
-            inputTrue->stop();
+            streamTrue->stop();
         }
         unusedStopped = true;
 
@@ -18953,9 +18883,9 @@ public:
     virtual void stop()
     {
         if (!unusedStopped || cond)
-            inputTrue->stop();
-        if (inputFalse && (!unusedStopped || !cond))
-            inputFalse->stop();
+            streamTrue->stop();
+        if (streamFalse && (!unusedStopped || !cond))
+            streamFalse->stop();
         CRoxieServerActivity::stop();
     }
 
@@ -18985,7 +18915,7 @@ public:
 
     virtual IIndexReadActivityInfo *queryIndexReadActivity()
     {
-        IRoxieInput *in = cond ? inputTrue  : inputFalse;
+        IFinalRoxieInput *in = cond ? inputTrue  : inputFalse;
         if (in)
             return in->queryIndexReadActivity();
         return NULL;
@@ -19000,21 +18930,25 @@ public:
         unusedStopped = false;
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (idx==1)
+        {
             inputFalse = _in;
+            streamFalse = &_in->queryStream();
+        }
         else
         {
             assertex(!idx);
             inputTrue = _in;
+            streamTrue = &_in->queryStream();
         }
     }
 
     virtual const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        IRoxieInput *in = cond ? inputTrue  : inputFalse;
+        IEngineRowStream *in = cond ? streamTrue  : streamFalse;
         if (in)
         {
             const void * ret;
@@ -20218,7 +20152,7 @@ public:
         CRoxieServerActivity::reset();
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
@@ -20784,7 +20718,7 @@ public:
         CRoxieServerDiskReadBaseActivity::start(parentExtractSize, parentExtract, paused);
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         if (idx==(unsigned)-1)
             idx = 0;
@@ -21451,7 +21385,7 @@ public:
         CRoxieServerActivity::stop();
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
@@ -22215,7 +22149,7 @@ public:
         CRoxieServerActivity::reset();
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
     }
@@ -23148,7 +23082,7 @@ public:
         remote.onCreate(this, _ctx, _colocalParent);
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (idx)
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
@@ -23199,7 +23133,7 @@ public:
         CRoxieServerActivity::reset();
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         if (idx==(unsigned)-1)
             idx = 0;
@@ -23805,7 +23739,7 @@ class CRoxieServerFullKeyedJoinHead: public CRoxieServerActivity, implements IRe
     bool isLocal;
     Owned<IEngineRowAllocator> indexReadAllocator;
     Owned<const IResolvedFile> varFileInfo;
-    IRoxieInput *indexReadInput;
+    IFinalRoxieInput *indexReadInput;
     IIndexReadActivityInfo *rootIndex;
 
 public:
@@ -23839,7 +23773,7 @@ public:
         indexReadAllocator.setown(ctx->queryCodeContext()->getRowAllocator(indexReadMeta, activityId));
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (!idx)
             puller.setInput(this, _in);
@@ -23930,7 +23864,7 @@ public:
         }
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         if (idx==(unsigned)-1)
             idx = 0;
@@ -24134,7 +24068,7 @@ protected:
     CJoinGroup *groupStart;
     CriticalSection groupsCrit;
     QueueOf<CJoinGroup, false> groups;
-    IRoxieInput *indexReadInput;
+    IFinalRoxieInput *indexReadInput;
     IIndexReadActivityInfo *rootIndex;
 
     void createDefaultRight()
@@ -24182,7 +24116,7 @@ public:
         remote.onCreate(this, _ctx, _colocalParent);
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *_in)
     {
         if (!idx)
             puller.setInput(this, _in);
@@ -24222,7 +24156,7 @@ public:
     {
         puller.stop();
         if (indexReadInput)
-            indexReadInput->stop();
+            indexReadInput->queryStream().stop();   // Could probably do this as soon as re have fetched rootIndex?
         CRoxieServerActivity::stop();
     }
 
@@ -24264,7 +24198,7 @@ public:
         }
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         if (idx==(unsigned)-1)
             idx = 0;
@@ -24575,7 +24509,7 @@ public:
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, false, ctx);
     }
 
-    virtual void setInput(unsigned idx, IRoxieInput *in)
+    virtual void setInput(unsigned idx, IFinalRoxieInput *in)
     {
         head.setInput(idx, in);
     }
@@ -25140,7 +25074,7 @@ public:
             throw e;
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         return NULL;
     }
@@ -25300,7 +25234,7 @@ public:
         }
     }
 
-    virtual IRoxieInput *queryOutput(unsigned idx)
+    virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
         return NULL;
     }
@@ -25622,12 +25556,12 @@ public:
     {
         IRoxieServerActivity &targetActivity = activities.item(target);
         IRoxieServerActivity &sourceActivity = activities.item(source);
-        IRoxieInput * output = sourceActivity.queryOutput(sourceIdx);
+        IFinalRoxieInput * output = sourceActivity.queryOutput(sourceIdx);
         if (probeManager)
         {
             IRoxieProbe * inputProbe = probeManager->createProbe(static_cast<IInputBase*>(output), &output->queryStream(), &sourceActivity, &targetActivity, sourceIdx, targetIdx, iteration);
             probes.append(*LINK(inputProbe));
-            output = &dynamic_cast<IRoxieInput &>(inputProbe->queryInput());
+            output = &dynamic_cast<IFinalRoxieInput &>(inputProbe->queryInput());
         }
         targetActivity.setInput(targetIdx, output);
     }
@@ -25790,18 +25724,18 @@ public:
         results.setown(new CGraphResults);
     }
 
-    virtual IRoxieInput * startOutput(unsigned id, unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual IFinalRoxieInput * startOutput(unsigned id, unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        IRoxieInput * ret = selectOutput(id);
+        IFinalRoxieInput * ret = selectOutput(id);
         ret->start(parentExtractSize, parentExtract, paused);
         return ret;
     }
 
-    virtual IRoxieInput * selectOutput(unsigned id)
+    virtual IFinalRoxieInput * selectOutput(unsigned id)
     {
         ForEachItemIn(i, sinks)
         {
-            IRoxieInput * ret = sinks.item(i).querySelectOutput(id);
+            IFinalRoxieInput * ret = sinks.item(i).querySelectOutput(id);
             if (ret)
                 return ret;
         }
@@ -25814,7 +25748,7 @@ public:
         results->setResult(id, result);
     }
 
-    virtual bool querySetInputResult(unsigned id, IRoxieInput * input)
+    virtual bool querySetInputResult(unsigned id, IFinalRoxieInput * input)
     {
         ForEachItemIn(i, activities)
         {
@@ -26066,7 +26000,7 @@ public:
     virtual CGraphIterationInfo *selectGraphLoopOutput()
     {
         IRoxieServerActivity &sourceActivity = activities.item(graphOutputActivityIndex);
-        IRoxieInput *sourceInput = sourceActivity.queryOutput(0);
+        IFinalRoxieInput *sourceInput = sourceActivity.queryOutput(0);
         IEngineRowStream *sourceStream = &sourceInput->queryStream();
         return new CGraphIterationInfo(&sourceActivity, sourceInput, sourceStream, 0, loopCounter);
     }
@@ -26186,7 +26120,7 @@ public:
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 } testMeta;
 
-class TestInput : public CInterface, implements IRoxieInput, implements IEngineRowStream
+class TestInput : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
 {
     char const * const *input;
     IRoxieSlaveContext *ctx;
@@ -26399,7 +26333,8 @@ protected:
         activity->setInput(0, &in);
         if (input2)
             activity->setInput(1, &in2);
-        IRoxieInput *out = activity->queryOutput(outputIdx);
+        IFinalRoxieInput *out = activity->queryOutput(outputIdx);
+        IEngineRowStream *outStream = &out->queryStream();
         IOutputMetaData *meta = out->queryOutputMeta();
         void *buf = alloca(meta->getFixedSize());
 
@@ -26418,11 +26353,11 @@ protected:
                 ASSERT(!input2 || in2.state == TestInput::STATEstarted);
                 loop
                 {
-                    const void *next = out->nextRow();
+                    const void *next = outStream->nextRow();
                     if (!next)
                     {
                         ASSERT(output[count++] == NULL);
-                        next = out->nextRow();
+                        next = outStream->nextRow();
                         if (!next)
                         {
                             ASSERT(output[count++] == NULL);
@@ -26442,7 +26377,7 @@ protected:
                 {
                     // Check that reading after end is harmless
                     in.allRead = true;
-                    const void *next = out->nextRow();
+                    const void *next = outStream->nextRow();
                     ASSERT(next == NULL);
                 }
             }
@@ -26463,7 +26398,7 @@ protected:
         TestInput in(ctx, input);
         in.repeat = repeat;
         activity->setInput(0, &in);
-        ArrayOf<IRoxieInput *> out;
+        ArrayOf<IFinalRoxieInput *> out;
         for (unsigned i = 0; i < numOutputs; i++)
         {
             out.append(activity->queryOutput(i));
@@ -26473,12 +26408,13 @@ protected:
         class casyncfor: public CAsyncFor
         {
         public:
-            casyncfor(CcdServerTest *_parent, IRoxieServerActivity *_activity, ArrayOf<IRoxieInput *> &_outputs, char const * const *_input, char const * const *_output, unsigned _repeat)
+            casyncfor(CcdServerTest *_parent, IRoxieServerActivity *_activity, ArrayOf<IFinalRoxieInput *> &_outputs, char const * const *_input, char const * const *_output, unsigned _repeat)
             : parent(_parent), activity(_activity), outputs(_outputs), input(_input), output(_output), repeat(_repeat)
             {}
             void Do(unsigned i)
             {
-                IRoxieInput *out = outputs.item(i);
+                IFinalRoxieInput *out = outputs.item(i);
+                IEngineRowStream *outStream = &out->queryStream();
                 out->start(0, NULL, false);
                 IOutputMetaData *meta = out->queryOutputMeta();
                 void *buf = alloca(meta->getFixedSize());
@@ -26486,12 +26422,12 @@ protected:
                 unsigned repeats = repeat;
                 loop
                 {
-                    const void *next = out->nextRow();
+                    const void *next = outStream->nextRow();
                     if (!next)
                     {
                         ASSERT(repeats==0);
                         ASSERT(output[count++] == NULL);
-                        next = out->nextRow();
+                        next = outStream->nextRow();
                         if (!next)
                         {
                             ASSERT(output[count++] == NULL);
@@ -26510,11 +26446,11 @@ protected:
                     ASSERT(memcmp(next, buf, outsize) == 0);
                     ReleaseRoxieRow(next);
                 }
-                out->stop();
+                outStream->stop();
             }
         private:
             IRoxieServerActivity *activity;
-            ArrayOf<IRoxieInput *> &outputs;
+            ArrayOf<IFinalRoxieInput *> &outputs;
             char const * const *input;
             char const * const *output;
             unsigned repeat;
