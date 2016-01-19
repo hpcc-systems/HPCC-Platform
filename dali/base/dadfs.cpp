@@ -38,6 +38,7 @@
 #include "mputil.hpp"
 #include "rmtfile.hpp"
 #include "dadfs.hpp"
+#include "eclhelper.hpp"
 
 #ifdef _DEBUG
 //#define EXTRA_LOGGING
@@ -964,6 +965,7 @@ interface IDistributedFileTransactionExt : extends IDistributedFileTransaction
     virtual void retryActions()=0;
     virtual void runActions()=0;
     virtual void commitAndClearup()=0;
+    virtual ICodeContext *queryCodeContext()=0;
 };
 
 class CDistributedFileDirectory: public CInterface, implements IDistributedFileDirectory
@@ -1322,7 +1324,7 @@ public:
             // This will do the right thing for either super-files and logical-files.
             try
             {
-                file->detach(0); // 0 == timeout immediately if cannot get exclusive lock
+                file->detach(0, NULL); // 0 == timeout immediately if cannot get exclusive lock
                 return;
             }
             catch (ISDSException *e)
@@ -1456,6 +1458,7 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
     // any exception to the rule used by addSubFile / removeSubFile
     unsigned depth;
     unsigned prepared;
+    ICodeContext *codeCtx;
 
     /* 'owner' is set if, transaction object is implicitly created, because none provided
      * The owner cannot be release or unlocked. The transaction can still retry if other files are locked,
@@ -1515,8 +1518,9 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
     }
 public:
     IMPLEMENT_IINTERFACE;
-    CDistributedFileTransaction(IUserDescriptor *user, IDistributedSuperFile *_owner=NULL)
-        : isactive(false), depth(0), prepared(0), owner(_owner)
+
+    CDistributedFileTransaction(IUserDescriptor *user, IDistributedSuperFile *_owner=NULL, ICodeContext *_codeCtx=NULL)
+        : isactive(false), depth(0), prepared(0), owner(_owner), codeCtx(_codeCtx)
     {
         setUserDescriptor(udesc,user);
     }
@@ -1793,6 +1797,10 @@ public:
         isactive = false;
         actions.kill();
         deleteFiles();
+    }
+    virtual ICodeContext *queryCodeContext()
+    {
+        return codeCtx;
     }
 };
 
@@ -3152,7 +3160,7 @@ protected:
                 parts.item(i1++).clearDirty();
         }
     }
-    void detach(unsigned timeoutMs=INFINITE, bool removePhysicals=true)
+    void detach(unsigned timeoutMs, bool removePhysicals, ICodeContext *ctx)
     {
         // Removes either a cluster in case of multi cluster file or the whole File entry from DFS
 
@@ -3898,13 +3906,13 @@ public:
 public:
     void detachLogical(unsigned timeoutms=INFINITE)
     {
-        detach(timeoutms, false);
+        detach(timeoutms, false, NULL);
     }
 
 public:
-    virtual void detach(unsigned timeoutMs=INFINITE)
+    virtual void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL)
     {
-        detach(timeoutMs, true);
+        detach(timeoutMs, true, ctx);
     }
 
     bool existsPhysicalPartFiles(unsigned short port)
@@ -4877,7 +4885,7 @@ protected:
     int interleaved; // 0 not interleaved, 1 interleaved old, 2 interleaved new
     IArrayOf<IDistributedFile> subfiles;
 
-    void clearSuperOwners(unsigned timeoutMs)
+    void clearSuperOwners(unsigned timeoutMs, ICodeContext *ctx)
     {
         /* JCSMORE - Why on earth is this doing this way?
          * We are in a super file, we already have [read] locks to sub files (in 'subfiles' array)
@@ -4886,7 +4894,6 @@ protected:
         Owned<IPropertyTreeIterator> iter = root->getElements("SubFile");
         StringBuffer oquery;
         oquery.append("SuperOwner[@name=\"").append(logicalName.get()).append("\"]");
-        Owned<IMultiException> exceptions = MakeMultiException("CDelayedDelete::doRemoveEntry::SuperOwners");
         ForEach(*iter)
         {
             const char *name = iter->query().queryProp("@name");
@@ -4903,13 +4910,14 @@ protected:
                     if (subfroot)
                     {
                         if (!subfroot->removeProp(oquery.str()))
-                            exceptions->append(*MakeStringException(-1, "CDelayedDelete::removeEntry: SubFile %s of %s not found for removal",name?name:"(NULL)", logicalName.get()));
+                        {
+                            VStringBuffer s("SubFile %s is not owned by SuperFile %s", name, logicalName.get());
+                            ctx->addWuException(s.str(), 0, SeverityWarning, "DFS[clearSuperOwner]");
+                        }
                     }
                 }
             }
         }
-        if (exceptions->ordinality())
-            throw exceptions.getClear();
     }
 
     static StringBuffer &getSubPath(StringBuffer &path,unsigned idx)
@@ -5462,7 +5470,7 @@ public:
         root.setown(conn->getRoot());
     }
 
-    void detach(unsigned timeoutMs=INFINITE)
+    void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL)
     {   
         assertex(conn.get()); // must be attached
         CriticalBlock block(sect);
@@ -5484,7 +5492,7 @@ public:
          * 5) updateFS (housekeeping of empty scopes, relationships) - ok
          */
         CFileChangeWriteLock writeLock(conn, timeoutMs);
-        clearSuperOwners(timeoutMs);
+        clearSuperOwners(timeoutMs, ctx);
         writeLock.clear();
         root.setown(closeConnection(true));
         updateFS(logicalName, parent->queryDefaultTimeout());
@@ -7655,7 +7663,7 @@ public:
     {
         if (nestedTransaction)
             nestedTransaction->runActions();
-        super->detach();
+        super->detach(INFINITE, transaction->queryCodeContext());
     }
     virtual void commit()
     {
@@ -10479,9 +10487,9 @@ IDaliServer *createDaliDFSServer(IPropertyTree *config)
     return daliDFSServer;
 }
 
-IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user)
+IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user, ICodeContext *ctx)
 {
-    return new CDistributedFileTransaction(user);
+    return new CDistributedFileTransaction(user, NULL, ctx);
 }
 
 static void encodeCompareResult(DistributedFileCompareResult &ret,bool differs,CDateTime &newestdt1,CDateTime &newestdt2)
