@@ -146,10 +146,9 @@ elseif ( NOT MAKE_DOCS_ONLY )
     HPCC_ADD_SUBDIRECTORY (system)
     HPCC_ADD_SUBDIRECTORY (thorlcr "PLATFORM")
     HPCC_ADD_SUBDIRECTORY (testing)
-   if ( NOT WIN32 )
-       HPCC_ADD_SUBDIRECTORY (clienttools "CLIENTTOOLS_ONLY")
-   endif()
-
+    if ( NOT WIN32 )
+        HPCC_ADD_SUBDIRECTORY (clienttools "CLIENTTOOLS_ONLY")
+    endif()
 endif()
 
 HPCC_ADD_SUBDIRECTORY(docs "PLATFORM")
