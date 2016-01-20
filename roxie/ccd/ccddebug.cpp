@@ -25,6 +25,7 @@
 #include "ccdqueue.ipp"
 #include "ccdsnmp.hpp"
 #include "ccdstate.hpp"
+#include "thorstrand.hpp"
 
 using roxiemem::IRowManager;
 
@@ -52,11 +53,12 @@ protected:
     bool hasStopped;
 
 public:
-    InputProbe(IFinalRoxieInput *_in, IEngineRowStream *_inStream, IDebuggableContext *_debugContext,
+    InputProbe(IFinalRoxieInput *_in, IDebuggableContext *_debugContext,
         unsigned _sourceId, unsigned _sourceIdx, unsigned _targetId, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
-        : in(_in),  inStream(_inStream), debugContext(_debugContext),
+        : in(_in),  debugContext(_debugContext),
           sourceId(_sourceId), sourceIdx(_sourceIdx), targetId(_targetId), targetIdx(_targetIdx), iteration(_iteration), channel(_channel)
     {
+        inStream = NULL;
         hasStarted = false;
         everStarted = false;
         hasStopped = false;
@@ -74,6 +76,22 @@ public:
     {
         return in->gatherConjunctions(collector);
     }
+
+    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    {
+        assertex (!idx);
+        PointerArrayOf<IEngineRowStream> instreams;
+        Owned<IStrandJunction> junction = in->getOutputStreams(sourceIdx, instreams, false, flags | SFforceSingle);
+        // We forced to single, so should not be getting anything but a single stream back
+        assertex(junction==NULL);
+        assertex(instreams.length()==1);
+        inStream = instreams.item(0);
+
+        // Return a single stream too...
+        streams.append(this);
+        return NULL;
+    }
+
     virtual void resetEOF()
     {
         inStream->resetEOF();
@@ -104,10 +122,6 @@ public:
     virtual IOutputMetaData * queryOutputMeta() const
     {
         return in->queryOutputMeta();
-    }
-    IEngineRowStream &queryStream()
-    {
-        return *this;
     }
     IInputBase &queryInput()
     {
@@ -172,8 +186,8 @@ class TraceProbe : public InputProbe
 public:
     IMPLEMENT_IINTERFACE;
 
-    TraceProbe(IFinalRoxieInput *_in, IEngineRowStream *_inStream, unsigned _sourceId, unsigned _targetId, unsigned _sourceIdx, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
-        : InputProbe(_in, _inStream, NULL, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel)
+    TraceProbe(IFinalRoxieInput *_in, unsigned _sourceId, unsigned _targetId, unsigned _sourceIdx, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
+        : InputProbe(_in, NULL, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel)
     {
     }
 
@@ -272,11 +286,11 @@ class CProbeManager : public CInterface, implements IProbeManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    IRoxieProbe *createProbe(IInputBase *in, IEngineRowStream *_inStream, IActivityBase *inAct, IActivityBase *outAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
+    IRoxieProbe *createProbe(IInputBase *in, IActivityBase *inAct, IActivityBase *outAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
     {
         unsigned idIn = inAct->queryId();
         unsigned idOut = outAct->queryId();
-        TraceProbe *probe = new TraceProbe(static_cast<IFinalRoxieInput*>(in), _inStream, idIn, idOut, sourceIdx, targetIdx, iteration, 0);
+        TraceProbe *probe = new TraceProbe(static_cast<IFinalRoxieInput*>(in), idIn, idOut, sourceIdx, targetIdx, iteration, 0);
         probes.append(*probe);
         return probe;
     }
@@ -526,8 +540,8 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
     }
 
 public:
-    DebugProbe(IInputBase *_in, IEngineRowStream *_inStream, unsigned _sourceId, unsigned _sourceIdx, DebugActivityRecord *_sourceAct, unsigned _targetId, unsigned _targetIdx, DebugActivityRecord *_targetAct, unsigned _iteration, unsigned _channel, IDebuggableContext *_debugContext)
-        : InputProbe(static_cast<IFinalRoxieInput*>(_in), _inStream, _debugContext, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
+    DebugProbe(IInputBase *_in,  unsigned _sourceId, unsigned _sourceIdx, DebugActivityRecord *_sourceAct, unsigned _targetId, unsigned _targetIdx, DebugActivityRecord *_targetAct, unsigned _iteration, unsigned _channel, IDebuggableContext *_debugContext)
+        : InputProbe(static_cast<IFinalRoxieInput*>(_in), debugContext, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
           sourceAct(_sourceAct), targetAct(_targetAct)
     {
         historyCapacity = debugContext->getDefaultHistoryCapacity();
@@ -1011,7 +1025,7 @@ public:
         return CInterface::Release();
     }
 
-    virtual IRoxieProbe *createProbe(IInputBase *in, IEngineRowStream *inStream, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
+    virtual IRoxieProbe *createProbe(IInputBase *in, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
     {
         CriticalBlock b(crit);
         if (!iteration)
@@ -1021,7 +1035,7 @@ public:
         unsigned targetId = targetAct->queryId();
         DebugActivityRecord *sourceActRecord = noteActivity(sourceAct, iteration, channel, debugContext->querySequence());
         DebugActivityRecord *targetActRecord = noteActivity(targetAct, iteration, channel, debugContext->querySequence());
-        DebugProbe *probe = new DebugProbe(in, inStream, sourceId, sourceIdx, sourceActRecord, targetId, targetIdx, targetActRecord, iteration, channel, debugContext);
+        DebugProbe *probe = new DebugProbe(in, sourceId, sourceIdx, sourceActRecord, targetId, targetIdx, targetActRecord, iteration, channel, debugContext);
 #ifdef _DEBUG
         DBGLOG("Creating probe for edge id %s in graphManager %p", probe->queryEdgeId(), this);
 #endif

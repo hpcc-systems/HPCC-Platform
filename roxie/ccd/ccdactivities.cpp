@@ -40,6 +40,7 @@
 #include "csvsplitter.hpp"
 #include "thorxmlread.hpp"
 #include "thorcommon.ipp"
+#include "thorstrand.hpp"
 #include "jstats.h"
 
 size32_t diskReadBufferSize = 0x10000;
@@ -5164,10 +5165,12 @@ public:
         {
             remoteGraph->beforeExecute();
             Owned<IFinalRoxieInput> input = remoteGraph->startOutput(0, remoteExtractBuilder.size(), remoteExtractBuilder.getbytes(), false);
-            IEngineRowStream &stream = input->queryStream();
+            Owned <IStrandJunction> junction;
+            IEngineRowStream *stream = connectSingleStream(input, 0, junction, 0);
+
             while (!aborted)
             {
-                const void * next = stream.ungroupedNextRow();
+                const void * next = stream->ungroupedNextRow();
                 if (!next)
                     break;
 

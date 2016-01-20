@@ -59,6 +59,7 @@ struct IHThorInput : public IInputBase
     virtual void resetEOF() { }
 
     // HThor is not going to support parallel streams
+    virtual IEngineRowStream &queryStream() = 0;
     inline bool nextGroup(ConstPointerArray & group) { return queryStream().nextGroup(group); }
     inline void readAll(RtlLinkedDatasetBuilder &builder) { return queryStream().readAll(builder); }
     inline const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) { return queryStream().nextRowGE(seek, numFields, wasCompleteMatch, stepExtra); }
