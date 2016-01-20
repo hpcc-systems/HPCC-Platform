@@ -1020,18 +1020,24 @@ void CHqlBoundTarget::validate() const
 { 
     if (expr)
     {
-        if (queryType()->getSize() != UNKNOWN_LENGTH)
+        ITypeInfo * type = queryType();
+        type_t tc = type->getTypeCode();
+        if (tc == type_row || type->isReference())
+        {
+            //No checks to apply in these cases.
+        }
+        else if (type->getSize() != UNKNOWN_LENGTH)
         {
             assertex(!length);
         }
-        else if (isArrayRowset(queryType()))
+        else if (isArrayRowset(type))
         {
-            if (!hasStreamedModifier(queryType()))
+            if (!hasStreamedModifier(type))
                 assertex(count != NULL);
         }
         else
         {
-            assertex(length || queryType()->getTypeCode() == type_varstring || queryType()->getTypeCode() == type_varunicode || hasStreamedModifier(queryType()));
+            assertex(length || tc == type_varstring || tc == type_varunicode || hasStreamedModifier(queryType()));
         }
     }
 }
@@ -1410,7 +1416,6 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
     #endif
         }
     }
-    hints = 0;
     litno = 0;
     soName.set(_soName);
     HqlDummyLookupContext dummyctx(NULL);
@@ -2766,7 +2771,7 @@ void HqlCppTranslator::buildFilter(BuildCtx & ctx, IHqlExpression * expr)
         }
         break;
     case no_or:
-        if (!(hints & HintSize) && requiresTempAfterFirst(ctx, expr))
+        if (requiresTempAfterFirst(ctx, expr))
         {
             OwnedHqlExpr inverted = convertOrToAnd(expr);
             buildFilter(ctx, inverted);
@@ -4293,6 +4298,7 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
         case type_table:
         case type_groupedtable:
         case type_dictionary:
+        case type_row:
             break;
         default:
             {
@@ -10242,14 +10248,15 @@ void HqlCppTranslator::assignBoundToTemp(BuildCtx & ctx, IHqlExpression * lhs, I
 
 void HqlCppTranslator::assign(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & rhs)
 {
-    if (!target.isFixedSize())
+    IHqlExpression * lhs = target.expr;
+    ITypeInfo * lType = lhs->queryType()->queryPromotedType();
+
+    if ((lType->getTypeCode() != type_row) && !target.isFixedSize())
     {
         assignCastUnknownLength(ctx, target, rhs);
         return;
     }
 
-    IHqlExpression * lhs = target.expr;
-    ITypeInfo * lType = lhs->queryType()->queryPromotedType();
     if (!isSameBasicType(lType, rhs.expr->queryType()->queryPromotedType()))
         assignAndCast(ctx, target, rhs);
     else
@@ -12240,17 +12247,6 @@ IHqlExpression * HqlCppTranslator::needFunction(IIdAtom * name)
     return internalScope->lookupSymbol(name, LSFsharedOK, dummyctx);
 }
 
-
-unsigned HqlCppTranslator::processHint(IHqlExpression * expr)
-{
-    unsigned oldHints = hints;
-    IAtom * hint = NULL; // MORE how do I get this?
-    if (hint == sizeAtom)
-        hints = (hints & ~(HintSpeed|HintSize)) | HintSize;
-    else if (hint == speedAtom)
-        hints = (hints & ~(HintSize|HintSpeed)) | HintSpeed;
-    return oldHints;
-}
 
 bool HqlCppTranslator::childrenRequireTemp(BuildCtx & ctx, IHqlExpression * expr, bool includeChildren)
 {

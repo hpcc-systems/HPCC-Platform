@@ -188,8 +188,8 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Select the <emphasis role="bold">Compiler</emphasis> tab.
-              </para>
+              <para>Select the <emphasis role="bold">Compiler</emphasis>
+              tab.</para>
 
               <para>The compiler details are automatically specified. If you
               want to override the defaults, check the <emphasis
@@ -328,7 +328,7 @@
 
           <para></para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -454,7 +454,7 @@
           configure the text, foreground and background colors to your
           preference.</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -522,7 +522,7 @@
           <para>The <emphasis role="bold">Results tab</emphasis> allows you to
           configure how results display.</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -589,7 +589,7 @@
           option if you are using multiple versions of the client tools or if
           you installed the compiler in a different location.</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -663,7 +663,7 @@
           <para>The <emphasis role="bold">Other tab</emphasis> allows you to
           configure other settings.</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -973,7 +973,7 @@
           Expand any folder to see the ECL files within it.</para>
 
           <para><graphic fileref="../../images/CT13.jpg" /><informaltable
-              colsep="0" frame="none" rowsep="0">
+              colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -1106,7 +1106,7 @@
           environment to which you are connected.</para>
 
           <para><graphic fileref="../../images/CT14.jpg" /> <informaltable
-              colsep="0" frame="none" rowsep="0">
+              colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -1193,7 +1193,7 @@
           environment to which you are connected.</para>
 
           <para><graphic fileref="../../images/CT15.jpg" /> <informaltable
-              colsep="0" frame="none" rowsep="0">
+              colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -1314,7 +1314,7 @@
           control and specify access details for the environment(s) you use.
           It contains the following selections:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -1419,7 +1419,7 @@
           <para>The <emphasis role="bold">Current Tab</emphasis> contains the
           following selections:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
               <colspec colwidth="90pt" />
 
@@ -1456,7 +1456,7 @@
           <para>The <emphasis role="bold">Clipboard Tab</emphasis> contains
           the following selections:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
               <colspec colwidth="90pt" />
 
@@ -1500,7 +1500,7 @@
           role="bold">Editor Tab</emphasis> contains the following
           selections:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
               <colspec colwidth="90pt" />
 
@@ -1678,7 +1678,7 @@
           <para>The <emphasis role="bold">SearchTab</emphasis> contains the
           following selections:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
               <colspec colwidth="90pt" />
 
@@ -1734,7 +1734,7 @@
           <para>The <emphasis role="bold">SyntaxTab</emphasis> contains the
           following selections:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
               <colspec colwidth="90pt" />
 
@@ -1794,7 +1794,7 @@
 
           <para><graphic fileref="../../images/CT41.png" /></para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -1864,7 +1864,7 @@
           the top of the Builder window and contains the following
           selections:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
               <colspec colwidth="90pt" />
 
@@ -1931,7 +1931,7 @@
 
           <graphic fileref="../../images/CT48.png" />
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -1988,7 +1988,7 @@
           clicking on the one you want to view. Other available selections
           are:</para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -2060,7 +2060,7 @@
           <para>The <emphasis role="bold">Help </emphasis>menu contains the
           following selections:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -2098,7 +2098,7 @@
           <para>Right-click on any Workunit for a Pop-up menu
           containing:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
@@ -2370,7 +2370,7 @@
 
           <para>Right-click on Results Pop-up menu containing:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="130.40pt" />
 
@@ -3075,7 +3075,7 @@ ENDMACRO;
 
         <para>There are four breakpoint modes:</para>
 
-        <informaltable colsep="0" frame="none" rowsep="0">
+        <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
             <colspec colwidth="87.55pt" />
 
@@ -3174,7 +3174,7 @@ ENDMACRO;
           <para>The <emphasis role="bold">Process</emphasis> options
           include:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="85.55pt" />
 
@@ -3213,7 +3213,7 @@ ENDMACRO;
           <para>The <emphasis role="bold">Graph</emphasis> options
           include:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="85.55pt" />
 
@@ -3249,7 +3249,7 @@ ENDMACRO;
           <para>The <emphasis role="bold">Edge</emphasis> options
           include:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="85.55pt" />
 
@@ -3278,7 +3278,7 @@ ENDMACRO;
           <para>The <emphasis role="bold">Breakpoint(s)</emphasis> options
           include:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="85.55pt" />
 
@@ -3317,7 +3317,7 @@ ENDMACRO;
           <para>The <emphasis role="bold">Find</emphasis> options
           include:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="85.55pt" />
 
@@ -3359,7 +3359,7 @@ ENDMACRO;
           <para>The <emphasis role="bold">View</emphasis> options
           include:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -3406,7 +3406,7 @@ ENDMACRO;
           <para>The <emphasis role="bold">Global Filter</emphasis> options
           include:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -3435,7 +3435,7 @@ ENDMACRO;
           <para>The <emphasis role="bold">Active Filter</emphasis> options
           include:</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 

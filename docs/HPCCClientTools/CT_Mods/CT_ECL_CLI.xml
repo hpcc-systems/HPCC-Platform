@@ -32,7 +32,7 @@
 
         <para></para>
 
-        <informaltable colsep="0" frame="none" rowsep="0">
+        <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
             <colspec align="left" colwidth="125.55pt" />
 
@@ -271,7 +271,7 @@ ecl deploy roxie - --name=FindPersonService
         <para>A hyphen (-) specifies that the object should be read from
         stdin.</para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -447,7 +447,7 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
         <para>A hyphen (-) specifies that the object should be read from
         stdin.</para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -738,7 +738,7 @@ ecl unpublish roxie "FindpersonService*"
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -853,7 +853,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
         <para>A hyphen (-) specifies that the object should be read from
         stdin.</para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -1056,7 +1056,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -1145,7 +1145,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -1238,7 +1238,7 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -1376,7 +1376,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -1549,7 +1549,7 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -1694,7 +1694,7 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -1826,7 +1826,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -1960,7 +1960,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
@@ -2041,7 +2041,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
@@ -2131,7 +2131,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
@@ -2221,7 +2221,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -2313,7 +2313,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -2431,8 +2431,8 @@ ecl packagemap validate roxie --active</programlisting>
 
         <para>The --queryid option checks the files in a query instead of all
         the queries in the target queryset. This is quicker when you only need
-        to validate the files for a single query. <informaltable colsep="0"
-            frame="none" rowsep="0">
+        to validate the files for a single query. <informaltable colsep="1"
+            frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
@@ -2552,7 +2552,7 @@ ecl packagemap validate roxie --active</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -2624,7 +2624,7 @@ ecl packagemap validate roxie --active</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -2696,7 +2696,7 @@ ecl packagemap validate roxie --active</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -2768,7 +2768,7 @@ ecl packagemap validate roxie --active</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -2846,7 +2846,7 @@ ecl bundle depends mybundle --version=2</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -2905,7 +2905,7 @@ ecl bundle info mybundle --version=2</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -2967,7 +2967,7 @@ ecl bundle install mybundle --keepprior</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -3047,7 +3047,7 @@ ecl bundle install mybundle --keepprior</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -3114,7 +3114,7 @@ ecl bundle list myb*
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -3167,7 +3167,7 @@ ecl bundle list myb*
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -3220,7 +3220,7 @@ ecl bundle list myb*
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -3301,7 +3301,7 @@ ecl abort -n MyJob</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -3386,7 +3386,7 @@ ecl status -n MyJob</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -3471,7 +3471,7 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -3557,7 +3557,7 @@ ecl getname -wu W201407*
 
         <para></para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 

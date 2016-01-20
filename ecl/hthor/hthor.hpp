@@ -57,6 +57,15 @@ struct IHThorInput : public IInputBase
     virtual void updateProgress(IStatisticGatherer &progress) const = 0;
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual void resetEOF() { }
+
+    // HThor is not going to support parallel streams
+    inline bool nextGroup(ConstPointerArray & group) { return queryStream().nextGroup(group); }
+    inline void readAll(RtlLinkedDatasetBuilder &builder) { return queryStream().readAll(builder); }
+    inline const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) { return queryStream().nextRowGE(seek, numFields, wasCompleteMatch, stepExtra); }
+    inline const void *nextRow() { return queryStream().nextRow(); }
+    inline void stop() { queryStream().stop(); }
+    inline const void *ungroupedNextRow() { return queryStream().ungroupedNextRow(); }
+
 };
 
 struct IHThorNWayInput

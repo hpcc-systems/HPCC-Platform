@@ -406,7 +406,8 @@ private:
 class EclCmdQueriesCopy : public EclCmdCommon
 {
 public:
-    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000), optDontCopyFiles(false), optOverwrite(false), optAllowForeign(false)
+    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000), optDontCopyFiles(false), optOverwrite(false), optAllowForeign(false),
+        optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false)
     {
         optTimeLimit = (unsigned) -1;
         optWarnTimeLimit = (unsigned) -1;
@@ -462,6 +463,18 @@ public:
                 continue;
             if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
                 continue;
+            if (iter.matchFlag(optUpdateSuperfiles, ECLOPT_UPDATE_SUPER_FILES))
+                continue;
+            if (iter.matchFlag(optUpdateCloneFrom, ECLOPT_UPDATE_CLONE_FROM))
+                continue;
+            if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
+                continue;
+            if (iter.matchFlag(optUpdateSuperfiles, ECLOPT_UPDATE_SUPER_FILES))
+                continue;
+            if (iter.matchFlag(optUpdateCloneFrom, ECLOPT_UPDATE_CLONE_FROM))
+                continue;
+            if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
+                continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
@@ -503,6 +516,9 @@ public:
         req->setSourceProcess(optSourceProcess);
         req->setActivate(optActivate);
         req->setOverwrite(optOverwrite);
+        req->setUpdateSuperFiles(optUpdateSuperfiles);
+        req->setUpdateCloneFrom(optUpdateCloneFrom);
+        req->setAppendCluster(!optDontAppendCluster);
         req->setDontCopyFiles(optDontCopyFiles);
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
@@ -554,7 +570,10 @@ public:
             "   --source-process       Process cluster to copy files from\n"
             "   -A, --activate         Activate the new query\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
-            "   -O, --overwrite        Overwrite existing files\n"
+            "   -O, --overwrite        Completely replace existing DFS file information (dangerous)\n"
+            "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
+            "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
+            "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n"
             "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
             "   --timeLimit=<sec>      Value to set for query timeLimit configuration\n"
@@ -585,6 +604,9 @@ private:
     bool optActivate;
     bool optNoReload;
     bool optOverwrite;
+    bool optUpdateSuperfiles;
+    bool optUpdateCloneFrom;
+    bool optDontAppendCluster; //Undesirable but here temporarily because DALI may have locking issues
     bool optDontCopyFiles;
     bool optAllowForeign;
 };
@@ -592,7 +614,8 @@ private:
 class EclCmdQueriesCopyQueryset : public EclCmdCommon
 {
 public:
-    EclCmdQueriesCopyQueryset() : optCloneActiveState(false), optAllQueries(false), optDontCopyFiles(false), optOverwrite(false), optAllowForeign(false)
+    EclCmdQueriesCopyQueryset() : optCloneActiveState(false), optAllQueries(false), optDontCopyFiles(false), optOverwrite(false), optAllowForeign(false),
+        optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -630,6 +653,12 @@ public:
                 continue;
             if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
                 continue;
+            if (iter.matchFlag(optUpdateSuperfiles, ECLOPT_UPDATE_SUPER_FILES))
+                continue;
+            if (iter.matchFlag(optUpdateCloneFrom, ECLOPT_UPDATE_CLONE_FROM))
+                continue;
+            if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -658,6 +687,9 @@ public:
         req->setSourceProcess(optSourceProcess);
         req->setCloneActiveState(optCloneActiveState);
         req->setOverwriteDfs(optOverwrite);
+        req->setUpdateSuperFiles(optUpdateSuperfiles);
+        req->setUpdateCloneFrom(optUpdateCloneFrom);
+        req->setAppendCluster(!optDontAppendCluster);
         req->setCopyFiles(!optDontCopyFiles);
         req->setAllowForeignFiles(optAllowForeign);
 
@@ -708,7 +740,10 @@ public:
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
             "   --source-process       Process cluster to copy files from\n"
             "   --clone-active-state   Make copied queries active if active on source\n"
-            "   -O, --overwrite        Overwrite existing DFS file information\n"
+            "   -O, --overwrite        Completely replace existing DFS file information (dangerous)\n"
+            "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
+            "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
+            "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n"
             "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             " Common Options:\n",
             stdout);
@@ -721,6 +756,9 @@ private:
     StringAttr optSourceProcess;
     bool optCloneActiveState;
     bool optOverwrite;
+    bool optUpdateSuperfiles;
+    bool optUpdateCloneFrom;
+    bool optDontAppendCluster; //Undesirable but here temporarily because DALI may have locking issues
     bool optDontCopyFiles;
     bool optAllowForeign;
     bool optAllQueries;

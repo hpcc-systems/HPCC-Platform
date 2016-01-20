@@ -123,9 +123,9 @@ if ( PLUGIN )
     HPCC_ADD_SUBDIRECTORY (plugins/v8embed "V8EMBED")
     HPCC_ADD_SUBDIRECTORY (plugins/memcached "MEMCACHED")
     HPCC_ADD_SUBDIRECTORY (plugins/pyembed "PYEMBED")
-    HPCC_ADD_SUBDIRECTORY (plugins/redis "REDISEMBED")
+    HPCC_ADD_SUBDIRECTORY (plugins/redis "REDIS")
     HPCC_ADD_SUBDIRECTORY (plugins/javaembed "JAVAEMBED")
-    HPCC_ADD_SUBDIRECTORY (plugins/kafka "KAFKAEMBED")
+    HPCC_ADD_SUBDIRECTORY (plugins/kafka "KAFKA")
     HPCC_ADD_SUBDIRECTORY (plugins/cassandra "CASSANDRAEMBED")
     HPCC_ADD_SUBDIRECTORY (plugins/sqlite3 "SQLITE3EMBED")
     HPCC_ADD_SUBDIRECTORY (plugins/mysql "MYSQLEMBED")
@@ -146,10 +146,9 @@ elseif ( NOT MAKE_DOCS_ONLY )
     HPCC_ADD_SUBDIRECTORY (system)
     HPCC_ADD_SUBDIRECTORY (thorlcr "PLATFORM")
     HPCC_ADD_SUBDIRECTORY (testing)
-   if ( NOT WIN32 )
-       HPCC_ADD_SUBDIRECTORY (clienttools "CLIENTTOOLS_ONLY")
-   endif()
-
+    if ( NOT WIN32 )
+        HPCC_ADD_SUBDIRECTORY (clienttools "CLIENTTOOLS_ONLY")
+    endif()
 endif()
 
 HPCC_ADD_SUBDIRECTORY(docs "PLATFORM")
@@ -190,6 +189,7 @@ if(TOP_LEVEL_PROJECT)
     set(CPACK_RPM_PACKAGE_RELEASE "${stagever}")
     set(CPACK_RPM_PACKAGE_VENDOR "HPCC Systems®")
     set(CPACK_PACKAGE_VENDOR "HPCC Systems®")
+    set(CPACK_PACKAGE_VENDOR_WITHOUT_TRADEMARK "HPCC Systems")
 
     if(${ARCH64BIT} EQUAL 1)
         set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
@@ -389,7 +389,7 @@ if(TOP_LEVEL_PROJECT)
             set(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\hpccsystems.com")
             set(CPACK_NSIS_CONTACT ${CPACK_PACKAGE_CONTACT})
             set(CPACK_NSIS_DEFINES "
-                !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
+                !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR_WITHOUT_TRADEMARK}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
                 !define MUI_FINISHPAGE_NOAUTOCLOSE
             ")
 

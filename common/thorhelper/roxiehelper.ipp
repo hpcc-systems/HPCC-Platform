@@ -26,21 +26,13 @@ extern THORHELPER_API unsigned traceLevel;
 interface IOutputMetaData;
 interface IInputSteppingMeta;
 
-struct IInputBase : public IInterface //base for IRoxieInput and IHThorInput
+struct IInputBase : public IInterface //base for IFinalRoxieInput and IHThorInput
 {
     virtual IOutputMetaData * queryOutputMeta() const = 0;
     virtual IInputSteppingMeta * querySteppingMeta() { return NULL; }
 
     // These will need some thought
     virtual IEngineRowStream &queryStream() = 0;
-    inline void resetEOF() { queryStream().resetEOF(); }
-    inline bool nextGroup(ConstPointerArray & group) { return queryStream().nextGroup(group); }
-    inline void readAll(RtlLinkedDatasetBuilder &builder) { return queryStream().readAll(builder); }
-    inline const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) { return queryStream().nextRowGE(seek, numFields, wasCompleteMatch, stepExtra); }
-    inline const void *nextRow() { return queryStream().nextRow(); }
-    inline void stop() { queryStream().stop(); }
-    inline const void *ungroupedNextRow() { return queryStream().ungroupedNextRow(); }
-
 };
 
 //---------------------------------------------------

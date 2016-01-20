@@ -59,7 +59,6 @@ interface IRoxieServerQueryPacket : public IInterface, public ILRUChain
     virtual void setDebugResponse(unsigned sequence, IRoxieQueryPacket *) = 0;
 };
 
-interface IRoxieInput;
 interface IProbeManager;
 interface IRoxieServerLoopResultProcessor;
 
@@ -90,7 +89,7 @@ interface IRoxieServerContext;
 interface IRoxieSlaveContext;
 class ClusterWriteHandler;
 
-interface IRoxieInput : extends IInputBase
+interface IFinalRoxieInput : extends IInputBase
 {
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
     virtual void reset() = 0;
@@ -98,11 +97,10 @@ interface IRoxieInput : extends IInputBase
     virtual unsigned __int64 queryTotalCycles() const = 0;
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual unsigned numConcreteOutputs() const { return 1; }
-    virtual IRoxieInput * queryConcreteInput(unsigned idx) { assertex(idx==0); return this; }
+    virtual IFinalRoxieInput * queryConcreteInput(unsigned idx) { assertex(idx==0); return this; }
     virtual IRoxieServerActivity *queryActivity() = 0;
     virtual IIndexReadActivityInfo *queryIndexReadActivity() = 0;
 };
-
 
 interface ISteppedConjunctionCollector;
 
@@ -134,9 +132,9 @@ interface IRoxiePackage;
 
 interface IRoxieServerActivity : extends IActivityBase
 {
-    virtual void setInput(unsigned idx, IRoxieInput *in) = 0;
-    virtual IRoxieInput *queryOutput(unsigned idx) = 0;
-    virtual IRoxieInput *queryInput(unsigned idx) const = 0;
+    virtual void setInput(unsigned idx, IFinalRoxieInput *in) = 0;
+    virtual IFinalRoxieInput *queryOutput(unsigned idx) = 0;
+    virtual IFinalRoxieInput *queryInput(unsigned idx) const = 0;
     virtual void execute(unsigned parentExtractSize, const byte *parentExtract) = 0;
     virtual void onCreate(IRoxieSlaveContext *ctx, IHThorArg *colocalArg) = 0;
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
@@ -153,10 +151,10 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void serializeExtra(MemoryBuffer &out) = 0;
     virtual void stopSink(unsigned idx) = 0;
 //Functions to support result streaming between parallel loop/graphloop/library implementations
-    virtual IRoxieInput * querySelectOutput(unsigned id) = 0;
-    virtual bool querySetStreamInput(unsigned id, IRoxieInput * _input) = 0;
+    virtual IFinalRoxieInput * querySelectOutput(unsigned id) = 0;
+    virtual bool querySetStreamInput(unsigned id, IFinalRoxieInput * _input) = 0;
     virtual void gatherIterationUsage(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract) = 0;
-    virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes) = 0;
+    virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes) = 0;
     virtual void resetOutputsUsed() = 0;        // use for adjusting correct number of uses for a splitter
     virtual void noteOutputUsed() = 0;
     virtual bool isPassThrough() = 0;
@@ -209,20 +207,20 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
 interface IGraphResult : public IInterface
 {
     virtual void getLinkedResult(unsigned & countResult, byte * * & result) = 0;
-    virtual IRoxieInput * createIterator() = 0;
+    virtual IEngineRowStream * createIterator() = 0;
     virtual const void * getLinkedRowResult() = 0;
 };
 
 interface IRoxieServerLoopResultProcessor
 {
     virtual void noteUseIteration(unsigned whichIteration) = 0;
-    virtual IRoxieInput * connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx) = 0;
+    virtual IFinalRoxieInput * connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx) = 0;
 };
 
 interface IRoxieGraphResults : extends IEclGraphResults
 {
 public:
-    virtual IRoxieInput * createIterator(unsigned id) = 0;
+    virtual IEngineRowStream * createIterator(unsigned id) = 0;
 };
 
 class CGraphIterationInfo;
@@ -230,10 +228,10 @@ class CGraphIterationInfo;
 interface IRoxieServerChildGraph : public IInterface
 {
     virtual void beforeExecute() = 0;
-    virtual IRoxieInput * startOutput(unsigned id, unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
-    virtual IRoxieInput * selectOutput(unsigned id) = 0;
+    virtual IFinalRoxieInput * startOutput(unsigned id, unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
+    virtual IFinalRoxieInput * selectOutput(unsigned id) = 0;
     virtual void setInputResult(unsigned id, IGraphResult * result) = 0;
-    virtual bool querySetInputResult(unsigned id, IRoxieInput * result) = 0;
+    virtual bool querySetInputResult(unsigned id, IFinalRoxieInput * result) = 0;
     virtual void stopUnusedOutputs() = 0;
     virtual IRoxieGraphResults * execute(size32_t parentExtractSize, const byte *parentExtract) = 0;
     virtual void afterExecute() = 0;
@@ -241,7 +239,7 @@ interface IRoxieServerChildGraph : public IInterface
     virtual void clearGraphLoopResults() = 0;
     virtual void executeGraphLoop(size32_t parentExtractSize, const byte *parentExtract) = 0;
     virtual void setGraphLoopResult(unsigned id, IGraphResult * result) = 0;
-    virtual IRoxieInput * getGraphLoopResult(unsigned id) = 0;
+    virtual IEngineRowStream * getGraphLoopResult(unsigned id) = 0;
 //parallel graph related helpers.
     virtual CGraphIterationInfo * selectGraphLoopOutput() = 0;
     virtual void gatherIterationUsage(IRoxieServerLoopResultProcessor & processor) = 0;

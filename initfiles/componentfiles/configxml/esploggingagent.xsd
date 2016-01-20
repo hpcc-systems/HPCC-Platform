@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+################################################################################
+#    Copyright (C) 2014 HPCC Systems.
+#
+#    All rights reserved.
+################################################################################
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:include schemaLocation="environment.xsd"/>
+  <xs:element name="ESPLoggingAgent">
+    <xs:complexType>
+      <xs:annotation>
+        <xs:appinfo>
+            <title>ESP Logging Agent</title>
+        </xs:appinfo>
+      </xs:annotation>
+      <xs:attribute name="build" type="buildType" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="buildSet" type="buildSetType" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Name for this agent</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="description" type="xs:string" use="optional" default="ESP Logging Agent">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Description for this process</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="MaxServerWaitingSeconds" type="xs:nonNegativeInteger" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>timeout for waiting ESP server response.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="MaxTriesGTS" type="xs:nonNegativeInteger" use="optional" default="3">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>maximum times of resending GetTransactionSeed requests after a failure.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="MaxTriesRS" type="xs:nonNegativeInteger" use="optional" default="3">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>maximum times of resending log update requests after a failure.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="MaxLogQueueLength" type="xs:nonNegativeInteger" use="optional" default="500000">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>maximum queue length for log update requests.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="QueueSizeSignal" type="xs:nonNegativeInteger" use="optional" default="10000">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Add warning to esp log when the queue length of log update requests reaches this value.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="FailSafe" type="xs:boolean" use="optional" default="true">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Enable FailSafe functionality.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="FailSafeLogsDir" type="xs:string" use="optional" default="">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Log directory where Failsafe files are stored.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:sequence>
+        <xs:element name="Filter" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <title>Filters</title>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:attribute name="filter" type="relativePath" use="required">
+              <xs:annotation>
+                <xs:appinfo>
+                  <colIndex>1</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="type" type="xs:string" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <colIndex>2</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attributeGroup ref="ESPServer"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:attributeGroup name="ESPServer">
+    <xs:attribute name="ESPServer" type="espprocessType" use="required">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Specifies the ESPServer process.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="User" type="xs:string" use="optional" default="">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Specifies the user name for accessing the ESPServer.</tooltip>
+          <required>true</required>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="Password" type="xs:string" use="optional" default="">
+      <xs:annotation>
+        <xs:appinfo>
+          <viewType>password</viewType>
+          <tooltip>Specifies the user's password for accessing the ESPServer.</tooltip>
+          <required>true</required>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+</xs:schema>

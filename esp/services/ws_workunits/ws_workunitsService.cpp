@@ -70,9 +70,17 @@ public:
     StringAttr query;
 };
 
+//The ECLWUActionNames[] has to match with the ESPenum ECLWUActions in the ecm file.
 static unsigned NumOfECLWUActionNames = 11;
-static const char *ECLWUActionNames[] = { "Abort", "Delete", "EventDeschedule", "Pause", "PauseNow" ,
-        "Protect" , "Unprotect" , "EventReschedule" , "Restore" , "Resume" , "SetToFailed" };
+static const char *ECLWUActionNames[] = { "Abort", "Delete", "Deschedule", "Reschedule", "Pause",
+    "PauseNow", "Protect", "Unprotect", "Restore", "Resume", "SetToFailed", NULL };
+
+class CECLWUActionsEx : public SoapEnumParamNew<CECLWUActions>
+{
+public:
+    CECLWUActionsEx() : SoapEnumParamNew<CECLWUActions>() { init("ECLWUActions","string", ECLWUActionNames); }
+};
+static CECLWUActionsEx eclWUActionType;
 
 void setActionResult(const char* wuid, CECLWUActions action, const char* result, StringBuffer& strAction, IArrayOf<IConstWUActionResult>* results)
 {
@@ -616,7 +624,12 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
 {
     try
     {
-        CECLWUActions action = req.getActionType();
+        CECLWUActions action;
+        double version = context.getClientVersion();
+        if (version >= 1.57)
+            action = req.getWUActionType();
+        else
+            action = eclWUActionType.toEnum(req.getActionType());
         if (action == ECLWUActions_Undefined)
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"Action not defined.");
 
@@ -4265,6 +4278,19 @@ void CWsWorkunitsEx::createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, c
     }
 }
 
+void CWsWorkunitsEx::createZAPWUGraphProgressFile(const char* wuid, const char* pathNameStr)
+{
+    Owned<IPropertyTree> graphProgress = getWUGraphProgress(wuid, true);
+    if (graphProgress)
+    {
+        StringBuffer graphProgressXML;
+        toXML(graphProgress, graphProgressXML, 1, XML_Format);
+
+        VStringBuffer fileName("%s.graphprogress", pathNameStr);
+        createZAPFile(fileName.str(), graphProgressXML.length(), graphProgressXML.str());
+    }
+}
+
 bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfoRequest &req, IEspWUCreateZAPInfoResponse &resp)
 {
     try
@@ -4296,6 +4322,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
 
         WsWuInfo winfo(context, cwu);
         createZAPWUXMLFile(winfo, pathNameStr.str());
+        createZAPWUGraphProgressFile(req.getWuid(), pathNameStr.str());
         addProcessLogfile(cwu, winfo, "EclAgent", folderToZIP.str());
         addProcessLogfile(cwu, winfo, "Thor", folderToZIP.str());
 

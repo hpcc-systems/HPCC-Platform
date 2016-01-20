@@ -331,6 +331,41 @@
                  plugin="esdl_svc_engine"
                  type="DynamicESDL"/>
     </BuildSet>
+    <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="esploggingagent"
+             path="componentfiles/esploggingagent"
+             processName="ESPLoggingAgent"
+             schema="esploggingagent.xsd"/>
+    <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="loggingmanager"
+             path="componentfiles/loggingmanager"
+             processName="LoggingManager"
+             schema="loggingmanager.xsd"/>
+    <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="wslogging"
+             path="componentfiles/wslogging"
+             processName="EspService"
+             schema="wslogging.xsd">
+      <Properties bindingType="loggingservice_binding"
+                defaultPort="8146"
+                defaultResourcesBasedn="ou=EspServices,ou=ecl"
+                defaultSecurePort="18146"
+                plugin="wslogging"
+                type="wslogging">
+        <Authenticate access="Read"
+                   description="Root access to WS Logging service"
+                   path="/"
+                   required="Read"
+                   resource="WsLoggingAccess"/>
+        <AuthenticateFeature description="Access to WS Logging service"
+                   path="WsLoggingAccess"
+                   resource="WsLoggingAccess"
+                   service="wslogging"/>
+    </Properties>
+   </BuildSet>
   </Build>
 </Programs>
 </Environment>

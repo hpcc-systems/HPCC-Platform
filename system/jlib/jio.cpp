@@ -95,7 +95,7 @@ extern jlib_decl size32_t checked_read(int file, void *buffer, size32_t len)
         else if (!readNow)
             break;
         ret += readNow;
-        if (readNow == len)
+        if (readNow == (ssize_t)len)
             break;
         buffer = ((char *) buffer) + readNow;
         len -= readNow;
@@ -169,7 +169,7 @@ extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, of
         else if (!readNow)
             break;
         ret += readNow;
-        if (readNow == len)
+        if (readNow == (ssize_t)len)
             break;
         pos += readNow;
         buffer = ((char *) buffer) + readNow;

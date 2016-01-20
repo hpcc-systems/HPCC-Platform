@@ -167,8 +167,8 @@ public:
             ep.set(NULL);
         return ep;
     }
-    virtual void cloneInfo(IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool overwrite, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder);
-    void cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *user, INode *remote, bool overwrite);
+    virtual void cloneInfo(unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder);
+    void cloneSuperInfo(unsigned updateFlags, ReferencedFileList *list, IUserDescriptor *user, INode *remote);
     virtual const char *queryPackageId() const {return pkgid.get();}
     virtual __int64 getFileSize()
     {
@@ -229,12 +229,12 @@ public:
     void addFilesFromPackage(IPropertyTree &package, const char *_daliip, const char *srcCluster, const char *_remotePrefix);
 
     virtual IReferencedFileIterator *getFiles();
-    virtual void cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder);
+    virtual void cloneFileInfo(unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder);
 
     virtual void cloneRelationships();
-    virtual void cloneAllInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
+    virtual void cloneAllInfo(unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
     {
-        cloneFileInfo(helper, overwrite, cloneSuperInfo, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder);
+        cloneFileInfo(updateFlags, helper, cloneSuperInfo, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder);
         cloneRelationships();
     }
     virtual void resolveFiles(const char *process, const char *remoteIP, const char *_remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool trackSubFiles, bool resolveForeign=false);
@@ -415,7 +415,7 @@ void ReferencedFile::resolve(const char *dstCluster, const char *srcCluster, IUs
         resolveLocal(dstCluster, srcCluster, user, subfiles);
 }
 
-void ReferencedFile::cloneInfo(IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool overwrite, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
+void ReferencedFile::cloneInfo(unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
 {
     if ((flags & RefFileCloned) || (flags & RefFileSuper) || (flags & RefFileInPackage))
         return;
@@ -432,7 +432,7 @@ void ReferencedFile::cloneInfo(IDFUhelper *helper, IUserDescriptor *user, const 
         if (filePrefix.length())
             srcLFN.append(filePrefix.str()).append("::");
         srcLFN.append(logicalName.str());
-        helper->cloneRoxieSubFile(srcLFN, srcCluster, logicalName, dstCluster, filePrefix, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, user, daliip, overwrite);
+        helper->cloneRoxieSubFile(srcLFN, srcCluster, logicalName, dstCluster, filePrefix, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, user, daliip, updateFlags);
         flags |= RefFileCloned;
     }
     catch (IException *e)
@@ -448,7 +448,7 @@ void ReferencedFile::cloneInfo(IDFUhelper *helper, IUserDescriptor *user, const 
     }
 }
 
-void ReferencedFile::cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *user, INode *remote, bool overwrite)
+void ReferencedFile::cloneSuperInfo(unsigned updateFlags, ReferencedFileList *list, IUserDescriptor *user, INode *remote)
 {
     if ((flags & RefFileCloned) || (flags & RefFileInPackage) || !(flags & RefFileSuper) || !(flags & RefFileRemote))
         return;
@@ -463,7 +463,7 @@ void ReferencedFile::cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *u
         Owned<IDistributedFile> df = dir.lookup(logicalName.str(), user);
         if(df)
         {
-            if (!overwrite)
+            if (!(updateFlags & DALI_UPDATEF_SUPERFILES))
                 return;
             df->detach();
             df.clear();
@@ -480,7 +480,7 @@ void ReferencedFile::cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *u
                 //ensure superfile in superfile is cloned, before add
                 ReferencedFile *subref = list->map.getValue(name);
                 if (subref)
-                    subref->cloneSuperInfo(list, user, remote, overwrite);
+                    subref->cloneSuperInfo(updateFlags, list, user, remote);
             }
             if (name && *name)
                 superfile->addSubFile(name, false, NULL, false);
@@ -713,14 +713,14 @@ void ReferencedFileList::resolveFiles(const char *_process, const char *remoteIP
         resolveSubFiles(subfiles, checkLocalFirst, trackSubFiles, resolveForeign);
 }
 
-void ReferencedFileList::cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
+void ReferencedFileList::cloneFileInfo(unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
 {
     ReferencedFileIterator files(this);
     ForEach(files)
-        files.queryObject().cloneInfo(helper, user, process, srcCluster, overwrite, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder);
+        files.queryObject().cloneInfo(updateFlags, helper, user, process, srcCluster, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder);
     if (cloneSuperInfo)
         ForEach(files)
-            files.queryObject().cloneSuperInfo(this, user, remote, overwrite);
+            files.queryObject().cloneSuperInfo(updateFlags, this, user, remote);
 }
 
 void ReferencedFileList::cloneRelationships()

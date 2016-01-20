@@ -10349,3 +10349,16 @@ IStatisticGatherer * createGlobalStatisticGatherer(IWorkUnit * wu)
 {
     return new GlobalStatisticGatherer(wu);
 }
+
+extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool readonly)
+{
+    if (!wuid || !*wuid)
+        return NULL;
+
+    VStringBuffer path("/GraphProgress/%s", wuid);
+    Owned<IRemoteConnection> conn = querySDS().connect(path.str(),myProcessSession(),readonly ? RTM_LOCK_READ : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (conn)
+        return conn->getRoot();
+    else
+        return NULL;
+}

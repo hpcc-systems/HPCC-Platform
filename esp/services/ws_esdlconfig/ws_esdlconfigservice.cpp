@@ -621,23 +621,28 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
 
         StringBuffer esdlDefinitionName;
 
+        int esdlver = 0;
         const char * esdlDefId = esdlDefIdSTR.str();
-        while(esdlDefId && *esdlDefId &&*esdlDefId != '.')
-            esdlDefinitionName.append(*esdlDefId++);
+        if (esdlDefId && *esdlDefId)
+        {
+            while(esdlDefId && *esdlDefId && *esdlDefId != '.')
+                esdlDefinitionName.append(*esdlDefId++);
 
-        if (!esdlDefId || !*esdlDefId || *esdlDefId != '.')
-            throw MakeStringException(-1, "Invalid ESDL Definition ID format detected <esdldefname>.<ver>");
+            if (!esdlDefId || !*esdlDefId)
+                throw MakeStringException(-1, "Invalid ESDL Definition ID format detected: '%s'. Expected format: <esdldefname>.<ver>", esdlDefIdSTR.str());
 
-        esdlDefId++;
+            esdlDefId++;
 
-        int esdlver = 1;
-        if (esdlDefId)
-            esdlver = atoi (esdlDefId);
+            if (esdlDefId)
+                esdlver = atoi (esdlDefId);
 
-        if (esdlver <= 0)
-            throw MakeStringException(-1, "Invalid ESDL Definition version detected: %d", esdlver);
+            if (esdlver <= 0)
+                throw MakeStringException(-1, "Invalid ESDL Definition version detected: %d", esdlver);
+        }
 
-        if (methodstree->getCount("Method") <= 0)
+
+
+        if (!methodstree || methodstree->getCount("Method") <= 0)
             throw MakeStringException(-1, "Could not find any method configuration entries.");
 
         if (espProcName.length() == 0)
@@ -655,7 +660,8 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
             if (!espproctree)
             {
                 StringBuffer msg;
-                msg.appendf("Could not find ESP binding associated with Esp Process Name: %s and port %s or %s Esp Service Name", espProcName.str(), espPort.str(), espServiceName.str());
+                msg.appendf("Could not find ESP binding associated with Esp Process '%s' and either port '%s' or Esp Service Name '%s'",
+                        espProcName.str(), espPort.isEmpty() ? "N/A" : espPort.str(), espServiceName.isEmpty() ? "N/A" : espServiceName.str());
                 resp.updateStatus().setCode(-1);
                 resp.updateStatus().setDescription(msg.str());
                 return false;
@@ -818,28 +824,31 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
         if (config.length() > 0)
             methodstree.setown(fetchConfigInfo(config, espProcName, espBindingName, esdlDefIdSTR, esdlServiceName));
 
-       bool override = req.getOverwrite();
+        bool override = req.getOverwrite();
 
-       StringBuffer esdlDefinitionName;
-
+        StringBuffer esdlDefinitionName;
+        int esdlver = 0;
         const char * esdlDefId = esdlDefIdSTR.str();
-        while (esdlDefId && *esdlDefId != '.')
-            esdlDefinitionName.append(*esdlDefId++);
-        if (!esdlDefId || !*esdlDefId || *esdlDefId != '.')
-            throw MakeStringException(-1, "Invalid ESDL Definition ID format detected <esdldefname>.<ver>");
+        if (esdlDefId && *esdlDefId)
+        {
+            while (esdlDefId && *esdlDefId != '.')
+                esdlDefinitionName.append(*esdlDefId++);
 
-        esdlDefId++;
+            if (!esdlDefId || !*esdlDefId)
+                throw MakeStringException(-1, "Invalid ESDL Definition ID format detected: '%s'. Expected format: <esdldefname>.<ver>", esdlDefIdSTR.str());
 
-        int esdlver = 1;
-        if (esdlDefId)
-            esdlver = atoi(esdlDefId);
+            esdlDefId++;
 
-        if (esdlver <= 0)
-            throw MakeStringException(-1, "Invalid ESDL Definition version detected: %d", esdlver);
+            if (esdlDefId)
+                esdlver = atoi(esdlDefId);
+
+            if (esdlver <= 0)
+                throw MakeStringException(-1, "Invalid ESDL Definition version detected: %d", esdlver);
+        }
 
         if (esdlServiceName.length() == 0)
         {
-            if (esdlDefinitionName.length() == 0)
+           if (esdlDefinitionName.length() == 0)
                 throw MakeStringException(-1, "Must provide either valid EsdlDefinition ID <esdldefname>.<ver> or EsdlServiceName");
             else
                 esdlServiceName.set(esdlDefinitionName.str());
@@ -864,8 +873,8 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
             {
                 StringBuffer msg;
                 msg.appendf(
-                        "Could not find ESP binding associated with Esp Process Name: %s and port %s or %s Esp Service Name",
-                        espProcName.str(), espPort.str(), espServiceName.str());
+                        "Could not find ESP binding associated with Esp Process '%s' and either port '%s' or Esp Service Name '%s'",
+                        espProcName.str(), espPort.isEmpty() ? "N/A" : espPort.str(), espServiceName.isEmpty() ? "N/A" : espServiceName.str());
                 resp.updateStatus().setCode(-1);
                 resp.updateStatus().setDescription(msg.str());
                 return false;

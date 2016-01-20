@@ -671,7 +671,7 @@ static inline void updateQueryPriority(IPropertyTree *queryTree, const char *val
     }
 }
 
-void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *remotePrefix, const char *target, const char *srcCluster, const char *queryname, bool overwrite, bool allowForeignFiles)
+void copyQueryFilesToCluster(unsigned updateFlags, IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *remotePrefix, const char *target, const char *srcCluster, const char *queryname, bool allowForeignFiles)
 {
     if (!target || !*target)
         return;
@@ -689,11 +689,11 @@ void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const cha
         if (queryname && *queryname)
             queryname = queryid.append(queryname).append(".0").str(); //prepublish dummy version number to support fuzzy match like queries="myquery.*" in package
         wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, queryname);
-        wufiles->resolveFiles(process.str(), remoteIP, remotePrefix, srcCluster, !overwrite, true, false, true);
+        wufiles->resolveFiles(process.str(), remoteIP, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true);
         StringBuffer defReplicateFolder;
         getConfigurationDirectory(NULL, "data2", "roxie", process.str(), defReplicateFolder);
         Owned<IDFUhelper> helper = createIDFUhelper();
-        wufiles->cloneAllInfo(helper, overwrite, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
+        wufiles->cloneAllInfo(updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
     }
 }
 
@@ -766,6 +766,9 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not defined for publishing workunit %s", wuid.str());
     if (!isValidCluster(target.str()))
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", target.str());
+
+    DBGLOG("%s publishing wuid %s to target %s as query %s", context.queryUserId(), wuid.str(), target.str(), queryName.str());
+
     StringBuffer daliIP;
     StringBuffer srcCluster;
     StringBuffer srcPrefix;
@@ -776,9 +779,18 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         if (!isProcessCluster(daliIP, srcCluster))
             throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Process cluster %s not found on %s DALI", srcCluster.str(), daliIP.length() ? daliIP.str() : "local");
     }
+    unsigned updateFlags = 0;
+    if (req.getUpdateDfs())
+        updateFlags |= (DALI_UPDATEF_SUPERFILES | DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM);
+    if (req.getUpdateCloneFrom())
+        updateFlags |= DALI_UPDATEF_CLONE_FROM;
+    if (req.getUpdateSuperFiles())
+        updateFlags |= DALI_UPDATEF_SUPERFILES;
+    if (req.getAppendCluster())
+        updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
 
     if (!req.getDontCopyFiles())
-        copyQueryFilesToCluster(context, cw, daliIP, srcPrefix, target.str(), srcCluster, queryName.str(), req.getUpdateDfs(), req.getAllowForeignFiles());
+        copyQueryFilesToCluster(updateFlags, context, cw, daliIP, srcPrefix, target.str(), srcCluster, queryName.str(), req.getAllowForeignFiles());
 
     WorkunitUpdate wu(&cw->lock());
     if (req.getUpdateWorkUnitName() && notEmpty(req.getJobName()))
@@ -2097,7 +2109,7 @@ class QueryCloner
 {
 public:
     QueryCloner(IEspContext *_context, const char *address, const char *source, const char *_target) :
-        context(_context), cloneFilesEnabled(false), target(_target), overwriteDfs(false), srcAddress(address)
+        context(_context), cloneFilesEnabled(false), target(_target), updateFlags(0), srcAddress(address)
     {
         if (srcAddress.length())
             srcQuerySet.setown(fetchRemoteQuerySetInfo(context, srcAddress, source));
@@ -2272,10 +2284,10 @@ public:
         else
             cloneAllLocal(cloneActiveState);
     }
-    void enableFileCloning(const char *dfsServer, const char *destProcess, const char *sourceProcess, bool _overwriteDfs, bool allowForeign)
+    void enableFileCloning(unsigned _updateFlags, const char *dfsServer, const char *destProcess, const char *sourceProcess, bool allowForeign)
     {
         cloneFilesEnabled = true;
-        overwriteDfs = _overwriteDfs;
+        updateFlags = _updateFlags;
         splitDerivedDfsLocation(dfsServer, srcCluster, dfsIP, srcPrefix, sourceProcess, sourceProcess, NULL, NULL);
         wufiles.setown(createReferencedFileList(context->queryUserId(), context->queryPassword(), allowForeign, false));
         Owned<IHpccPackageSet> ps = createPackageSet(destProcess);
@@ -2287,7 +2299,7 @@ public:
     {
         if (cloneFilesEnabled)
         {
-            wufiles->resolveFiles(process, dfsIP, srcPrefix, srcCluster, !overwriteDfs, true, false, true);
+            wufiles->resolveFiles(process, dfsIP, srcPrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), true, false, true);
             Owned<IDFUhelper> helper = createIDFUhelper();
             Owned <IConstWUClusterInfo> cl = getTargetClusterInfo(target);
             if (cl)
@@ -2295,7 +2307,7 @@ public:
                 SCMStringBuffer process;
                 StringBuffer defReplicateFolder;
                 getConfigurationDirectory(NULL, "data2", "roxie", cl->getRoxieProcess(process).str(), defReplicateFolder);
-                wufiles->cloneAllInfo(helper, overwriteDfs, true, true, cl->getRoxieRedundancy(), cl->getChannelsPerNode(), cl->getRoxieReplicateOffset(), defReplicateFolder);
+                wufiles->cloneAllInfo(updateFlags, helper, true, true, cl->getRoxieRedundancy(), cl->getChannelsPerNode(), cl->getRoxieReplicateOffset(), defReplicateFolder);
             }
         }
     }
@@ -2313,7 +2325,7 @@ private:
     StringAttr target;
     StringAttr process;
     bool cloneFilesEnabled;
-    bool overwriteDfs;
+    unsigned updateFlags;
 
 public:
     StringArray existingQueryIds;
@@ -2339,6 +2351,8 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
     if (!isValidCluster(target))
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid destination target name: %s", target);
 
+    DBGLOG("%s copying queryset %s from %s target %s", context.queryUserId(), target, srcAddress.str(), srcTarget.str());
+
     QueryCloner cloner(&context, srcAddress, srcTarget, target);
 
     SCMStringBuffer process;
@@ -2350,7 +2364,17 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
             clusterInfo->getRoxieProcess(process);
             if (!process.length())
                 throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "DFS process cluster not found for destination target %s", target);
-            cloner.enableFileCloning(req.getDfsServer(), process.str(), req.getSourceProcess(), req.getOverwriteDfs(), req.getAllowForeignFiles());
+            unsigned updateFlags = 0;
+            if (req.getOverwriteDfs())
+                updateFlags |= (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES);
+            if (req.getUpdateCloneFrom())
+                updateFlags |= DALI_UPDATEF_CLONE_FROM;
+            if (req.getUpdateSuperFiles())
+                updateFlags |= DALI_UPDATEF_SUPERFILES;
+            if (req.getAppendCluster())
+                updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
+
+            cloner.enableFileCloning(updateFlags, req.getDfsServer(), process.str(), req.getSourceProcess(), req.getAllowForeignFiles());
         }
     }
 
@@ -2390,6 +2414,8 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     StringAttr targetQueryName(req.getDestName());
     Owned<IClientWUQuerySetDetailsResponse> sourceQueryInfoResp;
     IConstQuerySetQuery *srcInfo=NULL;
+
+    DBGLOG("%s copying query %s to target %s from %s target %s", context.queryUserId(), srcQuery.str(), target, srcAddress.str(), srcQuerySet.str());
 
     StringBuffer remoteIP;
     StringBuffer wuid;
@@ -2437,7 +2463,17 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         StringBuffer srcCluster;
         StringBuffer srcPrefix;
         splitDerivedDfsLocation(req.getDaliServer(), srcCluster, daliIP, srcPrefix, req.getSourceProcess(), req.getSourceProcess(), remoteIP.str(), NULL);
-        copyQueryFilesToCluster(context, cw, daliIP.str(), srcPrefix, target, srcCluster, targetQueryName.get(), req.getOverwrite(), req.getAllowForeignFiles());
+        unsigned updateFlags = 0;
+        if (req.getOverwrite())
+            updateFlags |= (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES);
+        if (req.getUpdateCloneFrom())
+            updateFlags |= DALI_UPDATEF_CLONE_FROM;
+        if (req.getUpdateSuperFiles())
+            updateFlags |= DALI_UPDATEF_SUPERFILES;
+        if (req.getAppendCluster())
+            updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
+
+        copyQueryFilesToCluster(updateFlags, context, cw, daliIP.str(), srcPrefix, target, srcCluster, targetQueryName.get(), req.getAllowForeignFiles());
     }
 
     WorkunitUpdate wu(&cw->lock());

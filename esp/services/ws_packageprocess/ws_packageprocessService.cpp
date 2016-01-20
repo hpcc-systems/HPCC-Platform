@@ -124,7 +124,7 @@ bool isFileKnownOnCluster(const char *logicalname, const char *target, IUserDesc
     return isFileKnownOnCluster(logicalname, clusterInfo, userdesc);
 }
 
-void cloneFileInfoToDali(StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, bool overWrite, IUserDescriptor* userdesc, bool allowForeignFiles)
+void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles)
 {
     StringBuffer user;
     StringBuffer password;
@@ -139,13 +139,13 @@ void cloneFileInfoToDali(StringArray &notFound, IPropertyTree *packageMap, const
     wufiles->addFilesFromPackageMap(packageMap);
     SCMStringBuffer processName;
     dstInfo->getRoxieProcess(processName);
-    wufiles->resolveFiles(processName.str(), lookupDaliIp, remotePrefix, srcCluster, !overWrite, false, false);
+    wufiles->resolveFiles(processName.str(), lookupDaliIp, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false);
 
     StringBuffer defReplicateFolder;
     getConfigurationDirectory(NULL, "data2", "roxie", processName.str(), defReplicateFolder);
 
     Owned<IDFUhelper> helper = createIDFUhelper();
-    wufiles->cloneAllInfo(helper, overWrite, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
+    wufiles->cloneAllInfo(updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
 
     Owned<IReferencedFileIterator> iter = wufiles->getFiles();
     ForEach(*iter)
@@ -156,13 +156,13 @@ void cloneFileInfoToDali(StringArray &notFound, IPropertyTree *packageMap, const
     }
 }
 
-void cloneFileInfoToDali(StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, bool overWrite, IUserDescriptor* userdesc, bool allowForeignFiles)
+void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles)
 {
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(dstCluster);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", dstCluster);
 
-    cloneFileInfoToDali(notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, overWrite, userdesc, allowForeignFiles);
+    cloneFileInfoToDali(updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles);
 }
 
 void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const char *target, bool activate)
@@ -184,7 +184,7 @@ void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const c
 
 //////////////////////////////////////////////////////////
 
-void addPackageMapInfo(const char *xml, StringArray &filesNotFound, const char *process, const char *target, const char *pmid, const char *packageSetName, const char *lookupDaliIp, const char *srcCluster, const char *prefix, bool activate, bool overWrite, IUserDescriptor* userdesc, bool allowForeignFiles, bool preloadAll)
+void addPackageMapInfo(unsigned updateFlags, const char *xml, StringArray &filesNotFound, const char *process, const char *target, const char *pmid, const char *packageSetName, const char *lookupDaliIp, const char *srcCluster, const char *prefix, bool activate, IUserDescriptor* userdesc, bool allowForeignFiles, bool preloadAll)
 {
     if (!xml || !*xml)
         throw MakeStringExceptionDirect(PKG_INFO_NOT_DEFINED, "PackageMap info not provided");
@@ -246,10 +246,10 @@ void addPackageMapInfo(const char *xml, StringArray &filesNotFound, const char *
     Owned<IPropertyTree> pkgSet = getPkgSetRegistry(process, false);
     IPropertyTree *psEntry = pkgSet->queryPropTree(xpath);
 
-    if (!overWrite && (psEntry || pmExisting))
-        throw MakeStringException(PKG_NAME_EXISTS, "Package name %s already exists, either delete it or specify overwrite", pmid);
+    if (!(updateFlags & DALI_UPDATEF_PACKAGEMAP) && (psEntry || pmExisting))
+        throw MakeStringException(PKG_NAME_EXISTS, "Package name %s already exists, either delete it or specify replace packagemap", pmid);
 
-    cloneFileInfoToDali(filesNotFound, pmTree, lookupDaliIp, clusterInfo, srcCluster, prefix, overWrite, userdesc, allowForeignFiles);
+    cloneFileInfoToDali(updateFlags, filesNotFound, pmTree, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles);
 
     if (pmExisting)
         packageMaps->removeTree(pmExisting);
@@ -538,13 +538,26 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     if (name.isEmpty())
         throw MakeStringExceptionDirect(PKG_MISSING_PARAM, "PackageMap name parameter required");
 
+    DBGLOG("%s adding packagemap %s to target %s", context.queryUserId(), name.str(), target.str());
+
     StringBuffer pmid;
     if (!req.getGlobalScope())
         pmid.append(target).append("::");
     pmid.append(name.get());
 
     bool activate = req.getActivate();
-    bool overWrite = req.getOverWrite();
+    unsigned updateFlags = 0;
+    if (req.getOverWrite())
+        updateFlags |= (DALI_UPDATEF_PACKAGEMAP | DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES);
+    if (req.getReplacePackageMap())
+        updateFlags |= DALI_UPDATEF_PACKAGEMAP;
+    if (req.getUpdateCloneFrom())
+        updateFlags |= DALI_UPDATEF_CLONE_FROM;
+    if (req.getUpdateSuperFiles())
+        updateFlags |= DALI_UPDATEF_SUPERFILES;
+    if (req.getAppendCluster())
+        updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
+
     StringAttr processName(req.getProcess());
 
     Owned<IUserDescriptor> userdesc;
@@ -565,7 +578,7 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     buildPkgSetId(pkgSetId, processName.get());
 
     StringArray filesNotFound;
-    addPackageMapInfo(req.getInfo(), filesNotFound, processName, target, pmid, pkgSetId, daliip, srcCluster, prefix, activate, overWrite, userdesc, req.getAllowForeignFiles(), req.getPreloadAllPackages());
+    addPackageMapInfo(updateFlags, req.getInfo(), filesNotFound, processName, target, pmid, pkgSetId, daliip, srcCluster, prefix, activate, userdesc, req.getAllowForeignFiles(), req.getPreloadAllPackages());
     resp.setFilesNotFound(filesNotFound);
 
     StringBuffer msg;

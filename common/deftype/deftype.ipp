@@ -618,6 +618,7 @@ public:
 
     virtual type_t getTypeCode() const                          { return type_row; }
     virtual bool isScalar()                                 { return false; }
+    virtual size32_t getSize()                              { return basetype ? basetype->getSize() : UNKNOWN_LENGTH; }
     virtual const char *queryTypeName()                     { return "row"; }
     virtual StringBuffer &getECLType(StringBuffer & out)    { out.append(queryTypeName()); 
                                                               if (basetype) 

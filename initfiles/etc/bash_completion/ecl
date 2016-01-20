@@ -89,7 +89,7 @@ _ecl_opts_queries()
             echo "--help list copy config"
             ;;
         copy)
-            echo -n "--no-reload --allow-foreign --wait= --timeLimit= --warnTimeLimit= --memoryLimit= --priority= --daliip= "
+            echo -n "--no-reload --allow-foreign --wait= --timeLimit= --warnTimeLimit= --memoryLimit= --priority= --daliip= --update-super-files --update-clone-from --dont-append-cluster "
             _ecl_opts_common
             ;;
         config)
@@ -140,7 +140,7 @@ _ecl_opts_packagemap()
             then
                 _ecl_opts_file
             else
-                echo -n "-O --overwrite --allow-foreign "
+                echo -n "-O --overwrite --allow-foreign --update-super-files --update-clone-from --dont-append-cluster --replace "
                 _ecl_opts_common
             fi
             ;;
@@ -170,7 +170,7 @@ _ecl_opts_core_file()
                 _ecl_opts_common
                 ;;
             publish)
-                echo -n "-A --activate --no-reload --allow-foreign --timeLimit= --warnTimeLimit= --memoryLimit= --priority= --daliip= "
+                echo -n "-A --activate --no-reload --allow-foreign --timeLimit= --warnTimeLimit= --memoryLimit= --priority= --daliip= --update-super-files --update-clone-from --dont-append-cluster "
                 _ecl_opts_deploy
                 _ecl_opts_common
                 ;;

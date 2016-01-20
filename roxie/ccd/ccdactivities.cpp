@@ -4607,7 +4607,7 @@ public:
         m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
         activityMeta.setown(deserializeRecordMeta(m, true));
         layoutTranslators.setown(new TranslatorArray);
-        bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
+        bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
         if (!variableFileName)
         {
             bool isOpt = (helper->getJoinFlags() & JFindexoptional) != 0;
@@ -4648,7 +4648,7 @@ public:
         : factory(_aFactory), CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory)
     {
         helper = (IHThorKeyedJoinArg *) basehelper;
-        variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
+        variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
         inputDone = 0;
         processed = 0;
         candidateCount = 0;
@@ -5163,16 +5163,13 @@ public:
         try
         {
             remoteGraph->beforeExecute();
-            Owned<IRoxieInput> input = remoteGraph->startOutput(0, remoteExtractBuilder.size(), remoteExtractBuilder.getbytes(), false);
+            Owned<IFinalRoxieInput> input = remoteGraph->startOutput(0, remoteExtractBuilder.size(), remoteExtractBuilder.getbytes(), false);
+            IEngineRowStream &stream = input->queryStream();
             while (!aborted)
             {
-                const void * next = input->nextRow();
+                const void * next = stream.ungroupedNextRow();
                 if (!next)
-                {
-                    next = input->nextRow();
-                    if (!next)
-                        break;
-                }
+                    break;
 
                 size32_t nextSize = meta.getRecordSize(next);
                 //MORE - what about grouping?

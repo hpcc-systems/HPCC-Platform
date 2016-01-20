@@ -41,14 +41,14 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">StartsWith</emphasis> function returns TRUE if
-  the <emphasis>source</emphasis> starts with the text in the
-  <emphasis>suffix</emphasis> parameter.</para>
+  <para>The <emphasis role="bold">StartsWith</emphasis> function returns TRUE
+  if the <emphasis>source</emphasis> starts with the text in the
+  <emphasis>prefix</emphasis> parameter.</para>
 
   <para>Example:</para>
 
   <programlisting format="linespecific">IMPORT STD;
-STD.STr.StartsWith('a word away','a word');   //returns TRUE
-STD.STr.StartsWith('a word away','aword');   //returns FALSE
+STD.Str.StartsWith('a word away','a word');   //returns TRUE
+STD.Str.StartsWith('a word away','aword');   //returns FALSE
 </programlisting>
 </sect1>
