@@ -3074,7 +3074,23 @@ public:
     {
         return !checkProtectAttr(logicalName.get(),root,reason);
     }
-
+    bool checkOwned(StringBuffer &error)
+    {
+        Owned<IPropertyTreeIterator> iter = root->getElements("SuperOwner");
+        if (iter->first())
+        {
+            error.append("Cannot remove file ").append(logicalName.get()).append(" as owned by SuperFile(s): ");
+            loop
+            {
+                error.append(iter->query().queryProp("@name"));
+                if (!iter->next())
+                    break;
+                error.append(", ");
+            }
+            return true;
+        }
+        return false;
+    }
     bool canRemove(StringBuffer &reason,bool ignoresub=false)
     {
         CriticalBlock block(sect);
@@ -3085,31 +3101,25 @@ public:
             reason.appendf("empty filename");
             return false;
         }
-        if (logicalName.isQuery()) {
+        if (logicalName.isQuery())
+        {
             reason.appendf("%s is query",logicalname);
             return false;
         }
-        if (logicalName.isForeign()) {
+        if (logicalName.isForeign())
+        {
             reason.appendf("%s is foreign",logicalname);
             return false;
         }
-        if (logicalName.isMulti()) {
+        if (logicalName.isMulti())
+        {
             reason.appendf("%s is multi",logicalname);
             return false;
         }
-        if (!ignoresub) {
-            // And has super owners
-            Owned<IPropertyTreeIterator> iter = root->getElements("SuperOwner");
-            if (iter->first()) {
-                reason.append("Cannot remove file ").append(logicalname).append(" as owned by SuperFile(s): ");
-                loop {
-                    reason.append(iter->query().queryProp("@name"));
-                    if (!iter->next())
-                        break;
-                    reason.append(", ");
-                }
+        if (!ignoresub)
+        {
+            if (checkOwned(reason))
                 return false;
-            }
         }
         return true;
     }
@@ -5185,6 +5195,10 @@ public:
 
     void checkFormatAttr(IDistributedFile *sub, const char* exprefix="")
     {
+        IDistributedSuperFile *superSub = sub->querySuperFile();
+        if (superSub && (0 == superSub->numSubFiles(true)))
+            return;
+
         // only check sub files not siblings, which is excessive (format checking is really only debug aid)
         checkSubFormatAttr(sub,exprefix);
     }
@@ -5520,7 +5534,10 @@ public:
         assertex(conn.get()); // must be attached
         CriticalBlock block(sect);
         checkModify("CDistributedSuperFile::detach");
-        subfiles.kill();    
+        StringBuffer reason;
+        if (checkOwned(reason))
+            throw MakeStringException(-1, "detach: %s", reason.str());
+        subfiles.kill();
 
         // Remove from SDS
 

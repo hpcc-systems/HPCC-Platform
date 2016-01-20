@@ -189,6 +189,7 @@ if(TOP_LEVEL_PROJECT)
     set(CPACK_RPM_PACKAGE_RELEASE "${stagever}")
     set(CPACK_RPM_PACKAGE_VENDOR "HPCC Systems®")
     set(CPACK_PACKAGE_VENDOR "HPCC Systems®")
+    set(CPACK_PACKAGE_VENDOR_WITHOUT_TRADEMARK "HPCC Systems")
 
     if(${ARCH64BIT} EQUAL 1)
         set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
@@ -388,7 +389,7 @@ if(TOP_LEVEL_PROJECT)
             set(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\hpccsystems.com")
             set(CPACK_NSIS_CONTACT ${CPACK_PACKAGE_CONTACT})
             set(CPACK_NSIS_DEFINES "
-                !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
+                !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR_WITHOUT_TRADEMARK}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
                 !define MUI_FINISHPAGE_NOAUTOCLOSE
             ")
 

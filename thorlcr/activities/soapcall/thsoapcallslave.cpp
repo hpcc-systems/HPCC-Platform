@@ -36,6 +36,7 @@ class CWscRowCallSlaveActivity : public CSlaveActivity, public CThorDataLink, im
 {
     bool eof;
     Owned<IWSCHelper> wscHelper;
+    StringBuffer authToken;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -45,37 +46,38 @@ public:
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        StringBuffer authToken;
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
         appendOutputLinked(this);
-        if (container.queryLocalOrGrouped() || firstNode())
-        {
-            switch (container.getKind())
-            {
-                case TAKsoap_rowdataset:
-                    wscHelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
-                    break;
-                case TAKhttp_rowdataset:
-                    wscHelper.setown(createHttpCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
-                    break;
-                default:
-                    throwUnexpected();
-            }
-        }
     }
     // IThorDataLink methods
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
         eof = false;
-        dataLinkStart();
-        if (wscHelper)
+        if (container.queryLocalOrGrouped() || firstNode())
+        {
+            switch (container.getKind())
+            {
+                case TAKsoap_rowdataset:
+                    wscHelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, queryDummyContextLogger(), NULL));
+                    break;
+                case TAKhttp_rowdataset:
+                    wscHelper.setown(createHttpCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, queryDummyContextLogger(), NULL));
+                    break;
+                default:
+                    throwUnexpected();
+            }
             wscHelper->start();
+        }
+        dataLinkStart();
     }
     virtual void stop()
     {
         if (wscHelper)
+        {
             wscHelper->waitUntilDone();
+            wscHelper.clear();
+        }
         dataLinkStop();
     }
     CATCH_NEXTROW()

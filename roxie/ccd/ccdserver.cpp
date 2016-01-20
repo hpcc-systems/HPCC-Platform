@@ -24148,7 +24148,7 @@ public:
         if (keepLimit == 0) keepLimit = (unsigned)-1;
         getLimitType(joinFlags, limitFail, limitOnFail);
         cloneLeft = (joinFlags & JFtransformmatchesleft) != 0;
-        if (joinFlags & JFleftouter)
+        if (joinFlags & JFleftouter || limitOnFail)
             createDefaultRight();
     }
 
