@@ -4912,7 +4912,13 @@ protected:
                         if (!subfroot->removeProp(oquery.str()))
                         {
                             VStringBuffer s("SubFile %s is not owned by SuperFile %s", name, logicalName.get());
-                            ctx->addWuException(s.str(), 0, SeverityWarning, "DFS[clearSuperOwner]");
+                            if (ctx)
+                                ctx->addWuException(s.str(), 0, SeverityWarning, "DFS[clearSuperOwner]");
+                            else
+                            {
+                                Owned<IException> e = makeStringException(-1, s.str());
+                                EXCLOG(e, "DFS[clearSuperOwner]");
+                            }
                         }
                     }
                 }
