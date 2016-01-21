@@ -94,7 +94,7 @@ public:
     inline Shared()                              { ptr = NULL; }
     inline Shared(CLASS * _ptr, bool owned)      { ptr = _ptr; if (!owned && _ptr) _ptr->Link(); }
     inline Shared(const Shared & other)          { ptr = other.getLink(); }
-#if defined(__cplusplus) and __cplusplus >= 201100
+#if defined(__cplusplus) && __cplusplus >= 201100
     inline Shared(Shared && other)               { ptr = other.getClear(); }
 #endif
     inline ~Shared()                             { ::Release(ptr); }
