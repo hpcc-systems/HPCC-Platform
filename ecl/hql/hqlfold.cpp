@@ -2154,6 +2154,41 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             }
             break;
         }
+    case no_regex_findset:
+        {
+            IValue * v0 = expr->queryChild(0)->queryValue();
+            IValue * v1 = expr->queryChild(1)->queryValue();
+            if (v0 && v1)
+            {
+                bool isAllResult;
+                size32_t resultBytes;
+                rtlDataAttr matchResults;
+
+                if(isUnicodeType(v0->queryType()))
+                {
+                    size32_t plen = v0->queryType()->getStringLen();
+                    OwnedMalloc<UChar> pattern (plen+1);
+                    v0->getUCharStringValue(plen+1, pattern.get()); //plen+1 so get null-terminated
+                    size32_t slen = v1->queryType()->getStringLen();
+                    OwnedMalloc<UChar> search (slen);
+                    v1->getUCharStringValue(slen, search);
+                    ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExpr(pattern, !expr->hasAttribute(noCaseAtom));
+                    compiled->getMatchSet(isAllResult, resultBytes, matchResults.refdata(), slen, search.get());
+                    rtlDestroyCompiledUStrRegExpr(compiled);
+                }
+                else
+                {
+                    StringBuffer pattern, search;
+                    v0->getStringValue(pattern);
+                    v1->getStringValue(search);
+                    rtlCompiledStrRegex compiled;
+                    compiled.setPattern(pattern.str(), !expr->hasAttribute(noCaseAtom));
+                    compiled->getMatchSet(isAllResult, resultBytes, matchResults.refdata(), search.length(), search.str());
+                }
+                return convertSetToExpression(isAllResult, resultBytes, matchResults.getdata(), expr->queryType());
+            }
+            break;
+        }
     case no_regex_replace:
         {
             IValue * t0 = expr->queryChild(0)->queryValue();

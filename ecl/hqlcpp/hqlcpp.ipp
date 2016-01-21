@@ -1345,6 +1345,7 @@ public:
     void doBuildExprRank(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprRanked(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprRegexFindReplace(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound);
+    void doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound);
     void doBuildExprRound(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprSelect(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprSizeof(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);

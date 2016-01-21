@@ -2937,6 +2937,9 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_regex_replace:
         doBuildExprRegexFindReplace(ctx, expr, tgt);
         return;
+    case no_regex_findset:
+        doBuildExprRegexFindSet(ctx, expr, tgt);
+        return;
     case no_skip:
     case no_assert:
         {
