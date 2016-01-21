@@ -147,15 +147,15 @@ static unsigned hex2digit(char c)
     }
 }
 
-inline char char_toupper(char c) { return (char)toupper(c); }
+static inline char char_toupper(char c) { return (char)toupper(c); }
 
-inline void clip(unsigned &len, const char * s)
+static inline void clip(unsigned &len, const char * s)
 {
     while ( len > 0 && s[len-1]==' ' )
         len--;
 }
 
-inline unsigned min3(unsigned a, unsigned b, unsigned c)
+static inline unsigned min3(unsigned a, unsigned b, unsigned c)
 {
     unsigned mi;
 
@@ -172,9 +172,9 @@ inline unsigned min3(unsigned a, unsigned b, unsigned c)
 }
 
 //--- Optimized versions of the edit distance functions
-inline unsigned mask(unsigned x) { return x & 1; }
+static inline unsigned mask(unsigned x) { return x & 1; }
 
-unsigned editDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
+static unsigned editDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
 {
     unsigned i, j;
 
@@ -196,7 +196,7 @@ unsigned editDistance(unsigned leftLen, const char * left, unsigned rightLen, co
     //Optimize the storage requirements by
     //i) Only storing two stripes
     //ii) Calculate, but don't store the row comparing against the null string
-    unsigned char da[3][256];
+    unsigned char da[2][256];
     char r_0 = right[0];
     char l_0 = left[0];
     bool matched_l0 = false;
@@ -229,20 +229,21 @@ unsigned editDistance(unsigned leftLen, const char * left, unsigned rightLen, co
     return da[mask(leftLen-1)][rightLen-1];
 }
 
-unsigned optimalStringAlignmentDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
+static unsigned optimalStringAlignmentDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
 {
     /* This is the restricted form of the Damerau-Levenshtein distance AKA optimal string alignment (OSA).
      * It is restricted in that a substring can only be altered once.
      * e.g. OSA(CA, ABC) = 3, CA -> A -> AB -> ABC : fullDL(CA, ABC) = 2, CA -> AC -> ABC (i.e. a transposition then an insertion upon that transposition).
      * e.g. OSA(abcde, acbed) = 3 & fullDL(abcde, acbed) = 2
      */
-    if (rightLen < 2 || leftLen < 2)
-        return editDistance(leftLen, left, rightLen, right);
 
     unsigned i, j;
 
     clip(leftLen, left);
     clip(rightLen, right);
+
+    if (rightLen < 2 || leftLen < 2)
+        return editDistance(leftLen, left, rightLen, right);
 
     if (leftLen > 255)
         leftLen = 255;
@@ -256,42 +257,6 @@ unsigned optimalStringAlignmentDistance(unsigned leftLen, const char * left, uns
     if (rightLen == 0)
         return leftLen;
 
-#if 0
-    unsigned char d[256][256];
-    for (i = 0; i <=leftLen; ++i)
-    {
-        d[i][0] = i;
-    }
-    for (j = 0; j <=rightLen; ++j)
-    {
-        d[0][j] = j;
-    }
-
-    for (j = 1; j <= rightLen; ++j)
-    {
-        for (i = 1; i <= leftLen; ++i)
-        {
-            unsigned char cost = left[i-1] == right[j-1] ? 0 : 1;
-            d[i][j] = min3( d[i][j-1]+1, d[i-1][j] + 1, d[i-1][j-1] + cost);
-            if(i > 1 && j > 1 && left[i-1] == right[j-2] && left[i-2] == right[j-1] &&  d[i][j] > d[i-2][j-2] + cost)
-                d[i][j] = d[i-2][j-2] + cost;
-            }
-    }
-
-#if 0
-    for (i = 0; i <= leftLen; ++i)
-    {
-        for (j = 0; j <= rightLen; ++j)
-        {
-            printf(" %u", d[i][j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-#endif
-    return d[leftLen][rightLen];
-#endif
-
     //Optimize the storage requirements by
     //i) Only storing two stripes + one more for adjacent transpositions i.e. D(i-2, j-2). Do this always even if not needed when min(leftLen, rightLen) < 3 so as to allocate on the stack.
     unsigned char da[3][256];
@@ -303,7 +268,7 @@ unsigned optimalStringAlignmentDistance(unsigned leftLen, const char * left, uns
     {
         if (right[j] == l_0) matched_l0 = true;
         da[0][j] = (matched_l0) ? j : j+1;
-        da[2][j] = j; //This is the NULL row. NOTE: da[2][reightLen] is never actually referenced.
+        da[2][j] = j; //This is the NULL row. NOTE: da[2][rightLen] is never actually referenced.
     }
 
     bool matched_r0 = (l_0 == r_0);
@@ -380,7 +345,7 @@ static unsigned char defaultConfusionMatrix[defaultConfusionMatrixLength*(defaul
 #define defaultConfusionMatrixIndx(i,j) (i>=j)?(i*(i+1)>>1)+j:(j*(j+1)>>1)+i
 #define defaultConfusionMatrix(i,j) defaultConfusionMatrix[defaultConfusionMatrixIndx(i,j)]
 
-unsigned damerauLevenshteinDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned char * confusionMatrix/*= NULL*/, byte confusionMatrixLength/*= 0*/)
+static unsigned damerauLevenshteinDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned char * confusionMatrix/*= NULL*/, byte confusionMatrixLength/*= 0*/)
 {
     //if (rightLen < 2 || leftLen < 2)
     //    return editDistance(leftLen, left, rightLen, right);
@@ -485,7 +450,7 @@ unsigned damerauLevenshteinDistance(unsigned leftLen, const char * left, unsigne
     return d[leftLen][rightLen];
 }
 
-unsigned weightedDamerauLevenshteinDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned char * confusionMatrix/*= NULL*/, byte confusionMatrixLength/*= 0*/)
+static unsigned weightedDamerauLevenshteinDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned char * confusionMatrix/*= NULL*/, byte confusionMatrixLength/*= 0*/)
 {
     if (confusionMatrix && confusionMatrixLength > 0)
         return damerauLevenshteinDistance(leftLen, left, rightLen, right, confusionMatrix, confusionMatrixLength);

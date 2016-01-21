@@ -18,7 +18,7 @@ EXPORT TestWeightedDamerauLevenshteinDistance := MODULE
     EXPORT Test02 := ASSERT(Str.WeightedDamerauLevenshteinDistance('','                ') = 0, CONST);
     EXPORT Test03 := ASSERT(Str.WeightedDamerauLevenshteinDistance('                ','') = 0, CONST);
     EXPORT Test04 := ASSERT(Str.WeightedDamerauLevenshteinDistance('a ','                ') = 1, CONST);
-    //EXPORT Test05 := ASSERT(Str.WeightedDamerauLevenshteinDistance(' a ','   ') = 1, CONST);
+    EXPORT Test05 := ASSERT(Str.WeightedDamerauLevenshteinDistance(' a ','   ') = 2, CONST);
     EXPORT Test06 := ASSERT(Str.WeightedDamerauLevenshteinDistance('Aprs  ','APp') = 2, CONST);//default confusion matrix is case insensitive.
     EXPORT Test07 := ASSERT(Str.WeightedDamerauLevenshteinDistance('abcd','acbd') = 1, CONST);
     EXPORT Test08 := ASSERT(Str.WeightedDamerauLevenshteinDistance('abcd','abd') = 1, CONST);

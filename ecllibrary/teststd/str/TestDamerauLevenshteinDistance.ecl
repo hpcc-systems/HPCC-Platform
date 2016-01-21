@@ -18,7 +18,7 @@ EXPORT TestDamerauLevenshteinDistance := MODULE
     EXPORT Test02 := ASSERT(Str.DamerauLevenshteinDistance('','                ') = 0, CONST);
     EXPORT Test03 := ASSERT(Str.DamerauLevenshteinDistance('                ','') = 0, CONST);
     EXPORT Test04 := ASSERT(Str.DamerauLevenshteinDistance('a ','                ') = 1, CONST);
-    //EXPORT Test05 := ASSERT(Str.DamerauLevenshteinDistance(' a ','   ') = 1, CONST);
+    EXPORT Test05 := ASSERT(Str.DamerauLevenshteinDistance(' a ','   ') = 2, CONST);
     EXPORT Test06 := ASSERT(Str.DamerauLevenshteinDistance('Aprs  ','APp') = 3, CONST);
     EXPORT Test07 := ASSERT(Str.DamerauLevenshteinDistance('abcd','acbd') = 1, CONST);
     EXPORT Test08 := ASSERT(Str.DamerauLevenshteinDistance('abcd','abd') = 1, CONST);

@@ -18,7 +18,7 @@ EXPORT TestOptimalStringAlignmentDistance := MODULE
     EXPORT Test02 := ASSERT(Str.OptimalStringAlignmentDistance('','                ') = 0, CONST);
     EXPORT Test03 := ASSERT(Str.OptimalStringAlignmentDistance('                ','') = 0, CONST);
     EXPORT Test04 := ASSERT(Str.OptimalStringAlignmentDistance('a ','                ') = 1, CONST);
-    //EXPORT Test05 := ASSERT(Str.OptimalStringAlignmentDistance(' a ','   ') = 1, CONST);
+    EXPORT Test05 := ASSERT(Str.OptimalStringAlignmentDistance(' a ','   ') = 2, CONST);
     EXPORT Test06 := ASSERT(Str.OptimalStringAlignmentDistance('Aprs  ','APp') = 3, CONST);
     EXPORT Test07 := ASSERT(Str.OptimalStringAlignmentDistance('abcd','acbd') = 1, CONST);
     EXPORT Test08 := ASSERT(Str.OptimalStringAlignmentDistance('abcd','abd') = 1, CONST);
