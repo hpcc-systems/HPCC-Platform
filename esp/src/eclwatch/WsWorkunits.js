@@ -227,7 +227,7 @@ define([
         WUAction: function (workunits, actionType, callback) {
             var request = {
                 Wuids: workunits,
-                ActionType: actionType
+                WUActionType: actionType
             };
             ESPRequest.flattenArray(request, "Wuids", "Wuid");
 

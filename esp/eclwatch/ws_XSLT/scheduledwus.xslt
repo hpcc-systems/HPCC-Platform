@@ -208,7 +208,7 @@
                     <table style="margin:10 0 0 0" id="btnTable" name="btnTable">
                         <tr>
                             <td>
-                                <input type="submit" class="sbutton" name="ActionType" id="deleteBtn" value="Deschedule" disabled="true" onclick="return confirm('Delete selected workunits from schedule list?')"/>
+                                <input type="submit" class="sbutton" name="WUActionType" id="deleteBtn" value="Deschedule" disabled="true" onclick="return confirm('Delete selected workunits from schedule list?')"/>
                             </td>
                         </tr>
                     </table>

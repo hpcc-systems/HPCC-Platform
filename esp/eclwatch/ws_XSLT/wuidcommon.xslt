@@ -854,7 +854,7 @@
       <xsl:when test="number(Archived)">
         <form action="/WsWorkunits/WUAction?PageFrom=WUID" method="post">
           <input type="hidden" name="Wuids_i1" value="{$wuid}"/>
-          <input type="submit" class="sbutton" name="ActionType" id="restoreBtn" value="Restore"/>
+          <input type="submit" class="sbutton" name="WUActionType" id="restoreBtn" value="Restore"/>
         </form>
       </xsl:when>
         <xsl:when test="number(ClusterFlag)=2">
@@ -870,12 +870,12 @@
                   </xsl:choose>
                 </xsl:variable>
                 <input type="hidden" name="Wuids_i1" value="{$wuid}"/>
-                <input type="submit" name="ActionType" value="Abort" class="sbutton" title="Abort workunit" onclick="return confirm('Abort workunit?')">
+                <input type="submit" name="WUActionType" value="Abort" class="sbutton" title="Abort workunit" onclick="return confirm('Abort workunit?')">
                   <xsl:if test="number(AccessFlag) &lt; 7 or State='aborting' or State='aborted' or State='failed' or State='completed' or $ScheduledAborting!=0">
                     <xsl:attribute name="disabled">disabled</xsl:attribute>
                   </xsl:if>
                 </input>
-                <input type="submit" name="ActionType" value="Delete" class="sbutton" title="Delete workunit" onclick="return confirm('Delete workunit?')">
+                <input type="submit" name="WUActionType" value="Delete" class="sbutton" title="Delete workunit" onclick="return confirm('Delete workunit?')">
                   <xsl:if test="number(AccessFlag) &lt; 7 or number(Protected)">
                     <xsl:attribute name="disabled">disabled</xsl:attribute>
                   </xsl:if>
@@ -891,7 +891,7 @@
             <td></td>
             <xsl:if test="number(ThorLCR)">
                 <td>
-                  <form action="/WsWorkunits/WUAction?ActionType=Pause&amp;Wuids_i1={$wuid}" method="post">
+                  <form action="/WsWorkunits/WUAction?WUActionType=Pause&amp;Wuids_i1={$wuid}" method="post">
                     <input type="submit" name="Pause" value="Pause" class="sbutton" title="Pause workunit">
                       <xsl:if test="number(AccessFlag) &lt; 7 or State!='running'">
                         <xsl:attribute name="disabled">disabled</xsl:attribute>
@@ -900,7 +900,7 @@
                   </form>
                 </td>
                 <td>
-                  <form action="/WsWorkunits/WUAction?ActionType=PauseNow&amp;Wuids_i1={$wuid}" method="post">
+                  <form action="/WsWorkunits/WUAction?WUActionType=PauseNow&amp;Wuids_i1={$wuid}" method="post">
                     <input type="submit" name="PauseNow" value="PauseNow" class="sbutton" title="Pause workunit now">
                       <xsl:if test="number(AccessFlag) &lt; 7 or State!='running'">
                         <xsl:attribute name="disabled">disabled</xsl:attribute>
@@ -909,7 +909,7 @@
                   </form>
                 </td>
                 <td>
-                  <form action="/WsWorkunits/WUAction?ActionType=Resume&amp;Wuids_i1={$wuid}" method="post">
+                  <form action="/WsWorkunits/WUAction?WUActionType=Resume&amp;Wuids_i1={$wuid}" method="post">
                     <input type="submit" name="Resume" value="Resume" class="sbutton" title="Resume workunit">
                       <xsl:if test="number(AccessFlag) &lt; 7 or State!='paused'">
                         <xsl:attribute name="disabled">disabled</xsl:attribute>
@@ -927,25 +927,25 @@
                   </xsl:choose>
                 </xsl:variable>
                 <input type="hidden" name="Wuids_i1" value="{$wuid}"/>
-                <input type="submit" name="ActionType" value="Abort" class="sbutton" title="Abort workunit" onclick="return confirm('Abort workunit?')">
+                <input type="submit" name="WUActionType" value="Abort" class="sbutton" title="Abort workunit" onclick="return confirm('Abort workunit?')">
                   <xsl:if test="number(AccessFlag) &lt; 7 or State='aborting' or State='aborted' or State='failed' or State='completed' or $ScheduledAborting!=0">
                     <xsl:attribute name="disabled">disabled</xsl:attribute>
                   </xsl:if>
                 </input>
-                <input type="submit" name="ActionType" value="Delete" class="sbutton" title="Delete workunit" onclick="return confirm('Delete workunit?')">
+                <input type="submit" name="WUActionType" value="Delete" class="sbutton" title="Delete workunit" onclick="return confirm('Delete workunit?')">
                   <xsl:if test="number(AccessFlag) &lt; 7 or number(Protected)">
                     <xsl:attribute name="disabled">disabled</xsl:attribute>
                   </xsl:if>
                 </input>
                 <xsl:if test="number(EventSchedule) = 1">
-                  <input type="submit" name="ActionType" value="Reschedule" class="sbutton" title="Reschedule workunit">
+                  <input type="submit" name="WUActionType" value="Reschedule" class="sbutton" title="Reschedule workunit">
                             <xsl:if test="number(AccessFlag) &lt; 7">
                               <xsl:attribute name="disabled">disabled</xsl:attribute>
                             </xsl:if>
                          </input>
                 </xsl:if>
                 <xsl:if test="number(EventSchedule) = 2">
-                  <input type="submit" name="ActionType" value="Deschedule" class="sbutton" title="Deschedule workunit">
+                  <input type="submit" name="WUActionType" value="Deschedule" class="sbutton" title="Deschedule workunit">
                             <xsl:if test="number(AccessFlag) &lt; 7">
                               <xsl:attribute name="disabled">disabled</xsl:attribute>
                             </xsl:if>
