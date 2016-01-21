@@ -101,6 +101,14 @@ MyString2 := U'abcd\353';    // becomes 'abcdë'
 MyUnicodeString2 := U'abcd\353';    // becomes 'abcdë'
 MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
 
+    <para><emphasis role="bold">UTF8 string<indexterm>
+        <primary>UTF8 string</primary>
+      </indexterm> constants </emphasis>must begin with leading “U8”
+    characters. Characters between the quotes are utf8-encoded and the type of
+    the constant is UTF8.</para>
+
+    <programlisting>MyUTF8String := U8'abcd\353';</programlisting>
+
     <para><emphasis role="bold">VARSTRING string constants<indexterm>
         <primary>VARSTRING string constants</primary>
       </indexterm> </emphasis>must begin with a leading “V” character. The

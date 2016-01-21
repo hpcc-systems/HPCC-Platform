@@ -139,6 +139,17 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
           </row>
 
           <row>
+            <entry>UTF8</entry>
+
+            <entry>STRING</entry>
+
+            <entry>ASCII or EBCDIC representation with any non-existent
+            characters appearing as the SUBstitute control code (0x1A in ASCII
+            or 0x3F in EBCDIC) and any non-valid ASCII or EBCDIC characters
+            appearing as the substitution codepoint (0xFFFD)</entry>
+          </row>
+
+          <row>
             <entry>STRING</entry>
 
             <entry>QSTRING</entry>
@@ -169,6 +180,32 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
             <entry>UNICODE</entry>
 
             <entry>UNICODE representation of the value, including decimal and
+            sign—may be expressed in scientific notation</entry>
+          </row>
+
+          <row>
+            <entry>INTEGER</entry>
+
+            <entry>UTF8</entry>
+
+            <entry>UTF8 representation of the value</entry>
+          </row>
+
+          <row>
+            <entry>DECIMAL</entry>
+
+            <entry>UTF8</entry>
+
+            <entry>UTF8 representation of the value, including decimal and
+            sign</entry>
+          </row>
+
+          <row>
+            <entry>REAL</entry>
+
+            <entry>UTF8</entry>
+
+            <entry>UTF8 representation of the value, including decimal and
             sign—may be expressed in scientific notation</entry>
           </row>
 
@@ -326,6 +363,38 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
             <entry>UNICODE</entry>
 
             <entry>DATA</entry>
+
+            <entry>Value is cast with no translation</entry>
+          </row>
+
+          <row>
+            <entry>DATA</entry>
+
+            <entry>UTF8</entry>
+
+            <entry>Value is cast with no translation</entry>
+          </row>
+
+          <row>
+            <entry>UTF8</entry>
+
+            <entry>DATA</entry>
+
+            <entry>Value is cast with no translation</entry>
+          </row>
+
+          <row>
+            <entry>UTF8</entry>
+
+            <entry>UNICODE</entry>
+
+            <entry>Value is cast with no translation</entry>
+          </row>
+
+          <row>
+            <entry>UNICODE</entry>
+
+            <entry>UTF8</entry>
 
             <entry>Value is cast with no translation</entry>
           </row>
