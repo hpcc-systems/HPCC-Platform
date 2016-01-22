@@ -1007,7 +1007,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         setSEHtoExceptionHandler(&abortHandler);
         if (runOnce)
         {
-            Owned <IRoxieListener> roxieServer = createRoxieSocketListener(0, 1, 0, false);
+            Owned <IRoxieListener> roxieServer = createProtocolSocketListener("runOnce", createRoxieProtocolMsgSink(getNodeAddress(myNodeIndex), 0), 0, 1, 0, false);
             try
             {
                 const char *format = globals->queryProp("format");
@@ -1043,15 +1043,16 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 unsigned numThreads = roxieFarm.getPropInt("@numThreads", numServerThreads);
                 unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
                 unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
+                const IpAddress &ip = getNodeAddress(myNodeIndex);
                 if (!roxiePort)
                 {
                     roxiePort = port;
-                    ownEP.set(roxiePort, getNodeAddress(myNodeIndex));
+                    ownEP.set(roxiePort, ip);
                 }
                 bool suspended = roxieFarm.getPropBool("@suspended", false);
                 Owned <IRoxieListener> roxieServer;
                 if (port)
-                    roxieServer.setown(createRoxieSocketListener(port, numThreads, listenQueue, suspended));
+                    roxieServer.setown(createProtocolSocketListener("native", createRoxieProtocolMsgSink(ip, port), port, numThreads, listenQueue, suspended));
                 else
                     roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
 

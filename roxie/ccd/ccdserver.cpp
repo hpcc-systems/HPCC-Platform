@@ -19563,29 +19563,21 @@ public:
             storedName = "Dataset";
 
         MemoryBuffer result;
-        FlushingStringBuffer *response = NULL;
         bool saveInContext = (int) sequence < 0 || isReread;
         if (!meta.queryOriginal()) // this is a bit of a hack - don't know why no meta on an output....
             meta.set(input->queryOutputMeta());
         Owned<IOutputRowSerializer> rowSerializer;
-        Owned<IXmlWriter> writer;
+        Owned<IXmlWriter> xmlwriter;
+        bool appendRaw = false;
+
+        IHpccProtocolResultsWriter *results = NULL;
+        IHpccProtocolResponse *protocol = serverContext->queryProtocol();
+        unsigned protocolFlags = (protocol) ? protocol->getFlags() : 0;
         if ((int) sequence >= 0)
         {
-            response = serverContext->queryResult(sequence);
-            if (response)
-            {
-                const IProperties *xmlns = serverContext->queryXmlns(sequence);
-                response->startDataset("Dataset", helper.queryName(), sequence, (helper.getFlags() & POFextend) != 0, xmlns);
-                if (response->mlFmt==MarkupFmt_XML || response->mlFmt==MarkupFmt_JSON)
-                {
-                    unsigned int writeFlags = serverContext->getXmlFlags();
-                    if (response->mlFmt==MarkupFmt_JSON)
-                        writeFlags |= XWFnoindent;
-                    writer.setown(createIXmlWriterExt(writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
-                    writer->outputBeginArray(DEFAULTXMLROWTAG);
-                }
-            }
-
+            results = (protocol) ? protocol->queryHpccResultsSection() : NULL;
+            if (results)
+                xmlwriter.setown(results->addDataset(helper.queryName(), sequence, "Dataset", appendRaw, serverContext->getXmlFlags(), (helper.getFlags() & POFextend) != 0, serverContext->queryXmlns(sequence)));  //xmlwriter only returned if needed
         }
         size32_t outputLimitBytes = 0;
         IConstWorkUnit *workunit = serverContext->queryWorkUnit();
@@ -19604,7 +19596,7 @@ public:
             assertex(outputLimit<=0x1000); // 32bit limit because MemoryBuffer/CMessageBuffers involved etc.
             outputLimitBytes = outputLimit * 0x100000;
         }
-        if (workunit != NULL || (response && response->isRaw))
+        if (workunit != NULL || (results && protocol->getFlags() & HPCC_PROTOCOL_NATIVE_RAW))
         {
             createRowAllocator();
             rowSerializer.setown(rowAllocator->createDiskSerializer(ctx->queryCodeContext()));
@@ -19623,13 +19615,18 @@ public:
             {
                 if (workunit)
                     result.append(row == NULL);
-                if (response)
+                if (results)
                 {
-                    if (response->isRaw)
-                        response->append((char)(row == NULL));
-                    else
+                    if (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW)
                     {
-                        response->append("<Row __GroupBreak__=\"1\"/>");        // sensible, but need to handle on input
+                        char val = (char)(row == NULL);
+                        results->appendRaw(sequence, 1, &val);
+                    }
+                    else if (xmlwriter)
+                    {
+                        xmlwriter->outputBeginNested("Row", false);
+                        xmlwriter->outputCString("1", "@__GroupBreak__");
+                        xmlwriter->outputEndNested("Row");
                     }
                 }
             }
@@ -19647,31 +19644,30 @@ public:
                 CThorDemoRowSerializer serializerTarget(result);
                 rowSerializer->serialize(serializerTarget, (const byte *) row);
             }
-            if (response)
+            if ((int) sequence >= 0)
             {
-                if (response->isRaw)
+                if (appendRaw)
                 {
                     // MORE - should be able to serialize straight to the response...
                     MemoryBuffer rowbuff;
                     CThorDemoRowSerializer serializerTarget(rowbuff);
                     rowSerializer->serialize(serializerTarget, (const byte *) row);
-                    response->append(rowbuff.length(), rowbuff.toByteArray());
+                    results->appendRawRow(sequence, rowbuff.length(), rowbuff.toByteArray());
                 }
-                else if (writer)
+                else if (xmlwriter)
                 {
-                    writer->outputBeginNested(DEFAULTXMLROWTAG, false);
-                    helper.serializeXml((byte *) row, *writer);
-                    writer->outputEndNested(DEFAULTXMLROWTAG);
+                    xmlwriter->outputBeginNested(DEFAULTXMLROWTAG, false);
+                    helper.serializeXml((byte *) row, *xmlwriter);
+                    xmlwriter->outputEndNested(DEFAULTXMLROWTAG);
+                    results->finalizeXmlRow(sequence);
                 }
                 else
                 {
                     SimpleOutputWriter x;
                     helper.serializeXml((byte *) row, x);
                     x.newline();
-                    response->append(x.str());
+                    results->appendSimpleRow(sequence, x.str());
                 }
-                response->incrementRowCount();
-                response->flush(false);
             }
             ReleaseRoxieRow(row);
             if (outputLimitBytes && result.length() > outputLimitBytes)
@@ -19687,8 +19683,8 @@ public:
                 throw MakeStringExceptionDirect(0, errMsg.str());
             }
         }
-        if (writer)
-            writer->outputEndArray(DEFAULTXMLROWTAG);
+        if (xmlwriter)
+            xmlwriter->outputEndArray(DEFAULTXMLROWTAG);
         if (saveInContext)
             serverContext->appendResultDeserialized(storedName, sequence, builder.getcount(), builder.linkrows(), (helper.getFlags() & POFextend) != 0, LINK(meta.queryOriginal()));
         if (workunit)

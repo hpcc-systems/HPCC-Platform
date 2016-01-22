@@ -19,22 +19,10 @@
 #define _CCDLISTENER_INCL
 
 #include <jlib.hpp>
+#include "ccdprotocol.hpp"
 
-interface IRoxieListener : extends IInterface
-{
-    virtual void start() = 0;
-    virtual bool stop(unsigned timeout) = 0;
-    virtual void stopListening() = 0;
-    virtual void disconnectQueue() = 0;
-    virtual void addAccess(bool allow, bool allowBlind, const char *ip, const char *mask, const char *query, const char *errMsg, int errCode) = 0;
-    virtual unsigned queryPort() const = 0;
-    virtual const SocketEndpoint &queryEndpoint() const = 0;
-    virtual bool suspend(bool suspendIt) = 0;
+extern IHpccProtocolMsgSink *createRoxieProtocolMsgSink(const IpAddress &ip, unsigned short port);
 
-    virtual void runOnce(const char *query) = 0;
-};
-
-extern IRoxieListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsigned listenQueue, bool suspended);
 extern IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended);
 extern bool suspendRoxieListener(unsigned port, bool suspended);
 extern IArrayOf<IRoxieListener> socketListeners;

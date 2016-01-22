@@ -265,6 +265,7 @@ public:
     virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size);
     virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size);
     virtual void incrementRowCount();
+    void setTail(const char *value){tail.set(value);}
 };
 
 class THORHELPER_API FlushingJsonBuffer : public FlushingStringBuffer
