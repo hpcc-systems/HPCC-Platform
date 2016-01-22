@@ -156,7 +156,7 @@
     the existing distribution of the specified <emphasis>index</emphasis>,
     where the linkage between the two is determined by the
     <emphasis>joincondition</emphasis>. Records for which the
-    <emphasis>joncondition</emphasis> is true will end up on the same
+    <emphasis>joincondition</emphasis> is true will end up on the same
     node.</para>
   </sect2>
 
