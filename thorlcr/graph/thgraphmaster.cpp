@@ -1216,7 +1216,7 @@ public:
     virtual IDistributedFileTransaction *querySuperFileTransaction()
     {
         if (!superfiletransaction.get())
-            superfiletransaction.setown(createDistributedFileTransaction(userDesc));
+            superfiletransaction.setown(createDistributedFileTransaction(userDesc, this));
         return superfiletransaction.get();
     }
     virtual char *getJobName()
