@@ -263,6 +263,7 @@ public:
     bool onWUGetArchiveFile(IEspContext &context, IEspWUGetArchiveFileRequest &req, IEspWUGetArchiveFileResponse &resp);
 private:
     void addProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, const char* path);
+    void addThorSlaveLogfile(Owned<IConstWorkUnit> &cwu,WsWuInfo& winfo, const char* path);
     void createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
     void createZAPWUXMLFile(WsWuInfo &winfo, const char* pathNameStr);
     void createZAPWUGraphProgressFile(const char* wuid, const char* pathNameStr);
