@@ -8809,7 +8809,10 @@ public:
             if (expr->queryChild(1) == searchModule)
             {
                 IIdAtom * id = expr->queryChild(3)->queryId();
-                return getVirtualReplacement(id);
+                OwnedHqlExpr replacement = getVirtualReplacement(id);
+                if (expr == replacement->queryBody())
+                    return LINK(expr);
+                return replacement.getClear();
             }
             break;
         }
