@@ -10705,6 +10705,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case RECORD: msg.append("RECORD"); break;
     case RECORDOF: msg.append("RECORDOF"); break;
     case RECOVERY: msg.append("RECOVERY"); break;
+    case REFRESH: msg.append("REFRESH"); break;
     case REGEXFIND: msg.append("REGEXFIND"); break;
     case REGEXREPLACE: msg.append("REGEXREPLACE"); break;
     case REGROUP: msg.append("REGROUP"); break;
