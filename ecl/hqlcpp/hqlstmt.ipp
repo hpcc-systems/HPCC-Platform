@@ -46,6 +46,7 @@ public:
     virtual void                    setIncomplete(bool _incomplete) { incomplete = _incomplete; }
     virtual void                    setIncluded(bool _included) { included = _included; }
             void                    setPriority(unsigned _prio) { priority = _prio; }
+    virtual void                    finishedBuilding() {}
     virtual void                    finishedFramework() { throwUnexpected(); }
 
 protected:
@@ -117,6 +118,7 @@ public:
     void                            appendStmt(HqlStmt & stmt);
     void                            inheritDefinitions(HqlStmts & owwther);
     HqlStmt *                       queryStmt() { return owner; };
+    void                            finishedBuilding();
 
     void appendOwn(HqlExprAssociation & next);
     bool zap(HqlExprAssociation & next);
@@ -146,6 +148,7 @@ public:
     virtual unsigned                numChildren() const;
     virtual void                    mergeScopeWithContainer();
     virtual IHqlStmt *              queryChild(unsigned index) const;
+    virtual void                    finishedBuilding();
     virtual void                    finishedFramework();
 
 protected:

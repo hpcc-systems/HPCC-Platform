@@ -54,6 +54,8 @@ enum AssocKind
     AssocGraphNode         = 0x0000200,
     AssocSubGraph          = 0x0000400,
     AssocStmt              = 0x0000800,
+
+    AssocFinished          = 0x8000000, // Already finished processing and cleaned up the structure
  };
 
 class CHqlBoundExpr;
@@ -222,6 +224,7 @@ public:
     virtual void            mergeScopeWithContainer() = 0;
     virtual void            setIncomplete(bool incomplete) = 0;
     virtual void            setIncluded(bool _included) = 0;
+    virtual void            finishedBuilding() = 0;
     virtual void            finishedFramework() = 0;
 };
 

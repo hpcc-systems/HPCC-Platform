@@ -494,6 +494,15 @@ void SuperHashTable::releaseAll(void)
     tablecount = 0;
 }
 
+void SuperHashTable::destroy()
+{
+    releaseAll();
+    doKill();
+    tablesize = 0;
+    setCache(0);
+    table = nullptr;
+}
+
 void SuperHashTable::kill(void)
 {
     releaseAll();

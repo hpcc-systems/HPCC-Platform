@@ -1052,6 +1052,24 @@ void HqlStmts::appendOwn(HqlExprAssociation & next)
         exprAssociationCache.replace(next);
 }
 
+
+void HqlStmts::finishedBuilding()
+{
+    //Set a flag to prevent re-traversing child activities from their parents.
+    if (associationMask & AssocFinished)
+        return;
+    associationMask |= AssocFinished;
+    ForEachItem(i)
+        item(i).finishedBuilding();
+    exprAssociationCache.destroy();
+
+    //Remove most of the definitions, but some need to stay (e.g, activity instances)
+    //This catches most cases, so keep it simple.
+    if (!(associationMask & (AssocActivity|AssocActivityInstance)))
+        defs.kill();
+}
+
+
 void HqlStmts::inheritDefinitions(HqlStmts & other)
 {
     associationMask |= other.associationMask;
@@ -1248,6 +1266,12 @@ HqlCompoundStmt::HqlCompoundStmt(StmtKind _kind, HqlStmts * _container) : HqlStm
 void HqlCompoundStmt::finishedFramework()
 {
     frameworkCount = doCalcTotalChildren(this);
+}
+
+
+void HqlCompoundStmt::finishedBuilding()
+{
+    code.finishedBuilding();
 }
 
 
