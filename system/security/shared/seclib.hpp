@@ -324,8 +324,4 @@ interface IRestartManager : extends IInterface
     virtual void setRestartHandler(IRestartHandler * pRestartHandler) = 0;
 };
 
-extern "C" SECLIB_API ISecManager *createSecManager(const char *model_name, const char *serviceName, IPropertyTree &config);
-extern "C" SECLIB_API IAuthMap *createDefaultAuthMap(IPropertyTree* config);
-
-
 #endif

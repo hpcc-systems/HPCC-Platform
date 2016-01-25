@@ -21,10 +21,54 @@
 
 typedef IAuthMap* (*createDefaultAuthMap_t_)(IPropertyTree* config);
 typedef ISecManager* (*newSecManager_t_)(const char *serviceName, IPropertyTree &config);
+typedef ISecManager* (*newPluggableSecManager_t_)(const char *serviceName, IPropertyTree &secMgrCfg, IPropertyTree &authCfg);
 
 class SecLoader
 {
 public:
+    ///
+    /// Method:  loadPluggableSecManager
+    ///
+    /// Using the given configuration property trees, this method loads the specified
+    /// Security Manager DLL/SO implemented in the specified library file and calls
+    /// its instance factory to create and return an ISecManager security manager instance
+    /// for the given ESP service
+    ///
+    /// @param  svcName         Service name ie 'WsTopology_smc_myesp'
+    /// @param  secMgrCfg       'SecurityManager' IPropertyTree from component config file
+    /// @param  authCfg         'Authenticate' IPropertyTree from EspService component binding
+    ///
+    /// @return an ISecManager Security Manager instance
+    ///
+    static ISecManager* loadPluggableSecManager(const char * svcName, IPropertyTree* authCfg, IPropertyTree* secMgrCfg)
+    {
+        const char * lsm = "Load Security Manager :";
+
+        StringBuffer libName, instFactory;
+        secMgrCfg->getProp("@LibName", libName);
+        if (libName.isEmpty())
+            throw MakeStringException(-1, "%s library name not specified for %s", lsm, svcName);
+        //TODO Search for LibName in plugins folder, or in specified location
+
+        instFactory.set(secMgrCfg->queryProp("@InstanceFactoryName"));
+        if (instFactory.isEmpty())
+            instFactory.set("createInstance");
+
+        //Load the DLL/SO
+        HINSTANCE pluggableSecLib = LoadSharedObject(libName.str(), true, false);
+        if(pluggableSecLib == NULL)
+            throw MakeStringException(-1, "%s can't load library %s for %s", lsm, libName.str(), svcName);
+
+        //Retrieve address of exported ISecManager instance factory
+        newPluggableSecManager_t_ xproc = NULL;
+        xproc = (newPluggableSecManager_t_)GetSharedProcedure(pluggableSecLib, instFactory.str());
+        if (xproc == NULL)
+            throw MakeStringException(-1, "%s cannot locate procedure %s of '%s'", lsm, instFactory.str(), libName.str());
+
+        //Call ISecManager instance factory and return the new instance
+        return xproc(svcName, *secMgrCfg, *authCfg);
+    }
+
     static ISecManager* loadSecManager(const char* model_name, const char* servicename, IPropertyTree* cfg)
     {
         if (!model_name || !*model_name)
