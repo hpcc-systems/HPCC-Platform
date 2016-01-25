@@ -2861,8 +2861,14 @@ void HqlGram::releaseScopes()
 
     leftRightScopes.kill();
     
-    while (selfScopes.length()>0)
+    while (selfScopes.length() > 0)
+    {
+        //Ensure that we do not remove any scopes that are still active - otherwise they will be released too early
+        OwnedHqlExpr self = getSelfScope();
+        if (activeRecords.contains(*self))
+            break;
         popSelfScope();
+    }
     modScope.clear();
     outerScopeAccessDepth = 0;
 
