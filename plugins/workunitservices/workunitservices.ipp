@@ -114,16 +114,16 @@ inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
     short int prioritylevel = calcPriorityValue(&pt);
     mb.appendEndian(sizeof(prioritylevel), &prioritylevel);
 
-    StringBuffer s1, s2;
-    const char* modTime = readModifyTime(pt, s1, true);
-    const char* crtTime = readCreateTime(pt, s2, true);
-    if (crtTime && *crtTime)
+    StringBuffer crtTime, modTime;
+    readModifyTime(pt, modTime, true);
+    readCreateTime(pt, crtTime, true);
+    if (crtTime.length())
     {
-        fixedAppend(mb, 20, crtTime, strlen(crtTime));
-        if (modTime && *modTime)
-            fixedAppend(mb, 20, modTime, strlen(modTime));
+        fixedAppend(mb, 20, crtTime.str(), crtTime.length());
+        if (modTime.length())
+            fixedAppend(mb, 20, modTime.str(), modTime.length());
         else
-            fixedAppend(mb, 20, crtTime, strlen(crtTime));
+            fixedAppend(mb, 20, crtTime.str(), crtTime.length());
     }
     else
     {
