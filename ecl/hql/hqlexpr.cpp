@@ -9788,7 +9788,7 @@ IHqlExpression * createDelayedScope(IHqlExpression * expr)
 }
 
 //==============================================================================================================
-CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _type) : CHqlExpressionWithType(_op, _type)
+CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _type) : CHqlExpression(_op)
 {
 #ifdef SEARCH_NAME1
     if (strcmp(_name, SEARCH_NAME1) == 0)
@@ -9801,6 +9801,24 @@ CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _t
     name.set(_name);
     infoFlags |= HEFtranslated;
     infoFlags |= HEFhasunadorned;
+    type = _type;
+}
+
+CHqlVariable::~CHqlVariable()
+{
+    ::Release(type);
+}
+
+
+ITypeInfo *CHqlVariable::queryType() const
+{
+    return type;
+}
+
+ITypeInfo *CHqlVariable::getType()
+{
+    ::Link(type);
+    return type;
 }
 
 CHqlVariable *CHqlVariable::makeVariable(node_operator op, const char * name, ITypeInfo * type) 
