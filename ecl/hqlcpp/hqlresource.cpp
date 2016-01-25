@@ -321,7 +321,7 @@ public:
                 if (selected->getOperator() == no_select)
                     field.set(selected->queryChild(1));
                 else
-                    field.setown(createField(valueId, selected->getType(), NULL));
+                    field.setown(createFieldFromValue(valueId, selected));
                 OwnedHqlExpr record = createRecord(field);
                 OwnedHqlExpr self = getSelf(record);
                 OwnedHqlExpr assign = createAssign(createSelectExpr(LINK(self), LINK(field)), LINK(selected));

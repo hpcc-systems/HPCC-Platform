@@ -10601,6 +10601,28 @@ extern IHqlExpression *createField(IIdAtom *id, ITypeInfo *type, IHqlExpression 
     return expr->closeExpr();
 }
 
+extern IHqlExpression *createFieldFromValue(IIdAtom *id, IHqlExpression * expr)
+{
+    HqlExprArray args;
+    if (expr->getOperator() == no_select)
+        expr = expr->queryChild(1);
+    if (expr->getOperator() == no_field)
+    {
+        inheritAttribute(args, expr, _linkCounted_Atom);
+    }
+    else
+    {
+        IHqlExpression * record = expr->queryRecord();
+        if (record)
+        {
+            if (recordRequiresLinkCount(record))
+                args.append(*createAttribute(_linkCounted_Atom));
+        }
+    }
+    return createField(id, expr->getType(), args);
+}
+
+
 extern HQL_API IHqlExpression *createQuoted(const char * text, ITypeInfo *type)
 {
     return CHqlVariable::makeVariable(no_quoted, text, type);
