@@ -1255,6 +1255,7 @@ extern HQL_API IHqlExpression *createLeftBinaryList(node_operator op, HqlExprArr
 
 extern HQL_API IHqlExpression *createField(IIdAtom * name, ITypeInfo *type, IHqlExpression *defaultValue, IHqlExpression *attrs=NULL);
 extern HQL_API IHqlExpression *createField(IIdAtom *name, ITypeInfo *type, HqlExprArray & args);
+extern HQL_API IHqlExpression *createFieldFromValue(IIdAtom *id, IHqlExpression * expr);
 extern HQL_API IHqlExpression *createConstant(bool constant);
 extern HQL_API IHqlExpression *createConstant(__int64 constant);
 extern HQL_API IHqlExpression *createConstant(const char *constant);
