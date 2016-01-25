@@ -5540,11 +5540,11 @@ void HqlCppTranslator::doBuildAssignCatch(BuildCtx & ctx, const CHqlBoundTarget 
     subctx.addGroup();
 
     BuildCtx tryctx(subctx);
-    tryctx.addQuotedCompound("try");
+    tryctx.addQuotedCompoundLiteral("try");
     buildExprAssign(tryctx, target, expr->queryChild(0));
 
     BuildCtx catchctx(subctx);
-    catchctx.addQuotedCompound("catch (IException * e)");
+    catchctx.addQuotedCompoundLiteral("catch (IException * e)");
     IHqlExpression * exceptVar = associateLocalFailure(catchctx, "e");
     buildExprAssign(catchctx, target, expr->queryChild(1));
 

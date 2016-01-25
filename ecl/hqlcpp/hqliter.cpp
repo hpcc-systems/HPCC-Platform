@@ -280,27 +280,27 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
     if (expr->queryBody() == root)
     {
         BuildCtx firstctx(classctx);
-        firstctx.addQuotedCompound("virtual const byte * first()");
+        firstctx.addQuotedCompoundLiteral("virtual const byte * first()");
         createRawFirstFunc(firstctx, expr, cursors);
 
         BuildCtx nextctx(classctx);
-        nextctx.addQuotedCompound("virtual const byte * next()");
+        nextctx.addQuotedCompoundLiteral("virtual const byte * next()");
         createRawNextFunc(nextctx, expr, cursors);
     }
     else
     {
         BuildCtx rawfirstctx(classctx);
-        rawfirstctx.addQuotedCompound("inline const byte * rawFirst()");
+        rawfirstctx.addQuotedCompoundLiteral("inline const byte * rawFirst()");
         createRawFirstFunc(rawfirstctx, root, cursors);
 
         BuildCtx rawnextctx(classctx);
-        rawnextctx.addQuotedCompound("virtual const byte * rawNext()");
+        rawnextctx.addQuotedCompoundLiteral("virtual const byte * rawNext()");
         createRawNextFunc(rawnextctx, root, cursors);
 
         OwnedHqlExpr failValue = createTranslatedOwned(createValue(no_nullptr, makeVoidType()));
         TransformSequenceBuilder checkValidBuilder(translator, failValue);
         BuildCtx checkctx(classctx);
-        checkctx.addQuotedCompound("inline const byte * checkValid()");
+        checkctx.addQuotedCompoundLiteral("inline const byte * checkValid()");
         bindParentCursors(checkctx, cursors);
         if (isArrayRowset(expr->queryType()))
             translator.bindTableCursor(checkctx, root, "(*cur)");
@@ -313,15 +313,15 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
         checkctx.addReturn(row);
 
         BuildCtx firstctx(classctx);
-        firstctx.addQuotedCompound("virtual const byte * first()");
+        firstctx.addQuotedCompoundLiteral("virtual const byte * first()");
         firstctx.addQuotedLiteral("if (!rawFirst()) return NULL;");
-        firstctx.addQuotedCompound("for (;;)");
+        firstctx.addQuotedCompoundLiteral("for (;;)");
         firstctx.addQuotedLiteral("const byte * valid = checkValid(); if (valid) return valid;");
         firstctx.addQuotedLiteral("if (!rawNext()) return NULL;");
 
         BuildCtx nextctx(classctx);
-        nextctx.addQuotedCompound("virtual const byte * next()");
-        nextctx.addQuotedCompound("for (;;)");
+        nextctx.addQuotedCompoundLiteral("virtual const byte * next()");
+        nextctx.addQuotedCompoundLiteral("for (;;)");
         nextctx.addQuotedLiteral("if (!rawNext()) return NULL;");
         nextctx.addQuotedLiteral("const byte * valid = checkValid(); if (valid) return valid;");
     }

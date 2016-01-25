@@ -165,10 +165,10 @@ protected:
     IHqlStmt * stmt;
 };
 
-class HqlQuoteStmt : public HqlCompoundStmt
+class HqlQuoteStmt : public HqlStmt
 {
 public:
-    HqlQuoteStmt(StmtKind _kind, HqlStmts * _container, const char * _text) : HqlCompoundStmt(_kind, _container), text(_text) {}
+    HqlQuoteStmt(StmtKind _kind, HqlStmts * _container, const char * _text) : HqlStmt(_kind, _container), text(_text) {}
 
     virtual StringBuffer &          getTextExtra(StringBuffer & out) const;
 
@@ -177,10 +177,34 @@ protected:
 };
 
 
-class HqlQuoteLiteralStmt : public HqlCompoundStmt
+class HqlQuoteLiteralStmt : public HqlStmt
 {
 public:
-    HqlQuoteLiteralStmt(StmtKind _kind, HqlStmts * _container, const char * _text) : HqlCompoundStmt(_kind, _container), text(_text) {}
+    HqlQuoteLiteralStmt(StmtKind _kind, HqlStmts * _container, const char * _text) : HqlStmt(_kind, _container), text(_text) {}
+
+    virtual StringBuffer &          getTextExtra(StringBuffer & out) const;
+
+protected:
+    const char * text;
+};
+
+
+class HqlQuoteCompoundStmt : public HqlCompoundStmt
+{
+public:
+    HqlQuoteCompoundStmt(StmtKind _kind, HqlStmts * _container, const char * _text) : HqlCompoundStmt(_kind, _container), text(_text) {}
+
+    virtual StringBuffer &          getTextExtra(StringBuffer & out) const;
+
+protected:
+  StringAttr text;
+};
+
+
+class HqlQuoteLiteralCompoundStmt : public HqlCompoundStmt
+{
+public:
+    HqlQuoteLiteralCompoundStmt(StmtKind _kind, HqlStmts * _container, const char * _text) : HqlCompoundStmt(_kind, _container), text(_text) {}
 
     virtual StringBuffer &          getTextExtra(StringBuffer & out) const;
 
