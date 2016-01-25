@@ -167,10 +167,10 @@ public:
 class IndirectSlaveContext : public CInterface, implements IRoxieSlaveContext
 {
 public:
-    IndirectSlaveContext(IRoxieSlaveContext * _ctx = NULL) : ctx(_ctx) {}
+    IndirectSlaveContext(IRoxieSlaveContext * _ctx) : ctx(_ctx) {}
     IMPLEMENT_IINTERFACE
 
-    void set(IRoxieSlaveContext * _ctx) { ctx = _ctx; }
+//    void set(IRoxieSlaveContext * _ctx) { ctx = _ctx; }
 
     virtual ICodeContext *queryCodeContext()
     {
@@ -543,11 +543,11 @@ public:
         CActivityFactory::addChildQuery(id, childQuery);
     }
 
-    virtual void createChildQueries(IArrayOf<IActivityGraph> &childGraphs, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx) const
+    virtual void createChildQueries(IRoxieSlaveContext * ctx, IArrayOf<IActivityGraph> &childGraphs, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx) const
     {
         ForEachItemIn(idx, childQueries)
         {
-            childGraphs.append(*createActivityGraph(NULL, childQueryIndexes.item(idx), childQueries.item(idx), parentActivity, _probeManager, _logctx));
+            childGraphs.append(*createActivityGraph(ctx, NULL, childQueryIndexes.item(idx), childQueries.item(idx), parentActivity, _probeManager, _logctx));
         }
     }
 
@@ -556,7 +556,7 @@ public:
         ForEachItemIn(idx, childGraphs)
         {
             ctx->noteChildGraph(childQueryIndexes.item(idx), &childGraphs.item(idx));
-            childGraphs.item(idx).onCreate(ctx, colocalArg);
+            childGraphs.item(idx).onCreate(colocalArg);
         }
     }
 
@@ -564,8 +564,8 @@ public:
     {
         unsigned match = childQueryIndexes.find(childId);
         assertex(match != NotFound);
-        Owned<IActivityGraph> graph = createActivityGraph(NULL, childQueryIndexes.item(match), childQueries.item(match), parentActivity, _probeManager, _logctx);
-        graph->onCreate(ctx, colocalArg);
+        Owned<IActivityGraph> graph = createActivityGraph(ctx, NULL, childQueryIndexes.item(match), childQueries.item(match), parentActivity, _probeManager, _logctx);
+        graph->onCreate(colocalArg);
         return graph.getClear();
     }
 
@@ -850,17 +850,17 @@ private:
 
 #define JUNCTION_BLOCK_SIZE 512 // Make configurable at some point
 
-extern IEngineRowStream *connectSingleStream(IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, unsigned flags)
+extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, unsigned flags)
 {
     if (input)
     {
         PointerArrayOf<IEngineRowStream> instreams;
-        junction.setown(input->getOutputStreams(idx, instreams, false, flags));
+        junction.setown(input->getOutputStreams(ctx, idx, instreams, false, flags));
         if (instreams.length() != 1)
         {
             assertex(instreams.length());
             if (!junction)
-                junction.setown(createStrandJunction(instreams.length(), 1, JUNCTION_BLOCK_SIZE, false));
+                junction.setown(createStrandJunction(ctx->queryRowManager(), instreams.length(), 1, JUNCTION_BLOCK_SIZE, false));
             return junction->queryOutput(0);
         }
         else
@@ -870,12 +870,12 @@ extern IEngineRowStream *connectSingleStream(IFinalRoxieInput *input, unsigned i
         return NULL;
 }
 
-extern IEngineRowStream *connectSingleStream(IFinalRoxieInput *input, unsigned idx, unsigned flags)
+extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, unsigned flags)
 {
     if (input)
     {
         PointerArrayOf<IEngineRowStream> instreams;
-        Owned<IStrandJunction> junction = input->getOutputStreams(idx, instreams, false, flags);
+        Owned<IStrandJunction> junction = input->getOutputStreams(ctx, idx, instreams, false, flags);
         assertex(!junction);
         assertex(instreams.length() == 1);
         return instreams.item(0);
@@ -918,8 +918,9 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : factory(_factory), 
+    CRoxieServerActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : ctx(_ctx),
+          factory(_factory),
           basehelper(_factory->getHelper()),
           activityId(_factory->queryId()),
           stats(_factory ? factory->queryStatsMapping() : actStatistics)
@@ -927,12 +928,11 @@ public:
         input = NULL;
         sourceIdx = 0;
         inputStream = NULL;
-        ctx = NULL;
         meta.set(basehelper.queryOutputMeta());
         processed = 0;
         localCycles = 0;
         if (factory)
-            factory->createChildQueries(childGraphs, this, _probeManager, *this);
+            factory->createChildQueries(ctx, childGraphs, this, _probeManager, *this);
         state=STATEreset;
         rowAllocator = NULL;
         debugging = _probeManager != NULL; // Don't want to collect timing stats from debug sessions
@@ -942,7 +942,7 @@ public:
         aborted = false;
     }
     
-    CRoxieServerActivity(IHThorArg & _helper) : factory(NULL), basehelper(_helper), stats(allStatistics)
+    CRoxieServerActivity(IRoxieSlaveContext *_ctx, IHThorArg & _helper) : ctx(_ctx), factory(NULL), basehelper(_helper), stats(allStatistics)
     {
         activityId = 0;
         input = NULL;
@@ -1121,16 +1121,15 @@ public:
 
     virtual bool needsAllocator() const { return false; }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        ctx = _ctx;
         colocalParent = _colocalParent;
         createPending = true;
         if (needsAllocator())
             createRowAllocator();
         processed = 0;
         if (factory)
-            factory->onCreateChildQueries(_ctx, &basehelper, childGraphs);
+            factory->onCreateChildQueries(ctx, &basehelper, childGraphs);
         if (ctx)
             timeActivities = ctx->queryOptions().timeActivities;
     }
@@ -1329,7 +1328,7 @@ public:
     virtual void connectOutputStreams(unsigned flags)
     {
         if (input)  // && !inputStream ?
-            inputStream = connectSingleStream(input, sourceIdx, junction, flags);
+            inputStream = connectSingleStream(ctx, input, sourceIdx, junction, flags);
         ForEachItemIn(i, dependencies)
         {
             dependencies.item(i).connectOutputStreams(flags);
@@ -1358,7 +1357,7 @@ public:
         sourceIdx = _sourceIdx;
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
         assertex(!idx);
         // By default, activities are assumed NOT to support streams
@@ -1467,8 +1466,8 @@ protected:
 
 public:
 
-    CRoxieServerLateStartActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerLateStartActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
         prefiltered = false;
         eof = false;
@@ -1595,9 +1594,9 @@ public:
         return input;
     }
 
-    virtual void connectOutputStreams(unsigned flags)
+    virtual void connectOutputStreams(IRoxieSlaveContext *ctx, unsigned flags)
     {
-        inputStream = connectSingleStream(input, sourceIdx, junction, flags);
+        inputStream = connectSingleStream(ctx, input, sourceIdx, junction, flags);
     }
 
     IEngineRowStream *queryStream() const
@@ -1777,29 +1776,20 @@ class CRoxieServerReadAheadInput : public CInterface, implements IFinalRoxieInpu
     CriticalSection crit;
     bool eof;
     bool disabled;
+    IRoxieSlaveContext *ctx;
     RecordPullerThread puller;
     unsigned preload;
     cycle_t totalCycles;
-    IRoxieSlaveContext *ctx;
     bool timeActivities;
 
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieServerReadAheadInput(unsigned _preload) : puller(true), preload(_preload)
+    CRoxieServerReadAheadInput(IRoxieSlaveContext *_ctx, unsigned _preload) : ctx(_ctx), puller(true), preload(_preload)
     {
         eof = false;
-        disabled = false;
-        ctx = NULL;
-        totalCycles = 0;
-        timeActivities = defaultTimeActivities;
-    }
-
-    void onCreate(IRoxieSlaveContext *_ctx)
-    {
-        ctx = _ctx;
         disabled = (ctx->queryDebugContext() != NULL);
-        if (ctx)
-            timeActivities = ctx->queryOptions().timeActivities;
+        totalCycles = 0;
+        timeActivities = ctx->queryOptions().timeActivities;
     }
 
     virtual IRoxieServerActivity *queryActivity()
@@ -1807,10 +1797,10 @@ public:
         return puller.queryInput()->queryActivity();
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
         assertex(!idx);
-        puller.connectOutputStreams(flags);
+        puller.connectOutputStreams(ctx, flags);
         streams.append(this);
         return NULL;
     }
@@ -1975,8 +1965,8 @@ protected:
     Owned<CRoxieServerReadAheadInput> puller;
 
 public:
-    CRoxieServerTwoInputActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerTwoInputActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
         input1 = NULL;
         inputStream1 = NULL;
@@ -1990,13 +1980,6 @@ public:
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         input1->start(parentExtractSize, parentExtract, paused);
-    }
-
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
-    {
-        if (puller)
-            puller->onCreate(_ctx);
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
     }
 
     virtual void stop()
@@ -2055,10 +2038,10 @@ public:
         }   
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
-        inputStream1 = connectSingleStream(input1, sourceIdx1, junction1, flags);
-        return CRoxieServerActivity::getOutputStreams(idx, streams, multiOk, flags);
+        inputStream1 = connectSingleStream(ctx, input1, sourceIdx1, junction1, flags);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
     }
 };
 
@@ -2075,8 +2058,8 @@ protected:
     Owned<IStrandJunction> *junctionArray;
 
 public:
-    CRoxieServerMultiInputBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerActivity(_factory, _probeManager), numInputs(_numInputs)
+    CRoxieServerMultiInputBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), numInputs(_numInputs)
     {
         numStreams = numInputs;
         inputArray = new IFinalRoxieInput*[numInputs];
@@ -2132,11 +2115,11 @@ public:
         sourceIdxArray[idx] = _sourceIdx;
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
         for (unsigned i = 0; i < numInputs; i++)
-            streamArray[i] = connectSingleStream(inputArray[i], sourceIdxArray[i], junctionArray[i], flags);
-        return CRoxieServerActivity::getOutputStreams(idx, streams, multiOk, flags);
+            streamArray[i] = connectSingleStream(ctx, inputArray[i], sourceIdxArray[i], junctionArray[i], flags);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
     }
 
 };
@@ -2146,8 +2129,8 @@ public:
 class CRoxieServerMultiInputActivity : public CRoxieServerMultiInputBaseActivity
 {
 public:
-    CRoxieServerMultiInputActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputBaseActivity(_factory, _probeManager, _numInputs)
+    CRoxieServerMultiInputActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputBaseActivity(_ctx, _factory, _probeManager, _numInputs)
     {
     }
 
@@ -2183,8 +2166,8 @@ protected:
     Owned<IException> exception;
 
 public:
-    CRoxieServerInternalSinkActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerActivity(_factory, _probeManager), numOutputs(_numOutputs)
+    CRoxieServerInternalSinkActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), numOutputs(_numOutputs)
     {
         executed = false;
         stopped = new bool[numOutputs];
@@ -3559,9 +3542,14 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRemoteResultAdaptor(const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled)
+    CRemoteResultAdaptor(IRoxieSlaveContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled)
         : remoteId(_remoteId), meta(_meta), activity(_activity), helper(_helper), preserveOrder(_preserveOrder), flowControlled(_flowControlled), merger(*this)
     {
+        ctx = _ctx;
+        errorHandler = _errorHandler;
+        colocalArg = NULL;
+        allread = false;
+        ruid = 0;
         rowLimit = (unsigned __int64) -1;
         keyedLimit = (unsigned __int64) -1;
         contextCached = false;
@@ -3569,6 +3557,7 @@ public:
         buffers = new ChannelBuffer*[numChannels+1];
         memset(buffers, 0, (numChannels+1)*sizeof(ChannelBuffer *));
         parentExtractSize = 0;
+        rowManager = NULL;
         parentExtract = NULL;
         debugContext = NULL;
         mergeOrder = NULL;
@@ -3759,15 +3748,13 @@ public:
         return true;
     }
 
-    virtual void onCreate(IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
+    virtual void onCreate(IHThorArg *_colocalArg)
     {
-        errorHandler = _errorHandler;
-        ctx = _ctx;
         debugContext = ctx->queryDebugContext();
         colocalArg = _colocalArg;
         if (meta.needsSerializeDisk())
         {
-            deserializer.setown(meta.createDiskDeserializer(_ctx->queryCodeContext(), activity.queryId()));
+            deserializer.setown(meta.createDiskDeserializer(ctx->queryCodeContext(), activity.queryId()));
             rowAllocator.setown(ctx->queryCodeContext()->getRowAllocator(meta.queryOriginal(), activity.queryId()));
         }
         if (ctx->queryDebugContext() && ctx->queryDebugContext()->getExecuteSequentially())
@@ -3875,11 +3862,11 @@ public:
         onReset();
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
         // Make sure parent activity calls up the tree
         PointerArrayOf<IEngineRowStream> instreams;
-        IStrandJunction *junction = activity.getOutputStreams(idx, instreams, false, 0);
+        IStrandJunction *junction = activity.getOutputStreams(ctx, idx, instreams, false, 0);
         assertex (junction == NULL);
         // I return a single strand (we could change that sometime I guess...)
         streams.append(this);
@@ -4468,8 +4455,8 @@ class CSkippableRemoteResultAdaptor : public CRemoteResultAdaptor
     }
 
 public:
-    CSkippableRemoteResultAdaptor(const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled, bool _skipping) :
-        CRemoteResultAdaptor(_remoteId, _meta, _helper, _activity, _preserveOrder, _flowControlled)
+    CSkippableRemoteResultAdaptor(IRoxieSlaveContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled, bool _skipping) :
+        CRemoteResultAdaptor(_ctx, _errorHandler, _remoteId, _meta, _helper, _activity, _preserveOrder, _flowControlled)
     {
         skipping = _skipping;
         index = 0;
@@ -4537,8 +4524,8 @@ class CRoxieServerApplyActivity : public CRoxieServerInternalSinkActivity
     IHThorApplyArg &helper;
 
 public:
-    CRoxieServerApplyActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper((IHThorApplyArg &) basehelper)
+    CRoxieServerApplyActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, 0), helper((IHThorApplyArg &) basehelper)
     {
     }
 
@@ -4567,9 +4554,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerApplyActivity(this, _probeManager);
+        return new CRoxieServerApplyActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -4588,8 +4575,8 @@ IRoxieServerActivityFactory *createRoxieServerApplyActivityFactory(unsigned _id,
 class CRoxieServerNullActivity : public CRoxieServerActivity
 {
 public:
-    CRoxieServerNullActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerNullActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
     }
 
@@ -4600,9 +4587,9 @@ public:
 
 };
 
-IRoxieServerActivity * createRoxieServerNullActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+IRoxieServerActivity * createRoxieServerNullActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
 {
-    return new CRoxieServerNullActivity(_factory, _probeManager);
+    return new CRoxieServerNullActivity(_ctx, _factory, _probeManager);
 }
 
 class CRoxieServerNullActivityFactory : public CRoxieServerActivityFactory
@@ -4613,9 +4600,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerNullActivity(this, _probeManager);
+        return new CRoxieServerNullActivity(_ctx, this, _probeManager);
     }
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
     {
@@ -4633,8 +4620,8 @@ IRoxieServerActivityFactory *createRoxieServerNullActivityFactory(unsigned _id, 
 class CRoxieServerPassThroughActivity : public CRoxieServerActivity
 {
 public:
-    CRoxieServerPassThroughActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerPassThroughActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
     }
 
@@ -4676,9 +4663,9 @@ public:
     }
 };
 
-IRoxieServerActivity * createRoxieServerPassThroughActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+IRoxieServerActivity * createRoxieServerPassThroughActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
 {
-    return new CRoxieServerPassThroughActivity(_factory, _probeManager);
+    return new CRoxieServerPassThroughActivity(_ctx, _factory, _probeManager);
 }
 
 //=================================================================================
@@ -4690,8 +4677,8 @@ protected:
     bool first;
 
 public:
-    CRoxieServerChildBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerChildBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
         eof = false;
         first = true;
@@ -4731,8 +4718,8 @@ class CRoxieServerChildIteratorActivity : public CRoxieServerChildBaseActivity
     IHThorChildIteratorArg &helper;
 
 public:
-    CRoxieServerChildIteratorActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerChildBaseActivity(_factory, _probeManager), helper((IHThorChildIteratorArg &) basehelper)
+    CRoxieServerChildIteratorActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerChildBaseActivity(_ctx, _factory, _probeManager), helper((IHThorChildIteratorArg &) basehelper)
     {
     }
 
@@ -4784,9 +4771,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerChildIteratorActivity(this, _probeManager);
+        return new CRoxieServerChildIteratorActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -4802,8 +4789,8 @@ class CRoxieServerChildNormalizeActivity : public CRoxieServerChildBaseActivity
     IHThorChildNormalizeArg &helper;
 
 public:
-    CRoxieServerChildNormalizeActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerChildBaseActivity(_factory, _probeManager), helper((IHThorChildNormalizeArg &) basehelper)
+    CRoxieServerChildNormalizeActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerChildBaseActivity(_ctx, _factory, _probeManager), helper((IHThorChildNormalizeArg &) basehelper)
     {
     }
 
@@ -4860,9 +4847,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerChildNormalizeActivity(this, _probeManager);
+        return new CRoxieServerChildNormalizeActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -4878,8 +4865,8 @@ class CRoxieServerChildAggregateActivity : public CRoxieServerChildBaseActivity
     IHThorChildAggregateArg &helper;
 
 public:
-    CRoxieServerChildAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerChildBaseActivity(_factory, _probeManager), helper((IHThorChildAggregateArg &) basehelper)
+    CRoxieServerChildAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerChildBaseActivity(_ctx, _factory, _probeManager), helper((IHThorChildAggregateArg &) basehelper)
     {
     }
 
@@ -4910,9 +4897,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerChildAggregateActivity(this, _probeManager);
+        return new CRoxieServerChildAggregateActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -4930,8 +4917,8 @@ class CRoxieServerChildGroupAggregateActivity : public CRoxieServerChildBaseActi
 
 public:
     IMPLEMENT_IINTERFACE
-    CRoxieServerChildGroupAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerChildBaseActivity(_factory, _probeManager), helper((IHThorChildGroupAggregateArg &) basehelper),
+    CRoxieServerChildGroupAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerChildBaseActivity(_ctx, _factory, _probeManager), helper((IHThorChildGroupAggregateArg &) basehelper),
           aggregated(helper, helper)
     {
     }
@@ -4986,9 +4973,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerChildGroupAggregateActivity(this, _probeManager);
+        return new CRoxieServerChildGroupAggregateActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -5007,8 +4994,8 @@ class CRoxieServerChildThroughNormalizeActivity : public CRoxieServerChildBaseAc
     bool ok;
 
 public:
-    CRoxieServerChildThroughNormalizeActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerChildBaseActivity(_factory, _probeManager), helper((IHThorChildThroughNormalizeArg &) basehelper)
+    CRoxieServerChildThroughNormalizeActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerChildBaseActivity(_ctx, _factory, _probeManager), helper((IHThorChildThroughNormalizeArg &) basehelper)
     {
         lastInput = NULL;
         numProcessedLastGroup = 0;
@@ -5088,9 +5075,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerChildThroughNormalizeActivity(this, _probeManager);
+        return new CRoxieServerChildThroughNormalizeActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -5106,8 +5093,8 @@ class CRoxieServerDistributionActivity : public CRoxieServerInternalSinkActivity
     IHThorDistributionArg &helper;
 
 public:
-    CRoxieServerDistributionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper((IHThorDistributionArg &)basehelper)
+    CRoxieServerDistributionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, 0), helper((IHThorDistributionArg &)basehelper)
     {
     }
 
@@ -5147,9 +5134,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerDistributionActivity(this, _probeManager);
+        return new CRoxieServerDistributionActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -5172,8 +5159,8 @@ class CRoxieServerLinkedRawIteratorActivity : public CRoxieServerActivity
     IHThorLinkedRawIteratorArg &helper;
 
 public:
-    CRoxieServerLinkedRawIteratorActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorLinkedRawIteratorArg &) basehelper)
+    CRoxieServerLinkedRawIteratorActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorLinkedRawIteratorArg &) basehelper)
     {
     }
 
@@ -5199,9 +5186,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerLinkedRawIteratorActivity(this, _probeManager);
+        return new CRoxieServerLinkedRawIteratorActivity(_ctx, this, _probeManager);
     }
 
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -5220,8 +5207,8 @@ IRoxieServerActivityFactory *createRoxieServerLinkedRawIteratorActivityFactory(u
 class CRoxieServerDatasetResultActivity : public CRoxieServerActivity
 {
 public:
-    CRoxieServerDatasetResultActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerDatasetResultActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
     }
 
@@ -5282,9 +5269,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerDatasetResultActivity(this, _probeManager);
+        return new CRoxieServerDatasetResultActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -5308,8 +5295,8 @@ class CRoxieServerInlineTableActivity : public CRoxieServerActivity
     __uint64 numRows;
 
 public:
-    CRoxieServerInlineTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorInlineTableArg &) basehelper)
+    CRoxieServerInlineTableActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorInlineTableArg &) basehelper)
     {
         curRow = 0;
         numRows = 0;
@@ -5355,9 +5342,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerInlineTableActivity(this, _probeManager);
+        return new CRoxieServerInlineTableActivity(_ctx, this, _probeManager);
     }
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
     {
@@ -5378,14 +5365,14 @@ class CRoxieServerWorkUnitReadActivity : public CRoxieServerActivity
     CriticalSection readerCrit;
     Owned<IWorkUnitRowReader> wuReader;
 public:
-    CRoxieServerWorkUnitReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorWorkunitReadArg &)basehelper)
+    CRoxieServerWorkUnitReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorWorkunitReadArg &)basehelper)
     {
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
         if (!ctx->queryServerContext())
         {
             throw MakeStringException(ROXIE_INTERNAL_ERROR, "Workunit read activity cannot be executed in slave context");
@@ -5443,9 +5430,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerWorkUnitReadActivity(this, _probeManager);
+        return new CRoxieServerWorkUnitReadActivity(_ctx, this, _probeManager);
     }
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
     {
@@ -5476,15 +5463,15 @@ public:
     CSafeRoxieInput(unsigned _sourceIdx, IFinalRoxieInput * _input) : input(_input), inputStream(NULL), sourceIdx(_sourceIdx) {}
     IMPLEMENT_IINTERFACE
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
-        connectOutputStreams(flags);
+        connectOutputStreams(ctx, flags);
         streams.append(this);
         return NULL;
     }
-    void connectOutputStreams(unsigned flags)
+    void connectOutputStreams(IRoxieSlaveContext *ctx, unsigned flags)
     {
-        inputStream.set(connectSingleStream(input, sourceIdx, junction, flags));
+        inputStream.set(connectSingleStream(ctx, input, sourceIdx, junction, flags));
     }
     virtual IOutputMetaData * queryOutputMeta() const
     {
@@ -5567,7 +5554,7 @@ public:
         throwUnexpected();
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
         assertex(!idx);
         streams.append(this);
@@ -5654,14 +5641,14 @@ public:
         input = _input;
         sourceIdx = _sourceIdx;
     }
-    inline void connectOutputStreams(unsigned flags)
+    inline void connectOutputStreams(IRoxieSlaveContext *ctx, unsigned flags)
     {
-        stream = connectSingleStream(input, sourceIdx, junction, flags);
+        stream = connectSingleStream(ctx, input, sourceIdx, junction, flags);
     }
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
         assertex(idx == 0);
-        connectOutputStreams(flags);
+        connectOutputStreams(ctx, flags);
         streams.append(this);
         return NULL;
     }
@@ -5814,17 +5801,17 @@ class CRoxieServerLocalResultReadActivity : public CRoxieServerActivity
     unsigned sequence;
 
 public:
-    CRoxieServerLocalResultReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorLocalResultReadArg &)basehelper), graphId(_graphId)
+    CRoxieServerLocalResultReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorLocalResultReadArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
         sequence = 0;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        graph = static_cast<ILocalGraphEx *>(_ctx->queryCodeContext()->resolveLocalQuery(graphId));
+        CRoxieServerActivity::onCreate(_colocalParent);
+        graph = static_cast<ILocalGraphEx *>(ctx->queryCodeContext()->resolveLocalQuery(graphId));
         sequence = helper.querySequence();
     }
 
@@ -5878,9 +5865,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerLocalResultReadActivity(this, _probeManager, graphId);
+        return new CRoxieServerLocalResultReadActivity(_ctx, this, _probeManager, graphId);
     }
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
     {
@@ -5901,15 +5888,15 @@ class CRoxieServerLocalResultStreamReadActivity : public CRoxieServerActivity
     unsigned sequence;
 
 public:
-    CRoxieServerLocalResultStreamReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorLocalResultReadArg &)basehelper)
+    CRoxieServerLocalResultStreamReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorLocalResultReadArg &)basehelper)
     {
         sequence = 0;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
         sequence = helper.querySequence();
     }
 
@@ -5950,9 +5937,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerLocalResultStreamReadActivity(this, _probeManager);
+        return new CRoxieServerLocalResultStreamReadActivity(_ctx, this, _probeManager);
     }
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
     {
@@ -5974,18 +5961,18 @@ class CRoxieServerLocalResultWriteActivity : public CRoxieServerInternalSinkActi
     unsigned graphId;
 
 public:
-    CRoxieServerLocalResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorLocalResultWriteArg &)basehelper), graphId(_graphId)
+    CRoxieServerLocalResultWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _numOutputs)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _numOutputs), helper((IHThorLocalResultWriteArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
     }
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerInternalSinkActivity::onCreate(_ctx, _colocalParent);
-        graph = static_cast<ILocalGraphEx *>(_ctx->queryCodeContext()->resolveLocalQuery(graphId));
+        CRoxieServerInternalSinkActivity::onCreate(_colocalParent);
+        graph = static_cast<ILocalGraphEx *>(ctx->queryCodeContext()->resolveLocalQuery(graphId));
     }
 
     virtual void onExecute() 
@@ -6023,9 +6010,9 @@ public:
         Owned<IHThorLocalResultWriteArg> helper = (IHThorLocalResultWriteArg *) helperFactory();
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerLocalResultWriteActivity(this, _probeManager, graphId, usageCount);
+        return new CRoxieServerLocalResultWriteActivity(_ctx, this, _probeManager, graphId, usageCount);
     }
 
 };
@@ -6044,18 +6031,18 @@ class CRoxieServerDictionaryResultWriteActivity : public CRoxieServerInternalSin
     unsigned graphId;
 
 public:
-    CRoxieServerDictionaryResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _usageCount, unsigned _graphId)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _usageCount), helper((IHThorDictionaryResultWriteArg &)basehelper), graphId(_graphId)
+    CRoxieServerDictionaryResultWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _usageCount, unsigned _graphId)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _usageCount), helper((IHThorDictionaryResultWriteArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
     }
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerInternalSinkActivity::onCreate(_ctx, _colocalParent);
-        graph = static_cast<ILocalGraphEx *>(_ctx->queryCodeContext()->resolveLocalQuery(graphId));
+        CRoxieServerInternalSinkActivity::onCreate(_colocalParent);
+        graph = static_cast<ILocalGraphEx *>(ctx->queryCodeContext()->resolveLocalQuery(graphId));
     }
 
     virtual void onExecute()
@@ -6101,9 +6088,9 @@ public:
         isInternal = true;
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerDictionaryResultWriteActivity(this, _probeManager, usageCount, graphId);
+        return new CRoxieServerDictionaryResultWriteActivity(_ctx, this, _probeManager, usageCount, graphId);
     }
 };
 
@@ -6127,17 +6114,17 @@ protected:
     unsigned sequence;
 
 public:
-    CRoxieServerGraphLoopResultReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorGraphLoopResultReadArg &)basehelper), graphId(_graphId)
+    CRoxieServerGraphLoopResultReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorGraphLoopResultReadArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
         sequence = 0;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        graph = static_cast<ILocalGraphEx *>(_ctx->queryCodeContext()->resolveLocalQuery(graphId));
+        CRoxieServerActivity::onCreate(_colocalParent);
+        graph = static_cast<ILocalGraphEx *>(ctx->queryCodeContext()->resolveLocalQuery(graphId));
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -6218,7 +6205,7 @@ public:
         //helper already initialised from the gatherIterationUsage() call.
         CRoxieServerActivity::connectOutputStreams(0);
         iterInput.set(processor.connectIterationOutput(helper.querySequence(), probeManager, probes, this, 0));
-        iterStream.set(connectSingleStream(iterInput, 0, iterJunction, 0));
+        iterStream.set(connectSingleStream(ctx, iterInput, 0, iterJunction, 0));
     }
 
     virtual IInputSteppingMeta * querySteppingMeta()
@@ -6239,8 +6226,8 @@ public:
 class CRoxieServerInternalGraphLoopResultReadActivity : public CRoxieServerGraphLoopResultReadActivity
 {
 public:
-    CRoxieServerInternalGraphLoopResultReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _sequence)
-        : CRoxieServerGraphLoopResultReadActivity(_factory, _probeManager, _graphId)
+    CRoxieServerInternalGraphLoopResultReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _sequence)
+        : CRoxieServerGraphLoopResultReadActivity(_ctx, _factory, _probeManager, _graphId)
     {
         sequence = _sequence;
     }
@@ -6274,9 +6261,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerGraphLoopResultReadActivity(this, _probeManager, graphId);
+        return new CRoxieServerGraphLoopResultReadActivity(_ctx, this, _probeManager, graphId);
     }
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
     {
@@ -6298,18 +6285,18 @@ class CRoxieServerGraphLoopResultWriteActivity : public CRoxieServerInternalSink
     unsigned graphId;
 
 public:
-    CRoxieServerGraphLoopResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorGraphLoopResultWriteArg &)basehelper), graphId(_graphId)
+    CRoxieServerGraphLoopResultWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _numOutputs)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _numOutputs), helper((IHThorGraphLoopResultWriteArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
     }
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerInternalSinkActivity::onCreate(_ctx, _colocalParent);
-        graph = static_cast<ILocalGraphEx *>(_ctx->queryCodeContext()->resolveLocalQuery(graphId));
+        CRoxieServerInternalSinkActivity::onCreate(_colocalParent);
+        graph = static_cast<ILocalGraphEx *>(ctx->queryCodeContext()->resolveLocalQuery(graphId));
     }
 
     virtual void onExecute() 
@@ -6382,9 +6369,9 @@ public:
         Owned<IHThorGraphLoopResultWriteArg> helper = (IHThorGraphLoopResultWriteArg *) helperFactory();
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerGraphLoopResultWriteActivity(this, _probeManager, graphId, usageCount);
+        return new CRoxieServerGraphLoopResultWriteActivity(_ctx, this, _probeManager, graphId, usageCount);
     }
 
 };
@@ -6405,8 +6392,8 @@ protected:
 
 public:
 
-    CRoxieServerDedupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorDedupArg &)basehelper)
+    CRoxieServerDedupActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorDedupArg &)basehelper)
     {
         numKept = 0;
         numToKeep = 0;
@@ -6427,8 +6414,8 @@ class CRoxieServerDedupKeepLeftActivity : public CRoxieServerDedupActivity
 
 public:
 
-    CRoxieServerDedupKeepLeftActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerDedupActivity(_factory, _probeManager)
+    CRoxieServerDedupKeepLeftActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerDedupActivity(_ctx, _factory, _probeManager)
     {
         prev = NULL;
         stepCompare = NULL;
@@ -6560,8 +6547,8 @@ class CRoxieServerDedupKeepRightActivity : public CRoxieServerDedupActivity
 
 public:
 
-    CRoxieServerDedupKeepRightActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerDedupActivity(_factory, _probeManager)
+    CRoxieServerDedupKeepRightActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerDedupActivity(_ctx, _factory, _probeManager)
     {
         kept = NULL;
         first = true;
@@ -6627,8 +6614,8 @@ class CRoxieServerDedupAllActivity : public CRoxieServerActivity
     ICompare *primaryCompare;
 
 public:
-    CRoxieServerDedupAllActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _keepLeft)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorDedupArg &)basehelper)
+    CRoxieServerDedupAllActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _keepLeft)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorDedupArg &)basehelper)
     {
         keepLeft = _keepLeft;
         primaryCompare = helper.queryComparePrimary();
@@ -6811,14 +6798,14 @@ public:
         keepLeft = helper->keepLeft();
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (compareAll)
-            return new CRoxieServerDedupAllActivity(this, _probeManager, keepLeft);
+            return new CRoxieServerDedupAllActivity(_ctx, this, _probeManager, keepLeft);
         else if (keepLeft)
-            return new CRoxieServerDedupKeepLeftActivity(this, _probeManager);
+            return new CRoxieServerDedupKeepLeftActivity(_ctx, this, _probeManager);
         else
-            return new CRoxieServerDedupKeepRightActivity(this, _probeManager);
+            return new CRoxieServerDedupKeepRightActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -6921,8 +6908,8 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
     } table;
 
 public:
-    CRoxieServerHashDedupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorHashDedupArg &)basehelper), table(helper, activityId)
+    CRoxieServerHashDedupActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorHashDedupArg &)basehelper), table(helper, activityId)
     {
         eof = false;
     }
@@ -6933,9 +6920,9 @@ public:
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
     }
 
-    virtual void onCreate(IRoxieSlaveContext *ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(ctx, colocalParent);
+        CRoxieServerActivity::onCreate(colocalParent);
         table.onCreate(ctx);
     }
 
@@ -6978,9 +6965,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerHashDedupActivity(this, _probeManager);
+        return new CRoxieServerHashDedupActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -7000,8 +6987,8 @@ class CRoxieServerRollupActivity : public CRoxieServerActivity
     bool readFirstRow;
 
 public:
-    CRoxieServerRollupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorRollupArg &)basehelper)
+    CRoxieServerRollupActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorRollupArg &)basehelper)
     {
         readFirstRow = false;
     }
@@ -7076,9 +7063,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerRollupActivity(this, _probeManager);
+        return new CRoxieServerRollupActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -7098,8 +7085,8 @@ class CRoxieServerNormalizeActivity : public CRoxieServerActivity
     unsigned numProcessedLastGroup;
 
 public:
-    CRoxieServerNormalizeActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorNormalizeArg &)basehelper)
+    CRoxieServerNormalizeActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorNormalizeArg &)basehelper)
     {
         buffer = NULL;
         numThisRow = 0;
@@ -7172,9 +7159,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerNormalizeActivity(this, _probeManager);
+        return new CRoxieServerNormalizeActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -7219,8 +7206,8 @@ class CRoxieServerNormalizeChildActivity : public CRoxieServerActivity
     }
 
 public:
-    CRoxieServerNormalizeChildActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorNormalizeChildArg &)basehelper)
+    CRoxieServerNormalizeChildActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorNormalizeChildArg &)basehelper)
     {
         buffer = NULL;
         cursor = NULL;
@@ -7294,9 +7281,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerNormalizeChildActivity(this, _probeManager);
+        return new CRoxieServerNormalizeChildActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -7334,8 +7321,8 @@ class CRoxieServerNormalizeLinkedChildActivity : public CRoxieServerActivity
     }
 
 public:
-    CRoxieServerNormalizeLinkedChildActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorNormalizeLinkedChildArg &)basehelper)
+    CRoxieServerNormalizeLinkedChildActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorNormalizeLinkedChildArg &)basehelper)
     {
         numProcessedLastGroup = 0;
     }
@@ -7394,9 +7381,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerNormalizeLinkedChildActivity(this, _probeManager);
+        return new CRoxieServerNormalizeLinkedChildActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -7418,16 +7405,16 @@ protected:
     unsigned sortFlags;
 
 public:
-    CRoxieServerSortActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, RoxieSortAlgorithm _sortAlgorithm, unsigned _sortFlags)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorSortArg &)basehelper), sortAlgorithm(_sortAlgorithm), sortFlags(_sortFlags)
+    CRoxieServerSortActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, RoxieSortAlgorithm _sortAlgorithm, unsigned _sortFlags)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorSortArg &)basehelper), sortAlgorithm(_sortAlgorithm), sortFlags(_sortFlags)
     {
         compare = helper.queryCompare();
         readInput = false;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
         if (sortAlgorithm==unknownSortAlgorithm)
             sorter.clear();
         else
@@ -7557,9 +7544,9 @@ public:
             sortAlgorithm = unknownSortAlgorithm;
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSortActivity(this, _probeManager, sortAlgorithm, sortFlags);
+        return new CRoxieServerSortActivity(_ctx, this, _probeManager, sortAlgorithm, sortFlags);
     }
 
     virtual const StatisticsMapping &queryStatsMapping() const
@@ -7611,8 +7598,8 @@ protected:
     unsigned prevIndex;
 
 public:
-    CRoxieServerQuantileActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _flags)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorQuantileArg &)basehelper), flags(_flags)
+    CRoxieServerQuantileActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _flags)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorQuantileArg &)basehelper), flags(_flags)
     {
         compare = helper.queryCompare();
         skew = 0.0;
@@ -7824,9 +7811,9 @@ public:
         flags = quantileHelper->getFlags();
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerQuantileActivity(this, _probeManager, flags);
+        return new CRoxieServerQuantileActivity(_ctx, this, _probeManager, flags);
     }
 };
 
@@ -7846,8 +7833,8 @@ class CRoxieServerSortedActivity : public CRoxieServerActivity
 
 public:
 
-    CRoxieServerSortedActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorSortedArg &)basehelper)
+    CRoxieServerSortedActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorSortedArg &)basehelper)
     {
         prev = NULL;
         compare = helper.queryCompare();
@@ -7931,9 +7918,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSortedActivity(this, _probeManager);
+        return new CRoxieServerSortedActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -8077,7 +8064,7 @@ public:
             parent->start(oid, parentExtractSize, parentExtract, paused);
         }
 
-        virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+        virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
         {
             parent->connectOutputStreams(flags);
             streams.append(this);
@@ -8161,8 +8148,8 @@ public:
     }
 
 public:
-    CRoxieServerThroughSpillActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerActivity(_factory, _probeManager), helper(basehelper), numOutputs(_numOutputs)
+    CRoxieServerThroughSpillActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper(basehelper), numOutputs(_numOutputs)
     {
         numOriginalOutputs = numOutputs;
         adaptors = new OutputAdaptor[numOutputs];
@@ -8426,9 +8413,9 @@ public:
         setNumOutputs(_numOutputs);
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerThroughSpillActivity(this, _probeManager, numOutputs);
+        return new CRoxieServerThroughSpillActivity(_ctx, this, _probeManager, numOutputs);
     }
 
 };
@@ -8455,9 +8442,9 @@ public:
         setNumOutputs(helper->numBranches());
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerThroughSpillActivity(this, _probeManager, numOutputs);
+        return new CRoxieServerThroughSpillActivity(_ctx, this, _probeManager, numOutputs);
     }
 
 };
@@ -8502,17 +8489,17 @@ class CRoxieServerPipeReadActivity : public CRoxieServerActivity
     Owned<IReadRowStream> readTransformer;
     bool groupSignalled;
 public:
-    CRoxieServerPipeReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorPipeReadArg &)basehelper)
+    CRoxieServerPipeReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorPipeReadArg &)basehelper)
     {
         groupSignalled = true;
     }
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
         rowDeserializer.setown(rowAllocator->createDiskDeserializer(ctx->queryCodeContext()));
     }
 
@@ -8614,8 +8601,8 @@ class CRoxieServerPipeThroughActivity : public CRoxieServerActivity, implements 
 
 public:
 
-    CRoxieServerPipeThroughActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorPipeThroughArg &)basehelper), puller(false)
+    CRoxieServerPipeThroughActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorPipeThroughArg &)basehelper), puller(false)
     {
         recreate = helper.recreateEachRow();
         groupSignalled = true;
@@ -8625,9 +8612,9 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
         rowSerializer.setown(inputMeta.createDiskSerializer(ctx->queryCodeContext(), activityId));
         rowDeserializer.setown(rowAllocator->createDiskDeserializer(ctx->queryCodeContext()));
         writeTransformer.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
@@ -8663,10 +8650,10 @@ public:
         inputMeta.set(_in->queryOutputMeta());
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
-        puller.connectOutputStreams(flags);
-        return CRoxieServerActivity::getOutputStreams(idx, streams, multiOk, flags);
+        puller.connectOutputStreams(ctx, flags);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -8825,8 +8812,8 @@ class CRoxieServerPipeWriteActivity : public CRoxieServerInternalSinkActivity
     bool recreate;
     bool inputExhausted;
 public:
-    CRoxieServerPipeWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorPipeWriteArg &)basehelper)
+    CRoxieServerPipeWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _numOutputs), helper((IHThorPipeWriteArg &)basehelper)
     {
         recreate = helper.recreateEachRow();
         firstRead = false;
@@ -8835,9 +8822,9 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
         inputMeta.set(input->queryOutputMeta());
         rowSerializer.setown(inputMeta.createDiskSerializer(ctx->queryCodeContext(), activityId));
         writeTransformer.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
@@ -8925,9 +8912,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerPipeReadActivity(this, _probeManager);
+        return new CRoxieServerPipeReadActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -8939,9 +8926,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerPipeThroughActivity(this, _probeManager);
+        return new CRoxieServerPipeThroughActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -8953,9 +8940,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerPipeWriteActivity(this, _probeManager, usageCount);
+        return new CRoxieServerPipeWriteActivity(_ctx, this, _probeManager, usageCount);
     }
 };
 
@@ -8981,8 +8968,8 @@ class CRoxieServerStreamedIteratorActivity : public CRoxieServerActivity
     Owned<IRowStream> rows;
 
 public:
-    CRoxieServerStreamedIteratorActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorStreamedIteratorArg &)basehelper)
+    CRoxieServerStreamedIteratorActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorStreamedIteratorArg &)basehelper)
     {
     }
 
@@ -9026,9 +9013,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerStreamedIteratorActivity(this, _probeManager);
+        return new CRoxieServerStreamedIteratorActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -9047,8 +9034,8 @@ class CRoxieServerFilterActivity : public CRoxieServerLateStartActivity
 
 public:
 
-    CRoxieServerFilterActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerLateStartActivity(_factory, _probeManager), helper((IHThorFilterArg &)basehelper)
+    CRoxieServerFilterActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerLateStartActivity(_ctx, _factory, _probeManager), helper((IHThorFilterArg &)basehelper)
     {
         anyThisGroup = false;
         stepCompare = NULL;
@@ -9179,9 +9166,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerFilterActivity(this, _probeManager);
+        return new CRoxieServerFilterActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -9200,8 +9187,8 @@ class CRoxieServerFilterGroupActivity : public CRoxieServerLateStartActivity
 
 public:
 
-    CRoxieServerFilterGroupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerLateStartActivity(_factory, _probeManager), helper((IHThorFilterGroupArg &)basehelper)
+    CRoxieServerFilterGroupActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerLateStartActivity(_ctx, _factory, _probeManager), helper((IHThorFilterGroupArg &)basehelper)
     {
         curIndex = 0;
         stepCompare = NULL;
@@ -9364,9 +9351,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerFilterGroupActivity(this, _probeManager);
+        return new CRoxieServerFilterGroupActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -9385,8 +9372,8 @@ class CRoxieServerSideEffectActivity : public CRoxieServerActivity
     bool executed;
 public:
 
-    CRoxieServerSideEffectActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorSideEffectArg &)basehelper)
+    CRoxieServerSideEffectActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorSideEffectArg &)basehelper)
     {
         executed = false;
     }
@@ -9455,9 +9442,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSideEffectActivity(this, _probeManager);
+        return new CRoxieServerSideEffectActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -9478,8 +9465,8 @@ class CRoxieServerActionActivity : public CRoxieServerInternalSinkActivity
     IHThorActionArg &helper;
 public:
 
-    CRoxieServerActionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorActionArg &)basehelper)
+    CRoxieServerActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _numOutputs), helper((IHThorActionArg &)basehelper)
     {
     }
 
@@ -9497,9 +9484,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerActionActivity(this, _probeManager, usageCount);
+        return new CRoxieServerActionActivity(_ctx, this, _probeManager, usageCount);
     }
 };
 
@@ -9521,8 +9508,8 @@ class CRoxieServerSampleActivity : public CRoxieServerActivity
 
 public:
 
-    CRoxieServerSampleActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorSampleArg &)basehelper)
+    CRoxieServerSampleActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorSampleArg &)basehelper)
     {
         numSamples = 0;
         numToSkip = 0;
@@ -9588,9 +9575,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSampleActivity(this, _probeManager);
+        return new CRoxieServerSampleActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -9610,8 +9597,8 @@ class CRoxieServerChooseSetsActivity : public CRoxieServerActivity
 
 public:
 
-    CRoxieServerChooseSetsActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorChooseSetsArg &)basehelper)
+    CRoxieServerChooseSetsActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorChooseSetsArg &)basehelper)
     {
         setCounts = NULL;
         numSets = 0;
@@ -9672,9 +9659,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerChooseSetsActivity(this, _probeManager);
+        return new CRoxieServerChooseSetsActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -9700,8 +9687,8 @@ protected:
 
 public:
 
-    CRoxieServerChooseSetsExActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorChooseSetsExArg &)basehelper)
+    CRoxieServerChooseSetsExActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorChooseSetsExArg &)basehelper)
     {
         setCounts = NULL;
         limits = NULL;
@@ -9777,7 +9764,7 @@ class CRoxieServerChooseSetsLastActivity : public CRoxieServerChooseSetsExActivi
 {
     unsigned * numToSkip;
 public:
-    CRoxieServerChooseSetsLastActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager) : CRoxieServerChooseSetsExActivity(_factory, _probeManager)
+    CRoxieServerChooseSetsLastActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager) : CRoxieServerChooseSetsExActivity(_ctx, _factory, _probeManager)
     {
         numToSkip = NULL;
     }
@@ -9824,7 +9811,7 @@ class CRoxieServerChooseSetsEnthActivity : public CRoxieServerChooseSetsExActivi
 {
     count_t * counter;
 public:
-    CRoxieServerChooseSetsEnthActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager) : CRoxieServerChooseSetsExActivity(_factory, _probeManager)
+    CRoxieServerChooseSetsEnthActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager) : CRoxieServerChooseSetsExActivity(_ctx, _factory, _probeManager)
     {
         counter = NULL;
     }
@@ -9872,9 +9859,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerChooseSetsEnthActivity(this, _probeManager);
+        return new CRoxieServerChooseSetsEnthActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -9891,9 +9878,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerChooseSetsLastActivity(this, _probeManager);
+        return new CRoxieServerChooseSetsLastActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -9914,8 +9901,8 @@ class CRoxieServerEnthActivity : public CRoxieServerActivity
 
 public:
 
-    CRoxieServerEnthActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorEnthArg &)basehelper)
+    CRoxieServerEnthActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorEnthArg &)basehelper)
     {
         eof = false;
         numerator = denominator = counter = 0;
@@ -9973,9 +9960,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerEnthActivity(this, _probeManager);
+        return new CRoxieServerEnthActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -9994,8 +9981,8 @@ class CRoxieServerAggregateActivity : public CRoxieServerActivity
     bool abortEarly;
 
 public:
-    CRoxieServerAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorAggregateArg &)basehelper)
+    CRoxieServerAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorAggregateArg &)basehelper)
     {
         eof = false;
         isInputGrouped = false;
@@ -10063,9 +10050,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerAggregateActivity(this, _probeManager);
+        return new CRoxieServerAggregateActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -10087,8 +10074,8 @@ class CRoxieServerHashAggregateActivity : public CRoxieServerActivity
     bool gathered;
     bool isGroupedAggregate;
 public:
-    CRoxieServerHashAggregateActivity(const IRoxieServerActivityFactory *_factory, bool _isGroupedAggregate, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorHashAggregateArg &)basehelper),
+    CRoxieServerHashAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, bool _isGroupedAggregate, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorHashAggregateArg &)basehelper),
           isGroupedAggregate(_isGroupedAggregate),
           aggregated(helper, helper)
     {
@@ -10168,9 +10155,9 @@ public:
         isGroupedAggregate = _graphNode.getPropBool("att[@name='grouped']/@value");
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerHashAggregateActivity(this, isGroupedAggregate, _probeManager);
+        return new CRoxieServerHashAggregateActivity(_ctx, this, isGroupedAggregate, _probeManager);
     }
 protected:
     bool isGroupedAggregate;
@@ -10189,8 +10176,8 @@ class CRoxieServerDegroupActivity : public CRoxieServerActivity
     bool eof;
 
 public:
-    CRoxieServerDegroupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorDegroupArg &)basehelper)
+    CRoxieServerDegroupActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorDegroupArg &)basehelper)
     {
         eof = false;
     }
@@ -10253,9 +10240,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerDegroupActivity(this, _probeManager);
+        return new CRoxieServerDegroupActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -10276,8 +10263,8 @@ class CRoxieServerSpillReadActivity : public CRoxieServerActivity
     unsigned __int64 choosenLimit;
 
 public:
-    CRoxieServerSpillReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorDiskReadArg &)basehelper)
+    CRoxieServerSpillReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorDiskReadArg &)basehelper)
     {
         needTransform = helper.needTransform();
         rowLimit = (unsigned __int64) -1;
@@ -10384,9 +10371,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSpillReadActivity(this, _probeManager);
+        return new CRoxieServerSpillReadActivity(_ctx, this, _probeManager);
     }
 
     virtual void addDependency(unsigned source, ThorActivityKind sourceKind, unsigned sourceIdx, int controlId, const char *edgeId)
@@ -10408,8 +10395,8 @@ IRoxieServerActivityFactory *createRoxieServerSpillReadActivityFactory(unsigned 
 class CRoxieServerSpillWriteActivity : public CRoxieServerActivity
 {
 public:
-    CRoxieServerSpillWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerSpillWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
     }
 
@@ -10519,8 +10506,8 @@ protected:
     }
 
 public:
-    CRoxieServerDiskWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper((IHThorDiskWriteArg &)basehelper)
+    CRoxieServerDiskWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, 0), helper((IHThorDiskWriteArg &)basehelper)
     {
         extend = ((helper.getFlags() & TDWextend) != 0);
         overwrite = ((helper.getFlags() & TDWoverwrite) != 0);
@@ -10706,8 +10693,8 @@ class CRoxieServerCsvWriteActivity : public CRoxieServerDiskWriteActivity
     CSVOutputStream csvOutput;
 
 public:
-    CRoxieServerCsvWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerDiskWriteActivity(_factory, _probeManager), csvHelper(static_cast<IHThorCsvWriteArg &>(helper))
+    CRoxieServerCsvWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerDiskWriteActivity(_ctx, _factory, _probeManager), csvHelper(static_cast<IHThorCsvWriteArg &>(helper))
     {
         csvOutput.init(csvHelper.queryCsvParameters(), false);
     }
@@ -10780,8 +10767,8 @@ class CRoxieServerXmlWriteActivity : public CRoxieServerDiskWriteActivity
     unsigned footerLength;
 
 public:
-    CRoxieServerXmlWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, ThorActivityKind _kind)
-        : CRoxieServerDiskWriteActivity(_factory, _probeManager), xmlHelper(static_cast<IHThorXmlWriteArg &>(helper)), kind(_kind), headerLength(0), footerLength(0)
+    CRoxieServerXmlWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, ThorActivityKind _kind)
+        : CRoxieServerDiskWriteActivity(_ctx, _factory, _probeManager), xmlHelper(static_cast<IHThorXmlWriteArg &>(helper)), kind(_kind), headerLength(0), footerLength(0)
     {
     }
 
@@ -10877,24 +10864,24 @@ public:
             assertex(numOutputs == 0);
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         switch (numOutputs)
         {
         case 0:
             switch (kind)
             {
-            case TAKdiskwrite: return new CRoxieServerDiskWriteActivity(this, _probeManager);
-            case TAKcsvwrite: return new CRoxieServerCsvWriteActivity(this, _probeManager);
+            case TAKdiskwrite: return new CRoxieServerDiskWriteActivity(_ctx, this, _probeManager);
+            case TAKcsvwrite: return new CRoxieServerCsvWriteActivity(_ctx, this, _probeManager);
             case TAKxmlwrite:
             case TAKjsonwrite:
-                return new CRoxieServerXmlWriteActivity(this, _probeManager, kind);
+                return new CRoxieServerXmlWriteActivity(_ctx, this, _probeManager, kind);
             };
             throwUnexpected();
         case 1:
-            return new CRoxieServerSpillWriteActivity(this, _probeManager);
+            return new CRoxieServerSpillWriteActivity(_ctx, this, _probeManager);
         default:
-            return new CRoxieServerThroughSpillActivity(this, _probeManager, numOutputs);
+            return new CRoxieServerThroughSpillActivity(_ctx, this, _probeManager, numOutputs);
         }
     }
 
@@ -11025,8 +11012,8 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     }
 
 public:
-    CRoxieServerIndexWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper(static_cast<IHThorIndexWriteArg &>(basehelper))
+    CRoxieServerIndexWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, 0), helper(static_cast<IHThorIndexWriteArg &>(basehelper))
     {
         overwrite = ((helper.getFlags() & TIWoverwrite) != 0);
         reccount = 0;
@@ -11249,9 +11236,9 @@ public:
         setNumOutputs(0);
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerIndexWriteActivity(this, _probeManager);
+        return new CRoxieServerIndexWriteActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -11351,8 +11338,8 @@ class CRoxieServerJoinActivity : public CRoxieServerTwoInputActivity
     }
 
 public:
-    CRoxieServerJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _forceSpill)
-        : CRoxieServerTwoInputActivity(_factory, _probeManager), helper((IHThorJoinArg &)basehelper), forceSpill(_forceSpill)
+    CRoxieServerJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _forceSpill)
+        : CRoxieServerTwoInputActivity(_ctx, _factory, _probeManager), helper((IHThorJoinArg &)basehelper), forceSpill(_forceSpill)
     {
         // MORE - some of this should be done in factory
         unsigned joinFlags = helper.getJoinFlags();
@@ -11455,7 +11442,7 @@ public:
     {
         if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
-            puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - can't ask context for parallelJoinPreload as context is not yet set up.
+            puller.setown(new CRoxieServerReadAheadInput(ctx, ctx->queryOptions().parallelJoinPreload));
             puller->setInput(0, _sourceIdx, _in);
             _in = puller;
             _sourceIdx = 0;
@@ -11976,9 +11963,9 @@ public:
         input2idx = 0;
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerJoinActivity(this, _probeManager, forceSpill);
+        return new CRoxieServerJoinActivity(_ctx, this, _probeManager, forceSpill);
     }
 
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -12063,9 +12050,9 @@ public:
         puller.setInput(this, _sourceIdx, _in);
     }
 
-    void connectOutputStreams(unsigned flags)
+    void connectOutputStreams(IRoxieSlaveContext *ctx, unsigned flags)
     {
-        puller.connectOutputStreams(flags);
+        puller.connectOutputStreams(ctx, flags);
     }
 
     virtual void processRow(const void *row)
@@ -12151,8 +12138,8 @@ class CRoxieServerThreadedConcatActivity : public CRoxieServerActivity
     bool grouped;
 
 public:
-    CRoxieServerThreadedConcatActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _grouped, unsigned _numInputs)
-        : CRoxieServerActivity(_factory, _probeManager), grouped(_grouped)
+    CRoxieServerThreadedConcatActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _grouped, unsigned _numInputs)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), grouped(_grouped)
     {
         numInputs = _numInputs;
         eof = (numInputs==0);
@@ -12227,11 +12214,11 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
         ForEachItemIn(i, pullers)
-            pullers.item(i).connectOutputStreams(flags);
-        return CRoxieServerActivity::getOutputStreams(idx, streams, multiOk, flags);
+            pullers.item(i).connectOutputStreams(ctx, flags);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
     }
 
     virtual const void * nextRow()
@@ -12290,8 +12277,8 @@ class CRoxieServerOrderedConcatActivity : public CRoxieServerMultiInputActivity
     unsigned streamIdx;
 
 public:
-    CRoxieServerOrderedConcatActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _grouped, unsigned _numInputs)
-        : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs)
+    CRoxieServerOrderedConcatActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _grouped, unsigned _numInputs)
+        : CRoxieServerMultiInputActivity(_ctx, _factory, _probeManager, _numInputs)
     {
         eogSeen = false;
         anyThisGroup = false;
@@ -12367,12 +12354,12 @@ public:
         grouped = helper->queryOutputMeta()->isGrouped();
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (ordered || (_probeManager && _probeManager->queryDebugManager()))
-            return new CRoxieServerOrderedConcatActivity(this, _probeManager, grouped, numInputs());
+            return new CRoxieServerOrderedConcatActivity(_ctx, this, _probeManager, grouped, numInputs());
         else
-            return new CRoxieServerThreadedConcatActivity(this, _probeManager, grouped, numInputs());
+            return new CRoxieServerThreadedConcatActivity(_ctx, this, _probeManager, grouped, numInputs());
     }
 };
 
@@ -12391,8 +12378,8 @@ class CRoxieServerNonEmptyActivity : public CRoxieServerMultiInputBaseActivity
     bool foundInput;
 
 public:
-    CRoxieServerNonEmptyActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputBaseActivity(_factory, _probeManager, _numInputs)
+    CRoxieServerNonEmptyActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputBaseActivity(_ctx, _factory, _probeManager, _numInputs)
     {
         foundInput = false;
         selectedStream = NULL;
@@ -12478,9 +12465,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerNonEmptyActivity(this, _probeManager, numInputs());
+        return new CRoxieServerNonEmptyActivity(_ctx, this, _probeManager, numInputs());
     }
 
 };
@@ -12645,8 +12632,8 @@ class CRoxieServerMergeActivity : public CRoxieServerMultiInputActivity
     }
 
 public:
-    CRoxieServerMergeActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs), helper((IHThorMergeArg &)basehelper)
+    CRoxieServerMergeActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputActivity(_ctx, _factory, _probeManager, _numInputs), helper((IHThorMergeArg &)basehelper)
     {
         activeInputs = 0;
         first = true;
@@ -12707,9 +12694,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerMergeActivity(this, _probeManager, numInputs());
+        return new CRoxieServerMergeActivity(_ctx, this, _probeManager, numInputs());
     }
 };
 
@@ -12728,8 +12715,8 @@ class CRoxieServerRegroupActivity : public CRoxieServerMultiInputActivity
     unsigned __int64 numProcessedLastGroup;
 
 public:
-    CRoxieServerRegroupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs), helper((IHThorRegroupArg &)basehelper)
+    CRoxieServerRegroupActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputActivity(_ctx, _factory, _probeManager, _numInputs), helper((IHThorRegroupArg &)basehelper)
     {
         streamIndex = 0;
         eof = false;
@@ -12801,9 +12788,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerRegroupActivity(this, _probeManager, numInputs());
+        return new CRoxieServerRegroupActivity(_ctx, this, _probeManager, numInputs());
     }
 };
 
@@ -12820,8 +12807,8 @@ class CRoxieServerCombineActivity : public CRoxieServerMultiInputActivity
     unsigned __int64 numProcessedLastGroup;
 
 public:
-    CRoxieServerCombineActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs), helper((IHThorCombineArg &)basehelper)
+    CRoxieServerCombineActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputActivity(_ctx, _factory, _probeManager, _numInputs), helper((IHThorCombineArg &)basehelper)
     {
         numProcessedLastGroup = 0;
     }
@@ -12896,9 +12883,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerCombineActivity(this, _probeManager, numInputs());
+        return new CRoxieServerCombineActivity(_ctx, this, _probeManager, numInputs());
     }
 };
 
@@ -12915,8 +12902,8 @@ class CRoxieServerCombineGroupActivity : public CRoxieServerTwoInputActivity
     unsigned __int64 numProcessedLastGroup;
 
 public:
-    CRoxieServerCombineGroupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerTwoInputActivity(_factory, _probeManager), helper((IHThorCombineGroupArg &)basehelper)
+    CRoxieServerCombineGroupActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerTwoInputActivity(_ctx, _factory, _probeManager), helper((IHThorCombineGroupArg &)basehelper)
     {
         numProcessedLastGroup = 0;
     }
@@ -13016,9 +13003,9 @@ public:
         input2idx = 0;
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerCombineGroupActivity(this, _probeManager);
+        return new CRoxieServerCombineGroupActivity(_ctx, this, _probeManager);
     }
 
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -13062,8 +13049,8 @@ class CRoxieServerRollupGroupActivity : public CRoxieServerActivity
     bool eof;
 
 public:
-    CRoxieServerRollupGroupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), 
+    CRoxieServerRollupGroupActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
         helper((IHThorRollupGroupArg &)basehelper)
     {
         eof = false;
@@ -13134,9 +13121,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerRollupGroupActivity(this, _probeManager);
+        return new CRoxieServerRollupGroupActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -13154,8 +13141,8 @@ class CRoxieServerFilterProjectActivity : public CRoxieServerLateStartActivity
     unsigned __int64 recordCount;
 
 public:
-    CRoxieServerFilterProjectActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerLateStartActivity(_factory, _probeManager), helper((IHThorFilterProjectArg &)basehelper)
+    CRoxieServerFilterProjectActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerLateStartActivity(_ctx, _factory, _probeManager), helper((IHThorFilterProjectArg &)basehelper)
     {
         numProcessedLastGroup = 0;
         recordCount = 0;
@@ -13222,9 +13209,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerFilterProjectActivity(this, _probeManager);
+        return new CRoxieServerFilterProjectActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -13241,8 +13228,8 @@ class CRoxieServerProjectActivity : public CRoxieServerActivity
     unsigned __int64 recordCount;
 
 public:
-    CRoxieServerProjectActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _count)
-        : CRoxieServerActivity(_factory, _probeManager), 
+    CRoxieServerProjectActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _count)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
         count(_count)
     {
         numProcessedLastGroup = 0;
@@ -13313,9 +13300,9 @@ public:
         count = (_kind==TAKcountproject || _kind==TAKprefetchcountproject);
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerProjectActivity(this, _probeManager, count);
+        return new CRoxieServerProjectActivity(_ctx, this, _probeManager, count);
     }
 };
 
@@ -13361,8 +13348,8 @@ class CRoxieServerPrefetchProjectActivity : public CRoxieServerActivity, impleme
     CriticalSection pulledCrit;
 
 public:
-    CRoxieServerPrefetchProjectActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _count)
-        : CRoxieServerActivity(_factory, _probeManager), 
+    CRoxieServerPrefetchProjectActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _count)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
         helper((IHThorPrefetchProjectArg &) basehelper),
         puller(false),
         count(_count)
@@ -13388,10 +13375,10 @@ public:
         puller.setInput(this, _sourceIdx, _in);
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
-        puller.connectOutputStreams(flags);
-        return CRoxieServerActivity::getOutputStreams(idx, streams, multiOk, flags);
+        puller.connectOutputStreams(ctx, flags);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -13552,9 +13539,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerPrefetchProjectActivity(this, _probeManager, count);
+        return new CRoxieServerPrefetchProjectActivity(_ctx, this, _probeManager, count);
     }
 };
 
@@ -13612,8 +13599,8 @@ protected:
     Linked<IOutputMetaData> counterMeta;
 
 public:
-    CRoxieServerLoopActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _loopGraphId, IOutputMetaData * _counterMeta)
-        : CRoxieServerActivity(_factory, _probeManager), 
+    CRoxieServerLoopActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _loopGraphId, IOutputMetaData * _counterMeta)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
         helper((IHThorLoopArg &)basehelper), loopGraphId(_loopGraphId), counterMeta(_counterMeta)
     {
         eof = false;
@@ -13671,8 +13658,8 @@ class CRoxieServerSequentialLoopActivity : public CRoxieServerLoopActivity
     unsigned loopCounter;
 
 public:
-    CRoxieServerSequentialLoopActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _loopGraphId, IOutputMetaData * _counterMeta)
-        : CRoxieServerLoopActivity(_factory, _probeManager, _loopGraphId, _counterMeta)
+    CRoxieServerSequentialLoopActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _loopGraphId, IOutputMetaData * _counterMeta)
+        : CRoxieServerLoopActivity(_ctx, _factory, _probeManager, _loopGraphId, _counterMeta)
     {
         curStream = NULL;
         loopCounter = 0;
@@ -13681,10 +13668,10 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerLoopActivity::onCreate(_ctx, _colocalParent);
-        loopQuery.set(_ctx->queryChildGraph(loopGraphId));
+        CRoxieServerLoopActivity::onCreate(_colocalParent);
+        loopQuery.set(ctx->queryChildGraph(loopGraphId));
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -13918,7 +13905,7 @@ public:
 
     void connectOutputStreams(unsigned flags)
     {
-        safeInput->connectOutputStreams(flags);
+        safeInput->connectOutputStreams(ctx, flags);
     }
 
     IFinalRoxieInput *queryInput() const
@@ -13967,8 +13954,8 @@ protected:
     }
 
 public:
-    CRoxieServerParallelLoopActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _loopGraphId, IOutputMetaData * _counterMeta)
-        : CRoxieServerLoopActivity(_factory, _probeManager, _loopGraphId, _counterMeta),
+    CRoxieServerParallelLoopActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _loopGraphId, IOutputMetaData * _counterMeta)
+        : CRoxieServerLoopActivity(_ctx, _factory, _probeManager, _loopGraphId, _counterMeta),
           readySpace(parallelLoopFlowLimit)
     {
         probeManager = _probeManager;
@@ -13976,10 +13963,10 @@ public:
         sizeNumParallel = 0;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        executor.onCreate(_ctx);
+        CRoxieServerActivity::onCreate(_colocalParent);
+        executor.onCreate(ctx);
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -14006,10 +13993,10 @@ public:
         executor.setInput(this, _sourceIdx, _in, flags);
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
         executor.connectOutputStreams(flags);
-        return CRoxieServerActivity::getOutputStreams(idx, streams, multiOk, flags);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -14248,7 +14235,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
     }
 
     Owned<IStrandJunction> curJunction;
-    IEngineRowStream *curStream = connectSingleStream(curInput, inputIdx, curJunction, 0);
+    IEngineRowStream *curStream = connectSingleStream(ctx, curInput, inputIdx, curJunction, 0);
     try
     {
         curInput->start(savedParentExtractSize, savedParentExtract, false);
@@ -14348,12 +14335,12 @@ public:
         counterMeta.setown(new CCounterRowMetaData);
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (flags & IHThorLoopArg::LFparallel)
-            return new CRoxieServerParallelLoopActivity(this, _probeManager, loopGraphId, counterMeta);
+            return new CRoxieServerParallelLoopActivity(_ctx, this, _probeManager, loopGraphId, counterMeta);
         else
-            return new CRoxieServerSequentialLoopActivity(this, _probeManager, loopGraphId, counterMeta);
+            return new CRoxieServerSequentialLoopActivity(_ctx, this, _probeManager, loopGraphId, counterMeta);
     }
 };
 
@@ -14375,8 +14362,8 @@ protected:
     Linked<IOutputMetaData> counterMeta;
 
 public:
-    CRoxieServerGraphLoopActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _GraphGraphId, IOutputMetaData * _counterMeta)
-        : CRoxieServerActivity(_factory, _probeManager), 
+    CRoxieServerGraphLoopActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _GraphGraphId, IOutputMetaData * _counterMeta)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
         helper((IHThorGraphLoopArg &)basehelper), loopGraphId(_GraphGraphId), counterMeta(_counterMeta)
     {
         flags = helper.getFlags();
@@ -14429,16 +14416,16 @@ class CRoxieServerSequentialGraphLoopActivity : public CRoxieServerGraphLoopActi
     bool evaluated;
 
 public:
-    CRoxieServerSequentialGraphLoopActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _GraphGraphId, IOutputMetaData * _counterMeta)
-        : CRoxieServerGraphLoopActivity(_factory, _probeManager, _GraphGraphId, _counterMeta)
+    CRoxieServerSequentialGraphLoopActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _GraphGraphId, IOutputMetaData * _counterMeta)
+        : CRoxieServerGraphLoopActivity(_ctx, _factory, _probeManager, _GraphGraphId, _counterMeta)
     {
         evaluated = false;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerGraphLoopActivity::onCreate(_ctx, _colocalParent);
-        GraphQuery.set(_ctx->queryChildGraph(loopGraphId));
+        CRoxieServerGraphLoopActivity::onCreate(_colocalParent);
+        GraphQuery.set(ctx->queryChildGraph(loopGraphId));
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -14556,8 +14543,8 @@ public:
         if (numUses > 1)
         {
             factory.setown(createRoxieServerThroughSpillActivityFactory(sourceAct->queryFactory()->queryQueryFactory(), createGraphOutputSplitter, numUses));
-            IRoxieServerActivity *splitter =  factory->createActivity(NULL);
-            splitter->onCreate(ctx, NULL);
+            IRoxieServerActivity *splitter = factory->createActivity(ctx, NULL);
+            splitter->onCreate(NULL);
             IFinalRoxieInput *input = sourceAct->queryOutput(sourceIdx);
             if (probeManager)
             {
@@ -14609,8 +14596,8 @@ class CRoxieServerParallelGraphLoopActivity : public CRoxieServerGraphLoopActivi
     IArrayOf<IRoxieProbe> probes;
 
 public:
-    CRoxieServerParallelGraphLoopActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _GraphGraphId, IOutputMetaData * _counterMeta)
-        : CRoxieServerGraphLoopActivity(_factory, _probeManager, _GraphGraphId, _counterMeta), probeManager(_probeManager)
+    CRoxieServerParallelGraphLoopActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _GraphGraphId, IOutputMetaData * _counterMeta)
+        : CRoxieServerGraphLoopActivity(_ctx, _factory, _probeManager, _GraphGraphId, _counterMeta), probeManager(_probeManager)
     {
         inputExtractMapper.setown(new CExtractMapperInput);
         resultInput = NULL;
@@ -14618,10 +14605,10 @@ public:
         createLoopCounter = 0;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerGraphLoopActivity::onCreate(_ctx, _colocalParent);
-        childGraph.set(_ctx->queryChildGraph(loopGraphId));
+        CRoxieServerGraphLoopActivity::onCreate(_colocalParent);
+        childGraph.set(ctx->queryChildGraph(loopGraphId));
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -14637,7 +14624,7 @@ public:
 
     virtual void connectOutputStreams(unsigned flags)
     {
-        inputExtractMapper->connectOutputStreams(flags);
+        inputExtractMapper->connectOutputStreams(ctx, flags);
         CRoxieServerActivity::connectOutputStreams(flags);
     }
 
@@ -14699,7 +14686,7 @@ public:
 
         for (createLoopCounter=1; createLoopCounter <= maxIterations; createLoopCounter++)
         {
-            IRoxieServerChildGraph * graph = childGraph->createGraphLoopInstance(createLoopCounter, parentExtractSize, parentExtract, *this);
+            IRoxieServerChildGraph * graph = childGraph->createGraphLoopInstance(ctx, createLoopCounter, parentExtractSize, parentExtract, *this);
             graph->beforeExecute();
             iterationGraphs.append(*graph);
             graph->gatherIterationUsage(*this);
@@ -14713,7 +14700,7 @@ public:
         ForEachItemIn(i2, iterationGraphs)
             iterationGraphs.item(i2).associateIterationOutputs(*this);
         resultInput = outputs.tos().connectOutput(probeManager, probes, this, 0);
-        resultStream = connectSingleStream(resultInput, 0, resultJunction, 0);
+        resultStream = connectSingleStream(ctx, resultInput, 0, resultJunction, 0);
     }
 
     void createSplitters(IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes)
@@ -14766,12 +14753,12 @@ public:
         counterMeta.setown(new CCounterRowMetaData);
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (kind == TAKparallelgraphloop)
-            return new CRoxieServerParallelGraphLoopActivity(this, _probeManager, loopGraphId, counterMeta);
+            return new CRoxieServerParallelGraphLoopActivity(_ctx, this, _probeManager, loopGraphId, counterMeta);
         else
-            return new CRoxieServerSequentialGraphLoopActivity(this, _probeManager, loopGraphId, counterMeta);
+            return new CRoxieServerSequentialGraphLoopActivity(_ctx, this, _probeManager, loopGraphId, counterMeta);
     }
 };
 
@@ -14827,13 +14814,13 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
         }
 
-        virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+        virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
         {
             if (!oid)  // Only need to set up once
             {
                 parent->connectOutputStreams(flags);  // To handle dependencies etc
             }
-            return CExtractMapperInput::getOutputStreams(0, streams, multiOk, flags);
+            return CExtractMapperInput::getOutputStreams(ctx, 0, streams, multiOk, flags);
         }
 
 
@@ -14876,8 +14863,8 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
     const LibraryCallFactoryExtra & extra;
 
 public:
-    CRoxieServerLibraryCallActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs, unsigned _numOutputs, const LibraryCallFactoryExtra & _extra)
-        : CRoxieServerActivity(_factory, _probeManager),
+    CRoxieServerLibraryCallActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs, unsigned _numOutputs, const LibraryCallFactoryExtra & _extra)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
         helper((IHThorLibraryCallArg &)basehelper), extra(_extra)
     {
         numInputs = _numInputs;
@@ -14912,11 +14899,11 @@ public:
         delete [] outputUsed;
     }
  
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        libraryGraph.setown(_ctx->getLibraryGraph(extra, this));
-        libraryGraph->onCreate(_ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
+        libraryGraph.setown(ctx->getLibraryGraph(extra, this));
+        libraryGraph->onCreate(_colocalParent);
 
         //Now map the inputs and outputs to the adapters
         IRoxieServerChildGraph * graph = libraryGraph->queryLoopGraph();
@@ -14928,7 +14915,7 @@ public:
             unsigned outputIndex = extra.outputs.item(i2);
             Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+outputIndex);
             outputAdaptors[i2].setInput(0, output);   // MORE - no idea if this 0 is right??
-            outputAdaptors[i2].connectOutputStreams(0);
+            outputAdaptors[i2].connectOutputStreams(ctx, 0);
         }
     }
 
@@ -15105,9 +15092,9 @@ public:
         setNumOutputs(extra.outputs.ordinality());
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerLibraryCallActivity(this, _probeManager, numInputs(), numOutputs, extra);
+        return new CRoxieServerLibraryCallActivity(_ctx, this, _probeManager, numInputs(), numOutputs, extra);
     }
 
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -15145,8 +15132,8 @@ protected:
     PointerArrayOf<IEngineRowStream> selectedStreams;
 
 public:
-    CRoxieServerNWayInputBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputBaseActivity(_factory, _probeManager, _numInputs)
+    CRoxieServerNWayInputBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputBaseActivity(_ctx, _factory, _probeManager, _numInputs)
     {
     }
 
@@ -15210,8 +15197,8 @@ class CRoxieServerNWayInputActivity : public CRoxieServerNWayInputBaseActivity
 {
     IHThorNWayInputArg & helper;
 public:
-    CRoxieServerNWayInputActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerNWayInputBaseActivity(_factory, _probeManager, _numInputs), helper((IHThorNWayInputArg &)basehelper)
+    CRoxieServerNWayInputActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerNWayInputBaseActivity(_ctx, _factory, _probeManager, _numInputs), helper((IHThorNWayInputArg &)basehelper)
     {
     }
 
@@ -15269,9 +15256,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerNWayInputActivity(this, _probeManager, numInputs());
+        return new CRoxieServerNWayInputActivity(_ctx, this, _probeManager, numInputs());
     }
 };
 
@@ -15294,8 +15281,8 @@ class CRoxieServerNWayGraphLoopResultReadActivity : public CRoxieServerNWayInput
     rtlDataAttr selection;
 
 public:
-    CRoxieServerNWayGraphLoopResultReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
-        : CRoxieServerNWayInputBaseActivity(_factory, _probeManager, 0), helper((IHThorNWayGraphLoopResultReadArg &)basehelper)
+    CRoxieServerNWayGraphLoopResultReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
+        : CRoxieServerNWayInputBaseActivity(_ctx, _factory, _probeManager, 0), helper((IHThorNWayGraphLoopResultReadArg &)basehelper)
     {
         grouped = helper.isGrouped();
         graphId = _graphId;
@@ -15321,12 +15308,12 @@ public:
             IProbeManager * probeManager = NULL;        // MORE!!
             for (unsigned i = 0; i < max; i++)
             {
-                CRoxieServerActivity * resultInput = new CRoxieServerInternalGraphLoopResultReadActivity(factory, probeManager, graphId, selections[i]);
+                CRoxieServerActivity * resultInput = new CRoxieServerInternalGraphLoopResultReadActivity(ctx, factory, probeManager, graphId, selections[i]);
                 resultReaders.append(*resultInput);
                 selectedInputs.append(resultInput);
-                resultInput->onCreate(ctx, colocalParent);
+                resultInput->onCreate(colocalParent);
                 resultInput->start(parentExtractSize, parentExtract, paused);
-                selectedStreams.append(connectSingleStream(resultInput, 0, resultJunctions[i], i));
+                selectedStreams.append(connectSingleStream(ctx, resultInput, 0, resultJunctions[i], i));
             }
         }
         else
@@ -15364,7 +15351,7 @@ public:
         {
             IFinalRoxieInput *in = processor.connectIterationOutput(selections[i], probeManager, probes, this, i);
             selectedInputs.append(in);
-            selectedStreams.append(connectSingleStream(in, 0, resultJunctions[i], i));
+            selectedStreams.append(connectSingleStream(ctx, in, 0, resultJunctions[i], i));
         }
     }
 
@@ -15388,9 +15375,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerNWayGraphLoopResultReadActivity(this, _probeManager, graphId);
+        return new CRoxieServerNWayGraphLoopResultReadActivity(_ctx, this, _probeManager, graphId);
     }
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
     {
@@ -15501,8 +15488,8 @@ protected:
 class CRoxieServerNaryActivity : public CRoxieServerMultiInputActivity
 {
 public:
-    CRoxieServerNaryActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs)
+    CRoxieServerNaryActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputActivity(_ctx, _factory, _probeManager, _numInputs)
     {
     }
 
@@ -15522,7 +15509,7 @@ public:
         expandedJunctions = new Owned<IStrandJunction> [expandedInputs.length()];
         ForEachItemIn(idx, expandedInputs)
         {
-            expandedStreams.append(connectSingleStream(expandedInputs.item(idx), 0, expandedJunctions[idx], 0));  // MORE - is the index 0 right?
+            expandedStreams.append(connectSingleStream(ctx, expandedInputs.item(idx), 0, expandedJunctions[idx], 0));  // MORE - is the index 0 right?
         }
     }
 
@@ -15583,8 +15570,8 @@ protected:
 class CRoxieServerNWayMergeActivity : public CRoxieServerNaryActivity
 {
 public:
-    CRoxieServerNWayMergeActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerNaryActivity(_factory, _probeManager, _numInputs),
+    CRoxieServerNWayMergeActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerNaryActivity(_ctx, _factory, _probeManager, _numInputs),
         helper((IHThorNWayMergeArg &)basehelper) 
     {
         initializedMeta = false;
@@ -15665,9 +15652,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerNWayMergeActivity(this, _probeManager, numInputs());
+        return new CRoxieServerNWayMergeActivity(_ctx, this, _probeManager, numInputs());
     }
 };
 
@@ -15681,15 +15668,15 @@ IRoxieServerActivityFactory *createRoxieServerNWayMergeActivityFactory(unsigned 
 class CRoxieServerNWayMergeJoinActivity : public CRoxieServerNaryActivity
 {
 public:
-    CRoxieServerNWayMergeJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs, CMergeJoinProcessor & _processor)
-        : CRoxieServerNaryActivity(_factory, _probeManager, _numInputs),processor(_processor),
+    CRoxieServerNWayMergeJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs, CMergeJoinProcessor & _processor)
+        : CRoxieServerNaryActivity(_ctx, _factory, _probeManager, _numInputs),processor(_processor),
         helper((IHThorNWayMergeJoinArg &)basehelper) 
     {
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerNaryActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerNaryActivity::onCreate(_colocalParent);
         ICodeContext * codectx = ctx->queryCodeContext();
         inputAllocator.setown(codectx->getRowAllocator(helper.queryInputMeta(), activityId));
         outputAllocator.setown(codectx->getRowAllocator(helper.queryOutputMeta(), activityId));
@@ -15757,8 +15744,8 @@ protected:
 class CRoxieServerAndMergeJoinActivity : public CRoxieServerNWayMergeJoinActivity
 {
 public:
-    CRoxieServerAndMergeJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerNWayMergeJoinActivity(_factory, _probeManager, _numInputs, andProcessor), andProcessor(helper)
+    CRoxieServerAndMergeJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerNWayMergeJoinActivity(_ctx, _factory, _probeManager, _numInputs, andProcessor), andProcessor(helper)
     {
     }
 
@@ -15769,8 +15756,8 @@ protected:
 class CRoxieServerAndLeftMergeJoinActivity : public CRoxieServerNWayMergeJoinActivity
 {
 public:
-    CRoxieServerAndLeftMergeJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerNWayMergeJoinActivity(_factory, _probeManager, _numInputs, andLeftProcessor), andLeftProcessor(helper)
+    CRoxieServerAndLeftMergeJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerNWayMergeJoinActivity(_ctx, _factory, _probeManager, _numInputs, andLeftProcessor), andLeftProcessor(helper)
     {
     }
 
@@ -15781,8 +15768,8 @@ protected:
 class CRoxieServerMofNMergeJoinActivity : public CRoxieServerNWayMergeJoinActivity
 {
 public:
-    CRoxieServerMofNMergeJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerNWayMergeJoinActivity(_factory, _probeManager, _numInputs, mofnProcessor), mofnProcessor(helper)
+    CRoxieServerMofNMergeJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerNWayMergeJoinActivity(_ctx, _factory, _probeManager, _numInputs, mofnProcessor), mofnProcessor(helper)
     {
     }
 
@@ -15793,8 +15780,8 @@ protected:
 class CRoxieServerProximityJoinActivity : public CRoxieServerNWayMergeJoinActivity
 {
 public:
-    CRoxieServerProximityJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerNWayMergeJoinActivity(_factory, _probeManager, _numInputs, proximityProcessor), proximityProcessor(helper)
+    CRoxieServerProximityJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerNWayMergeJoinActivity(_ctx, _factory, _probeManager, _numInputs, proximityProcessor), proximityProcessor(helper)
     {
     }
 
@@ -15813,20 +15800,20 @@ public:
         flags = helper->getJoinFlags();
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (flags & IHThorNWayMergeJoinArg::MJFhasrange)
-            return new CRoxieServerProximityJoinActivity(this, _probeManager, numInputs());
+            return new CRoxieServerProximityJoinActivity(_ctx, this, _probeManager, numInputs());
 
         switch (flags & IHThorNWayMergeJoinArg::MJFkindmask)
         {
         case IHThorNWayMergeJoinArg::MJFinner:
-            return new CRoxieServerAndMergeJoinActivity(this, _probeManager, numInputs());
+            return new CRoxieServerAndMergeJoinActivity(_ctx, this, _probeManager, numInputs());
         case IHThorNWayMergeJoinArg::MJFleftonly:
         case IHThorNWayMergeJoinArg::MJFleftouter:
-            return new CRoxieServerAndLeftMergeJoinActivity(this, _probeManager, numInputs());
+            return new CRoxieServerAndLeftMergeJoinActivity(_ctx, this, _probeManager, numInputs());
         case IHThorNWayMergeJoinArg::MJFmofn:
-            return new CRoxieServerMofNMergeJoinActivity(this, _probeManager, numInputs());
+            return new CRoxieServerMofNMergeJoinActivity(_ctx, this, _probeManager, numInputs());
         default:
             throwUnexpected();
         }
@@ -15845,8 +15832,8 @@ class CRoxieServerNWaySelectActivity : public CRoxieServerMultiInputActivity
 {
     IHThorNWaySelectArg &helper;
 public:
-    CRoxieServerNWaySelectActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs),
+    CRoxieServerNWaySelectActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputActivity(_ctx, _factory, _probeManager, _numInputs),
           helper((IHThorNWaySelectArg &)basehelper)
     {
         selectedInput = NULL;
@@ -15869,7 +15856,7 @@ public:
                 if (whichInput < numRealInputs)
                 {
                     selectedInput = cur->queryConcreteInput(whichInput);
-                    selectedStream = connectSingleStream(selectedInput, 0, selectedJunction, 0);  // Should this be passing whichInput??
+                    selectedStream = connectSingleStream(ctx, selectedInput, 0, selectedJunction, 0);  // Should this be passing whichInput??
                     break;
                 }
                 whichInput -= numRealInputs;
@@ -15936,9 +15923,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerNWaySelectActivity(this, _probeManager, numInputs());
+        return new CRoxieServerNWaySelectActivity(_ctx, this, _probeManager, numInputs());
     }
 };
 
@@ -15956,10 +15943,10 @@ protected:
     CRemoteResultAdaptor remote;
 
 public:
-    CRoxieServerRemoteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteID)
-        : CRoxieServerActivity(_factory, _probeManager), 
+    CRoxieServerRemoteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteID)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorRemoteArg &)basehelper),
-          remote(_remoteID, meta.queryOriginal(), helper, *this, false, false) // MORE - if they need it stable we'll have to think!
+          remote(_ctx, this, _remoteID, meta.queryOriginal(), helper, *this, false, false) // MORE - if they need it stable we'll have to think!
     {
     }
 
@@ -15968,10 +15955,10 @@ public:
         return NULL;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, _ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
+        remote.onCreate(_colocalParent);
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -16034,9 +16021,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerRemoteActivity(this, _probeManager, remoteId);
+        return new CRoxieServerRemoteActivity(_ctx, this, _probeManager, remoteId);
     }
 
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -16071,8 +16058,8 @@ class CRoxieServerIterateActivity : public CRoxieServerActivity
     unsigned counter;
 
 public:
-    CRoxieServerIterateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager),
+    CRoxieServerIterateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorIterateArg &)basehelper)
     {
         counter = 0;
@@ -16138,9 +16125,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerIterateActivity(this, _probeManager);
+        return new CRoxieServerIterateActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -16160,17 +16147,17 @@ class CRoxieServerProcessActivity : public CRoxieServerActivity
     Owned<IEngineRowAllocator> rightRowAllocator;
 
 public:
-    CRoxieServerProcessActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorProcessArg &)basehelper)
+    CRoxieServerProcessActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorProcessArg &)basehelper)
     {
         counter = 0;
     }
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
         rightRowAllocator.setown(ctx->queryCodeContext()->getRowAllocator(QUERYINTERFACE(helper.queryRightRecordSize(), IOutputMetaData), activityId));
     }
 
@@ -16237,9 +16224,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerProcessActivity(this, _probeManager);
+        return new CRoxieServerProcessActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -16262,8 +16249,8 @@ class CRoxieServerGroupActivity : public CRoxieServerActivity
     const void *next;
 
 public:
-    CRoxieServerGroupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorGroupArg &)basehelper)
+    CRoxieServerGroupActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorGroupArg &)basehelper)
     {
         next = NULL;
         endPending = false;
@@ -16349,9 +16336,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerGroupActivity(this, _probeManager);
+        return new CRoxieServerGroupActivity(_ctx, this, _probeManager);
     }
 
     virtual const StatisticsMapping &queryStatsMapping() const
@@ -16375,8 +16362,8 @@ class CRoxieServerFirstNActivity : public CRoxieServerLateStartActivity
     IHThorFirstNArg &helper;
 
 public:
-    CRoxieServerFirstNActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerLateStartActivity(_factory, _probeManager), helper((IHThorFirstNArg &)basehelper)
+    CRoxieServerFirstNActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerLateStartActivity(_ctx, _factory, _probeManager), helper((IHThorFirstNArg &)basehelper)
     {
         doneThisGroup = 0;
         limit = 0;
@@ -16454,9 +16441,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerFirstNActivity(this, _probeManager);
+        return new CRoxieServerFirstNActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -16473,8 +16460,8 @@ class CRoxieServerSelectNActivity : public CRoxieServerActivity
     IHThorSelectNArg &helper;
 
 public:
-    CRoxieServerSelectNActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorSelectNArg &)basehelper)
+    CRoxieServerSelectNActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorSelectNArg &)basehelper)
     {
         done = false;
     }
@@ -16526,9 +16513,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSelectNActivity(this, _probeManager);
+        return new CRoxieServerSelectNActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -16719,8 +16706,8 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     }
 
 public:
-    CRoxieServerSelfJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _forceSpill)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorJoinArg &)basehelper), forceSpill(_forceSpill)
+    CRoxieServerSelfJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _forceSpill)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorJoinArg &)basehelper), forceSpill(_forceSpill)
     {
         collate = helper.queryCompareLeftRight();
         eof = false;
@@ -16960,9 +16947,9 @@ public:
         forceSpill = queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);;
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSelfJoinActivity(this, _probeManager, forceSpill);
+        return new CRoxieServerSelfJoinActivity(_ctx, this, _probeManager, forceSpill);
     }
 
     virtual const StatisticsMapping &queryStatsMapping() const
@@ -17279,8 +17266,8 @@ private:
     }
 
 public:
-    CRoxieServerLookupJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _useFewTable)
-        : CRoxieServerTwoInputActivity(_factory, _probeManager), helper((IHThorHashJoinArg &)basehelper), useFewTable(_useFewTable)
+    CRoxieServerLookupJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _useFewTable)
+        : CRoxieServerTwoInputActivity(_ctx, _factory, _probeManager), helper((IHThorHashJoinArg &)basehelper), useFewTable(_useFewTable)
     {
         unsigned joinFlags = helper.getJoinFlags();
         leftOuterJoin = (joinFlags & JFleftouter) != 0;
@@ -17402,7 +17389,7 @@ public:
     {
         if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
-            puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - can't ask context for parallelJoinPreload as context is not yet set up.
+            puller.setown(new CRoxieServerReadAheadInput(ctx, ctx->queryOptions().parallelJoinPreload));
             puller->setInput(0, _sourceIdx, _in);
             _in = puller;
             _sourceIdx = 0;
@@ -17737,9 +17724,9 @@ public:
             throw MakeStringException(ROXIE_INVALID_FLAGS, "Invalid flags for lookup join activity"); // code generator should never create such an activity
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerLookupJoinActivity(this, _probeManager, useFewTable);
+        return new CRoxieServerLookupJoinActivity(_ctx, this, _probeManager, useFewTable);
     }
 
     virtual const StatisticsMapping &queryStatsMapping() const
@@ -17813,8 +17800,8 @@ private:
     }
 
 public:
-    CRoxieServerAllJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerTwoInputActivity(_factory, _probeManager), helper((IHThorAllJoinArg &)basehelper)
+    CRoxieServerAllJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerTwoInputActivity(_ctx, _factory, _probeManager), helper((IHThorAllJoinArg &)basehelper)
     {
         unsigned joinFlags = helper.getJoinFlags();
         leftOuterJoin = (joinFlags & JFleftouter) != 0;
@@ -17889,7 +17876,7 @@ public:
     {
         if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
-            puller.setown(new CRoxieServerReadAheadInput(0)); // MORE - can't ask context for parallelJoinPreload as context is not yet set up.
+            puller.setown(new CRoxieServerReadAheadInput(ctx, ctx->queryOptions().parallelJoinPreload));
             puller->setInput(0, _sourceIdx, _in);
             _in = puller;
             _sourceIdx = 0;
@@ -18133,9 +18120,9 @@ public:
             throw MakeStringException(ROXIE_INVALID_FLAGS, "Invalid flags for join all activity"); // code generator should never create such an activity
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerAllJoinActivity(this, _probeManager);
+        return new CRoxieServerAllJoinActivity(_ctx, this, _probeManager);
     }
     virtual const StatisticsMapping &queryStatsMapping() const
     {
@@ -18162,8 +18149,8 @@ class CRoxieServerTopNActivity : public CRoxieServerLateStartActivity
     ICompare &compare;
 
 public:
-    CRoxieServerTopNActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerLateStartActivity(_factory, _probeManager), helper((IHThorTopNArg &)basehelper), compare(*helper.queryCompare())
+    CRoxieServerTopNActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerLateStartActivity(_ctx, _factory, _probeManager), helper((IHThorTopNArg &)basehelper), compare(*helper.queryCompare())
     {
         sorted = NULL;
         sortedCount = 0;
@@ -18292,9 +18279,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerTopNActivity(this, _probeManager);
+        return new CRoxieServerTopNActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -18312,8 +18299,8 @@ protected:
     IHThorLimitArg &helper;
 
 public:
-    CRoxieServerLimitActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorLimitArg &)basehelper)
+    CRoxieServerLimitActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorLimitArg &)basehelper)
     {
         rowLimit = 0;
     }
@@ -18385,9 +18372,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerLimitActivity(this, _probeManager);
+        return new CRoxieServerLimitActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -18406,8 +18393,8 @@ class CRoxieServerSkipLimitActivity : public CRoxieServerLimitActivity
     IHThorLimitTransformExtra * transformExtra;
 
 public:
-    CRoxieServerSkipLimitActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _onFail)
-        : CRoxieServerLimitActivity(_factory, _probeManager)
+    CRoxieServerSkipLimitActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _onFail)
+        : CRoxieServerLimitActivity(_ctx, _factory, _probeManager)
     {
         transformExtra = NULL;
         started = false;
@@ -18492,9 +18479,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSkipLimitActivity(this, _probeManager, kind==TAKcreaterowlimit);
+        return new CRoxieServerSkipLimitActivity(_ctx, this, _probeManager, kind==TAKcreaterowlimit);
     }
 };
 
@@ -18510,8 +18497,8 @@ class CRoxieServerCatchActivity : public CRoxieServerActivity
     IHThorCatchArg &helper;
 
 public:
-    CRoxieServerCatchActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorCatchArg &)basehelper)
+    CRoxieServerCatchActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorCatchArg &)basehelper)
     {
     }
 
@@ -18584,8 +18571,8 @@ class CRoxieServerSkipCatchActivity : public CRoxieServerActivity
     bool createRow;
 
 public:
-    CRoxieServerSkipCatchActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _createRow)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorCatchArg &)basehelper), createRow(_createRow)
+    CRoxieServerSkipCatchActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _createRow)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorCatchArg &)basehelper), createRow(_createRow)
     {
         started = false;
         index = 0;
@@ -18690,16 +18677,16 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         switch (kind)
         {
         case TAKcatch:
-            return new CRoxieServerCatchActivity(this, _probeManager);
+            return new CRoxieServerCatchActivity(_ctx, this, _probeManager);
         case TAKskipcatch:
-            return new CRoxieServerSkipCatchActivity(this, _probeManager, false);
+            return new CRoxieServerSkipCatchActivity(_ctx, this, _probeManager, false);
         case TAKcreaterowcatch:
-            return new CRoxieServerSkipCatchActivity(this, _probeManager, true);
+            return new CRoxieServerSkipCatchActivity(_ctx, this, _probeManager, true);
         default:
             throwUnexpected();
         }
@@ -18720,8 +18707,8 @@ class CRoxieServerPullActivity : public CRoxieServerActivity
     unsigned index;
 
 public:
-    CRoxieServerPullActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerPullActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
         started = false;
         index = 0;
@@ -18788,9 +18775,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerPullActivity(this, _probeManager);
+        return new CRoxieServerPullActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -18803,17 +18790,17 @@ IRoxieServerActivityFactory *createRoxieServerPullActivityFactory(unsigned _id, 
 class CRoxieServerTraceActivity : public CRoxieServerActivity
 {
 public:
-    CRoxieServerTraceActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorTraceArg &) basehelper),
+    CRoxieServerTraceActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorTraceArg &) basehelper),
           keepLimit(0), skip(0), sample(0)
     {
         assertex(meta.hasXML());
         traceEnabled = defaultTraceEnabled && !isBlind();
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
         if (ctx)
             traceEnabled = ctx->queryOptions().traceEnabled && !isBlind();
     }
@@ -18921,9 +18908,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerTraceActivity(this, _probeManager);
+        return new CRoxieServerTraceActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -18942,8 +18929,8 @@ class CRoxieServerCaseActivity : public CRoxieServerMultiInputBaseActivity
     IEngineRowStream *active;
 
 public:
-    CRoxieServerCaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputBaseActivity(_factory, _probeManager, _numInputs), helper((IHThorCaseArg &)basehelper)
+    CRoxieServerCaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputBaseActivity(_ctx, _factory, _probeManager, _numInputs), helper((IHThorCaseArg &)basehelper)
     {
         unusedStopped = false;
         cond = 0;
@@ -19009,9 +18996,9 @@ public:
         graphInvariant = _graphInvariant;
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerCaseActivity(this, _probeManager, numInputs());
+        return new CRoxieServerCaseActivity(_ctx, this, _probeManager, numInputs());
     }
 
     virtual bool isGraphInvariant() const
@@ -19042,8 +19029,8 @@ class CRoxieServerIfActivity : public CRoxieServerActivity
     bool unusedStopped;
 
 public:
-    CRoxieServerIfActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorIfArg &)basehelper)
+    CRoxieServerIfActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorIfArg &)basehelper)
     {
         inputFalse = NULL;
         inputTrue = NULL;
@@ -19138,11 +19125,11 @@ public:
         }
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
-        streamTrue = connectSingleStream(inputTrue, sourceIdxTrue, junctionTrue, flags);
-        streamFalse = connectSingleStream(inputFalse, sourceIdxFalse, junctionFalse, flags);
-        return CRoxieServerActivity::getOutputStreams(idx, streams, multiOk, flags);
+        streamTrue = connectSingleStream(ctx, inputTrue, sourceIdxTrue, junctionTrue, flags);
+        streamFalse = connectSingleStream(ctx, inputFalse, sourceIdxFalse, junctionFalse, flags);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
     }
 
     virtual const void *nextRow()
@@ -19175,9 +19162,9 @@ public:
         input2idx = (unsigned)-1;
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerIfActivity(this, _probeManager);
+        return new CRoxieServerIfActivity(_ctx, this, _probeManager);
     }
 
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -19227,8 +19214,8 @@ class CRoxieServerActionBaseActivity : public CRoxieServerActivity
     bool executed;
 
 public:
-    CRoxieServerActionBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerActionBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
         executed = false;
     }
@@ -19283,8 +19270,8 @@ class CRoxieServerIfActionActivity : public CRoxieServerActionBaseActivity
     IHThorIfArg &helper;
 
 public:
-    CRoxieServerIfActionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActionBaseActivity(_factory, _probeManager), helper((IHThorIfArg &)basehelper)
+    CRoxieServerIfActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActionBaseActivity(_ctx, _factory, _probeManager), helper((IHThorIfArg &)basehelper)
     {
     }
 
@@ -19310,9 +19297,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerIfActionActivity(this, _probeManager);
+        return new CRoxieServerIfActionActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -19331,8 +19318,8 @@ IRoxieServerActivityFactory *createRoxieServerIfActionActivityFactory(unsigned _
 class CRoxieServerParallelActionActivity : public CRoxieServerActionBaseActivity
 {
 public:
-    CRoxieServerParallelActionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActionBaseActivity(_factory, _probeManager)
+    CRoxieServerParallelActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActionBaseActivity(_ctx, _factory, _probeManager)
     {
     }
 
@@ -19361,9 +19348,9 @@ public:
         assertex(!isRoot);      // non-internal should be expanded out..
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerParallelActionActivity(this, _probeManager);
+        return new CRoxieServerParallelActionActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -19384,8 +19371,8 @@ class CRoxieServerSequentialActionActivity : public CRoxieServerActionBaseActivi
     IHThorSequentialArg &helper;
 
 public:
-    CRoxieServerSequentialActionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActionBaseActivity(_factory, _probeManager), helper((IHThorSequentialArg &)basehelper)
+    CRoxieServerSequentialActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActionBaseActivity(_ctx, _factory, _probeManager), helper((IHThorSequentialArg &)basehelper)
     {
     }
 
@@ -19407,9 +19394,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSequentialActionActivity(this, _probeManager);
+        return new CRoxieServerSequentialActionActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -19428,8 +19415,8 @@ IRoxieServerActivityFactory *createRoxieServerSequentialActionActivityFactory(un
 class CRoxieServerWhenActivity : public CRoxieServerActivity
 {
 public:
-    CRoxieServerWhenActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerWhenActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
         savedExtractSize = 0;
         savedExtract = NULL;
@@ -19503,9 +19490,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerWhenActivity(this, _probeManager);
+        return new CRoxieServerWhenActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -19521,8 +19508,8 @@ extern IRoxieServerActivityFactory *createRoxieServerWhenActivityFactory(unsigne
 class CRoxieServerWhenActionActivity : public CRoxieServerActionBaseActivity
 {
 public:
-    CRoxieServerWhenActionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActionBaseActivity(_factory, _probeManager)
+    CRoxieServerWhenActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActionBaseActivity(_ctx, _factory, _probeManager)
     {
         savedExtractSize = 0;
         savedExtract = NULL;
@@ -19567,9 +19554,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerWhenActionActivity(this, _probeManager);
+        return new CRoxieServerWhenActionActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -19610,8 +19597,8 @@ class CRoxieServerParseActivity : public CRoxieServerActivity, implements IMatch
     }
 
 public:
-    CRoxieServerParseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, INlpParseAlgorithm * _algorithm)
-        : CRoxieServerActivity(_factory, _probeManager), 
+    CRoxieServerParseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, INlpParseAlgorithm * _algorithm)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
         helper((IHThorParseArg &)basehelper), algorithm(_algorithm)
     {
         parser = NULL;
@@ -19629,10 +19616,10 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        parser = algorithm->createParser(_ctx->queryCodeContext(), activityId, helper.queryHelper(), &helper);
+        CRoxieServerActivity::onCreate(_colocalParent);
+        parser = algorithm->createParser(ctx->queryCodeContext(), activityId, helper.queryHelper(), &helper);
         rowIter = parser->queryResultIter();
     }
 
@@ -19715,9 +19702,9 @@ public:
         algorithm.setown(createThorParser(rc, *helper));
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerParseActivity(this, _probeManager, algorithm);
+        return new CRoxieServerParseActivity(_ctx, this, _probeManager, algorithm);
     }
 };
 
@@ -19736,16 +19723,16 @@ class CRoxieServerWorkUnitWriteActivity : public CRoxieServerInternalSinkActivit
     IRoxieServerContext *serverContext;
 
 public:
-    CRoxieServerWorkUnitWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _isReread, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorWorkUnitWriteArg &)basehelper), isReread(_isReread)
+    CRoxieServerWorkUnitWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _isReread, unsigned _numOutputs)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _numOutputs), helper((IHThorWorkUnitWriteArg &)basehelper), isReread(_isReread)
     {
         grouped = (helper.getFlags() & POFgrouped) != 0;
         serverContext = NULL;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerInternalSinkActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerInternalSinkActivity::onCreate(_colocalParent);
         serverContext = ctx->queryServerContext();
         if (!serverContext)
         {
@@ -19909,9 +19896,9 @@ public:
         isInternal = (helper->getSequence()==ResultSequenceInternal);
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerWorkUnitWriteActivity(this, _probeManager, isReread, usageCount);
+        return new CRoxieServerWorkUnitWriteActivity(_ctx, this, _probeManager, isReread, usageCount);
     }
 
 };
@@ -19930,15 +19917,15 @@ class CRoxieServerWorkUnitWriteDictActivity : public CRoxieServerInternalSinkAct
     IRoxieServerContext *serverContext;
 
 public:
-    CRoxieServerWorkUnitWriteDictActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _usageCount)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _usageCount), helper((IHThorDictionaryWorkUnitWriteArg &)basehelper)
+    CRoxieServerWorkUnitWriteDictActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _usageCount)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _usageCount), helper((IHThorDictionaryWorkUnitWriteArg &)basehelper)
     {
         serverContext = NULL;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerInternalSinkActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerInternalSinkActivity::onCreate(_colocalParent);
         serverContext = ctx->queryServerContext();
         if (!serverContext)
         {
@@ -19979,9 +19966,9 @@ public:
         isInternal = (helper->getSequence()==ResultSequenceInternal);
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerWorkUnitWriteDictActivity(this, _probeManager, usageCount);
+        return new CRoxieServerWorkUnitWriteDictActivity(_ctx, this, _probeManager, usageCount);
     }
 
 };
@@ -19999,8 +19986,8 @@ class CRoxieServerRemoteResultActivity : public CRoxieServerInternalSinkActivity
     IHThorRemoteResultArg &helper;
 
 public:
-    CRoxieServerRemoteResultActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorRemoteResultArg &)basehelper)
+    CRoxieServerRemoteResultActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _numOutputs), helper((IHThorRemoteResultArg &)basehelper)
     {
     }
 
@@ -20022,9 +20009,9 @@ public:
         isInternal = (helper->getSequence()==ResultSequenceInternal);
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerRemoteResultActivity(this, _probeManager, usageCount);
+        return new CRoxieServerRemoteResultActivity(_ctx, this, _probeManager, usageCount);
     }
 
 };
@@ -20050,8 +20037,8 @@ class CRoxieServerXmlParseActivity : public CRoxieServerActivity, implements IXM
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerXmlParseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), 
+    CRoxieServerXmlParseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
         helper((IHThorXmlParseArg &)basehelper)
     {
         srchStrNeedsFree = helper.searchTextNeedsFree();
@@ -20158,9 +20145,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerXmlParseActivity(this, _probeManager);
+        return new CRoxieServerXmlParseActivity(_ctx, this, _probeManager);
     }
 };
 
@@ -20206,8 +20193,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerDiskReadBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
-        : CRoxieServerActivity(_factory, _probeManager), 
+    CRoxieServerDiskReadBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorDiskReadBaseArg &)basehelper),
           numParts(_numParts),
           remoteId(_remoteId),
@@ -20219,7 +20206,7 @@ public:
     {
         forceRemote = factory->queryQueryFactory().queryOptions().disableLocalOptimizations;
         if ((forceRemote || numParts != 1) && !isLocal)  // NOTE : when numParts == 0 (variable case) we create, even though we may not use
-            remote.setown(new CSkippableRemoteResultAdaptor(remoteId, meta.queryOriginal(), helper, *this, sorted, false, _maySkip));
+            remote.setown(new CSkippableRemoteResultAdaptor(_ctx, this, remoteId, meta.queryOriginal(), helper, *this, sorted, false, _maySkip));
         compoundHelper = NULL;
         eof = false;
         rowLimit = (unsigned __int64) -1;
@@ -20235,11 +20222,11 @@ public:
         return varFileInfo;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
         if (remote)
-            remote->onCreate(this, _ctx, _colocalParent);
+            remote->onCreate(_colocalParent);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -20409,8 +20396,8 @@ class CRoxieServerDiskReadActivity : public CRoxieServerDiskReadBaseActivity
     unsigned readIndex;
 
 public:
-    CRoxieServerDiskReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskReadBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager)
+    CRoxieServerDiskReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
+        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager)
     {
         compoundHelper = (IHThorDiskReadArg *)&helper;
         readHelper = (IHThorDiskReadArg *)&helper;
@@ -20569,8 +20556,8 @@ class CRoxieServerXmlReadActivity : public CRoxieServerDiskReadBaseActivity, imp
     unsigned __int64 localOffset;
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieServerXmlReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskReadBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager)
+    CRoxieServerXmlReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
+        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager)
     {
         compoundHelper = NULL;
         readHelper = (IHThorXmlReadArg *)&helper;
@@ -20673,10 +20660,10 @@ class CRoxieServerCsvReadActivity : public CRoxieServerDiskReadBaseActivity
     const char *escapes;
     size32_t maxRowSize;
 public:
-    CRoxieServerCsvReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+    CRoxieServerCsvReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
                                 unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager,
                                 const char *_quotes, const char *_separators, const char *_terminators, const char *_escapes, size32_t _maxRowSize)
-        : CRoxieServerDiskReadBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager),
+        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager),
           quotes(_quotes), separators(_separators), terminators(_terminators), escapes(_escapes), maxRowSize(_maxRowSize)
     {
         compoundHelper = NULL;
@@ -20810,8 +20797,8 @@ class CRoxieServerDiskNormalizeActivity : public CRoxieServerDiskReadBaseActivit
     bool firstPending;
 
 public:
-    CRoxieServerDiskNormalizeActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskReadBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, false, _manager)
+    CRoxieServerDiskNormalizeActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, IInMemoryIndexManager *_manager)
+        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, false, _manager)
     {
         compoundHelper = (IHThorDiskNormalizeArg *)&helper;
         normalizeHelper = (IHThorDiskNormalizeArg *)&helper;
@@ -20906,8 +20893,8 @@ protected:
     bool done;
 
 public:
-    CRoxieServerDiskAggregateBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskReadBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, false, false, _manager),
+    CRoxieServerDiskAggregateBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
+        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, false, false, _manager),
           done(false)
     {
     }
@@ -20950,8 +20937,8 @@ class CRoxieServerDiskCountActivity : public CRoxieServerDiskAggregateBaseActivi
     }
 
 public:
-    CRoxieServerDiskCountActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskAggregateBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
+    CRoxieServerDiskCountActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
+        : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
           countHelper((IHThorDiskCountArg &)basehelper)
     {
         limitHelper = static_cast<IHThorSourceCountLimit *>(basehelper.selectInterface(TAIsourcecountlimit_1));
@@ -21068,9 +21055,9 @@ class CRoxieServerDiskAggregateActivity : public CRoxieServerDiskAggregateBaseAc
     IHThorCompoundAggregateExtra & aggregateHelper;
 
 public:
-    CRoxieServerDiskAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+    CRoxieServerDiskAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
         unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskAggregateBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
+        : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
           aggregateHelper((IHThorDiskAggregateArg &)basehelper)
     {
     }
@@ -21156,8 +21143,8 @@ class CRoxieServerDiskGroupAggregateActivity : public CRoxieServerDiskAggregateB
 
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieServerDiskGroupAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskAggregateBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
+    CRoxieServerDiskGroupAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
+        : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
           aggregateHelper((IHThorDiskGroupAggregateArg &)basehelper),
           resultAggregator(aggregateHelper, aggregateHelper),
           gathered(false)
@@ -21292,27 +21279,27 @@ public:
         }
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         unsigned numParts = datafile ? datafile->getNumParts() : 0;
         switch (kind)
         {
         case TAKcsvread:
-            return new CRoxieServerCsvReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager,
+            return new CRoxieServerCsvReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager,
                                                    quotes, separators, terminators, escapes, maxCsvRowSize);
         case TAKxmlread:
         case TAKjsonread:
-            return new CRoxieServerXmlReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);
+            return new CRoxieServerXmlReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);
         case TAKdiskread:
-            return new CRoxieServerDiskReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);
+            return new CRoxieServerDiskReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);
         case TAKdisknormalize:
-            return new CRoxieServerDiskNormalizeActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, manager);
+            return new CRoxieServerDiskNormalizeActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, manager);
         case TAKdiskcount:
-            return new CRoxieServerDiskCountActivity(this, _probeManager, remoteId, numParts, isLocal, manager);
+            return new CRoxieServerDiskCountActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, manager);
         case TAKdiskaggregate:
-            return new CRoxieServerDiskAggregateActivity(this, _probeManager, remoteId, numParts, isLocal, manager);
+            return new CRoxieServerDiskAggregateActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, manager);
         case TAKdiskgroupaggregate:
-            return new CRoxieServerDiskGroupAggregateActivity(this, _probeManager, remoteId, numParts, isLocal, manager);
+            return new CRoxieServerDiskGroupAggregateActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, manager);
         }
         throwUnexpected();
     }
@@ -21389,13 +21376,13 @@ protected:
     }
 
 public:
-    CRoxieServerIndexActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+    CRoxieServerIndexActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
         IKeyArray * _keySet, TranslatorArray *_translators, bool _sorted, bool _isLocal, bool _maySkip)
-        : CRoxieServerActivity(_factory, _probeManager), 
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
           keySet(_keySet),
           translators(_translators),
           indexHelper((IHThorIndexReadBaseArg &)basehelper),
-          remote(_remoteId, meta.queryOriginal(), indexHelper, *this, _sorted, false, _maySkip),
+          remote(_ctx, this, _remoteId, meta.queryOriginal(), indexHelper, *this, _sorted, false, _maySkip),
           remoteId(_remoteId),
           sorted(_sorted),
           isLocal(_isLocal) 
@@ -21416,10 +21403,10 @@ public:
         return varFileInfo;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, _ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
+        remote.onCreate(_colocalParent);
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -21596,9 +21583,9 @@ class CRoxieServerIndexReadBaseActivity : public CRoxieServerIndexActivity
 {
     IHThorSourceLimitTransformExtra * limitTransformExtra;
 public:
-    CRoxieServerIndexReadBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+    CRoxieServerIndexReadBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
         IKeyArray * _keySet, TranslatorArray *_translators, bool _sorted, bool _isLocal, bool _maySkip)
-        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, _maySkip)
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, _maySkip)
     {
         limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(indexHelper.selectInterface(TAIsourcelimittransformextra_1));
     }
@@ -21650,9 +21637,9 @@ protected:
     unsigned maxSeekLookahead;
 
 public:
-    CRoxieServerIndexReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+    CRoxieServerIndexReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
         IKeyArray * _keySet, TranslatorArray *_translators, bool _sorted, bool _isLocal, bool _maySkip, unsigned _maxSeekLookahead)
-        : CRoxieServerIndexReadBaseActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, _maySkip),
+        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, _maySkip),
           readHelper((IHThorIndexReadArg &)basehelper)
     {
         rawMeta = readHelper.queryRawSteppingMeta();
@@ -22031,9 +22018,9 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
     }
 
 public:
-    CRoxieServerSimpleIndexReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+    CRoxieServerSimpleIndexReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
             IKeyArray *_keyArray, TranslatorArray *_translatorArray, bool _isLocal)
-        : CRoxieServerActivity(_factory, _probeManager), 
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
           readHelper((IHThorIndexReadArg &)basehelper), 
           indexHelper((IHThorIndexReadArg &)basehelper), 
           translators(_translatorArray),
@@ -22485,14 +22472,14 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
-            return new CRoxieServerNullActivity(this, _probeManager);
+            return new CRoxieServerNullActivity(_ctx, this, _probeManager);
         else if (isSimple && !maySkip)
-            return new CRoxieServerSimpleIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, isLocal);
+            return new CRoxieServerSimpleIndexReadActivity(_ctx, this, _probeManager, remoteId, keySet, translatorArray, isLocal);
         else
-            return new CRoxieServerIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, sorted, isLocal, maySkip, maxSeekLookahead);
+            return new CRoxieServerIndexReadActivity(_ctx, this, _probeManager, remoteId, keySet, translatorArray, sorted, isLocal, maySkip, maxSeekLookahead);
     }
 };
 
@@ -22507,8 +22494,8 @@ class CRoxieServerNullCountActivity : public CRoxieServerActivity
 {
     bool done;
 public:
-    CRoxieServerNullCountActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager)
+    CRoxieServerNullCountActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
         done = false;
     }
@@ -22546,8 +22533,8 @@ class CRoxieServerIndexCountActivity : public CRoxieServerIndexActivity
     bool done;
 
 public:
-    CRoxieServerIndexCountActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, TranslatorArray *_translators, bool _isLocal)
-        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, false, _isLocal, false),
+    CRoxieServerIndexCountActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, TranslatorArray *_translators, bool _isLocal)
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, _keySet, _translators, false, _isLocal, false),
           countHelper((IHThorIndexCountArg &)basehelper),
           done(false)
     {
@@ -22741,14 +22728,14 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
-            return new CRoxieServerNullCountActivity(this, _probeManager);
+            return new CRoxieServerNullCountActivity(_ctx, this, _probeManager);
 //      else if (isSimple)
 //          return new CRoxieServerSimpleIndexCountActivity(this, keySet->queryKeyPart(0)->queryPart(0));
         else
-            return new CRoxieServerIndexCountActivity(this, _probeManager, remoteId, keySet, translatorArray, isLocal);
+            return new CRoxieServerIndexCountActivity(_ctx, this, _probeManager, remoteId, keySet, translatorArray, isLocal);
     }
 };
 
@@ -22764,8 +22751,8 @@ class CRoxieServerNullIndexAggregateActivity : public CRoxieServerActivity
     IHThorIndexAggregateArg &aggregateHelper;
     bool done;
 public:
-    CRoxieServerNullIndexAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager),
+    CRoxieServerNullIndexAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
           aggregateHelper((IHThorIndexAggregateArg &)basehelper)
     {
         done = false;
@@ -22796,9 +22783,9 @@ class CRoxieServerIndexAggregateActivity : public CRoxieServerIndexActivity
     bool done;
 
 public:
-    CRoxieServerIndexAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+    CRoxieServerIndexAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
         IKeyArray * _keySet, TranslatorArray *_translators, bool _isLocal)
-        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, false, _isLocal, false),
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, _keySet, _translators, false, _isLocal, false),
           aggregateHelper((IHThorIndexAggregateArg &)basehelper),
           done(false)
     {
@@ -22903,14 +22890,14 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
-            return new CRoxieServerNullIndexAggregateActivity(this, _probeManager);
+            return new CRoxieServerNullIndexAggregateActivity(_ctx, this, _probeManager);
 //      else if (isSimple)
 //          return new CRoxieServerSimpleIndexAggregateActivity(this, keySet->queryKeyPart(0)->queryPart(0));
         else
-            return new CRoxieServerIndexAggregateActivity(this, _probeManager, remoteId, keySet, translatorArray, isLocal);
+            return new CRoxieServerIndexAggregateActivity(_ctx, this, _probeManager, remoteId, keySet, translatorArray, isLocal);
     }
 };
 
@@ -22931,9 +22918,9 @@ class CRoxieServerIndexGroupAggregateActivity : public CRoxieServerIndexActivity
     bool eof;
 
 public:
-    CRoxieServerIndexGroupAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+    CRoxieServerIndexGroupAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
         IKeyArray * _keySet, TranslatorArray *_translators, bool _isLocal)
-        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, false, _isLocal, false),
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, _keySet, _translators, false, _isLocal, false),
           aggregateHelper((IHThorIndexGroupAggregateArg &)basehelper),
           singleAggregator(aggregateHelper, aggregateHelper),
           resultAggregator(aggregateHelper, aggregateHelper),
@@ -23096,14 +23083,14 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
-            return new CRoxieServerNullActivity(this, _probeManager);
+            return new CRoxieServerNullActivity(_ctx, this, _probeManager);
 //      else if (isSimple)
 //          return new CRoxieServerSimpleIndexGroupAggregateActivity(this, keySet->queryKeyPart(0)->queryPart(0));
         else
-            return new CRoxieServerIndexGroupAggregateActivity(this, _probeManager, remoteId, keySet, translatorArray, isLocal);
+            return new CRoxieServerIndexGroupAggregateActivity(_ctx, this, _probeManager, remoteId, keySet, translatorArray, isLocal);
     }
 };
 
@@ -23119,9 +23106,9 @@ class CRoxieServerIndexNormalizeActivity : public CRoxieServerIndexReadBaseActiv
     IHThorCompoundNormalizeExtra & readHelper;
 
 public:
-    CRoxieServerIndexNormalizeActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+    CRoxieServerIndexNormalizeActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
         IKeyArray * _keySet, TranslatorArray *_translators, bool _sorted, bool _isLocal)
-        : CRoxieServerIndexReadBaseActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, false),
+        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, false),
           readHelper((IHThorIndexNormalizeArg &)basehelper)
     {
     }
@@ -23232,12 +23219,12 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
-            return new CRoxieServerNullActivity(this, _probeManager);
+            return new CRoxieServerNullActivity(_ctx, this, _probeManager);
         else
-            return new CRoxieServerIndexNormalizeActivity(this, _probeManager, remoteId, keySet, translatorArray, sorted, isLocal);
+            return new CRoxieServerIndexNormalizeActivity(_ctx, this, _probeManager, remoteId, keySet, translatorArray, sorted, isLocal);
     }
 };
 
@@ -23261,8 +23248,8 @@ class CRoxieServerFetchActivity : public CRoxieServerActivity, implements IRecor
     Owned<const IResolvedFile> varFileInfo;
 
 public:
-    CRoxieServerFetchActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IFilePartMap *_map)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorFetchBaseArg &)basehelper), map(_map), remote(_remoteId, meta.queryOriginal(), helper, *this, true, true), puller(false)
+    CRoxieServerFetchActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IFilePartMap *_map)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorFetchBaseArg &)basehelper), map(_map), remote(_ctx, this, _remoteId, meta.queryOriginal(), helper, *this, true, true), puller(false)
     {
         fetchContext = static_cast<IHThorFetchContext *>(helper.selectInterface(TAIfetchcontext_1));
         needsRHS = helper.transformNeedsRhs();
@@ -23275,10 +23262,10 @@ public:
         return varFileInfo;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, _ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
+        remote.onCreate(_colocalParent);
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -23288,10 +23275,10 @@ public:
         puller.setInput(this, _sourceIdx, _in);
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
-        puller.connectOutputStreams(flags);
-        return CRoxieServerActivity::getOutputStreams(idx, streams, multiOk, flags);
+        puller.connectOutputStreams(ctx, flags);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -23441,9 +23428,9 @@ public:
         }
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerFetchActivity(this, _probeManager, remoteId, map);
+        return new CRoxieServerFetchActivity(_ctx, this, _probeManager, remoteId, map);
     }
 
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
@@ -23529,7 +23516,7 @@ public:
         }
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const { throw MakeStringException(ROXIE_INTERNAL_ERROR, "%s query %s is suspended and cannot be executed - error occurred at %s(%d)", (queryFactory.isQueryLibrary()) ? "Library" : " ", queryFactory.queryQueryName(), __FILE__, __LINE__); }
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const { throw MakeStringException(ROXIE_INTERNAL_ERROR, "%s query %s is suspended and cannot be executed - error occurred at %s(%d)", (queryFactory.isQueryLibrary()) ? "Library" : " ", queryFactory.queryQueryName(), __FILE__, __LINE__); }
 
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
     {
@@ -23798,10 +23785,11 @@ public:
     Owned<IEngineRowAllocator> ccdRecordAllocator;
     IJoinProcessor &processor;
 
-    KeyedJoinRemoteAdaptor(const RemoteActivityId &_remoteId, IHThorKeyedJoinArg &_helper, IRoxieServerActivity &_activity, bool _isFullKey, bool _isSimple, 
+    KeyedJoinRemoteAdaptor(IRoxieSlaveContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IHThorKeyedJoinArg &_helper,
+                           IRoxieServerActivity &_activity, bool _isFullKey, bool _isSimple,
                            RecordPullerThread &_puller, IJoinProcessor &_processor)
         : helper(_helper), 
-          CRemoteResultAdaptor(_remoteId, 0, _helper, _activity, true, true), 
+          CRemoteResultAdaptor(_ctx, _errorHandler, _remoteId, 0, _helper, _activity, true, true),
           isFullKey(_isFullKey),
           isSimple(_isSimple),
           puller(_puller),
@@ -23813,9 +23801,9 @@ public:
         eof = false;
     }
 
-    virtual void onCreate(IRoxieServerErrorHandler *_errorHandler, IRoxieSlaveContext *_ctx, IHThorArg *_colocalArg)
+    virtual void onCreate(IHThorArg *_colocalArg)
     {
-        CRemoteResultAdaptor::onCreate(_errorHandler, _ctx, _colocalArg);
+        CRemoteResultAdaptor::onCreate(_colocalArg);
         ccdRecordAllocator.setown(ctx->queryCodeContext()->getRowAllocator(QUERYINTERFACE(helper.queryJoinFieldsRecordSize(), IOutputMetaData), activityId));
     }
 
@@ -23950,13 +23938,13 @@ class CRoxieServerFullKeyedJoinHead: public CRoxieServerActivity, implements IRe
     IIndexReadActivityInfo *rootIndex;
 
 public:
-    CRoxieServerFullKeyedJoinHead(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, TranslatorArray *_translators, IOutputMetaData *_indexReadMeta, IJoinProcessor *_joinHandler, bool _isLocal)
-        : CRoxieServerActivity(_factory, _probeManager), 
+    CRoxieServerFullKeyedJoinHead(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, TranslatorArray *_translators, IOutputMetaData *_indexReadMeta, IJoinProcessor *_joinHandler, bool _isLocal)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorKeyedJoinArg &)basehelper), 
           tlk(createKeyManager(NULL, 0, this)),
           translators(_translators),
           keySet(_keySet),
-          remote(_remoteId, 0, helper, *this, true, true),
+          remote(_ctx, this, _remoteId, 0, helper, *this, true, true),
           indexReadMeta(_indexReadMeta),
           joinHandler(_joinHandler),
           puller(false),
@@ -23973,10 +23961,10 @@ public:
         return varFileInfo;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, _ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
+        remote.onCreate(_colocalParent);
         indexReadAllocator.setown(ctx->queryCodeContext()->getRowAllocator(indexReadMeta, activityId));
     }
 
@@ -23993,12 +23981,12 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
-        puller.connectOutputStreams(flags);
+        puller.connectOutputStreams(ctx, flags);
         if (indexReadInput)
-            connectSingleStream(indexReadInput, indexReadIdx, indexReadJunction, flags);  // We never actually pull the stream
-        return CRoxieServerActivity::getOutputStreams(idx, streams, multiOk, flags);
+            connectSingleStream(ctx, indexReadInput, indexReadIdx, indexReadJunction, flags);  // We never actually pull the stream
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -24306,11 +24294,11 @@ protected:
     }
 
 public:
-    CRoxieServerKeyedJoinBase(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _joinFlags
+    CRoxieServerKeyedJoinBase(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _joinFlags
         , bool isFull, bool _isSimple, bool _isLocal)
-        : CRoxieServerActivity(_factory, _probeManager), 
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorKeyedJoinArg &)basehelper), 
-          remote(_remoteId, helper, *this, isFull, _isSimple, puller, *this), 
+          remote(_ctx, this, _remoteId, helper, *this, isFull, _isSimple, puller, *this),
           joinFlags(_joinFlags), 
           preserveGroups(meta.isGrouped()),
           puller(false),
@@ -24331,10 +24319,10 @@ public:
         // MORE - code would be easier to read if I got more values from helper rather than passing from factory
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        remote.onCreate(this, _ctx, _colocalParent);
+        CRoxieServerActivity::onCreate(_colocalParent);
+        remote.onCreate(_colocalParent);
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -24353,9 +24341,9 @@ public:
     virtual void connectOutputStreams(unsigned flags)
     {
         CRoxieServerActivity::connectOutputStreams(flags);
-        puller.connectOutputStreams(flags);
+        puller.connectOutputStreams(ctx, flags);
         if (indexReadInput)
-            indexReadStream = connectSingleStream(indexReadInput, indexReadIdx, indexReadJunction, flags);  // We never actually pull the stream
+            indexReadStream = connectSingleStream(ctx, indexReadInput, indexReadIdx, indexReadJunction, flags);  // We never actually pull the stream
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -24703,10 +24691,10 @@ class CRoxieServerKeyedJoinActivity : public CRoxieServerKeyedJoinBase
 
 public:
 
-    CRoxieServerKeyedJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_headId, IKeyArray * _key, TranslatorArray *_translators, IOutputMetaData *_indexReadMeta,
+    CRoxieServerKeyedJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_headId, IKeyArray * _key, TranslatorArray *_translators, IOutputMetaData *_indexReadMeta,
         const RemoteActivityId &_tailId, IFilePartMap *_map, unsigned _joinFlags, bool _isLocal)
-        : CRoxieServerKeyedJoinBase(_factory, _probeManager, _tailId, _joinFlags, true, false, _isLocal),
-          head(_factory, _probeManager, _headId, _key, _translators, _indexReadMeta, this, _isLocal),
+        : CRoxieServerKeyedJoinBase(_ctx, _factory, _probeManager, _tailId, _joinFlags, true, false, _isLocal),
+          head(_ctx, _factory, _probeManager, _headId, _key, _translators, _indexReadMeta, this, _isLocal),
           map(_map)
     {
         CRoxieServerKeyedJoinBase::setInput(0, 0, head.queryOutput(0));
@@ -24718,10 +24706,10 @@ public:
         return varFetchFileInfo;
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerKeyedJoinBase::onCreate(_ctx, _colocalParent);
-        head.onCreate(_ctx, _colocalParent);
+        CRoxieServerKeyedJoinBase::onCreate(_colocalParent);
+        head.onCreate(_colocalParent);
         fetchInputFields.set(helper.queryFetchInputRecordSize());
         fetchInputAllocator.setown(ctx->queryCodeContext()->getRowAllocator(helper.queryFetchInputRecordSize(), activityId));
     }
@@ -24745,10 +24733,10 @@ public:
         head.setInput(idx, _sourceIdx, _in);
     }
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
         connectOutputStreams(flags);
-        return head.getOutputStreams(idx, streams, multiOk, flags);
+        return head.getOutputStreams(ctx, idx, streams, multiOk, flags);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -24825,9 +24813,9 @@ class CRoxieServerHalfKeyedJoinActivity : public CRoxieServerKeyedJoinBase
     Owned<IEngineRowAllocator> joinFieldsAllocator;
 
 public:
-    CRoxieServerHalfKeyedJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, TranslatorArray *_translators, 
+    CRoxieServerHalfKeyedJoinActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, TranslatorArray *_translators,
         IOutputMetaData *_indexReadMeta, unsigned _joinFlags, bool _isSimple, bool _isLocal)
-        : CRoxieServerKeyedJoinBase(_factory, _probeManager, _remoteId, _joinFlags, false, _isSimple, _isLocal),
+        : CRoxieServerKeyedJoinBase(_ctx, _factory, _probeManager, _remoteId, _joinFlags, false, _isSimple, _isLocal),
           indexReadMeta(_indexReadMeta),
           tlk(createKeyManager(NULL, 0, this)),
           keySet(_keySet),
@@ -24857,9 +24845,9 @@ public:
         }
     }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        CRoxieServerKeyedJoinBase::onCreate(_ctx, _colocalParent);
+        CRoxieServerKeyedJoinBase::onCreate(_colocalParent);
         indexReadAllocator.setown(ctx->queryCodeContext()->getRowAllocator(indexReadMeta, activityId));
 
         IOutputMetaData *joinFieldsMeta = helper.queryJoinFieldsRecordSize();
@@ -25144,13 +25132,13 @@ public:
         return activityMeta;
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
         if (isHalfKeyed)
-            return new CRoxieServerHalfKeyedJoinActivity(this, _probeManager, 
+            return new CRoxieServerHalfKeyedJoinActivity(_ctx, this, _probeManager,
                 headId, keySet, translatorArray, indexReadMeta, joinFlags, isSimple, isLocal);
         else
-            return new CRoxieServerKeyedJoinActivity(this, _probeManager, 
+            return new CRoxieServerKeyedJoinActivity(_ctx, this, _probeManager,
                 headId, keySet, translatorArray, indexReadMeta, 
                 tailId, map, joinFlags, isLocal);
     }
@@ -25189,8 +25177,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerSoapActivityBase(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorSoapActionArg &)basehelper)
+    CRoxieServerSoapActivityBase(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorSoapActionArg &)basehelper)
     {
         eof = false;
         if (clientCert.certificate.length() > 0 && clientCert.privateKey.length() > 0 && clientCert.passphrase.length() > 0)
@@ -25229,8 +25217,8 @@ class CRoxieServerSoapRowCallActivity : public CRoxieServerSoapActivityBase
     IHThorSoapCallArg & callHelper;
 
 public:
-    CRoxieServerSoapRowCallActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerSoapActivityBase(_factory, _probeManager), callHelper((IHThorSoapCallArg &)basehelper)
+    CRoxieServerSoapRowCallActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerSoapActivityBase(_ctx, _factory, _probeManager), callHelper((IHThorSoapCallArg &)basehelper)
     {
     }
 
@@ -25274,9 +25262,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSoapRowCallActivity(this, _probeManager);
+        return new CRoxieServerSoapRowCallActivity(_ctx, this, _probeManager);
     }
 
     virtual const StatisticsMapping &queryStatsMapping() const
@@ -25295,8 +25283,8 @@ IRoxieServerActivityFactory *createRoxieServerSoapRowCallActivityFactory(unsigne
 class CRoxieServerSoapRowActionActivity : public CRoxieServerSoapActivityBase 
 {
 public:
-    CRoxieServerSoapRowActionActivity (const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerSoapActivityBase(_factory, _probeManager)
+    CRoxieServerSoapRowActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerSoapActivityBase(_ctx, _factory, _probeManager)
     {}
 
     virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
@@ -25331,9 +25319,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSoapRowActionActivity(this, _probeManager);
+        return new CRoxieServerSoapRowActionActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -25359,8 +25347,8 @@ class CRoxieServerSoapDatasetCallActivity : public CRoxieServerSoapActivityBase
     IHThorSoapCallArg & callHelper;
 
 public:
-    CRoxieServerSoapDatasetCallActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerSoapActivityBase(_factory, _probeManager), callHelper((IHThorSoapCallArg &)basehelper)
+    CRoxieServerSoapDatasetCallActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerSoapActivityBase(_ctx, _factory, _probeManager), callHelper((IHThorSoapCallArg &)basehelper)
     {
     }
 
@@ -25407,9 +25395,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSoapDatasetCallActivity(this, _probeManager);
+        return new CRoxieServerSoapDatasetCallActivity(_ctx, this, _probeManager);
     }
 
     virtual const StatisticsMapping &queryStatsMapping() const
@@ -25428,8 +25416,8 @@ IRoxieServerActivityFactory *createRoxieServerSoapDatasetCallActivityFactory(uns
 class CRoxieServerSoapDatasetActionActivity : public CRoxieServerSoapActivityBase 
 {
 public:
-    CRoxieServerSoapDatasetActionActivity (const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerSoapActivityBase(_factory, _probeManager)
+    CRoxieServerSoapDatasetActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerSoapActivityBase(_ctx, _factory, _probeManager)
     {}
 
     virtual const void *getNextRow()
@@ -25491,9 +25479,9 @@ public:
     {
     }
 
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSoapDatasetActionActivity(this, _probeManager);
+        return new CRoxieServerSoapDatasetActionActivity(_ctx, this, _probeManager);
     }
 
     virtual bool isSink() const
@@ -25586,7 +25574,7 @@ public:
 class CPseudoActivity : public CRoxieServerActivity
 {
 public:
-    CPseudoActivity(IHThorArg & _helper) : CRoxieServerActivity(_helper) {}
+    CPseudoActivity(IRoxieSlaveContext *_ctx, IHThorArg & _helper) : CRoxieServerActivity(_ctx, _helper) {}
 
     virtual const void *nextRow()
     {
@@ -25604,7 +25592,7 @@ protected:
         bool aborted;
         Owned<IException> exception;
     public:
-        ActivityGraphSlaveContext(const IRoxieContextLogger &_logctx) : logctx(_logctx), loopCounter(0), codeContext(NULL)
+        ActivityGraphSlaveContext(IRoxieSlaveContext *_ctx, const IRoxieContextLogger &_logctx) : IndirectSlaveContext(_ctx), logctx(_logctx), loopCounter(0), codeContext(NULL)
         {
             aborted = false;
         }
@@ -25722,8 +25710,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CActivityGraph(const char *_graphName, unsigned _id, ActivityArray &x, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx)
-        : probeManager(_probeManager), graphDefinition(x), graphName(_graphName), graphSlaveContext(_logctx)
+    CActivityGraph(IRoxieSlaveContext *_ctx, const char *_graphName, unsigned _id, ActivityArray &x, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx)
+        : probeManager(_probeManager), graphDefinition(x), graphName(_graphName), graphSlaveContext(_ctx, _logctx)
     {
         id = x.getLibraryGraphId();
         if (!id)
@@ -25744,12 +25732,18 @@ public:
         return graphName.get();
     }
 
-    void createGraph()
+    void createGraph(IRoxieSlaveContext *_ctx)
     {
+        if (graphDefinition.isMultiInstance())
+        {
+            graphCodeContext.set(_ctx->queryCodeContext());
+            _ctx = &graphSlaveContext;
+        }
+
         ForEachItemIn(idx, graphDefinition)
         {
             IRoxieServerActivityFactory &donor = graphDefinition.serverItem(idx);
-            IRoxieServerActivity &activity = *donor.createActivity(probeManager);
+            IRoxieServerActivity &activity = *donor.createActivity(_ctx, probeManager);
             activities.append(activity);
             if (donor.isSink())
             {
@@ -25808,20 +25802,13 @@ public:
         targetActivity.setInput(targetIdx, sourceIdx, output);
     }
 
-    virtual void onCreate(IRoxieSlaveContext *ctx, IHThorArg *_colocalParent)
+    virtual void onCreate(IHThorArg *_colocalParent)
     {
-        graphSlaveContext.set(ctx);
-        if (graphDefinition.isMultiInstance())
-        {
-            graphCodeContext.set(ctx->queryCodeContext());
-            ctx = &graphSlaveContext;
-        }
-
         ForEachItemIn(idx, activities)
         {
             IRoxieServerActivity *activity = &activities.item(idx);
             if (activity)
-                activity->onCreate(ctx, _colocalParent);
+                activity->onCreate(_colocalParent);
         }
     }
 
@@ -26082,7 +26069,7 @@ public:
             probeManager->getProbeResponse(query);
     }
 
-    virtual IRoxieServerChildGraph * createGraphLoopInstance(unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx)
+    virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx)
     {
         throwUnexpected();
     }
@@ -26113,29 +26100,28 @@ class CIterationActivityGraph : public CActivityGraph
 
 public:
     CIterationActivityGraph(const char *_graphName, unsigned _id, ActivityArray &x, IProbeManager *_probeManager, 
-                            unsigned _loopCounter, IRoxieSlaveContext *ctx, IHThorArg * _colocalParent, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &_logctx)
-        : CActivityGraph(_graphName, _id, x, _probeManager, _logctx)
+                            unsigned _loopCounter, IRoxieSlaveContext *_ctx, IHThorArg * _colocalParent, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &_logctx)
+        : CActivityGraph(_ctx, _graphName, _id, x, _probeManager, _logctx)
     {
         graphOutputActivityIndex = 0;
         loopCounter = _loopCounter;
         colocalParent = _colocalParent;
-        graphSlaveContext.set(ctx);
         graphSlaveContext.setLoopCounter(loopCounter);
-        graphCodeContext.set(ctx->queryCodeContext());
+        graphCodeContext.set(_ctx->queryCodeContext());
 
         fixedParentExtractSize = parentExtractSize;
         fixedParentExtract = parentExtract;
     }
 
-    void createIterationGraph()
+    void createIterationGraph(IRoxieSlaveContext *_ctx)
     {
-        Owned<IRoxieServerActivity> pseudoActivity = new CPseudoActivity(*new CPseudoArg);
+        Owned<IRoxieServerActivity> pseudoActivity = new CPseudoActivity(_ctx, *new CPseudoArg);
 
         ForEachItemIn(idx1, graphDefinition)
             activities.append(*LINK(pseudoActivity));
 
         graphOutputActivityIndex = queryGraphOutputIndex();
-        recursiveCreateGraph(graphOutputActivityIndex);
+        recursiveCreateGraph(_ctx, graphOutputActivityIndex);
     }
 
     unsigned queryGraphOutputIndex() const
@@ -26146,7 +26132,7 @@ public:
         throwUnexpected();
     }
 
-    void recursiveCreateGraph(unsigned whichActivity)
+    void recursiveCreateGraph(IRoxieSlaveContext *_ctx, unsigned whichActivity)
     {
         //Check to see if already created
         IRoxieServerActivity & prevActivity = activities.item(whichActivity);
@@ -26191,16 +26177,16 @@ public:
                     unsigned outputidx;
                     unsigned source = donor.getInput(branch, outputidx);
                     if (source ==(unsigned) -1)
-                        activity = createRoxieServerNullActivity(&donor, probeManager);
+                        activity = createRoxieServerNullActivity(&graphSlaveContext, &donor, probeManager);
                     else
-                        activity = createRoxieServerPassThroughActivity(&donor, probeManager);
+                        activity = createRoxieServerPassThroughActivity(&graphSlaveContext, &donor, probeManager);
 
                     activities.replace(*activity, whichActivity);
-                    activity->onCreate(&graphSlaveContext, colocalParent);
+                    activity->onCreate(colocalParent);
                     if (source ==(unsigned) -1)
                         return;
 
-                    recursiveCreateGraph(source);
+                    recursiveCreateGraph(_ctx, source);
                     connectInput(whichActivity, 0, source, outputidx, loopCounter);
                     break;
                 }
@@ -26209,9 +26195,9 @@ public:
 
         if (!activity)
         {
-            activity = donor.createActivity(probeManager);
+            activity = donor.createActivity(&graphSlaveContext, probeManager);
             activities.replace(*activity, whichActivity);
-            activity->onCreate(&graphSlaveContext, colocalParent);
+            activity->onCreate(colocalParent);
             activity->resetOutputsUsed();
 
             unsigned inputidx = 0;
@@ -26222,7 +26208,7 @@ public:
                 if (source==(unsigned) -1)
                     break;
 
-                recursiveCreateGraph(source);
+                recursiveCreateGraph(_ctx, source);
                 connectInput(whichActivity, inputidx, source, outputidx, loopCounter);
                 inputidx++;
             }
@@ -26234,7 +26220,7 @@ public:
         ForEachItemIn(idx2, dependencies)
         {
             unsigned input = dependencies.item(idx2);
-            recursiveCreateGraph(input);
+            recursiveCreateGraph(_ctx, input);
             activity->addDependency(activities.item(input),dependencyIndexes.item(idx2),dependencyControlIds.item(idx2));
         }
     }
@@ -26293,23 +26279,22 @@ public:
     virtual IEclGraphResults * queryLocalGraph() { throwUnexpected(); }
     virtual IRoxieServerChildGraph * queryLoopGraph() { throwUnexpected(); }
 
-    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent) 
+    virtual void onCreate(IHThorArg *_colocalParent)
     { 
-        ctx = _ctx;
         colocalParent = _colocalParent;
     }
 
-    virtual IRoxieServerChildGraph * createGraphLoopInstance(unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx)
+    virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx)
     {
         Owned<CIterationActivityGraph> ret = new CIterationActivityGraph(graphName, id, graphDefinition, probeManager, loopCounter, ctx, colocalParent, parentExtractSize, parentExtract, logctx);
-        ret->createIterationGraph();
+        ret->createIterationGraph(ctx);
         return ret.getClear();
     }
 };
 
 
 
-IActivityGraph *createActivityGraph(const char *_graphName, unsigned id, ActivityArray &childFactories, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx)
+IActivityGraph *createActivityGraph(IRoxieSlaveContext *ctx, const char *_graphName, unsigned id, ActivityArray &childFactories, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx)
 {
     if (childFactories.isDelayed())
     {
@@ -26320,8 +26305,8 @@ IActivityGraph *createActivityGraph(const char *_graphName, unsigned id, Activit
         Owned<IProbeManager> childProbe;
         if (_probeManager)
             childProbe.setown(_probeManager->startChildGraph(id, parentActivity));
-        Owned<CActivityGraph> ret = new CActivityGraph(_graphName, id, childFactories, childProbe, _logctx);
-        ret->createGraph();
+        Owned<CActivityGraph> ret = new CActivityGraph(ctx, _graphName, id, childFactories, childProbe, _logctx);
+        ret->createGraph(ctx);
         if (_probeManager)
             _probeManager->endChildGraph(childProbe, parentActivity);
         return ret.getClear();
@@ -26400,7 +26385,7 @@ public:
         ASSERT(state == STATEreset);
         state = STATEstarted; 
     }
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
     {
         streams.append(this);
         return NULL;
@@ -26576,7 +26561,7 @@ protected:
         if (input2)
             activity->setInput(1, 0, &in2);
         IFinalRoxieInput *out = activity->queryOutput(outputIdx);
-        IEngineRowStream *outStream = connectSingleStream(out, outputIdx, 0);
+        IEngineRowStream *outStream = connectSingleStream(ctx, out, outputIdx, 0);
         IOutputMetaData *meta = out->queryOutputMeta();
         void *buf = alloca(meta->getFixedSize());
 
@@ -26586,7 +26571,7 @@ protected:
             // This should be true whether we read all, some, or none of the data.
             // Should not matter if an activity is not started
             if (iteration % 4 == 0)
-                activity->onCreate(ctx, NULL);
+                activity->onCreate(NULL);
             unsigned count = 0;
             if (iteration % 4 != 3)
             {
@@ -26636,7 +26621,7 @@ protected:
 
     void testSplitActivity(IRoxieServerActivityFactory *factory, char const * const *input, char const * const *output, unsigned numOutputs, unsigned repeat)
     {
-        Owned <IRoxieServerActivity> activity = factory->createActivity(NULL);
+        Owned <IRoxieServerActivity> activity = factory->createActivity(ctx, NULL);
         TestInput in(ctx, input);
         in.repeat = repeat;
         activity->setInput(0, 0, &in);
@@ -26645,7 +26630,7 @@ protected:
         {
             out.append(activity->queryOutput(i));
         }
-        activity->onCreate(ctx, NULL);
+        activity->onCreate(NULL);
 
         class casyncfor: public CAsyncFor
         {
@@ -26656,7 +26641,7 @@ protected:
             void Do(unsigned i)
             {
                 IFinalRoxieInput *out = outputs.item(i);
-                IEngineRowStream *outStream = connectSingleStream(out, 0, 0);
+                IEngineRowStream *outStream = connectSingleStream(NULL, out, 0, 0);
                 out->start(0, NULL, false);
                 IOutputMetaData *meta = out->queryOutputMeta();
                 void *buf = alloca(meta->getFixedSize());
@@ -26728,7 +26713,7 @@ protected:
         DBGLOG("Testing %s activity", sortAlgorithm);
         Owned<IPropertyTree> dummyNode = createPTree("node");
         Owned <IRoxieServerActivityFactory> factory = createRoxieServerSortActivityFactory(1, 1, *queryFactory, sortActivityTestFactory, TAKsort, *dummyNode);
-        Owned <IRoxieServerActivity> activity = factory->createActivity(NULL);
+        Owned <IRoxieServerActivity> activity = factory->createActivity(ctx, NULL);
         const char * test[] = { NULL, NULL };
         const char * test12345[] = { "1", "2", "3", "4", "5", NULL, NULL };
         const char * test54321[] = { "5", "4", "3", "2", "1", NULL, NULL };
@@ -26846,7 +26831,7 @@ protected:
         Owned <IRoxieServerActivityFactory> factory = createRoxieServerMergeActivityFactory(1, 1, *queryFactory, mergeActivityTestFactory, TAKmerge);
         factory->setInput(0,0,0);
         factory->setInput(1,0,0);
-        Owned <IRoxieServerActivity> activity = factory->createActivity(NULL);
+        Owned <IRoxieServerActivity> activity = factory->createActivity(ctx, NULL);
         const char * test[] = { NULL, NULL };
         const char * test12345[] = { "1", "2", "3", "4", "5", NULL, NULL };
         const char * test1122334455[] = { "1", "1", "2", "2", "3", "3", "4", "4", "5", "5", NULL, NULL };
@@ -26879,7 +26864,7 @@ protected:
         Owned <IRoxieServerActivityFactory> factory = createRoxieServerMergeActivityFactory(1, 1, *queryFactory, mergeActivityTestFactory, TAKmerge);
         factory->setInput(0,0,0);
         factory->setInput(1,0,0);
-        Owned <IRoxieServerActivity> activity = factory->createActivity(NULL);
+        Owned <IRoxieServerActivity> activity = factory->createActivity(ctx, NULL);
         const char * test[] = { NULL, NULL };
         const char * test12345[] = { "1", "2", "3", "4", "5", NULL, NULL };
         const char * test11111[] = { "1", "1", "1", "1", "1", NULL, NULL };
@@ -26907,7 +26892,7 @@ protected:
         init();
         Owned <IRoxieServerActivityFactory> factory = createRoxieServerThroughSpillActivityFactory(*queryFactory, splitActivityTestFactory, numOutputs);
         factory->setInput(0,0,0);
-        Owned <IRoxieServerActivity> activity = factory->createActivity(NULL);
+        Owned <IRoxieServerActivity> activity = factory->createActivity(ctx, NULL);
 
         const char * test[] = { NULL, NULL };
         const char * test12345[] = { "1", "2", "3", "4", "5", NULL, NULL };

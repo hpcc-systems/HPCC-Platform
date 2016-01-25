@@ -109,10 +109,10 @@ interface IFinalRoxieInput : extends IInputBase
     virtual IRoxieServerActivity *queryActivity() = 0;
     virtual IIndexReadActivityInfo *queryIndexReadActivity() = 0;
 
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags) = 0;  // Use StrandFlags values for flags
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags) = 0;  // Use StrandFlags values for flags
 };
 
-extern IEngineRowStream *connectSingleStream(IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, unsigned flags);
+extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, unsigned flags);
 
 interface ISteppedConjunctionCollector;
 
@@ -148,9 +148,9 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual IFinalRoxieInput *queryOutput(unsigned idx) = 0;
     virtual IFinalRoxieInput *queryInput(unsigned idx) const = 0;
     virtual void execute(unsigned parentExtractSize, const byte *parentExtract) = 0;
-    virtual void onCreate(IRoxieSlaveContext *ctx, IHThorArg *colocalArg) = 0;
+    virtual void onCreate(IHThorArg *colocalArg) = 0;
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
-    virtual IStrandJunction *getOutputStreams(unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags) = 0;  // Use StrandFlags values for flags
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags) = 0;  // Use StrandFlags values for flags
 
     virtual void stop() = 0;
     virtual void abort() = 0;
@@ -189,7 +189,7 @@ interface IRoxieServerActivity : extends IActivityBase
 
 interface IRoxieServerActivityFactory : extends IActivityFactory
 {
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probemanager) const = 0;
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probemanager) const = 0;
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx) = 0;
     virtual bool isSink() const = 0;
     virtual bool isFunction() const = 0;
@@ -208,7 +208,7 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual void noteProcessed(unsigned idx, unsigned processed) const = 0;
     virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const ActivityTimeAccumulator &totalCycles, cycle_t localCycles) const = 0;
     virtual void onCreateChildQueries(IRoxieSlaveContext *ctx, IHThorArg *colocalArg, IArrayOf<IActivityGraph> &childGraphs) const = 0;
-    virtual void createChildQueries(IArrayOf<IActivityGraph> &childGraphs, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx) const = 0;
+    virtual void createChildQueries(IRoxieSlaveContext *ctx, IArrayOf<IActivityGraph> &childGraphs, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx) const = 0;
     virtual void noteStarted() const = 0;
     virtual void noteStarted(unsigned idx) const = 0;
     virtual void noteDependent(unsigned target) = 0;
@@ -264,7 +264,7 @@ interface IRoxieServerChildGraph : public IInterface
 
 interface IQueryFactory;
 
-extern IActivityGraph *createActivityGraph(const char *graphName, unsigned id, ActivityArray &x, IRoxieServerActivity *parent, IProbeManager *probeManager, const IRoxieContextLogger &logctx);
+extern IActivityGraph *createActivityGraph(IRoxieSlaveContext *ctx, const char *graphName, unsigned id, ActivityArray &x, IRoxieServerActivity *parent, IProbeManager *probeManager, const IRoxieContextLogger &logctx);
 
 extern ruid_t getNextRuid();
 extern void setStartRuid(unsigned restarts);

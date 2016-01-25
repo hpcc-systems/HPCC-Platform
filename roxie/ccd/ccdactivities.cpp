@@ -210,7 +210,7 @@ public:
         if (datafile)
             addXrefFileInfo(reply, datafile);
     }
-    void createChildQueries(IArrayOf<IActivityGraph> &childGraphs, IHThorArg *colocalArg, IProbeManager *_probeManager, IRoxieSlaveContext *queryContext, const SlaveContextLogger &logctx) const
+    void createChildQueries(IRoxieSlaveContext *ctx, IArrayOf<IActivityGraph> &childGraphs, IHThorArg *colocalArg, IProbeManager *_probeManager, IRoxieSlaveContext *queryContext, const SlaveContextLogger &logctx) const
     {
         if (childQueries.length())
         {
@@ -218,10 +218,10 @@ public:
             {
                 if (!_probeManager) // MORE - the probeAllRows is a hack!
                     _probeManager = queryContext->queryProbeManager();
-                IActivityGraph *childGraph = createActivityGraph(NULL, childQueryIndexes.item(idx), childQueries.item(idx), NULL, _probeManager, logctx); // MORE - the parent is wrong!
+                IActivityGraph *childGraph = createActivityGraph(ctx, NULL, childQueryIndexes.item(idx), childQueries.item(idx), NULL, _probeManager, logctx); // MORE - the parent is wrong!
                 childGraphs.append(*childGraph);
                 queryContext->noteChildGraph(childQueryIndexes.item(idx), childGraph);
-                childGraph->onCreate(queryContext, colocalArg);             //NB: onCreate() on helper for activities in child graph are delayed, otherwise this would go wrong.
+                childGraph->onCreate(colocalArg);             //NB: onCreate() on helper for activities in child graph are delayed, otherwise this would go wrong.
             }
         }
     }
@@ -335,9 +335,9 @@ protected:
         // MORE - need to consider debugging....
         if (probeAllRows)
             probeManager.setown(createProbeManager());
-        basefactory->createChildQueries(childGraphs, basehelper, probeManager, queryContext, logctx);
+        basefactory->createChildQueries(queryContext, childGraphs, basehelper, probeManager, queryContext, logctx);
 #else
-        basefactory->createChildQueries(childGraphs, basehelper, NULL, queryContext, logctx);
+        basefactory->createChildQueries(queryContext, childGraphs, basehelper, NULL, queryContext, logctx);
 #endif
         if (meta.needsSerializeDisk())
             serializer.setown(meta.createDiskSerializer(queryContext->queryCodeContext(), basefactory->queryId()));
@@ -5166,7 +5166,7 @@ public:
             remoteGraph->beforeExecute();
             Owned<IFinalRoxieInput> input = remoteGraph->startOutput(0, remoteExtractBuilder.size(), remoteExtractBuilder.getbytes(), false);
             Owned <IStrandJunction> junction;
-            IEngineRowStream *stream = connectSingleStream(input, 0, junction, 0);
+            IEngineRowStream *stream = connectSingleStream(queryContext, input, 0, junction, 0);
 
             while (!aborted)
             {

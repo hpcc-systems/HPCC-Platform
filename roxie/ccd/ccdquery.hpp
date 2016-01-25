@@ -58,13 +58,13 @@ interface IActivityGraph : extends IInterface
     virtual void reset() = 0;
     virtual void execute() = 0;
     virtual void getProbeResponse(IPropertyTree *query) = 0;
-    virtual void onCreate(IRoxieSlaveContext *ctx, IHThorArg *colocalArg) = 0;
+    virtual void onCreate(IHThorArg *colocalArg) = 0;
     virtual void noteException(IException *E) = 0;
     virtual void checkAbort() = 0;
     virtual IThorChildGraph * queryChildGraph() = 0;
     virtual IEclGraphResults * queryLocalGraph() = 0;
     virtual IRoxieServerChildGraph * queryLoopGraph() = 0;
-    virtual IRoxieServerChildGraph * createGraphLoopInstance(unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) = 0;
+    virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) = 0;
     virtual const char *queryName() const = 0;
 };
 
@@ -134,7 +134,7 @@ private:
 interface IQueryFactory : extends IInterface
 {
     virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const = 0;
-    virtual IActivityGraph *lookupGraph(const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const = 0;
+    virtual IActivityGraph *lookupGraph(IRoxieSlaveContext *ctx, const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const = 0;
     virtual ISlaveActivityFactory *getSlaveActivityFactory(unsigned id) const = 0;
     virtual IRoxieServerActivityFactory *getRoxieServerActivityFactory(unsigned id) const = 0;
     virtual hash64_t queryHash() const = 0;
