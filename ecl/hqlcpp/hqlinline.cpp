@@ -1915,7 +1915,7 @@ void NestedEvalContext::ensureHelpersExist()
 
         //void onStart(const byte * parentExtract)
         BuildCtx onstartctx(onStart.declarectx);
-        IHqlStmt * onStartStmt = onstartctx.addQuotedCompound("inline void onStart()");
+        IHqlStmt * onStartStmt = onstartctx.addQuotedCompoundLiteral("inline void onStart()");
         if (parentExtract)
             parentExtract->beginChildActivity(onStart.declarectx, onstartctx, GraphCoLocal, colocalMember, true, parentExtract->canSerializeFields(), NULL);
 

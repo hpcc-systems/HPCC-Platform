@@ -223,9 +223,9 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
         translator.beginNestedClass(helperctx, "helper", "INlpHelper");
 
         BuildCtx funcctx(helperctx);
-        funcctx.addQuotedCompound("virtual IValidator * queryValidator(unsigned i)");
+        funcctx.addQuotedCompoundLiteral("virtual IValidator * queryValidator(unsigned i)");
         BuildCtx casectx(funcctx);
-        casectx.addQuotedCompound("switch (i)");
+        casectx.addQuotedCompoundLiteral("switch (i)");
 
         ForEachItemIn(idx, validators)
         {
@@ -243,14 +243,14 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
             CHqlBoundExpr boundMatched;
             if (kind != ValidateIsUnicode)
             {
-                validctx.addQuotedCompound("virtual bool isValid(unsigned len, const char * data)");
+                validctx.addQuotedCompoundLiteral("virtual bool isValid(unsigned len, const char * data)");
                 boundMatched.length.setown(createVariable("len", LINK(sizetType)));
                 boundMatched.expr.setown(createVariable("data", makeReferenceModifier(LINK(unknownStringType))));
                 validctx.associateExpr(activeMatchTextExpr, boundMatched);
             }
             else
             {
-                validctx.addQuotedCompound("virtual bool isValid(unsigned len, const UChar * data)");
+                validctx.addQuotedCompoundLiteral("virtual bool isValid(unsigned len, const UChar * data)");
                 boundMatched.length.setown(createVariable("len", LINK(sizetType)));
                 boundMatched.expr.setown(createVariable("data", makeReferenceModifier(LINK(unknownUnicodeType))));
                 validctx.associateExpr(activeMatchUnicodeExpr, boundMatched);
@@ -282,10 +282,10 @@ void NlpParseContext::buildProductions(HqlCppTranslator & translator, BuildCtx &
 
     {
         BuildCtx metactx(classctx);
-        metactx.addQuotedCompound("virtual IOutputMetaData * queryProductionMeta(unsigned id)");
+        metactx.addQuotedCompoundLiteral("virtual IOutputMetaData * queryProductionMeta(unsigned id)");
 
         BuildCtx metacasectx(metactx);
-        metacasectx.addQuotedCompound("switch (id)");
+        metacasectx.addQuotedCompoundLiteral("switch (id)");
 
         StringBuffer s;
         ForEachItemIn(i, productions)
@@ -304,11 +304,11 @@ void NlpParseContext::buildProductions(HqlCppTranslator & translator, BuildCtx &
     {
         OwnedHqlExpr callback = createVariable("input", makeBoolType());
         BuildCtx prodctx(startctx);
-        prodctx.addQuotedCompound("virtual size32_t executeProduction(ARowBuilder & crSelf, unsigned id, IProductionCallback * input)");
+        prodctx.addQuotedCompoundLiteral("virtual size32_t executeProduction(ARowBuilder & crSelf, unsigned id, IProductionCallback * input)");
         prodctx.associateExpr(activeProductionMarkerExpr, callback);
 
         BuildCtx prodcasectx(prodctx);
-        prodcasectx.addQuotedCompound("switch (id)");
+        prodcasectx.addQuotedCompoundLiteral("switch (id)");
 
         StringBuffer s, subname;
         ForEachItemIn(i, productions)
@@ -511,7 +511,7 @@ void HqlCppTranslator::doBuildParseTransform(BuildCtx & classctx, IHqlExpression
 {
     BuildCtx funcctx(classctx);
 
-    funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IMatchedResults * matched, IMatchWalker * walker)");
+    funcctx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IMatchedResults * matched, IMatchWalker * walker)");
     ensureRowAllocated(funcctx, "crSelf");
     funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     funcctx.associateExpr(activeNlpMarkerExpr, activeNlpMarkerExpr);
@@ -539,11 +539,11 @@ void HqlCppTranslator::doBuildParseSearchText(BuildCtx & classctx, IHqlExpressio
 
     if (searchTypeCode == type_unicode)
     {
-        funcctx.addQuotedCompound("virtual void getSearchText(size32_t & retLen, char * & _retText, const void * _self)");
+        funcctx.addQuotedCompoundLiteral("virtual void getSearchText(size32_t & retLen, char * & _retText, const void * _self)");
         funcctx.addQuotedLiteral("UChar * & retText = *(UChar * *)&_retText;");        // don't ask.
     }
     else
-        funcctx.addQuotedCompound("virtual void getSearchText(size32_t & retLen, char * & retText, const void * _self)");
+        funcctx.addQuotedCompoundLiteral("virtual void getSearchText(size32_t & retLen, char * & retText, const void * _self)");
     funcctx.addQuotedLiteral("const unsigned char * self = (const unsigned char *) _self;");
     bindTableCursor(funcctx, dataset, "self");
 
@@ -646,7 +646,7 @@ void HqlCppTranslator::doBuildParseCompiled(BuildCtx & classctx, MemoryBuffer & 
     OwnedHqlExpr srcData = addDataLiteral((const char *)compressed.toByteArray(), buffLen);
     OwnedHqlExpr retData = createVariable("retData", makePointerType(makeVoidType()));
 
-    funcctx.addQuotedCompound("virtual void queryCompiled(IResourceContext *ctx, size32_t & retLen, const void * & retData)");
+    funcctx.addQuotedCompoundLiteral("virtual void queryCompiled(IResourceContext *ctx, size32_t & retLen, const void * & retData)");
     funcctx.addQuotedF("//uncompressed size = %d", buffer.length());
     buildExpr(funcctx, srcData, bound);
 

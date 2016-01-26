@@ -552,10 +552,10 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
         OwnedHqlExpr result = createVariable("ret", LINK(intType));
 
         BuildCtx comparectx(classctx);
-        comparectx.addQuotedCompound("class Compare : public IRangeCompare", s2.clear().append(" ").append(compareName).append(";"));
+        comparectx.addQuotedCompoundLiteral("class Compare : public IRangeCompare", s2.clear().append(" ").append(compareName).append(";"));
         translator.doBuildUnsignedFunction(comparectx, "maxFields", lenOffsets/2);
 
-        comparectx.addQuotedCompound("virtual int docompare(const void * _left,const void * _right, unsigned numFields) const");
+        comparectx.addQuotedCompoundLiteral("virtual int docompare(const void * _left,const void * _right, unsigned numFields) const");
         comparectx.addQuotedLiteral("const byte * left = (const byte *)_left;");
         comparectx.addQuotedLiteral("const byte * right = (const byte *)_right;");
         comparectx.addQuotedLiteral("int ret;");
@@ -587,8 +587,8 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
         OwnedHqlExpr result = createVariable("ret", LINK(intType));
 
         BuildCtx distancectx(classctx);
-        distancectx.addQuotedCompound("class Distance : public IDistanceCalculator", s2.clear().append(" ").append(distanceName).append(";"));
-        distancectx.addQuotedCompound("virtual unsigned getDistance(unsigned __int64 & distance, const void * _before, const void * _after, unsigned numFields) const");
+        distancectx.addQuotedCompoundLiteral("class Distance : public IDistanceCalculator", s2.clear().append(" ").append(distanceName).append(";"));
+        distancectx.addQuotedCompoundLiteral("virtual unsigned getDistance(unsigned __int64 & distance, const void * _before, const void * _after, unsigned numFields) const");
         distancectx.addQuotedLiteral("const byte * before = (const byte *)_before;");
         distancectx.addQuotedLiteral("const byte * after = (const byte *)_after;");
 
@@ -756,7 +756,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRowsetRange(BuildCtx & ctx, IH
     OwnedHqlExpr normalized = normalizeListCasts(castList);
 
     BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual void getInputSelection(bool & __isAllResult, size32_t & __lenResult, void * & __result)");
+    funcctx.addQuotedCompoundLiteral("virtual void getInputSelection(bool & __isAllResult, size32_t & __lenResult, void * & __result)");
     doBuildFunctionReturn(funcctx, castType, normalized);
 
     if ((kind == TAKnwaygraphloopresultread) && isGrouped(rowset))
@@ -995,7 +995,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
         //virtual unsigned __int64 extractRangeValue(const void * input);               // distance is assumed to be unsigned, code generator must bias if not true.
         {
             BuildCtx extractCtx(instance->startctx);
-            extractCtx.addQuotedCompound("unsigned __int64 extractRangeValue(const void * _left)");
+            extractCtx.addQuotedCompoundLiteral("unsigned __int64 extractRangeValue(const void * _left)");
             extractCtx.addQuotedLiteral("const byte * left = (const byte *)_left;");
             bindTableCursor(extractCtx, dataset, "left", no_left, selSeq);
             buildReturn(extractCtx, rangeValue);
@@ -1004,7 +1004,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
         //virtual void adjustRangeValue(void * self, const void * input, __int64 delta);        // implementation must ensure field doesn't go -ve.
         {
             BuildCtx adjustCtx(instance->startctx);
-            adjustCtx.addQuotedCompound("void adjustRangeValue(ARowBuilder & crSelf, const void * _left, __int64 delta)");
+            adjustCtx.addQuotedCompoundLiteral("void adjustRangeValue(ARowBuilder & crSelf, const void * _left, __int64 delta)");
             ensureRowAllocated(adjustCtx, "crSelf");
             adjustCtx.addQuotedLiteral("const byte * left = (const byte *)_left;");
 
@@ -1034,7 +1034,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
         //virtual __int64 maxRightBeforeLeft()
         {
             BuildCtx rBeforeLctx(instance->startctx);
-            rBeforeLctx.addQuotedCompound("virtual __int64 maxRightBeforeLeft()");
+            rBeforeLctx.addQuotedCompoundLiteral("virtual __int64 maxRightBeforeLeft()");
             OwnedHqlExpr mrbl = stepCondition.getMaxRightBeforeLeft();
             buildReturn(rBeforeLctx, mrbl);
         }
@@ -1042,7 +1042,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
         //virtual __int64 maxLeftBeforeRight()
         {
             BuildCtx lBeforeRctx(instance->startctx);
-            lBeforeRctx.addQuotedCompound("virtual __int64 maxLeftBeforeRight()");
+            lBeforeRctx.addQuotedCompoundLiteral("virtual __int64 maxLeftBeforeRight()");
             OwnedHqlExpr mlbr = stepCondition.getMaxLeftBeforeRight();
             buildReturn(lBeforeRctx, mlbr);
         }
@@ -1062,7 +1062,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
     if (transform)
     {
         BuildCtx transformctx(instance->startctx);
-        transformctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, unsigned numRows, const void * * _rows)");
+        transformctx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, unsigned numRows, const void * * _rows)");
         ensureRowAllocated(transformctx, "crSelf");
         transformctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
         transformctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _rows[1];");
@@ -1092,7 +1092,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
         if (lastJoinField->queryType()->isInteger())
         {
             BuildCtx transformctx(instance->startctx);
-            transformctx.addQuotedCompound("virtual bool createNextJoinValue(ARowBuilder & crSelf, const void * _value)");
+            transformctx.addQuotedCompoundLiteral("virtual bool createNextJoinValue(ARowBuilder & crSelf, const void * _value)");
             ensureRowAllocated(transformctx, "crSelf");
             transformctx.addQuotedLiteral("const byte * value = (const byte *)_value;");
 
