@@ -1531,11 +1531,13 @@ protected:
     IHqlScope * typeScope;
 };
 
-class CHqlVariable : public CHqlExpressionWithType
+class CHqlVariable : public CHqlExpression
 {
 protected:
     StringAttr name;
+    ITypeInfo * type;
     CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _type);
+    ~CHqlVariable();
     virtual bool equals(const IHqlExpression & other) const;
     virtual void sethash();
 public:
@@ -1543,6 +1545,13 @@ public:
     virtual StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual StringBuffer &printAliases(StringBuffer &s, unsigned, bool &) { return s; }
+    virtual ITypeInfo *queryType() const;
+    virtual ITypeInfo *getType();
+    virtual bool isIndependentOfScope() { return true; }
+    virtual bool isIndependentOfScopeIgnoringInputs() { return true; }
+    virtual bool usesSelector(IHqlExpression * selector) { return false; }
+    virtual void gatherTablesUsed(CUsedTablesBuilder & used) {}
+    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) {}
 };
 
 class CHqlAttribute : public CHqlExpressionWithTables
