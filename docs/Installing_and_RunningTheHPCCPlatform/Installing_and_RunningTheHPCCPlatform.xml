@@ -209,10 +209,6 @@
     </sect1>
   </chapter>
 
-  <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-              xpointer="Hardware-and-Software-Chapter"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
-
   <chapter id="HPCC-installation-and-startup">
     <title>HPCC Installation and Startup</title>
 
