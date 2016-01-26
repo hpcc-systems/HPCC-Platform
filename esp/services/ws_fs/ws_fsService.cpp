@@ -2278,15 +2278,15 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
     return true;
 }
 
-const char* CFileSprayEx::getDropZoneDirByIP(const char* ip, StringBuffer& dir)
+void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, StringBuffer& destFileOut, StringBuffer& mask)
 {
     if (!ip || !*ip)
-        return NULL;
+        return;
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment> env = factory->openEnvironment();
     if (!env)
-        return NULL;
+        return;
 
     Owned<IConstMachineInfo> machine = env->getMachineByAddress(ip);
     if (!machine)
@@ -2294,21 +2294,38 @@ const char* CFileSprayEx::getDropZoneDirByIP(const char* ip, StringBuffer& dir)
         IpAddress ipAddr;
         ipAddr.ipset(ip);
         if (!ipAddr.isLocal())
-            return NULL;
+            return;
         machine.setown(env->getMachineForLocalHost());
         if (!machine)
-            return NULL;
+            return;
     }
-    SCMStringBuffer computer, directory;
+    SCMStringBuffer computer, directory, maskBuf;
     machine->getName(computer);
     if (!computer.length())
-        return NULL;
+        return;
 
     Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByComputer(computer.str());
     if (!dropZone)
-        return NULL;
+        return;
     dropZone->getDirectory(directory);
-    return dir.set(directory.str()).str();
+
+    StringBuffer destFile;
+    if (isAbsolutePath(destFileIn))
+        destFile.set(destFileIn);
+    else
+    {
+        destFile.set(directory.str());
+        if (destFile.length())
+            addPathSepChar(destFile);
+        destFile.append(destFileIn);
+    }
+    destFileOut.set(destFile.str());
+    if ((destFile.length() >= directory.length()) && !strnicmp(destFile.str(), directory.str(), directory.length()))
+    {
+        dropZone->getUMask(maskBuf);
+        if (maskBuf.length())
+            mask.set(maskBuf.str());
+    }
 }
 
 bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDesprayResponse &resp)
@@ -2358,16 +2375,11 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         {
             RemoteFilename rfn;
             SocketEndpoint ep(destip);
-            if (isAbsolutePath(destfile))
-                rfn.setPath(ep, destfile);
-            else
-            {
-                StringBuffer buf;
-                getDropZoneDirByIP(destip, buf);
-                if (buf.length())
-                    addPathSepChar(buf);
-                rfn.setPath(ep, buf.append(destfile).str());
-            }
+            StringBuffer destfileWithPath, umask;
+            getDropZoneInfoByIP(destip, destfile, destfileWithPath, umask);
+            rfn.setPath(ep, destfileWithPath.str());
+            if (umask.length())
+                options->setUMask(umask.str());
             destination->setSingleFilename(rfn);
         }
         else

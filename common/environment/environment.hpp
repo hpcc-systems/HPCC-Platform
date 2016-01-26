@@ -108,6 +108,7 @@ interface IConstDropZoneInfo : extends IConstEnvBase
     virtual IStringVal & getComputerName(IStringVal & str) const = 0;
     virtual IStringVal & getDescription(IStringVal & str) const = 0;
     virtual IStringVal & getDirectory(IStringVal & str) const = 0;
+    virtual IStringVal & getUMask(IStringVal & str) const = 0;
 };
 
 interface IConstEnvironment : extends IConstEnvBase
