@@ -1684,7 +1684,6 @@ void DatasetBuilderBase::doFinishRow(BuildCtx & ctx, BoundRow * selfCursor, IHql
     s.append(instanceName).append(".finalizeRow(");
     translator.generateExprCpp(s, boundSize.expr).append(");");
     ctx.addQuoted(s);
-    ctx.removeAssociation(selfCursor);
 }
 
 //---------------------------------------------------------------------------

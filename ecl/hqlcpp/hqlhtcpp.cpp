@@ -7107,7 +7107,6 @@ void HqlCppTranslator::finishSelf(BuildCtx & ctx, BoundRow * self, BoundRow * ta
         OwnedHqlExpr sizeofTarget = createSizeof(target->querySelector());
         ctx.associateExpr(sizeofTarget, bound);
     }
-    ctx.removeAssociation(self);
 }
 
 
@@ -12615,48 +12614,30 @@ void HqlCppTranslator::buildProcessTransformFunction(BuildCtx & ctx, IHqlExpress
 
     LinkedHqlExpr skipReturnValue = queryZero();
     associateSkipReturnMarker(funcctx, skipReturnValue, NULL);
-    if (!recordTypesMatch(dataset, right))
-    {
-        //self won't clash, so can generate efficient code.
-        //Perform cse on both transforms
-        OwnedHqlExpr comma = createComma(LINK(transformRow), LINK(transformRight));
-        comma.setown(spotScalarCSE(comma, NULL, queryOptions().spotCseInIfDatasetConditions));
-        if (comma->getOperator() == no_alias_scope)
-            comma.set(comma->queryChild(0));
 
-        HqlExprArray unwound;
-        comma->unwindList(unwound, no_comma);
-        unsigned max = unwound.ordinality();
+    //Perform cse on both transforms
+    OwnedHqlExpr comma = createComma(LINK(transformRow), LINK(transformRight));
+    comma.setown(spotScalarCSE(comma, NULL, queryOptions().spotCseInIfDatasetConditions));
+    if (comma->getOperator() == no_alias_scope)
+        comma.set(comma->queryChild(0));
 
-        BoundRow * selfCursor = bindSelf(funcctx, dataset, "crSelf");
-        BoundRow * selfRowCursor = bindSelf(funcctx, right, "crSelfRight");
+    HqlExprArray unwound;
+    comma->unwindList(unwound, no_comma);
+    unsigned max = unwound.ordinality();
 
-        for (unsigned i=0; i<max-2; i++)
-            buildStmt(funcctx, &unwound.item(i));
+    BoundRow * selfCursor = bindSelf(funcctx, dataset, "crSelf");
+    BoundRow * selfRowCursor = bindSelf(funcctx, right, "crSelfRight");
 
-        IHqlExpression * newTransformRow = queryExpandAliasScope(funcctx, &unwound.item(max-2));
-        IHqlExpression * newTransformRight = queryExpandAliasScope(funcctx, &unwound.item(max-1));
-        assertex(newTransformRow->getOperator() == no_transform && newTransformRight->getOperator() == no_transform);
+    for (unsigned i=0; i<max-2; i++)
+        buildStmt(funcctx, &unwound.item(i));
 
-        doTransform(funcctx, newTransformRow, selfCursor);
-        doTransform(funcctx, newTransformRight, selfRowCursor);
-        buildReturnRecordSize(funcctx, selfCursor);
-    }
-    else
-    {
-        BuildCtx ctx1(funcctx);
+    IHqlExpression * newTransformRow = queryExpandAliasScope(funcctx, &unwound.item(max-2));
+    IHqlExpression * newTransformRight = queryExpandAliasScope(funcctx, &unwound.item(max-1));
+    assertex(newTransformRow->getOperator() == no_transform && newTransformRight->getOperator() == no_transform);
 
-        ctx1.addGroup();
-        BoundRow * selfRowCursor = bindSelf(ctx1, right, "crSelfRight");
-        doTransform(ctx1, transformRight, selfRowCursor);
-
-        BuildCtx ctx2(funcctx);
-        ctx2.addGroup();
-        BoundRow * selfCursor = bindSelf(ctx2, dataset, "crSelf");
-        doTransform(ctx2, transformRow, selfCursor);
-
-        buildReturnRecordSize(ctx2, selfCursor);
-    }
+    doTransform(funcctx, newTransformRow, selfCursor);
+    doTransform(funcctx, newTransformRight, selfRowCursor);
+    buildReturnRecordSize(funcctx, selfCursor);
 }
 
 
