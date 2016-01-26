@@ -489,7 +489,7 @@ void HqlDllGenerator::addWorkUnitAsResource()
 void HqlDllGenerator::insertStandAloneCode()
 {
     BuildCtx ctx(static_cast<HqlCppInstance &>(*code), goAtom);
-    ctx.addQuotedCompound("int main(int argc, const char *argv[])");
+    ctx.addQuotedCompoundLiteral("int main(int argc, const char *argv[])");
     ctx.addQuotedLiteral("return start_query(argc, argv);\n");
 }
 

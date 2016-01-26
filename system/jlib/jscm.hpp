@@ -85,7 +85,6 @@ private:
     CLASS * ptr;
 };
 
-
 //This base class implements a shared pointer based on a link count held in the object.
 //The two derived classes Owned and Linked should be used as the concrete types to construct a shared object
 //from a pointer.
@@ -94,9 +93,11 @@ template <class CLASS> class Shared
 public:
     inline Shared()                              { ptr = NULL; }
     inline Shared(CLASS * _ptr, bool owned)      { ptr = _ptr; if (!owned && _ptr) _ptr->Link(); }
-    inline Shared(const Shared<CLASS> & other)   { ptr = other.getLink(); }
+    inline Shared(const Shared & other)          { ptr = other.getLink(); }
+#if defined(__cplusplus) && __cplusplus >= 201100
+    inline Shared(Shared && other)               { ptr = other.getClear(); }
+#endif
     inline ~Shared()                             { ::Release(ptr); }
-
     inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { this->set(other.get()); return *this;  }
 
     inline CLASS * operator -> () const         { return ptr; } 

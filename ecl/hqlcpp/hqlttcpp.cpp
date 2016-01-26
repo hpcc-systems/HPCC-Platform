@@ -1664,7 +1664,7 @@ protected:
                 {
                     StringBuffer temp;
                     temp.append("_agg_").append(assigns.ordinality());
-                    targetField = createField(createIdAtom(temp.str()), expr->getType(), NULL);
+                    targetField = createFieldFromValue(createIdAtom(temp.str()), expr);
                     extraSelectNeeded = true;
                 }
                 fields.append(*targetField);
@@ -3338,7 +3338,7 @@ static IHqlExpression * extractPrefetchFields(HqlExprArray & fields, HqlExprArra
         match = fields.ordinality();
         StringBuffer name;
         name.append("_f").append(match).append("_");
-        IHqlExpression * field = createField(createIdAtom(name.str()), expr->getType(), NULL);
+        IHqlExpression * field = createFieldFromValue(createIdAtom(name.str()), expr);
         fields.append(*field);
         values.append(*LINK(expr));
     }
@@ -3656,7 +3656,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
             {
                 StringBuffer temp;
                 temp.append("_agg_").append(aggregateAssigns.ordinality());
-                IHqlExpression * targetField = createField(createIdAtom(temp.str()), curGroup->getType(), NULL);
+                IHqlExpression * targetField = createFieldFromValue(createIdAtom(temp.str()), curGroup);
                 aggregateFields.append(*targetField);
                 aggregateAssigns.append(*createAssign(createSelectExpr(getActiveTableSelector(), LINK(targetField)), LINK(curGroup)));
                 extraSelectNeeded = true;
@@ -11181,7 +11181,7 @@ IHqlExpression * HqlTreeNormalizer::transformEvaluate(IHqlExpression * expr)
                 else
                 {
                     //EVALUATE(t[n], e)          -> table(t,{f1 := e})[n].f1;
-                    OwnedHqlExpr field = createField(valueId, expr->getType(), NULL);
+                    OwnedHqlExpr field = createFieldFromValue(valueId, expr);
                     IHqlExpression * aggregateRecord = createRecord(field);
 
                     IHqlExpression * newAttr = replaceSelector(attr, activeTable, baseDs);

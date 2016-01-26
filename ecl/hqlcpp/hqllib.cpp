@@ -480,7 +480,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibrarySelect(BuildCtx & ctx, 
 void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibraryInstance * libraryInstance)
 {
     BuildCtx subctx(ctx);
-    subctx.addQuotedCompound("virtual void createParentExtract(rtlRowBuilder & builder)");
+    subctx.addQuotedCompoundLiteral("virtual void createParentExtract(rtlRowBuilder & builder)");
 
 
     BuildCtx beforeBuilderCtx(subctx);
@@ -585,9 +585,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
 
     StringBuffer s;
     BuildCtx metactx(instance->classctx);
-    metactx.addQuotedCompound("virtual IOutputMetaData * queryOutputMeta(unsigned whichOutput)");
+    metactx.addQuotedCompoundLiteral("virtual IOutputMetaData * queryOutputMeta(unsigned whichOutput)");
     BuildCtx switchctx(metactx);
-    switchctx.addQuotedCompound("switch (whichOutput)");
+    switchctx.addQuotedCompoundLiteral("switch (whichOutput)");
 
     HqlDummyLookupContext dummyCtx(NULL);
     IHqlScope * moduleScope = module->queryScope();
@@ -604,7 +604,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
 
     //Library Name must be onCreate invariant
     BuildCtx namectx(instance->createctx);
-    namectx.addQuotedCompound("virtual char * getLibraryName()");
+    namectx.addQuotedCompoundLiteral("virtual char * getLibraryName()");
     buildReturn(namectx, name, unknownVarStringType);
 
     buildInstanceSuffix(instance);

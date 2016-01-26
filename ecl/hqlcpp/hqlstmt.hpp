@@ -122,6 +122,7 @@ public:
     IHqlStmt *                  addQuotedLiteral(const char * text); // must only be used for constant C++ strings - avoids a memory clone
     IHqlStmt *                  addQuotedF(const char * text, ...) __attribute__((format(printf, 2, 3)));
     IHqlStmt *                  addQuotedCompound(const char * text, const char * extra = NULL);
+    IHqlStmt *                  addQuotedCompoundLiteral(const char * text, const char * extra = NULL);
     IHqlStmt *                  addQuotedCompoundOpt(const char * text, const char * extra = NULL);
     IHqlStmt *                  addQuoted(StringBuffer & text)              { return addQuoted(text.str()); }
     IHqlStmt *                  addQuotedCompound(StringBuffer & text, const char * extra = NULL){ return addQuotedCompound(text.str(), extra); }

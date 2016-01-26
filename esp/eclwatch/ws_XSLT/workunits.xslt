@@ -391,34 +391,34 @@
                            <xsl:choose>
                                 <xsl:when test="string-length($archived)">
                                    <td>
-                                      <input type="submit" class="sbutton" name="ActionType" id="restoreBtn" value="Restore" disabled="true"/>
+                                      <input type="submit" class="sbutton" name="WUActionType" id="restoreBtn" value="Restore" disabled="true"/>
                                    </td>
                                 </xsl:when>
                                 <xsl:otherwise>
                                    <td>
-                                      <input type="submit" class="sbutton" name="ActionType" id="deleteBtn" value="Delete" disabled="true" onclick="return confirm('Delete selected workunits?')"/>
+                                      <input type="submit" class="sbutton" name="WUActionType" id="deleteBtn" value="Delete" disabled="true" onclick="return confirm('Delete selected workunits?')"/>
                                    </td>
                                    <td width="10"/>
                                    <td>
-                                      <input type="submit" class="sbutton" name="ActionType" id="protectBtn" value="Protect" disabled="true"/>
+                                      <input type="submit" class="sbutton" name="WUActionType" id="protectBtn" value="Protect" disabled="true"/>
                                    </td>
                                    <td width="10"/>
                                    <td>
-                                      <input type="submit" class="sbutton" name="ActionType" id="unprotectBtn" value="Unprotect" disabled="true"/>
+                                      <input type="submit" class="sbutton" name="WUActionType" id="unprotectBtn" value="Unprotect" disabled="true"/>
                                    </td>
                                 </xsl:otherwise>
                             </xsl:choose>
                            <td width="10"/>
                            <td>
-                              <input type="submit" class="sbutton" name="ActionType" id="scheduleBtn" value="Reschedule" disabled="true"/>
+                              <input type="submit" class="sbutton" name="WUActionType" id="scheduleBtn" value="Reschedule" disabled="true"/>
                            </td>
                            <td width="10"/>
                            <td>
-                              <input type="submit" class="sbutton" name="ActionType" id="descheduleBtn" value="Deschedule" disabled="true"/>
+                              <input type="submit" class="sbutton" name="WUActionType" id="descheduleBtn" value="Deschedule" disabled="true"/>
                            </td>
                            <td width="10"/>
                            <td>
-                              <input type="submit" class="sbutton" name="ActionType" id="changeStateBtn" value="SetToFailed" disabled="true"/>
+                              <input type="submit" class="sbutton" name="WUActionType" id="changeStateBtn" value="SetToFailed" disabled="true"/>
                            </td>
                         </tr>
                      </table>

@@ -459,18 +459,28 @@ IHqlStmt * BuildCtx::addQuotedCompound(const char * text, const char * extra)
 {
     if (ignoreInput)
         return NULL;
-    HqlCompoundStmt * next = new HqlQuoteStmt(quote_compound_stmt, curStmts, text);
+    HqlCompoundStmt * next = new HqlQuoteCompoundStmt(quote_compound_stmt, curStmts, text);
     if (extra)
         next->addExpr(createQuoted(extra, makeVoidType()));
     return appendCompound(next);
 }
 
 
+IHqlStmt * BuildCtx::addQuotedCompoundLiteral(const char * text, const char * extra)
+{
+    if (ignoreInput)
+        return NULL;
+    HqlCompoundStmt * next = new HqlQuoteLiteralCompoundStmt(quote_compound_stmt, curStmts, text);
+    if (extra)
+        next->addExpr(createQuoted(extra, makeVoidType()));
+    return appendCompound(next);
+}
+
 IHqlStmt * BuildCtx::addQuotedCompoundOpt(const char * text, const char * extra)
 {
     if (ignoreInput)
         return NULL;
-    HqlCompoundStmt * next = new HqlQuoteStmt(quote_compoundopt_stmt, curStmts, text);
+    HqlCompoundStmt * next = new HqlQuoteCompoundStmt(quote_compoundopt_stmt, curStmts, text);
     if (extra)
         next->addExpr(createQuoted(extra, makeVoidType()));
     return appendCompound(next);
@@ -1292,6 +1302,18 @@ StringBuffer & HqlQuoteStmt::getTextExtra(StringBuffer & out) const
 
 
 StringBuffer & HqlQuoteLiteralStmt::getTextExtra(StringBuffer & out) const
+{
+    return out.append(text);
+}
+
+
+StringBuffer & HqlQuoteCompoundStmt::getTextExtra(StringBuffer & out) const
+{
+    return out.append(text);
+}
+
+
+StringBuffer & HqlQuoteLiteralCompoundStmt::getTextExtra(StringBuffer & out) const
 {
     return out.append(text);
 }

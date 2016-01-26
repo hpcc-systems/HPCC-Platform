@@ -171,7 +171,7 @@
                             {
                                 if(confirm('Do you want to abort '+wuid+'?'))
                                 {
-                                    document.location="/WsWorkunits/WUAction?ActionType=Abort&Wuids_i1="+wuid;
+                                    document.location="/WsWorkunits/WUAction?WUActionType=Abort&Wuids_i1="+wuid;
                                 }
                             }
 
@@ -179,7 +179,7 @@
                             {
                                 if(confirm('Do you want to pause '+wuid+'?'))
                                 {
-                                    document.location="/WsWorkunits/WUAction?ActionType=Pause&Wuids_i1="+wuid;
+                                    document.location="/WsWorkunits/WUAction?WUActionType=Pause&Wuids_i1="+wuid;
                                 }
                             }
 
@@ -187,7 +187,7 @@
                             {
                                 if(confirm('Do you want to pause '+wuid+' now?'))
                                 {
-                                    document.location="/WsWorkunits/WUAction?ActionType=PauseNow&Wuids_i1="+wuid;
+                                    document.location="/WsWorkunits/WUAction?WUActionType=PauseNow&Wuids_i1="+wuid;
                                 }
                             }
 
@@ -195,7 +195,7 @@
                             {
                                 if(confirm('Do you want to resume '+wuid+'?'))
                                 {
-                                    document.location="/WsWorkunits/WUAction?ActionType=Resume&Wuids_i1="+wuid;
+                                    document.location="/WsWorkunits/WUAction?WUActionType=Resume&Wuids_i1="+wuid;
                                 }
                             }
 
