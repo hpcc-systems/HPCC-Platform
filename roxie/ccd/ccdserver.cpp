@@ -848,8 +848,6 @@ private:
     IRoxieServerActivityCopyArray & activities;
 };
 
-#define JUNCTION_BLOCK_SIZE 512 // Make configurable at some point
-
 extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, unsigned flags)
 {
     if (input)
@@ -860,7 +858,11 @@ extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxi
         {
             assertex(instreams.length());
             if (!junction)
-                junction.setown(createStrandJunction(ctx->queryRowManager(), instreams.length(), 1, JUNCTION_BLOCK_SIZE, false));
+                junction.setown(createStrandJunction(ctx->queryRowManager(), instreams.length(), 1, ctx->queryOptions().strandBlockSize, false));
+            ForEachItemIn(stream, instreams)
+            {
+                junction->setInput(stream, instreams.item(stream));
+            }
             return junction->queryOutput(0);
         }
         else
@@ -1173,6 +1175,8 @@ public:
         basehelper.onStart(parentExtract, NULL);
         if (factory)
             factory->noteStarted();
+        if (junction)
+            junction->ready();
     }
 
     void executeDependencies(unsigned parentExtractSize, const byte *parentExtract, unsigned controlId)
@@ -1327,8 +1331,13 @@ public:
 
     virtual void connectOutputStreams(unsigned flags)
     {
-        if (input)  // && !inputStream ?
+        if (input && !inputStream)
             inputStream = connectSingleStream(ctx, input, sourceIdx, junction, flags);
+        connectDependencies(flags);
+    }
+
+    void connectDependencies(unsigned flags)
+    {
         ForEachItemIn(i, dependencies)
         {
             dependencies.item(i).connectOutputStreams(flags);
@@ -7533,7 +7542,7 @@ public:
         }
         else
             sortFlags = TAFstable|TAFconstant;
-        bool forceSpill = _queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);;
+        bool forceSpill = _queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);
         if (forceSpill)
             sortFlags |= TAFspill;
         if (!(sortFlags & TAFunstable))
@@ -13221,23 +13230,169 @@ IRoxieServerActivityFactory *createRoxieServerFilterProjectActivityFactory(unsig
 }
 
 //=================================================================================
+
+class CRoxieServerParallelProjectActivity : public CRoxieServerActivity
+{
+    unsigned numProcessedLastGroup;
+    unsigned numStrands;
+    unsigned blockSize;
+
+    class ProjectProcessor : public CInterfaceOf<IEngineRowStream>
+    {
+        CRoxieServerParallelProjectActivity &parent;
+
+        // All these probably should go in a common base class StrandProcessor. Might even want that class to replace the corresponding fields in CRoxieServerActivity
+        IEngineRowStream *inputStream;
+        IHThorArg &basehelper;
+        bool timeActivities;
+    public:
+        ActivityTimeAccumulator totalCycles;
+        unsigned processed = 0;
+        unsigned numProcessedLastGroup = 0;
+
+    public:
+        ProjectProcessor(CRoxieServerParallelProjectActivity &_parent, IEngineRowStream *_inputStream)
+          : parent(_parent), inputStream(_inputStream), basehelper(parent.basehelper)
+        {
+            timeActivities = parent.timeActivities;
+        }
+        virtual const void * nextRow()
+        {
+            ActivityTimer t(totalCycles, timeActivities);
+            loop
+            {
+                OwnedConstRoxieRow in = inputStream->nextRow();
+                if (!in)
+                {
+                    if (numProcessedLastGroup == processed)
+                        in.setown(inputStream->nextRow());
+                    if (!in)
+                    {
+                        numProcessedLastGroup = processed;
+                        return NULL;
+                    }
+                }
+
+                try
+                {
+                    RtlDynamicRowBuilder rowBuilder(parent.rowAllocator);
+                    size32_t outSize;
+                    outSize = ((IHThorProjectArg &) basehelper).transform(rowBuilder, in);
+                    if (outSize)
+                    {
+                        processed++;
+                        return rowBuilder.finalizeRowClear(outSize);
+                    }
+                }
+                catch (IException *E)
+                {
+                    throw parent.makeWrappedException(E);
+                }
+            }
+        }
+        virtual void stop()
+        {
+            parent.processed += processed;  // MORE - Should be atomic
+            // Also merge the cycles up somehow (and any other relevant stats)
+            inputStream->stop();
+        }
+        virtual void resetEOF()
+        {
+            inputStream->resetEOF();
+        }
+    };
+    IArrayOf<ProjectProcessor> strands;
+    Owned<IStrandBranch> branch;
+    Owned<IStrandJunction> splitter;
+
+public:
+    CRoxieServerParallelProjectActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numStrands, unsigned _blockSize)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager),
+          numStrands(_numStrands), blockSize(_blockSize)
+    {
+        if (!blockSize)
+            blockSize = ctx->queryOptions().strandBlockSize;
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        ForEachItemIn(idx, strands)
+        {
+            strands.item(idx).numProcessedLastGroup = 0;
+        }
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        if (splitter)
+            splitter->ready();
+    }
+
+    virtual void reset()
+    {
+        if (splitter)
+            splitter->reset();
+        CRoxieServerActivity::reset();
+    }
+
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    {
+        assertex(idx == 0);
+        CRoxieServerActivity::connectDependencies(flags);
+
+        PointerArrayOf<IEngineRowStream> instreams;
+        Owned <IStrandJunction> recombiner = input->getOutputStreams(ctx, sourceIdx, instreams, true, flags);
+
+        // If my input was already split into streams, I just use those...
+        if (instreams.length() == 1)
+        {
+            assertex(recombiner == NULL);
+            // Create a splitter to split the input into n... and a recombiner if need to preserve sorting
+            if (flags & SFpreserveOrder || true)
+            {
+                branch.setown(createStrandBranch(ctx->queryRowManager(), numStrands, blockSize, true, false));
+                splitter.set(branch->queryInputJunction());
+                recombiner.set(branch->queryOutputJunction());
+            }
+            else
+            {
+                splitter.setown(createStrandJunction(ctx->queryRowManager(), 1, numStrands, blockSize, false));
+            }
+            splitter->setInput(0, instreams.item(0));
+            for (unsigned strandNo = 0; strandNo < numStrands; strandNo++)
+                strands.append(*new ProjectProcessor(*this, splitter->queryOutput(strandNo)));
+        }
+        else
+        {
+            // Ignore my hint and just use the width already split into...
+            ForEachItemIn(strandNo, instreams)
+                strands.append(*new ProjectProcessor(*this, instreams.item(strandNo)));
+        }
+        ForEachItemIn(i, strands)
+        {
+            streams.append(&strands.item(i));
+        }
+        return recombiner.getClear();
+    }
+
+    virtual bool needsAllocator() const { return true; }
+
+    virtual const void * nextRow()
+    {
+        throwUnexpected();
+    }
+};
+
 class CRoxieServerProjectActivity : public CRoxieServerActivity
 {
     unsigned numProcessedLastGroup;
-    bool count;
     unsigned __int64 recordCount;
+    bool count;
 
-public:
+ public:
     CRoxieServerProjectActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _count)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
-        count(_count)
+          count(_count)
     {
         numProcessedLastGroup = 0;
         recordCount = 0;
-    }
-
-    ~CRoxieServerProjectActivity()
-    {
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -13292,23 +13447,30 @@ public:
 class CRoxieServerProjectActivityFactory : public CRoxieServerActivityFactory
 {
 protected:
+    unsigned numStrands;
+    unsigned strandBlockSize;
     bool count;
 public:
-    CRoxieServerProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+    CRoxieServerProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
+        numStrands = _graphNode.getPropInt("hint[@name='numstrands']/@value", 1);
+        strandBlockSize = _graphNode.getPropInt("hint[@name='strandblocksize']/@value", 0);
         count = (_kind==TAKcountproject || _kind==TAKprefetchcountproject);
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerProjectActivity(_ctx, this, _probeManager, count);
+        if (kind == TAKproject && numStrands > 1)  // Not supported on prefetch or count projects
+            return new CRoxieServerParallelProjectActivity(_ctx, this, _probeManager, numStrands, strandBlockSize);
+        else
+            return new CRoxieServerProjectActivity(_ctx, this, _probeManager, count);
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerProjectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerProjectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -13534,8 +13696,8 @@ public:
 class CRoxieServerPrefetchProjectActivityFactory : public CRoxieServerProjectActivityFactory 
 {
 public:
-    CRoxieServerPrefetchProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerProjectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerPrefetchProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerProjectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -13545,9 +13707,9 @@ public:
     }
 };
 
-extern IRoxieServerActivityFactory *createRoxieServerPrefetchProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+extern IRoxieServerActivityFactory *createRoxieServerPrefetchProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerPrefetchProjectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerPrefetchProjectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================

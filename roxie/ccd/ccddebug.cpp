@@ -541,7 +541,7 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
 
 public:
     DebugProbe(IInputBase *_in,  unsigned _sourceId, unsigned _sourceIdx, DebugActivityRecord *_sourceAct, unsigned _targetId, unsigned _targetIdx, DebugActivityRecord *_targetAct, unsigned _iteration, unsigned _channel, IDebuggableContext *_debugContext)
-        : InputProbe(static_cast<IFinalRoxieInput*>(_in), debugContext, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
+        : InputProbe(static_cast<IFinalRoxieInput*>(_in), _debugContext, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
           sourceAct(_sourceAct), targetAct(_targetAct)
     {
         historyCapacity = debugContext->getDefaultHistoryCapacity();

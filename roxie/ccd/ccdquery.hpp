@@ -109,6 +109,7 @@ public:
     int fetchPreload;
     int prefetchProjectPreload;
     int bindCores;
+    unsigned strandBlockSize;
 
     bool checkingHeap;
     bool disableLocalOptimizations;

@@ -289,6 +289,7 @@ QueryOptions::QueryOptions()
     fetchPreload = defaultFetchPreload;
     prefetchProjectPreload = defaultPrefetchProjectPreload;
     bindCores = coresPerQuery;
+    strandBlockSize = defaultStrandBlockSize;
 
     checkingHeap = defaultCheckingHeap;
     disableLocalOptimizations = false;  // No global default for this
@@ -316,6 +317,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     fetchPreload = other.fetchPreload;
     prefetchProjectPreload = other.prefetchProjectPreload;
     bindCores = other.bindCores;
+    strandBlockSize = other.strandBlockSize;
 
     checkingHeap = other.checkingHeap;
     disableLocalOptimizations = other.disableLocalOptimizations;
@@ -353,6 +355,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(fetchPreload, wu, "fetchPreload");
     updateFromWorkUnit(prefetchProjectPreload, wu, "prefetchProjectPreload");
     updateFromWorkUnit(bindCores, wu, "bindCores");
+    updateFromWorkUnit(strandBlockSize, wu, "strandBlockSize");
 
     updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
     updateFromWorkUnit(disableLocalOptimizations, wu, "disableLocalOptimizations");
@@ -400,6 +403,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(fetchPreload, ctx, "@fetchPreload", "_FetchPreload");
         updateFromContext(prefetchProjectPreload, ctx, "@prefetchProjectPreload", "_PrefetchProjectPreload");
         updateFromContext(bindCores, ctx, "@bindCores", "_bindCores");
+        updateFromContext(strandBlockSize, ctx, "@strandBlockSize", "_strandBlockSize");
 
         updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
         // Note: disableLocalOptimizations is not permitted at context level (too late)
@@ -536,7 +540,7 @@ protected:
             return createRoxieServerChooseSetsLastActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKproject:
         case TAKcountproject:
-            return createRoxieServerProjectActivityFactory(id, subgraphId, *this, helperFactory, kind); // code is common between Project, CountProject
+            return createRoxieServerProjectActivityFactory(id, subgraphId, *this, helperFactory, kind, node); // code is common between Project, CountProject
         case TAKfilterproject:
             return createRoxieServerFilterProjectActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKdatasetresult:
@@ -846,7 +850,7 @@ protected:
         case TAKnonempty:
             return createRoxieServerNonEmptyActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKprefetchproject:
-            return createRoxieServerPrefetchProjectActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerPrefetchProjectActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKwhen_dataset:
             return createRoxieServerWhenActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKwhen_action:

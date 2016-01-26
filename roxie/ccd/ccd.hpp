@@ -432,6 +432,7 @@ extern unsigned defaultFetchPreload;
 extern unsigned defaultFullKeyedJoinPreload;
 extern unsigned defaultKeyedJoinPreload;
 extern unsigned defaultPrefetchProjectPreload;
+extern unsigned defaultStrandBlockSize;
 extern bool defaultCheckingHeap;
 
 extern unsigned slaveQueryReleaseDelaySeconds;
