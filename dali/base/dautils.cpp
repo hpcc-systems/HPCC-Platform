@@ -1135,8 +1135,7 @@ bool CDfsLogicalFileName::setFromMask(const char *fname,const char *rootdir)
                             if (memicmp(fname,"_of_",4)==0) {
                                 if (!fname[4])
                                     return false;
-                                set(logicalName.str());
-                                return true;
+                                return setValidate(logicalName.str());
                             }
                         }
                     }
