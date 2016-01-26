@@ -187,7 +187,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
             m_authmethod.set(authcfg->queryProp("@method"));
             if (!m_authmethod.isEmpty())
             {
-                PROGLOG("Authenticate method=%s", m_authmethod.str());
+                PROGLOG("Configuring Authenticate method=%s", m_authmethod.str());
                 Owned<IPropertyTree> process_config = getProcessConfig(tree, procname);
 
                 Owned<IPropertyTree> secMgrCfg;
@@ -206,7 +206,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     if (!secMgrType.isEmpty() && 0==strcmp(secMgrType.str(), m_authmethod.str()))
                     {
                         m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, authcfg, secMgrCfg));
-                        m_authmap.setown(m_secmgr->createAuthMap(authcfg));//???
+                        m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                     }
                     else
                     {
@@ -215,66 +215,66 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 }
                 else
                 {
-            //Legacy Security Manager
-            if(stricmp(m_authmethod.str(), "LdapSecurity") == 0)
-            {
-                StringBuffer lsname;
-                authcfg->getProp("@config", lsname);
-                Owned<IPropertyTree> lscfg = bnd_cfg->getPropTree(StringBuffer(".//ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str());
-                if(lscfg == NULL)
-                {
-                    if(process_config.get() != NULL)
-                        lscfg.setown(process_config->getPropTree(StringBuffer("ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str()));
-                    if(lscfg == NULL)
+                    //Legacy Security Manager
+                    if(stricmp(m_authmethod.str(), "LdapSecurity") == 0)
                     {
-                        ERRLOG("can't find bnd_cfg for LdapSecurity %s", lsname.str());
-                        throw MakeStringException(-1, "can't find bnd_cfg for LdapSecurity %s", lsname.str());
+                        StringBuffer lsname;
+                        authcfg->getProp("@config", lsname);
+                        Owned<IPropertyTree> lscfg = bnd_cfg->getPropTree(StringBuffer(".//ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str());
+                        if(lscfg == NULL)
+                        {
+                            if(process_config.get() != NULL)
+                                lscfg.setown(process_config->getPropTree(StringBuffer("ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str()));
+                            if(lscfg == NULL)
+                            {
+                                ERRLOG("can't find bnd_cfg for LdapSecurity %s", lsname.str());
+                                throw MakeStringException(-1, "can't find bnd_cfg for LdapSecurity %s", lsname.str());
+                            }
+                        }
+
+                        m_secmgr.setown(SecLoader::loadSecManager("LdapSecurity", "EspHttpBinding", LINK(lscfg)));
+                        if(m_secmgr.get() == NULL)
+                        {
+                            throw MakeStringException(-1, "error generating SecManager");
+                        }
+
+                        StringBuffer basednbuf;
+                        authcfg->getProp("@resourcesBasedn", basednbuf);
+                        m_secmgr->setExtraParam("resourcesBasedn", basednbuf.str());
+                        basednbuf.clear();
+                        authcfg->getProp("@workunitsBasedn", basednbuf);
+                        m_secmgr->setExtraParam("workunitsBasedn", basednbuf.str());
+
+                        m_authmap.setown(m_secmgr->createAuthMap(authcfg));
+                        m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
+                    }
+                    else if(stricmp(m_authmethod.str(), "Local") == 0)
+                    {
+                        m_secmgr.setown(SecLoader::loadSecManager("Local", "EspHttpBinding", NULL));
+                        m_authmap.setown(m_secmgr->createAuthMap(authcfg));
+                    }
+                    else if(stricmp(m_authmethod.str(), "htpasswd") == 0)
+                    {
+                        Owned<IPropertyTree> cfg;
+                        if(process_config.get() != NULL)
+                            cfg.setown(process_config->getPropTree("htpasswdSecurity"));
+                        if(cfg == NULL)
+                        {
+                            ERRLOG("can't find htpasswdSecurity in configuration");
+                            throw MakeStringException(-1, "can't find htpasswdSecurity in configuration");
+                        }
+
+                        m_secmgr.setown(SecLoader::loadSecManager("htpasswd", "EspHttpBinding", LINK(cfg)));
+                        m_authmap.setown(m_secmgr->createAuthMap(authcfg));
+                    }
+                    IRestartManager* restartManager = dynamic_cast<IRestartManager*>(m_secmgr.get());
+                    if(restartManager!=NULL)
+                    {
+                        IRestartHandler* pHandler = dynamic_cast<IRestartHandler*>(getESPContainer());
+                        if(pHandler!=NULL)
+                            restartManager->setRestartHandler(pHandler);
                     }
                 }
-
-                m_secmgr.setown(SecLoader::loadSecManager("LdapSecurity", "EspHttpBinding", LINK(lscfg)));
-                if(m_secmgr.get() == NULL)
-                {
-                    throw MakeStringException(-1, "error generating SecManager");
-                }
-
-                StringBuffer basednbuf;
-                authcfg->getProp("@resourcesBasedn", basednbuf);
-                m_secmgr->setExtraParam("resourcesBasedn", basednbuf.str());
-                basednbuf.clear();
-                authcfg->getProp("@workunitsBasedn", basednbuf);
-                m_secmgr->setExtraParam("workunitsBasedn", basednbuf.str());
-
-                m_authmap.setown(m_secmgr->createAuthMap(authcfg));
-                m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
-            }
-            else if(stricmp(m_authmethod.str(), "Local") == 0)
-            {
-                m_secmgr.setown(SecLoader::loadSecManager("Local", "EspHttpBinding", NULL));
-                m_authmap.setown(m_secmgr->createAuthMap(authcfg));
-            }
-            else if(stricmp(m_authmethod.str(), "htpasswd") == 0)
-            {
-                Owned<IPropertyTree> cfg;
-                if(process_config.get() != NULL)
-                    cfg.setown(process_config->getPropTree("htpasswdSecurity"));
-                if(cfg == NULL)
-                {
-                    ERRLOG("can't find htpasswdSecurity in configuration");
-                    throw MakeStringException(-1, "can't find htpasswdSecurity in configuration");
-                }
-
-                m_secmgr.setown(SecLoader::loadSecManager("htpasswd", "EspHttpBinding", LINK(cfg)));
-                m_authmap.setown(m_secmgr->createAuthMap(authcfg));
-            }
-            IRestartManager* restartManager = dynamic_cast<IRestartManager*>(m_secmgr.get());
-            if(restartManager!=NULL)
-            {
-                IRestartHandler* pHandler = dynamic_cast<IRestartHandler*>(getESPContainer());
-                if(pHandler!=NULL)
-                    restartManager->setRestartHandler(pHandler);
-            }
-            }
             }
         }
     }

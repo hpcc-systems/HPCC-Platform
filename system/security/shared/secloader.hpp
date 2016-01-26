@@ -34,20 +34,20 @@ public:
     /// its instance factory to create and return an ISecManager security manager instance
     /// for the given ESP service
     ///
-    /// @param  svcName         Service name ie 'WsTopology_smc_myesp'
+    /// @param  bindingName     Binding name ie 'WsTopology_smc_myesp'
     /// @param  secMgrCfg       'SecurityManager' IPropertyTree from component config file
     /// @param  authCfg         'Authenticate' IPropertyTree from EspService component binding
     ///
     /// @return an ISecManager Security Manager instance
     ///
-    static ISecManager* loadPluggableSecManager(const char * svcName, IPropertyTree* authCfg, IPropertyTree* secMgrCfg)
+    static ISecManager* loadPluggableSecManager(const char * bindingName, IPropertyTree* authCfg, IPropertyTree* secMgrCfg)
     {
         const char * lsm = "Load Security Manager :";
 
         StringBuffer libName, instFactory;
         secMgrCfg->getProp("@LibName", libName);
         if (libName.isEmpty())
-            throw MakeStringException(-1, "%s library name not specified for %s", lsm, svcName);
+            throw MakeStringException(-1, "%s library name not specified for %s", lsm, bindingName);
         //TODO Search for LibName in plugins folder, or in specified location
 
         instFactory.set(secMgrCfg->queryProp("@InstanceFactoryName"));
@@ -57,7 +57,7 @@ public:
         //Load the DLL/SO
         HINSTANCE pluggableSecLib = LoadSharedObject(libName.str(), true, false);
         if(pluggableSecLib == NULL)
-            throw MakeStringException(-1, "%s can't load library %s for %s", lsm, libName.str(), svcName);
+            throw MakeStringException(-1, "%s can't load library %s for %s", lsm, libName.str(), bindingName);
 
         //Retrieve address of exported ISecManager instance factory
         newPluggableSecManager_t_ xproc = NULL;
@@ -66,8 +66,9 @@ public:
             throw MakeStringException(-1, "%s cannot locate procedure %s of '%s'", lsm, instFactory.str(), libName.str());
 
         //Call ISecManager instance factory and return the new instance
-        return xproc(svcName, *secMgrCfg, *authCfg);
+        return xproc(bindingName, *secMgrCfg, *authCfg);
     }
+
     static ISecManager* loadSecManager(const char* model_name, const char* servicename, IPropertyTree* cfg)
     {
         if (!model_name || !*model_name)
