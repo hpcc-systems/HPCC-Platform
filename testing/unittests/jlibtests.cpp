@@ -528,6 +528,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION( JlibStringBufferTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStringBufferTest, "JlibStringBufferTest" );
 
 
+
 /* =========================================================== */
 
 static const unsigned split4_2[] = {0, 2, 4 };
@@ -617,7 +618,6 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibQuantileTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibQuantileTest, "JlibQuantileTest" );
 
-
 /* =========================================================== */
 
 class JlibReaderWriterTest : public CppUnit::TestFixture
@@ -705,13 +705,12 @@ class JlibReaderWriterTest : public CppUnit::TestFixture
                     work = spinCalculation(work, workScale);
                 target.enqueue(buffer + i);
             }
+            target.noteWriterStopped();
             doneSem.signal();
             return 0;
         }
     };
 public:
-    JlibReaderWriterTest() { unitWorkTimeMs = 0; }
-
     const static size_t bufferSize = 0x100000;//0x100000*64;
     void testQueue(IRowQueue & queue, unsigned numProducers, unsigned numConsumers, unsigned queueElements, unsigned readerWork, unsigned writerWork)
     {
@@ -745,10 +744,6 @@ public:
         //Wait for the writers to complete
         for (unsigned i7 = 0; i7 < numProducers; i7++)
             writerDoneSem.wait();
-
-        //Now add NULL records to the queue so the consumers know to terminate
-        for (unsigned i8 = 0; i8 < numConsumers; i8++)
-            queue.enqueue(NULL);
 
         //Wait for the readers to complete
         for (unsigned i3 = 0; i3 < numConsumers; i3++)

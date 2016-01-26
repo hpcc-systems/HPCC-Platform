@@ -715,6 +715,38 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
         throw e;
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+class CSimpleFunctionThread : public Thread
+{
+    std::function<void()> func;
+public:
+    inline CSimpleFunctionThread(std::function<void()> _func) : Thread("TaskProcessor"), func(_func) { }
+    virtual int run()
+    {
+        func();
+        return 1;
+    }
+};
+
+void asyncStart(IThreaded & threaded)
+{
+    CThreaded * thread = new CThreaded("AsyncStart", &threaded);
+    thread->startRelease();
+}
+
+void asyncStart(const char * name, IThreaded & threaded)
+{
+    CThreaded * thread = new CThreaded(name, &threaded);
+    thread->startRelease();
+}
+
+//Experimental - is this a useful function to replace some uses of IThreaded?
+void asyncStart(std::function<void()> func)
+{
+    (new CSimpleFunctionThread(func))->startRelease();
+}
+
 // ---------------------------------------------------------------------------
 // Thread Pools
 // ---------------------------------------------------------------------------

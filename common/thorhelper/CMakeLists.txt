@@ -38,6 +38,7 @@ set (    SRCS
          thorsoapcall.cpp 
          thorstep.cpp 
          thorstep2.cpp 
+         thorstrand.cpp
          thortalgo.cpp 
          thortlex.cpp 
          thortparse.cpp 
@@ -57,6 +58,7 @@ set (    SRCS
          thorrparse.hpp 
          thorsoapcall.hpp 
          thorstep.hpp 
+         thorstrand.hpp
          thorxmlread.hpp 
          thorxmlwrite.hpp
          roxierow.hpp

@@ -169,6 +169,12 @@ interface IRowWriter: extends IInterface
     virtual void flush() = 0;
 };
 
+interface IRowWriterEx : extends IRowWriter
+{
+public:
+    virtual void noteStopped() = 0;
+};
+
 interface IRowLinkCounter: extends IInterface
 {
     virtual void linkRow(const void *row)=0;
