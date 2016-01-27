@@ -576,7 +576,9 @@ EXAMPLELIB_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx; 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------
 
-EXAMPLELIB_API void EXAMPLELIB_CALL elEchoString(unsigned &amp; tgtLen, char * &amp; tgt, unsigned srcLen, const char * src)
+EXAMPLELIB_API unsigned EXAMPLELIB_CALL elStringFind(unsigned srcLen,
+ const char * src, unsigned hitLen, const char * hit,
+ unsigned instance)
 {
     tgt = (char *)CTXMALLOC(parentCtx, srcLen);
     memcpy(tgt,src,srcLen);
