@@ -462,7 +462,7 @@
   <sect2 id="DLL_code_module">
     <title>.SO code module:</title>
 
-    <programlisting>  //******************************************************
+    <para><programlisting>//******************************************************
   // hqlplugins.hpp : Defines standard values included
               in
   // the plugin header file.
@@ -490,9 +490,9 @@
   
   typedef bool (*EclPluginDefinition) (ECLPluginDefinitionBlock *);
   
-  #endif //__HQLPLUGIN_INCL
-  
-  //******************************************************
+  #endif //__HQLPLUGIN_INCL</programlisting></para>
+
+    <programlisting>//******************************************************
   // examplelib.hpp : Defines standard values included in
   // the plugin code file.
   //******************************************************
@@ -515,65 +515,73 @@
   
   extern "C" {
   EXAMPLELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
+  EXAMPLELIB_API void setPluginContext(IPluginContext * _ctx);
   EXAMPLELIB_API unsigned EXAMPLELIB_CALL elStringFind(unsigned srcLen,
        const char * src, unsigned hitLen, const char * hit,
        unsigned instance);
   }
   
   #endif //EXAMPLELIB_INCL
-  
-  //******************************************************
-  // examplelib.cpp : Defines the plugin code.
-  //******************************************************
-  #include &lt;memory.h&gt;
-  #include "examplelib.hpp"
-  
-  static char buildVersion[] = "$Name$ $Id$";
-  
-  #define EXAMPLELIB_VERSION "EXAMPLELIB 1.0.00"
-  
-  static const char * const HoleDefinition =
-    "SYSTEM\n"
-    "MODULE (SYSTEM)\n"
-    " FUNCTION StringFind(string src, string search,
-        unsigned4 instance),unsigned4,c,name('elStringFind')\n"
-    "END\n";
-  
-  static const char * const EclDefinition =
-    "export ExampleLib := SERVICE\n"
-    " unsigned integer4 StringFind(const string src,
-        const string tofind, unsigned4 instance )
-            : c, pure,entrypoint='elStringFind'; \n"
-    "END;";
-  
-  EXAMPLELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
-  {
+  </programlisting>
+
+    <para></para>
+
+    <programlisting>//******************************************************
+// examplelib.cpp : Defines the plugin code.
+//******************************************************
+#include &lt;time.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ctype.h&gt;
+#include "examplelib.hpp"
+
+#define EXAMPLELIB_VERSION "EXAMPLELIB 1.0.00"
+
+static const char * HoleDefinition = NULL;
+
+static const char * EclDefinition =
+"export ExampleLib := SERVICE\n"
+"  string EchoString(const string src) : c, pure,fold,entrypoint='elEchoString'; \n"
+"END;";
+
+EXAMPLELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
+{
+    //  Warning:    This function may be called without the plugin being loaded fully.  
+    //              It should not make any library calls or assume that dependent modules
+    //              have been loaded or that it has been initialised.
+    //
+    //              Specifically:  "The system does not call DllMain for process and thread 
+    //              initialization and termination.  Also, the system does not load 
+    //              additional executable modules that are referenced by the specified module."
+
     if (pb-&gt;size != sizeof(ECLPluginDefinitionBlock))
-       return false;
+        return false;
+
     pb-&gt;magicVersion = PLUGIN_VERSION;
-    pb-&gt;version = EXAMPLELIB_VERSION " $Name$ $Id$";
+    pb-&gt;version = EXAMPLELIB_VERSION " $Revision: 62376 $";
     pb-&gt;moduleName = "lib_examplelib";
     pb-&gt;ECL = EclDefinition;
     pb-&gt;Hole = HoleDefinition;
     pb-&gt;flags = PLUGIN_IMPLICIT_MODULE;
     pb-&gt;description = "ExampleLib example services library";
     return true;
-  }
-  
-  //----------------------------------------------------------------
-  EXAMPLELIB_API unsigned EXAMPLELIB_CALL elStringFind(unsigned srcLen,
-    const char * src, unsigned hitLen, const char * hit,
-    unsigned instance)
-  {
-    if ( srcLen &lt; hitLen )
-       return 0;
-    unsigned steps = srcLen-hitLen+1;
-    for ( unsigned i = 0; i &lt; steps; i++ )
-       if ( !memcmp((char *)src+i,hit,hitLen) )
-            if ( !--instance )
-                 return i+1;
-    return 0;
-  }
+}
+
+namespace nsExamplelib {
+    IPluginContext * parentCtx = NULL;
+}
+using namespace nsExamplelib;
+
+EXAMPLELIB_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx; }
+
+//-------------------------------------------------------------------------------------------------------------------------------------------
+
+EXAMPLELIB_API void EXAMPLELIB_CALL elEchoString(unsigned &amp; tgtLen, char * &amp; tgt, unsigned srcLen, const char * src)
+{
+    tgt = (char *)CTXMALLOC(parentCtx, srcLen);
+    memcpy(tgt,src,srcLen);
+    tgtLen = srcLen;
+}
 </programlisting>
   </sect2>
 </sect1>
