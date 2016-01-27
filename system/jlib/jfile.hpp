@@ -56,6 +56,7 @@ interface IDirectoryIterator : extends IIteratorOf<IFile>
 #define DEFAULT_COPY_BLKSIZE  0x100000
 enum CFflags { CFnone=0x0, CFflush_read=0x1, CFflush_write=0x2, CFflush_rdwr=0x3 };
 
+#define IFUnone 0xffffffff
 
 #define IDDIunchanged   1
 #define IDDImodified    2
@@ -99,8 +100,9 @@ interface IFile :extends IInterface
     virtual bool setCompression(bool set) = 0;
     virtual offset_t compressedSize() = 0;
     virtual unsigned getCRC() = 0;
-    virtual void setCreateFlags(unsigned cflags) =0;    // I_S*
+    virtual void setCreateFlags(unsigned cflags, unsigned _cumask=IFUnone) = 0;    // I_S*
     virtual void setShareMode(IFSHmode shmode) =0;
+    virtual void setFileUmask(unsigned _cumask) = 0;
 
 // Directory functions
     virtual bool createDirectory() = 0;

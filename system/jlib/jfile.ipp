@@ -69,8 +69,9 @@ public:
 
     virtual unsigned getCRC();
 
-    virtual void setCreateFlags(unsigned cflags);
+    virtual void setCreateFlags(unsigned cflags, unsigned _cumask=IFUnone);
     virtual void setShareMode(IFSHmode shmode);
+    virtual void setFileUmask(unsigned _cumask);
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime);
 
     virtual void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone);
@@ -90,6 +91,7 @@ public:
 protected:
     StringAttr filename;
     unsigned flags;
+    unsigned cumask;
 };
 
 
