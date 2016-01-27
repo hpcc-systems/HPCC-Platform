@@ -50,6 +50,7 @@ public:
     virtual void rename(const char *newTail);
     virtual void move(const char *newName);
     virtual void setReadOnly(bool ro);
+    virtual void setFilePermissions(unsigned fPerms);
     virtual offset_t size();
     virtual bool setCompression(bool set);
     virtual offset_t compressedSize();
