@@ -91,6 +91,7 @@ protected:
     virtual void checkForAbort(unsigned wfid, IException * handling) = 0;
     // Persistence styles varies from machine to machine
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item) = 0;
+    virtual void doExecuteCriticalItem(IRuntimeWorkflowItem & item) = 0;
     virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item) = 0;
 
     // Check conditions, item type and call operations below based on type

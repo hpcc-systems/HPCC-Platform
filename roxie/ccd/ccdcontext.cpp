@@ -376,6 +376,24 @@ protected:
         when = getResultInt(whenName, ResultSequencePersist);
         return true;
     }
+    virtual void doExecuteCriticalItem(IRuntimeWorkflowItem & item)
+    {
+        if (!workunit)
+            throw MakeStringException(0, "CRITICAL not supported when running predeployed queries");
+
+        unsigned wfid = item.queryWfid();
+
+        SCMStringBuffer name;
+        const char *criticalName = item.getCriticalName(name).str();
+
+        Owned<IRemoteConnection> rlock = obtainCriticalLock(criticalName);
+        if (!rlock.get())
+            throw MakeStringException(0, "Cannot obtain Critical section lock");
+
+        doExecuteItemDependencies(item, wfid);
+        doExecuteItem(item, wfid);
+        releaseCriticalLock(rlock);
+    }
 
 private:
 
@@ -708,7 +726,17 @@ private:
             }
         }
     }
-
+    IRemoteConnection *obtainCriticalLock(const char *name)
+    {
+        StringBuffer xpath;
+        xpath.append("/WorkUnitCriticalLocks/").append(name);
+        return querySDS().connect(xpath.str(), myProcessSession(), RTM_CREATE | RTM_LOCK_WRITE | RTM_DELETE_ON_DISCONNECT, INFINITE);
+    }
+    void releaseCriticalLock(IRemoteConnection *criticalLock)
+    {
+        if(criticalLock && queryDaliServerVersion().compare("1.3") < 0)
+            criticalLock->close(true);
+    }
     IConstWorkUnit *workunit;
     IPropertyTree *workflowInfo;
     Owned<IWorkflowScheduleConnection> wfconn;

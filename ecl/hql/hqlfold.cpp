@@ -4234,6 +4234,13 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
         if (isRedundantGlobalScope(expr))
             return removeParentNode(expr);
         break;
+    case no_evaluate_stmt:
+        {
+            IHqlExpression * arg = expr->queryChild(0);
+            if (arg->isConstant() || arg->getOperator() == no_table)
+                return createNullExpr(expr);
+            break;
+        }
     }
     return NULL;
 }
