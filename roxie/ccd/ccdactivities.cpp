@@ -585,9 +585,9 @@ public:
         return logctx;
     }
 
-    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const 
+    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
-        return queryContext->queryCodeContext()->getRowAllocator(meta, activityId); 
+        return queryContext->queryCodeContext()->getRowAllocator(meta, activityId);
     }
     virtual const char *cloneVString(const char *str) const
     {

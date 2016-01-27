@@ -1578,6 +1578,11 @@ public:
         return allocatorMetaCache->ensure(meta, activityId, roxiemem::RHFnone);
     }
 
+    virtual IEngineRowAllocator *getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+    {
+        return allocatorMetaCache->ensure(meta, activityId, flags);
+    }
+
     virtual const char *cloneVString(const char *str) const
     {
         return rowManager->cloneVString(str);

@@ -316,6 +316,12 @@ public:
     {
         return ctx->getWorkunitRowReader(wuid, name, sequence, xmlTransformer, rowAllocator, isGrouped);
     }
+    virtual IEngineRowAllocator *getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+    {
+        return ctx->getRowAllocatorEx(meta, activityId, flags);
+    }
+
+
 protected:
     IRoxieSlaveContext * ctx;
 };
@@ -13240,6 +13246,7 @@ class CRoxieServerParallelProjectActivity : public CRoxieServerActivity
     class ProjectProcessor : public CInterfaceOf<IEngineRowStream>
     {
         CRoxieServerParallelProjectActivity &parent;
+        IEngineRowAllocator *rowAllocator;
 
         // All these probably should go in a common base class StrandProcessor. Might even want that class to replace the corresponding fields in CRoxieServerActivity
         IEngineRowStream *inputStream;
@@ -13255,6 +13262,7 @@ class CRoxieServerParallelProjectActivity : public CRoxieServerActivity
           : parent(_parent), inputStream(_inputStream), basehelper(parent.basehelper)
         {
             timeActivities = parent.timeActivities;
+            rowAllocator = parent.ctx->getRowAllocatorEx(parent.meta.queryOriginal(), parent.activityId, roxiemem::RHFunique);
         }
         virtual const void * nextRow()
         {
@@ -13275,7 +13283,7 @@ class CRoxieServerParallelProjectActivity : public CRoxieServerActivity
 
                 try
                 {
-                    RtlDynamicRowBuilder rowBuilder(parent.rowAllocator);
+                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
                     size32_t outSize;
                     outSize = ((IHThorProjectArg &) basehelper).transform(rowBuilder, in);
                     if (outSize)
@@ -13312,6 +13320,7 @@ public:
     {
         if (!blockSize)
             blockSize = ctx->queryOptions().strandBlockSize;
+
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -13371,8 +13380,6 @@ public:
         }
         return recombiner.getClear();
     }
-
-    virtual bool needsAllocator() const { return true; }
 
     virtual const void * nextRow()
     {
