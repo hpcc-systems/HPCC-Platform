@@ -143,7 +143,8 @@ inline void deleteEclDirectWorkunit(IWorkUnitFactory *factory, const char *wuid)
 {
     try
     {
-        factory->deleteWorkUnit(wuid);
+        if (!factory->deleteWorkUnit(wuid))
+            throw MakeStringException(-1, "%s: Workunit cannot be deleted. Please check ESP log.", wuid);
     }
     catch (IException *e)
     {
