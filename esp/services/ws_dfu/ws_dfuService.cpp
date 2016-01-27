@@ -1347,6 +1347,7 @@ inline void doDeleteSubFiles(StringArray &files, IUserDescriptor *userdesc, Stri
 
 bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp)
 {
+    double version = context.getClientVersion();
     Owned<IUserDescriptor> userdesc;
     const char *username = context.queryUserId();
     if(username && *username)
@@ -1362,8 +1363,10 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
     doDeleteSuperFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, returnStr, actionResults, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
     doDeleteSubFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, returnStr, actionResults, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
 
-    resp.setActionResults(actionResults);
-    resp.setDFUArrayActionResult(returnStr.str());//Used by legacy
+    if (version >= 1.27)
+        resp.setActionResults(actionResults);
+    if (version < 1.33)
+        resp.setDFUArrayActionResult(returnStr.str());
     return true;
 }
 
@@ -1406,6 +1409,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
             userdesc->set(username.str(), passwd);
         }
 
+        IArrayOf<IEspDFUActionInfo> actionResults;
         StringBuffer errorStr, subfiles;
         for(unsigned i = 0; i < req.getLogicalFiles().length();i++)
         {
@@ -1437,7 +1441,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
                     subfiles.append(curfile);
                 }
                 else
-                    errorStr.appendf("<Message><Value>%s not found</Value></Message>", curfile);
+                    setDeleteFileResults(file, NULL, true, NULL, "not found", errorStr, actionResults);
             }
             catch(IException* e)
             {
@@ -1446,19 +1450,22 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
                 if (e->errorCode() == DFSERR_CreateAccessDenied)
                     emsg.replaceString("Create ", "AddtoSuperfile ");
 
-                errorStr.appendf("<Message><Value>%s for %s</Value></Message>", emsg.str(), curfile);
+                setDeleteFileResults(file, NULL, true, NULL, emsg.str(), errorStr, actionResults);
                 e->Release();
             }
             catch(...)
             {
-                errorStr.appendf("<Message><Value>Unknown exception for %s</Value></Message>", curfile);
+                setDeleteFileResults(file, NULL, true, NULL, "unknown exception", errorStr, actionResults);
             }
             delete [] curfile;
         }
 
+        if (version >= 1.27)
+            resp.setActionResults(actionResults);
         if (errorStr.length())
         {
-            resp.setDFUArrayActionResult(errorStr.str());
+            if (version < 1.33)
+                resp.setDFUArrayActionResult(errorStr.str());
             return false;
         }
 

@@ -70,16 +70,9 @@
                 <b>Action status:</b>
             </tr>
             <table>
-                <xsl:for-each select="//Message">
-                    <xsl:choose>             
-                        <xsl:when test="string-length(href)">
-                            <a href="{href}"><xsl:value-of select="Value"/></a>
-                        </xsl:when>
-                        <xsl:otherwise>
-                            <xsl:value-of select="Value"/>
-                        </xsl:otherwise>
-                    </xsl:choose>
+                <xsl:for-each select="//ActionResults/*">
                     <br/>
+                    <xsl:value-of select="ActionResult"/>
                 </xsl:for-each>
             </table>
             <xsl:choose>             

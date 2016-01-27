@@ -184,11 +184,11 @@ public:
     {
         return true;
     }
-    bool addResourcesEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * resources, SecPermissionType ptype = PT_DEFAULT, const char* basedn=NULL)
+    bool addResourcesEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * resources, SecPermissionType ptype = PT_ADMINISTRATORS_ONLY, const char* basedn=NULL)
     {
         return addResources(sec_user, resources);
     }
-    bool addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype = PT_DEFAULT, const char* basedn=NULL)
+    bool addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype = PT_ADMINISTRATORS_ONLY, const char* basedn=NULL)
     {
         Owned<ISecResourceList> rlist;
         rlist.setown(createResourceList("resources"));

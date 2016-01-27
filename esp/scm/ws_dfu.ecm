@@ -267,7 +267,7 @@ DFUArrayActionResponse
 {
     [min_ver("1.04")] string BackToPage;
     [min_ver("1.18")] string RedirectTo;
-    string DFUArrayActionResult; //used by legacy eclwatch
+    [depr_ver("1.33")] string DFUArrayActionResult;
     [min_ver("1.27")] ESParray<ESPstruct DFUActionInfo> ActionResults;
 };
 
@@ -699,7 +699,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 
 //  ===========================================================================
 ESPservice [
-    version("1.32"),
+    version("1.33"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

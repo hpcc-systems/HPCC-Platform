@@ -78,6 +78,42 @@ inline void varAppendMax(MemoryBuffer &mb,unsigned w,const char *str, size32_t l
 
 // This is use by sasha - it's a real mess
 
+inline void convertTimestampToStr(unsigned __int64 timestamp, StringBuffer& timeStr, bool formatTZ)
+{
+    formatStatistic(timeStr, timestamp, SMeasureTimestampUs);
+    if (formatTZ)
+    {
+        timeStr.setCharAt(19, 'Z'); //Match with old timestamp
+        timeStr.setLength(20); //Match with old timestamp
+    }
+}
+
+inline const char* readCreateTime(IPropertyTree& pt, StringBuffer& time, bool formatTZ)
+{
+    time.clear();
+    unsigned __int64 value = pt.getPropInt64("Statistics/Statistic[@s='global'][@kind='WhenCreated']/@value", 0);
+    if (value > 0)
+        convertTimestampToStr(value, time, formatTZ);
+    return time.str();
+}
+
+inline const char* readModifyTime(IPropertyTree& pt, StringBuffer& time, bool formatTZ)
+{
+    time.clear();
+    unsigned __int64 value = 0;
+    Owned<IPropertyTreeIterator> stats = pt.getElements("Statistics/Statistic[@s='global'][@kind='WhenWorkunitModified']");
+    ForEach(*stats)
+    {
+        IPropertyTree& stat = stats->query();
+        unsigned __int64 val = stat.getPropInt64("@value", 0);
+        if (val > value)
+            value = val;
+    }
+    if (value > 0)
+        convertTimestampToStr(value, time, formatTZ);
+    return time.str();
+}
+
 inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
 {
     mb.setEndian(__LITTLE_ENDIAN);
@@ -91,13 +127,27 @@ inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
     short int prioritylevel = calcPriorityValue(&pt);
     mb.appendEndian(sizeof(prioritylevel), &prioritylevel);
 
-    const char *mod = "TimeStamps/TimeStamp[@application=\"workunit\"]/Modified";
-    const char *crt = "TimeStamps/TimeStamp[@application=\"workunit\"]/Created";
-    fixedAppend(mb,20,pt,crt);
-    if (pt.hasProp(mod))
-        fixedAppend(mb,20,pt,mod);
+    StringBuffer crtTime, modTime;
+    readModifyTime(pt, modTime, true);
+    readCreateTime(pt, crtTime, true);
+    if (crtTime.length())
+    {
+        fixedAppend(mb, 20, crtTime.str(), crtTime.length());
+        if (modTime.length())
+            fixedAppend(mb, 20, modTime.str(), modTime.length());
+        else
+            fixedAppend(mb, 20, crtTime.str(), crtTime.length());
+    }
     else
+    {
+        const char *mod = "TimeStamps/TimeStamp[@application=\"workunit\"]/Modified";
+        const char *crt = "TimeStamps/TimeStamp[@application=\"workunit\"]/Created";
         fixedAppend(mb,20,pt,crt);
+        if (pt.hasProp(mod))
+            fixedAppend(mb,20,pt,mod);
+        else
+            fixedAppend(mb,20,pt,crt);
+    }
     byte online = isonline?1:0;
     mb.append(online);
     byte prot = pt.getPropBool("@protected")?1:0;
