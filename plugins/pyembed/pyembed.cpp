@@ -1046,8 +1046,9 @@ protected:
     }
     void pop()
     {
-        addArg(args.getClear());
+        OwnedPyObject arg = args.getClear();
         args.setown((PyObject *) stack.popGet());
+        addArg(arg.getClear());
     }
     void addArg(PyObject *arg)
     {
