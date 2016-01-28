@@ -70,7 +70,7 @@ public:
 
     virtual unsigned getCRC();
 
-    virtual void setCreateFlags(unsigned cflags);
+    virtual void setCreateFlags(unsigned short cflags);
     virtual void setShareMode(IFSHmode shmode);
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime);
 

@@ -1530,7 +1530,7 @@ public:
     CRemoteFile(const SocketEndpoint &_ep, const char * _filename)
         : CRemoteBase(_ep, _filename)
     {
-        flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR)<<16);
+        flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
     }
 
     bool exists()
@@ -1920,15 +1920,26 @@ public:
         return crc;
     }
 
-    void setCreateFlags(unsigned cflags)
+    void setCreateFlags(unsigned short cflags)
     {
-        flags |= (cflags<<16);
+        flags &= 0xffff;
+        flags |= ((unsigned)cflags<<16);
+    }
+
+    unsigned short getCreateFlags()
+    {
+        return (unsigned short)(flags>>16);
     }
 
     void setShareMode(IFSHmode shmode)
     {
         flags &= ~(IFSHfull|IFSHread);
         flags |= (unsigned)(shmode&(IFSHfull|IFSHread));
+    }
+
+    unsigned short getShareMode()
+    {
+        return (unsigned short)(flags&0xffff);
     }
 
     void remoteExtractBlobElements(const char * prefix, ExtractedBlobArray & extracted)
@@ -2208,7 +2219,10 @@ public:
         const char *localname = parent->queryLocalName();
         localname = skipSpecialPath(localname);
         // also send _extraFlags
-        sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags);
+        // then also send sMode, cFlags
+        unsigned short sMode = parent->getShareMode();
+        unsigned short cFlags = parent->getCreateFlags();
+        sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags).append(sMode).append(cFlags);
         parent->sendRemoteCommand(sendBuffer, replyBuffer);
 
         replyBuffer.read(handle);
@@ -3996,8 +4010,15 @@ public:
         msg.read(name->text).read(mode).read(share);  
         // also try to recv extra byte
         byte extra = 0;
+        unsigned short sMode = IFUnone;
+        unsigned short cFlags = IFUnone;
         if (msg.remaining() >= sizeof(byte))
+        {
             msg.read(extra);
+            // and then try to recv extra sMode, cFlags (always sent together)
+            if (msg.remaining() >= (sizeof(sMode) + sizeof(cFlags)))
+                msg.read(sMode).read(cFlags);
+        }
         IFEflags extraFlags = (IFEflags)extra;
         // none => nocache for remote (hint)
         // can revert to previous behavior with conf file setting "allow_pgcache_flush=false"
@@ -4023,8 +4044,14 @@ public:
             file->setShareMode(IFSHfull);
             break;
         }
+        // use sMode, cFlags if sent
+        if (sMode != IFUnone && cFlags != IFUnone)
+        {
+            file->setCreateFlags(cFlags);
+            file->setShareMode((IFSHmode)sMode);
+        }
         if (TF_TRACE_PRE_IO)
-            PROGLOG("before open file '%s',  (%d,%d,%d)",name->text.get(),(int)mode,(int)share,extraFlags);
+            PROGLOG("before open file '%s',  (%d,%d,%d,%d,0%o)",name->text.get(),(int)mode,(int)share,extraFlags,sMode,cFlags);
         IFileIO *fileio = file->open((IFOmode)mode,extraFlags);
         int handle;
         if (fileio) {

@@ -245,12 +245,13 @@ static StringBuffer &getLocalOrRemoteName(StringBuffer &name,const RemoteFilenam
 CFile::CFile(const char * _filename)
 {
     filename.set(_filename);
-    flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)<<16);
+    flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
 }
 
-void CFile::setCreateFlags(unsigned cflags)
+void CFile::setCreateFlags(unsigned short cflags)
 {
-    flags |= (cflags<<16);
+    flags &= 0xffff;
+    flags |= ((unsigned)cflags<<16);
 }
 
 void CFile::setShareMode(IFSHmode shmode)
@@ -1498,7 +1499,7 @@ public:
         return ifile->getCRC();
     }
 
-    void setCreateFlags(unsigned cflags)
+    void setCreateFlags(unsigned short cflags)
     {
         ifile->setCreateFlags(cflags);
     }
