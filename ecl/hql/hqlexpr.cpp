@@ -49,6 +49,7 @@
 #include "hqlrepository.hpp"
 #include "hqldesc.hpp"
 #include "hqlir.hpp"
+#include "stringlib.hpp"
 
 //This nearly works - but there are still some examples which have problems - primarily libraries, old parameter syntax, enums and other issues.
 
@@ -557,7 +558,7 @@ extern HQL_API IHqlExpression * queryAnnotationAttribute(IAtom * search, IHqlExp
 
 extern HQL_API IHqlExpression * queryMetaAttribute(IAtom * search, IHqlExpression * expr)
 {
-    loop
+    while(expr)
     {
         annotate_kind kind = expr->getAnnotationKind();
         if (kind == annotate_none)
@@ -570,6 +571,7 @@ extern HQL_API IHqlExpression * queryMetaAttribute(IAtom * search, IHqlExpressio
         }
         expr = expr->queryBody(true);
     }
+    return NULL;
 }
 
 extern HQL_API void gatherMetaAttributes(HqlExprArray & matches, IAtom * search, IHqlExpression * expr)
@@ -6615,31 +6617,23 @@ IHqlExpression *CHqlRecord::lookupSymbol(IIdAtom * fieldName)
 
 IHqlExpression * CHqlRecord::lookupNearestSymbol(IIdAtom * fieldName)
 {
-    unsigned editDistance = -1;
-    return lookupNearestSymbol(fieldName, editDistance);
+    NearestSymbol nearest(fieldName);
+    return LINK(lookupNearestSymbol(fieldName, nearest));
 }
 
-IHqlExpression * CHqlRecord::lookupNearestSymbol(IIdAtom * fieldName, unsigned & editDistance)
+IHqlExpression * CHqlRecord::lookupNearestSymbol(IIdAtom * fieldName, NearestSymbol & nearest)
 {
-    IHqlExpression * ret = NULL;
-    editDistance = -1;
     //Find nearest symbol i.e. that with the lowest edit distance, if multiple symbosl with equal distance found return first.
     //Therefore if a distance of 0 is encountered just return that.
     //MORE: Unsure as to whether returning 1st encountered is best functionality, but then what else?
     HashIterator iter(fields);
     for (iter.first(); iter.isValid(); iter.next())
     {
-        IHqlExpression * cur = fields.mapToValue(&iter.query());
-        unsigned distance = HqlGram::computeEditDistance(fieldName, cur->queryId());
-        if (distance == 0)
-            continue;
-        else if (distance < editDistance && distance <= MAX_SYMBOL_DISTANCE)
-        {
-            ret = cur;
-            editDistance = distance;
-        }
+        nearest.compare(fields.mapToValue(&iter.query()));
+        if (nearest.bestMatchFound())
+            return nearest.querySymbol();
     }
-    return LINK(ret);
+    return nearest.querySymbol();
 }
 
 /* does not affect linkage */
@@ -7985,16 +7979,14 @@ IHqlExpression *CHqlScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFla
 
 IHqlExpression * CHqlScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    unsigned distance = -1;
-    return lookupNearestSymbol(searchName, lookupFlags, ctx, distance);
+    NearestSymbol nearest(searchName);
+    return LINK(lookupNearestSymbol(searchName, lookupFlags, ctx, nearest));
 }
 
-IHqlExpression * CHqlScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+IHqlExpression * CHqlScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest)
 {
     //Emulates IHqlExpression *CHqlScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 
-    IHqlExpression * ret = NULL;
-    editDistance = -1;
     //Find nearest symbol i.e. that with the lowest edit distance, if multiple symbosl with equal distance found return first.
     //Therefore if a distance of 0 is encountered just return that.
     //MORE: Unsure as to whether returning 1st encountered is best functionality, but then what else?
@@ -8004,16 +7996,11 @@ IHqlExpression * CHqlScope::lookupNearestSymbol(IIdAtom * searchName, unsigned l
         IHqlExpression * cur = symbols.mapToValue(&iter.query());
         if (!(cur->isExported() || (lookupFlags & LSFsharedOK)))
             continue;
-        unsigned distance = HqlGram::computeEditDistance(searchName, cur->queryId());
-        if (distance == 0)
-            continue;
-        else if (distance < editDistance && distance <= MAX_SYMBOL_DISTANCE)
-        {
-            ret = cur;
-            editDistance = distance;
-        }
+        nearest.compare(cur);
+        if (nearest.bestMatchFound())
+            return nearest.querySymbol();
     }
-    return LINK(ret);
+    return nearest.querySymbol();
 }
 
 int CHqlScope::getPropInt(IAtom * a, int def) const
@@ -8208,113 +8195,21 @@ IHqlExpression *CHqlRemoteScope::clone(HqlExprArray &newkids)
     return this;
 }
 
-IHqlExpression * CHqlRemoteScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+IHqlExpression * CHqlRemoteScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest)
 {
     preloadSymbols(ctx, false);
-    HqlExprArray symbolArray;
-    unsigned distanceArray[2];
-    unsigned index = 0;
 
-    unsigned distance = -1;
-    OwnedHqlExpr resolvedSym(resolved->lookupNearestSymbol(searchName, lookupFlags, ctx, distance));
-    if (resolvedSym && resolvedSym->getOperator() != no_processing && !(lookupFlags & LSFignoreBase))
+    unsigned penalty = 0;
+    NearestSymbol tempNearest(searchName);
+    IHqlExpression * symbol = CHqlScope::lookupNearestSymbol(searchName, LSFsharedOK|lookupFlags, ctx, tempNearest);
+    if (symbol && symbol->isNamedSymbol())
     {
-        symbolArray.append(*resolvedSym.getClear());
-        distanceArray[index++] = distance;
+        nearest.compare(tempNearest, penalty);
+        if (nearest.bestMatchFound())
+            return nearest.querySymbol();
     }
 
-    unsigned retDistance = -1;
-    OwnedHqlExpr ret(CHqlScope::lookupNearestSymbol(searchName, LSFsharedOK|lookupFlags, ctx, retDistance));
-    bool isRetOk = ret ? ret->isNamedSymbol() : false;
-
-    unsigned repoSymDistance = -1;
-#if 0
-    OwnedHqlExpr repoSym(repositoryNearestLoadSymbol(searchName, repoSymDistance));//Need to either ignore or open up to edit distance search
-#else
-    OwnedHqlExpr repoSym;
-#endif
-
-    bool isRepoSymOk = false;
-    if(repoSym && repoSym->hasText())
-    {
-        if (lookupFlags & LSFignoreBase)
-            isRepoSymOk = true;
-        else
-        {
-            IFileContents * contents = repoSym->queryDefinitionText();
-            if (contents && (contents->length() != 0))
-                isRepoSymOk = true;
-        }
-    }
-
-    OwnedHqlExpr nearest(HqlGram::findNearestSymbol(distance = -1, ret, isRetOk, retDistance, repoSym, isRepoSymOk, repoSymDistance));
-    if (nearest)
-    {
-        distanceArray[index++] = distance;
-        symbolArray.append(*nearest.getClear());
-    }
-
-    return HqlGram::findNearestSymbol(editDistance = -1, symbolArray, distanceArray, 1);
-    //MORE: the logic below rquires parseAttribute to open to edit distance searches
-
-/*
-    StringBuffer filename;
-    if (fullName)
-        filename.append(fullName).append('.');
-    filename.append(str(searchName));
-
-    IFileContents * contents = ret->queryDefinitionText();
-    if (!contents || (contents->length() == 0))
-    {
-        StringBuffer msg("Definition for ");
-        msg.append(str(searchName)).append(" contains no text");
-        throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
-    }
-
-    OwnedHqlExpr recursionGuard(createSymbol(searchName, LINK(processingMarker), ob_exported));
-    resolved->defineSymbol(LINK(recursionGuard));
-
-    unsigned prevErrors = ctx.numErrors();
-    parseAttribute(this, contents, ctx, searchName);
-
-    OwnedHqlExpr newSymbol(resolved->lookupSymbol(searchName, LSFsharedOK|lookupFlags, ctx));
-    if (ctx.numErrors() != prevErrors)
-    {
-        //If there was an error processing the attribute then return unknown.
-        //The caller will also spot the difference in the error count, so we won't get attributes
-        //incorrectly defined.
-        if (newSymbol)
-            resolved->removeSymbol(searchName);
-        return NULL;
-    }
-
-    if(!newSymbol || (newSymbol->getOperator() == no_processing))
-    {
-        if (newSymbol)
-            resolved->removeSymbol(searchName);
-        StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
-        msg.append(str(searchName));
-        throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
-    }
-
-    //Preserve ob_sandbox etc. annotated on the original definition, but not on the parsed code.
-    unsigned repositoryFlags=ret->getSymbolFlags();
-    IHqlNamedAnnotation * symbol = queryNameAnnotation(newSymbol);
-    assertex(symbol);
-    symbol->setRepositoryFlags(repositoryFlags);
-
-    if (repositoryFlags&ob_sandbox)
-    {
-        if (ctx.errs)
-            ctx.errs->reportWarning(CategoryInformation,WRN_DEFINITION_SANDBOXED,"Definition is sandboxed",filename,0,0,0);
-    }
-
-    if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))
-        return NULL;
-
-    ctx.noteExternalLookup(this, newSymbol);
-    return newSymbol.getClear();
-*/
+    return nearest.querySymbol();
 }
 
 IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -8326,11 +8221,12 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     {
         if (lookupFlags & LSFrequired)
         {
-            if(ctx.queryParseContext().autoIdSuggestions)
+            if (ctx.queryParseContext().autoIdSuggestions)
             {
                 StringBuffer msgSuffix;
-                OwnedHqlExpr nearest(resolved->lookupNearestSymbol(searchName, lookupFlags, ctx));
-                throwRecursiveError(searchName, HqlGram::composeSymbolSuggestionMsg(nearest, msgSuffix));
+                NearestSymbol nearest(searchName);
+                resolved->lookupNearestSymbol(searchName, lookupFlags, ctx, nearest);
+                throwRecursiveError(searchName, nearest.composeSymbolSuggestionMsg(msgSuffix));
             }
             else
                 throwRecursiveError(searchName, NULL);
@@ -8384,13 +8280,14 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
         if(ctx.queryParseContext().autoIdSuggestions)
         {
             //Take a single stab at finding correct symbol
-            OwnedHqlExpr nearest(CHqlScope::lookupNearestSymbol(searchName, LSFsharedOK|lookupFlags, ctx));
-            IFileContents * nearestContents = nearest->queryDefinitionText();
+            NearestSymbol nearest(searchName);
+            CHqlScope::lookupNearestSymbol(searchName, LSFsharedOK|lookupFlags, ctx, nearest);
+            IFileContents * nearestContents = nearest.querySymbol()->queryDefinitionText();
             //Only suggest if it contains text
             //MORE: With multiple suggestion infrastructure, multiple attempts to find a close (in edit distance)
             //symbol that actualy contains text can be utilized.
             if (nearestContents && (nearestContents->length() > 0))
-                HqlGram::composeSymbolSuggestionMsg(nearest, msg);
+                nearest.composeSymbolSuggestionMsg(msg);
             throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
         }
     }
@@ -8420,9 +8317,10 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
         msg.append(str(searchName));
         if(ctx.queryParseContext().autoIdSuggestions)
         {
-            OwnedHqlExpr nearest(resolved->lookupNearestSymbol(searchName, LSFsharedOK|lookupFlags, ctx));
-            if(nearest && (nearest->getOperator() != no_processing))
-                HqlGram::composeSymbolSuggestionMsg(nearest, msg);
+            NearestSymbol nearest(searchName);
+            resolved->lookupNearestSymbol(searchName, LSFsharedOK|lookupFlags, ctx, nearest);
+            if(nearest.querySymbol() && (nearest.querySymbol()->getOperator() != no_processing))
+                nearest.composeSymbolSuggestionMsg(msg);
         }
         throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
     }
@@ -8435,7 +8333,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
 
     if (repositoryFlags & ob_sandbox)
     {
-        if (ctx.errs)//MORE: should this error report searchName and thus a suggestion also?
+        if (ctx.errs)
             ctx.errs->reportWarning(CategoryInformation,WRN_DEFINITION_SANDBOXED,"Definition is sandboxed",filename,0,0,0);
     }
 
@@ -8666,108 +8564,34 @@ inline bool canMergeDefinition(IHqlExpression * expr)
     return true;
 }
 
-IHqlExpression * CHqlMergedScope::lookupNearestSymbol(IIdAtom * searchId, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+IHqlExpression * CHqlMergedScope::lookupNearestSymbol(IIdAtom * searchId, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest)
 {
     CriticalBlock block(cs);
+    NearestSymbol tempNearest(searchId);
+    unsigned penalty = 0;
 
-    editDistance = -1;
-    unsigned distance = -1;
-    unsigned index = 0;
-    unsigned distanceArray[3];
-    HqlExprArray symbolArray;
-
-    OwnedHqlExpr resolved(CHqlScope::lookupNearestSymbol(searchId, lookupFlags, ctx, distance));
+    IHqlExpression * resolved = CHqlScope::lookupNearestSymbol(searchId, lookupFlags, ctx, tempNearest);
     if (resolved)
     {
         node_operator resolvedOp = resolved->getOperator();
         if (resolvedOp == no_merge_pending)
         {
             if (lookupFlags & LSFrequired)
-                return NULL;
+                return nearest.querySymbol();//NULL
         }
         else if (resolvedOp != no_merge_nomatch && resolvedOp != no_nobody)
         {
-            symbolArray.append(*resolved.getClear());
-            distanceArray[index++] = distance;
+            nearest.compare(tempNearest, penalty);
+            if (nearest.bestMatchFound())
+                return nearest.querySymbol();
         }
     }
     else
     {
         if (mergedAll)
-            return NULL;
+            return nearest.querySymbol();
     }
-
-    OwnedHqlExpr recursionGuard(createSymbol(searchId, LINK(mergePendingMarker), ob_exported));
-    defineSymbol(LINK(recursionGuard));//hmmmmmm???
-
-    OwnedHqlExpr previousMatch;
-    Owned<CHqlMergedScope> mergeScope;
-    unsigned prevErrors = ctx.numErrors();
-    unsigned symbolFlags = 0;
-    ForEachItemIn(i, mergedScopes)
-    {
-        OwnedHqlExpr matched(mergedScopes.item(i).lookupNearestSymbol(searchId, lookupFlags, ctx, distance = -1));
-        if (matched)
-        {
-            if (!canMergeDefinition(matched))
-            {
-                if (!previousMatch)
-                    previousMatch.setown(matched.getClear());
-                break;
-            }
-
-            if (previousMatch)
-            {
-                IHqlScope * previousScope = previousMatch->queryScope();
-                mergeScope.setown(new CHqlMergedScope(searchId, previousScope->queryFullName()));
-                mergeScope->addScope(previousScope);
-            }
-
-            //Not so sure about this....
-            symbolFlags |= matched->getSymbolFlags();
-            if (mergeScope)
-            {
-                IHqlScope * scope = matched->queryScope();
-                mergeScope->addScope(scope);
-            }
-            else
-                previousMatch.setown(matched.getClear());
-        }
-        else
-        {
-            //Prevent cascaded errors in attributes which shouldn't have been reachable (e.g., syntax checking)
-            if (prevErrors != ctx.numErrors())
-                break;
-        }
-    }
-
-    if (mergeScope)
-    {
-        //Not sure about this?
-        OwnedHqlExpr newScope(mergeScope.getClear()->closeExpr());
-        IHqlExpression * symbol = createSymbol(searchId, id, LINK(newScope), true, false, symbolFlags);
-        //defineSymbol(symbol);//hmmmmmm???
-        unsigned distance = HqlGram::computeEditDistance(searchId, symbol->queryId());
-        if (distance != 0 && distance != (unsigned)(-1))
-        {
-            symbolArray.append(*LINK(symbol));
-            distanceArray[index++] = distance;
-        }
-    }
-    if (previousMatch)
-    {
-        //defineSymbol(LINK(previousMatch));//hmmmmmm???
-        symbolArray.append(*previousMatch.getClear());
-        distanceArray[index++] = distance;
-    }
-
-    OwnedHqlExpr ret(HqlGram::findNearestSymbol(editDistance, symbolArray, distanceArray, 1));
-    if (ret)
-        return ret.getClear();
-
-    //Indicate that no match was found to save work next time.
-    defineSymbol(createSymbol(searchId, LINK(mergeNoMatchMarker), ob_exported));//hmmmmmm???
-    return NULL;
+    return nearest.querySymbol();
 }
 
 IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -9446,148 +9270,120 @@ IHqlExpression * CHqlVirtualScope::lookupBaseSymbol(IHqlExpression * & definitio
     return NULL;
 }
 
-IHqlExpression * CHqlVirtualScope::lookupNearestBaseSymbol(IHqlExpression * & definitionModule, IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+IHqlExpression * CHqlVirtualScope::lookupNearestBaseSymbol(IHqlExpression * & definitionModule, IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest)
 {
-    OwnedHqlExpr nearestSymbol;
-    unsigned minDistance = -1;
-    unsigned penalty = 0;
-
     ForEachChild(i, this)
     {
         IHqlExpression * child = queryChild(i);
         IHqlScope * base = child->queryScope();
         if (base)
         {
-            unsigned distance = -1;
-            IHqlExpression * match = base->lookupNearestSymbol(searchName, lookupFlags|LSFfromderived, ctx, distance);
-            if (match)
-            {
-                unsigned tempDistance = distance + --penalty;
-                if (tempDistance == 0)
-                {
-                    editDistance = distance;
-                    definitionModule = child;
-                    return match;
-                }
-                else if (tempDistance < minDistance)
-                {
-                    editDistance = distance;
-                    definitionModule = child;
-                    nearestSymbol.setown(match);
-                }
-            }
+            base->lookupNearestSymbol(searchName, lookupFlags|LSFfromderived, ctx, nearest);
+            if (nearest.bestMatchFound())
+                return nearest.querySymbol();
         }
     }
 
-    return nearestSymbol.getClear();
+    return nearest.querySymbol();
 }
 
-IHqlExpression * CHqlVirtualScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+IHqlExpression * CHqlVirtualScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest)
 {
-    editDistance = -1;
     //Are we just trying to find out what the definition in this scope is?
     if (lookupFlags & LSFignoreBase)
-        return CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, editDistance);
+        return CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, nearest);
 
     //The scope is complete=>this is a reference from outside the scope
     if (complete)
     {
         //NOTE: If the members are virtual, then all that is significant is whether a match exists or not.
         if (concrete && !(lookupFlags & LSFfromderived))
-            return concrete->lookupNearestSymbol(searchName, lookupFlags, ctx, editDistance);
+            return concrete->lookupNearestSymbol(searchName, lookupFlags, ctx, nearest);
 
         //The class is not concrete...
         //1. It is based on a parameter, and not complete because the parameter hasn't been substituted.
         //2. A reference from a derived module accessing the base definition.
         //3. An illegal access to a member of an abstract class
-        OwnedHqlExpr match(CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, editDistance));
+        NearestSymbol tempNearest(searchName);
+        IHqlExpression * match = CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, tempNearest);
+
         if (!match)
-            return NULL;
+            return nearest.querySymbol();//NULL
 
         if (!containsVirtual || (lookupFlags & LSFfromderived))
-            return match.getClear();
+        {
+            nearest.compare(tempNearest);
+            return nearest.querySymbol();
+        }
 
         if (!isVirtualSymbol(match))
         {
             //Select from a parameter where the item is not defined in the parameter's scope => error
-            if (match->getOperator() == no_unboundselect)
-            {
-                editDistance = -1;
-                return NULL;
-            }
-            return match.getClear();
+            if (match->getOperator() != no_unboundselect)
+                nearest.compare(tempNearest);
+            return nearest.querySymbol();
         }
 
-        if (!canBeVirtual(match))
+        if (canBeVirtual(match))
         {
-            editDistance = -1;
-            return NULL;
+            nearest.compare(tempNearest);
+            return nearest.querySymbol();
         }
 
-        return match.getClear();
+        return nearest.querySymbol();
     }
 
-    unsigned scopeSymbolDistance = -1;
-    OwnedHqlExpr scopeSymbol(CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, scopeSymbolDistance));
+    NearestSymbol scopeNearest(searchName);
+    IHqlExpression * scopeSymbol = CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, scopeNearest);
 
     IHqlExpression * definitionModule = this;
-    unsigned baseSymbolDistance = -1;
-    OwnedHqlExpr baseSymbol(lookupNearestBaseSymbol(definitionModule, searchName, lookupFlags, ctx, baseSymbolDistance));
+    NearestSymbol baseNearest(searchName);
+    IHqlExpression * baseSymbol = lookupNearestBaseSymbol(definitionModule, searchName, lookupFlags, ctx, baseNearest);
 
     if (!scopeSymbol && !baseSymbol)
-    {
-        editDistance = -1;
-        return NULL;
-    }
+        return nearest.querySymbol();//NULL
 
-    bool isScopeSymbolOK = true;
-    if (!isVirtualSymbol(scopeSymbol))
+    bool isScopeSymbolOK = false;
+    if (scopeSymbol)
     {
-        node_operator op = scopeSymbol->getOperator();
-        if (op == no_unboundselect || op == no_purevirtual)
+        isScopeSymbolOK = true;
+        if (!isVirtualSymbol(scopeSymbol))
+        {
+            node_operator op = scopeSymbol->getOperator();
+            if (op == no_unboundselect || op == no_purevirtual)
+                isScopeSymbolOK = false;
+        }
+        else if (!canBeVirtual(scopeSymbol))
             isScopeSymbolOK = false;
     }
-    else if (!canBeVirtual(scopeSymbol))
-        isScopeSymbolOK = false;
 
-    bool isBaseSymbolOK = true;
-    if (!isVirtualSymbol(baseSymbol))
+    bool isBaseSymbolOK = false;
+    if (baseSymbol)
     {
-        node_operator op = baseSymbol->getOperator();
-        if (op == no_unboundselect || op == no_purevirtual)
+        isBaseSymbolOK = true;
+        if (!isVirtualSymbol(baseSymbol))
+        {
+            node_operator op = baseSymbol->getOperator();
+            if (op == no_unboundselect || op == no_purevirtual)
+            isBaseSymbolOK = false;
+        }
+        else if (!canBeVirtual(baseSymbol))
             isBaseSymbolOK = false;
     }
-    else if (!canBeVirtual(baseSymbol))
-        isBaseSymbolOK = false;
 
     if (isScopeSymbolOK && isBaseSymbolOK)
     {
         //Give a slight priority bias to scopeSymbol.
-        unsigned penalizedBaseDistance = baseSymbolDistance == -1 ? -1 : baseSymbolDistance + 1;
-        if (scopeSymbolDistance <= baseSymbolDistance)
-        {
-            editDistance = scopeSymbolDistance;
-            return scopeSymbol.getClear();
-        }
-        else
-        {
-            editDistance = baseSymbolDistance;
-            return baseSymbol.getClear();
-        }
+        unsigned penalty = 1;
+        scopeNearest.compare(baseNearest, penalty);//Give slight bias to scoped vs based.
+        nearest.compare(scopeNearest);
     }
     else if (isScopeSymbolOK && !isBaseSymbolOK)
-    {
-        editDistance = scopeSymbolDistance;
-        return scopeSymbol.getClear();
-    }
+        nearest.compare(scopeNearest);
     else if (!isScopeSymbolOK && isBaseSymbolOK)
-    {
-        editDistance = baseSymbolDistance;
-        return baseSymbol.getClear();
-    }
+        nearest.compare(baseNearest);
 
-    editDistance = -1;
-    return NULL;
+    return nearest.querySymbol();
 }
 
 IHqlExpression *CHqlVirtualScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -9782,7 +9578,7 @@ public:
 
     virtual void defineSymbol(IHqlExpression * expr);
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
-    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest);
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context);
 
 protected:
@@ -9820,43 +9616,39 @@ void CHqlForwardScope::defineSymbol(IHqlExpression * expr)
         CHqlVirtualScope::defineSymbol(expr);
 }
 
-IHqlExpression * CHqlForwardScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+IHqlExpression * CHqlForwardScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest)
 {
-    editDistance = -1;
-    unsigned distance = -1;
-    HqlExprArray symbolArray;
-    unsigned distanceArray[2];
-    unsigned index = 0;
-    OwnedHqlExpr resolvedSym(resolved->lookupNearestSymbol(searchName, lookupFlags, ctx, distance));
+    NearestSymbol tempNearest(searchName);
+    unsigned penalty = 0;
+    IHqlExpression * resolvedSym = resolved->lookupNearestSymbol(searchName, lookupFlags, ctx, tempNearest);
     if(!(lookupFlags & LSFignoreBase))
     {
         if (resolvedSym)
         {
-            editDistance = distance;
-            return resolvedSym.getClear();
+            nearest.compare(tempNearest);
+            return nearest.querySymbol();
         }
         else if(resolvedAll)
-            return NULL;
+            return nearest.querySymbol();
     }
 
     if (resolvedSym && resolvedSym->getOperator() != no_processing)
     {
-        symbolArray.append(*resolvedSym.getClear());
-        distanceArray[index++] = distance;
+        nearest.compare(tempNearest, penalty);
+        if (nearest.bestMatchFound())
+            return nearest.querySymbol();
     }
 
-    OwnedHqlExpr ret(CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, distance = -1));
-    if (ret)
-    {
-        symbolArray.append(*ret.getClear());
-        distanceArray[index++] = distance;
-    }
-    if (!ret || (lookupFlags & LSFignoreBase) || !parentScope)
-        return HqlGram::findNearestSymbol(editDistance, symbolArray, distanceArray, 1);
+    tempNearest.reset();
+    CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, tempNearest);
+    nearest.compare(tempNearest, penalty);
+    IHqlExpression * symbol = CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, tempNearest);
+    if ((lookupFlags & LSFignoreBase) || !parentScope)
+        return nearest.querySymbol();
 
     //MORE: for now return here
-    return HqlGram::findNearestSymbol(editDistance, symbolArray, distanceArray, 1);
-
+    return nearest.querySymbol();
+/*
     IHqlExpression * processingSymbol = createSymbol(searchName, LINK(processingMarker), ob_exported);
     resolved->defineSymbol(processingSymbol);
 
@@ -9878,6 +9670,7 @@ IHqlExpression * CHqlForwardScope::lookupNearestSymbol(IIdAtom * searchName, uns
         return NULL;
 
     return newSymbol.getClear();
+    */
 }
 
 IHqlExpression *CHqlForwardScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -9985,37 +9778,23 @@ CHqlMultiParentScope::CHqlMultiParentScope(IIdAtom * _name, ...)
     va_end(args);
 }
 
-IHqlExpression * CHqlMultiParentScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+IHqlExpression * CHqlMultiParentScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest)
 {
-    editDistance = -1;
-    unsigned distance = -1;
     unsigned penalty = 0;
-    OwnedHqlExpr nearest(CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, distance));
-    if (nearest)
-    {
-        editDistance = distance;
-        penalty++;
-    }
+    NearestSymbol tempNearest(searchName);
+    CHqlScope::lookupNearestSymbol(searchName, lookupFlags, ctx, tempNearest);
+    nearest.compare(tempNearest, penalty);
+    if (nearest.bestMatchFound())
+        return nearest.querySymbol();
 
     unsigned numChildren = parents.length();
     for (unsigned i=0; i<numChildren; i++)
     {
-        IHqlExpression * cur = ((IHqlScope&)parents.item(i)).lookupNearestSymbol(searchName, lookupFlags, ctx, distance);
-        if (cur)
-        {
-            distance = distance == -1 ? -1 : distance + penalty++;
-            if (distance < editDistance)
-            {
-                editDistance = distance;//MORE: should the penalty remain?
-                nearest.setown(cur);
-            }
-        }
+        nearest.branchSearch(&(IHqlScope&)parents.item(i), lookupFlags, ctx, penalty);
+        if (nearest.bestMatchFound())
+            return nearest.querySymbol();
     }
-
-    if (editDistance <= MAX_SYMBOL_DISTANCE)
-        return nearest.getClear();
-    editDistance = -1;
-    return NULL;
+    return nearest.querySymbol();
 }
 
 IHqlExpression *CHqlMultiParentScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -10200,9 +9979,9 @@ StringBuffer &CHqlScopeParameter::toString(StringBuffer &ret)
     return ret;
 }
 
-IHqlExpression * CHqlScopeParameter::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+IHqlExpression * CHqlScopeParameter::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest)
 {
-    return typeScope->lookupNearestSymbol(searchName, lookupFlags|LSFfromderived, ctx, editDistance);
+    return typeScope->lookupNearestSymbol(searchName, lookupFlags|LSFfromderived, ctx, nearest);
 }
 
 IHqlExpression * CHqlScopeParameter::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -10271,17 +10050,17 @@ IHqlScope * CHqlDelayedScope::clone(HqlExprArray & children, HqlExprArray & symb
 
 IHqlExpression * CHqlDelayedScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    unsigned editDistance = -1;
-    return lookupNearestSymbol(searchName, lookupFlags, ctx, editDistance);
+    NearestSymbol nearest(searchName);
+    return LINK(lookupNearestSymbol(searchName, lookupFlags, ctx, nearest));
 }
 
-IHqlExpression * CHqlDelayedScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+IHqlExpression * CHqlDelayedScope::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest)
 {
     IHqlScope * scope = queryChild(0)->queryScope();
     if (scope)
-        return scope->lookupNearestSymbol(searchName, lookupFlags, ctx);
+        return scope->lookupNearestSymbol(searchName, lookupFlags, ctx, nearest);
 
-    return typeScope->lookupNearestSymbol(searchName, lookupFlags, ctx);
+    return typeScope->lookupNearestSymbol(searchName, lookupFlags, ctx, nearest);
 }
 
 IHqlExpression * CHqlDelayedScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -10734,13 +10513,13 @@ CHqlDelayedScopeCall::CHqlDelayedScopeCall(IHqlExpression * _param, ITypeInfo * 
 
 IHqlExpression * CHqlDelayedScopeCall::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    unsigned editDistance = -1;
-    return lookupNearestSymbol(searchName, lookupFlags, ctx, editDistance);
+    NearestSymbol nearest(searchName);
+    return LINK(lookupNearestSymbol(searchName, lookupFlags, ctx, nearest));
 }
 
-IHqlExpression * CHqlDelayedScopeCall::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & editDistance)
+IHqlExpression * CHqlDelayedScopeCall::lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest)
 {
-    return typeScope->lookupNearestSymbol(searchName, lookupFlags, ctx, editDistance);
+    return typeScope->lookupNearestSymbol(searchName, lookupFlags, ctx, nearest);
 }
 
 IHqlExpression * CHqlDelayedScopeCall::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -10928,14 +10707,14 @@ IHqlExpression * CHqlAlienType::queryMemberFunc(IIdAtom * search)
 
 IHqlExpression * CHqlAlienType::lookupNearestSymbol(IIdAtom * searchName)
 {
-    unsigned editDistance = -1;
-    return lookupNearestSymbol(searchName, editDistance);
+    NearestSymbol nearest(searchName);
+    return LINK(lookupNearestSymbol(searchName, nearest));
 }
 
-IHqlExpression * CHqlAlienType::lookupNearestSymbol(IIdAtom * searchName, unsigned & editDistance)
+IHqlExpression * CHqlAlienType::lookupNearestSymbol(IIdAtom * searchName, NearestSymbol & nearest)
 {
     HqlDummyLookupContext ctx(NULL);
-    return scope->lookupNearestSymbol(searchName, LSFpublic, ctx, editDistance);
+    return scope->lookupNearestSymbol(searchName, LSFpublic, ctx, nearest);
 }
 
 IHqlExpression *CHqlAlienType::lookupSymbol(IIdAtom * searchName)
@@ -16769,6 +16548,91 @@ IHqlExpression * annotateIndexBlobs(IHqlExpression * expr)
 {
     CHqlBlobTransformer transformer;
     return transformer.transform(expr);
+}
+
+void NearestSymbol::compare(NearestSymbol & comparison)
+{
+    unsigned penalty = 0;
+    compare(comparison, penalty);
+}
+
+void NearestSymbol::compare(NearestSymbol & comparison, unsigned & penalty)
+{
+    if (!comparison.nearest)
+        return;
+
+    if (nearest == comparison.nearest)
+        return;
+
+    unsigned unsignedDistance = comparison.distance == (unsigned)(-1) ? comparison.distance : comparison.distance + penalty;
+    if (unsignedDistance < distance)
+    {
+        distance = comparison.distance;
+        nearest.set(comparison.nearest);
+        penalty++;
+    }
+}
+
+void NearestSymbol::compare(IHqlExpression * comparison)
+{
+    if (!comparison || nearest == comparison)
+        return;
+
+    unsigned tempDistance = computeEditDistance(comparison->queryId());
+
+    if (tempDistance == 0 || tempDistance >= MAX_SYMBOL_DISTANCE)
+        return;
+
+    if (tempDistance < distance)
+    {
+        distance = tempDistance;
+        nearest.set(comparison);
+    }
+}
+
+unsigned NearestSymbol::computeEditDistance(const IIdAtom * comparison) const
+{
+    if (!comparison)
+        return -1;
+
+    const char * comparisonLowerStr = str(lower(comparison));
+    const char * searchNameLowerStr = str(lower(searchName));
+
+    return slEditDistanceV2(strlen(searchNameLowerStr), searchNameLowerStr, strlen(comparisonLowerStr), comparisonLowerStr);
+}
+
+IHqlExpression * NearestSymbol::branchSearch(IHqlScope * scope, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & penalty)
+{
+    NearestSymbol tempNearest(searchName);
+    scope->lookupNearestSymbol(searchName, lookupFlags, ctx, tempNearest);
+    compare(tempNearest);
+    return nearest;
+}
+
+IHqlExpression * NearestSymbol::branchSearch(IHqlSimpleScope * scope, unsigned & penalty)
+{
+    NearestSymbol tempNearest(searchName);
+    scope->lookupNearestSymbol(searchName, tempNearest);
+    compare(tempNearest, penalty);
+    return nearest;
+}
+
+void NearestSymbol::reset()
+{
+    nearest.clear();
+    distance = -1;
+}
+
+bool NearestSymbol::bestMatchFound() const
+{
+    return distance == 1;
+}
+
+const char * NearestSymbol::composeSymbolSuggestionMsg(StringBuffer & msg) const
+{
+    if (nearest)
+        msg.append(" - did you perhaps mean \"").append(nearest->queryName()->queryStr()).append("\"?");
+    return msg.str();
 }
 
 /*

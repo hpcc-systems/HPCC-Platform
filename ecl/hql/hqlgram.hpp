@@ -35,7 +35,6 @@
 #define EXPORT_FLAG 1
 #define VIRTUAL_FLAG 2
 #define SHARED_FLAG 4
-#define MAX_SYMBOL_DISTANCE 5
 
 #define REC_FLD_ERR_STR "Need to supply a value for field '%s'"
 #define ERR_WRONGSCOPING_ERR_STR "Value for field '%s' cannot be computed in this scope"
@@ -311,7 +310,7 @@ public:
     IHqlExpression * createDefaults();
     IHqlExpression * createFormals(bool oldSetFormat);
     IHqlExpression * queryParameter(IIdAtom * name);
-    IHqlExpression * queryNearestParameter(IIdAtom * name, unsigned & editDistance);
+    IHqlExpression * queryNearestParameter(IIdAtom * name, NearestSymbol & nearest);
 
 public:
     Owned<IHqlScope> localScope;
@@ -585,13 +584,8 @@ public:
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportMacroExpansionPosition(IError * warning, HqlLex * lexer);
     void reportErrorUnexpectedX(const attribute & errpos, IAtom * unexpected);
-    static unsigned computeEditDistance(const IIdAtom * id1, const IIdAtom * id2);
-    static const char * composeSymbolSuggestionMsg(IHqlExpression * symbol, StringBuffer & msg);
-    static IHqlExpression * findNearestSymbol(unsigned & minDistance, IHqlExpression * s1, bool OK1, unsigned distance1, IHqlExpression * s2, bool OK2, unsigned distance2);
-    static IHqlExpression * findNearestSymbol(unsigned & minDistance, const HqlExprArray & symbolArray, const unsigned * distanceArray, unsigned penalty);
     IHqlExpression * lookupNearestSymbol(IIdAtom * searchName);
-    IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned & editDistance);
-
+    IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, NearestSymbol & nearest);
 
     // Don't use overloading: va_list is the same as char*!!
     void reportErrorVa(int errNo, const ECLlocation & a, const char* format, va_list args) __attribute__((format(printf,4,0)));
@@ -1015,6 +1009,7 @@ protected:
     IHqlExpression * findFeature(IHqlExpression * value);
     void setFeatureParamsOwn(IHqlExpression * expr);
 };
+
 
 
 

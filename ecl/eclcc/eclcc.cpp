@@ -2076,9 +2076,8 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             setDebugOption("syntaxCheck", tempBool);
         }
-        else if (iter.matchFlag(tempBool, "--auto-id-suggestions"))
+        else if (iter.matchFlag(optAutoIdSuggestions, "--auto-id-suggestions"))
         {
-            optAutoIdSuggestions = tempBool;
         }
         else if (iter.matchOption(optIniFilename, "-specs"))
         {

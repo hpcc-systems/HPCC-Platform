@@ -271,8 +271,8 @@ IHqlExpression *HqlLex::lookupSymbol(IIdAtom * name, const attribute& errpos)
 
 IHqlExpression * HqlLex::lookupNearestSymbol(IIdAtom * name, const attribute& errpos)
 {
-    unsigned distance = -1;
-    return yyParser->lookupNearestSymbol(name, distance);
+    NearestSymbol nearest(name);
+    return LINK(yyParser->lookupNearestSymbol(name, nearest));
 }
 
 unsigned HqlLex::hex2digit(char c)
