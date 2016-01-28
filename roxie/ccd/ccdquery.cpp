@@ -290,6 +290,7 @@ QueryOptions::QueryOptions()
     prefetchProjectPreload = defaultPrefetchProjectPreload;
     bindCores = coresPerQuery;
     strandBlockSize = defaultStrandBlockSize;
+    forceNumStrands = defaultForceNumStrands;
 
     checkingHeap = defaultCheckingHeap;
     disableLocalOptimizations = false;  // No global default for this
@@ -318,6 +319,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     prefetchProjectPreload = other.prefetchProjectPreload;
     bindCores = other.bindCores;
     strandBlockSize = other.strandBlockSize;
+    forceNumStrands = other.forceNumStrands;
 
     checkingHeap = other.checkingHeap;
     disableLocalOptimizations = other.disableLocalOptimizations;
@@ -356,6 +358,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(prefetchProjectPreload, wu, "prefetchProjectPreload");
     updateFromWorkUnit(bindCores, wu, "bindCores");
     updateFromWorkUnit(strandBlockSize, wu, "strandBlockSize");
+    updateFromWorkUnit(forceNumStrands, wu, "forceNumStrands");
 
     updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
     updateFromWorkUnit(disableLocalOptimizations, wu, "disableLocalOptimizations");
@@ -404,6 +407,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(prefetchProjectPreload, ctx, "@prefetchProjectPreload", "_PrefetchProjectPreload");
         updateFromContext(bindCores, ctx, "@bindCores", "_bindCores");
         updateFromContext(strandBlockSize, ctx, "@strandBlockSize", "_strandBlockSize");
+        updateFromContext(forceNumStrands, ctx, "@forceNumStrands", "_forceNumStrands");
 
         updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
         // Note: disableLocalOptimizations is not permitted at context level (too late)
@@ -696,7 +700,7 @@ protected:
         case TAKsimpleaction:
             return createRoxieServerActionActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKparse:
-            return createRoxieServerParseActivityFactory(id, subgraphId, *this, helperFactory, kind, this);
+            return createRoxieServerParseActivityFactory(id, subgraphId, *this, helperFactory, kind, node, this);
         case TAKworkunitwrite:
             return createRoxieServerWorkUnitWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKdictionaryworkunitwrite:

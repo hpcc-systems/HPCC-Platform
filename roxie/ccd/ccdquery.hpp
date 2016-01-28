@@ -110,6 +110,7 @@ public:
     int prefetchProjectPreload;
     int bindCores;
     unsigned strandBlockSize;
+    unsigned forceNumStrands;
 
     bool checkingHeap;
     bool disableLocalOptimizations;
