@@ -26,16 +26,18 @@ string20            middle;
                 end;
             end;
 
-
-in1rec :=   record
+idRec := record
 unsigned    id;
+END;
+
+in1rec :=   record(idRec)
 complexName name;
 unsigned    age;
 string      title;
         end;
 
 in2rec := record
-unsigned    id;
+idRec;
 complexName name;
 real8       age;
 boolean     dead;

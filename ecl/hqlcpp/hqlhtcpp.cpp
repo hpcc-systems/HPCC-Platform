@@ -8023,7 +8023,7 @@ void HqlCppTranslator::doBuildExprSizeof(BuildCtx & ctx, IHqlExpression * expr, 
 
 }
 
-void HqlCppTranslator::doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IHqlExpression * rightRecord, IHqlExpression * leftSelector, IHqlExpression * rightSelector, StringBuffer & selectorText, bool isCount)
+void HqlCppTranslator::doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IHqlExpression * leftSelector, IHqlExpression * rightRecord, IHqlExpression * rightSelector, StringBuffer & selectorText, bool isCount)
 {
     switch (expr->getOperator())
     {
