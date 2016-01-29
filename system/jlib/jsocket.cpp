@@ -24,7 +24,6 @@
     look at loopback
 */
 
-
 #include "platform.h"
 #ifdef _VER_C5
 #include <clwclib.h>
@@ -137,7 +136,7 @@ static bool IP6preferred=false;         // e.g. for DNS and socket create
 IpSubNet PreferredSubnet(NULL,NULL);    // set this if you prefer a particular subnet for debugging etc
                                         // e.g. PreferredSubnet("192.168.16.0", "255.255.255.0")
 
-static atomic_t pre_conn_unreach_cnt = ATOMIC_INIT(0);    // global count of pre_connect() ENETUNREACH error
+static atomic_t pre_conn_unreach_cnt = ATOMIC_INIT(0);    // global count of pre_connect() JSE_NETUNREACH error
 
 #define IPV6_SERIALIZE_PREFIX (0x00ff00ff)
 
@@ -315,13 +314,8 @@ struct MCASTREQ
 #define T_FD_SET fd_set
 #define XFD_SETSIZE FD_SETSIZE
 //Following are defined in more modern headers
-#ifndef ETIMEDOUT
-#define ETIMEDOUT WSAETIMEDOUT
-#define ECONNREFUSED WSAECONNREFUSED
-#endif
 #define XFD_ZERO(s) FD_ZERO(s)
 #define SEND_FLAGS 0
-#define BADSOCKERR(err) ((err==WSAEBADF)||(err==WSAENOTSOCK))
 #define CHECKSOCKRANGE(s)
 #elif defined(__FreeBSD__) || defined(__APPLE__)
 #define XFD_SETSIZE FD_SETSIZE
@@ -329,7 +323,6 @@ struct MCASTREQ
 #define XFD_ZERO(s) FD_ZERO(s)
 #define T_SOCKET int
 #define SEND_FLAGS (MSG_NOSIGNAL)
-#define BADSOCKERR(err) ((err==EBADF)||(err==ENOTSOCK))
 #define CHECKSOCKRANGE(s)
 #else
 #define XFD_SETSIZE 32768
@@ -353,12 +346,13 @@ struct xfd_set { __fd_mask fds_bits[XFD_SETSIZE / __NFDBITS]; }; // define our o
 #define XFD_ZERO(s) memset(s,0,sizeof(xfd_set))
 #define T_SOCKET int
 #define SEND_FLAGS (MSG_NOSIGNAL)
-#define BADSOCKERR(err) ((err==EBADF)||(err==ENOTSOCK))
 #endif
 #ifdef CENTRAL_NODE_RANDOM_DELAY
 static SocketEndpointArray CentralNodeArray;
 #endif
 enum SOCKETMODE { sm_tcp_server, sm_tcp, sm_udp_server, sm_udp, sm_multicast_server, sm_multicast};
+
+#define BADSOCKERR(err) ((err==JSE_BADF)||(err==JSE_NOTSOCK))
 
 class CSocket: public CInterface, public ISocket
 {
@@ -521,17 +515,20 @@ bool win_socket_library::initdone = false;
 static win_socket_library ws32_lib;
 
 #define ERRNO() WSAGetLastError()
-#ifndef EADDRINUSE
-#define EADDRINUSE WSAEADDRINUSE
-#define ECONNRESET WSAECONNRESET
-#define ECONNABORTED WSAECONNABORTED
-#define ENOTCONN WSAENOTCONN
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#define EINPROGRESS WSAEINPROGRESS
-#define ENETUNREACH WSAENETUNREACH
-#define ENOTSOCK WSAENOTSOCK
-#endif
-#define EINTRCALL WSAEINTR
+
+#define JSE_ADDRINUSE WSAEADDRINUSE
+#define JSE_CONNRESET WSAECONNRESET
+#define JSE_CONNABORTED WSAECONNABORTED
+#define JSE_NOTCONN WSAENOTCONN
+#define JSE_WOULDBLOCK WSAEWOULDBLOCK
+#define JSE_INPROGRESS WSAEINPROGRESS
+#define JSE_NETUNREACH WSAENETUNREACH
+#define JSE_NOTSOCK WSAENOTSOCK
+#define JSE_TIMEDOUT WSAETIMEDOUT
+#define JSE_CONNREFUSED WSAECONNREFUSED
+#define JSE_BADF WSAEBADF
+
+#define JSE_INTR WSAEINTR
 
 struct j_sockaddr_in6 {
     short   sin6_family;        /* AF_INET6 */
@@ -637,6 +634,20 @@ int inet_aton (const char *name, struct in_addr *addr)
 
 
 #else
+
+#define JSE_ADDRINUSE EADDRINUSE
+#define JSE_CONNRESET ECONNRESET
+#define JSE_CONNABORTED ECONNABORTED
+#define JSE_NOTCONN ENOTCONN
+#define JSE_WOULDBLOCK EWOULDBLOCK
+#define JSE_INPROGRESS EINPROGRESS
+#define JSE_NETUNREACH ENETUNREACH
+#define JSE_NOTSOCK ENOTSOCK
+#define JSE_TIMEDOUT ETIMEDOUT
+#define JSE_CONNREFUSED ECONNREFUSED
+#define JSE_BADF EBADF
+
+
 #define _inet_ntop inet_ntop
 #define _inet_pton inet_pton
 
@@ -651,7 +662,7 @@ typedef union {
 #define DEFINE_SOCKADDR(name) J_SOCKADDR name; memset(&name,0,sizeof(J_SOCKADDR))
 
 
-#define EINTRCALL EINTR
+#define JSE_INTR EINTR
 #define ERRNO() (errno)
 #ifndef INADDR_NONE
 #define INADDR_NONE (-1)
@@ -825,8 +836,8 @@ int CSocket::pre_connect (bool block)
     int rc = ::connect(sock, &u.sa, ul);
     if (rc==SOCKET_ERROR) {
         err = ERRNO();
-        if ((err != EINPROGRESS)&&(err != EWOULDBLOCK)&&(err != ETIMEDOUT)&&(err!=ECONNREFUSED)) {   // handled by caller
-            if (err != ENETUNREACH) {
+        if ((err != JSE_INPROGRESS)&&(err != JSE_WOULDBLOCK)&&(err != JSE_TIMEDOUT)&&(err!=JSE_CONNREFUSED)) {   // handled by caller
+            if (err != JSE_NETUNREACH) {
                 atomic_set(&pre_conn_unreach_cnt, 0);
                 LOGERR2(err,1,"pre_connect");
             } else {
@@ -859,7 +870,7 @@ int CSocket::post_connect ()
         set_nagle(false);
         state = ss_open;
     }
-    else if ((err!=ETIMEDOUT)&&(err!=ECONNREFUSED)) // handled by caller
+    else if ((err!=JSE_TIMEDOUT)&&(err!=JSE_CONNREFUSED)) // handled by caller
         LOGERR2(err,1,"post_connect");
     return err;
 }
@@ -911,7 +922,7 @@ void CSocket::open(int listen_queue_size,bool reuseports)
     int saverr;
     if (::bind(sock, &u.sa, ul) != 0) {
         saverr = ERRNO();
-        if (saverr==EADDRINUSE) {   // don't log as error (some usages probe ports)
+        if (saverr==JSE_ADDRINUSE) {   // don't log as error (some usages probe ports)
 ErrPortInUse:
             closesock();
             char msg[1024]; 
@@ -927,7 +938,7 @@ ErrPortInUse:
     if (!connectionless()) {
         if (::listen(sock, listen_queue_size) != 0) {
             saverr = ERRNO();
-            if (saverr==EADDRINUSE)
+            if (saverr==JSE_ADDRINUSE)
                 goto ErrPortInUse;
             closesock();
             THROWJSOCKEXCEPTION(saverr);
@@ -990,7 +1001,7 @@ ISocket* CSocket::accept(bool allowcancel)
                 return NULL;
             THROWJSOCKEXCEPTION(JSOCKERR_cancel_accept);
         }
-        if (saverr != EINTRCALL) {
+        if (saverr != JSE_INTR) {
             accept_cancel_state = accept_not_cancelled;
             THROWJSOCKEXCEPTION(saverr);
         }
@@ -1203,7 +1214,7 @@ bool CSocket::connect_timeout( unsigned timeout, bool noexception)
     int err;
     while (!tm.timedout(&remaining)) {
         err = pre_connect(false);
-        if ((err == EINPROGRESS)||(err == EWOULDBLOCK)) {
+        if ((err == JSE_INPROGRESS)||(err == JSE_WOULDBLOCK)) {
             T_FD_SET fds;
             struct timeval tv;
             CHECKSOCKRANGE(sock);
@@ -1311,7 +1322,7 @@ void CSocket::connect_wait(unsigned timems)
     #ifndef BLOCK_POLLED_SINGLE_CONNECTS
             unsigned polltime = 1;
     #endif
-            while (!blockselect && ((err == EINPROGRESS)||(err == EWOULDBLOCK))) {
+            while (!blockselect && ((err == JSE_INPROGRESS)||(err == JSE_WOULDBLOCK))) {
                 T_FD_SET fds;
                 struct timeval tv;
                 CHECKSOCKRANGE(sock);
@@ -1463,7 +1474,7 @@ int CSocket::wait_read(unsigned timeout)
         }
         if (ret==SOCKET_ERROR) {
             int err = ERRNO();
-            if (err!=EINTRCALL) {   // else retry (should adjust time but for our usage don't think it matters that much)
+            if (err!=JSE_INTR) {   // else retry (should adjust time but for our usage don't think it matters that much)
                 LOGERR2(err,1,"wait_read");
                 break;
             }
@@ -1493,7 +1504,7 @@ int CSocket::wait_write(unsigned timeout)
         }
         if (ret==SOCKET_ERROR) {
             int err = ERRNO();
-            if (err!=EINTRCALL) {   // else retry (should adjust time but for our usage don't think it matters that much)
+            if (err!=JSE_INTR) {   // else retry (should adjust time but for our usage don't think it matters that much)
                 LOGERR2(err,1,"wait_write");
                 break;
             }
@@ -1554,14 +1565,14 @@ EintrRetry:
                 LOGERR2(err,1,"Socket closed during read");
                 rc = 0;
             }
-            else if ((err==EINTRCALL)&&(retrycount--!=0)) {
+            else if ((err==JSE_INTR)&&(retrycount--!=0)) {
                 LOGERR2(err,1,"EINTR retrying");
                 goto EintrRetry;
             }
             else {
                 VStringBuffer errMsg("readtms(timeoutms=%d)", timeoutms);
                 LOGERR2(err,1,errMsg.str());
-                if ((err==ECONNRESET)||(err==EINTRCALL)||(err==ECONNABORTED)) {
+                if ((err==JSE_CONNRESET)||(err==JSE_INTR)||(err==JSE_CONNABORTED)) {
                     errclose();
                     err = JSOCKERR_broken_pipe;
                 }
@@ -1631,7 +1642,7 @@ EintrRetry:
                 LOGERR2(err,3,"Socket closed during read");
                 rc = 0;
             }
-            else if ((err==EINTRCALL)&&(retrycount--!=0)) {
+            else if ((err==JSE_INTR)&&(retrycount--!=0)) {
                 if (sock==INVALID_SOCKET)
                     rc = 0;         // convert an EINTR after closed to a graceful close
                 else {
@@ -1641,7 +1652,7 @@ EintrRetry:
             }
             else {
                 LOGERR2(err,3,"read");
-                if ((err==ECONNRESET)||(err==EINTRCALL)||(err==ECONNABORTED)) {
+                if ((err==JSE_CONNRESET)||(err==JSE_INTR)||(err==JSE_CONNABORTED)) {
                     errclose();
                     err = JSOCKERR_broken_pipe;
                 }
@@ -1691,13 +1702,13 @@ EintrRetry:
                 LOGERR2(err,5,"Socket closed during read");
                 rc = 0;
             }
-            else if ((err==EINTRCALL)&&(retrycount--!=0)) {
+            else if ((err==JSE_INTR)&&(retrycount--!=0)) {
                 LOGERR2(err,5,"EINTR retrying");
                 goto EintrRetry;
             }
             else {
                 LOGERR2(err,5,"read");
-                if ((err==ECONNRESET)||(err==EINTRCALL)||(err==ECONNABORTED)) {
+                if ((err==JSE_CONNRESET)||(err==JSE_INTR)||(err==JSE_CONNABORTED)) {
                     errclose();
                     err = JSOCKERR_broken_pipe;
                 }
@@ -1747,23 +1758,23 @@ EintrRetry:
                 LOGERR2(err,7,"Socket closed during write");
                 rc = 0;
             }
-            else if ((err==EINTRCALL)&&(retrycount--!=0)) {
+            else if ((err==JSE_INTR)&&(retrycount--!=0)) {
                 LOGERR2(err,7,"EINTR retrying");
                 goto EintrRetry;
             }
             else {
-                if (((sockmode==sm_multicast)||(sockmode==sm_udp))&&(err==ECONNREFUSED))
+                if (((sockmode==sm_multicast)||(sockmode==sm_udp))&&(err==JSE_CONNREFUSED))
                     break; // ignore
                 LOGERR2(err,7,"write");
-                if ((err==ECONNRESET)||(err==EINTRCALL)||(err==ECONNABORTED)
+                if ((err==JSE_CONNRESET)||(err==JSE_INTR)||(err==JSE_CONNABORTED)
 #ifndef _WIN32
-                    ||(err==EPIPE)||(err==ETIMEDOUT)  // linux can raise these on broken pipe
+                    ||(err==EPIPE)||(err==JSE_TIMEDOUT)  // linux can raise these on broken pipe
 #endif
                     ) {
                     errclose();
                     err = JSOCKERR_broken_pipe;
                 }
-                if ((err == EWOULDBLOCK) && nonblocking)
+                if ((err == JSE_WOULDBLOCK) && nonblocking)
                     break;
                 THROWJSOCKEXCEPTION(err);
             }
@@ -1854,7 +1865,7 @@ EintrRetry:
     }
     if (rc < 0) {
         int err=ERRNO();
-        if ((err==EINTRCALL)&&(retrycount--!=0)) {
+        if ((err==JSE_INTR)&&(retrycount--!=0)) {
             LOGERR2(err,7,"EINTR retrying");
             goto EintrRetry;
         }
@@ -1879,9 +1890,9 @@ size32_t CSocket::udp_write_to(const SocketEndpoint &ep, void const* buf, size32
         int rc = sendto(sock, (char*)buf, size, 0, &u.sa, ul);
         if (rc < 0) {
             int err=ERRNO();
-            if (((sockmode==sm_multicast)||(sockmode==sm_udp))&&(err==ECONNREFUSED))
+            if (((sockmode==sm_multicast)||(sockmode==sm_udp))&&(err==JSE_CONNREFUSED))
                 break; // ignore
-            if (err!=EINTRCALL) {
+            if (err!=JSE_INTR) {
                 THROWJSOCKEXCEPTION(err);
             }
         }
@@ -1929,13 +1940,13 @@ EintrRetry:
             LOGERR2(err,8,"Socket closed during write");
             sent = 0;
         }
-        else if ((err==EINTRCALL)&&(retrycount--!=0)) {
+        else if ((err==JSE_INTR)&&(retrycount--!=0)) {
             LOGERR2(err,8,"EINTR retrying");
             goto EintrRetry;
         }
         else {
             LOGERR2(err,8,"write_multiple");
-            if ((err==ECONNRESET)||(err==EINTRCALL)||(err==ECONNABORTED)||(err==ETIMEDOUT)) {
+            if ((err==JSE_CONNRESET)||(err==JSE_INTR)||(err==JSE_CONNABORTED)||(err==JSE_TIMEDOUT)) {
                 errclose();
                 err = JSOCKERR_broken_pipe;
             }
@@ -2251,7 +2262,7 @@ void CSocket::shutdown(unsigned mode)
         int rc = ::shutdown(sock, mode);
         if (rc != 0) {
             int err=ERRNO();
-            if (err==ENOTCONN) {
+            if (err==JSE_NOTCONN) {
                 LOGERR2(err,9,"shutdown");
                 err = JSOCKERR_broken_pipe;
             }
@@ -4023,8 +4034,8 @@ public:
         if (offset>=ni)
 #endif
             offset = 0;
-        unsigned j=offset;
-        ForEachItemIn(i,items) {
+        unsigned j = offset;
+        ForEachItemIn(i, items) {
             SelectItem &si = items.element(j);
             j++;
             if (j==ni)
@@ -4105,7 +4116,7 @@ public:
                 if (n < 0) {
                     CriticalBlock block(sect);
                     int err = ERRNO();
-                    if (err != EINTRCALL) {
+                    if (err != JSE_INTR) {
                         if (dummysockopen) {
                             LOGERR(err,12,"CSocketSelectThread select error"); // should cache error ?
                             validateselecterror = err;
@@ -4633,7 +4644,7 @@ public:
                 if (n < 0) {
                     CriticalBlock block(sect);
                     int err = ERRNO();
-                    if (err != EINTRCALL) {
+                    if (err != JSE_INTR) {
                         if (dummysockopen) {
                             LOGERR(err,12,"CSocketEpollThread epoll error"); // should cache error ?
                             validateselecterror = err;
@@ -5377,7 +5388,7 @@ static CSocket *prepareSocket(unsigned idx,const SocketEndpoint &ep, ISocketConn
 {
     Owned<CSocket> sock = new CSocket(ep,sm_tcp,NULL);
     int err = sock->pre_connect(false);
-    if ((err == EINPROGRESS)||(err == EWOULDBLOCK)) 
+    if ((err == JSE_INPROGRESS)||(err == JSE_WOULDBLOCK)) 
         return sock.getClear();
     if (err==0) {
         int err = sock->post_connect();
@@ -5429,7 +5440,7 @@ void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,u
                 CriticalUnblock unblock(*sect); // up to caller to cope with multithread
                 if (err==0) 
                     inotify->connected(idx,ep,sock);
-                else if ((err==ETIMEDOUT)||(err==ECONNREFUSED))  { 
+                else if ((err==JSE_TIMEDOUT)||(err==JSE_CONNREFUSED))  { 
                          // don't give up so easily (maybe listener not yet started (i.e. racing))
                     newsock = prepareSocket(idx,ep,*inotify);
                     Sleep(100); // not very nice but without this would just loop 
@@ -6038,7 +6049,7 @@ public:
                 isopen = true;
                 err = initerr?initerr:sock->pre_connect(false);
                 initerr = 0;
-                if ((err == EINPROGRESS)||(err == EWOULDBLOCK))
+                if ((err == JSE_INPROGRESS)||(err == JSE_WOULDBLOCK))
                     err = 0; // continue
                 else {
                     if (err==0)
@@ -6176,7 +6187,7 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
     else
     {
         int err = ERRNO();
-        if (err != EINTRCALL)
+        if (err != JSE_INTR)
         {
             throw MakeStringException(-1,"wait_multiple::select error %d", err);
         }
