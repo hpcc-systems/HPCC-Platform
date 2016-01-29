@@ -6101,7 +6101,8 @@ bool CWsDeployFileInfo::buildEnvironment(IEspContext &context, IEspBuildEnvironm
   {
     if(!strcmp(sbName.str(), m_userWithLock.str()) || !strcmp(sbUserIp.str(), m_userIp.str()))
     { 
-        buildEnvFromWizard(xml, m_pService->getName(), m_pService->getCfg(), envXml);
+        StringArray empty;
+        buildEnvFromWizard(xml, m_pService->getName(), m_pService->getCfg(), envXml, empty, empty);
         setSkipNotification(true);
 
         if(envXml.length())

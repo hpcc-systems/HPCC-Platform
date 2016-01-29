@@ -104,6 +104,8 @@ void usage()
   puts("          -override espsmc,@enableSystemUseRewrite,true\"");
   puts("   -set_xpath_attrib_value <XPATH> <ATTRIBUTE> <VALUE>: sets or add the xpath with attribute and value.");
   puts("          Example: \"-set_xpath_attrib_value  Software/Topology/Cluster[@name=\"thor\"]/ThorCluster @process thor123\"");
+  puts("   -assign_ips <BuildSet> <IP or IP Range>:  assign IPs to specific buildset components");
+  puts("          Example: \" -assign_ips dali 10.0.0.1-10");
   puts("   -help: print out this usage.");
 }
 
@@ -121,6 +123,8 @@ int main(int argc, char** argv)
   StringBufferArray arrXPaths;
   StringBufferArray arrAttrib;
   StringBufferArray arrValues;
+  StringArray arrAssignIPRanges;
+  StringArray arrBuildSetWithAssignedIPs;
 
   int i = 1;
   bool writeToFiles = false;
@@ -235,6 +239,12 @@ int main(int argc, char** argv)
       i++;
       overrides.append(argv[i++]);
     }
+    else if(stricmp(argv[i], "-assign_ips") == 0)
+    {
+      i++;
+      arrBuildSetWithAssignedIPs.append(argv[i++]);
+      arrAssignIPRanges.append(argv[i++]);
+    }
     else
     {
       fprintf(stderr, "Error: unknown command line parameter: %s\n", argv[i]);
@@ -263,6 +273,12 @@ int main(int argc, char** argv)
   try
   {
     validateIPS(ipAddrs.str());
+
+    for (int nIdx = 0; nIdx < arrAssignIPRanges.length(); nIdx++)
+    {
+      validateIPS(arrAssignIPRanges.item(nIdx));
+    }
+
     StringBuffer optionsXml, envXml;
     const char* pServiceName = "WsDeploy_wsdeploy_esp";
     Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ENVGEN_PATH_TO_ESP_CONFIG);
@@ -270,7 +286,7 @@ int main(int argc, char** argv)
     optionsXml.appendf("<XmlArgs supportNodes=\"%d\" roxieNodes=\"%d\" thorNodes=\"%d\" slavesPerNode=\"%d\" roxieOnDemand=\"%s\" ipList=\"%s\"/>", supportNodes, roxieNodes,
       thorNodes, slavesPerNode, roxieOnDemand?"true":"false", ipAddrs.str());
 
-    buildEnvFromWizard(optionsXml, pServiceName, pCfg, envXml, &dirMap);
+    buildEnvFromWizard(optionsXml, pServiceName, pCfg, envXml, arrBuildSetWithAssignedIPs, arrAssignIPRanges, &dirMap);
 
     if(envXml.length())
     {
@@ -335,7 +351,6 @@ int main(int argc, char** argv)
         }
         toXML(pEnvTree, envXml.clear());
       }
-
 
       StringBuffer env;
       StringBuffer thisip;
