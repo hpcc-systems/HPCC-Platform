@@ -22,6 +22,16 @@
 #include "msgbuilder.hpp"
 #include "jthread.hpp"
 #include "dfuwu.hpp"
+#include "environment.hpp"
+
+struct CDropZoneFileFilter
+{
+    StringAttr name;
+    bool dirOnly;
+    bool fileOnly;
+    CDropZoneFileFilter(const char* _name, bool _dirOnly, bool _fileOnly)
+        : name(_name), dirOnly(_dirOnly), fileOnly(_fileOnly) {};
+};
 
 class Schedule : public Thread
 {
@@ -92,6 +102,7 @@ public:
     virtual bool onDfuMonitor(IEspContext &context, IEspDfuMonitorRequest &req, IEspDfuMonitorResponse &resp);
     virtual bool onGetDFUProgress(IEspContext &context, IEspProgressRequest &req, IEspProgressResponse &resp);
     virtual bool onOpenSave(IEspContext &context, IEspOpenSaveRequest &req, IEspOpenSaveResponse &resp);
+    virtual bool onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSearchRequest &req, IEspDropZoneFileSearchResponse &resp);
     virtual bool onDropZoneFiles(IEspContext &context, IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp);
     virtual bool onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZoneFilesRequest &req, IEspDFUWorkunitsActionResponse &resp);
     virtual bool onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRequest &req, IEspGetSprayTargetsResponse &resp);
@@ -115,6 +126,13 @@ protected:
     void appendGroupNode(IArrayOf<IEspGroupNode>& groupNodes, const char* nodeName, const char* clusterType, bool replicateOutputs);
     bool getOneDFUWorkunit(IEspContext& context, const char* wuid, IEspGetDFUWorkunitsResponse& resp);
     const char* getDropZoneDirByIP(const char* destIP, StringBuffer& dir);
+    void queryDropZoneInfo(const char* dropZone, const char* pathReq, StringBuffer& path, EnvMachineOS& os, IpAddress& ip);
+    void addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* path,
+        IArrayOf<IEspPhysicalFileStruct>& filesInFolder, IArrayOf<IEspPhysicalFileStruct>&files);
+    bool searchDropZoneFileInFolder(IEspContext& context, IFile* f, CDropZoneFileFilter& filter, bool skipMask,
+        StringBuffer& relPath, EnvMachineOS& os, IArrayOf<IEspPhysicalFileStruct>& files);
+    void searchDropZoneFileInFolder(IEspContext& context, CDropZoneFileFilter& filter, IpAddress& ip,
+        EnvMachineOS& os, const char* path, IArrayOf<IEspPhysicalFileStruct>& files);
 };
 
 #endif //_ESPWIZ_FileSpray_HPP__
