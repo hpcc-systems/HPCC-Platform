@@ -90,10 +90,6 @@ source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 source  ${INSTALL_DIR}/etc/init.d/init-functions
 source  ${INSTALL_DIR}/etc/init.d/export-path
 
-# Only root user can write following logfile
-is_root
-
-[ ! -e ${LOG_DIR} ] && mkdir -p ${LOG_DIR}
 export logfile=${LOG_DIR}/hpcc-init.log
 
 [ ! -e ${logfile}  ] && touch $logfile
@@ -277,6 +273,9 @@ if [ -z $arg ] || [ $# -ne 1 ]; then
 fi
 
 log "Debug log written to $LOG_DIR/hpcc-init.debug"
+[ -e $LOG_DIR/hpcc-init.debug ] && rm -rf ${LOG_DIR}/hpcc-init.debug
+touch ${LOG_DIR}/hpcc-init.debug
+chown ${user}:${user} ${LOG_DIR}/hpcc-init.debug
 exec 2>$LOG_DIR/hpcc-init.debug
 set -x
 
