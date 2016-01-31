@@ -242,7 +242,7 @@ ESPrequest AddPartToPackageMapRequest
     string Target;
     string Process;
     string PackageMap;
-    bool GlobalScope(0);
+    bool GlobalScope(false);
     string PartName;
     string Content;
     boolean DeletePrevious;

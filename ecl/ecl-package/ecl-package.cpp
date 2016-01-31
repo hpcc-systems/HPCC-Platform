@@ -1104,7 +1104,7 @@ public:
                     "   <filename>                  Name of file containing packagemap part content\n"
                     " Options:\n"
                     "   --part-name                 Name of part being added (defaults to filename)\n"
-                    "   --delete-previous           Replace an existing part with matching name\n"
+                    "   --delete-prev               Replace an existing part with matching name\n"
                     "   --daliip=<ip>               IP of the remote dali to use for logical file lookups\n"
                     "   --global-scope              The specified packagemap is shared across multiple targets\n"
                     "   --source-process=<value>    Process cluster to copy files from\n"

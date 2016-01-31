@@ -245,6 +245,7 @@ public:
             pmid.append(target).append("::");
         }
         pmid.append(name);
+        pmid.toLowerCase();
     }
     void setProcess(const char *name)
     {
@@ -269,12 +270,28 @@ public:
                 throw MakeStringException(PKG_INVALID_CLUSTER_TYPE, "Process cluster %s not found on %s DALI", srcCluster.str(), daliIP.length() ? daliIP.str() : "local");
         }
     }
+    void convertExisting()
+    {
+        Linked<IPropertyTree> pmPart = pmExisting;
+        const char *s = strstr(pmid.str(), "::");
+        if (s)
+            pmPart->addProp("@id", s+2);
+        packageMaps->removeTree(pmExisting);
+
+        Owned<IPropertyTree> pmTree = createPTree("PackageMap", ipt_ordered);
+        pmTree->setProp("@id", pmid);
+        pmTree->setPropBool("@multipart", true);
+        pmTree->addPropTree("Part", pmPart.getClear());
+        pmExisting = packageMaps->addPropTree("PackageMap", pmTree.getClear());
+    }
     void init()
     {
         VStringBuffer xpath("PackageMap[@id='%s']", pmid.str());
         globalLock.setown(querySDS().connect("/PackageMaps", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
         packageMaps = globalLock->queryRoot();
         pmExisting = packageMaps->queryPropTree(xpath);
+        if (pmExisting && !pmExisting->getPropBool("@multipart", false))
+            convertExisting();
     }
     void createPart(const char *partname, const char *xml)
     {
@@ -325,9 +342,8 @@ public:
     {
         cloneFileInfoToDali(updateFlags, filesNotFound, pmPart, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
     }
-    void create(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
+    void doCreate(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
     {
-        init();
         createPart(partname, xml);
 
         if (pmExisting)
@@ -343,6 +359,7 @@ public:
 
         Owned<IPropertyTree> pmTree = createPTree("PackageMap", ipt_ordered);
         pmTree->setProp("@id", pmid);
+        pmTree->setPropBool("@multipart", true);
         pmTree->addPropTree("Part", pmPart.getClear());
         packageMaps->addPropTree("PackageMap", pmTree.getClear());
 
@@ -358,14 +375,22 @@ public:
         }
         makePackageActive(pkgSet, psEntry, target, checkFlag(PKGADD_MAP_ACTIVATE));
     }
-
+    void create(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
+    {
+        init();
+        doCreate(partname, xml, updateFlags, filesNotFound);
+    }
     void addPart(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
     {
         init();
-        createPart(partname, xml);
 
         if (!pmExisting)
-            throw MakeStringException(PKG_NAME_EXISTS, "PackageMap %s not found, create it before adding additional parts/files", pmid.str());
+        {
+            doCreate(partname, xml, updateFlags, filesNotFound);
+            return;
+        }
+
+        createPart(partname, xml);
 
         VStringBuffer xpath("Part[@id='%s']", partname);
         IPropertyTree *existingPart = pmExisting->queryPropTree(xpath);
@@ -657,6 +682,9 @@ void CWsPackageProcessEx::getPkgInfoById(const char *packageMapId, IPropertyTree
     Owned<IPropertyTree> packageMaps = packageMapAndSet.getPackageMaps();
     if (!packageMaps)
         throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve information about package maps from dali server");
+
+    StringBuffer lcPMID(packageMapId);
+    packageMapId = lcPMID.toLowerCase().str();
 
     StringBuffer xpath;
     xpath.append("PackageMap[@id='").append(packageMapId).append("']");
