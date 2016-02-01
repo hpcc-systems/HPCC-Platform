@@ -228,7 +228,7 @@ class HQL_API ThrowingErrorReceiver : public ErrorReceiverSink
 
 void ThrowingErrorReceiver::report(IError* error)
 {
-    throw error;
+    throw LINK(error);
 }
 
 IErrorReceiver * createThrowingErrorReceiver()
