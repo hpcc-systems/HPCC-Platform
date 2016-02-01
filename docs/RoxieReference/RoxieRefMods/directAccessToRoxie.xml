@@ -341,5 +341,37 @@ Regs.Reg.1.Codes.Code=MCO</programlisting></para>
 to
 /WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName/expanded</programlisting></para>
     </sect2>
+
+    <sect2 id="RESTful_access" role="brk">
+      <title>Direct RESTful access to Roxie</title>
+
+      <para>You can access your Roxie queries directly using a RESTful
+      interface in the following manner:</para>
+
+      <para><programlisting>http://&lt;ip&gt;:9876/&lt;target&gt;/&lt;queryid&gt;?&lt;stored1&gt;=&lt;value&gt;
+       &amp;&lt;storeddataset&gt;.Row.0.name=abc&amp;storeddataset.Row.0.id=123</programlisting>where,
+      </para>
+
+      <para>ip is the IP address or hostname of your Roxie server or a VIP to
+      a range of IPs for a farm of Roxie servers</para>
+
+      <para><emphasis>target</emphasis> is the name of the target
+      cluster</para>
+
+      <para><emphasis>queryid</emphasis> is the published Query's Query
+      Id.</para>
+
+      <para><emphasis>stored1</emphasis> is an input variable (using STORED in
+      ECL) and value is the <emphasis>value</emphasis> to submit</para>
+
+      <para><emphasis>storeddataset</emphasis> is a dataset to be passed in to
+      the query</para>
+
+      <para>For example:</para>
+
+      <para><programlisting>http://127.0.0.1:9876/roxie/echotest.1?echoValue=Ziggy%20played%20guitar</programlisting></para>
+
+      <para></para>
+    </sect2>
   </sect1>
 </chapter>
