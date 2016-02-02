@@ -168,6 +168,7 @@ define({root:
     FileUploader: "File Uploader",
     FileUploadStillInProgress: "File upload still in progress",
     Filter: "Filter",
+    FilterSet: "Filter Set",
     Find: "Find",
     Finished: "Finished",
     FindNext: "Find Next",
