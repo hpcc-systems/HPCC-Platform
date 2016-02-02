@@ -81,16 +81,17 @@
   </chapter>
 
   <chapter id="ECLWatch_Home_Chapter">
-    <title>ECL Watch Home</title>
+    <title>ECL Watch Home Page</title>
 
-    <para>Click on the <emphasis role="bold">ECL Watch home</emphasis> link in
-    the navigation bar at the top of the ECL Watch page to find the <emphasis
-    role="bold">Activity</emphasis> and <emphasis
-    role="bold">Scheduler</emphasis> links. These links provide access to the
-    respective pages you need to be able to perform the related tasks.</para>
+    <para>Click on the <emphasis role="bold">ECL Watch</emphasis> home page
+    link in the navigation bar at the top of the ECL Watch page to find the
+    <emphasis role="bold">Activity</emphasis>, <emphasis
+    role="bold">Scheduler</emphasis>, and <emphasis role="bold">Search
+    Results</emphasis> links. You can access the respective pages from the
+    links or tabs along the top of the ECL Watch home page.</para>
 
     <para><figure>
-        <title>HPCC Platform link</title>
+        <title>ECL Watch home page link</title>
 
         <mediaobject>
           <imageobject>
@@ -99,10 +100,105 @@
         </mediaobject>
       </figure></para>
 
+    <para>There are several icons used throughout ECL Watch. The following
+    table describes most of the icons that you will encounter.</para>
+
+    <para><informaltable colsep="1" frame="all">
+        <tgroup cols="2">
+          <colspec colwidth="46pt" />
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">Icon</emphasis></entry>
+
+              <entry><emphasis role="bold">Definition</emphasis></entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/ECLWaCluster.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>System cluster</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/ECLWaClustPaused.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>System cluster paused</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/ECLWaClustNotFound.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>System cluster not found</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_complete.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>Workunit Compiled, Completed</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_edit.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>Workunit Edit</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_running.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>Workunit Running, Compiling, Debug Running</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_fail.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>Workunit Failed, Aborted</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_warn.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>Workunit Archived, Blocked, Scheduled, Wait, Uploading
+              Files, Debug Paused, Paused</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_abort.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>Workunit Aborting</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_submit.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>Workunit Submitted</entry>
+            </row>
+
+            <row>
+              <entry><inlinegraphic fileref="images/wu_deleted.png"
+              vendor="eclwatchSS" /></entry>
+
+              <entry>Workunit Deleted.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
     <sect1 id="ECLWatch_Activity" role="nobrk">
       <title>Activity</title>
 
-      <para>The Activity page displays activity on all clusters in the
+      <para>The Activity tab displays activity on all clusters in the
       environment. The Activity page provides access to Cluster Job Queue
       administration tasks such as: monitoring progress, setting priority,
       moving a job up or down in the queue, pausing a job, aborting a job, and
@@ -110,19 +206,191 @@
 
       <!--***Note specific Activity task details have been REMOVED (to DocShare/WKSPCE/ECLWa400)***-->
 
-      <para>When ECL Watch starts it defaults to the Activity page. To access
-      the Activity page from any other page in ECL Watch click on the
-      <emphasis role="bold">ECL Watch</emphasis> image at the top of any page,
-      as indicated the preceding image.</para>
+      <para>When you access the ECL Watch URL, the ECL Watch Home Page
+      displays the Activity tab. To access the Activity tab from any other
+      page in ECL Watch click on the <emphasis role="bold">ECL
+      Watch</emphasis> image at the top of any page, as shown above.</para>
 
-      <para>Activity related tasks can also be initiated from the workunit tab
-      for the specific job in question.</para>
+      <sect2 id="ECLWatch_ClusterActivity">
+        <title>Cluster Activity</title>
+
+        <para>Information about your systems' clusters, and any activity on
+        those clusters can be accessed from the ECL Watch Activity tab. Select
+        the <emphasis role="bold">Activity</emphasis> tab link below the
+        <emphasis role="bold">ECL Watch</emphasis> image in the navigation
+        sub-menu. This displays the Cluster Activity tab.</para>
+
+        <para><figure>
+            <title>Clusters Activity</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA1002b.jpg" vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>All the system clusters display. If there is any activity on a
+        cluster there is an icon next to the cluster to indicate some
+        activity. In the above example the icon to expand the Thor cluster
+        indicates there is some activity on the Thor cluster. Click the icon
+        to expand the cluster to see the activity on that cluster.</para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Cluster Action Buttons</title>
+
+        <figure>
+          <title>Cluster Action Buttons</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA1005.jpg" vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>Check the box next to a cluster to enable the Cluster Action
+        buttons. The Cluster Action buttons will then allow you to perform the
+        following actions on the selected cluster(s). </para>
+
+        <sect3>
+          <title>Pause</title>
+
+          <para>Pauses the cluster's job queue. The currently running job will
+          complete, but no other jobs will execute until the queue is
+          resumed.</para>
+        </sect3>
+
+        <sect3>
+          <title>Resume</title>
+
+          <para>Resumes a paused job queue. Any waiting jobs will resume
+          execution in order.</para>
+        </sect3>
+
+        <sect3>
+          <title>Clear</title>
+
+          <para>Removes all workunits from the job queue. The removed
+          workunits' state is then set to aborted. Any workunits that were
+          waiting in the queue can be resubmitted manually later, if
+          desired.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="WorkUnitActivityTab">
+        <title>Cluster Workunit Activity</title>
+
+        <para><figure>
+            <title>Workunit Activity Buttons</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA1002c.jpg" vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Check the box next to a Workunit to select it and enable the
+        Workunit Action buttons.</para>
+      </sect2>
+
+      <sect2>
+        <title>Workunit Action Buttons</title>
+
+        <para>The enabled Workunit Action buttons will then allow you to
+        perform the following actions on the selected Workunit(s).</para>
+
+        <sect3>
+          <title>Open</title>
+
+          <para>Opens a (workunit) tab for the selected workunit.</para>
+        </sect3>
+
+        <sect3>
+          <title>Pause</title>
+
+          <para>Press the <emphasis role="bold">Pause</emphasis> button to
+          complete the current subgraph and then put the job into a paused
+          state.</para>
+        </sect3>
+
+        <sect3>
+          <title>Pause Now</title>
+
+          <para>Press the <emphasis role="bold">Pause Now</emphasis> button to
+          interrupt the current subgraph (abort it) and put the job into a
+          paused state.</para>
+        </sect3>
+
+        <sect3>
+          <title>Resume</title>
+
+          <para>Resumes processing of any paused job.</para>
+        </sect3>
+
+        <sect3>
+          <title>Abort</title>
+
+          <para>Aborts a running job. An aborted job cannot be resumed.</para>
+        </sect3>
+
+        <sect3>
+          <title>High, Normal, Low</title>
+
+          <para><figure>
+              <title>Priority</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWA1003b.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>You can raise or lower the priority of the job in the
+          queue. Select the job, then press one of the appropriate buttons,
+          <emphasis role="bold">High</emphasis> or <emphasis
+          role="bold">Low</emphasis>. Typically all jobs are Normal priority
+          by default.</para>
+
+          <para>Press the <emphasis role="bold">High</emphasis> button to
+          raise the priority of the select job to High. Press the <emphasis
+          role="bold">Low</emphasis> button to lower the priority of the
+          processing job.</para>
+        </sect3>
+
+        <sect3>
+          <title>Top, Bottom, Up, Down</title>
+
+          <para><figure>
+              <title>Queue Position</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWA1003c.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>You can change the position of a job in the queue using
+          the Top, Bottom, Up, and Down buttons.</para>
+
+          <para>Select the workunit to move, that will enable the action
+          buttons.</para>
+
+          <para>Press the <emphasis role="bold">Top</emphasis> button to move
+          the select job to the top of the processing queue. Press the
+          <emphasis role="bold">Up</emphasis> button to move the job up one
+          position in the queue. Press the <emphasis
+          role="bold">Down</emphasis> button to move the job down one position
+          in the queue. Press the <emphasis role="bold">Bottom</emphasis>
+          button to move the job down to the bottom of the queue.</para>
+        </sect3>
+      </sect2>
 
       <sect2 id="cluster_Info" role="brk">
         <title>Cluster Information</title>
 
         <para>You can access more information about your clusters from the
-        main Activity page. Select the target cluster from the main <emphasis
+        main Activity tab. Select the target cluster from the main <emphasis
         role="bold">Activity</emphasis> tab, by checking the box next to it.
         <figure>
             <title>Open Cluster</title>
@@ -136,11 +404,10 @@
 
         <para>This enables the <emphasis role="bold">Open</emphasis> action
         button. Press the Open action button to open a new tab for that
-        cluster. You can also double-click on the target cluster.</para>
+        cluster.</para>
 
-        <para>The cluster tab displays the groups on that cluster.
-        Double-click on a group, or check the box next to the cluster group,
-        and press the open button. <figure>
+        <para>The cluster tab displays the groups on that cluster. Check the
+        box next to the cluster group, and press the open button. <figure>
             <title>Open Cluster Groups</title>
 
             <mediaobject>
@@ -165,19 +432,136 @@
         <para>On that cluster group tab, you can access the information about
         that cluster. There are three tabs on that cluster group tab. The
         <emphasis role="bold">Summary</emphasis> tab provides a snapshot of
-        that group. The <emphasis role="bold">Usage</emphasis> tab provides
-        access to a usage graph, and other information. The <emphasis
-        role="bold">Log File</emphasis> tab is where you can view that cluster
-        group's log. <figure>
-            <title>Cluster Log File</title>
+        that group.</para>
+
+        <sect3 id="ClusterUsageTab">
+          <title>The Cluster Usage Tab</title>
+
+          <para>The <emphasis role="bold">Usage</emphasis> tab provides access
+          to a usage graph. The usage tab provides information about the
+          cluster usage. <figure>
+              <title>Usage Graph</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWA0UG01.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>To display the usage graph, you can enter some values in the
+          in the fields displayed on the initial usage tab. Optionally, you
+          can just accept the default, the values for the last 30 days. Then
+          press the <emphasis role="bold">Get Usage Graph</emphasis> button to
+          display the graph.</para>
+
+          <para>The Graph shows the cluster usage over time. More information
+          about the cluster usage is specified using a color code. The column
+          on the right breaks down the overall usage as well as the percentage
+          during standard business hours and non-business hours. You can
+          change these values using the fields above the chart, then press the
+          <emphasis role="bold">Get Usage Graph</emphasis> button
+          again.</para>
+
+          <sect4>
+            <title id="ClusterLogFile">Cluster Log File</title>
+
+            <para>The <emphasis role="bold">Log File</emphasis> tab is where
+            you can view that cluster group's log. <figure>
+                <title>Cluster Log File</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/ECLWA005.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>There are several log display options that you can use to
+            filter the log file. You can filter by rows, pages, or by time.
+            Use the filter options on the Log File tab to filter the displayed
+            log. You can also download the log file to view offline.</para>
+          </sect4>
+        </sect3>
+      </sect2>
+
+      <sect2 id="ECLWatch_AutoRefresh">
+        <title>Auto Refresh</title>
+
+        <para><figure>
+            <title>Auto Refresh</title>
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/ECLWA005.jpg" />
+                <imagedata fileref="images/ECLWA011.jpg" />
               </imageobject>
             </mediaobject>
-          </figure></para>
+          </figure>The <emphasis role="bold">Activity</emphasis> page displays
+        active ECL or DFU workunits either running or in the queue on your
+        cluster. To refresh the list, press the <emphasis
+        role="bold">Refresh</emphasis> button. Auto Refresh shows the list in
+        real-time, but this feature is disabled by default.</para>
+
+        <para>To enable Auto Refresh, toggle the Auto Refresh button.</para>
+
+        <para>In an environment with a large number of active users, Auto
+        Refresh could impact performance of your ESP server.</para>
       </sect2>
+    </sect1>
+
+    <sect1 id="ECLWatch_EventScheduler">
+      <title>ECL Event Scheduler</title>
+
+      <para>The Event Scheduler page provides an interface to the ECL
+      Scheduler. The ECL Scheduler interface allows you to see a list of
+      scheduled workunits. It can also trigger an event. An Event is a
+      case-insensitive string constant naming the event to trap.</para>
+
+      <para>ECL Scheduling provides a means of automating processes within ECL
+      code or to chain processes together to work in sequence. For example,
+      you can write ECL code that watches a landing zone for the arrival of a
+      file, and when it arrives, sprays it to Thor, processes it, builds an
+      index, and then adds it to a superfile.</para>
+
+      <para>ECL Scheduling is event-based. The ECL Scheduler monitors a
+      Schedule list containing registered Workunits and Events and executes
+      any Workunits associated with an Event when that Event is
+      triggered.</para>
+
+      <para>Your ECL Code can execute when an Event is triggered, or can
+      trigger an Event. If you submit code containing a <emphasis
+      role="bold">WHEN </emphasis>clause, the Event and Workunit registers in
+      the Schedule list. When that Event triggers, the Workunit compiles and
+      executes. When the Workunit completes, ECL Scheduler removes it from the
+      Schedule list.</para>
+
+      <para>For example, if you submit a Workunit using <emphasis
+      role="bold">WHEN(‘Event1’,’MyEvent’, COUNT(2)) </emphasis>in the
+      appropriate place, it will execute twice (the value of <emphasis
+      role="bold">COUNT</emphasis>) before the ECL Scheduler removes it from
+      the Schedule list and the Workunit is marked as completed.</para>
+
+      <para>For more details about both <emphasis id="WHEN"
+      role="bold">WHEN</emphasis> or <emphasis id="NOTIFY"
+      role="bold">NOTIFY</emphasis> or any ECL Language functions or keywords
+      please see the ECL Language reference. A copy of which can be found
+      online at <ulink
+      url="http://hpccsystems.com/download/docs/learning-ecl">http://hpccsystems.com/download/docs/learning-ecl</ulink>
+      on the HPCC Systems<superscript>®</superscript> web site.</para>
+
+      <!--***NOTE: Be sure to UPDATE these images when they find a home in ECLWATCH***-->
+    </sect1>
+
+    <xi:include href="ECLScheduler/ECLSched-Mods/ECLSchedComp.xml"
+                xpointer="ECLSched_Interface"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <sect1>
+      <title>Search Results</title>
+
+      <para>The <emphasis role="bold">Search Results</emphasis> tab displays
+      when you perform a search. The search capabilities of ECL Watch are a
+      very powerful tool.</para>
 
       <sect2 id="ECLWatch_GlobalSearch">
         <title>Global Search</title>
@@ -262,77 +646,7 @@
 
         <!-- Enter <i>ecl:output</i> into the global search box and it will return all of the workunits that contain "output" in the ECL page of ECL Watch-->
       </sect2>
-
-      <sect2 id="ECLWatch_AutoRefresh">
-        <title>Auto Refresh</title>
-
-        <para><figure>
-            <title>Auto Refresh</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="images/ECLWA011.jpg" />
-              </imageobject>
-            </mediaobject>
-          </figure>The <emphasis role="bold">Activity</emphasis> page displays
-        active ECL or DFU workunits either running or in the queue on your
-        cluster. To refresh the list, press the <emphasis
-        role="bold">Refresh</emphasis> button. Auto Refresh shows the list in
-        real-time, but this feature is disabled by default.</para>
-
-        <para>To enable Auto Refresh, toggle the Auto Refresh button.</para>
-
-        <para>In an environment with a large number of active users, Auto
-        Refresh could impact performance of your ESP server.</para>
-      </sect2>
     </sect1>
-
-    <sect1 id="ECLWatch_EventScheduler">
-      <title>ECL Event Scheduler</title>
-
-      <para>The Event Scheduler page provides an interface to the ECL
-      Scheduler. The ECL Scheduler interface allows you to see a list of
-      scheduled workunits. It can also trigger an event. An Event is a
-      case-insensitive string constant naming the event to trap.</para>
-
-      <para>ECL Scheduling provides a means of automating processes within ECL
-      code or to chain processes together to work in sequence. For example,
-      you can write ECL code that watches a landing zone for the arrival of a
-      file, and when it arrives, sprays it to Thor, processes it, builds an
-      index, and then adds it to a superfile.</para>
-
-      <para>ECL Scheduling is event-based. The ECL Scheduler monitors a
-      Schedule list containing registered Workunits and Events and executes
-      any Workunits associated with an Event when that Event is
-      triggered.</para>
-
-      <para>Your ECL Code can execute when an Event is triggered, or can
-      trigger an Event. If you submit code containing a <emphasis
-      role="bold">WHEN </emphasis>clause, the Event and Workunit registers in
-      the Schedule list. When that Event triggers, the Workunit compiles and
-      executes. When the Workunit completes, ECL Scheduler removes it from the
-      Schedule list.</para>
-
-      <para>For example, if you submit a Workunit using <emphasis
-      role="bold">WHEN(‘Event1’,’MyEvent’, COUNT(2)) </emphasis>in the
-      appropriate place, it will execute twice (the value of <emphasis
-      role="bold">COUNT</emphasis>) before the ECL Scheduler removes it from
-      the Schedule list and the Workunit is marked as completed.</para>
-
-      <para>For more details about both <emphasis id="WHEN"
-      role="bold">WHEN</emphasis> or <emphasis id="NOTIFY"
-      role="bold">NOTIFY</emphasis> or any ECL Language functions or keywords
-      please see the ECL Language reference. A copy of which can be found
-      online at <ulink
-      url="http://hpccsystems.com/download/docs/learning-ecl">http://hpccsystems.com/download/docs/learning-ecl</ulink>
-      on the HPCC Systems<superscript>®</superscript> web site.</para>
-
-      <!--***NOTE: Be sure to UPDATE these images when they find a home in ECLWATCH***-->
-    </sect1>
-
-    <xi:include href="ECLScheduler/ECLSched-Mods/ECLSchedComp.xml"
-                xpointer="ECLSched_Interface"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="ECLWatch_ECLWorkunits">
