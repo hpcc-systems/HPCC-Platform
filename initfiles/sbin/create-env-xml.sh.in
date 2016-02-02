@@ -26,4 +26,4 @@
 OUTPUT=${INSTALL_DIR}/etc/HPCCSystems/rpmnew/environment.xml
 [ -n "$1" ] && OUTPUT=$1
 
-${INSTALL_DIR}/sbin/envgen -env ${OUTPUT} -ip . -roxienodes 1 -thornodes 1 -slavesPerNode 1 -o data4=/var/lib/[NAME]/hpcc-data4/[COMPONENT] -set_xpath_attrib_value Software/EclCCServerProcess/Option @name maxCompileThreads -set_xpath_attrib_value Software/EclCCServerProcess/Option @value 2 -override roxie,@allFilesDynamic,true -override roxie,@lazyOpen,smart -override roxie,@localSlave,true -override roxie,@slaveConfig,simple
+${INSTALL_DIR}/sbin/envgen -env ${OUTPUT} -ip . -roxienodes 1 -thornodes 1 -slavesPerNode 1 -o data4=/var/lib/[NAME]/hpcc-data4/[COMPONENT] -set_xpath_attrib_value Software/Topology/Cluster[@name=\"thor_roxie\"] @prefix thor  -set_xpath_attrib_value Software/EclCCServerProcess/Option @name maxCompileThreads -set_xpath_attrib_value Software/EclCCServerProcess/Option @value 2 -override roxie,@allFilesDynamic,true -override roxie,@lazyOpen,smart -override roxie,@localSlave,true -override roxie,@slaveConfig,simple
