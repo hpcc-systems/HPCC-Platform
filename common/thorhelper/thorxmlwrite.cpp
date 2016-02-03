@@ -752,7 +752,8 @@ inline void outputEncodedXmlDecimal(const void *field, unsigned size, unsigned p
     char dec[50];
     if (fieldname)
         out.append('<').append(fieldname).append(" xsi:type=\"xsd:decimal\">");
-    DecLock();
+
+    BcdCriticalBlock bcdBlock;
     if (DecValid(true, size*2-1, field))
     {
         DecPushDecimal(field, size, precision);
@@ -763,7 +764,7 @@ inline void outputEncodedXmlDecimal(const void *field, unsigned size, unsigned p
     }
     else
         out.append("####");
-    DecUnlock();
+
     if (fieldname)
         out.append("</").append(fieldname).append('>');
 }
@@ -773,7 +774,8 @@ inline void outputEncodedXmlUDecimal(const void *field, unsigned size, unsigned 
     char dec[50];
     if (fieldname)
         out.append('<').append(fieldname).append(" xsi:type=\"xsd:decimal\">");
-    DecLock();
+
+    BcdCriticalBlock bcdBlock;
     if (DecValid(false, size*2, field))
     {
         DecPushUDecimal(field, size, precision);
@@ -784,7 +786,7 @@ inline void outputEncodedXmlUDecimal(const void *field, unsigned size, unsigned 
     }
     else
         out.append("####");
-    DecUnlock();
+
     if (fieldname)
         out.append("</").append(fieldname).append('>');
 }

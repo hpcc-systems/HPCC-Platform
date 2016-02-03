@@ -30,6 +30,10 @@ rec := { decimal17_4 sumx, unsigned countx };
 ds := dataset([{20,3},{10,2},{10.0001,2}], rec);
 output(nofold(ds), { sumx, countx, decimal20_10 average := sumx/countx, sumx between 10 and 10.00009, sumx between 10D and 10.00009D });
 
+ds1 := dataset(10000, TRANSFORM(rec, SELF.sumx := COUNTER * COUNTER; SELF.countx := COUNTER));
+ds2 := dataset(10000, TRANSFORM(rec, SELF.sumx := COUNTER * 2 * COUNTER; SELF.countx := COUNTER/3));
+ds3 := ds1 + ds2; // unoredered;
+output(SUM(nofold(ds3), sumx));
 
 decimal17_4 value1 := 1.6667;
 decimal17_4 value2 := 1.6667 : stored('value2');
