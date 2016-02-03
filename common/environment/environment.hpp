@@ -93,6 +93,11 @@ interface IConstMachineInfo : extends IConstEnvBase
     virtual EnvMachineState getState() const = 0;
 };
 
+interface  IConstMachineInfoIterator : extends IIteratorOf<IConstMachineInfo>
+{
+    virtual unsigned count() = 0;
+};
+
 
 interface IConstInstanceInfo : extends IConstEnvBase
 {
@@ -111,6 +116,11 @@ interface IConstDropZoneInfo : extends IConstEnvBase
     virtual IStringVal & getUMask(IStringVal & str) const = 0;
 };
 
+interface  IConstDropZoneInfoIterator : extends IIteratorOf<IConstDropZoneInfo>
+{
+    virtual unsigned count() = 0;
+};
+
 interface IConstEnvironment : extends IConstEnvBase
 {
     virtual IConstDomainInfo * getDomain(const char * name) const = 0;
@@ -125,6 +135,26 @@ interface IConstEnvironment : extends IConstEnvBase
     virtual IEnvironment & lock() const = 0;
     virtual bool isConstEnvironment() const = 0;
     virtual void clearCache() = 0;
+
+    virtual bool isLocalHost(const char * computer) const = 0;
+
+    virtual unsigned getNumberOfMachines() const = 0;
+    virtual IConstMachineInfo * getMachineByIndex(unsigned index) const = 0;
+    virtual IConstMachineInfoIterator * getMachineIterator() const = 0;
+
+    virtual unsigned getNumberOfLocalDropZones() = 0;
+    virtual IConstDropZoneInfo * getLocalDropZoneByIndex(unsigned index) const = 0;
+    virtual IConstDropZoneInfoIterator * getLocalDropZoneIterator() const = 0;
+
+    virtual IConstDropZoneInfo * getDropZoneByComputer(const char * computer, const char * dzname) const = 0;
+    virtual unsigned getNumberOfRemoteDropZones(const char * computer) const = 0;
+    virtual IConstDropZoneInfo * getRemoteDropZoneByIndex(const char * computer, unsigned index) const = 0;
+    virtual IConstDropZoneInfoIterator * getRemoteDropZoneIterator(const char * computer) const = 0;
+
+    virtual unsigned getNumberOfDropZones() const  = 0;
+    virtual IConstDropZoneInfo * getDropZoneByIndex(unsigned index) const = 0;
+    virtual IConstDropZoneInfoIterator * getDropZoneIterator() const = 0;
+
 };
 
 
