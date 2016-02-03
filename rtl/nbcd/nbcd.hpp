@@ -51,7 +51,7 @@ template <byte length, byte precision> class decimal;
 class nbcd_decl Decimal
 {
 public:
-    Decimal() { setZero(); }
+    constexpr Decimal() = default;
     Decimal(const Decimal & other);
 
     Decimal & abs();
@@ -144,10 +144,10 @@ protected:
         lastDigit = maxDigits-1,                  // Last decimal digit
         zeroDigit = (maxDigits-maxIntegerDigits), // Unity digit (decimal point)
     };
-    byte digits[maxDigits];                       // stored little endian.
-    byte msb;                                     // Most significant integer digit
-    byte lsb;                                     // Least significant decimal digit
-    byte negative;                                // byte to allow ^ operation
+    byte digits[maxDigits] = { 0 } ;              // stored little endian.
+    byte msb = zeroDigit;                         // Most significant integer digit
+    byte lsb = zeroDigit;                         // Least significant decimal digit
+    byte negative = false;                        // byte to allow ^ operation
 };
 
 
