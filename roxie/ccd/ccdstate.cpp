@@ -3028,6 +3028,11 @@ void mergeStats(IPropertyTree *s1, IPropertyTree *s2)
 
 void mergeQueries(IPropertyTree *dest, IPropertyTree *src)
 {
+    Owned<IPropertyTreeIterator> elems = src->getElements("Exception");
+    ForEach(*elems)
+    {
+        dest->addPropTree("Exception", LINK(&elems->query()));
+    }
     IPropertyTree *destQueries = ensurePTree(dest, "Queries");
     IPropertyTree *srcQueries = src->queryPropTree("Queries");
     if (!srcQueries)
