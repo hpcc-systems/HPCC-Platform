@@ -81,5 +81,3 @@ outrec t2(in1 l, in2 r) := transform
     end;
 
 output(join(in1, in2, left.id = right.id, t2(left, right)));
-
-output(workunit);
