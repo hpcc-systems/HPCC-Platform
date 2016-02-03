@@ -98,7 +98,8 @@ void outputXmlDecimal(const void *field, unsigned size, unsigned precision, cons
     char dec[50];
     if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
-    DecLock();
+
+    BcdCriticalBlock bcdBlock;
     if (DecValid(true, size*2-1, field))
     {
         DecPushDecimal(field, size, precision);
@@ -109,7 +110,7 @@ void outputXmlDecimal(const void *field, unsigned size, unsigned precision, cons
     }
     else
         out.append("####");
-    DecUnlock();
+
     if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
 }
@@ -119,7 +120,8 @@ void outputXmlUDecimal(const void *field, unsigned size, unsigned precision, con
     char dec[50];
     if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
-    DecLock();
+
+    BcdCriticalBlock bcdBlock;
     if (DecValid(false, size*2, field))
     {
         DecPushUDecimal(field, size, precision);
@@ -130,7 +132,7 @@ void outputXmlUDecimal(const void *field, unsigned size, unsigned precision, con
     }
     else
         out.append("####");
-    DecUnlock();
+
     if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
 }
@@ -253,7 +255,8 @@ void outputJsonDecimal(const void *field, unsigned size, unsigned precision, con
 {
     char dec[50];
     appendJSONNameOrDelimit(out, fieldname);
-    DecLock();
+
+    BcdCriticalBlock bcdBlock;
     if (DecValid(true, size*2-1, field))
     {
         DecPushDecimal(field, size, precision);
@@ -262,14 +265,14 @@ void outputJsonDecimal(const void *field, unsigned size, unsigned precision, con
         while(isspace(*finger)) finger++;
         out.append(finger);
     }
-    DecUnlock();
 }
 
 void outputJsonUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
 {
     char dec[50];
     appendJSONNameOrDelimit(out, fieldname);
-    DecLock();
+
+    BcdCriticalBlock bcdBlock;
     if (DecValid(false, size*2, field))
     {
         DecPushUDecimal(field, size, precision);
@@ -278,5 +281,4 @@ void outputJsonUDecimal(const void *field, unsigned size, unsigned precision, co
         while(isspace(*finger)) finger++;
         out.append(finger);
     }
-    DecUnlock();
 }

@@ -2132,9 +2132,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             Owned<BoundRow> rowBuilder = createRowBuilder(ctx, tempRow);
             Owned<IReferenceSelector> createdRef = createReferenceSelector(rowBuilder);
 
-            BuildCtx subctx(ctx);
-            subctx.addGroup();
-            doBuildRowAssignAggregate(subctx, createdRef, expr);
+            doBuildRowAssignAggregate(ctx, createdRef, expr);
             finalizeTempRow(ctx, tempRow, rowBuilder);
 
             convertBoundRowToDataset(ctx, tgt, tempRow, format);
@@ -3332,13 +3330,11 @@ void HqlCppTranslator::buildDatasetAssignJoin(BuildCtx & ctx, IHqlCppDatasetBuil
 
 void HqlCppTranslator::buildDatasetAssignAggregate(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
 {
-    BuildCtx subctx(ctx);
-    subctx.addGroup();
-    BoundRow * targetRow = target->buildCreateRow(subctx);
+    BoundRow * targetRow = target->buildCreateRow(ctx);
 
-    Owned<IReferenceSelector> targetRef = buildActiveRow(subctx, targetRow->querySelector());
-    doBuildRowAssignAggregate(subctx, targetRef, expr);
-    target->finishRow(subctx, targetRow);
+    Owned<IReferenceSelector> targetRef = buildActiveRow(ctx, targetRow->querySelector());
+    doBuildRowAssignAggregate(ctx, targetRef, expr);
+    target->finishRow(ctx, targetRow);
 }
 
 void HqlCppTranslator::buildDatasetAssignChoose(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
@@ -3577,7 +3573,6 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
     if (isRowAssign)
     {
         bool done = false;
-        subctx.addGroup();
 
         //Some code primarily here to improve the generated code for productions inside parse statements for text parsing.
         //see if we can replace a memcpy of the child record with a link...
@@ -4390,8 +4385,6 @@ void HqlCppTranslator::doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSe
         //MORE: This doesn't associated the returned size with the target if assigned to a child field.
         //very unusual code, so not too concerned.
     }
-
-    subctx.removeAssociation(selfCursor);
 }
         
 void HqlCppTranslator::doBuildRowAssignUserTable(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr)
@@ -4797,7 +4790,6 @@ IHqlExpression * HqlCppTranslator::ensureIteratedRowIsLive(BuildCtx & initctx, B
     }
 
     BuildCtx childctx(iterctx);
-    childctx.addGroup();
 
     Owned<BoundRow> tempRow = declareTempRow(childctx, childctx, rowExpr);
     Owned<BoundRow> rowBuilder = createRowBuilder(childctx, tempRow);

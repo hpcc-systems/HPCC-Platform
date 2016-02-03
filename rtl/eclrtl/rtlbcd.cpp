@@ -22,20 +22,21 @@
 #include "jmutex.hpp"
 #include "jexcept.hpp"
 
-static CriticalSection bcdCriticalSection;
-static Decimal stack[32];
-static unsigned curStack;
+static thread_local Decimal stack[32];
+static thread_local unsigned curStack;
 
 //---------------------------------------------------------------------------------------------------------------------
 
+//These functions are retained to that old work units will load, and then report a version mismatch, rather than a
+//confusing unresolved symbol error.
 void DecLock()
 {
-    bcdCriticalSection.enter();
+    throwUnexpected();
 }
 
 void DecUnlock()
 {
-    bcdCriticalSection.leave();
+    throwUnexpected();
 }
 
 unsigned DecMarkStack()

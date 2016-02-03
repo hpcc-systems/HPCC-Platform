@@ -22,6 +22,7 @@ define([
     "dojo/dom",
     "dojo/dom-form",
     "dojo/on",
+    "dojo/dom-style",
 
     "dijit/registry",
     "dijit/form/Select",
@@ -37,7 +38,7 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, domStyle,
                 registry, Select,
                 _Widget,
                 template) {
@@ -50,11 +51,13 @@ define([
         iconFilter: null,
         filterDropDown: null,
         filterForm: null,
+        filterLabel: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
             this.filterDropDown = registry.byId(this.id + "FilterDropDown");
             this.filterForm = registry.byId(this.id + "FilterForm");
+            this.filterLabel = registry.byId(this.id + "FilterLabel");
         },
 
         startup: function (args) {
@@ -118,13 +121,25 @@ define([
         close: function (event) {
             this.filterDropDown.closeDropDown();
         },
-        
+
         disable: function(disable) {
             this.filterDropDown.set("disabled", disable);
         },
 
         refreshState: function () {
-            this.iconFilter.src = this.exists() ? dojoConfig.getImageURL("filter.png") : dojoConfig.getImageURL("noFilter.png");
+            if (this.exists()) {
+                this.iconFilter.src = dojoConfig.getImageURL("filter1.png");
+                dom.byId(this.id + "FilterDropDown_label").innerHTML = this.i18n.FilterSet;
+                domStyle.set(this.id + "FilterDropDown_label", {
+                    "font-weight": "bold"
+                });
+            } else {
+                this.iconFilter.src = dojoConfig.getImageURL("noFilter1.png");
+                dom.byId(this.id + "FilterDropDown_label").innerHTML = this.i18n.Filter;
+                domStyle.set(this.id + "FilterDropDown_label", {
+                    "font-weight": "normal"
+                });
+            }
         }
     });
 });

@@ -896,6 +896,7 @@ CLocalEnvironment::CLocalEnvironment(const char* environmentFile)
    }
 
    machineCacheBuilt = false;
+   dropZoneCacheBuilt = false;
 }
 
 CLocalEnvironment::CLocalEnvironment(IRemoteConnection *_conn, IPropertyTree* root/*=NULL*/, 
@@ -910,6 +911,7 @@ CLocalEnvironment::CLocalEnvironment(IRemoteConnection *_conn, IPropertyTree* ro
       p.setown(conn->getRoot());
 
     machineCacheBuilt = false;
+    dropZoneCacheBuilt = false;
 }
 
 CLocalEnvironment::~CLocalEnvironment()
@@ -1329,6 +1331,7 @@ void CLocalEnvironment::clearCache()
     }
     cache.kill();
     machineCacheBuilt = false;
+    dropZoneCacheBuilt = false;
     resetPasswordsFromSDS();
 }
 

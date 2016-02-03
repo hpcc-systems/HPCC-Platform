@@ -1231,7 +1231,7 @@ void SourceBuilder::buildTargetCursor(Shared<BoundRow> & tempRow, Shared<BoundRo
 void SourceBuilder::associateTargetCursor(BuildCtx & subctx, BuildCtx & ctx, BoundRow * tempRow, BoundRow * rowBuilder, IHqlExpression * expr)
 {
     //First remove the old active dataset
-    //NOT sure this is needed
+    //This is not strictly necessary, but it avoids the redundant row being serialized to any child queries
     BoundRow * oldCursor = translator.resolveSelectorDataset(ctx, expr->queryChild(0));
     ctx.removeAssociation(oldCursor);
 

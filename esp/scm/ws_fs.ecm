@@ -522,6 +522,8 @@ ESPStruct PhysicalFileStruct
     bool isDir;
     int64 filesize;
     string modifiedtime;
+    [min_ver("1.13")] string Path;
+    [min_ver("1.13")] ESParray<ESPstruct PhysicalFileStruct> Files;
 };
 
 ESPresponse [exceptions_inline] FileListResponse
@@ -533,6 +535,20 @@ ESPresponse [exceptions_inline] FileListResponse
     bool DirectoryOnly(false);
     [min_ver("1.10")] string AcceptLanguage;
     ESParray<ESPStruct PhysicalFileStruct> files;   
+};
+
+ESPrequest [nil_remove] DropZoneFileSearchRequest
+{
+    string DropZoneName;
+    string FileName;
+    string Path;
+    bool DirectoryOnly(false);
+    bool FileOnly(false);
+};
+
+ESPresponse [exceptions_inline] DropZoneFileSearchResponse
+{
+    ESParray<ESPStruct PhysicalFileStruct> Files;
 };
 
 ESPrequest OpenSaveRequest
@@ -638,7 +654,7 @@ ESPresponse [exceptions_inline, nil_remove] GetSprayTargetsResponse
 };
 
 ESPservice [
-    version("1.12"),
+    version("1.13"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;
@@ -671,6 +687,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/opensave.xslt")] OpenSave(OpenSaveRequest, OpenSaveResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dropzonefile.xslt")] DropZoneFiles(DropZoneFilesRequest, DropZoneFilesResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfuwuaction_results.xslt")] DeleteDropZoneFiles(DeleteDropZoneFilesRequest, DFUWorkunitsActionResponse);
+    ESPmethod [min_ver("1.13")] DropZoneFileSearch(DropZoneFileSearchRequest, DropZoneFileSearchResponse);
     ESPmethod GetSprayTargets(GetSprayTargetsRequest, GetSprayTargetsResponse);
 };
 

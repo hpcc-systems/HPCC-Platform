@@ -22,20 +22,22 @@ define([
     "dojo/store/Memory",
     "dojo/dom",
     "dojo/dom-class",
+    "dojo/dom-style",
 
     "dijit/registry",
 
     "dojox/treemap/TreeMap",
 
     "hpcc/_Widget",
+    "hpcc/Utility",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
-    function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, dom, domClass,
+    function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, dom, domClass, domStyle,
             registry, 
             TreeMap,
-            _Widget, ESPWorkunit,
+            _Widget, Utility, ESPWorkunit,
             template) {
         return declare("TimingTreeMapWidget", [_Widget], {
             templateString: template,
@@ -66,8 +68,18 @@ define([
                 this.inherited(arguments);
             },
 
+            calcHeight: function (elmID) {
+                var elmHeight, elmMargin, elm = document.getElementById(elmID);
+                var computedStyle = domStyle.getComputedStyle(elm);
+                elmHeight = parseFloat(computedStyle.getPropertyValue("height"));
+                elmMargin = parseFloat(computedStyle.getPropertyValue('margin-top')) + parseInt(computedStyle.getPropertyValue('margin-bottom'));
+                return elmHeight + elmMargin;
+            },
+
             resize: function (args) {
                 this.inherited(arguments);
+                var helpHeight = this.params.hideHelp ? 0 : this.calcHeight(this.id + "Help");
+                args.h -= helpHeight + 2;
                 this.treeMap._dataChanged = true;
                 this.treeMap.resize(args);
             },
@@ -155,6 +167,21 @@ define([
                 }
             },
 
+            setActivities: function (activities) {
+                var context = this;
+                setTimeout(function () {
+                    context.loadTimers(activities.map(function (activity) {
+                        return {
+                            __hpcc_prefix: "Activites",
+                            __hpcc_id: activity._globalID,
+                            ActivityID: activity._globalID,
+                            Name: activity.label,
+                            Seconds: Utility.espTime2Seconds(activity.TimeMaxLocalExecute)
+                        };
+                    }));
+                }, 20);
+            },
+
             refreshTreeMap: function () {
                 var context = this;
                 this.wu.fetchTimers(function (timers) {
@@ -163,41 +190,42 @@ define([
                 });
             },
 
-            loadTimers: function (timers) {
-                this.largestValue = 0;
+            timerFilter: function (timer) {
+                if (lang.exists("params.query.graphsOnly", this) && this.params.query.graphsOnly) {
+                    return (timer.SubGraphId && (this.params.query.graphName === "*" || this.params.query.graphName === timer.GraphName) && (this.params.query.subGraphId === "*" || this.params.query.subGraphId === timer.SubGraphId));
+                }
+                return (timer.Name != "Process" &&
+                        timer.Name != "compile" &&
+                        timer.Name != "Total thor time" &&
+                        timer.Name != "Total cluster time" &&
+                        timer.Name.indexOf(":TimeElapsed") < 0);
+            },
+
+            loadTimers: function (_timers) {
+                var context = this;
+                var timers = _timers.filter(function (d) { return context.timerFilter(d); });
                 var timerData = [];
                 if (timers) {
+                    this.avg = timers.reduce(function (sum, timer) { return sum + timer.Seconds; }, 0) / timers.length;
+                    var sqrDiffs = timers.map(function (timer) { return Math.pow(timer.Seconds - context.avg, 2); });
+                    var variance = sqrDiffs.reduce(function (sum, value) { return sum + value; }, 0) / sqrDiffs.length;
+                    this.stdDev = Math.sqrt(variance);
                     for (var i = 0; i < timers.length; ++i) {
-                        if (this.params.query.graphsOnly) {
-                            if (timers[i].SubGraphId && (this.params.query.graphName === "*" || this.params.query.graphName === timers[i].GraphName) && (this.params.query.subGraphId === "*" || this.params.query.subGraphId === timers[i].SubGraphId)) {
-                                timerData.push(lang.mixin({
-                                    __hpcc_prefix: timers[i].GraphName
-                                }, timers[i]));
-                                if (this.largestValue < timers[i].Seconds * 1000) {
-                                    this.largestValue = timers[i].Seconds * 1000;
-                                }
+                        var prefix = "other";
+                        if (timers[i].Name.indexOf("Graph graph") == 0) {
+                            if (!timers[i].SubGraphId) {
+                                continue;
                             }
-                        } else if ( timers[i].Name != "Process" &&
-                                    timers[i].Name != "Total thor time") {
-                            var prefix = "other";
-                            if (timers[i].Name.indexOf("Graph graph") == 0) {
-                                if (!timers[i].SubGraphId) {
-                                    continue;
-                                }
-                                prefix = timers[i].GraphName;
-                            } else {
-                                var nameParts = timers[i].Name.split(":");
-                                if (nameParts.length > 1) {
-                                    prefix = nameParts[0];
-                                }
-                            }
-                            timerData.push(lang.mixin({
-                                __hpcc_prefix: prefix
-                            }, timers[i]));
-                            if (this.largestValue < timers[i].Seconds * 1000) {
-                                this.largestValue = timers[i].Seconds * 1000;
+                            prefix = timers[i].GraphName;
+                        } else {
+                            var nameParts = timers[i].Name.split(":");
+                            if (nameParts.length > 1) {
+                                prefix = nameParts[0];
                             }
                         }
+                        timerData.push(lang.mixin({
+                            __hpcc_prefix: prefix
+                        }, timers[i]));
                     }
                 }
                 this.store = new Memory({
@@ -209,11 +237,18 @@ define([
                 this.treeMap.set("store", this.store);
                 this.treeMap.set("areaAttr", "Seconds");
                 this.treeMap.set("colorFunc", function (item) {
-                    var redness = Math.floor(255 * (item.Seconds * 1000 / context.largestValue));
+                    var deviation = (item.Seconds - context.avg) / context.stdDev;
+                    var redness = 0;
+                    var greeness = 0;
+                    if (deviation > 0) {
+                        redness = Math.min(255, Math.floor(255 * deviation / 3));
+                    } else {
+                        greeness = -Math.min(255, Math.floor(255 * deviation / 3));
+                    }
                     return {
-                        r: 255,
+                        r: 255 - greeness,
                         g: 255 - redness,
-                        b: 255 - redness
+                        b: 255 - redness - greeness
                     };
                 });
                 this.treeMap.set("groupAttrs", ["__hpcc_prefix"]);
