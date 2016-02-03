@@ -609,6 +609,11 @@ public:
                 throw e;
             }
         }
+        else
+        {
+            keySize = 0;
+            keyedSize = 0;
+        }
     }
 
     virtual void reset(bool crappyHack)
@@ -2545,7 +2550,11 @@ public:
             numkeys = _keyset->numParts();
         }
         else
+        {
+            keySize = 0;
+            keyedSize = 0;
             numkeys = 0;
+        }
         killBuffers();
     }
 
@@ -2694,7 +2703,8 @@ public:
         if (!started)
         {
             started = true;
-            segs.checkSize(keyedSize, "[merger]"); //PG: not sure what keyname to use here
+            if (keyedSize)
+                segs.checkSize(keyedSize, "[merger]"); //PG: not sure what keyname to use here
         }
         if (!crappyHack)
         {

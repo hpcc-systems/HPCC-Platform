@@ -1114,7 +1114,12 @@ public:
     {
         if (isAll)
             UNSUPPORTED("SET(ALL)");
-        collection.setown(new CassandraCollection(cass_collection_new(CASS_COLLECTION_TYPE_SET, numElements)));
+        // We don't know whether the corresponding field in Cassandra is a list or a set. Try binding a dummy list to tell which.
+        CassandraCollection temp(cass_collection_new(CASS_COLLECTION_TYPE_LIST, 0));
+        if (cass_statement_bind_collection(stmtInfo->queryStatement(), thisParam, temp) == CASS_OK)
+            collection.setown(new CassandraCollection(cass_collection_new(CASS_COLLECTION_TYPE_LIST, numElements)));
+        else
+            collection.setown(new CassandraCollection(cass_collection_new(CASS_COLLECTION_TYPE_SET, numElements)));
         return true;
     }
     virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned numRows)

@@ -345,6 +345,9 @@ public:
         }
 
         const RtlFieldInfo * const *fields = type->queryFields();
+        if (!fields && type->queryChildType())
+            fields = type->queryChildType()->queryFields();
+        assertex(fields);
         StringBuffer names;
         while (*fields)
         {
@@ -842,7 +845,7 @@ public:
     {
         // Expect to see a tuple here, or possibly (if the ECL record has a single field), an arbitrary scalar object
         // If it's a tuple, we push it onto our stack as the active object
-        nextField(NULL);  // MORE - should it be passing field?
+        nextField(field);
         if (!PyTuple_Check(elem))
         {
             if (countFields(field->type->queryFields())==1)
@@ -1043,11 +1046,13 @@ protected:
     void push()
     {
         stack.append(args.getClear());
+        args.setown(PyList_New(0));
     }
     void pop()
     {
-        addArg(args.getClear());
+        OwnedPyObject arg = args.getClear();
         args.setown((PyObject *) stack.popGet());
+        addArg(arg.getClear());
     }
     void addArg(PyObject *arg)
     {
