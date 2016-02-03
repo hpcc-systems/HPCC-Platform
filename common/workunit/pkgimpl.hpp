@@ -366,29 +366,38 @@ public:
     {
         return (IFACE *) matchResolvedPackage(name);
     }
-
+    void loadPackage(IPropertyTree &packageTree)
+    {
+        const char *id = packageTree.queryProp("@id");
+        if (!id || !*id)
+            throw MakeStringException(PACKAGE_MISSING_ID, "Invalid package map - Package element missing id attribute");
+        Owned<packageType> package = new packageType(&packageTree);
+        packages.setValue(id, package.get());
+        const char *queries = packageTree.queryProp("@queries");
+        if (queries && *queries)
+        {
+            wildMatches.append(queries);
+            wildIds.append(id);
+        }
+    }
+    void loadPart(IPropertyTree &part)
+    {
+        Owned<IPropertyTreeIterator> partPackages = part.getElements("Package");
+        ForEach(*partPackages)
+            loadPackage(partPackages->query());
+    }
     void load(IPropertyTree *xml)
     {
         if (!xml)
             return;
         compulsory = xml->getPropBool("@compulsory");
-        Owned<IPropertyTreeIterator> allpackages = xml->getElements("Package");
+        Owned<IPropertyTreeIterator> allpackages = xml->getElements("Package"); //old style non-part packages first
         ForEach(*allpackages)
-        {
-            IPropertyTree &packageTree = allpackages->query();
-            const char *id = packageTree.queryProp("@id");
-            if (!id || !*id)
-                throw MakeStringException(PACKAGE_MISSING_ID, "Invalid package map - Package element missing id attribute");
-            Owned<packageType> package = new packageType(&packageTree);
-            packages.setValue(id, package.get());
-            const char *queries = packageTree.queryProp("@queries");
-            if (queries && *queries)
-            {
-                wildMatches.append(queries);
-                wildIds.append(id);
-            }
-        }
-        HashIterator it(packages);
+            loadPackage(allpackages->query());
+        Owned<IPropertyTreeIterator> parts = xml->getElements("Part"); //new multipart packagemap
+        ForEach(*parts)
+            loadPart(parts->query());
+        HashIterator it(packages); //package bases can be across parts
         ForEach (it)
         {
             packageType *pkg = packages.getValue((const char *)it.query().getKey());

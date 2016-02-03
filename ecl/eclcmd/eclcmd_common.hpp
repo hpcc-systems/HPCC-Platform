@@ -99,6 +99,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_UPDATE_SUPER_FILES "--update-super-files"
 #define ECLOPT_UPDATE_CLONE_FROM "--update-clone-from"
 #define ECLOPT_DONT_APPEND_CLUSTER "--dont-append-cluster"
+#define ECLOPT_PART_NAME "--part-name"
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format

@@ -968,6 +968,371 @@ private:
     bool optGlobalScope;
 };
 
+
+class EclCmdPackageAddPart : public EclCmdCommon
+{
+public:
+    EclCmdPackageAddPart() : optDeletePrevious(false), optGlobalScope(false), optAllowForeign(false), optPreloadAll(false), optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false)
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+            return false;
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optTarget.isEmpty())
+                    optTarget.set(arg);
+                else if (optPMID.isEmpty())
+                    optPMID.set(arg);
+                else if (optFileName.isEmpty())
+                    optFileName.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (iter.matchOption(optPartName, ECLOPT_PART_NAME))
+                continue;
+            if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
+                continue;
+            if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
+                continue;
+            if (iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS))
+                continue;
+            if (iter.matchFlag(optGlobalScope, ECLOPT_GLOBAL_SCOPE))
+                continue;
+            if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
+                continue;
+            if (iter.matchFlag(optPreloadAll, ECLOPT_PRELOAD_ALL_PACKAGES))
+                continue;
+            if (iter.matchFlag(optUpdateSuperfiles, ECLOPT_UPDATE_SUPER_FILES))
+                continue;
+            if (iter.matchFlag(optUpdateCloneFrom, ECLOPT_UPDATE_CLONE_FROM))
+                continue;
+            if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
+                continue;
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+        {
+            usage();
+            return false;
+        }
+        StringBuffer err;
+        if (optFileName.isEmpty())
+            err.append("\n ... Missing package file name\n");
+        else if (optTarget.isEmpty())
+            err.append("\n ... Specify a cluster name\n");
+        else if (optPMID.isEmpty())
+            err.append("\n ... Specify a packagemap name\n");
+
+        if (err.length())
+        {
+            fprintf(stdout, "%s", err.str());
+            return false;
+        }
+
+        if (optPartName.isEmpty())
+        {
+            StringBuffer name;
+            splitFilename(optFileName.get(), NULL, NULL, &name, &name);
+            optPartName.set(name.str());
+        }
+        optPMID.toLowerCase();
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
+        StringBuffer content;
+        content.loadFile(optFileName);
+
+        fprintf(stdout, "\n ... adding packagemap %s part %s from file %s\n\n", optPMID.get(), optPartName.get(), optFileName.get());
+
+        Owned<IClientAddPartToPackageMapRequest> request = packageProcessClient->createAddPartToPackageMapRequest();
+        request->setTarget(optTarget);
+        request->setPackageMap(optPMID);
+        request->setPartName(optPartName);
+        request->setContent(content);
+        request->setDeletePrevious(optDeletePrevious);
+        request->setDaliIp(optDaliIP);
+        request->setGlobalScope(optGlobalScope);
+        request->setSourceProcess(optSourceProcess);
+        request->setAllowForeignFiles(optAllowForeign);
+        request->setPreloadAllPackages(optPreloadAll);
+        request->setUpdateSuperFiles(optUpdateSuperfiles);
+        request->setUpdateCloneFrom(optUpdateCloneFrom);
+        request->setAppendCluster(!optDontAppendCluster);
+
+        Owned<IClientAddPartToPackageMapResponse> resp = packageProcessClient->AddPartToPackageMap(request);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+
+        StringArray &notFound = resp->getFilesNotFound();
+        if (notFound.length())
+        {
+            fputs("\nFiles defined in packagemap part but not found in DFS:\n", stderr);
+            ForEachItemIn(i, notFound)
+                fprintf(stderr, "  %s\n", notFound.item(i));
+            fputs("\n", stderr);
+        }
+
+        return 0;
+    }
+
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+                    "\n"
+                    "The 'add-part' command will add the packagemap part to an existing packagemap\n"
+                    "\n"
+                    "ecl packagemap add-part [options] <target> <pmid> <filename>\n"
+                    "   <target>                    Name of target to use when adding packagemap part\n"
+                    "   <pmid>                      Identifier of packagemap to add the part to\n"
+                    "   <filename>                  Name of file containing packagemap part content\n"
+                    " Options:\n"
+                    "   --part-name                 Name of part being added (defaults to filename)\n"
+                    "   --delete-prev               Replace an existing part with matching name\n"
+                    "   --daliip=<ip>               IP of the remote dali to use for logical file lookups\n"
+                    "   --global-scope              The specified packagemap is shared across multiple targets\n"
+                    "   --source-process=<value>    Process cluster to copy files from\n"
+                    "   --allow-foreign             Do not fail if foreign files are used in packagemap\n"
+                    "   --preload-all               Set preload files option for all packages\n"
+                    "   --update-super-files        Update local DFS super-files if remote DALI has changed\n"
+                    "   --update-clone-from         Update local clone from location if remote DALI has changed\n"
+                    "   --dont-append-cluster       Only use to avoid locking issues due to adding cluster to file\n",
+                    stdout);
+
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optPMID;
+    StringAttr optTarget;
+    StringAttr optDaliIP;
+    StringAttr optSourceProcess;
+    StringAttr optPartName;
+    StringAttr optFileName;
+    bool optDeletePrevious;
+    bool optGlobalScope;
+    bool optAllowForeign;
+    bool optPreloadAll;
+    bool optUpdateSuperfiles;
+    bool optUpdateCloneFrom;
+    bool optDontAppendCluster;
+};
+
+class EclCmdPackageRemovePart : public EclCmdCommon
+{
+public:
+    EclCmdPackageRemovePart()
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+            return false;
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (!optTarget.length())
+                    optTarget.set(arg);
+                else if (!optPMID.length())
+                    optPMID.set(arg);
+                else if (!optPartName.length())
+                    optPartName.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (iter.matchFlag(optGlobalScope, ECLOPT_GLOBAL_SCOPE))
+                continue;
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+        {
+            usage();
+            return false;
+        }
+        StringBuffer err;
+        if (optPMID.isEmpty())
+            err.append("\n ... Missing package map name\n");
+        else if (optPartName.isEmpty())
+            err.append("\n ... Missing part name\n");
+        else if (optTarget.isEmpty())
+            err.append("\n ... Specify a target cluster name\n");
+
+        if (err.length())
+        {
+            fprintf(stdout, "%s", err.str());
+            return false;
+        }
+
+        return true;
+    }
+    virtual int processCMD()
+    {
+        fprintf(stdout, "\n ... removing part %s from packagemap %s\n\n", optPartName.get(), optPMID.get());
+
+        Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
+        Owned<IClientRemovePartFromPackageMapRequest> request = packageProcessClient->createRemovePartFromPackageMapRequest();
+        request->setTarget(optTarget);
+        request->setPackageMap(optPMID);
+        request->setGlobalScope(optGlobalScope);
+        request->setPartName(optPartName);
+
+        Owned<IClientRemovePartFromPackageMapResponse> resp = packageProcessClient->RemovePartFromPackageMap(request);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        else
+            printf("Successfully removed part %s from package %s\n", optPartName.get(), optPMID.get());
+
+        return 0;
+    }
+
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+                    "\n"
+                    "The 'remove-part' command will remove the given part from the given packagemap\n"
+                    "\n"
+                    "ecl packagemap remove-part <target> <packagemap> <partname>\n"
+                    "   <target>               Name of the target to use \n"
+                    "   <packagemap>           Name of the package map containing the part\n"
+                    "   <partname>             Name of the part to remove\n"
+                    " Options:\n"
+                    "   --global-scope         The specified packagemap is sharable across multiple targets\n",
+                    stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optTarget;
+    StringAttr optPMID;
+    StringAttr optPartName;
+    bool optGlobalScope;
+};
+
+class EclCmdPackageGetPart: public EclCmdCommon
+{
+public:
+    EclCmdPackageGetPart()
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+            return false;
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (!optTarget.length())
+                    optTarget.set(arg);
+                else if (!optPMID.length())
+                    optPMID.set(arg);
+                else if (!optPartName.length())
+                    optPartName.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (iter.matchFlag(optGlobalScope, ECLOPT_GLOBAL_SCOPE))
+                continue;
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+        {
+            usage();
+            return false;
+        }
+        StringBuffer err;
+        if (optPMID.isEmpty())
+            err.append("\n ... Missing package map name\n");
+        else if (optPartName.isEmpty())
+            err.append("\n ... Missing part name\n");
+        else if (optTarget.isEmpty())
+            err.append("\n ... Specify a target cluster name\n");
+
+        if (err.length())
+        {
+            fprintf(stdout, "%s", err.str());
+            return false;
+        }
+
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
+        Owned<IClientGetPartFromPackageMapRequest> request = packageProcessClient->createGetPartFromPackageMapRequest();
+        request->setTarget(optTarget);
+        request->setPackageMap(optPMID);
+        request->setGlobalScope(optGlobalScope);
+        request->setPartName(optPartName);
+
+        Owned<IClientGetPartFromPackageMapResponse> resp = packageProcessClient->GetPartFromPackageMap(request);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        else
+            printf("%s", resp->getContent());
+
+        return 0;
+    }
+
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+                    "\n"
+                    "The 'get-part' command will fetch the given part from the given packagemap\n"
+                    "\n"
+                    "ecl packagemap get-part <target> <packagemap> <partname>\n"
+                    "   <target>               Name of the target to use \n"
+                    "   <packagemap>           Name of the package map containing the part\n"
+                    "   <partname>             Name of the part to get\n"
+                    " Options:\n"
+                    "   --global-scope         The specified packagemap is sharable across multiple targets\n",
+                    stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optTarget;
+    StringAttr optPMID;
+    StringAttr optPartName;
+    bool optGlobalScope;
+};
+
 IEclCommand *createPackageSubCommand(const char *cmdname)
 {
     if (!cmdname || !*cmdname)
@@ -988,7 +1353,13 @@ IEclCommand *createPackageSubCommand(const char *cmdname)
         return new EclCmdPackageValidate();
     if (strieq(cmdname, "query-files"))
         return new EclCmdPackageQueryFiles();
-return NULL;
+    if (strieq(cmdname, "add-part"))
+        return new EclCmdPackageAddPart();
+    if (strieq(cmdname, "remove-part"))
+        return new EclCmdPackageRemovePart();
+    if (strieq(cmdname, "get-part"))
+        return new EclCmdPackageGetPart();
+    return NULL;
 }
 
 //=========================================================================================
@@ -1014,6 +1385,9 @@ public:
             "      info         Return active package map information\n"
             "      validate     Validate information in the package map file \n"
             "      query-files  Show files used by a query and if/how they are mapped\n"
+            "      add-part     Add additional packagemap content to an existing packagemap\n"
+            "      get-part     Get the content of a packagemap part from a packagemap\n"
+            "      remove-part  Remove a packagemap part from a packagemap\n"
         );
     }
 };
