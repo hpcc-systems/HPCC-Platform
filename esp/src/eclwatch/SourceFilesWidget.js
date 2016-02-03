@@ -77,7 +77,8 @@ define([
                             return dojoConfig.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' class='dgrid-row-url'>" + Name + "</a>";
                         }
                     }),
-                    Count: { label: "Usage", width: 72, sortable: true }
+                    FileCluster: { label: this.i18n.FileCluster, width: 300, sortable: false },
+                    Count: { label: this.i18n.Usage, width: 72, sortable: true }
                 }
             }, domID);
 
