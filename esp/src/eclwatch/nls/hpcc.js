@@ -156,6 +156,7 @@ define({root:
     ExpandAll: "Expand All",
     Export: "Export",
     File: "File",
+    FileCluster: "File Cluster",
     FileCounts: "File Counts",
     FileName: "File Name",
     FileParts: "File Parts",
