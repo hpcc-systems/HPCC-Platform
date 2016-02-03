@@ -48,8 +48,8 @@ ENDEMBED;
 
 dataset(namesRecord) streamedNames(data d, utf8 u) := EMBED(Python)
   return [  \
-     ("Gavin", "Halliday", [("a", 1),("b", 2),("c", 3)], [("aa", 11)], ("aaa", 111), 250, -1,  U'là',  U'là',  U'là', 0x01000000, d, False, set(["1","2"])), \
-     ("John", "Smith", [], [], ("c", 3), 250, -1,  U'là',  U'là',  u, 0x02000000, d, True, []) \
+     ("Gavin", "Halliday", [("a", 1),("b", 2),("c", 3)], [("aa", 11)], ("aaa", 111), 250, -1,  U'là',  U'là',  U'là', 1, d, False, set(["1","2"])), \
+     ("John", "Smith", [], [], ("c", 3), 250, -1,  U'là',  U'là',  u, 2, d, True, []) \
      ]
 ENDEMBED;
 
@@ -78,3 +78,13 @@ childrec tnamed(string s) := EMBED(Python)
 ENDEMBED;
 
 output(tnamed('Yo').name);
+
+// Test passing records into Python
+
+dataset(namesRecord) streamInOut(dataset(namesRecord) recs) := EMBED(Python)
+  for rec in recs:
+    if rec.name1 == 'Gavin':
+       yield rec
+ENDEMBED;
+
+output(streamInOut(streamedNames(d'AA', u'là')));

@@ -219,8 +219,8 @@ size32_t RtlSwapIntTypeInfo::build(ARowBuilder &builder, size32_t offset, const 
 {
     builder.ensureCapacity(length+offset, field->name->str());
     __int64 val = isUnsigned() ? (__int64) source.getUnsignedResult(field) : source.getSignedResult(field);
-    // NOTE - we assume that the value returned from the source is already a swapped int
-    rtlWriteInt(builder.getSelf() + offset, val, length);
+    // NOTE - we assume that the value returned from the source is NOT already a swapped int - source doesn;t know that we are going to store it swapped
+    rtlWriteSwapInt(builder.getSelf() + offset, val, length);
     offset += length;
     return offset;
 }
@@ -298,14 +298,12 @@ size32_t RtlStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const R
         builder.ensureCapacity(offset+size+sizeof(size32_t), field->name->str());
         byte *dest = builder.getSelf()+offset;
         rtlWriteInt4(dest, size);
-#if 0
-        // NOTE - you might argue that we should convert the incoming data to EBCDIC. But it seems more useful to
-        // define the semantics as being that the IFieldSource should return EBCDIC if you have declared the matching field as EBCDIC
-        // (otherwise, why did you bother?)
+        // NOTE - it has been the subject of debate whether we should convert the incoming data to EBCDIC, or expect the IFieldSource to have already returned ebcdic
+        // In order to be symmetrical with the passing of ecl data to a IFieldProcessor the former interpretation is preferred.
+        // Expecting source.getStringResult to somehow "know" that EBCDIC was expected seems odd.
         if (isEbcdic())
             rtlStrToEStr(size, (char *) dest+sizeof(size32_t), size, (char *)value);
         else
-#endif
             memcpy(dest+sizeof(size32_t), value, size);
         offset += size+sizeof(size32_t);
     }
@@ -313,12 +311,9 @@ size32_t RtlStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const R
     {
         builder.ensureCapacity(offset+length, field->name->str());
         byte *dest = builder.getSelf()+offset;
-#if 0
-        // See above...
         if (isEbcdic())
             rtlStrToEStr(length, (char *) dest, size, (char *) value);
         else
-#endif
             rtlStrToStr(length, dest, size, value);
         offset += length;
     }
