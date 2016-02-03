@@ -233,6 +233,7 @@ while true ; do
                 if [ -z $comp_return ]
                 then
                     log "Unknown component: $comp"
+                    echo "Unknown component: $comp"
                     exit 1
                 fi
                 for (( i=0; i<=${compListLen}; i++ ));do
