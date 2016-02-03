@@ -356,8 +356,6 @@ const char * cppSystemText[]  = {
     "   DecSwap() : eclrtl,library='eclrtl',entrypoint='DecSwap';",
     "   DecUint4Power(unsigned4 pow) :  eclrtl,library='eclrtl',entrypoint='DecUint4Power';",
     "   string DecPopStringX() :    eclrtl,library='eclrtl',entrypoint='DecPopStringX';",
-    "   DecLock() : eclrtl,library='eclrtl',entrypoint='DecLock';",
-    "   DecUnlock() :   eclrtl,library='eclrtl',entrypoint='DecUnlock';",
     "   boolean DecValid(boolean isSigned, const data src) : eclrtl,pure,library='eclrtl',entrypoint='DecValid';",
     "   boolean DecValidTos() : eclrtl,pure,library='eclrtl',entrypoint='DecValidTos';",
 

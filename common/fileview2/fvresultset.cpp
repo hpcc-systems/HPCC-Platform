@@ -1111,14 +1111,12 @@ xdouble CResultSetCursor::getDouble(int columnIndex)
             return (xdouble)rtlGetPackedUnsigned(cur);
     case type_decimal:
         {
-            DecLock();
+            BcdCriticalBlock bcdBlock;
             if (type.isSigned())
                 DecPushDecimal(cur, type.getSize(), type.getPrecision());
             else
                 DecPushUDecimal(cur, type.getSize(), type.getPrecision());
-            xdouble ret = DecPopReal();
-            DecUnlock();
-            return ret;
+            return DecPopReal();
         }
     case type_real:
         if (size == 4)
@@ -1188,14 +1186,12 @@ __int64 CResultSetCursor::getInt(int columnIndex)
             return rtlGetPackedUnsigned(cur);
     case type_decimal:
         {
-            DecLock();
+            BcdCriticalBlock bcdBlock;
             if (type.isSigned())
                 DecPushDecimal(cur, type.getSize(), type.getPrecision());
             else
                 DecPushUDecimal(cur, type.getSize(), type.getPrecision());
-            __int64 ret = DecPopInt64();
-            DecUnlock();
-            return ret;
+            return DecPopInt64();
         }
     case type_real:
         if (size == 4)
@@ -1346,13 +1342,12 @@ IStringVal & CResultSetCursor::getString(IStringVal & ret, int columnIndex)
         }
     case type_decimal:
         {
-            DecLock();
+            BcdCriticalBlock bcdBlock;
             if (type.isSigned())
                 DecPushDecimal(cur, type.getSize(), type.getPrecision());
             else
                 DecPushUDecimal(cur, type.getSize(), type.getPrecision());
             DecPopStringX(resultLen, resultStr);
-            DecUnlock();
             ret.setLen(resultStr, resultLen);
             return ret;
         }
@@ -1466,13 +1461,12 @@ IStringVal & CResultSetCursor::getDisplayText(IStringVal &ret, int columnIndex)
         }
     case type_decimal:
         {
-            DecLock();
+            BcdCriticalBlock bcdBlock;
             if (type.isSigned())
                 DecPushDecimal(cur, type.getSize(), type.getPrecision());
             else
                 DecPushUDecimal(cur, type.getSize(), type.getPrecision());
             DecPopStringX(resultLen, resultStr);
-            DecUnlock();
             ret.setLen(resultStr, resultLen);
             return ret;
         }
@@ -2473,13 +2467,13 @@ void CColumnFilter::addValue(unsigned sizeText, const char * text)
     case type_decimal:
         {
             void * target = next->allocate(size);
-            DecLock();
+
+            BcdCriticalBlock bcdBlock;
             rtlDecPushUtf8(lenText, text);
             if (type->isSigned())
                 DecPopDecimal(target, size, type->getPrecision());
             else
                 DecPopUDecimal(target, size, type->getPrecision());
-            DecUnlock();
             break;
         }
     case type_real:

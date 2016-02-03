@@ -66,8 +66,6 @@ ECLRTL_API void  DecTruncate( void );       // truncate value on top of decimal 
 ECLRTL_API void  DecTruncateAt(unsigned places);       // truncate value on top of decimal stack
 ECLRTL_API void  DecUlongPower(unsigned long pow); // calculates top of stack to the power of unsigned long and replaces with result
 
-ECLRTL_API void  DecLock();
-ECLRTL_API void  DecUnlock();
 ECLRTL_API bool  DecValid(bool isSigned, unsigned digits, const void * data);
 ECLRTL_API bool  DecValidTos();
 ECLRTL_API bool  Dec2Bool(size32_t bytes, const void * data);
@@ -87,11 +85,12 @@ ECLRTL_API void  DecUnlock();
 ECLRTL_API unsigned DecMarkStack();
 ECLRTL_API void DecReleaseStack(unsigned mark);
 
+//No longer a critical section (since stack is thread_local), but prevents problems with exceptions.
 class ECLRTL_API BcdCriticalBlock
 {
 public:
-    inline BcdCriticalBlock()       { DecLock(); mark = DecMarkStack(); }
-    inline ~BcdCriticalBlock()      { DecReleaseStack(mark); DecUnlock(); }
+    inline BcdCriticalBlock()       { mark = DecMarkStack(); }
+    inline ~BcdCriticalBlock()      { DecReleaseStack(mark); }
 
 protected:
     unsigned mark;
