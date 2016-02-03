@@ -22,8 +22,15 @@
 #include "jmutex.hpp"
 #include "jexcept.hpp"
 
+#ifdef __APPLE__
+//Apple does not currently support thread_local (very strange), so need to use __thread.
+static __thread Decimal stack[32];
+static __thread unsigned curStack = 0;
+#else
+//gcc needs to use thread_local because it doesn't support __thread on arrays of constexpr objects
 static thread_local Decimal stack[32];
-static thread_local unsigned curStack;
+static thread_local unsigned curStack = 0;
+#endif
 
 //---------------------------------------------------------------------------------------------------------------------
 
