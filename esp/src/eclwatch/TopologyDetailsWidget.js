@@ -142,13 +142,20 @@ define([
                 for (var key in this.params.__hpcc_treeItem) {
                     if (this.params.__hpcc_treeItem.hasOwnProperty(key) && !(this.params.__hpcc_treeItem[key] instanceof Object)) {
                         if (key.indexOf("__") !== 0) {
-                            var tr = domConstruct.create("tr", {}, table);
-                            domConstruct.create("td", {
-                                innerHTML: "<b>" + key + ":&nbsp;&nbsp;</b>"
-                            }, tr);
-                            domConstruct.create("td", {
-                                innerHTML: this.params.__hpcc_treeItem[key]
-                            }, tr);
+                            switch (key) {
+                                case "Port":
+                                case "Path":
+                                case "ProcessNumber":
+                                break;
+                            default:
+                                var tr = domConstruct.create("tr", {}, table);
+                                domConstruct.create("td", {
+                                    innerHTML: "<b>" + key + ":&nbsp;&nbsp;</b>"
+                                }, tr);
+                                domConstruct.create("td", {
+                                    innerHTML: this.params.__hpcc_treeItem[key]
+                                }, tr);
+                            }
                         }
                     }
                 }
