@@ -2066,6 +2066,17 @@ public:
     {
         queryRoot()->setPropBool("@preserveCompression",val);
     }
+    StringBuffer &getUMask(StringBuffer &str)const
+    {
+        if (queryRoot()->hasProp("@umask"))
+            queryRoot()->getProp("@umask",str);
+        return str;
+    }
+    void setUMask(const char *val)
+    {
+        queryRoot()->setProp("@umask",val);
+
+    }
 };
 
 class CExceptionIterator: public CInterface, implements IExceptionIterator

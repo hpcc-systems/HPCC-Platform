@@ -830,6 +830,12 @@ public:
         str.set(root->queryProp("@directory"));
         return str;
     }
+    virtual IStringVal&     getUMask(IStringVal &str) const
+    {
+        if (root->hasProp("@umask"))
+            str.set(root->queryProp("@umask"));
+        return str;
+    }
 };
 
 #if 0
