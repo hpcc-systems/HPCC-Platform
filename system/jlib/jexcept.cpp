@@ -993,6 +993,7 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     signal(SIGBUS, SIG_DFL);
     signal(SIGILL, SIG_DFL);
     signal(SIGFPE, SIG_DFL);
+    signal(SIGABRT, SIG_DFL);
 #endif
     StringBuffer s;
 
@@ -1200,8 +1201,14 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     *spp = ip;
     sigsegv_exc = new CSEHException(signum,s.str());
 #else
-    if (SEHHandler && SEHHandler->fireException(new CSEHException(signum,s.str()))) 
-        return;
+    if (SEHHandler)
+    {
+        if ( SEHHandler->fireException(new CSEHException(signum,s.str())) )
+            return;
+        else
+            kill(getpid(), SIGABRT);
+    }
+
 #endif
     nested--;
 }
@@ -1264,6 +1271,7 @@ void jlib_decl enableSEHtoExceptionMapping()
     sigaction(SIGILL, &act, NULL);
     sigaction(SIGBUS, &act, NULL);
     sigaction(SIGFPE, &act, NULL);
+    sigaction(SIGABRT, &act, NULL);
 #endif
 }
 
@@ -1286,6 +1294,7 @@ void  jlib_decl disableSEHtoExceptionMapping()
     signal(SIGBUS, SIG_DFL);
     signal(SIGILL, SIG_DFL);
     signal(SIGFPE, SIG_DFL);
+    signal(SIGABRT, SIG_DFL);
 #endif
 }
 
