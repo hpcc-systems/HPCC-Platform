@@ -69,6 +69,8 @@ interface IRoxieSlaveContext : extends IRoxieContextLogger
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual IRoxieServerContext *queryServerContext() = 0;
     virtual IWorkUnitRowReader *getWorkunitRowReader(const char *wuid, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped) = 0;
+    virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const = 0;
+
 };
 
 interface IRoxieServerContext : extends IInterface

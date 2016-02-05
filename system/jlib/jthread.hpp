@@ -24,6 +24,7 @@
 #include "jmutex.hpp"
 #include "jexcept.hpp"
 #include "jhash.hpp"
+#include <functional>
 
 #ifdef _WIN32
 #define DEFAULT_THREAD_PRIORITY THREAD_PRIORITY_NORMAL
@@ -152,6 +153,12 @@ public:
     inline void init(IThreaded *_owner) { owner = _owner; start(); }
     virtual int run() { owner->main(); return 1; }
 };
+
+extern jlib_decl void asyncStart(IThreaded & threaded);
+extern jlib_decl void asyncStart(const char * name, IThreaded & threaded);
+#if defined(__cplusplus) and __cplusplus >= 201100
+extern jlib_decl void asyncStart(std::function<void()> func);
+#endif
 
 // Similar to above, but the underlying thread always remains running. This can make repeated start + join's significantly quicker
 class jlib_decl CThreadedPersistent : public CInterface

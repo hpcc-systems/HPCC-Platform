@@ -489,7 +489,6 @@ void EclGraphElement::createActivity(IAgentContext & agent, EclSubGraph * owner)
                     {
                         IRoxieProbe *base = probeManager->createProbe(
                                                         input.queryOutput(branchIndexes.item(i2)),  //input
-                                                        &input.queryOutput(branchIndexes.item(i2))->queryStream(),  //stream
                                                         input.activity.get(),   //Source act
                                                         activity.get(),         //target activity
                                                         0,//input.id, 
