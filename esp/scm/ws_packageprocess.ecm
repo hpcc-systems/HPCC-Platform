@@ -237,6 +237,57 @@ ESPresponse [exceptions_inline] GetPackageMapSelectOptionsResponse
     ESParray<string> ProcessFilters;
 };
 
+ESPrequest AddPartToPackageMapRequest
+{
+    string Target;
+    string Process;
+    string PackageMap;
+    bool GlobalScope(false);
+    string PartName;
+    string Content;
+    boolean DeletePrevious;
+    string DaliIp;
+    string SourceProcess;
+    bool AllowForeignFiles(true);
+    bool PreloadAllPackages(false);
+    bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
+    bool UpdateCloneFrom(false); //explicitly wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+};
+
+ESPresponse [exceptions_inline] AddPartToPackageMapResponse
+{
+    ESPstruct BasePackageStatus status;
+    ESParray<string, File> FilesNotFound;
+};
+
+ESPrequest RemovePartFromPackageMapRequest
+{
+    string Target;
+    string PackageMap;
+    bool GlobalScope(0);
+    string PartName;
+};
+
+ESPresponse [exceptions_inline] RemovePartFromPackageMapResponse
+{
+    ESPstruct BasePackageStatus status;
+};
+
+ESPrequest GetPartFromPackageMapRequest
+{
+    string Target;
+    string PackageMap;
+    bool GlobalScope(0);
+    string PartName;
+};
+
+ESPresponse [exceptions_inline] GetPartFromPackageMapResponse
+{
+    ESPstruct BasePackageStatus status;
+    string Content;
+};
+
 ESPservice [version("1.02"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
@@ -251,6 +302,9 @@ ESPservice [version("1.02"), exceptions_inline("./smc_xslt/exceptions.xslt")] Ws
     ESPmethod ValidatePackage(ValidatePackageRequest, ValidatePackageResponse);
     ESPmethod GetQueryFileMapping(GetQueryFileMappingRequest, GetQueryFileMappingResponse);
     ESPmethod GetPackageMapSelectOptions(GetPackageMapSelectOptionsRequest, GetPackageMapSelectOptionsResponse);
+    ESPmethod AddPartToPackageMap(AddPartToPackageMapRequest, AddPartToPackageMapResponse);
+    ESPmethod RemovePartFromPackageMap(RemovePartFromPackageMapRequest, RemovePartFromPackageMapResponse);
+    ESPmethod GetPartFromPackageMap(GetPartFromPackageMapRequest, GetPartFromPackageMapResponse);
 };
 
 SCMexportdef(WsPackageProcess);

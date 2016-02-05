@@ -171,6 +171,7 @@ interface IConstDFUoptions : extends IInterface
     virtual bool getRecordStructurePresent() const = 0;
     virtual bool getQuotedTerminator() const = 0;
     virtual bool getPreserveCompression() const = 0;
+    virtual StringBuffer &getUMask(StringBuffer &str)const =0;
 };
 
 interface IDFUoptions : extends IConstDFUoptions
@@ -209,6 +210,7 @@ interface IDFUoptions : extends IConstDFUoptions
     virtual void setRecordStructurePresent(bool val=false) = 0;
     virtual void setQuotedTerminator(bool val=true) = 0;
     virtual void setPreserveCompression(bool val=true) = 0;
+    virtual void setUMask(const char *val) = 0;
 };
 
 interface IConstDFUfileSpec: extends IInterface

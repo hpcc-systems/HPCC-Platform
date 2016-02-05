@@ -344,13 +344,13 @@ define([
                     },
                     Id: {
                         label: this.i18n.ID,
+                        width:380,
                         formatter: function (Id, idx) {
                             return "<a href='#' class='dgrid-row-url'>" + Id + "</a>";
                         }
                     },
                     Name: {
-                        width: 180,
-                        label: this.i18n.Name
+                        label: this.i18n.Name,
                     },
                     QuerySetId:{
                         width: 140,
@@ -358,7 +358,7 @@ define([
                         sortable: true
                     },
                     Wuid: {
-                        width: 180,
+                        width: 160,
                         label: this.i18n.WUID,
                         formatter: function (Wuid, idx) {
                             return "<a href='#' class='dgrid-row-url2'>" + Wuid + "</a>";

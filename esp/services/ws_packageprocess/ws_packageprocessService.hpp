@@ -159,6 +159,10 @@ public:
     virtual bool onListPackages(IEspContext &context, IEspListPackagesRequest &req, IEspListPackagesResponse &resp);
     virtual bool onGetPackageMapSelectOptions(IEspContext &context, IEspGetPackageMapSelectOptionsRequest &req, IEspGetPackageMapSelectOptionsResponse &resp);
     virtual bool onGetPackageMapById(IEspContext &context, IEspGetPackageMapByIdRequest &req, IEspGetPackageMapByIdResponse &resp);
+    virtual bool onAddPartToPackageMap(IEspContext &context, IEspAddPartToPackageMapRequest &req, IEspAddPartToPackageMapResponse &resp);
+    virtual bool onGetPartFromPackageMap(IEspContext &context, IEspGetPartFromPackageMapRequest &req, IEspGetPartFromPackageMapResponse &resp);
+    virtual bool onRemovePartFromPackageMap(IEspContext &context, IEspRemovePartFromPackageMapRequest &req, IEspRemovePartFromPackageMapResponse &resp);
+
     PackageMapAndSet packageMapAndSet;
 };
 

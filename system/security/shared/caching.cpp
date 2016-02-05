@@ -283,9 +283,12 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
 
     synchronized block(m_userCacheMonitor); 
 
-    CachedUser* user = m_userCache[username];
-    if(user == NULL)
-        return false;       
+    string key(username);
+    MapUserCache::iterator it = m_userCache.find(key);
+    if (it == m_userCache.end())
+        return false;
+    CachedUser* user = (CachedUser*)(it->second);
+
     time_t now;
     time(&now);
     if(user->getTimestamp() < (now - m_cacheTimeout))
@@ -329,9 +332,12 @@ ISecUser* CPermissionsCache::getCachedUser( ISecUser& sec_user)
         return NULL;
 
     synchronized block(m_userCacheMonitor); 
-    CachedUser* user = m_userCache[username];
-    if(user == NULL)
+
+    string key(username);
+    MapUserCache::iterator it = m_userCache.find(key);
+    if (it == m_userCache.end())
         return NULL;
+    CachedUser* user = (CachedUser*)(it->second);
     return LINK(user->queryUser());
 }
 void CPermissionsCache::add(ISecUser& sec_user)
@@ -344,9 +350,12 @@ void CPermissionsCache::add(ISecUser& sec_user)
         return;
     
     synchronized block(m_userCacheMonitor);     
-    CachedUser* user = m_userCache[username];
-    if(user)
+    string key(username);
+    MapUserCache::iterator it = m_userCache.find(key);
+    CachedUser* user = NULL;
+    if (it != m_userCache.end())
     {
+        user = (CachedUser*)(it->second);
         m_userCache.erase(username);
         delete user;
     }
@@ -359,9 +368,11 @@ void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
     if(username && *username)
     {
         synchronized block(m_userCacheMonitor);
-        CachedUser* user = m_userCache[username];
-        if(user)
+        string key(username);
+        MapUserCache::iterator it = m_userCache.find(key);
+        if (it != m_userCache.end())
         {
+            CachedUser* user = (CachedUser*)(it->second);
             m_userCache.erase(username);
             delete user;
         }
