@@ -281,10 +281,9 @@ public:
                 return NULL;
             }
             CThorExpandingRowArray rows(*this, this);
-            Owned<IRowStream> rowStream;
             try
             {
-                rowStream.setown(groupLoader->loadGroup(input, abortSoon, &rows));
+                groupLoader->loadGroup(input, abortSoon, &rows);
             }
             catch (IException *e)
             {

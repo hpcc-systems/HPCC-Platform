@@ -1372,17 +1372,17 @@ bool isOOMException(IException *_e)
         IThorException *e = QUERYINTERFACE(_e, IThorException);
         IException *oe = e && e->queryOriginalException() ? e->queryOriginalException() : _e;
         int ecode = oe->errorCode();
-        if (ecode >= ROXIEMM_ERROR_START && ecode <= ROXIEMM_ERROR_START) // should have ROXIEMM_ERROR_END marker probably
+        if (ecode >= ROXIEMM_ERROR_START && ecode <= ROXIEMM_ERROR_END)
             return true;
     }
     return false;
 }
 
-IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IException *e, const char *msg, unsigned numRows, IOutputMetaData *meta, const void *row)
+IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IException *e, const char *msg, rowcount_t numRows, IOutputMetaData *meta, const void *row)
 {
     VStringBuffer errorMsg("Out of memory whilst %s", msg);
-    if (NotFound != numRows)
-        errorMsg.appendf(", group/set size = %d", numRows);
+    if (RCUNSET != numRows)
+        errorMsg.appendf(", group/set size = %" RCPF "u", numRows);
     if (meta)
     {
         if (meta->isFixedSize())

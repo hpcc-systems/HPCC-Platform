@@ -117,10 +117,9 @@ public:
         rows.kill();
 
         // JCSMORE - could do in chunks and merge if > mem
-        Owned<IRowStream> rowStream;
         try
         {
-            rowStream.setown(groupOp ? rowLoader->loadGroup(in, activity->queryAbortSoon(), &rows) : rowLoader->load(in, activity->queryAbortSoon(), false, &rows));
+            groupOp ? rowLoader->loadGroup(in, activity->queryAbortSoon(), &rows) : rowLoader->load(in, activity->queryAbortSoon(), false, &rows);
         }
         catch (IException *e)
         {
@@ -617,7 +616,7 @@ public:
         {
             loop
             {
-                Owned<IRowStream> rowStream = groupLoader->loadGroup(input, abortSoon, &rows);
+                groupLoader->loadGroup(input, abortSoon, &rows);
                 unsigned count = rows.ordinality();
                 if (0 == count)
                 {

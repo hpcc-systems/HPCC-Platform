@@ -489,7 +489,7 @@ extern graph_decl IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int
 extern const graph_decl StatisticsMapping spillStatistics;
 
 extern graph_decl bool isOOMException(IException *e);
-extern graph_decl IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IException *e, const char *msg, unsigned numRows, IOutputMetaData *meta, const void *row);
+extern graph_decl IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IException *e, const char *msg, rowcount_t numRows, IOutputMetaData *meta, const void *row);
 
 #endif
 
