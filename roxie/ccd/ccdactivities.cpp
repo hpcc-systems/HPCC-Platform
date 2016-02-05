@@ -5165,7 +5165,7 @@ public:
         {
             remoteGraph->beforeExecute();
             Owned<IFinalRoxieInput> input = remoteGraph->startOutput(0, remoteExtractBuilder.size(), remoteExtractBuilder.getbytes(), false);
-            Owned <IStrandJunction> junction;
+            Owned<IStrandJunction> junction;
             IEngineRowStream *stream = connectSingleStream(queryContext, input, 0, junction, 0);
 
             while (!aborted)

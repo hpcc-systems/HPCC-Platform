@@ -1556,7 +1556,6 @@ public:
             blockSize = ctx->queryOptions().strandBlockSize;
         if (!numStrands)
             numStrands = ctx->queryOptions().forceNumStrands;
-        // Could consider some similar option for numStrands...
     }
 public:
     unsigned numStrands = 0;
@@ -6199,7 +6198,6 @@ public:
     {
         if (id == sequence)
         {
-
             CRoxieServerActivity::setInput(0, _sourceIdx, _input);
             connectOutputStreams(0);
             return true;
@@ -19974,7 +19972,7 @@ class CRoxieServerStrandedParseActivity : public CRoxieServerStrandedActivity
 
     public:
         ParseProcessor(CRoxieServerActivity &_parent, IEngineRowStream *_inputStream, IHThorParseArg &_helper, INlpParseAlgorithm * _algorithm)
-        : StrandProcessor(_parent, _inputStream, true), helper(_helper)
+            : StrandProcessor(_parent, _inputStream, false), helper(_helper)
         {
             parser = _algorithm->createParser(parent.queryCodeContext(), parent.queryId(), helper.queryHelper(), &helper);
             rowIter = parser->queryResultIter();
