@@ -294,5 +294,9 @@ interface IWorkQueueThread: extends IInterface
 // internally thread persists for specified time waiting before self destroying
 extern jlib_decl IWorkQueueThread *createWorkQueueThread(unsigned persisttime=1000*60);
 
+extern jlib_decl void setProcessAffinity(const char * cpus);
+extern jlib_decl void setAutoAffinity(unsigned curProcess, unsigned processPerNode, const char * optNodes);
+extern jlib_decl void bindMemoryToLocalNodes();
+
 
 #endif

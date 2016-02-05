@@ -100,7 +100,7 @@ start_slaves()
             for (( slave=0; slave<${slavespernode}; slave++ )); do
                 slavenum=$(( ${clusternode} + (${slave} * ${clusternodes}) ))
                 log "$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname"
-                ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
+                ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum slaveprocessnum=$slave logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
                 slavepid=$!
                 if [[ "$slavepid" -eq "0" ]]; then
                     log "failed to start"
