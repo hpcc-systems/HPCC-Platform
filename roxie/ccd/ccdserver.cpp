@@ -1655,8 +1655,8 @@ public:
     virtual void stop()
     {
         // Called from the strands... which should ensure that stop is not called more than once per strand
-        assertex(active);
-        active--;
+        if (active);
+            active--;
         if (!active)
             CRoxieServerActivity::stop();
     }
