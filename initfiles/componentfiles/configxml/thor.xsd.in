@@ -633,6 +633,27 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="affinity" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>A comma separated list of cpu ids (and ranges) to bind all thor slaves to</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="autoAffinity" type="xs:boolean" default="true">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Automatically bind slave processes to a single cpu socket, if multiple slaves are running on a multi socket machine</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="numaBindLocal" type="xs:boolean" default="false">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Restrict allocations to memory attached to the cpu sockets the slave process is bound to</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
     </xs:complexType>
     <xs:key name="thorProcessKey1">
       <xs:selector xpath="./ThorMasterProcess|./ThorSlaveProcess"/>
