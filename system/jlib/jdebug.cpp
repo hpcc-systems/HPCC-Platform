@@ -299,9 +299,6 @@ double getCycleToNanoScale()
 
 #else
 
-#if defined(CLOCK_MONOTONIC) && !defined(__APPLE__)
-static bool use_gettimeofday=false;
-#endif
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
 static bool useRDTSC = _USE_RDTSC;
 #endif
@@ -364,6 +361,9 @@ void calibrate_timing()
 
 
 #if !defined(INLINE_GET_CYCLES_NOW) || !defined(HAS_GOOD_CYCLE_COUNTER)
+#if defined(CLOCK_MONOTONIC) && !defined(__APPLE__)
+static bool use_gettimeofday=false;
+#endif
 cycle_t jlib_decl get_cycles_now()
 {
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
