@@ -165,6 +165,7 @@ protected:
     IRowInterfaces *rowIf;
     bool preserveNulls, ownsRows, useCompression;
     unsigned spillPriority;
+    unsigned rwCompFlag;
     CThorSpillableRowArray rows;
     OwnedIFile spillFile;
     bool mmRegistered;
@@ -182,7 +183,7 @@ protected:
         spillFile.setown(createIFile(tempName.str()));
 
         VStringBuffer spillPrefixStr("SpillableStream(%d)", SPILL_PRIORITY_SPILLABLE_STREAM); // const for now
-        rows.save(*spillFile, useCompression, spillPrefixStr.str()); // saves committed rows
+        rows.save(*spillFile, useCompression, rwCompFlag, spillPrefixStr.str()); // saves committed rows
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
         return true;
     }
@@ -213,6 +214,7 @@ public:
         useCompression = false;
         mmRegistered = false;
         ownsRows = false;
+        rwCompFlag = 0x0;
     }
     ~CSpillableStreamBase()
     {
@@ -360,6 +362,12 @@ public:
         : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls, _spillPriority)
     {
         useCompression = _compressSpills;
+        if (useCompression)
+        {
+            StringBuffer compType;
+            activity.getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+            setCompFlag(compType, rwCompFlag);
+        }
         pos = numReadRows = 0;
         granularity = 500; // JCSMORE - rows
 
@@ -389,7 +397,10 @@ public:
                 if (preserveNulls)
                     rwFlags |= rw_grouped;
                 if (useCompression)
+                {
                     rwFlags |= rw_compress;
+                    rwFlags |= rwCompFlag;
+                }
                 spillStream.setown(createRowStream(spillFile, rowIf, rwFlags));
                 return spillStream->nextRow();
             }
@@ -1277,19 +1288,22 @@ static int callbackSortRev(IInterface * const *cb2, IInterface * const *cb1)
     return 1;
 }
 
-rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const char *tracingPrefix)
+rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool _useCompression, unsigned _rwCompFlag, const char *tracingPrefix)
 {
     rowidx_t n = numCommitted();
     if (0 == n)
         return 0;
     ActPrintLog(&activity, "%s: CThorSpillableRowArray::save %" RIPF "d rows", tracingPrefix, n);
 
-    if (useCompression)
+    if (_useCompression)
         assertex(0 == writeCallbacks.ordinality()); // incompatible
 
     unsigned rwFlags = DEFAULT_RWFLAGS;
-    if (useCompression)
+    if (_useCompression)
+    {
         rwFlags |= rw_compress;
+        rwFlags |= _rwCompFlag;
+    }
     if (allowNulls)
         rwFlags |= rw_grouped;
 
@@ -1510,7 +1524,15 @@ protected:
         GetTempName(tempName, tempPrefix.str(), true);
         Owned<IFile> iFile = createIFile(tempName.str());
         VStringBuffer spillPrefixStr("RowCollector(%d)", spillPriority);
-        spillableRows.save(*iFile, compressSpills, spillPrefixStr.str()); // saves committed rows
+        unsigned _rwCompFlag = 0x0;
+        if (compressSpills)
+        {
+            StringBuffer compType;
+            activity.getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+            setCompFlag(compType, _rwCompFlag);
+        }
+        spillableRows.save(*iFile, compressSpills, _rwCompFlag, spillPrefixStr.str()); // saves committed rows
+        // spillableRows.save(*iFile, compressSpills, spillPrefixStr.str()); // saves committed rows
         spillFiles.append(new CFileOwner(iFile.getLink()));
         ++overflowCount;
         sizeSpill += iFile->size();
@@ -1591,7 +1613,12 @@ protected:
         // which may be one of these streams or CThorRowCollectorBase itself
         unsigned rwFlags = DEFAULT_RWFLAGS;
         if (compressSpills)
+        {
             rwFlags |= rw_compress;
+            StringBuffer compType;
+            activity.getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+            setCompFlag(compType, rwFlags);
+        }
         if (preserveGrouping)
             rwFlags |= rw_grouped;
         IArrayOf<IRowStream> instrms;

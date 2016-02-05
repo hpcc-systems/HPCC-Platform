@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,13 +13,32 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-HPCC_ADD_SUBDIRECTORY (hrpc)
-HPCC_ADD_SUBDIRECTORY (include "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (jhtree)
-HPCC_ADD_SUBDIRECTORY (jlib)
-HPCC_ADD_SUBDIRECTORY (lz4_sm)
-HPCC_ADD_SUBDIRECTORY (lzma)
-HPCC_ADD_SUBDIRECTORY (mp)
-HPCC_ADD_SUBDIRECTORY (security)
-HPCC_ADD_SUBDIRECTORY (xmllib)
-HPCC_ADD_SUBDIRECTORY (xmllibtest "PLATFORM")
+
+# Component: lz4
+
+#####################################################
+# Description:
+# ------------
+#    Cmake Input File for lz4
+#####################################################
+
+
+project( lz4 )
+
+set ( SRCS
+        lz4/lib/lz4.c
+)
+
+include_directories (
+        lz4/lib
+)
+
+ADD_DEFINITIONS( -D_LIB )
+
+SET_SOURCE_FILES_PROPERTIES( ${SRCS} PROPERTIES LANGUAGE C )
+
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -std=c99")
+endif()
+
+HPCC_ADD_LIBRARY( lz4 STATIC ${SRCS} )
