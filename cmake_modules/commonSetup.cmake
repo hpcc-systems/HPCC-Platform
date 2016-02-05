@@ -81,7 +81,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(GENERATE_COVERAGE_INFO "Generate coverage info for gcov" OFF)
   option(USE_SIGNED_CHAR "Build system with default char type is signed" OFF)
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
-  option(USE_INLINE_TSC "Inline calls to read TSC (time stamp counter)" ON)  # Generates code that is more efficient, but will cause problems if target platforms do not support it.
+  # Generates code that is more efficient, but will cause problems if target platforms do not support it.
+  if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    option(USE_INLINE_TSC "Inline calls to read TSC (time stamp counter)" ON)
+  else()
+    option(USE_INLINE_TSC "Inline calls to read TSC (time stamp counter)" OFF)
+  endif()
 
   option(WITH_PLUGINS "Enable the building of plugins" ON)
   # WITH_PLUGINS = OFF will disable all of the following, else they can be set off on a case by case basis
