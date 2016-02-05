@@ -531,6 +531,8 @@ public:
         numsegs = 0;
         keyBuffer = NULL;
         keyCursor = NULL;
+        keySize = 0;
+        keyedSize = 0;
         eclKeySize = _eclKeySize;
         started = false;
         setKey(_key);
@@ -608,11 +610,6 @@ public:
                 EXCLOG(e, err.str());
                 throw e;
             }
-        }
-        else
-        {
-            keySize = 0;
-            keyedSize = 0;
         }
     }
 
@@ -2550,11 +2547,7 @@ public:
             numkeys = _keyset->numParts();
         }
         else
-        {
-            keySize = 0;
-            keyedSize = 0;
             numkeys = 0;
-        }
         killBuffers();
     }
 
