@@ -309,6 +309,7 @@ enum {
     RFCsetthrottle, // legacy version
 // 1.9
     RFCsetthrottle2,
+    RFCsetfileperms,
     RFCmax,
     RFCunknown = 255 // 0 would have been more sensible, but can't break backward compatibility
 };
@@ -356,6 +357,7 @@ const char *RFCStrings[] =
     RFCText(RFCtreecopytmp),
     RFCText(RFCsetthrottle), // legacy version
     RFCText(RFCsetthrottle2),
+    RFCText(RFCsetfileperms),
     RFCText(RFCunknown),
 };
 static const char *getRFCText(RemoteFileCommandType cmd) { return RFCStrings[cmd]; }
@@ -1736,6 +1738,14 @@ public:
         sendRemoteCommand(sendBuffer, replyBuffer);
     }
 
+    void setFilePermissions(unsigned fPerms)
+    {
+        MemoryBuffer sendBuffer;
+        initSendBuffer(sendBuffer);
+        MemoryBuffer replyBuffer;
+        sendBuffer.append((RemoteFileCommandType)RFCsetfileperms).append(filename).append(fPerms);
+        sendRemoteCommand(sendBuffer, replyBuffer);
+    }
 
     offset_t size()
     {
@@ -4266,6 +4276,20 @@ public:
         return true;
     }
 
+    bool cmdSetFilePerms(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    {
+        IMPERSONATE_USER(client);
+        StringAttr name;
+        unsigned fPerms;
+        msg.read(name).read(fPerms);
+        if (TF_TRACE)
+            PROGLOG("setFilePerms,  '%s' 0%o",name.get(),fPerms);
+        Owned<IFile> file=createIFile(name);
+        file->setFilePermissions(fPerms);
+        reply.append((unsigned)RFEnoerror);
+        return true;
+    }
+
     bool cmdGetTime(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
@@ -4816,6 +4840,7 @@ public:
             case RFCisdirectory:
             case RFCisreadonly:
             case RFCsetreadonly:
+            case RFCsetfileperms:
             case RFCgettime:
             case RFCsettime:
             case RFCcreatedir:
@@ -4867,6 +4892,7 @@ public:
                 MAPCOMMANDCLIENT(RFCisdirectory, cmdIsDir, *client);
                 MAPCOMMANDCLIENT(RFCisreadonly, cmdIsReadOnly, *client);
                 MAPCOMMANDCLIENT(RFCsetreadonly, cmdSetReadOnly, *client);
+                MAPCOMMANDCLIENT(RFCsetfileperms, cmdSetFilePerms, *client);
                 MAPCOMMANDCLIENT(RFCgettime, cmdGetTime, *client);
                 MAPCOMMANDCLIENT(RFCsettime, cmdSetTime, *client);
                 MAPCOMMANDCLIENT(RFCcreatedir, cmdCreateDir, *client);

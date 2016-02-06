@@ -134,6 +134,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="umask" type="xs:string" use="optional" default="022">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>umask for desprayed files</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

@@ -95,6 +95,7 @@ interface IFile :extends IInterface
     virtual void rename(const char *newTail) = 0;       // tail only preferred but can have full path if exactly matches existing dir
     virtual void move(const char *newName) = 0;         // can move between directories on same node (NB currently not always supported on remote files!)
     virtual void setReadOnly(bool ro) = 0;
+    virtual void setFilePermissions(unsigned fPerms) = 0;
     virtual offset_t size() = 0;
     virtual bool setCompression(bool set) = 0;
     virtual offset_t compressedSize() = 0;

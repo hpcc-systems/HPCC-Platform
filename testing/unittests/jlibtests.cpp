@@ -413,6 +413,15 @@ protected:
                 extraFlags = IFEnocache;
             ifileio = ifile->open(IFOcreate, extraFlags);
 
+            try
+            {
+                ifile->setFilePermissions(0666);
+            }
+            catch (...)
+            {
+                fprintf(stdout, "ifile->setFilePermissions() exception\n");
+            }
+
             unsigned iter = nr / 40;
 
             __int64 pos = 0;
