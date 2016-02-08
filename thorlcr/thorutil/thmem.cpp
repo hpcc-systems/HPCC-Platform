@@ -1752,6 +1752,12 @@ public:
         spillableRows.transferFrom(src);
         enableSpillingCallback();
     }
+    virtual const void *probeRow(unsigned r)
+    {
+        if (r>=spillableRows.numCommitted())
+            return NULL;
+        return spillableRows.query(r);
+    }
     virtual void setup(ICompare *_iCompare, StableSortFlag _stableSort, RowCollectorSpillFlags _diskMemMix, unsigned _spillPriority)
     {
         iCompare = _iCompare;
@@ -1856,6 +1862,7 @@ public:
     virtual void transferRowsOut(CThorExpandingRowArray &dst, bool sort) { CThorRowCollectorBase::transferRowsOut(dst, sort); }
     virtual void transferRowsIn(CThorExpandingRowArray &src) { CThorRowCollectorBase::transferRowsIn(src); }
     virtual void transferRowsIn(CThorSpillableRowArray &src) { CThorRowCollectorBase::transferRowsIn(src); }
+    virtual const void *probeRow(unsigned r) { return CThorRowCollectorBase::probeRow(r); }
     virtual void setup(ICompare *iCompare, StableSortFlag stableSort, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=50)
     {
         CThorRowCollectorBase::setup(iCompare, stableSort, diskMemMix, spillPriority);
@@ -1908,6 +1915,7 @@ public:
     virtual void transferRowsOut(CThorExpandingRowArray &dst, bool sort) { CThorRowCollectorBase::transferRowsOut(dst, sort); }
     virtual void transferRowsIn(CThorExpandingRowArray &src) { CThorRowCollectorBase::transferRowsIn(src); }
     virtual void transferRowsIn(CThorSpillableRowArray &src) { CThorRowCollectorBase::transferRowsIn(src); }
+    virtual const void *probeRow(unsigned r) { return CThorRowCollectorBase::probeRow(r); }
     virtual void setup(ICompare *iCompare, StableSortFlag stableSort, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=50)
     {
         CThorRowCollectorBase::setup(iCompare, stableSort, diskMemMix, spillPriority);

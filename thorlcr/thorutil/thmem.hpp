@@ -514,6 +514,7 @@ interface IThorRowCollectorCommon : extends IInterface
     virtual void transferRowsOut(CThorExpandingRowArray &dst, bool sort=true) = 0;
     virtual void transferRowsIn(CThorExpandingRowArray &src) = 0;
     virtual void transferRowsIn(CThorSpillableRowArray &src) = 0;
+    virtual const void *probeRow(unsigned r) = 0;
     virtual void setup(ICompare *iCompare, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=50) = 0;
     virtual void resize(rowidx_t max) = 0;
     virtual void setOptions(unsigned options) = 0;

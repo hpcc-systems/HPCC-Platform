@@ -38,6 +38,7 @@
 #define ECL_WARN_END            1099
 
 #define ROXIEMM_ERROR_START     1300
+#define ROXIEMM_ERROR_END       1349
 
 #define ROXIE_ERROR_START       1400   // roxie is already using this start value
 #define ROXIE_ERROR_END         1799

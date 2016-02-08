@@ -44,7 +44,7 @@
 #define ROXIEMM_INVALID_MEMORY_ALIGNMENT  ROXIEMM_ERROR_START+2
 #define ROXIEMM_HEAP_ERROR                ROXIEMM_ERROR_START+3
 #define ROXIEMM_TOO_MUCH_MEMORY           ROXIEMM_ERROR_START+4
-
+// NB: max ROXIEMM_* error is ROXIEMM_ERROR_END (see errorlist.h)
 
 #ifdef __64BIT__
 #define HEAP_ALIGNMENT_SIZE I64C(0x40000u)                      // 256kb heaplets

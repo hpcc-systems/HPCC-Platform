@@ -222,16 +222,16 @@ protected:
     int errorcode;
     StringAttr msg;
     LogMsgAudience audience;
-    unsigned node;
+    unsigned slave;
     MemoryBuffer data; // extra exception specific data
-    bool notified;
     unsigned line, column;
     StringAttr file, origin;
     ErrorSeverity severity;
+    Linked<IException> originalException;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     CThorException(LogMsgAudience _audience,int code, const char *str) 
-        : audience(_audience), errorcode(code), msg(str), action(tea_null), graphId(0), id(0), node(0), line(0), column(0), severity(SeverityInformation), kind(TAKnone), notified(false) { };
+        : audience(_audience), errorcode(code), msg(str), action(tea_null), graphId(0), id(0), slave(0), line(0), column(0), severity(SeverityInformation), kind(TAKnone) { };
     CThorException(MemoryBuffer &mb)
     {
         mb.read((unsigned &)action);
@@ -239,6 +239,7 @@ public:
         mb.read(graphId);
         mb.read((unsigned &)kind);
         mb.read(id);
+        mb.read(slave);
         mb.read((unsigned &)audience);
         mb.read(errorcode);
         mb.read(msg);
@@ -249,6 +250,10 @@ public:
         mb.read(origin);
         if (0 == origin.length()) // simpler to clear serialized 0 length terminated string here than check on query
             origin.clear();
+        bool oe;
+        mb.read(oe);
+        if (oe)
+            originalException.setown(deserializeThorException(mb));
         size32_t sz;
         mb.read(sz);
         if (sz)
@@ -256,29 +261,30 @@ public:
     }
 
 // IThorException
-    ThorExceptionAction queryAction() { return action; }
-    ThorActivityKind queryActivityKind() { return kind; }
-    activity_id queryActivityId() { return id; }
-    graph_id queryGraphId() { return graphId; }
-    const char *queryJobId() { return jobId; }
-    void getAssert(StringAttr &_file, unsigned &_line, unsigned &_column) { _file.set(file); _line = line; _column = column; }
-    const char *queryOrigin() { return origin; }
-    const char *queryMessage() { return msg; }
-    ErrorSeverity querySeverity() { return severity; }
-    bool queryNotified() const { return notified; }
-    MemoryBuffer &queryData() { return data; }
-    void setNotified() { notified = true; }
-    void setActivityId(activity_id _id) { id = _id; }
-    void setActivityKind(ThorActivityKind _kind) { kind = _kind; }
-    void setGraphId(graph_id _graphId) { graphId = _graphId; }
-    void setJobId(const char *_jobId) { jobId.set(_jobId); }
-    void setAction(ThorExceptionAction _action) { action = _action; }
-    void setAudience(MessageAudience _audience) { audience = _audience; }
-    void setSlave(unsigned _node) { node = _node; }
-    void setMessage(const char *_msg) { msg.set(_msg); }
-    void setAssert(const char *_file, unsigned _line, unsigned _column) { file.set(_file); line = _line; column = _column; }
-    void setOrigin(const char *_origin) { origin.set(_origin); }
-    void setSeverity(ErrorSeverity _severity) { severity = _severity; }
+    virtual ThorExceptionAction queryAction() const { return action; }
+    virtual ThorActivityKind queryActivityKind() const { return kind; }
+    virtual activity_id queryActivityId() const { return id; }
+    virtual graph_id queryGraphId() const { return graphId; }
+    virtual const char *queryJobId() const { return jobId; }
+    virtual unsigned querySlave() const { return slave; }
+    virtual void getAssert(StringAttr &_file, unsigned &_line, unsigned &_column) const { _file.set(file); _line = line; _column = column; }
+    virtual const char *queryOrigin() const { return origin; }
+    virtual const char *queryMessage() const { return msg; }
+    virtual ErrorSeverity querySeverity() const { return severity; }
+    virtual MemoryBuffer &queryData() { return data; }
+    virtual IException *queryOriginalException() const { return originalException; }
+    virtual void setActivityId(activity_id _id) { id = _id; }
+    virtual void setActivityKind(ThorActivityKind _kind) { kind = _kind; }
+    virtual void setGraphId(graph_id _graphId) { graphId = _graphId; }
+    virtual void setJobId(const char *_jobId) { jobId.set(_jobId); }
+    virtual void setAction(ThorExceptionAction _action) { action = _action; }
+    virtual void setAudience(MessageAudience _audience) { audience = _audience; }
+    virtual void setSlave(unsigned _slave) { slave = _slave; }
+    virtual void setMessage(const char *_msg) { msg.set(_msg); }
+    virtual void setAssert(const char *_file, unsigned _line, unsigned _column) { file.set(_file); line = _line; column = _column; }
+    virtual void setOrigin(const char *_origin) { origin.set(_origin); }
+    virtual void setSeverity(ErrorSeverity _severity) { severity = _severity; }
+    virtual void setOriginalException(IException *e) { originalException.set(e); }
 
 // IException
     int errorCode() const { return errorcode; }
@@ -297,21 +303,31 @@ public:
                 if (kind) str.append(']');
                 str.append(": ");
             }
-            if (node)
+            if (slave)
             {
-                str.appendf("SLAVE #%d [", node);
-                queryClusterGroup().queryNode(node).endpoint().getUrlStr(str);
+                str.appendf("SLAVE #%d [", slave);
+                queryClusterGroup().queryNode(slave).endpoint().getUrlStr(str);
                 str.append("]: ");
             }
         }
         str.append(msg);
+        if (originalException)
+        {
+            if (msg.length())
+                str.append(" - ");
+            str.append("caused by (");
+            str.append(originalException->errorCode());
+            str.append(", ");
+            originalException->errorMessage(str);
+            str.append(")");
+        }
         return str;
     }
     MessageAudience errorAudience() const { return audience; }
 };
 
 CThorException *_MakeThorException(LogMsgAudience audience,int code, const char *format, va_list args) __attribute__((format(printf,3,0)));
-CThorException *_MakeThorException(LogMsgAudience audience,int code, const char *format, va_list args)
+CThorException *_MakeThorException(LogMsgAudience audience, int code, const char *format, va_list args)
 {
     StringBuffer eStr;
     eStr.limited_valist_appendf(1024, format, args);
@@ -388,6 +404,7 @@ IThorException *_MakeActivityException(CGraphElementBase &container, IException 
     if (_format)
         msg.append(", ").limited_valist_appendf(1024, _format, args);
     IThorException *e2 = new CThorException(e->errorAudience(), e->errorCode(), msg.str());
+    e2->setOriginalException(e);
     setExceptionActivityInfo(container, e2);
     return e2;
 }
@@ -899,6 +916,7 @@ void serializeThorException(IException *e, MemoryBuffer &out)
     out.append(te->queryGraphId());
     out.append((unsigned)te->queryActivityKind());
     out.append(te->queryActivityId());
+    out.append(te->querySlave());
     out.append((unsigned)te->errorAudience());
     out.append(te->errorCode());
     out.append(te->queryMessage());
@@ -910,6 +928,14 @@ void serializeThorException(IException *e, MemoryBuffer &out)
     out.append(column);
     out.append(te->querySeverity());
     out.append(te->queryOrigin());
+    IException *oe = te->queryOriginalException();
+    if (oe)
+    {
+        out.append(true);
+        serializeThorException(oe, out);
+    }
+    else
+        out.append(false);
     MemoryBuffer &data = te->queryData();
     out.append((size32_t)data.length());
     if (data.length())
@@ -1337,5 +1363,40 @@ IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMo
     return new CPerfMonHook(job, maxLevel, chain);
 }
 
-
 const StatisticsMapping spillStatistics(StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile, StKindNone);
+
+bool isOOMException(IException *_e)
+{
+    if (_e)
+    {
+        IThorException *e = QUERYINTERFACE(_e, IThorException);
+        IException *oe = e && e->queryOriginalException() ? e->queryOriginalException() : _e;
+        int ecode = oe->errorCode();
+        if (ecode >= ROXIEMM_ERROR_START && ecode <= ROXIEMM_ERROR_END)
+            return true;
+    }
+    return false;
+}
+
+IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IException *e, const char *msg, rowcount_t numRows, IOutputMetaData *meta, const void *row)
+{
+    VStringBuffer errorMsg("Out of memory whilst %s", msg);
+    if (RCUNSET != numRows)
+        errorMsg.appendf(", group/set size = %" RCPF "u", numRows);
+    if (meta)
+    {
+        if (meta->isFixedSize())
+            errorMsg.appendf(", Fixed rows, size = %d", meta->getFixedSize());
+        else
+            errorMsg.appendf(", Variable rows, min. size = %d", meta->getMinRecordSize());
+        if (row && meta->hasXML())
+        {
+            CommonXmlWriter xmlwrite(0);
+            meta->toXML((byte *) row, xmlwrite);
+            errorMsg.newline().append("Leading row of group: ").append(xmlwrite.str());
+        }
+    }
+    Owned<IThorException> te = MakeActivityException(activity, e, "%s", errorMsg.str());
+    e->Release();
+    return te.getClear();
+}
