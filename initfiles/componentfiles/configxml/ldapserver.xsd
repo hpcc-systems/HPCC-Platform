@@ -255,7 +255,6 @@
                             <xs:enumeration value="OpenLDAP"/>
                             <xs:enumeration value="389DirectoryServer"/>
                             <xs:enumeration value="Fedora389"/>
-			    <xs:enumeration value="iPlanet"/>
                         </xs:restriction>
                     </xs:simpleType>
             </xs:attribute>
