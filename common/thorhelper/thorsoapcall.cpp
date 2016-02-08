@@ -1650,7 +1650,7 @@ private:
             path.append(master->inputpath.get());
         CMatchCB matchCB(*this, url, NULL, meta);
         Owned<IXMLParse> xmlParser;
-        if (strieq(this->master->acceptType.str(), "application/json"))
+        if (strieq(master->acceptType.str(), "application/json"))
             xmlParser.setown(createJSONParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, false, true));
         else
             xmlParser.setown(createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, false));
