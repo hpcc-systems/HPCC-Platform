@@ -358,7 +358,12 @@ const char *RFCStrings[] =
     RFCText(RFCsetthrottle2),
     RFCText(RFCunknown),
 };
-static const char *getRFCText(RemoteFileCommandType cmd) { return RFCStrings[cmd]; }
+static const char *getRFCText(RemoteFileCommandType cmd)
+{
+    if (cmd > RFCmax)
+        cmd = RFCmax;
+    return RFCStrings[cmd];
+}
 
 #define ThrottleText(throttleClass) #throttleClass
 const char *ThrottleStrings[] =
