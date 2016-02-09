@@ -182,7 +182,7 @@ protected:
         spillFile.setown(createIFile(tempName.str()));
 
         VStringBuffer spillPrefixStr("SpillableStream(%d)", SPILL_PRIORITY_SPILLABLE_STREAM); // const for now
-        rows.save(*spillFile, useCompression, spillPrefixStr.str()); // saves committed rows
+        rows.save(*spillFile, useCompression, false, spillPrefixStr.str()); // saves committed rows
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
         return true;
     }
@@ -1277,7 +1277,7 @@ static int callbackSortRev(IInterface * const *cb2, IInterface * const *cb1)
     return 1;
 }
 
-rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const char *tracingPrefix)
+rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, bool skipNulls, const char *tracingPrefix)
 {
     rowidx_t n = numCommitted();
     if (0 == n)
@@ -1313,7 +1313,6 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
         while (i<n)
         {
             const void *row = rows[i];
-            assertex(row || allowNulls);
             if (i == nextCBI)
             {
                 writer->flush();
@@ -1330,8 +1329,17 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
                 }
                 while (i == nextCBI); // loop as may be >1 IWritePosCallback at same pos
             }
-            rows[i++] = NULL;
-            writer->putRow(row); // NB: putRow takes ownership/should avoid leaking if fails
+            if (row)
+            {
+                rows[i] = NULL;
+                writer->putRow(row); // NB: putRow takes ownership/should avoid leaking if fails
+            }
+            else if (!skipNulls)
+            {
+                assertex(allowNulls);
+                writer->putRow(NULL);
+            }
+            ++i;
         }
         writer->flush();
     }
@@ -1510,7 +1518,7 @@ protected:
         GetTempName(tempName, tempPrefix.str(), true);
         Owned<IFile> iFile = createIFile(tempName.str());
         VStringBuffer spillPrefixStr("RowCollector(%d)", spillPriority);
-        spillableRows.save(*iFile, compressSpills, spillPrefixStr.str()); // saves committed rows
+        spillableRows.save(*iFile, compressSpills, false, spillPrefixStr.str()); // saves committed rows
         spillFiles.append(new CFileOwner(iFile.getLink()));
         ++overflowCount;
         sizeSpill += iFile->size();
