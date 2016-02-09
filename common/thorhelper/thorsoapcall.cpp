@@ -1649,7 +1649,11 @@ private:
         if(master->rowTransformer && master->inputpath.get())
             path.append(master->inputpath.get());
         CMatchCB matchCB(*this, url, NULL, meta);
-        Owned<IXMLParse> xmlParser = createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, false);
+        Owned<IXMLParse> xmlParser;
+        if (strieq(master->acceptType.str(), "application/json"))
+            xmlParser.setown(createJSONParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, false, true));
+        else
+            xmlParser.setown(createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, false));
         while (xmlParser->next());
     }
 
