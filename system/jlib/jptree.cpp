@@ -6713,6 +6713,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
     enum ParseStates { headerStart, nameStart, valueStart, itemStart, objAttributes, itemContent, itemEnd } state;
     bool endOfRoot;
     bool preReadItemName;
+    bool more;
     StringBuffer tag, value;
 
     void init()
@@ -6721,6 +6722,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
         stateInfo = NULL;
         endOfRoot = false;
         preReadItemName = false;
+        more = true;
     }
 
     virtual void resetState()
@@ -6916,7 +6918,6 @@ public:
     }
     bool endNode(offset_t offset, bool notify=true)
     {
-        bool more = true;
         if (stack.ordinality()<2)
         {
             state = headerStart;
@@ -6932,7 +6933,7 @@ public:
         freeStateInfo.append(*stateInfo);
         stack.pop();
         stateInfo = (stack.ordinality()) ? &stack.tos() : NULL;
-        return more;
+        return true;
     }
 
     // IPullPTreeReader
@@ -6951,6 +6952,8 @@ public:
 
     virtual bool next()
     {
+        if (!more)
+            return false;
         checkStartReadNext();
         checkSkipWS();
         switch (state)

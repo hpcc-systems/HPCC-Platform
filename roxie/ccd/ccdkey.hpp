@@ -29,6 +29,7 @@ interface IDirectReader : public ISerialStream
     virtual IThorDiskCallback *queryThorDiskCallback() = 0;
     virtual ISimpleReadStream *querySimpleStream() = 0;
     virtual unsigned queryFilePart() const = 0;
+    virtual unsigned __int64 makeFilePositionLocal(offset_t pos) = 0;
 };
 
 interface IInMemoryIndexCursor : public IThorDiskCallback, public IIndexReadContext

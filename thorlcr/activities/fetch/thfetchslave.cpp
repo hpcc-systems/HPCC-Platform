@@ -647,7 +647,7 @@ public:
         lastMatch = &lastMatches[filePartIndex];
         while (!lastMatch->get())
         {
-            if (!parser->next() && !lastMatch)
+            if (!parser->next())
             {
                 StringBuffer tmpStr;
                 throw MakeActivityException(this, 0, "%s", fetchStream->getPartName(filePartIndex, tmpStr).str());

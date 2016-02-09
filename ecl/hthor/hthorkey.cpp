@@ -2598,7 +2598,7 @@ public:
                 part->getFilename(rfn).getPath(fname);
                 throw owner.makeWrappedException(e, fname.str());
             }
-            if(!gotNext && !lastMatch) //unfortunately json parser next() has slightly different behavior, tricky, may fix later
+            if(!gotNext)
             {
                 StringBuffer fname;
                 RemoteFilename rfn;

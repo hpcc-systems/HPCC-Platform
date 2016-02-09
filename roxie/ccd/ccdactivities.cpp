@@ -1608,19 +1608,34 @@ public:
 
 // RecordProcessor used by XML read activity. We don't try to index these or optimize fixed size cases...
 
-class XmlRecordProcessor : public RecordProcessor, implements IXMLSelect
+class XmlRecordProcessor : public RecordProcessor, implements IXMLSelect, implements IThorDiskCallback
 {
 public:
     IMPLEMENT_IINTERFACE;
     XmlRecordProcessor(CRoxieXmlReadActivity &_owner, IDirectReader *_reader)
-        : RecordProcessor(NULL), owner(_owner), reader(_reader)
+        : RecordProcessor(NULL), owner(_owner), reader(_reader), fileposition(0)
     {
         helper = _owner.helper;
-        helper->setCallback(reader->queryThorDiskCallback());
+        helper->setCallback(this);
+    }
+
+    //interface IThorDiskCallback
+    virtual unsigned __int64 getFilePosition(const void * row)
+    {
+        return fileposition;
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row)
+    {
+        return reader->makeFilePositionLocal(fileposition);
+    }
+    virtual const char * queryLogicalFilename(const void * row)
+    {
+        return reader->queryThorDiskCallback()->queryLogicalFilename(row);
     }
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
     {
+        fileposition = startOffset;
         lastMatch.set(&entry);
     }
 
@@ -1646,7 +1661,7 @@ public:
                 break;
             else if (lastMatch)
             {
-                unsigned transformedSize = owner.doTransform(output, rowTransformer, lastMatch, reader->queryThorDiskCallback());
+                unsigned transformedSize = owner.doTransform(output, rowTransformer, lastMatch, this);
                 lastMatch.clear();
                 if (transformedSize)
                 {
@@ -1687,6 +1702,7 @@ protected:
 
     Owned<IColumnProvider> lastMatch;
     Owned<IDirectReader> reader;
+    unsigned __int64 fileposition;
 };
 
 IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *datafile, size32_t maxRowSize)
@@ -4499,7 +4515,7 @@ public:
         try
         {
             while(!lastMatch)
-            if(!parser->next() && !lastMatch) //unfortunately json parser next() has slightly different behavior, tricky, may fix later
+            if(!parser->next())
                 throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %" I64F "d", pos);
             IHThorXmlFetchArg *h = (IHThorXmlFetchArg *) helper;
             unsigned thisSize = h->transform(rowBuilder, lastMatch, inputData, rawpos);

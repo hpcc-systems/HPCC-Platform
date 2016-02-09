@@ -71,6 +71,26 @@ class PtrToOffsetMapper
         return fragments[a-1];
     }
 
+    FragmentInfo &findBase(offset_t pos) const
+    {
+        // MORE - could cache last hit
+        unsigned int a = 0;
+        int b = numBases;
+        int rc;
+        while ((int)a<b)
+        {
+            int i = (a+b+1)/2;
+            rc = pos - fragments[i-1].baseOffset;
+            if (rc>=0)
+                a = i;
+            else
+                b = i-1;
+        }
+        assertex(a > 0);    // or incoming value was not part of ANY fragment
+        // MORE - could also check it's in the range for this fragment
+        return fragments[a-1];
+    }
+
     PtrToOffsetMapper(const PtrToOffsetMapper &);  // Not implemented
 
 public:
@@ -130,6 +150,12 @@ public:
         const char *ptr = (const char *) _ptr;
         FragmentInfo &frag = findBase(ptr);
         return makeLocalFposOffset(frag.partNo, ptr - frag.base);
+    }
+
+    offset_t makeFilePositionLocal(offset_t pos)
+    {
+        FragmentInfo &frag = findBase(pos);
+        return makeLocalFposOffset(frag.partNo, pos - frag.baseOffset);
     }
 
     void splitPos(offset_t &offset, offset_t &size, unsigned partNo, unsigned numParts)
@@ -638,6 +664,11 @@ public:
         return baseMap.ptrToLocalFilePosition(_ptr);
     }
 
+    virtual unsigned __int64 makeFilePositionLocal(offset_t pos)
+    {
+        return baseMap.makeFilePositionLocal(pos);
+    }
+
     virtual const char * queryLogicalFilename(const void * row) 
     { 
         UNIMPLEMENTED;
@@ -815,6 +846,12 @@ public:
         assertex(curStream != NULL);
         size32_t dummy;
         return makeLocalFposOffset(thisPartIdx-1, curStream->tell() + (const char *)_ptr - (const char *)curStream->peek(1, dummy));
+    }
+
+    virtual unsigned __int64 makeFilePositionLocal(offset_t pos)
+    {
+        assertex(pos >= thisFileStartPos);
+        return makeLocalFposOffset(thisPartIdx-1, pos - thisFileStartPos);
     }
 
     virtual const char * queryLogicalFilename(const void * row) 

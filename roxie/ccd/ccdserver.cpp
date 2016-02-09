@@ -20552,7 +20552,7 @@ class CRoxieServerXmlReadActivity : public CRoxieServerDiskReadBaseActivity, imp
     Owned<IXmlToRowTransformer> rowTransformer;
     Owned<IXMLParse> xmlParser;
     Owned<IColumnProvider> lastMatch;
-    unsigned __int64 localOffset;
+    unsigned __int64 fileoffset;
 public:
     IMPLEMENT_IINTERFACE;
     CRoxieServerXmlReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
@@ -20560,7 +20560,7 @@ public:
     {
         compoundHelper = NULL;
         readHelper = (IHThorXmlReadArg *)&helper;
-        localOffset = 0;
+        fileoffset = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -20590,22 +20590,22 @@ public:
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
     {
-        localOffset = startOffset;
+        fileoffset = startOffset;
         lastMatch.set(&entry);
     }
 
     //interface IThorDiskCallback
     virtual unsigned __int64 getFilePosition(const void * row)
     {
-        return localOffset;
+        return fileoffset;
     }
     virtual unsigned __int64 getLocalFilePosition(const void * row)
     {
-        return localOffset;
+        return reader->makeFilePositionLocal(fileoffset);
     }
     virtual const char * queryLogicalFilename(const void * row)
     {
-        return varFileInfo ? varFileInfo->queryFileName() : NULL;
+        return reader->queryThorDiskCallback()->queryLogicalFilename(row);
     }
 
     virtual const void *nextRow()
@@ -20622,12 +20622,14 @@ public:
                 //call to next() will callback on the IXmlSelect interface
                 bool gotNext = false;
                 gotNext = xmlParser->next();
-                if (lastMatch)
+                if(!gotNext)
+                    eof = true;
+                else if (lastMatch)
                 {
                     RtlDynamicRowBuilder rowBuilder(rowAllocator);
                     unsigned sizeGot = rowTransformer->transform(rowBuilder, lastMatch, this);
                     lastMatch.clear();
-                    localOffset = 0;
+                    fileoffset = 0;
                     if (sizeGot)
                     {
                         OwnedConstRoxieRow ret = rowBuilder.finalizeRowClear(sizeGot); 
@@ -20647,8 +20649,6 @@ public:
                         return ret.getClear();
                     }
                 }
-                if(!gotNext) //currently slightly different behavior for json
-                    eof = true;
             }
             return NULL;
         }
