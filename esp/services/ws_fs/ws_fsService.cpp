@@ -2280,6 +2280,9 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
 
 void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, StringBuffer& destFileOut, StringBuffer& mask)
 {
+    if (destFileIn && *destFileIn)
+        destFileOut.set(destFileIn);
+
     if (!ip || !*ip)
         return;
 
