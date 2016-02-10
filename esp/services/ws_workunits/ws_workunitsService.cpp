@@ -200,7 +200,8 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                     ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     {
                         cw.clear();
-                        factory->deleteWorkUnit(wuid);
+                        if (!factory->deleteWorkUnit(wuid))
+                            throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "%s: Workunit cannot be deleted. Please check ESP log.", wuid);
                         AuditSystemAccess(context.queryUserId(), true, "Deleted %s", wuid);
                     }
                     break;
@@ -1122,7 +1123,8 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         resp.setErrors(errors);
         cw.clear();
 
-        factory->deleteWorkUnit(wuid.str());
+        if (!factory->deleteWorkUnit(wuid.str()))
+            throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "%s: Workunit cannot be deleted. Please check ESP log.", wuid.str());
     }
     catch(IException* e)
     {
@@ -1210,7 +1212,8 @@ bool CWsWorkunitsEx::onWUCompileECL(IEspContext &context, IEspWUCompileECLReques
             resp.setDependencies(dependencies);
         }
         cw.clear();
-        factory->deleteWorkUnit(wuid.str());
+        if (!factory->deleteWorkUnit(wuid.str()))
+            throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "%s: Workunit cannot be deleted. Please check ESP log.", wuid.str());
     }
     catch(IException* e)
     {
@@ -1281,7 +1284,8 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
         wu->commit();
         wu.clear();
 
-        factory->deleteWorkUnit(wuid.str());
+        if (!factory->deleteWorkUnit(wuid.str()))
+            throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "%s: Workunit cannot be deleted. Please check ESP log.", wuid.str());
     }
     catch(IException* e)
     {
