@@ -456,6 +456,12 @@ void CHttpMessage::addParameter(const char* paramname, const char *value)
 
     m_queryparams->setProp(paramname, value);
     m_paramCount++;
+    if (!m_context || strieq(paramname, "__querystring"))
+        return;
+    if (value && *value)
+        m_context->addExtraTraceSummaryValue(paramname, value);
+    else
+        m_context->addExtraTraceSummaryValue(NULL, paramname);
 }
 
 StringBuffer& CHttpMessage::getParameter(const char* paramname, StringBuffer& paramval)

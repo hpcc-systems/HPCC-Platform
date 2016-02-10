@@ -1250,8 +1250,6 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
 {
     try
     {
-        DBGLOG("WUGetDependancyTrees");
-
         unsigned int timeMilliSec = 500;
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -3222,8 +3220,6 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
 {
     try
     {
-        DBGLOG("WUShowScheduled");
-
         const char *clusterName = req.getCluster();
         const char *eventName = req.getEventName();
         const char *state = req.getState();
@@ -3998,7 +3994,6 @@ void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char 
         }
         buildFullDllPath(dllpath.clear(), dllname.clear(), dir, name.str(), ext.str(), ++copy);
     }
-    DBGLOG("Writing workunit dll: %s", dllpath.str());
     Owned<IFile> f = createIFile(dllpath.str());
     Owned<IFileIO> io = f->open(IFOcreate);
     io->write(0, obj.length(), obj.toByteArray());

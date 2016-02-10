@@ -129,6 +129,34 @@ int CSoapService::processHeader(CHeader* header, IEspContext* ctx)
     return returnValue;
 }
 
+void CSoapService::addMessageToTraceSummary(IEspContext* ctx, CSoapValue* soapValue, const char* parent)
+{
+    const char* name = soapValue->get_name();
+    if (!name || !*name)//Invalid tag
+        return;
+
+    StringBuffer nameWithPath;
+    if (parent && *parent)
+        nameWithPath.append(parent).append(".");
+    if (!streq(name, ".")) //filter out the top layer
+        nameWithPath.append(name);
+
+    SoapValueArray* children = soapValue->query_children();
+    if (children && !children->empty())
+    {
+        ForEachItemIn(i, *children)
+            addMessageToTraceSummary(ctx, &children->item(i), nameWithPath.str());
+        return;
+    }
+    if (nameWithPath.isEmpty())
+        return;
+
+    StringBuffer value = soapValue->query_value(NULL);
+    value.trim();
+    if (!value.isEmpty() && !streq(value.str(), "\n"))
+        ctx->addExtraTraceSummaryValue(nameWithPath.str(), value.str());
+}
+
 int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
 {
     ESP_TIME_SECTION("CSoapService::processRequest()");
@@ -228,6 +256,8 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
 
     DBGLOG("SOAP method <%s> from %s@%s.", rpc_call->get_name(),  (userId&&*userId)?userId:"unknown",
         (peerStr.length()>0)?peerStr.str():"unknown");
+    ctx->addExtraTraceSummaryValue("SOAP method", rpc_call->get_name());
+    addMessageToTraceSummary(ctx, rpc_call->get_value(NULL), NULL);
 
     // call the rpc and set the response
     if(m_soapbinding != NULL)

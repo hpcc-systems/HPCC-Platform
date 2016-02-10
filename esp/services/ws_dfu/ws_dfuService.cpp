@@ -172,7 +172,6 @@ bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEs
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUSearch User=%s",username.str());
 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
@@ -312,7 +311,6 @@ bool CWsDfuEx::onDFUQuery(IEspContext &context, IEspDFUQueryRequest & req, IEspD
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUQuery User=%s",username.str());
 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
@@ -341,7 +339,6 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUInfo User=%s",username.str());
 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
@@ -377,7 +374,6 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUSpace User=%s",username.str());
 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
@@ -1486,14 +1482,11 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
 {
     try
     {
-        DBGLOG("CWsDfuEx::onDFUDefFile\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to access DFUDefFile. Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUDefFile User=%s",username.str());
 
         StringBuffer rawStr,returnStr;
 
@@ -1547,7 +1540,6 @@ void CWsDfuEx::xsltTransformer(const char* xsltPath,StringBuffer& source,StringB
 
 void CWsDfuEx::getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuffer& returnStr)
 {
-    DBGLOG("CWsDfuEx::getDefFile\n");
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc);
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",FileName);
@@ -1822,8 +1814,6 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name, const char *cluster,
     const char *description,IEspDFUFileDetail& FileDetails)
 {
-    DBGLOG("CWsDfuEx::doGetFileDetails\n");
-
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, false, false, true); // lock super-owners
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
@@ -2257,7 +2247,6 @@ bool CWsDfuEx::onDFUFileView(IEspContext &context, IEspDFUFileViewRequest &req, 
         Owned<IUserDescriptor> userdesc;
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUFileView User=%s",username.str());
 
         if(username.length() > 0)
         {
@@ -5196,9 +5185,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
     if (schemaText2.length() < 1)
         return;
 
-//DBGLOG("First schema returns:%s", schemaText.str());
-//DBGLOG("Second schema returns:%s", schemaText2.str());
-
     Owned<IPropertyTree> schema = createPTreeFromXMLString(schemaText.str());
     Owned<IPropertyTree> schema2 = createPTreeFromXMLString(schemaText2.str());
     if (!schema || !schema2)
@@ -5236,11 +5222,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
     IPropertyTree*  rows = schema->queryBranch("xs:element[@name=\"Dataset\"]/xs:complexType/xs:sequence/xs:element[@name=\"Row\"]/xs:complexType/xs:sequence");
     if (!rows)
         return;
-
-//  StringBuffer schemaText4;
-//  toXML(schema, schemaText4);
-
-//DBGLOG("First schema returns:%s", schemaText4.str());
 
     //Find out labels used for column mapping
     columnsDisplay.kill();
@@ -5349,8 +5330,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
     //Convert schema tree to schame now
     schemaText.clear();
     toXML(schema, schemaText);
-
-//DBGLOG("Merged schema returns:%s", schemaText.str());
     return;
 }
 
@@ -5561,7 +5540,6 @@ int CWsDfuEx::browseRelatedFileDataSet(double version, IRelatedBrowseFile * file
                 StringBuffer text;
                 StringBufferAdaptor adaptor2(text);
                 cursor->getXmlRow(adaptor2);
-//DBGLOG("Data row returns:%s", text.str());
 
 #ifdef TESTDATASET
 text.clear();
@@ -5648,7 +5626,6 @@ rows++;
                         if (text1.length() > 0)
                         {
                             mergeDataRow(text0, text, text1, columnsHide);
-    //DBGLOG("New row returns:%s", text0.str());
                         }
                         dataSetOutput.append(text0);
                     }

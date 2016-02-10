@@ -261,6 +261,12 @@ int CEspHttpServer::processRequest()
         IEspContext* ctx = m_request->queryContext();
         ctx->setServiceName(serviceName.str());
 
+        VStringBuffer traceStr("%s", method.str());
+        const char* contextPath = ctx->getContextPath();
+        if (contextPath && *contextPath)
+            traceStr.append(" ").append(contextPath);
+        ctx->addExtraTraceSummaryValue("1st_ln", traceStr.str());
+
         bool isSoapPost=(stricmp(method.str(), POST_METHOD) == 0 && m_request->isSoapMessage());
         if (!isSoapPost)
         {

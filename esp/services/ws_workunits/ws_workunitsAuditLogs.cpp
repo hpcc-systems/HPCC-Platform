@@ -1503,8 +1503,6 @@ bool CWsWorkunitsEx::onWUClusterJobQueueXLS(IEspContext &context, IEspWUClusterJ
 {
     try
     {
-        DBGLOG("WUClusterJobQueueXLS");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         getUserWuAccessFlags(context, accessOwn, accessOthers, true);
@@ -1535,8 +1533,6 @@ bool CWsWorkunitsEx::onWUClusterJobQueueLOG(IEspContext &context,IEspWUClusterJo
 {
     try
     {
-        DBGLOG("WUClusterJobQueueLOG");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         getUserWuAccessFlags(context, accessOwn, accessOthers, true);
@@ -1590,8 +1586,6 @@ bool CWsWorkunitsEx::onWUClusterJobXLS(IEspContext &context, IEspWUClusterJobXLS
 {
     try
     {
-        DBGLOG("WUClusterJobXLS");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         getUserWuAccessFlags(context, accessOwn, accessOthers, true);
@@ -1622,8 +1616,6 @@ bool CWsWorkunitsEx::onWUClusterJobSummaryXLS(IEspContext &context, IEspWUCluste
 {
     try
     {
-        DBGLOG("WUClusterJobSummaryXLS");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         getUserWuAccessFlags(context, accessOwn, accessOthers, true);
