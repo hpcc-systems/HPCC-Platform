@@ -921,6 +921,17 @@ void CFile::setReadOnly(bool ro)
 #endif
 }
 
+void CFile::setFilePermissions(unsigned fPerms)
+{
+#ifndef _WIN32
+    struct stat info;
+    if (stat(filename, &info) != 0)
+        throw makeErrnoExceptionV("CFile::setFilePermissions() %s", filename.get());
+    if (chmod(filename, fPerms&0777) != 0)
+        throw makeErrnoExceptionV("CFile::setFilePermissions() %s", filename.get());
+#endif
+}
+
 
 offset_t CFile::size()
 {
@@ -1388,7 +1399,12 @@ public:
     virtual void setReadOnly(bool ro)
     {
         connect();
-        ifile->setReadOnly(ro);             
+        ifile->setReadOnly(ro);
+    }
+    virtual void setFilePermissions(unsigned fPerms)
+    {
+        connect();
+        ifile->setFilePermissions(fPerms);
     }
     virtual offset_t size()
     {
