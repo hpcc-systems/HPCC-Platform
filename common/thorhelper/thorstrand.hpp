@@ -28,12 +28,12 @@ class IStrandJunction : extends IInterface
 public:
     virtual IEngineRowStream * queryOutput(unsigned n) = 0;
     virtual void setInput(unsigned n, IEngineRowStream * _stream) = 0;
-    virtual void ready() = 0;
+    virtual void start() = 0;
     virtual void reset() = 0;
     virtual void abort() = 0;
 };
 
-inline void startJunction(IStrandJunction * junction) { if (junction) junction->ready(); }
+inline void startJunction(IStrandJunction * junction) { if (junction) junction->start(); }
 inline void resetJunction(IStrandJunction * junction) { if (junction) junction->reset(); }
 
 interface IManyToOneRowStream : extends IRowStream

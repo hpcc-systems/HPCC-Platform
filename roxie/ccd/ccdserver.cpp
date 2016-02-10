@@ -1623,7 +1623,7 @@ protected:
     IArrayOf<StrandProcessor> strands;
     Owned<IStrandBranch> branch;
     Owned<IStrandJunction> splitter;
-    unsigned active;  // SHould really be atomic
+    std::atomic<unsigned> active;
 public:
     CRoxieServerStrandedActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const StrandOptions &_strandOptions)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
@@ -1645,7 +1645,7 @@ public:
 
     virtual void reset()
     {
-        // assertex(active==0);  Disable for now as we know that stop() is nt being called on the strands.
+        assertex(active==0);
         ForEachItemIn(idx, strands)
             strands.item(idx).reset();
         resetJunction(splitter);
@@ -1655,8 +1655,9 @@ public:
     virtual void stop()
     {
         // Called from the strands... which should ensure that stop is not called more than once per strand
-        if (active);
-            active--;
+        //The first strand to call
+        if (active)
+            --active;
         if (!active)
             CRoxieServerActivity::stop();
     }
