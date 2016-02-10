@@ -27,6 +27,7 @@
 #include "thorcommon.ipp"
 #include "eclrtl.hpp"
 #include "rtlread_imp.hpp"
+#include <algorithm>
 
 #include "thorstep.hpp"
 
@@ -665,6 +666,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKtopn:                   return "Top N";
     case TAKmerge:                  return "Merge";
     case TAKxmlfetch:               return "Xml Fetch";
+    case TAKjsonfetch:              return "Json Fetch";
     case TAKxmlparse:               return "Parse Xml";
     case TAKkeyeddistribute:        return "Keyed Distribute";
     case TAKjoinlight:              return "Lightweight Join";
@@ -1677,6 +1679,43 @@ IDiskMerger *createDiskMerger(IRowInterfaces *rowInterfaces, IRowLinkCounter *li
     return new CDiskMerger(rowInterfaces, linker, tempnamebase);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+void ActivityTimeAccumulator::addStatistics(IStatisticGatherer & builder) const
+{
+    if (totalCycles)
+    {
+        builder.addStatistic(StWhenFirstRow, firstRow);
+        builder.addStatistic(StTimeElapsed, elapsed());
+        builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
+        builder.addStatistic(StTimeFirstExecute, latency());
+    }
+}
+
+void ActivityTimeAccumulator::merge(const ActivityTimeAccumulator & other)
+{
+    if (other.totalCycles)
+    {
+        if (totalCycles)
+        {
+            //Record the earliest start, the latest end, the longest latencies
+            cycle_t thisLatency = latencyCycles();
+            cycle_t otherLatency = other.latencyCycles();
+            cycle_t maxLatency = std::max(thisLatency, otherLatency);
+            if (startCycles > other.startCycles)
+            {
+                startCycles = other.startCycles;
+                firstRow =other.firstRow;
+            }
+            firstExitCycles = startCycles + maxLatency;
+            if (endCycles < other.endCycles)
+                endCycles = other.endCycles;
+            totalCycles += other.totalCycles;
+        }
+        else
+            *this = other;
+    }
+}
 
 
 

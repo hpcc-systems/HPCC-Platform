@@ -131,9 +131,6 @@ interface THORHELPER_API IDiskMerger : extends IInterface
 
 extern THORHELPER_API IDiskMerger *createDiskMerger(IRowInterfaces *rowInterfaces, IRowLinkCounter *linker, const char *tempnamebase);
 
-extern THORHELPER_API void testDiskSort();
-
-
 
 #define TIME_ACTIVITIES
 class ActivityTimeAccumulator
@@ -142,11 +139,7 @@ class ActivityTimeAccumulator
 public:
     ActivityTimeAccumulator()
     {
-        startCycles = 0;
-        totalCycles = 0;
-        endCycles = 0;
-        firstRow = 0;
-        firstExitCycles = 0;
+        reset();
     }
 public:
     cycle_t startCycles; // Wall clock time of first entry to this activity
@@ -158,17 +151,19 @@ public:
     // Return the total amount of time (in nanoseconds) spent in this activity (first entry to last exit)
     inline unsigned __int64 elapsed() const { return cycle_to_nanosec(endCycles-startCycles); }
     // Return the total amount of time (in nanoseconds) spent in the first call of this activity (first entry to first exit)
-    inline unsigned __int64 latency() const { return cycle_to_nanosec(firstExitCycles-startCycles); }
+    inline unsigned __int64 latency() const { return cycle_to_nanosec(latencyCycles()); }
+    inline cycle_t latencyCycles() const { return firstExitCycles-startCycles; }
 
-    void addStatistics(IStatisticGatherer & builder) const
+    void addStatistics(IStatisticGatherer & builder) const;
+    void merge(const ActivityTimeAccumulator & other);
+
+    void reset()
     {
-        if (totalCycles)
-        {
-            builder.addStatistic(StWhenFirstRow, firstRow);
-            builder.addStatistic(StTimeElapsed, elapsed());
-            builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
-            builder.addStatistic(StTimeFirstExecute, latency());
-        }
+        startCycles = 0;
+        totalCycles = 0;
+        endCycles = 0;
+        firstRow = 0;
+        firstExitCycles = 0;
     }
 };
 

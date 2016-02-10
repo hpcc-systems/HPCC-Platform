@@ -109,6 +109,7 @@ void ProcessSlaveActivity::main()
                 e->setActivityKind(container.getKind());
                 e->setActivityId(container.queryId());
             }
+            exception.set(e);
         }
         else
         {
@@ -120,9 +121,9 @@ void ProcessSlaveActivity::main()
                 e = e2;
             }
             _e->Release();
+            exception.setown(e);
         }
         ActPrintLog(e);
-        exception.setown(e);
     }
     catch (std::exception & es)
     {
@@ -140,12 +141,19 @@ void ProcessSlaveActivity::main()
         ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "Unknown exception thrown in process()");
         exception.setown(MakeThorFatal(NULL, TE_UnknownException, "FATAL: Unknown exception thrown by ProcessThread"));
     }
+    if (exception)
+        fireException(exception);
     try { endProcess(); }
-    catch (IException *e)
+    catch (IException *_e)
     {
-        ActPrintLog(e, "Exception calling activity endProcess");
-        fireException(e);
-        exception.setown(e);
+        ActPrintLog(_e, "Exception calling activity endProcess");
+        IThorException *e = QUERYINTERFACE(_e, IThorException);
+        if (e)
+            exception.set(e);
+        else
+            exception.setown(MakeActivityException(this, _e));
+        _e->Release();
+        fireException(exception);
     }
 }
 
@@ -631,6 +639,7 @@ public:
                 ret = createCsvFetchSlave(this);
                 break;
             case TAKxmlfetch:
+            case TAKjsonfetch:
                 ret = createXmlFetchSlave(this);
                 break;
             case TAKthroughaggregate:

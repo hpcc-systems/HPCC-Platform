@@ -32,11 +32,11 @@ inline static void spinPause() { __pause(); }
 # else
 inline static void spinPause() { _mm_pause(); }
 # endif
+#elif defined(_ARCH_PPC64EL_)
+inline static void spinPause() { } // MORE: Is there an equivalent?
+#elif defined(_ARCH_ARM64_)
+inline static void spinPause() { } // MORE: Is there an equivalent?
 #else
-// _ARCH_ARM64_ || _ARCH_ARM32_
-// inline static void spinPause() { __nop(); }
-// _ARCH_PPC64EL_
-// __asm__ __volatile__ ("or 0,0,0");
 inline static void spinPause() { }
 #endif
 

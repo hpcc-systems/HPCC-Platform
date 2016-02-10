@@ -3064,11 +3064,6 @@ void CActivityBase::processAndThrowOwnedException(IException * _e)
         e = MakeActivityException(this, _e);
         _e->Release();
     }
-    if (!e->queryNotified())
-    {
-        fireException(e);
-        e->setNotified();
-    }
     throw e;
 }
 

@@ -281,7 +281,17 @@ public:
                 return NULL;
             }
             CThorExpandingRowArray rows(*this, this);
-            Owned<IRowStream> rowStream = groupLoader->loadGroup(input, abortSoon, &rows);
+            try
+            {
+                groupLoader->loadGroup(input, abortSoon, &rows);
+            }
+            catch (IException *e)
+            {
+                if (!isOOMException(e))
+                    throw e;
+                IOutputMetaData *inputOutputMeta = input->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta();
+                throw checkAndCreateOOMContextException(this, e, "loading group for filter group operation", groupLoader->numRows(), inputOutputMeta, groupLoader->probeRow(0));
+            }
             if (rows.ordinality())
             {
                 // JCSMORE - if isValid would take a stream, group wouldn't need to be in mem.
@@ -348,7 +358,17 @@ public:
 #endif
 
         CThorExpandingRowArray rows(*this, this);
-        groupStream.setown(groupLoader->loadGroup(input, abortSoon, &rows));
+        try
+        {
+            groupStream.setown(groupLoader->loadGroup(input, abortSoon, &rows));
+        }
+        catch (IException *e)
+        {
+            if (!isOOMException(e))
+                throw e;
+            IOutputMetaData *inputOutputMeta = input->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta();
+            throw checkAndCreateOOMContextException(this, e, "loading group for filter group operation", groupLoader->numRows(), inputOutputMeta, groupLoader->probeRow(0));
+        }
         if (rows.ordinality())
         {
             // JCSMORE - if isValid would take a stream, group wouldn't need to be in mem.

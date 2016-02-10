@@ -3051,6 +3051,12 @@ void stopMPServer()
     initMyNode(0);
 }
 
+bool hasMPServerStarted()
+{
+    CriticalBlock block(CGlobalMPServer::sect);
+    return globalMPServer != NULL;
+}
+
 IInterCommunicator &queryWorldCommunicator()
 {
     CriticalBlock block(CGlobalMPServer::sect);

@@ -1310,13 +1310,13 @@ public:
     {
         if (extra.embedded)
         {
-            return factory->lookupGraph(extra.embeddedGraphName, probeManager, *this, parentActivity);
+            return factory->lookupGraph(this, extra.embeddedGraphName, probeManager, *this, parentActivity);
         }
         else
         {
             Owned<IQueryFactory> libraryQuery = factory->lookupLibrary(extra.libraryName, extra.interfaceHash, *this);
             assertex(libraryQuery);
-            return libraryQuery->lookupGraph("graph1", probeManager, *this, parentActivity);
+            return libraryQuery->lookupGraph(this, "graph1", probeManager, *this, parentActivity);
         }
     }
 
@@ -1330,8 +1330,8 @@ public:
         }
         else if (probeAllRows || probeQuery != NULL)
             probeManager.setown(createProbeManager());
-        graph.setown(factory->lookupGraph(graphName, probeManager, *this, NULL));
-        graph->onCreate(this, NULL);  // MORE - is that right
+        graph.setown(factory->lookupGraph(this, graphName, probeManager, *this, NULL));
+        graph->onCreate(NULL);  // MORE - is that right
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
         if (workUnit)
@@ -1576,6 +1576,11 @@ public:
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
         return allocatorMetaCache->ensure(meta, activityId, roxiemem::RHFnone);
+    }
+
+    virtual IEngineRowAllocator *getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+    {
+        return allocatorMetaCache->ensure(meta, activityId, flags);
     }
 
     virtual const char *cloneVString(const char *str) const

@@ -888,7 +888,14 @@ dfuplus action=dspray srcname=le::imagedb
           <title>Add Operations:</title>
 
           <para>The <emphasis role="bold">add</emphasis> operation adds a new
-          logical file to the system data store.</para>
+          logical file to the system data store. </para>
+
+          <para>This also allows you to restore a superfile <indexterm>
+              <primary>restore a superfile</primary>
+            </indexterm>whose information was previously exported using the
+          savexml action. This is especially useful in a Cloud implementation
+          where files are stored in a bucket until a new instance is
+          started.</para>
 
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">add</emphasis> <emphasis>operation</emphasis>:</para>
@@ -904,8 +911,9 @@ dfuplus action=dspray srcname=le::imagedb
                     <entry><emphasis><emphasis><emphasis><emphasis><emphasis>srcxml</emphasis>
                     </emphasis></emphasis></emphasis></emphasis></entry>
 
-                    <entry>The logical name of the source XML file map
-                    (typically from a previous savexml operation).</entry>
+                    <entry>The path and name of the source XML file containing
+                    exported logical or superfile information (typically from
+                    a previous savexml operation).</entry>
                   </row>
 
                   <row>
@@ -969,7 +977,9 @@ dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>dfuplus action=add srcxml=flattimezones.xml dstname=flattimezones.txt</programlisting>
+          <programlisting>dfuplus action=add srcxml=flattimezones.xml dstname=flattimezones.txt
+dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
+</programlisting>
 
           <para></para>
         </sect3>
@@ -1212,7 +1222,12 @@ dfuplus action=dspray srcname=le::imagedb
           <title>Savexml Operations:</title>
 
           <para>The <emphasis role="bold">savexml</emphasis> operation saves
-          the logical file map to an XML file.</para>
+          the logical file map to an XML file. </para>
+
+          <para>This feature also allows you to export the metadata from a
+          superfile and then use it later to restore a superfile. This is
+          especially useful in an Cloud implementation where files are stored
+          in a bucket until a new instance is started.</para>
 
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">savexml</emphasis>
@@ -1233,7 +1248,8 @@ dfuplus action=dspray srcname=le::imagedb
                 <row>
                   <entry><emphasis>srcname</emphasis></entry>
 
-                  <entry>The logical name of the source file.</entry>
+                  <entry>The logical name of the source file. This can be the
+                  logical name of a superfile.</entry>
                 </row>
 
                 <row>

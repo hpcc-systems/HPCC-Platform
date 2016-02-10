@@ -238,10 +238,11 @@ public:
     virtual void rename(const char *newTail) { UNIMPLEMENTED; }
     virtual void move(const char *newName) { UNIMPLEMENTED; }
     virtual void setReadOnly(bool ro) { UNIMPLEMENTED; }
+    virtual void setFilePermissions(unsigned fPerms) { UNIMPLEMENTED; }
     virtual bool setCompression(bool set) { UNIMPLEMENTED; }
     virtual offset_t compressedSize() { UNIMPLEMENTED; }
     virtual unsigned getCRC() { UNIMPLEMENTED; }
-    virtual void setCreateFlags(unsigned cflags) { UNIMPLEMENTED; }
+    virtual void setCreateFlags(unsigned short cflags) { UNIMPLEMENTED; }
     virtual void setShareMode(IFSHmode shmode) { UNIMPLEMENTED; }
     virtual bool createDirectory() { UNIMPLEMENTED; }
     virtual IDirectoryDifferenceIterator *monitorDirectory(

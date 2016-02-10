@@ -817,27 +817,36 @@ public:
         if (!gathered)
         {
             gathered = true;
-            ForEachItemIn(p, partDescs)
+            try
             {
-                IPartDescriptor &partDesc = partDescs.item(p);
-                Owned<IKeyIndex> keyIndex = openKeyPart(this, partDesc);
-                Owned<IKeyManager> klManager = getKeyManager(keyIndex, helper, fixedDiskRecordSize);
-                setManager(klManager);
-                while (klManager->lookup(true))
+                ForEachItemIn(p, partDescs)
                 {
-                    ++progress;
-                    noteStats(klManager->querySeeks(), klManager->queryScans());
-                    helper->processRow(klManager->queryKeyBuffer(callback.getFPosRef()), this);
-                    callback.finishedRow();
+                    IPartDescriptor &partDesc = partDescs.item(p);
+                    Owned<IKeyIndex> keyIndex = openKeyPart(this, partDesc);
+                    Owned<IKeyManager> klManager = getKeyManager(keyIndex, helper, fixedDiskRecordSize);
+                    setManager(klManager);
+                    while (klManager->lookup(true))
+                    {
+                        ++progress;
+                        noteStats(klManager->querySeeks(), klManager->queryScans());
+                        helper->processRow(klManager->queryKeyBuffer(callback.getFPosRef()), this);
+                        callback.finishedRow();
+                    }
+                    callback.clearManager();
                 }
-                callback.clearManager();
+                ActPrintLog("INDEXGROUPAGGREGATE: Local aggregate table contains %d entries", localAggTable->elementCount());
+                if (!container.queryLocal() && container.queryJob().querySlaves()>1)
+                {
+                    BooleanOnOff tf(merging);
+                    bool ordered = 0 != (TDRorderedmerge & helper->getFlags());
+                    localAggTable.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggTable, mpTag, ordered));
+                }
             }
-            ActPrintLog("INDEXGROUPAGGREGATE: Local aggregate table contains %d entries", localAggTable->elementCount());
-            if (!container.queryLocal() && container.queryJob().querySlaves()>1)
+            catch (IException *e)
             {
-                BooleanOnOff tf(merging);
-                bool ordered = 0 != (TDRorderedmerge & helper->getFlags());
-                localAggTable.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggTable, mpTag, ordered));
+                if (!isOOMException(e))
+                    throw e;
+                throw checkAndCreateOOMContextException(this, e, "aggregating using hash table", localAggTable->elementCount(), helper->queryDiskRecordSize(), NULL);
             }
         }       
         Owned<AggregateRowBuilder> next = localAggTable->nextResult();

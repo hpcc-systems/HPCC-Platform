@@ -84,6 +84,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(GENERATE_COVERAGE_INFO "Generate coverage info for gcov" OFF)
   option(USE_SIGNED_CHAR "Build system with default char type is signed" OFF)
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
+  # Generates code that is more efficient, but will cause problems if target platforms do not support it.
+  if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    option(USE_INLINE_TSC "Inline calls to read TSC (time stamp counter)" ON)
+  else()
+    option(USE_INLINE_TSC "Inline calls to read TSC (time stamp counter)" OFF)
+  endif()
 
   # Plugin options
   option(REMBED "Create a package with ONLY the R plugin" OFF)
@@ -253,6 +259,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   message ("-- 64bit architecture is ${ARCH64BIT}")
 
   set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG -DDEBUG")
+
+  IF (USE_INLINE_TSC)
+    add_definitions (-DINLINE_GET_CYCLES_NOW)
+  ENDIF()
 
   set (CMAKE_THREAD_PREFER_PTHREAD 1)
   find_package(Threads)

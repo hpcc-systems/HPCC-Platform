@@ -56,6 +56,7 @@ interface IDirectoryIterator : extends IIteratorOf<IFile>
 #define DEFAULT_COPY_BLKSIZE  0x100000
 enum CFflags { CFnone=0x0, CFflush_read=0x1, CFflush_write=0x2, CFflush_rdwr=0x3 };
 
+#define IFUnone         0xffff
 
 #define IDDIunchanged   1
 #define IDDImodified    2
@@ -95,11 +96,12 @@ interface IFile :extends IInterface
     virtual void rename(const char *newTail) = 0;       // tail only preferred but can have full path if exactly matches existing dir
     virtual void move(const char *newName) = 0;         // can move between directories on same node (NB currently not always supported on remote files!)
     virtual void setReadOnly(bool ro) = 0;
+    virtual void setFilePermissions(unsigned fPerms) = 0;
     virtual offset_t size() = 0;
     virtual bool setCompression(bool set) = 0;
     virtual offset_t compressedSize() = 0;
     virtual unsigned getCRC() = 0;
-    virtual void setCreateFlags(unsigned cflags) =0;    // I_S*
+    virtual void setCreateFlags(unsigned short cflags) =0;    // I_S*
     virtual void setShareMode(IFSHmode shmode) =0;
 
 // Directory functions

@@ -163,6 +163,9 @@ enum {
     RFCcopysection,
     RFCtreecopy,
     RFCtreecopytmp,
+    RFCsetthrottle,
+    RFCsetthrottle2,
+    RFCsetfileperms,
 #endif
     RFCmax,
     RFCnone = 255

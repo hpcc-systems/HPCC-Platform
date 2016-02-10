@@ -245,12 +245,13 @@ static StringBuffer &getLocalOrRemoteName(StringBuffer &name,const RemoteFilenam
 CFile::CFile(const char * _filename)
 {
     filename.set(_filename);
-    flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)<<16);
+    flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
 }
 
-void CFile::setCreateFlags(unsigned cflags)
+void CFile::setCreateFlags(unsigned short cflags)
 {
-    flags |= (cflags<<16);
+    flags &= 0xffff;
+    flags |= ((unsigned)cflags<<16);
 }
 
 void CFile::setShareMode(IFSHmode shmode)
@@ -920,6 +921,17 @@ void CFile::setReadOnly(bool ro)
 #endif
 }
 
+void CFile::setFilePermissions(unsigned fPerms)
+{
+#ifndef _WIN32
+    struct stat info;
+    if (stat(filename, &info) != 0)
+        throw makeErrnoExceptionV("CFile::setFilePermissions() %s", filename.get());
+    if (chmod(filename, fPerms&0777) != 0)
+        throw makeErrnoExceptionV("CFile::setFilePermissions() %s", filename.get());
+#endif
+}
+
 
 offset_t CFile::size()
 {
@@ -1387,7 +1399,12 @@ public:
     virtual void setReadOnly(bool ro)
     {
         connect();
-        ifile->setReadOnly(ro);             
+        ifile->setReadOnly(ro);
+    }
+    virtual void setFilePermissions(unsigned fPerms)
+    {
+        connect();
+        ifile->setFilePermissions(fPerms);
     }
     virtual offset_t size()
     {
@@ -1498,7 +1515,7 @@ public:
         return ifile->getCRC();
     }
 
-    void setCreateFlags(unsigned cflags)
+    void setCreateFlags(unsigned short cflags)
     {
         ifile->setCreateFlags(cflags);
     }

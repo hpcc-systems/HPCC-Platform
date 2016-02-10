@@ -30,9 +30,6 @@ struct IInputBase : public IInterface //base for IFinalRoxieInput and IHThorInpu
 {
     virtual IOutputMetaData * queryOutputMeta() const = 0;
     virtual IInputSteppingMeta * querySteppingMeta() { return NULL; }
-
-    // These will need some thought
-    virtual IEngineRowStream &queryStream() = 0;
 };
 
 //---------------------------------------------------

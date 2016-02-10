@@ -312,6 +312,7 @@ enum {
     RFCsetthrottle, // legacy version
 // 1.9
     RFCsetthrottle2,
+    RFCsetfileperms,
     RFCmax,
     RFCunknown = 255 // 0 would have been more sensible, but can't break backward compatibility
 };
@@ -359,6 +360,7 @@ const char *RFCStrings[] =
     RFCText(RFCtreecopytmp),
     RFCText(RFCsetthrottle), // legacy version
     RFCText(RFCsetthrottle2),
+    RFCText(RFCsetfileperms),
     RFCText(RFCunknown),
 };
 static const char *getRFCText(RemoteFileCommandType cmd) { return RFCStrings[cmd]; }
@@ -1530,7 +1532,7 @@ public:
     CRemoteFile(const SocketEndpoint &_ep, const char * _filename)
         : CRemoteBase(_ep, _filename)
     {
-        flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR)<<16);
+        flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
     }
 
     bool exists()
@@ -1743,6 +1745,14 @@ public:
         sendRemoteCommand(sendBuffer, replyBuffer);
     }
 
+    void setFilePermissions(unsigned fPerms)
+    {
+        MemoryBuffer sendBuffer;
+        initSendBuffer(sendBuffer);
+        MemoryBuffer replyBuffer;
+        sendBuffer.append((RemoteFileCommandType)RFCsetfileperms).append(filename).append(fPerms);
+        sendRemoteCommand(sendBuffer, replyBuffer);
+    }
 
     offset_t size()
     {
@@ -1920,15 +1930,26 @@ public:
         return crc;
     }
 
-    void setCreateFlags(unsigned cflags)
+    void setCreateFlags(unsigned short cflags)
     {
-        flags |= (cflags<<16);
+        flags &= 0xffff;
+        flags |= ((unsigned)cflags<<16);
+    }
+
+    unsigned short getCreateFlags()
+    {
+        return (unsigned short)(flags>>16);
     }
 
     void setShareMode(IFSHmode shmode)
     {
         flags &= ~(IFSHfull|IFSHread);
         flags |= (unsigned)(shmode&(IFSHfull|IFSHread));
+    }
+
+    unsigned short getShareMode()
+    {
+        return (unsigned short)(flags&0xffff);
     }
 
     void remoteExtractBlobElements(const char * prefix, ExtractedBlobArray & extracted)
@@ -2208,7 +2229,10 @@ public:
         const char *localname = parent->queryLocalName();
         localname = skipSpecialPath(localname);
         // also send _extraFlags
-        sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags);
+        // then also send sMode, cFlags
+        unsigned short sMode = parent->getShareMode();
+        unsigned short cFlags = parent->getCreateFlags();
+        sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags).append(sMode).append(cFlags);
         parent->sendRemoteCommand(sendBuffer, replyBuffer);
 
         replyBuffer.read(handle);
@@ -2967,6 +2991,10 @@ inline void appendErr3(MemoryBuffer &reply, RemoteFileCommandType e, int code, c
 {
     StringBuffer msg;
     msg.appendf("ERROR: %s(%d) '%s'", getRFCText(e), code, errMsg?errMsg:"");
+    // some errors are RemoteFileCommandType, some are RFSERR_*
+    // RFCOpenIO needs remapping to non-zero for client to know its an error
+    if ((RemoteFileCommandType)e == RFCopenIO)
+        e = (RemoteFileCommandType)RFSERR_OpenFailed;
     reply.append((unsigned)e);
     reply.append(msg.str());
 }
@@ -3996,8 +4024,15 @@ public:
         msg.read(name->text).read(mode).read(share);  
         // also try to recv extra byte
         byte extra = 0;
+        unsigned short sMode = IFUnone;
+        unsigned short cFlags = IFUnone;
         if (msg.remaining() >= sizeof(byte))
+        {
             msg.read(extra);
+            // and then try to recv extra sMode, cFlags (always sent together)
+            if (msg.remaining() >= (sizeof(sMode) + sizeof(cFlags)))
+                msg.read(sMode).read(cFlags);
+        }
         IFEflags extraFlags = (IFEflags)extra;
         // none => nocache for remote (hint)
         // can revert to previous behavior with conf file setting "allow_pgcache_flush=false"
@@ -4023,8 +4058,14 @@ public:
             file->setShareMode(IFSHfull);
             break;
         }
+        // use sMode, cFlags if sent
+        if (sMode != IFUnone && cFlags != IFUnone)
+        {
+            file->setCreateFlags(cFlags);
+            file->setShareMode((IFSHmode)sMode);
+        }
         if (TF_TRACE_PRE_IO)
-            PROGLOG("before open file '%s',  (%d,%d,%d)",name->text.get(),(int)mode,(int)share,extraFlags);
+            PROGLOG("before open file '%s',  (%d,%d,%d,%d,0%o)",name->text.get(),(int)mode,(int)share,extraFlags,sMode,cFlags);
         IFileIO *fileio = file->open((IFOmode)mode,extraFlags);
         int handle;
         if (fileio) {
@@ -4308,6 +4349,20 @@ public:
             PROGLOG("setReadOnly,  '%s' %d",name.get(),(int)set);
         Owned<IFile> file=createIFile(name);
         file->setReadOnly(set);
+        reply.append((unsigned)RFEnoerror);
+        return true;
+    }
+
+    bool cmdSetFilePerms(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    {
+        IMPERSONATE_USER(client);
+        StringAttr name;
+        unsigned fPerms;
+        msg.read(name).read(fPerms);
+        if (TF_TRACE)
+            PROGLOG("setFilePerms,  '%s' 0%o",name.get(),fPerms);
+        Owned<IFile> file=createIFile(name);
+        file->setFilePermissions(fPerms);
         reply.append((unsigned)RFEnoerror);
         return true;
     }
@@ -4862,6 +4917,7 @@ public:
             case RFCisdirectory:
             case RFCisreadonly:
             case RFCsetreadonly:
+            case RFCsetfileperms:
             case RFCgettime:
             case RFCsettime:
             case RFCcreatedir:
@@ -4913,6 +4969,7 @@ public:
                 MAPCOMMANDCLIENT(RFCisdirectory, cmdIsDir, *client);
                 MAPCOMMANDCLIENT(RFCisreadonly, cmdIsReadOnly, *client);
                 MAPCOMMANDCLIENT(RFCsetreadonly, cmdSetReadOnly, *client);
+                MAPCOMMANDCLIENT(RFCsetfileperms, cmdSetFilePerms, *client);
                 MAPCOMMANDCLIENT(RFCgettime, cmdGetTime, *client);
                 MAPCOMMANDCLIENT(RFCsettime, cmdSetTime, *client);
                 MAPCOMMANDCLIENT(RFCcreatedir, cmdCreateDir, *client);

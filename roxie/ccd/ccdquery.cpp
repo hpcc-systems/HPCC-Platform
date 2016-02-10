@@ -289,6 +289,8 @@ QueryOptions::QueryOptions()
     fetchPreload = defaultFetchPreload;
     prefetchProjectPreload = defaultPrefetchProjectPreload;
     bindCores = coresPerQuery;
+    strandBlockSize = defaultStrandBlockSize;
+    forceNumStrands = defaultForceNumStrands;
 
     checkingHeap = defaultCheckingHeap;
     disableLocalOptimizations = false;  // No global default for this
@@ -316,6 +318,8 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     fetchPreload = other.fetchPreload;
     prefetchProjectPreload = other.prefetchProjectPreload;
     bindCores = other.bindCores;
+    strandBlockSize = other.strandBlockSize;
+    forceNumStrands = other.forceNumStrands;
 
     checkingHeap = other.checkingHeap;
     disableLocalOptimizations = other.disableLocalOptimizations;
@@ -353,6 +357,8 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(fetchPreload, wu, "fetchPreload");
     updateFromWorkUnit(prefetchProjectPreload, wu, "prefetchProjectPreload");
     updateFromWorkUnit(bindCores, wu, "bindCores");
+    updateFromWorkUnit(strandBlockSize, wu, "strandBlockSize");
+    updateFromWorkUnit(forceNumStrands, wu, "forceNumStrands");
 
     updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
     updateFromWorkUnit(disableLocalOptimizations, wu, "disableLocalOptimizations");
@@ -400,6 +406,8 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(fetchPreload, ctx, "@fetchPreload", "_FetchPreload");
         updateFromContext(prefetchProjectPreload, ctx, "@prefetchProjectPreload", "_PrefetchProjectPreload");
         updateFromContext(bindCores, ctx, "@bindCores", "_bindCores");
+        updateFromContext(strandBlockSize, ctx, "@strandBlockSize", "_strandBlockSize");
+        updateFromContext(forceNumStrands, ctx, "@forceNumStrands", "_forceNumStrands");
 
         updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
         // Note: disableLocalOptimizations is not permitted at context level (too late)
@@ -536,7 +544,7 @@ protected:
             return createRoxieServerChooseSetsLastActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKproject:
         case TAKcountproject:
-            return createRoxieServerProjectActivityFactory(id, subgraphId, *this, helperFactory, kind); // code is common between Project, CountProject
+            return createRoxieServerProjectActivityFactory(id, subgraphId, *this, helperFactory, kind, node); // code is common between Project, CountProject
         case TAKfilterproject:
             return createRoxieServerFilterProjectActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKdatasetresult:
@@ -590,6 +598,7 @@ protected:
         case TAKfetch:
         case TAKcsvfetch:
         case TAKxmlfetch:
+        case TAKjsonfetch:
             {
                 RemoteActivityId remoteId(id, hashValue);
                 return createRoxieServerFetchActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
@@ -692,7 +701,7 @@ protected:
         case TAKsimpleaction:
             return createRoxieServerActionActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKparse:
-            return createRoxieServerParseActivityFactory(id, subgraphId, *this, helperFactory, kind, this);
+            return createRoxieServerParseActivityFactory(id, subgraphId, *this, helperFactory, kind, node, this);
         case TAKworkunitwrite:
             return createRoxieServerWorkUnitWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKdictionaryworkunitwrite:
@@ -846,7 +855,7 @@ protected:
         case TAKnonempty:
             return createRoxieServerNonEmptyActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKprefetchproject:
-            return createRoxieServerPrefetchProjectActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerPrefetchProjectActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKwhen_dataset:
             return createRoxieServerWhenActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKwhen_action:
@@ -1266,12 +1275,12 @@ public:
         return *graphMap.getValue(name);
     }
 
-    virtual IActivityGraph *lookupGraph(const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const
+    virtual IActivityGraph *lookupGraph(IRoxieSlaveContext *ctx, const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const
     {
         assertex(name && *name);
         ActivityArrayPtr *graph = graphMap.getValue(name);
         assertex(graph);
-        Owned<IActivityGraph> ret = ::createActivityGraph(name, 0, **graph, parentActivity, probeManager, logctx);
+        Owned<IActivityGraph> ret = ::createActivityGraph(ctx, name, 0, **graph, parentActivity, probeManager, logctx);
         return ret.getClear();
     }
 
@@ -1737,6 +1746,7 @@ class CSlaveQueryFactory : public CQueryFactory
         case TAKfetch:
         case TAKcsvfetch:
         case TAKxmlfetch:
+        case TAKjsonfetch:
         case TAKremotegraph:
             break;
         case TAKsubgraph:
@@ -1806,6 +1816,7 @@ class CSlaveQueryFactory : public CQueryFactory
                     newAct = createRoxieCSVFetchActivityFactory(node, subgraphId, *this, helperFactory);
                     break;
                 case TAKxmlfetch:
+                case TAKjsonfetch:
                     newAct = createRoxieXMLFetchActivityFactory(node, subgraphId, *this, helperFactory);
                     break;
                 case TAKkeyedjoin:

@@ -182,6 +182,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKxmlparse:
         return createXmlParseActivity(agent, activityId, subgraphId, (IHThorXmlParseArg &)arg, kind);
     case TAKxmlfetch:
+    case TAKjsonfetch:
         return createXmlFetchActivity(agent, activityId, subgraphId, (IHThorXmlFetchArg &)arg, kind);
     case TAKmerge: 
         return createMergeActivity(agent, activityId, subgraphId, (IHThorMergeArg &)arg, kind);
@@ -489,7 +490,6 @@ void EclGraphElement::createActivity(IAgentContext & agent, EclSubGraph * owner)
                     {
                         IRoxieProbe *base = probeManager->createProbe(
                                                         input.queryOutput(branchIndexes.item(i2)),  //input
-                                                        &input.queryOutput(branchIndexes.item(i2))->queryStream(),  //stream
                                                         input.activity.get(),   //Source act
                                                         activity.get(),         //target activity
                                                         0,//input.id, 

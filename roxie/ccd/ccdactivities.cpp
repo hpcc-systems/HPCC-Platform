@@ -40,6 +40,7 @@
 #include "csvsplitter.hpp"
 #include "thorxmlread.hpp"
 #include "thorcommon.ipp"
+#include "thorstrand.hpp"
 #include "jstats.h"
 
 size32_t diskReadBufferSize = 0x10000;
@@ -209,7 +210,7 @@ public:
         if (datafile)
             addXrefFileInfo(reply, datafile);
     }
-    void createChildQueries(IArrayOf<IActivityGraph> &childGraphs, IHThorArg *colocalArg, IProbeManager *_probeManager, IRoxieSlaveContext *queryContext, const SlaveContextLogger &logctx) const
+    void createChildQueries(IRoxieSlaveContext *ctx, IArrayOf<IActivityGraph> &childGraphs, IHThorArg *colocalArg, IProbeManager *_probeManager, IRoxieSlaveContext *queryContext, const SlaveContextLogger &logctx) const
     {
         if (childQueries.length())
         {
@@ -217,10 +218,10 @@ public:
             {
                 if (!_probeManager) // MORE - the probeAllRows is a hack!
                     _probeManager = queryContext->queryProbeManager();
-                IActivityGraph *childGraph = createActivityGraph(NULL, childQueryIndexes.item(idx), childQueries.item(idx), NULL, _probeManager, logctx); // MORE - the parent is wrong!
+                IActivityGraph *childGraph = createActivityGraph(ctx, NULL, childQueryIndexes.item(idx), childQueries.item(idx), NULL, _probeManager, logctx); // MORE - the parent is wrong!
                 childGraphs.append(*childGraph);
                 queryContext->noteChildGraph(childQueryIndexes.item(idx), childGraph);
-                childGraph->onCreate(queryContext, colocalArg);             //NB: onCreate() on helper for activities in child graph are delayed, otherwise this would go wrong.
+                childGraph->onCreate(colocalArg);             //NB: onCreate() on helper for activities in child graph are delayed, otherwise this would go wrong.
             }
         }
     }
@@ -334,9 +335,9 @@ protected:
         // MORE - need to consider debugging....
         if (probeAllRows)
             probeManager.setown(createProbeManager());
-        basefactory->createChildQueries(childGraphs, basehelper, probeManager, queryContext, logctx);
+        basefactory->createChildQueries(queryContext, childGraphs, basehelper, probeManager, queryContext, logctx);
 #else
-        basefactory->createChildQueries(childGraphs, basehelper, NULL, queryContext, logctx);
+        basefactory->createChildQueries(queryContext, childGraphs, basehelper, NULL, queryContext, logctx);
 #endif
         if (meta.needsSerializeDisk())
             serializer.setown(meta.createDiskSerializer(queryContext->queryCodeContext(), basefactory->queryId()));
@@ -584,9 +585,9 @@ public:
         return logctx;
     }
 
-    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const 
+    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
-        return queryContext->queryCodeContext()->getRowAllocator(meta, activityId); 
+        return queryContext->queryCodeContext()->getRowAllocator(meta, activityId);
     }
     virtual const char *cloneVString(const char *str) const
     {
@@ -1608,19 +1609,34 @@ public:
 
 // RecordProcessor used by XML read activity. We don't try to index these or optimize fixed size cases...
 
-class XmlRecordProcessor : public RecordProcessor, implements IXMLSelect
+class XmlRecordProcessor : public RecordProcessor, implements IXMLSelect, implements IThorDiskCallback
 {
 public:
     IMPLEMENT_IINTERFACE;
     XmlRecordProcessor(CRoxieXmlReadActivity &_owner, IDirectReader *_reader)
-        : RecordProcessor(NULL), owner(_owner), reader(_reader)
+        : RecordProcessor(NULL), owner(_owner), reader(_reader), fileposition(0)
     {
         helper = _owner.helper;
-        helper->setCallback(reader->queryThorDiskCallback());
+        helper->setCallback(this);
+    }
+
+    //interface IThorDiskCallback
+    virtual unsigned __int64 getFilePosition(const void * row)
+    {
+        return fileposition;
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row)
+    {
+        return reader->makeFilePositionLocal(fileposition);
+    }
+    virtual const char * queryLogicalFilename(const void * row)
+    {
+        return reader->queryThorDiskCallback()->queryLogicalFilename(row);
     }
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
     {
+        fileposition = startOffset;
         lastMatch.set(&entry);
     }
 
@@ -1632,7 +1648,11 @@ public:
 #endif
         Linked<IXmlToRowTransformer> rowTransformer = helper->queryTransformer();
         OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
-        Owned<IXMLParse> xmlParser = createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0);
+        Owned<IXMLParse> xmlParser;
+        if (owner.basefactory->getKind() == TAKjsonread)
+            xmlParser.setown(createJSONParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
+        else
+            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
         while (!aborted)
         {
             //call to next() will callback on the IXmlSelect interface
@@ -1642,7 +1662,7 @@ public:
                 break;
             else if (lastMatch)
             {
-                unsigned transformedSize = owner.doTransform(output, rowTransformer, lastMatch, reader->queryThorDiskCallback());
+                unsigned transformedSize = owner.doTransform(output, rowTransformer, lastMatch, this);
                 lastMatch.clear();
                 if (transformedSize)
                 {
@@ -1683,6 +1703,7 @@ protected:
 
     Owned<IColumnProvider> lastMatch;
     Owned<IDirectReader> reader;
+    unsigned __int64 fileposition;
 };
 
 IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *datafile, size32_t maxRowSize)
@@ -4519,7 +4540,7 @@ public:
     {
         CRoxieFetchActivityBase::setPartNo(filechanged);
         rawStreamX.setown(createBufferedIOStream(rawFile, streamBufferSize));
-        parser.setown(createXMLParse(*rawStreamX, "/", *this));
+        parser.setown((factory->getKind()==TAKjsonfetch) ? createJSONParse(*rawStreamX, "/", *this) : createXMLParse(*rawStreamX, "/", *this));
     }
 };
 
@@ -5164,10 +5185,12 @@ public:
         {
             remoteGraph->beforeExecute();
             Owned<IFinalRoxieInput> input = remoteGraph->startOutput(0, remoteExtractBuilder.size(), remoteExtractBuilder.getbytes(), false);
-            IEngineRowStream &stream = input->queryStream();
+            Owned<IStrandJunction> junction;
+            IEngineRowStream *stream = connectSingleStream(queryContext, input, 0, junction, 0);
+
             while (!aborted)
             {
-                const void * next = stream.ungroupedNextRow();
+                const void * next = stream->ungroupedNextRow();
                 if (!next)
                     break;
 

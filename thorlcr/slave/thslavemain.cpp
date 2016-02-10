@@ -32,6 +32,8 @@
 #include "jfile.hpp"
 #include "jmisc.hpp"
 #include "jprop.hpp"
+#include "jthread.hpp"
+
 #include "thormisc.hpp"
 #include "slavmain.hpp"
 #include "thorport.hpp"
@@ -166,6 +168,9 @@ static bool jobListenerStopped = true;
 
 void UnregisterSelf(IException *e)
 {
+    if (!hasMPServerStarted())
+        return;
+
     StringBuffer slfStr;
     slfEp.getUrlStr(slfStr);
     LOG(MCdebugProgress, thorJob, "Unregistering slave : %s", slfStr.str());
@@ -235,6 +240,27 @@ void startSlaveLog()
     globals->setProp("@logURL", url.str());
 }
 
+void setSlaveAffinity(unsigned processOnNode)
+{
+    const char * affinity = globals->queryProp("@affinity");
+    if (affinity)
+        setProcessAffinity(affinity);
+    else if (globals->getPropBool("@autoAffinity", true))
+    {
+        const char * nodes = globals->queryProp("@autoNodeAffinityNodes");
+        unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+        setAutoAffinity(processOnNode, slavesPerNode, nodes);
+    }
+
+    //The default policy is to allocate from the local node, so restricting allocations to the current sockets
+    //may not buy much once the affinity is set up.  It also means it will fail if there is no memory left on
+    //this socket - even if there is on others.
+    //Therefore it is not recommended unless you have maybe several independent thors running on the same machines
+    //with exclusive access to memory.
+    if (globals->getPropBool("@numaBindLocal", false))
+        bindMemoryToLocalNodes();
+}
+
 
 int main( int argc, char *argv[]  )
 {
@@ -292,11 +318,14 @@ int main( int argc, char *argv[]  )
         }
         else 
             slfEp.setLocalHost(0);
+
         mySlaveNum = globals->getPropInt("@SLAVENUM");
 
         setMachinePortBase(slfEp.port);
         slfEp.port = getMachinePortBase();
         startSlaveLog();
+
+        setSlaveAffinity(globals->getPropInt("@SLAVEPROCESSNUM"));
 
         startMPServer(getFixedPort(TPORT_mp));
 #ifdef USE_MP_LOG
