@@ -172,7 +172,6 @@ bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEs
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUSearch User=%s",username.str());
 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
@@ -312,7 +311,6 @@ bool CWsDfuEx::onDFUQuery(IEspContext &context, IEspDFUQueryRequest & req, IEspD
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUQuery User=%s",username.str());
 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
@@ -341,7 +339,6 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUInfo User=%s",username.str());
 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
@@ -377,7 +374,6 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUSpace User=%s",username.str());
 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
@@ -404,6 +400,7 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
             filter.append("*");
         }
 
+        PROGLOG("DFUSpace: filter %s ", filter.str());
         Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator(filter, userdesc.get(), true, false, NULL);
         if(!fi)
             throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
@@ -1088,9 +1085,9 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
     {
         StringBuffer msgHead;
         if(username.length() > 0)
-            msgHead.appendf("CWsDfuEx::SuperfileAction User=%s Action=%s, Superfile=%s Subfile(s)= ", username.str(), action, superfile);
+            msgHead.appendf("%s: Superfile:%s, Subfile(s): ", action, superfile);
         else
-            msgHead.appendf("CWsDfuEx::SuperfileAction User=<unknown> Action=%s, Superfile=%s Subfile(s)= ", action, superfile);
+            msgHead.appendf("%s: Superfile:%s, Subfile(s): ", action, superfile);
 
         unsigned filesInMsgBuf = 0;
         StringBuffer msgBuf = msgHead;
@@ -1110,6 +1107,8 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
         if (filesInMsgBuf > 0)
             PROGLOG("%s", msgBuf.str());
     }
+    else
+        PROGLOG("%s: %s", action, superfile);
 
     Owned<IDFUhelper> dfuhelper = createIDFUhelper();
 
@@ -1118,6 +1117,7 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
         dfuhelper->addSuper(superfile, userdesc.get(), num, (const char**) subfileArray.getArray(), beforeSubFile, true);
     else
         dfuhelper->removeSuper(superfile, userdesc.get(), num, (const char**) subfileArray.getArray(), deleteFile, removeSuperfile);
+    PROGLOG("%s done", action);
 
     return num;
 }
@@ -1328,8 +1328,14 @@ void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &s
         if(!fn || !*fn)
             continue;
 
+        PROGLOG("Deleting %s", fn);
         if (DeleteActionFailure==doDeleteFile(fn, userdesc, superFiles, failedFiles, returnStr, actionResults, superFilesOnly, removeFromSuperfiles, deleteRecursively))
+        {
             failedFiles.appendUniq(fn);
+            PROGLOG("Delete %s failed", fn);
+        }
+        else
+            PROGLOG("Delete %s done", fn);
     }
 
 }
@@ -1486,14 +1492,16 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
 {
     try
     {
-        DBGLOG("CWsDfuEx::onDFUDefFile\n");
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to access DFUDefFile. Permission denied.");
 
+        const char* fileName = req.getName();
+        if (!fileName || !*fileName)
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
+        PROGLOG("DFUDefFile: %s", fileName);
+
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUDefFile User=%s",username.str());
 
         StringBuffer rawStr,returnStr;
 
@@ -1547,7 +1555,6 @@ void CWsDfuEx::xsltTransformer(const char* xsltPath,StringBuffer& source,StringB
 
 void CWsDfuEx::getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuffer& returnStr)
 {
-    DBGLOG("CWsDfuEx::getDefFile\n");
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc);
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",FileName);
@@ -1822,7 +1829,9 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name, const char *cluster,
     const char *description,IEspDFUFileDetail& FileDetails)
 {
-    DBGLOG("CWsDfuEx::doGetFileDetails\n");
+    if (!name || !*name)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
+    PROGLOG("doGetFileDetails: %s", name);
 
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, false, false, true); // lock super-owners
     if(!df)
@@ -2182,12 +2191,17 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
             }
         }
     }
+    PROGLOG("doGetFileDetails: %s done", name);
 }
 
 
 void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs)
 {
     double version = context.getClientVersion();
+    if (dirname && *dirname)
+        PROGLOG("getLogicalFileAndDirectory: %s", dirname);
+    else
+        PROGLOG("getLogicalFileAndDirectory: folder not specified");
 
     StringArray roxieClusterNames;
     IArrayOf<IEspTpCluster> roxieclusters;
@@ -2257,7 +2271,6 @@ bool CWsDfuEx::onDFUFileView(IEspContext &context, IEspDFUFileViewRequest &req, 
         Owned<IUserDescriptor> userdesc;
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuEx::onDFUFileView User=%s",username.str());
 
         if(username.length() > 0)
         {
@@ -3516,6 +3529,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
 
     if (queryDaliServerVersion().compare("3.11") < 0)
     {//Dali server does not support Filtered File Query. Use legacy code.
+        PROGLOG("DFUQuery: getAPageOfSortedLogicalFile");
         getAPageOfSortedLogicalFile(context, udesc, req, resp);
         return true;
     }
@@ -3562,10 +3576,12 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
 
     bool allMatchingFilesReceived = true;
     unsigned totalFiles = 0;
+    PROGLOG("DFUQuery: getLogicalFilesSorted");
     Owned<IDFAttributesIterator> it = queryDistributedFileDirectory().getLogicalFilesSorted(udesc, sortOrder, filterBuf.str(),
         localFilters, localFilterBuf.bufferBase(), pageStart, pageSize, &cacheHint, &totalFiles, &allMatchingFilesReceived);
     if(!it)
         throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
+    PROGLOG("DFUQuery: getLogicalFilesSorted done");
 
     IArrayOf<IEspDFULogicalFile> logicalFiles;
     ForEach(*it)
@@ -3589,6 +3605,11 @@ bool CWsDfuEx::onSuperfileList(IEspContext &context, IEspSuperfileListRequest &r
 {
     try
     {
+        const char* superfile = req.getSuperfile();
+        if (!superfile || !*superfile)
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Superfile name required");
+        PROGLOG("SuperfileList: %s", superfile);
+
         StringBuffer username;
         context.getUserID(username);
         Owned<IUserDescriptor> userdesc;
@@ -3670,6 +3691,10 @@ bool CWsDfuEx::onSavexml(IEspContext &context, IEspSavexmlRequest &req, IEspSave
             userdesc->set(username.str(), passwd);
         }
 
+        if (!req.getName() || !*req.getName())
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Name required");
+        PROGLOG("getFileXML: %s", req.getName());
+
         Owned<IDFUhelper> dfuhelper = createIDFUhelper();
         StringBuffer out;
         dfuhelper->getFileXML(req.getName(), out, userdesc.get());
@@ -3698,6 +3723,10 @@ bool CWsDfuEx::onAdd(IEspContext &context, IEspAddRequest &req, IEspAddResponse 
             userdesc.setown(createUserDescriptor());
             userdesc->set(username.str(), passwd);
         }
+
+        if (!req.getDstname() || !*req.getDstname())
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Dstname required.");
+        PROGLOG("addFileXML: %s", req.getDstname());
 
         Owned<IDFUhelper> dfuhelper = createIDFUhelper();
         StringBuffer xmlstr(req.getXmlmap().length(),(const char*)req.getXmlmap().bufferBase()); 
@@ -3742,8 +3771,10 @@ bool CWsDfuEx::onAddRemote(IEspContext &context, IEspAddRemoteRequest &req, IEsp
         const char* dstname = req.getDstname();
         if(dstname == NULL || *dstname == '\0')
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "dstname can't be empty.");
-        SocketEndpoint ep(srcdali);
 
+        PROGLOG("addFileRemote: Srcdali %s, Srcname %s, Dstname %s", srcdali, srcname, dstname);
+
+        SocketEndpoint ep(srcdali);
         Owned<IDFUhelper> dfuhelper = createIDFUhelper();
         dfuhelper->addFileRemote(dstname, ep, srcname, srcuserdesc.get(), userdesc.get());
     }
@@ -3775,6 +3806,8 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
 
         if (logicalNameStr.length() > 0)
         {
+            PROGLOG("DFUGetDataColumns: %s", logicalNameStr.str());
+
             __int64 startIndex = req.getStartIndex();
             __int64 endIndex = req.getEndIndex();
             if (startIndex < 1)
@@ -4257,7 +4290,7 @@ bool CWsDfuEx::onDFUSearchData(IEspContext &context, IEspDFUSearchDataRequest &r
 
         if (strlen(openLogicalName) > 0)
         {
-
+            PROGLOG("DFUSearchData: %s", openLogicalName);
 
             Owned<IEspDFUGetDataColumnsRequest> DataColumnsRequest = createDFUGetDataColumnsRequest();
             Owned<IEspDFUGetDataColumnsResponse> DataColumnsResponse = createDFUGetDataColumnsResponse();
@@ -4544,6 +4577,7 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
         if (clusterNameStr.trim().length() > 0)
             cluster = clusterNameStr.str();
 
+        PROGLOG("DFUGetFileMetaData: %s", fileName);
         Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
         Owned<INewResultSet> result = resultSetFactory->createNewFileResultSet(fileName, cluster);
         if (!result)
@@ -4590,6 +4624,7 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
             if (logicalNameStr.length() < 1)
                  throw MakeStringException(ECLWATCH_INVALID_INPUT,"No LogicalName defined.");
         }
+        PROGLOG("DFUBrowseData: %s", logicalNameStr.str());
 
         __int64 start = req.getStart() > 0 ? req.getStart() : 0;
         __int64 count=req.getCount() ? req.getCount() : 20, requested=count;
@@ -5196,9 +5231,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
     if (schemaText2.length() < 1)
         return;
 
-//DBGLOG("First schema returns:%s", schemaText.str());
-//DBGLOG("Second schema returns:%s", schemaText2.str());
-
     Owned<IPropertyTree> schema = createPTreeFromXMLString(schemaText.str());
     Owned<IPropertyTree> schema2 = createPTreeFromXMLString(schemaText2.str());
     if (!schema || !schema2)
@@ -5236,11 +5268,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
     IPropertyTree*  rows = schema->queryBranch("xs:element[@name=\"Dataset\"]/xs:complexType/xs:sequence/xs:element[@name=\"Row\"]/xs:complexType/xs:sequence");
     if (!rows)
         return;
-
-//  StringBuffer schemaText4;
-//  toXML(schema, schemaText4);
-
-//DBGLOG("First schema returns:%s", schemaText4.str());
 
     //Find out labels used for column mapping
     columnsDisplay.kill();
@@ -5349,8 +5376,6 @@ void CWsDfuEx::mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, 
     //Convert schema tree to schame now
     schemaText.clear();
     toXML(schema, schemaText);
-
-//DBGLOG("Merged schema returns:%s", schemaText.str());
     return;
 }
 
@@ -5561,7 +5586,6 @@ int CWsDfuEx::browseRelatedFileDataSet(double version, IRelatedBrowseFile * file
                 StringBuffer text;
                 StringBufferAdaptor adaptor2(text);
                 cursor->getXmlRow(adaptor2);
-//DBGLOG("Data row returns:%s", text.str());
 
 #ifdef TESTDATASET
 text.clear();
@@ -5648,7 +5672,6 @@ rows++;
                         if (text1.length() > 0)
                         {
                             mergeDataRow(text0, text, text1, columnsHide);
-    //DBGLOG("New row returns:%s", text0.str());
                         }
                         dataSetOutput.append(text0);
                     }

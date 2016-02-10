@@ -41,6 +41,8 @@ private:
     StringAttr      m_peer;
     StringAttr      m_useragent;
     StringAttr      m_acceptLanguage;
+    StringAttr      httpMethod;
+    StringAttr      servMethod;
 
     StringBuffer    m_servName;
     StringBuffer    m_servHost;
@@ -421,6 +423,16 @@ public:
         m_custom_headers.append(StringBuffer(name).appendf(": %s", val?val:"").str());
     }
 
+    virtual void setHTTPMethod(const char *method)
+    {
+        httpMethod.set(method);
+    }
+
+    virtual void setServiceMethod(const char *method)
+    {
+        servMethod.set(method);
+    }
+
     virtual CTxSummary* getTxSummary()
     {
         return m_txSummary.get();
@@ -550,6 +562,12 @@ void CEspContext::updateTraceSummaryHeader()
     {
         m_txSummary->set("activeReqs", m_active);
         m_txSummary->set("user", VStringBuffer("%s%s%s", (queryUserId() ? queryUserId() : ""), (m_peer.length() ? "@" : ""), m_peer.str()).str());
+
+        VStringBuffer reqSummury("%s %s.%s", httpMethod.get(), m_servName.str(), servMethod.get());
+        if (m_clientVer > 0)
+            reqSummury.append(" v").append(m_clientVer);
+        m_txSummary->set("req", reqSummury.str());
+
         if (m_hasException)
             m_txSummary->set(VStringBuffer("exception@%ums", m_exceptionTime), m_exceptionCode);
     }

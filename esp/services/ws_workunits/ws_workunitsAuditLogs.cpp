@@ -1384,6 +1384,18 @@ void streamJobQueueListResponse(IEspContext &context, const char *cluster, const
     response->sendFinalChunk(sb.str());
 }
 
+void logWUClusterJobESPCall(const char* method, const char* cluster, const char* from, const char* to)
+{
+    StringBuffer logMsg = method;
+    if (notEmpty(cluster))
+        logMsg.appendf(" cluster %s,", cluster);
+    if (notEmpty(from))
+        logMsg.appendf(" from %s,", from);
+    if (notEmpty(to))
+        logMsg.appendf(" to %s", to);
+    PROGLOG("%s", logMsg.str());
+}
+
 int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* response)
 {
     IEspContext *ctx = request->queryContext();
@@ -1399,6 +1411,7 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
          {
             const char *pos = path.str();
             skipPathNodes(pos, 1);
+            PROGLOG("getWuResourceByPath: %s", path.str());
             MemoryBuffer mb;
             StringBuffer mimetype;
             getWuResourceByPath(pos, mb, mimetype);
@@ -1413,6 +1426,7 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
          {
             const char *pos = path.str();
             skipPathNodes(pos, 1);
+            PROGLOG("getWuManifestByPath: %s", path.str());
             StringBuffer mf;
             getWuManifestByPath(pos, mf);
 
@@ -1456,6 +1470,7 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
             addToQueryString(xls, "EndDate", endDate);
             addToQueryString(xls, "BusinessStartTime", busStart);
             addToQueryString(xls, "BusinessEndTime", busEnd);
+            PROGLOG("WUJobList: %s", xls.str());
 
             streamJobListResponse(*ctx, cluster, startDate, endDate, response, bShowAll, fBusStart, fBusEnd, xls.str());
             return 0;
@@ -1474,6 +1489,7 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
             addToQueryString(xls, "Cluster", cluster);
             addToQueryString(xls, "StartDate", startDate);
             addToQueryString(xls, "EndDate", endDate);
+            PROGLOG("WUJobQueue: %s", xls.str());
 
             streamJobQueueListResponse(*ctx, cluster, startDate, endDate, response, xls.str());
             return 0;
@@ -1503,11 +1519,10 @@ bool CWsWorkunitsEx::onWUClusterJobQueueXLS(IEspContext &context, IEspWUClusterJ
 {
     try
     {
-        DBGLOG("WUClusterJobQueueXLS");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         getUserWuAccessFlags(context, accessOwn, accessOthers, true);
+        logWUClusterJobESPCall("WUClusterJobQueueXLS", req.getCluster(), req.getStartDate(), req.getEndDate());
 
         StringBuffer xml("<WUResultExcel><Result>");
         getClusterJobQueueXLS(xml, req.getCluster(), req.getStartDate(), req.getEndDate(), req.getShowType());
@@ -1535,23 +1550,29 @@ bool CWsWorkunitsEx::onWUClusterJobQueueLOG(IEspContext &context,IEspWUClusterJo
 {
     try
     {
-        DBGLOG("WUClusterJobQueueLOG");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         getUserWuAccessFlags(context, accessOwn, accessOthers, true);
 
+        StringBuffer logMsg = "WUClusterJobQueueLOG: ";
         CDateTime fromTime;
         if(notEmpty(req.getStartDate()))
+        {
             fromTime.setString(req.getStartDate(), NULL, false);
+            logMsg.appendf(" from %s,", req.getStartDate());
+        }
         CDateTime toTime;
         if(notEmpty(req.getEndDate()))
+        {
             toTime.setString(req.getEndDate(), NULL, false);
+            logMsg.appendf(" to %s,", req.getEndDate());
+        }
 
         const char *cluster = req.getCluster();
         StringBuffer filter("ThorQueueMonitor");
         if (notEmpty(cluster))
             filter.appendf(",%s", cluster);
+        PROGLOG("%s filter %s", logMsg.str(), filter.str());
 
         StringAttrArray lines;
         queryAuditLogs(fromTime, toTime, filter.str(), lines);
@@ -1590,11 +1611,10 @@ bool CWsWorkunitsEx::onWUClusterJobXLS(IEspContext &context, IEspWUClusterJobXLS
 {
     try
     {
-        DBGLOG("WUClusterJobXLS");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         getUserWuAccessFlags(context, accessOwn, accessOthers, true);
+        logWUClusterJobESPCall("WUClusterJobXLS", req.getCluster(), req.getStartDate(), req.getEndDate());
 
         StringBuffer xml("<WUResultExcel><Result>");
         getClusterJobXLS(context.getClientVersion(), xml, req.getCluster(), req.getStartDate(), req.getEndDate(), req.getShowAll(), req.getBusinessStartTime(), req.getBusinessEndTime());
@@ -1622,11 +1642,10 @@ bool CWsWorkunitsEx::onWUClusterJobSummaryXLS(IEspContext &context, IEspWUCluste
 {
     try
     {
-        DBGLOG("WUClusterJobSummaryXLS");
-
         SecAccessFlags accessOwn;
         SecAccessFlags accessOthers;
         getUserWuAccessFlags(context, accessOwn, accessOthers, true);
+        logWUClusterJobESPCall("WUClusterJobSummaryXLS", req.getCluster(), req.getStartDate(), req.getEndDate());
 
         StringBuffer xml("<WUResultExcel><Result>");
         getClusterJobSummaryXLS(context.getClientVersion(), xml, req.getCluster(), req.getStartDate(), req.getEndDate(), req.getShowAll(), req.getBusinessStartTime(), req.getBusinessEndTime());

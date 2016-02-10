@@ -2867,6 +2867,7 @@ int WUSchedule::run()
 {
     try
     {
+        PROGLOG("ECLWorkunit WUSchedule Thread started.");
         while(!stopping)
         {
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();

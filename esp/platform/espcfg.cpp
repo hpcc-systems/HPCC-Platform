@@ -133,7 +133,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     // load options
     const char* level = m_cfg->queryProp("@logLevel");
     m_options.logLevel = level ? atoi(level) : LogMin;
-    m_options.logReq = m_cfg->getPropBool("@logRequests", false);
+    m_options.logReq = m_cfg->getPropBool("@logRequests", true);
     m_options.logResp = m_cfg->getPropBool("@logResponses", false);
     m_options.frameTitle.set(m_cfg->queryProp("@name"));
     m_options.slowProcessingTime = m_cfg->getPropInt("@slowProcessingTime", 30) * 1000; //in msec

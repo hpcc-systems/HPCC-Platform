@@ -37,6 +37,15 @@ const unsigned ROXIELOCKCONNECTIONTIMEOUT = 60000; //60 second
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
+//The CQuerySetQueryActionTypes[] has to match with the ESPenum QuerySetQueryActionTypes in the ecm file.
+static unsigned NumOfQuerySetQueryActionTypes = 7;
+static const char *QuerySetQueryActionTypes[] = { "Suspend", "Unsuspend", "ToggleSuspend", "Activate",
+    "Delete", "RemoveAllAliases", "ResetQueryStats", NULL };
+
+//The CQuerySetAliasActionTypes[] has to match with the ESPenum QuerySetAliasActionTypes in the ecm file.
+static unsigned NumOfQuerySetAliasActionTypes = 1;
+static const char *QuerySetAliasActionTypes[] = { "Deactivate", NULL };
+
 bool isRoxieProcess(const char *process)
 {
     if (!process)
@@ -457,6 +466,7 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
     Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
 
     IArrayOf<IConstWUCopyLogicalClusterFileSections> clusterfiles;
+    PROGLOG("WUCopyLogicalFiles: %s", wuid.str());
     copyWULogicalFilesToTarget(context, *clusterInfo, *cw, clusterfiles, req.getCopyLocal());
     resp.setClusterFiles(clusterfiles);
 
@@ -1138,6 +1148,7 @@ bool CWsWorkunitsEx::onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDet
     Owned<IPropertyTree> registry = getQueryRegistry(req.getQuerySetName(), true);
     if (!registry)
         return false;
+    PROGLOG("WUQuerysetDetails for queryset %s", req.getQuerySetName());
 
     IArrayOf<IEspQuerySetQuery> respQueries;
     IArrayOf<IEspQuerySetAlias> respAliases;
@@ -1173,12 +1184,23 @@ bool CWsWorkunitsEx::onWUMultiQuerysetDetails(IEspContext &context, IEspWUMultiQ
     IArrayOf<IEspWUQuerySetDetail> respDetails;
 
     if (notEmpty(req.getClusterName()))
+    {
+        PROGLOG("WUMultiQuerysetDetails for cluster %s", req.getClusterName());
         retrieveQuerysetDetailsByCluster(context, respDetails, req.getClusterName(), req.getQuerySetName(), req.getFilterTypeAsString(), req.getFilter(), req.getCheckAllNodes());
+    }
     else if (notEmpty(req.getQuerySetName()))
+    {
+        PROGLOG("WUMultiQuerysetDetails for queryset %s", req.getQuerySetName());
         retrieveQuerysetDetails(context, respDetails, req.getQuerySetName(), req.getFilterTypeAsString(), req.getFilter());
+    }
     else
+    {
+        VStringBuffer logMsg("WUMultiQuerysetDetails: FilterType %s", req.getFilterTypeAsString());
+        if (notEmpty(req.getFilter()))
+            logMsg.append(", Filter ").append(req.getFilter());
+        PROGLOG("%s", logMsg.str());
         retrieveAllQuerysetDetails(context, respDetails, req.getFilterTypeAsString(), req.getFilter());
-
+    }
     resp.setQuerysets(respDetails);
 
     return true;
@@ -1395,9 +1417,11 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
         }
     }
 
+    PROGLOG("WUListQueries: getQuerySetQueriesSorted");
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstQuerySetQueryIterator> it = factory->getQuerySetQueriesSorted(sortOrder, filters, filterBuf.bufferBase(), pageStartFrom, pageSize, &cacheHint, &numberOfQueries, queriesUsingFileMap);
     resp.setCacheHint(cacheHint);
+    PROGLOG("WUListQueries: getQuerySetQueriesSorted done");
 
     StringArray querySetIds;
     IArrayOf<IEspQuerySetQuery> queries;
@@ -1458,16 +1482,24 @@ bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQu
     resp.setFileName(lfn.toLowerCase());
     resp.setProcess(process);
 
+    if (lfn.isEmpty())
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "FileName required");
+    VStringBuffer logMsg("WUListQueriesUsingFile: %s", lfn.str());
     StringArray targets;
     if (target && *target)
+    {
         targets.append(target);
+        logMsg.append(", target ").append(target);
+    }
     else // if (process && *process)
     {
         SCMStringBuffer targetStr;
         Owned<IStringIterator> targetClusters = getTargetClusters("RoxieCluster", process);
         ForEach(*targetClusters)
             targets.append(targetClusters->str(targetStr).str());
+        logMsg.append(", process ").append(process);
     }
+    PROGLOG("%s", logMsg.str());
 
     IArrayOf<IEspTargetQueriesUsingFile> respTargets;
     ForEachItemIn(i, targets)
@@ -1516,6 +1548,7 @@ bool CWsWorkunitsEx::onWUQueryFiles(IEspContext &context, IEspWUQueryFilesReques
     Owned<IPropertyTree> registeredQuery = resolveQueryAlias(target, query, true);
     if (!registeredQuery)
         throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query not found");
+    PROGLOG("WUQueryFiles: target %s, query %s", target, query);
     StringAttr queryid(registeredQuery->queryProp("@id"));
     registeredQuery.clear();
 
@@ -1553,6 +1586,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
         throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "QueryId not specified");
     resp.setQueryId(queryId);
     resp.setQuerySet(querySet);
+    PROGLOG("WUQueryDetails: QuerySet %s, query %s", querySet, queryId);
 
     Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
 
@@ -1910,6 +1944,7 @@ bool CWsWorkunitsEx::onWUQueryConfig(IEspContext &context, IEspWUQueryConfigRequ
     Owned<IPropertyTree> queryset = getQueryRegistry(target.get(), false);
     if (!queryset)
         throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Target Queryset %s not found", req.getTarget());
+    PROGLOG("WUQueryConfig: target %s", target.get());
 
     Owned<IProperties> queryIds = createProperties();
     expandQueryActionTargetList(queryIds, queryset, req.getQueryId(), QuerySetQueryActionTypes_Undefined);
@@ -1973,7 +2008,10 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
             Owned<IPropertyTree> query = getQueryById(queryset, id);
             if (!query)
                 throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s/%s not found.", req.getQuerySetName(), id);
-            switch (req.getAction())
+            CQuerySetQueryActionTypes action = req.getAction();
+            const char* strAction = (action > -1) && (action < NumOfQuerySetQueryActionTypes) ? QuerySetQueryActionTypes[action] : "Undefined";
+            PROGLOG("%s: queryset %s, query %s", strAction, req.getQuerySetName(), id);
+            switch (action)
             {
                 case CQuerySetQueryActionTypes_ToggleSuspend:
                     setQuerySuspendedState(queryset, id, !queryIds->getPropBool(id), context.queryUserId());
@@ -2035,7 +2073,10 @@ bool CWsWorkunitsEx::onWUQuerysetAliasAction(IEspContext &context, IEspWUQuerySe
             IPropertyTree *alias = queryset->queryPropTree(xpath.str());
             if (!alias)
                 throw MakeStringException(ECLWATCH_ALIAS_NOT_FOUND, "Alias %s/%s not found.", req.getQuerySetName(), item.getName());
-            switch (req.getAction())
+            CQuerySetAliasActionTypes action = req.getAction();
+            const char* strAction = (action > -1) && (action < NumOfQuerySetAliasActionTypes) ? QuerySetAliasActionTypes[action] : "Undefined";
+            PROGLOG("%s: queryset %s, alias %s", strAction, req.getQuerySetName(), item.getName());
+            switch (action)
             {
                 case CQuerySetAliasActionTypes_Deactivate:
                     removeQuerySetAlias(req.getQuerySetName(), item.getName());
@@ -2526,6 +2567,8 @@ void CWsWorkunitsEx::getGraphsByQueryId(const char *target, const char *queryId,
     Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target);
     if (!info || (info->getPlatform()!=RoxieCluster)) //Only support roxie for now
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid Roxie name");
+
+    PROGLOG("getGraphsByQueryId: target %s, query %s", target, queryId);
 
     const SocketEndpointArray &eps = info->getRoxieServers();
     if (eps.empty())

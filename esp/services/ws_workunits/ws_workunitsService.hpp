@@ -89,6 +89,7 @@ public:
             dirty |= UFO_RELOAD_MAPPED_QUERIES;
         else if (subid == psChange)
             dirty |= UFO_RELOAD_TARGETS_CHANGED_PMID;
+        PROGLOG("QueryFilesInUse.notify() called: <%d>", dirty);
     }
     virtual void subscribe()
     {
@@ -98,6 +99,7 @@ public:
             qsChange = querySDS().subscribe("QuerySets", *this, true);
             pmChange = querySDS().subscribe("PackageMaps", *this, true);
             psChange = querySDS().subscribe("PackageSets", *this, true);
+            PROGLOG("QueryFilesInUse.subscribe() called: QuerySets PackageMaps PackageSets");
         }
         catch (IException *E)
         {
@@ -124,6 +126,7 @@ public:
         qsChange = 0;
         pmChange = 0;
         psChange = 0;
+        PROGLOG("QueryFilesInUse.unsubscribe() called");
     }
 
     void abort()
