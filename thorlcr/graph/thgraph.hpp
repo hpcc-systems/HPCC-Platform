@@ -573,6 +573,7 @@ public:
     bool queryAborted() const { return aborted; }
     CJobBase &queryJob() const { return job; }
     CJobChannel &queryJobChannel() const { return jobChannel; }
+    unsigned queryJobChannelNumber() const;
     IGraphTempHandler *queryTempHandler() const { assertex(tmpHandler.get()); return tmpHandler; }
     CGraphBase *queryOwner() { return owner; }
     CGraphBase *queryParent() { return parent?parent:this; }
@@ -763,9 +764,12 @@ protected:
     Owned<IPerfMonHook> perfmonhook;
     size32_t oldNodeCacheMem;
     CIArrayOf<CJobChannel> jobChannels;
+    OwnedMalloc<unsigned> jobChannelSlaveNumbers;
+    OwnedMalloc<unsigned> jobSlaveChannelNum;
     bool crcChecking;
     bool usePackedAllocator;
     unsigned memorySpillAt;
+    rank_t myNodeRank;
 
 
     class CThorPluginCtx : public SimplePluginCtx
@@ -804,7 +808,10 @@ public:
     CJobChannel &queryJobChannel(unsigned c) const;
     CActivityBase &queryChannelActivity(unsigned c, graph_id gid, activity_id id) const;
     unsigned queryJobChannels() const { return jobChannels.ordinality(); }
+    inline unsigned queryJobChannelSlaveNum(unsigned channelNum) const { dbgassertex(channelNum<queryJobChannels()); return jobChannelSlaveNumbers[channelNum]; }
+    inline unsigned queryJobSlaveChannelNum(unsigned slaveNum) const { dbgassertex(slaveNum && slaveNum<=querySlaves()); return jobSlaveChannelNum[slaveNum-1]; }
     ICommunicator &queryNodeComm() const { return ::queryNodeComm(); }
+    const rank_t &queryMyNodeRank() const { return myNodeRank; }
     void init();
     void setXGMML(IPropertyTree *_xgmml) { xgmml.set(_xgmml); }
     IPropertyTree *queryXGMML() { return xgmml; }
@@ -1001,20 +1008,20 @@ public:
     CGraphElementBase &queryContainer() const { return container; }
     CJobBase &queryJob() const { return container.queryJob(); }
     CJobChannel &queryJobChannel() const { return container.queryJobChannel(); }
+    unsigned queryJobChannelNumber() const { return queryJobChannel().queryChannel(); }
     inline IMPServer &queryMPServer() const { return queryJobChannel().queryMPServer(); }
     inline roxiemem::IRowManager &queryRowManager() const { return queryJobChannel().queryRowManager(); }
     CGraphBase &queryGraph() const { return container.queryOwner(); }
-    CActivityBase &queryChannelActivity(unsigned channel) const
-    {
-        return queryJob().queryChannelActivity(channel, queryGraph().queryGraphId(), queryId());
-    }
+    CActivityBase &queryChannelActivity(unsigned channel) const { return queryJob().queryChannelActivity(channel, queryGraph().queryGraphId(), queryId()); }
     inline const mptag_t queryMpTag() const { return mpTag; }
     inline bool queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
     inline bool needReInit() const { return reInit; }
     inline bool queryTimeActivities() const { return timeActivities; }
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
+    bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
+    void cancelReceiveMsg(ICommunicator &comm, const rank_t rank, const mptag_t mpTag);
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
     bool firstNode() { return 1 == container.queryJobChannel().queryMyRank(); }
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }

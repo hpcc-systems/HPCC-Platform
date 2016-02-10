@@ -1959,6 +1959,11 @@ public:
     {
         return CThorRowCollectorBase::getStream(allMemRows, NULL, shared);
     }
+    virtual bool spill()
+    {
+        CThorArrayLockBlock block(spillableRows);
+        return spillRows();
+    }
 };
 
 IThorRowCollector *createThorRowCollector(CActivityBase &activity, IRowInterfaces *rowIf, ICompare *iCompare, StableSortFlag stableSort, RowCollectorSpillFlags diskMemMix, unsigned spillPriority, bool preserveGrouping)
