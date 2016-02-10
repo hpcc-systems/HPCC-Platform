@@ -270,6 +270,13 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     message(FATAL_ERROR "No threading support found")
   ENDIF()
 
+  if (NOT APPLE AND NOT WIN32)
+    find_package(NUMA)
+    if (NOT NUMA_FOUND)
+      message(FATAL_ERROR "Support for numa not found")
+    endif()
+  endif()
+
   if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
    set (CMAKE_COMPILER_IS_CLANGXX 1)
   endif()
