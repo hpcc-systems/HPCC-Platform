@@ -2931,6 +2931,10 @@ inline void appendErr3(MemoryBuffer &reply, RemoteFileCommandType e, int code, c
 {
     StringBuffer msg;
     msg.appendf("ERROR: %s(%d) '%s'", getRFCText(e), code, errMsg?errMsg:"");
+    // some errors are RemoteFileCommandType, some are RFSERR_*
+    // RFCOpenIO needs remapping to non-zero for client to know its an error
+    if ((RemoteFileCommandType)e == RFCopenIO)
+        e = (RemoteFileCommandType)RFSERR_OpenFailed;
     reply.append((unsigned)e);
     reply.append(msg.str());
 }
