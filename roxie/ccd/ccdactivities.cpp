@@ -1609,19 +1609,34 @@ public:
 
 // RecordProcessor used by XML read activity. We don't try to index these or optimize fixed size cases...
 
-class XmlRecordProcessor : public RecordProcessor, implements IXMLSelect
+class XmlRecordProcessor : public RecordProcessor, implements IXMLSelect, implements IThorDiskCallback
 {
 public:
     IMPLEMENT_IINTERFACE;
     XmlRecordProcessor(CRoxieXmlReadActivity &_owner, IDirectReader *_reader)
-        : RecordProcessor(NULL), owner(_owner), reader(_reader)
+        : RecordProcessor(NULL), owner(_owner), reader(_reader), fileposition(0)
     {
         helper = _owner.helper;
-        helper->setCallback(reader->queryThorDiskCallback());
+        helper->setCallback(this);
+    }
+
+    //interface IThorDiskCallback
+    virtual unsigned __int64 getFilePosition(const void * row)
+    {
+        return fileposition;
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row)
+    {
+        return reader->makeFilePositionLocal(fileposition);
+    }
+    virtual const char * queryLogicalFilename(const void * row)
+    {
+        return reader->queryThorDiskCallback()->queryLogicalFilename(row);
     }
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
     {
+        fileposition = startOffset;
         lastMatch.set(&entry);
     }
 
@@ -1633,7 +1648,11 @@ public:
 #endif
         Linked<IXmlToRowTransformer> rowTransformer = helper->queryTransformer();
         OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
-        Owned<IXMLParse> xmlParser = createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0);
+        Owned<IXMLParse> xmlParser;
+        if (owner.basefactory->getKind() == TAKjsonread)
+            xmlParser.setown(createJSONParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
+        else
+            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
         while (!aborted)
         {
             //call to next() will callback on the IXmlSelect interface
@@ -1643,7 +1662,7 @@ public:
                 break;
             else if (lastMatch)
             {
-                unsigned transformedSize = owner.doTransform(output, rowTransformer, lastMatch, reader->queryThorDiskCallback());
+                unsigned transformedSize = owner.doTransform(output, rowTransformer, lastMatch, this);
                 lastMatch.clear();
                 if (transformedSize)
                 {
@@ -1684,6 +1703,7 @@ protected:
 
     Owned<IColumnProvider> lastMatch;
     Owned<IDirectReader> reader;
+    unsigned __int64 fileposition;
 };
 
 IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *datafile, size32_t maxRowSize)
@@ -4520,7 +4540,7 @@ public:
     {
         CRoxieFetchActivityBase::setPartNo(filechanged);
         rawStreamX.setown(createBufferedIOStream(rawFile, streamBufferSize));
-        parser.setown(createXMLParse(*rawStreamX, "/", *this));
+        parser.setown((factory->getKind()==TAKjsonfetch) ? createJSONParse(*rawStreamX, "/", *this) : createXMLParse(*rawStreamX, "/", *this));
     }
 };
 

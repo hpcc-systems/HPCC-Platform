@@ -639,6 +639,7 @@ public:
                 ret = createCsvFetchSlave(this);
                 break;
             case TAKxmlfetch:
+            case TAKjsonfetch:
                 ret = createXmlFetchSlave(this);
                 break;
             case TAKthroughaggregate:

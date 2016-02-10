@@ -3952,6 +3952,12 @@ protected:
         curOffset++;
         return true;
     }
+    inline bool checkStartReadNext()
+    {
+        if (curOffset || nextChar) //not at starting state
+            return true;
+        return readNextToken();
+    }
     inline bool readNextToken();
     inline bool checkSkipWS()
     {
@@ -6290,6 +6296,9 @@ public:
     typedef CommonReaderBase<X> PARENT;
     using PARENT::reset;
     using PARENT::nextChar;
+    using PARENT::readNextToken;
+    using PARENT::checkReadNext;
+    using PARENT::checkStartReadNext;
     using PARENT::readNext;
     using PARENT::expecting;
     using PARENT::match;
@@ -6447,6 +6456,7 @@ class CJSONReader : public CJSONReaderBase<X>, implements IPTreeReader
     using PARENT::readName;
     using PARENT::checkReadNext;
     using PARENT::checkSkipWS;
+    using PARENT::checkStartReadNext;
     using PARENT::expecting;
     using PARENT::error;
     using PARENT::eos;
@@ -6478,6 +6488,7 @@ public:
     }
     void readValueNotify(const char *name, bool skipAttributes)
     {
+        offset_t startOffset = curOffset;
         StringBuffer value;
         if (readValue(value)==elementTypeNull)
             return;
@@ -6489,7 +6500,7 @@ public:
             return;
         }
 
-        iEvent->beginNode(name, curOffset);
+        iEvent->beginNode(name, startOffset);
         iEvent->beginNodeContent(name);
         iEvent->endNode(name, value.length(), value.str(), false, curOffset);
 
@@ -6576,9 +6587,10 @@ public:
         }
         iEvent->endNode(name, 0, "", false, curOffset);
     }
+
     void loadJSON()
     {
-        if (!checkReadNext())
+        if (!checkStartReadNext())
             return;
         if (checkBOM() && !checkReadNext())
             return;
@@ -6656,6 +6668,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
     using PARENT::readName;
     using PARENT::checkReadNext;
     using PARENT::checkSkipWS;
+    using PARENT::checkStartReadNext;
     using PARENT::expecting;
     using PARENT::error;
     using PARENT::eos;
@@ -6700,6 +6713,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
     enum ParseStates { headerStart, nameStart, valueStart, itemStart, objAttributes, itemContent, itemEnd } state;
     bool endOfRoot;
     bool preReadItemName;
+    bool more;
     StringBuffer tag, value;
 
     void init()
@@ -6708,6 +6722,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
         stateInfo = NULL;
         endOfRoot = false;
         preReadItemName = false;
+        more = true;
     }
 
     virtual void resetState()
@@ -6903,7 +6918,6 @@ public:
     }
     bool endNode(offset_t offset, bool notify=true)
     {
-        bool more = true;
         if (stack.ordinality()<2)
         {
             state = headerStart;
@@ -6919,7 +6933,7 @@ public:
         freeStateInfo.append(*stateInfo);
         stack.pop();
         stateInfo = (stack.ordinality()) ? &stack.tos() : NULL;
-        return more;
+        return true;
     }
 
     // IPullPTreeReader
@@ -6938,6 +6952,9 @@ public:
 
     virtual bool next()
     {
+        if (!more)
+            return false;
+        checkStartReadNext();
         checkSkipWS();
         switch (state)
         {

@@ -11382,7 +11382,7 @@ public:
                     break;
                 try
                 {
-                    unsigned __int64 fpos;
+                    unsigned __int64 fpos=0;
                     RtlStaticRowBuilder rowBuilder(rowBuffer, maxDiskRecordSize);
                     size32_t thisSize = helper.transform(rowBuilder, nextrec, &bc, fpos);
                     builder->processKeyData(rowBuffer, fpos, thisSize);
@@ -20920,13 +20920,13 @@ public:
     }
 };
 
-class CRoxieServerXmlReadActivity : public CRoxieServerDiskReadBaseActivity, implements IXMLSelect
+class CRoxieServerXmlReadActivity : public CRoxieServerDiskReadBaseActivity, implements IXMLSelect, implements IThorDiskCallback
 {
     IHThorXmlReadArg * readHelper;
     Owned<IXmlToRowTransformer> rowTransformer;
     Owned<IXMLParse> xmlParser;
     Owned<IColumnProvider> lastMatch;
-    unsigned __int64 localOffset;
+    unsigned __int64 fileoffset;
 public:
     IMPLEMENT_IINTERFACE;
     CRoxieServerXmlReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
@@ -20934,7 +20934,7 @@ public:
     {
         compoundHelper = NULL;
         readHelper = (IHThorXmlReadArg *)&helper;
-        localOffset = 0;
+        fileoffset = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -20964,8 +20964,22 @@ public:
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
     {
-        localOffset = startOffset;
+        fileoffset = startOffset;
         lastMatch.set(&entry);
+    }
+
+    //interface IThorDiskCallback
+    virtual unsigned __int64 getFilePosition(const void * row)
+    {
+        return fileoffset;
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row)
+    {
+        return reader->makeFilePositionLocal(fileoffset);
+    }
+    virtual const char * queryLogicalFilename(const void * row)
+    {
+        return reader->queryThorDiskCallback()->queryLogicalFilename(row);
     }
 
     virtual const void *nextRow()
@@ -20987,9 +21001,9 @@ public:
                 else if (lastMatch)
                 {
                     RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    unsigned sizeGot = rowTransformer->transform(rowBuilder, lastMatch, reader->queryThorDiskCallback());
+                    unsigned sizeGot = rowTransformer->transform(rowBuilder, lastMatch, this);
                     lastMatch.clear();
-                    localOffset = 0;
+                    fileoffset = 0;
                     if (sizeGot)
                     {
                         OwnedConstRoxieRow ret = rowBuilder.finalizeRowClear(sizeGot); 
