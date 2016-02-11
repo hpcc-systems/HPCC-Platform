@@ -156,7 +156,7 @@ public:
 
 extern jlib_decl void asyncStart(IThreaded & threaded);
 extern jlib_decl void asyncStart(const char * name, IThreaded & threaded);
-#if defined(__cplusplus) and __cplusplus >= 201100
+#if defined(__cplusplus) && __cplusplus >= 201100
 extern jlib_decl void asyncStart(std::function<void()> func);
 #endif
 

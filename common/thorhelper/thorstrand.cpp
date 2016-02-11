@@ -451,7 +451,7 @@ protected:
 class OrderedReadAheadQueue
 {
 public:
-    OrderedReadAheadQueue() : avail(0), space(1)
+    OrderedReadAheadQueue() : avail(0U), space(1U)
     {
     }
 
