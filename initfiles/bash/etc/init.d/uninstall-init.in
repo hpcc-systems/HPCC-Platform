@@ -85,3 +85,8 @@ if [ "${DISTRIB_NAME}" = "ubuntu" ] &&
       [ -e /lib/systemd/system/dafilesrv@.service ] && rm -rf /lib/systemd/system/dafilesrv@.service
    fi
 fi
+# Remove generated environment.xml under install directory
+[ -e ${INSTALL_DIR}/etc/HPCCSystems/rpmnew/environment.xml ] && rm -rf ${INSTALL_DIR}/etc/HPCCSystems/rpmnew/environment.xml
+[ -e ${INSTALL_DIR}/testing/regress/environment.xml ] && rm -rf ${INSTALL_DIR}/testing/regress/environment.xml
+
+exit 0
