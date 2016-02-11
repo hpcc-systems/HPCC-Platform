@@ -4175,6 +4175,71 @@ void CWsWorkunitsEx::addProcessLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& win
     }
 }
 
+void CWsWorkunitsEx::addThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& winfo, const char* path)
+{
+    if (cwu->getWuidVersion() <= 0)
+        return;
+    StringAttr clusterName(cwu->queryClusterName());
+    if (clusterName.isEmpty()) //Cluster name may not be set yet
+        return;
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
+    if (!clusterInfo)
+    {
+        WARNLOG("Cannot find TargetClusterInfo for workunit %s", cwu->queryWuid());
+        return;
+    }
+
+    unsigned numberOfSlaves = clusterInfo->getSize();
+    BoolHash uniqueProcesses;
+    Owned<IStringIterator> thorInstances = cwu->getProcesses("Thor");
+    ForEach (*thorInstances)
+    {
+        SCMStringBuffer processName;
+        thorInstances->str(processName);
+        if (processName.length() == 0)
+            continue;
+
+        bool* found = uniqueProcesses.getValue(processName.str());
+        if (found && *found)
+            continue;
+        uniqueProcesses.setValue(processName.str(), true);
+
+        StringBuffer groupName, logDir;
+        getClusterThorGroupName(groupName, processName.str());
+        getConfigurationDirectory(directories, "log", "thor", processName.str(), logDir);
+        Owned<IStringIterator> thorLogs = cwu->getLogs("Thor", processName.str());
+        ForEach (*thorLogs)
+        {
+            SCMStringBuffer logName;
+            thorLogs->str(logName);
+            if (logName.length() == 0)
+                continue;
+
+            const char* pStr = logName.str();
+            const char* ppStr = strstr(pStr, "/thormaster.");
+            if (!ppStr)
+            {
+                WARNLOG("Invalid thorlog entry in workunit xml: %s", logName.str());
+                continue;
+            }
+            ppStr += 12;
+            StringBuffer logDate = ppStr;
+            logDate.setLength(10);
+
+            for (unsigned i = 0; i < numberOfSlaves; i++)
+            {
+                MemoryBuffer mb;
+                winfo.getWorkunitThorSlaveLog(groupName.str(), NULL, logDate.str(), logDir.str(), i+1, mb, false);
+                if (!mb.length())
+                    continue;
+
+                VStringBuffer fileName("%s%c%s_thorslave.%d.%s.log", path, PATHSEPCHAR, processName.str(), i+1, logDate.str());
+                createZAPFile(fileName.str(), mb.length(), mb.bufferBase());
+            }
+        }
+    }
+}
+
 void CWsWorkunitsEx::createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr)
 {
     StringBuffer sb;
@@ -4329,6 +4394,8 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         createZAPWUGraphProgressFile(req.getWuid(), pathNameStr.str());
         addProcessLogfile(cwu, winfo, "EclAgent", folderToZIP.str());
         addProcessLogfile(cwu, winfo, "Thor", folderToZIP.str());
+        if (req.getIncludeThorSlaveLog())
+            addThorSlaveLogfile(cwu, winfo, folderToZIP.str());
 
         //Write out to ZIP file
         zipFileName.append(nameStr.str()).append(".zip");

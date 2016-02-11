@@ -67,7 +67,8 @@
                                 var history = document.getElementById("WhatChanged").value;
                                 var timing = document.getElementById("WhereSlow").value;
                                 var password = document.getElementById("Password").value;
-                                opener.createZAPInfo(wuid, espIP, thorIP, buildVersion, desc, history, timing, password);
+                                var thorSlaveLog = document.getElementById("IncludeThorSlaveLog").checked;
+                                opener.createZAPInfo(wuid, espIP, thorIP, buildVersion, desc, history, timing, password, thorSlaveLog);
                             }
                             window.close();
                         }
@@ -175,6 +176,12 @@
                                 </td>
                                 <td>
                                     <textarea rows="10" cols="72" id="WhereSlow" name="WhereSlow">&#160;</textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>
+                                    <input type="checkbox" title="Include Thor Slave logs" id="IncludeThorSlaveLog" name="IncludeThorSlaveLog">Include Thor Slave logs (It may take a long time to report the logs from multiple Thor Slave nodes.)</input>
                                 </td>
                             </tr>
                             <tr>

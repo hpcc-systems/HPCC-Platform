@@ -1639,6 +1639,7 @@ ESPrequest [nil_remove] WUCreateZAPInfoRequest
     string WhatChanged;
     string WhereSlow;
     [min_ver("1.53")] string Password;
+    [min_ver("1.57")] bool IncludeThorSlaveLog(false);
 };
 
 ESPresponse [exceptions_inline] WUCreateZAPInfoResponse

@@ -751,12 +751,13 @@
                         mywindow.focus();
                         return false;
                     }
-                    function createZAPInfo(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo, password)
+                    function createZAPInfo(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo, password, thorSlaveLog)
                     {
                         document.getElementById("ESPIPAddress").value=espIP;
                         if (thorIP != '')
                             document.getElementById("ThorIPAddress").value=thorIP;
                         document.getElementById("BuildVersion").value=ESPBuildVersion;
+                        document.getElementById("IncludeThorSlaveLog").value=thorSlaveLog;
                         if (problemDesciption != '')
                             document.getElementById("ProblemDescription").value=problemDesciption;
                         else
