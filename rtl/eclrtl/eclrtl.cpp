@@ -309,7 +309,6 @@ private:
 typedef MapStringTo<RTLUnicodeConverter, char const *> MapStrToUnicodeConverter;
 static __thread MapStrToUnicodeConverter *unicodeConverterMap = NULL;
 static __thread ThreadTermFunc prevThreadTerminator = NULL;
-CriticalSection ucmCrit;
 
 static void clearUnicodeConverterMap()
 {
