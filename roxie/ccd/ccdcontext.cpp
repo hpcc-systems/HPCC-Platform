@@ -2788,6 +2788,7 @@ public:
     virtual void process()
     {
         MTIME_SECTION(myTimer, "Process");
+        QueryTerminationCleanup threadCleanup;
         EclProcessFactory pf = (EclProcessFactory) factory->queryDll()->getEntry("createProcess");
         Owned<IEclProcess> p = pf();
         try

@@ -987,15 +987,18 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", runWuid);
 
             if (req.getCloneWorkunit())
-                WsWuHelpers::runWsWorkunit(context, wuid, runWuid, cluster, req.getInput(), &req.getVariables(), &req.getDebugValues());
+                WsWuHelpers::runWsWorkunit(context, wuid, runWuid, cluster, req.getInput(), &req.getVariables(),
+                    &req.getDebugValues(), &req.getApplicationValues());
             else
             {
-                WsWuHelpers::submitWsWorkunit(context, runWuid, cluster, NULL, 0, false, true, true, req.getInput(), &req.getVariables(), &req.getDebugValues());
+                WsWuHelpers::submitWsWorkunit(context, runWuid, cluster, NULL, 0, false, true, true, req.getInput(),
+                    &req.getVariables(), &req.getDebugValues(), &req.getApplicationValues());
                 wuid.set(runWuid);
             }
         }
         else if (notEmpty(req.getQuerySet()) && notEmpty(req.getQuery()))
-            WsWuHelpers::runWsWuQuery(context, wuid, req.getQuerySet(), req.getQuery(), cluster, req.getInput());
+            WsWuHelpers::runWsWuQuery(context, wuid, req.getQuerySet(), req.getQuery(), cluster, req.getInput(),
+                &req.getApplicationValues());
         else
             throw MakeStringException(ECLWATCH_MISSING_PARAMS,"Workunit or Query required");
 

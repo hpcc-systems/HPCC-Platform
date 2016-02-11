@@ -2971,7 +2971,7 @@ void WsWuHelpers::setXmlParameters(IWorkUnit *wu, const char *xml, IArrayOf<ICon
 }
 
 void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, bool resetVariables,
-    const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
+    const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs, IArrayOf<IConstApplicationValue> *applications)
 {
     ensureWsWorkunitAccess(context, *cw, SecAccess_Write);
     switch(cw->getState())
@@ -3026,6 +3026,16 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
         }
     }
 
+    if (applications)
+    {
+        ForEachItemIn(ii, *applications)
+        {
+            IConstApplicationValue& item = applications->item(ii);
+            if(notEmpty(item.getApplication()) && notEmpty(item.getName()))
+                wu->setApplicationValue(item.getApplication(), item.getName(), item.getValue(), true);
+        }
+    }
+
     if (resetWorkflow)
         wu->resetWorkflow();
     if (!compile)
@@ -3060,13 +3070,13 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
 }
 
 void WsWuHelpers::submitWsWorkunit(IEspContext& context, const char *wuid, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, bool resetVariables,
-    const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
+    const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs, IArrayOf<IConstApplicationValue> *applications)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
     if(!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
-    return submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, resetVariables, paramXml, variables, debugs);
+    return submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, resetVariables, paramXml, variables, debugs, applications);
 }
 
 
@@ -3083,24 +3093,24 @@ void WsWuHelpers::copyWsWorkunit(IEspContext &context, IWorkUnit &wu, const char
 }
 
 void WsWuHelpers::runWsWorkunit(IEspContext &context, StringBuffer &wuid, const char *srcWuid, const char *cluster, const char *paramXml,
-    IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
+    IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs, IArrayOf<IConstApplicationValue> *applications)
 {
     NewWsWorkunit wu(context);
     wuid.set(wu->queryWuid());
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, true, paramXml, variables, debugs);
+    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, true, paramXml, variables, debugs, applications);
 }
 
 void WsWuHelpers::runWsWorkunit(IEspContext &context, IConstWorkUnit *cw, const char *srcWuid, const char *cluster, const char *paramXml,
-    IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
+    IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs, IArrayOf<IConstApplicationValue> *applications)
 {
     WorkunitUpdate wu(&cw->lock());
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml, variables, debugs);
+    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml, variables, debugs, applications);
 }
 
 IException * WsWuHelpers::noteException(IWorkUnit *wu, IException *e, ErrorSeverity level)
@@ -3131,7 +3141,8 @@ StringBuffer & WsWuHelpers::resolveQueryWuid(StringBuffer &wuid, const char *que
     return wuid.append(q->queryProp("@wuid"));
 }
 
-void WsWuHelpers::runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const char *queryset, const char *query, const char *cluster, const char *paramXml)
+void WsWuHelpers::runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const char *queryset, const char *query,
+    const char *cluster, const char *paramXml, IArrayOf<IConstApplicationValue> *applications)
 {
     StringBuffer srcWuid;
 
@@ -3140,10 +3151,11 @@ void WsWuHelpers::runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const c
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml);
+    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml, NULL, NULL, applications);
 }
 
-void WsWuHelpers::runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset, const char *query, const char *cluster, const char *paramXml)
+void WsWuHelpers::runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset, const char *query,
+    const char *cluster, const char *paramXml, IArrayOf<IConstApplicationValue> *applications)
 {
     StringBuffer srcWuid;
 
@@ -3153,7 +3165,7 @@ void WsWuHelpers::runWsWuQuery(IEspContext &context, StringBuffer &wuid, const c
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, true, paramXml);
+    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, true, paramXml, NULL, NULL, applications);
 }
 
 void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& input)

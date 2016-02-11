@@ -602,6 +602,7 @@ ESPrequest WURunRequest
     bool NoRootTag(0);
     ESParray<ESPstruct NamedValue> DebugValues;
     ESParray<ESPstruct NamedValue> Variables;
+    [min_ver("1.56")] ESParray<ESPstruct ApplicationValue> ApplicationValues;
     ESPenum WUExceptionSeverity ExceptionSeverity("info");
 };
 
