@@ -21,7 +21,7 @@
  <Row><name>name2</name><value>2</value><boolval>false</boolval><r8>5.6</r8><r4>7.800000190734863</r4><d>3030</d><ddd>-1234567.89</ddd><u1>là</u1><u2>là      </u2><dt>2015-12-25 01:23:45</dt></Row>
 </Dataset>
 <Dataset name='Result 7'>
- <Row><Result_7>2</Result_7></Row>
+ <Row><Result_7>4</Result_7></Row>
 </Dataset>
 <Dataset name='Result 8'>
  <Row><Result_8>true</Result_8></Row>

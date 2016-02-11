@@ -26,6 +26,7 @@ GENERATE_BASH(processor ${bash-vars} "hpcc-push.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc-run.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "remote-install-engine.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "deploy-java-files.sh.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "create-env-xml.sh.in" outFiles)
 
 SET(noInstall)
 GENERATE_BASH(processor ${bash-vars} "prerm.in" noInstall)

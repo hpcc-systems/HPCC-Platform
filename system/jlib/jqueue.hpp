@@ -352,7 +352,7 @@ public:
         if (--activeWriters <= 0)
         {
             state_t curState = state.load(std::memory_order_acquire);
-            unsigned readersWaiting = (curState & readerMask) >> readerShift;
+            unsigned readersWaiting = (unsigned)((curState & readerMask) >> readerShift);
             readers.signal(readersWaiting);
         }
     }
@@ -361,8 +361,8 @@ public:
         //readers and writers may enqueue/dequeue another row before this takes effect
         aborted.store(true, std::memory_order_release);
         state_t curState = state.load(std::memory_order_acquire);
-        unsigned readersWaiting = (curState & readerMask) >> readerShift;
-        unsigned writersWaiting = (curState & writerMask) >> writerShift;
+        unsigned readersWaiting = (unsigned)((curState & readerMask) >> readerShift);
+        unsigned writersWaiting = (unsigned)((curState & writerMask) >> writerShift);
         readers.signal(readersWaiting);
         writers.signal(writersWaiting);
     }

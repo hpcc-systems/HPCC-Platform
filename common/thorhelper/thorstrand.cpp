@@ -49,15 +49,27 @@ public:
         started = true;
     }
 
+    void startProducerThread(IThreaded & main)
+    {
+        CThreaded * thread = new CThreaded("ReadAheadThread", &main);
+        threads.append(*thread);
+        thread->start();
+    }
+
     void processConsumerStop()
     {
-        //Ensure only one producer triggers stopping on the inputs
-        if (started && !stopping.exchange(true, std::memory_order_acq_rel))
+        if (started)
         {
-            stopConsumers();
-            for (unsigned i=0; i < numProducers; i++)
-                producerStoppedSem.wait();
+            //Ensure only one producer triggers stopping on the inputs
+            if (!stopping.exchange(true, std::memory_order_acq_rel))
+            {
+                stopActiveProducers();
+                for (unsigned i=0; i < numProducers; i++)
+                    producerStoppedSem.wait();
+            }
         }
+        else
+            stopInactiveProducers();
     }
 
     void waitForStop()
@@ -70,16 +82,26 @@ public:
         producerStoppedSem.signal();
     }
 
+    inline unsigned getNumProducers() const { return numProducers; }
+
 protected:
-    virtual void stopConsumers()
+    //Stop producers that have already been started()
+    virtual void stopActiveProducers()
     {
         producerStopSem.signal(numProducers);
+        ForEachItemIn(i, threads)
+            threads.item(i).join();
+        threads.kill();
     }
+
+    //Stop producers that have never been started()
+    virtual void stopInactiveProducers() = 0;
 
 private:
     unsigned numProducers;
     Semaphore producerStopSem;
     Semaphore producerStoppedSem;
+    CIArrayOf<CThreaded> threads;
     std::atomic<bool> stopping;
     bool started;
 };
@@ -101,7 +123,7 @@ public:
         assertex(n == 0);
         stream = _stream;
     }
-    virtual void ready()
+    virtual void start()
     {
     }
     virtual void reset()
@@ -243,6 +265,11 @@ public:
         queue = _queue;
     }
 
+    void stopInput()
+    {
+        stream->stop();
+    }
+
 protected:
     CStrandJunction & junction;
     RowBlockAllocator & allocator;
@@ -352,10 +379,10 @@ public:
         resetBlockQueue(queue);
         CStrandJunction::reset();
     }
-    virtual void ready()
+    virtual void start()
     {
         for (unsigned i=0; i < numStrands; i++)
-            asyncStart("ReadAheadThread", *producers[i]);
+            startProducerThread(*producers[i]);
         noteStarted();
     }
     static BlockedManyToOneJunction * create(roxiemem::IRowManager & rowManager, unsigned numStrands, unsigned blockSize)
@@ -366,11 +393,17 @@ public:
     }
 
 protected:
-    virtual void stopConsumers()
+    virtual void stopActiveProducers()
     {
         queue->abort();
-        CStrandJunction::stopConsumers();
+        CStrandJunction::stopActiveProducers();
     }
+    virtual void stopInactiveProducers()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            producers[i]->stopInput();
+    }
+
 
 protected:
     unsigned numStrands;
@@ -424,17 +457,23 @@ public:
             consumers[i]->reset();
         CStrandJunction::reset();
     }
-    virtual void ready()
+    virtual void start()
     {
-        asyncStart(producer);
+        startProducerThread(producer);
         noteStarted();
     }
 
 protected:
-    virtual void stopConsumers()
+    virtual void stopActiveProducers()
     {
         queue->abort();
-        CStrandJunction::stopConsumers();
+        CStrandJunction::stopActiveProducers();
+    }
+
+    virtual void stopInactiveProducers()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            producer.stopInput();
     }
 
 protected:
@@ -451,7 +490,7 @@ protected:
 class OrderedReadAheadQueue
 {
 public:
-    OrderedReadAheadQueue() : avail(0), space(1)
+    OrderedReadAheadQueue() : avail(0U), space(1U)
     {
     }
 
@@ -583,7 +622,7 @@ public:
         alive = true;
     }
 
-    void stop()
+    void stopInput()
     {
         stream->stop();
     }
@@ -661,13 +700,12 @@ public:
         numActiveStrands = numStrands;
         CStrandJunction::reset();
     }
-    virtual void ready()
+    virtual void start()
     {
         for (unsigned i=0; i < numStrands; i++)
-        {
-            CThreaded * thread = new CThreaded("ReadAheadThread", producers[i]);
-            thread->startRelease();
-        }
+            startProducerThread(*producers[i]);
+        noteStarted();
+        throwUnexpected();  // reimplement...
     }
     virtual const void *nextRow()
     {
@@ -731,6 +769,11 @@ protected:
             if (curStrand == numStrands)
                 curStrand = 0;
         } while (!producers[curStrand]->isAlive());
+    }
+    virtual void stopInactiveProducers()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            producers[i]->stopInput();
     }
 
 
@@ -936,6 +979,11 @@ public:
         strand = _input;
     }
 
+    void stopStrand()
+    {
+        strand->stop();
+    }
+
     inline OrderedReadAheadQueue & queryInputQueue() { return inputQueue; }
     inline OrderedReadAheadQueue & queryOutputQueue() { return outputQueue; }
 
@@ -962,12 +1010,20 @@ class COrderedStrandBranch : public CInterface, implements IStrandBranch, implem
         OrderedInputJunction(COrderedStrandBranch & _owner) : CStrandJunction(1), owner(_owner) {}
         virtual IEngineRowStream * queryOutput(unsigned n) { return owner.queryStrandInput(n); }
         virtual void setInput(unsigned n, IEngineRowStream * _stream) { assertex(n==0); owner.setInput(_stream); }
-        virtual void ready() { owner.startInputReader(); }
+        virtual void start()
+        {
+            startProducerThread(owner);
+            noteStarted();
+        }
         virtual void abort() { owner.abortInputQueues(); }
-        virtual void stopConsumers()
+        virtual void stopActiveProducers()
         {
             owner.abortInputQueues();
-            CStrandJunction::stopConsumers();
+            CStrandJunction::stopActiveProducers();
+        }
+        virtual void stopInactiveProducers()
+        {
+            owner.stopInactiveInput();
         }
     protected:
         COrderedStrandBranch & owner;
@@ -978,17 +1034,26 @@ class COrderedStrandBranch : public CInterface, implements IStrandBranch, implem
         OrderedOutputJunction(COrderedStrandBranch & _owner) : CStrandJunction(_owner.numStrands), owner(_owner) {}
         virtual IEngineRowStream * queryOutput(unsigned n) { assertex(n==0); return owner.queryOutput(); }
         virtual void setInput(unsigned n, IEngineRowStream * _stream) { owner.setStrand(n, _stream); }
-        virtual void ready() { owner.startStrandReaders(); }
+        virtual void start()
+        {
+            for (unsigned i=0; i < getNumProducers(); i++)
+                startProducerThread(*owner.strands[i]);
+            noteStarted();
+        }
         virtual void abort() { owner.abortOutputQueues(); }
-        virtual void stopConsumers()
+        virtual void stopActiveProducers()
         {
             owner.abortOutputQueues();
-            CStrandJunction::stopConsumers();
+            CStrandJunction::stopActiveProducers();
         }
         virtual void reset()
         {
             owner.resetBranch();
             CStrandJunction::reset();
+        }
+        virtual void stopInactiveProducers()
+        {
+            owner.stopInactiveStrands();
         }
     protected:
         COrderedStrandBranch & owner;
@@ -1030,19 +1095,6 @@ public:
     {
         for (unsigned i=0; i < numStrands; i++)
             strands[i]->abortOutputQueue();
-    }
-
-    void startStrandReaders()
-    {
-        for (unsigned i=0; i < numStrands; i++)
-            asyncStart(*strands[i]);
-        outputJunction->noteStarted();
-    }
-
-    void startInputReader()
-    {
-        asyncStart(*this);
-        inputJunction->noteStarted();
     }
 
     virtual void main()
@@ -1205,6 +1257,16 @@ public:
         return this;
     }
 
+    void stopInactiveInput()
+    {
+        input->stop();
+    }
+
+    void stopInactiveStrands()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            strands[i]->stopStrand();
+    }
 
  //interface IEngineRowStream
      virtual const void *nextRow()

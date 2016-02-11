@@ -1444,7 +1444,7 @@ private:
             // convert to XML with attribute values in single quotes - makes replaying queries easier
             uid = queryXML->queryProp("@uid");
             if (!uid)
-                uid = "-";
+                uid = queryXML->queryProp("_TransactionId");
             isBlind = queryXML->getPropBool("@blind", false) || queryXML->getPropBool("_blind", false);
             isDebug = queryXML->getPropBool("@debug") || queryXML->getPropBool("_Probe", false);
             toXML(queryXML, saniText, 0, isBlind ? (XML_SingleQuoteAttributeValues | XML_Sanitize) : XML_SingleQuoteAttributeValues);
@@ -1645,8 +1645,15 @@ readAnother:
                 bool isRequestArray = false;
                 bool isBlind = false;
                 bool isDebug = false;
-
+                const char *uid = NULL;
                 sanitizeQuery(queryXml, queryName, sanitizedText, httpHelper, uid, isRequest, isRequestArray, isBlind, isDebug);
+                if (uid)
+                {
+                    logctx.set(ep.getIpText(ctxstr).appendf(":%u{%s}", ep.port, uid).str());
+                    ctxstr.clear();
+                }
+                else
+                    uid = "-";
                 pool->checkAccess(peer, queryName, sanitizedText, isBlind);
                 if (isDebug)
                 {
@@ -1732,7 +1739,8 @@ readAnother:
                             {
                                 // we need to reparse input xml, as global whitespace setting has been overridden
                                 parseQueryPTFromString(queryXml, httpHelper, rawText.str(), (PTreeReaderOptions)(xmlReadFlags | ptr_ignoreNameSpaces));
-                                sanitizeQuery(queryXml, queryName, sanitizedText, httpHelper, uid, isRequest, isRequestArray, isBlind, isDebug);
+                                const char *dummy;
+                                sanitizeQuery(queryXml, queryName, sanitizedText, httpHelper, dummy, isRequest, isRequestArray, isBlind, isDebug);
                             }
                             IArrayOf<IPropertyTree> requestArray;
                             if (isHTTP)

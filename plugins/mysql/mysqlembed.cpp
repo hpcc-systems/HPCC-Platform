@@ -961,6 +961,76 @@ protected:
 
 // Each call to a MySQL function will use a new MySQLEmbedFunctionContext object
 
+static __thread ThreadTermFunc threadHookChain;
+static __thread MySQLConnection *cachedConnection = NULL;
+static __thread const char *cachedServer = NULL;
+static __thread const char *cachedUser = NULL;
+static __thread const char *cachedPassword = NULL;
+static __thread const char *cachedDatabase = NULL;
+static __thread unsigned cachedPort = 0;
+
+static bool cachedConnectionMatches(const char *server, unsigned port, const char *user, const char *password, const char *database)
+{
+    return streq(server, cachedServer) && port==cachedPort && streq(user, cachedUser) && streq(password, cachedPassword) && streq(database, cachedDatabase);
+}
+
+static void clearCache()
+{
+    ::Release(cachedConnection);
+    cachedConnection = NULL;
+    free((void *) cachedServer);
+    free((void *) cachedUser);
+    free((void *) cachedPassword);
+    free((void *) cachedDatabase);
+    cachedServer = cachedUser = cachedPassword = cachedDatabase = NULL;
+    cachedPort = 0;
+}
+
+static bool mysqlInitialized = false;
+static __thread bool mysqlThreadInitialized = false;
+static CriticalSection initCrit;
+
+static void terminateMySqlThread()
+{
+    clearCache();
+    mysql_thread_end();
+    mysqlThreadInitialized = false;  // In case it was a threadpool thread...
+    if (threadHookChain)
+    {
+        (*threadHookChain)();
+        threadHookChain = NULL;
+    }
+}
+
+static void initializeMySqlThread()
+{
+    if (!mysqlThreadInitialized)
+    {
+        {
+            CriticalBlock b(initCrit);
+            if (!mysqlInitialized)
+            {
+                mysqlInitialized = true;
+                mysql_library_init(0, NULL, NULL);
+            }
+        }
+        mysql_thread_init();
+        threadHookChain = addThreadTermFunc(terminateMySqlThread);
+        mysqlThreadInitialized = true;
+    }
+}
+
+static void cacheConnection(MySQLConnection *connection, const char *server, unsigned port, const char *user, const char *password, const char *database)
+{
+    clearCache();
+    cachedServer = strdup(server);
+    cachedUser = strdup(user);
+    cachedPassword = strdup(password);
+    cachedDatabase = strdup(database);
+    cachedPort = port;
+    cachedConnection = LINK(connection);
+}
+
 class MySQLEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
@@ -971,6 +1041,7 @@ public:
         const char *user = "";
         const char *password = "";
         const char *database = "";
+        bool caching = true;
         unsigned port = 0;
         StringArray opts;
         opts.appendList(options, ",");
@@ -992,13 +1063,32 @@ public:
                     password = val;
                 else if (stricmp(optName, "database")==0)
                     database = val;
+                else if (stricmp(optName, "cache")==0)
+                    caching = clipStrToBool(val);
             }
         }
-        conn.setown(new MySQLConnection(mysql_init(NULL)));
-        if (!mysql_real_connect(*conn, server, user, password, database, port, NULL, 0))
+        initializeMySqlThread();
+        if (caching && cachedConnection && cachedConnectionMatches(server, port, user, password, database))
         {
-            VStringBuffer err("mysql: failed to connect (%s)", mysql_error(*conn));
-            rtlFail(0, err.str());
+            conn.set(cachedConnection);
+        }
+        else
+        {
+            if (cachedConnection)
+            {
+                ::Release(cachedConnection);
+                cachedConnection = NULL;
+            }
+            conn.setown(new MySQLConnection(mysql_init(NULL)));
+            if (!mysql_real_connect(*conn, server, user, password, database, port, NULL, 0))
+            {
+                VStringBuffer err("mysql: failed to connect (%s)", mysql_error(*conn));
+                rtlFail(0, err.str());
+            }
+            if (caching)
+            {
+                cacheConnection(conn, server, port, user, password, database);
+            }
         }
     }
     virtual bool getBooleanResult()

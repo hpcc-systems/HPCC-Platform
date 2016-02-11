@@ -56,6 +56,15 @@ ThreadTermFunc addThreadTermFunc(ThreadTermFunc onTerm)
     return old;
 }
 
+void callThreadTerminationHooks()
+{
+    if (threadTerminationHook)
+    {
+        (*threadTerminationHook)();
+        threadTerminationHook = NULL;
+    }
+}
+
 PointerArray *exceptionHandlers = NULL;
 MODULE_INIT(INIT_PRIORITY_JTHREAD)
 {
@@ -275,11 +284,7 @@ int Thread::begin()
         handleException(MakeStringException(0, "Unknown exception in Thread %s", getName()));
     }
 #endif
-    if (threadTerminationHook)
-    {
-        (*threadTerminationHook)();
-        threadTerminationHook = NULL;
-    }
+    callThreadTerminationHooks();
 #ifdef _WIN32
 #ifndef _DEBUG
     CloseHandle(hThread);   // leak handle when debugging, 
@@ -866,11 +871,7 @@ public:
                 handleException(MakeStringException(0, "Unknown exception in Thread from pool %s", parent.poolname.get()));
             }
 #endif
-            if (threadTerminationHook)
-            {
-                (*threadTerminationHook)();    // Reset any pre-thread state.
-                threadTerminationHook = NULL;
-            }
+            callThreadTerminationHooks();    // Reset any pre-thread state.
         } while (parent.notifyStopped(this));
         return 0;
     }

@@ -62,6 +62,14 @@ extern jlib_decl unsigned threadLogID();  // for use in logging
 
 typedef void (*ThreadTermFunc)();
 extern jlib_decl ThreadTermFunc addThreadTermFunc(ThreadTermFunc onTerm);
+extern jlib_decl void callThreadTerminationHooks();
+
+//An exception safe way of ensuring that the thread termination hooks are called.
+class jlib_decl QueryTerminationCleanup
+{
+public:
+    inline ~QueryTerminationCleanup() { callThreadTerminationHooks(); }
+};
 
 class jlib_decl Thread : public CInterface, public IThread
 {
@@ -156,7 +164,7 @@ public:
 
 extern jlib_decl void asyncStart(IThreaded & threaded);
 extern jlib_decl void asyncStart(const char * name, IThreaded & threaded);
-#if defined(__cplusplus) and __cplusplus >= 201100
+#if defined(__cplusplus) && __cplusplus >= 201100
 extern jlib_decl void asyncStart(std::function<void()> func);
 #endif
 

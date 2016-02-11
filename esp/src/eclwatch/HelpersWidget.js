@@ -156,12 +156,18 @@ define([
                         }),
                         Type: {
                             label: this.i18n.Type,
-                            width: 117,
+                            width: 160,
                             formatter: function (Type, row) {
                                 if (context.canShowContent(Type)) {
-                                    return "<a href='#' class='dgrid-row-url'>" + Type + "</a>";
+                                    if (!row.Orig) {
+                                        return "<a href='#' class='dgrid-row-url'>" + Type + "</a>"
+                                    } if (row.Orig.Description === undefined && row.Orig.Type === Type) {
+                                        return "<a href='#' class='dgrid-row-url'>" + Type + "</a>"
+                                    } else {
+                                        return "<a href='#' class='dgrid-row-url'>" + Type + " (" + row.Orig.Description + ")" + "</a>"
+                                    }
                                 }
-                                return Type;
+                            return Type;
                             }
                         },
                         Description: {

@@ -184,8 +184,15 @@ echo ""
 
 # installing files
 installConfs "environment.conf" $configs/ 1 || exit 1
-installConfs "environment.xml" $configs/  1 || exit 1
 installConfs "genenvrules.conf" $configs/ 1 || exit 1
+
+echo "Generate environment.xml"
+# Generate environment.xml
+${path}/sbin/create-env-xml.sh > /dev/null 2>&1 || exit 1
+echo ""
+
+# installing environment.xml
+installConfs "environment.xml" $configs/  1 || exit 1
 
 installFile "$path${CONFIG_DIR}/version" "${CONFIG_DIR}/version" 1 || exit 1
 installFile "$initPath/dafilesrv" "/etc/init.d/dafilesrv" 1 || exit 1

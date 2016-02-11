@@ -24,6 +24,10 @@
 
 project( LdapSecurity ) 
 
+if (APPLE AND CMAKE_COMPILER_IS_CLANG)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+endif()
+
 set (    SRCS 
          ../shared/authmap.cpp 
          ../shared/caching.cpp 
