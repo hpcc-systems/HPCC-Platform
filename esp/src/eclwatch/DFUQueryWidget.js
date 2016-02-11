@@ -446,6 +446,7 @@ define([
             this.listStore = this.params.searchResults ? this.params.searchResults : new ESPLogicalFile.CreateLFQueryStore();
             this.treeStore = new ESPLogicalFile.CreateLFQueryTreeStore();
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
+                deselectOnRefresh: true,
                 store: this.listStore,
                 columns: {
                     col1: selector({
