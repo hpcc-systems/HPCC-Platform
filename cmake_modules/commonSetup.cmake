@@ -48,6 +48,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(CLIENTTOOLS_ONLY "Enable the building of Client Tools only." OFF)
   option(TEST_PLUGINS "Enable the building of platform and all plugins for testing purposes" OFF)
   option(PLUGIN "Enable building of a plugin" OFF)
+  option(USE_SHLIBDEPS "Enable the use of dpkg-shlibdeps on ubuntu packagin" OFF)
 
   if (APPLE OR WIN32)
     option(USE_BINUTILS "Enable use of binutils to embed workunit info into shared objects" OFF)

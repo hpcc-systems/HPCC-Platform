@@ -14,7 +14,10 @@
     </indexterm>(</emphasis><emphasis>target</emphasis><emphasis
   role="bold">)] [, EXPIRE<indexterm>
       <primary>EXPIRE</primary>
-    </indexterm>(</emphasis><emphasis>days</emphasis><emphasis role="bold">)]
+    </indexterm>(</emphasis><emphasis>days</emphasis> <emphasis role="bold">)]
+  [, REFRESH<indexterm>
+      <primary>REFRESH</primary>
+    </indexterm>(</emphasis><emphasis>flag</emphasis> <emphasis role="bold">)]
   [, SINGLE<indexterm>
       <primary>SINGLE</primary>
     </indexterm>] [, MULTIPLE<indexterm>
@@ -109,6 +112,25 @@
           </row>
 
           <row>
+            <entry><emphasis role="bold">REFRESH</emphasis></entry>
+
+            <entry>Optional. Option to control when the PERSIST rebuilds. If
+            omitted, the PERSIST rebuilds if 1) the underlying file does not
+            exist, or 2) the data has changed, or 3) the code has
+            changed.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>flag</emphasis></entry>
+
+            <entry>A boolean value indicating whether to rebuild the PERSIST.
+            When set to FALSE, the PERSIST rebuilds ONLY if the underlying
+            file does not exist. If your PERSIST layout has changed and you
+            specify REFRESH(FALSE) the mismatch could cause your job to
+            fail.</entry>
+          </row>
+
+          <row>
             <entry><emphasis role="bold">SINGLE</emphasis></entry>
 
             <entry>Optional. Specifies to keep a single PERSIST. The name of
@@ -153,6 +175,8 @@
   <emphasis>attribute</emphasis> is used in the computation. This gives a kind
   of "compute in anticipation" capability.</para>
 
+  <para></para>
+
   <para>Example:</para>
 
   <programlisting>  CountPeople := COUNT(Person) : PERSIST('PeopleCount');
@@ -170,7 +194,8 @@
                   'OtherThor',
                   CLUSTER('AnotherThor'));
        //run the code on the OtherThor cluster
-       // and write the file to the AnotherThor cluster</programlisting>
+       // and write the file to the AnotherThor cluster
+</programlisting>
 
   <para>See Also: <link linkend="STORED">STORED</link>, <link
   linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, <link
