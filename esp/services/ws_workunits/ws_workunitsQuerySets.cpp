@@ -972,28 +972,32 @@ void retrieveQuerysetDetailsFromAlias(IEspContext &context, IPropertyTree *regis
 {
     StringBuffer xpath;
     xpath.append("Alias[@name='").append(name).append("']");
-    IPropertyTree *alias = registry->queryPropTree(xpath);
-    if (!alias)
+    Owned<IPropertyTreeIterator> regAliases = registry->getElements(xpath.str());
+    if (!regAliases->first())
     {
         DBGLOG("Alias %s not found", name);
         return;
     }
 
-    Owned<IEspQuerySetAlias> a = createQuerySetAlias();
-    gatherQuerySetAliasDetails(alias, a);
-    xpath.clear().append("Query[@id='").append(a->getId()).append("']");
-    aliases.append(*a.getClear());
-
-    IPropertyTree *query = registry->queryPropTree(xpath);
-    if (!query)
+    ForEach(*regAliases)
     {
-        DBGLOG("No matching Query %s found for Alias %s", a->getId(), name);
-        return;
-    }
+        IPropertyTree& alias = regAliases->query();
+        Owned<IEspQuerySetAlias> a = createQuerySetAlias();
+        gatherQuerySetAliasDetails(&alias, a);
+        xpath.clear().append("Query[@id='").append(a->getId()).append("']");
+        aliases.append(*a.getClear());
 
-    Owned<IEspQuerySetQuery> q = createQuerySetQuery();
-    gatherQuerySetQueryDetails(context, query, q, cluster, queriesOnCluster);
-    queries.append(*q.getClear());
+        IPropertyTree *query = registry->queryPropTree(xpath);
+        if (!query)
+        {
+            DBGLOG("No matching Query %s found for Alias %s", a->getId(), name);
+            return;
+        }
+
+        Owned<IEspQuerySetQuery> q = createQuerySetQuery();
+        gatherQuerySetQueryDetails(context, query, q, cluster, queriesOnCluster);
+        queries.append(*q.getClear());
+    }
 }
 
 void retrieveQuerysetDetailsFromQuery(IEspContext &context, IPropertyTree *registry, const char *value, const char *type, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases, const char *cluster=NULL, IPropertyTree *queriesOnCluster=NULL)
@@ -1004,25 +1008,30 @@ void retrieveQuerysetDetailsFromQuery(IEspContext &context, IPropertyTree *regis
     StringBuffer attributeName(type);
     StringBuffer xpath;
     xpath.clear().append("Query[@").append(attributeName.toLowerCase()).append("='").append(value).append("']");
-    IPropertyTree *query = registry->queryPropTree(xpath);
-    if (!query)
+    Owned<IPropertyTreeIterator> regQueries = registry->getElements(xpath.str());
+    if (!regQueries->first())
     {
         DBGLOG("No matching Query %s found for %s", value, type);
         return;
     }
 
-    Owned<IEspQuerySetQuery> q = createQuerySetQuery();
-    gatherQuerySetQueryDetails(context, query, q, cluster, queriesOnCluster);
-    xpath.clear().append("Alias[@id='").append(q->getId()).append("']");
-    queries.append(*q.getClear());
-
-    Owned<IPropertyTreeIterator> regAliases = registry->getElements(xpath.str());
-    ForEach(*regAliases)
+    ForEach(*regQueries)
     {
-        IPropertyTree &alias = regAliases->query();
-        Owned<IEspQuerySetAlias> a = createQuerySetAlias();
-        gatherQuerySetAliasDetails(&alias, a);
-        aliases.append(*a.getClear());
+        IPropertyTree& query = regQueries->query();
+
+        Owned<IEspQuerySetQuery> q = createQuerySetQuery();
+        gatherQuerySetQueryDetails(context, &query, q, cluster, queriesOnCluster);
+        xpath.clear().append("Alias[@id='").append(q->getId()).append("']");
+        queries.append(*q.getClear());
+
+        Owned<IPropertyTreeIterator> regAliases = registry->getElements(xpath.str());
+        ForEach(*regAliases)
+        {
+            IPropertyTree &alias = regAliases->query();
+            Owned<IEspQuerySetAlias> a = createQuerySetAlias();
+            gatherQuerySetAliasDetails(&alias, a);
+            aliases.append(*a.getClear());
+        }
     }
 }
 
