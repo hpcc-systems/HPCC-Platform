@@ -77,11 +77,14 @@ public:
         return in->gatherConjunctions(collector);
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
     {
         assertex (!idx);
+        //Need to call
+        //extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, bool consumerOrdered)
         PointerArrayOf<IEngineRowStream> instreams;
-        Owned<IStrandJunction> junction = in->getOutputStreams(ctx, sourceIdx, instreams, false, flags | SFforceSingle);
+        Owned<IStrandJunction> junction = in->getOutputStreams(ctx, sourceIdx, instreams, NULL, consumerOrdered);
+        //MORE: This needs to create a junction if instreams > 1
         // We forced to single, so should not be getting anything but a single stream back
         assertex(junction==NULL);
         assertex(instreams.length()==1);

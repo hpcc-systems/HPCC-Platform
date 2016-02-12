@@ -26,6 +26,7 @@
 #include "jtime.hpp"
 #include <stdio.h>
 #include <time.h>
+#include <atomic>
 
 #if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
  #undef new
@@ -903,7 +904,7 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 
 }
 
-unsigned getAffinityCpus()
+static unsigned evalAffinityCpus()
 {
     unsigned numCpus = 0;
     DWORD ProcessAffinityMask, SystemAffinityMask;
@@ -988,7 +989,7 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
     close(cpufd);
 }
 
-unsigned getAffinityCpus()
+static unsigned evalAffinityCpus()
 {
 #ifdef __APPLE__
     // MORE - could do better
@@ -1179,6 +1180,19 @@ void getDiskUsage(char const * path, unsigned __int64 & total, unsigned __int64 
 }
 
 #endif
+
+static std::atomic<unsigned> cachedNumCpus;
+unsigned getAffinityCpus()
+{
+    if (cachedNumCpus.load(std::memory_order_acquire) == 0)
+        cachedNumCpus.store(evalAffinityCpus(), std::memory_order_release);
+    return cachedNumCpus.load(std::memory_order_acquire);
+}
+void clearAffinityCache()
+{
+    cachedNumCpus.store(0, std::memory_order_release);
+}
+
 
 static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
 {
