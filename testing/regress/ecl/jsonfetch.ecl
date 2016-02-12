@@ -61,14 +61,14 @@ namesTable := dataset([
         {'Rowling','J.K.', 1, 2, '09876',654321,false,'','',false,[{'Animal Farm',''},{'Slaughterhouse-five','Vonnegut'}], ['Blue','Green']}
         ], personRecord);
 
-output(namesTable,,'REGRESS::TEMP::output_object_namedArray.json',overwrite, json);
-readObjectNamedArray := dataset(DYNAMIC('REGRESS::TEMP::output_object_namedArray.json'), personRecord, json('Row'));
+output(namesTable,,'REGRESS::TEMP::jsonfetch.json',overwrite, json);
+dsJsonFetch := dataset(DYNAMIC('REGRESS::TEMP::jsonfetch.json'), personRecord, json('Row'));
 
-namedArrayWithPos := dataset(DYNAMIC('REGRESS::TEMP::output_object_namedArray.json'), {personRecord, UNSIGNED8 RecPtr{virtual(fileposition)}}, json('Row'));
-BUILD(namedArrayWithPos, {surname, RecPtr}, 'REGRESS::TEMP::namedarray.json.index', OVERWRITE);
+dsJsonFetchWithPos := dataset(DYNAMIC('REGRESS::TEMP::jsonfetch.json'), {personRecord, UNSIGNED8 RecPtr{virtual(fileposition)}}, json('Row'));
+BUILD(dsJsonFetchWithPos, {surname, RecPtr}, 'REGRESS::TEMP::jsonfetch.json.index', OVERWRITE);
 
-namedArrayIndex := INDEX(namedArrayWithPos, {surname, RecPtr}, DYNAMIC('REGRESS::TEMP::namedarray.json.index'));
+jsonFetchIndex := INDEX(dsJsonFetchWithPos, {surname, RecPtr}, DYNAMIC('REGRESS::TEMP::jsonfetch.json.index'));
 
-fetcheddata := LIMIT(FETCH(namedArrayWithPos, namedArrayIndex(surname = 'Mitchell'), RIGHT.RecPtr), 10);
+fetcheddata := LIMIT(FETCH(dsJsonFetchWithPos, jsonFetchIndex(surname = 'Mitchell'), RIGHT.RecPtr), 10);
 fetchednopos := project(fetcheddata, personRecord); //don't output positions
 output(fetchednopos, named('fetched'));
