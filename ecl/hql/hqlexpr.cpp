@@ -283,8 +283,6 @@ MODULE_EXIT()
     cachedNullRecord->Release();
     nullType->Release();
 
-    ClearTypeCache();
-
 #ifdef _REPORT_EXPRESSION_LEAKS
     if (exprCache->count())
     {
