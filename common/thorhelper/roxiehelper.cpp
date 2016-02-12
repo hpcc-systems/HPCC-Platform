@@ -1642,7 +1642,7 @@ int readHttpHeaderLine(IBufferedSocket *linereader, char *headerline, unsigned m
     int bytesread = linereader->readline(headerline, maxlen, true, me);
     if (me->ordinality())
         throw me.getClear();
-    if(bytesread <= 0 || bytesread > maxlen)
+    if(bytesread <= 0 || (unsigned)bytesread > maxlen)
         throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Bad Request");
     return bytesread;
 }

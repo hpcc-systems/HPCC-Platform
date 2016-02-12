@@ -133,7 +133,7 @@ extern THORHELPER_API IDiskMerger *createDiskMerger(IRowInterfaces *rowInterface
 
 
 #define TIME_ACTIVITIES
-class ActivityTimeAccumulator
+class THORHELPER_API ActivityTimeAccumulator
 {
     friend class ActivityTimer;
 public:

@@ -23,7 +23,7 @@
 #include "roxiestream.hpp"
 #include "roxiemem.hpp"
 
-class IStrandJunction : extends IInterface
+interface IStrandJunction : extends IInterface
 {
 public:
     virtual IEngineRowStream * queryOutput(unsigned n) = 0;

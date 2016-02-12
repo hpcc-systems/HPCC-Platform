@@ -18,10 +18,9 @@
 #ifndef TRACESLAVE_HPP
 #define TRACESLAVE_HPP
 
-#include <sys/time.h>
 #include "thmem.hpp"
+#include "jstats.h"
 
-class tm;
 class CTracingThorDataLink : implements CInterfaceOf<IThorDataLink>
 {
 private:
@@ -40,18 +39,10 @@ private:
         }
         inline void getTimeStamp(StringBuffer &retTimeStamp) const
         {
-            struct timeval tvNow, tvAdjust, tvResult;
-            struct tm tm;
-
-            gettimeofday(&tvNow, NULL);
-
-            const __int64 diffUSec = cycle_to_microsec(get_cycles_now() - cycleStamp);
-            tvAdjust.tv_sec = diffUSec / 1000000;
-            tvAdjust.tv_usec = diffUSec % 1000000;
-            timersub(&tvNow, &tvAdjust, &tvResult);
-
-            localtime_r(&tvResult.tv_sec, &tm);
-            retTimeStamp.setf("%d:%02d:%02d.%d", tm.tm_hour, tm.tm_min, tm.tm_sec, (int)(tvResult.tv_usec/1000));
+            unsigned __int64 nowUSec = getTimeStampNowValue();
+            __int64 diffUSec = cycle_to_microsec(get_cycles_now() - cycleStamp);
+            unsigned __int64 adjustedTime = nowUSec - diffUSec;
+            formatTimeStampAsLocalTime(retTimeStamp, adjustedTime);
         }
         inline const void * get() const      { return row.get(); }
         inline void clear()                  { row.clear(); }
