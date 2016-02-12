@@ -473,7 +473,15 @@ int main(int argc, const char *argv[])
     queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
 
     unsigned exitCode = doMain(argc, argv);
+
+#ifndef _DEBUG
+    //In release mode exit without calling all the clean up code.
+    //It is faster, and it helps avoids potential crashes if there are active objects which depend on objects in file hook dlls.
+    _exit(exitCode);
+#endif
+
     releaseAtoms();
+    ClearTypeCache();   // Clear this cache before the file hooks are unloaded
     removeFileHooks();
     return exitCode;
 }
