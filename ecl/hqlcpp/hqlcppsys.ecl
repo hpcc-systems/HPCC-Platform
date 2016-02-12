@@ -552,13 +552,15 @@ const char * cppSystemText[]  = {
     "   boolean regexNewStrFound() : method,pure,entrypoint='found';"
     "   string regexNewStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
     "   string regexNewStrReplaceX(const string _search, const string _replace) : method,pure,entrypoint='replace';"
+    "   set of string regexMatchSet(const string _search) : method,pure,entrypoint='getMatchSet';"
 
     "   regexNewSetUStrPattern(const varunicode _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern';"
     "   regexNewUStrFind(boolean _compiled, const unicode _search) : omethod,entrypoint='find';"
     "   boolean regexNewUStrFound() : method,pure,entrypoint='found';"
     "   unicode regexNewUStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
     "   unicode regexNewUStrReplaceX(const unicode _search, const unicode _replace) : method,pure,entrypoint='replace';"
-    
+    "   set of unicode regexUStrMatchSet(const unicode _search) : method,pure,entrypoint='getMatchSet';"
+
     //clibrary functions that are called from the code generation
     "   free(data1 src) : eclrtl,library='eclrtl',entrypoint='rtlFree';",
     "   integer4 memcmp(const data1 target, const data1 src, unsigned4 len) : sys,pure,entrypoint='memcmp';",

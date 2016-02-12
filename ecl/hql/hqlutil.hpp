@@ -684,6 +684,7 @@ extern HQL_API StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * 
 extern HQL_API bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side);
 extern HQL_API IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField);
 extern HQL_API IHqlExpression * queryTransformAssignValue(IHqlExpression * transform, IHqlExpression * searchField);
+extern HQL_API IHqlExpression * convertSetToExpression(bool isAll, size32_t len, const void * ptr, ITypeInfo * setType);
 
 extern HQL_API bool isCommonSubstringRange(IHqlExpression * expr);
 extern HQL_API bool isFileOutput(IHqlExpression * expr);

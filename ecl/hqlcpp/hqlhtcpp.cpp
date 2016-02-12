@@ -17793,6 +17793,27 @@ void HqlCppTranslator::doBuildAssignRegexFindReplace(BuildCtx & ctx, const CHqlB
     doBuildNewRegexFindReplace(ctx, &target, expr, NULL);
 }
 
+void HqlCppTranslator::doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound)
+{
+    CHqlBoundExpr boundMatch;
+    if (ctx.getMatchExpr(expr, boundMatch))
+    {
+        bound.set(boundMatch);
+        return;
+    }
+
+    IHqlExpression * pattern = expr->queryChild(0);
+    IHqlExpression * search = expr->queryChild(1);
+    bool isUnicode = isUnicodeType(search->queryType());
+    IHqlExpression * compiled = doBuildRegexCompileInstance(ctx, pattern, isUnicode, !expr->hasAttribute(noCaseAtom));
+
+    HqlExprArray args;
+    args.append(*LINK(compiled));
+    args.append(*LINK(search));
+    IIdAtom * func = isUnicode ? regexUStrMatchSetId : regexMatchSetId;
+    OwnedHqlExpr call = bindFunctionCall(func, args);
+    buildExprOrAssign(ctx, NULL, call, &bound);
+}
 
 //---------------------------------------------------------------------------
 //-- no_null [DATASET] --

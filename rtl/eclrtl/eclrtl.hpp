@@ -80,6 +80,7 @@ interface ICompiledStrRegExpr
 {
     virtual void replace(size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * replace) const = 0;
     virtual IStrRegExprFindInstance * find(const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const = 0;
+    virtual void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const char * _search) = 0;
 };
 
 // RegEx Compiler for unicode strings
@@ -93,6 +94,7 @@ interface ICompiledUStrRegExpr
 {
     virtual void replace(size32_t & outlen, UChar * & out, size32_t slen, UChar const * str, size32_t rlen, UChar const * replace) const = 0;
     virtual IUStrRegExprFindInstance * find(const UChar * str, size32_t from, size32_t len) const = 0;
+    virtual void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const UChar * _search) = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -675,11 +677,9 @@ ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExp
 ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiled);
 ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * compiled);
 
-
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive);
 ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiled);
 ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * compiled);
-
 
 ECLRTL_API void rtlCreateRange(size32_t & outlen, char * & out, unsigned fieldLen, unsigned compareLen, size32_t len, const char * str, byte fill, byte pad);
 ECLRTL_API void rtlCreateRangeLow(size32_t & outlen, char * & out, unsigned fieldLen, unsigned compareLen, size32_t len, const char * str);

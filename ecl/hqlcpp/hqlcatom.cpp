@@ -528,6 +528,8 @@ IIdAtom * regexNewUStrFindId;
 IIdAtom * regexNewUStrFoundId;
 IIdAtom * regexNewUStrFoundXId;
 IIdAtom * regexNewUStrReplaceXId;
+IIdAtom * regexMatchSetId;
+IIdAtom * regexUStrMatchSetId;
 IIdAtom * regexReplaceXId;
 IIdAtom * releaseRowId;
 IIdAtom * releaseRowsetId;
@@ -1192,6 +1194,8 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(regexNewUStrFound);
     MAKEID(regexNewUStrFoundX);
     MAKEID(regexNewUStrReplaceX);
+    MAKEID(regexMatchSet);
+    MAKEID(regexUStrMatchSet);
     MAKEID(regexReplaceX);
     MAKEID(releaseRow);
     MAKEID(releaseRowset);

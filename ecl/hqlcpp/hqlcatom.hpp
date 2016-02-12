@@ -528,6 +528,8 @@ extern IIdAtom * regexNewUStrFindId;
 extern IIdAtom * regexNewUStrFoundId;
 extern IIdAtom * regexNewUStrFoundXId;
 extern IIdAtom * regexNewUStrReplaceXId;
+extern IIdAtom * regexMatchSetId;
+extern IIdAtom * regexUStrMatchSetId;
 extern IIdAtom * regexReplaceXId;
 extern IIdAtom * releaseRowId;
 extern IIdAtom * releaseRowsetId;

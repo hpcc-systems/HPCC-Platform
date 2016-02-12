@@ -538,7 +538,7 @@ enum _node_operator {
         no_outputscalar,
         no_matchunicode,
         no_pat_validate,
-   no_unused83,
+        no_regex_findset,
         no_existsgroup,
         no_pat_use,
         no_unused13,

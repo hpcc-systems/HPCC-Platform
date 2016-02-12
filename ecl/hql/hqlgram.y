@@ -375,6 +375,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   RECOVERY
   REFRESH
   REGEXFIND
+  REGEXFINDSET
   REGEXREPLACE
   REGROUP
   REJECTED
@@ -5991,6 +5992,23 @@ primexpr1
                             }
                             parser->normalizeExpression($7, type_int, false);
                             $$.setExpr(createValue(no_regex_find, subType.getLink(), $3.getExpr(), $5.getExpr(), $7.getExpr(), $8.getExpr()));
+                        }
+    | REGEXFINDSET '(' expression ',' expression regexOpt ')'
+                        {
+                            parser->normalizeExpression($3, type_stringorunicode, false);
+                            Owned<ITypeInfo> retType;
+                            if(isUnicodeType($3.queryExprType()))
+                            {
+                                parser->normalizeExpression($5, type_unicode, false);
+                                retType.setown(makeUnicodeType(UNKNOWN_LENGTH, $3.queryExprType()->queryLocale()));
+                            }
+                            else
+                            {
+                                parser->normalizeExpression($5, type_string, false);
+                                retType.setown(makeStringType(UNKNOWN_LENGTH));
+                            }
+
+                            $$.setExpr(createValue(no_regex_findset, makeSetType(retType.getLink()), $3.getExpr(), $5.getExpr(), $6.getExpr()), $1);
                         }
     | REGEXREPLACE '(' expression ',' expression ',' expression regexOpt ')'
                         {
