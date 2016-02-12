@@ -9011,3 +9011,41 @@ IHqlExpression * queryTransformAssignValue(IHqlExpression * transform, IHqlExpre
         return value->queryChild(1);
     return NULL;
 }
+
+//-------------------------------------------------------------------------------------------------
+
+IHqlExpression * convertSetToExpression(bool isAll, size32_t len, const void * ptr, ITypeInfo * setType)
+{
+    HqlExprArray results;
+    const byte *presult = (const byte *) ptr;
+    const byte *presult_end = presult + len;
+
+    if (isAll)
+        return createValue(no_all, LINK(setType));
+
+    ITypeInfo * elementType = setType->queryChildType();
+    switch(elementType->getTypeCode())
+    {
+        case type_unicode:
+            while (presult < presult_end)
+            {
+                const size32_t numUChars = *((size32_t *) presult);
+                presult += sizeof(size32_t);
+                results.append(*createConstant(createUnicodeValue(numUChars, presult, LINK(elementType))));
+                presult += numUChars*sizeof(UChar);
+            };
+            break;
+        case type_string:
+            while (presult < presult_end)
+            {
+                const size32_t numUChars = *((size32_t *) presult);
+                presult += sizeof(size32_t);
+                results.append(*createConstant(createStringValue( (const char*)presult, (unsigned)numUChars)));
+                presult += numUChars;
+            };
+            break;
+        default:
+            UNIMPLEMENTED;
+    }
+    return createValue(no_list, LINK(setType), results);
+}

@@ -4855,7 +4855,7 @@ public:
                 sample[_len] = (char)NULL;
                 matched = boost::regex_search(sample, subs, *regEx);
             }
-            else 
+            else
             {
                 matched = boost::regex_search(_str + _from, _str + _len, subs, *regEx);
             }
@@ -4960,6 +4960,34 @@ public:
         CStrRegExprFindInstance * findInst = new CStrRegExprFindInstance(&regEx, str, from, len, needToKeepSearchString);
         return findInst;
     }
+
+    void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const char * _search)
+    {
+        rtlRowBuilder out;
+        size32_t outBytes = 0;
+        const char * search_end = _search+_srcLen;
+
+        boost::regex_iterator<const char *> cur(_search, search_end, regEx);
+        boost::regex_iterator<const char *> end; // Default contructor creates an end of list marker
+        for (; cur != end; ++cur)
+        {
+            const boost::match_results<const char *> &match = *cur;
+            if (match[0].first==search_end) break;
+
+            const size32_t lenBytes = match[0].second - match[0].first;
+            out.ensureAvailable(outBytes+lenBytes+sizeof(size32_t));
+            byte *outData = out.getbytes()+outBytes;
+
+            * (size32_t *) outData = lenBytes;
+            rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, match[0].first);
+
+            outBytes += lenBytes+sizeof(size32_t);
+        }
+        __isAllResult = false;
+        __resultBytes = outBytes;
+        __result = out.detachdata();
+    };
+
 };
 
 //---------------------------------------------------------------------------
@@ -5020,6 +5048,7 @@ public:
             int32_t start = n ? matcher->start(n, uerr) : matcher->start(uerr);
             int32_t end = n ? matcher->end(n, uerr) : matcher->end(uerr);
             outlen = end - start;
+
             out = (UChar *)rtlMalloc(outlen*2);
             sample.extract(start, outlen, out);
         }
@@ -5114,6 +5143,38 @@ public:
         CUStrRegExprFindInstance * findInst = new CUStrRegExprFindInstance(matcher, str, from, len);
         return findInst;
     }
+
+    void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const UChar * _search)
+    {
+        rtlRowBuilder out;
+        size32_t outBytes = 0;
+        UErrorCode uerr = U_ZERO_ERROR;
+        UnicodeString uStrSearch;
+
+        uStrSearch.setTo(_search, _srcLen);
+        matcher->reset(uStrSearch);
+        while (matcher->find())
+        {
+            uerr = U_ZERO_ERROR;
+            int32_t start = matcher->start(uerr);
+            assertex(uerr<=U_ZERO_ERROR);
+            if (start==_srcLen) break;
+            int32_t end = matcher->end(uerr);
+            assertex(uerr<=U_ZERO_ERROR);
+            int32_t numUChars = end - start;
+
+            out.ensureAvailable(outBytes+numUChars*sizeof(UChar)+sizeof(size32_t));
+            byte *outData = out.getbytes()+outBytes;
+            * (size32_t *) outData = numUChars;
+            uStrSearch.extract(start,numUChars,(UChar *) (outData+sizeof(size32_t)));
+
+            outBytes += numUChars*sizeof(UChar) + sizeof(size32_t);
+        }
+        __isAllResult = false;
+        __resultBytes = outBytes;
+        __result = out.detachdata();
+    }
+
 };
 
 //---------------------------------------------------------------------------

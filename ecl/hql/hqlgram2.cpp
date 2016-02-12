@@ -10714,6 +10714,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case REFRESH: msg.append("REFRESH"); break;
     case REGEXFIND: msg.append("REGEXFIND"); break;
     case REGEXREPLACE: msg.append("REGEXREPLACE"); break;
+    case REGEXFINDSET: msg.append("REGEXFINDSET"); break;
     case REGROUP: msg.append("REGROUP"); break;
     case REJECTED: msg.append("REJECTED"); break;
     case RELATIONSHIP: msg.append("RELATIONSHIP"); break;
