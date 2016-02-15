@@ -284,7 +284,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,existsdict);
     EXPAND_CASE(no,quantile);
     EXPAND_CASE(no,nocombine);
-    EXPAND_CASE(no,unused28);
+    EXPAND_CASE(no,unordered);
     EXPAND_CASE(no,unused29);
     EXPAND_CASE(no,unused30);
     EXPAND_CASE(no,unused31);

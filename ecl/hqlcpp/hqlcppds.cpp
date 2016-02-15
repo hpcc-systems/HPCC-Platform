@@ -2159,6 +2159,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -2466,6 +2467,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -3472,6 +3474,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -3934,6 +3937,7 @@ BoundRow * HqlCppTranslator::buildDatasetIterate(BuildCtx & ctx, IHqlExpression 
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -4729,6 +4733,7 @@ IHqlExpression * HqlCppTranslator::ensureIteratedRowIsLive(BuildCtx & initctx, B
         case no_stepped:
         case no_sorted:
         case no_distributed:
+        case no_unordered:
         case no_preservemeta:
         case no_choosen:
         case no_selectnth:                      // can occur as the lhs of no_select

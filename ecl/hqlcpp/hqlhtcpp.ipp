@@ -149,7 +149,7 @@ public:
     void addAttribute(const char * name, const char * value);
     void addAttribute(const char * name, IHqlExpression * expr);
     void addAttributeInt(const char * name, __int64 value);
-    void addAttributeBool(const char * name, bool value);
+    void addAttributeBool(const char * name, bool value, bool alwaysAdd=false);
     void addLocationAttribute(IHqlExpression * location);
     void addNameAttribute(IHqlExpression * location);
     void removeAttribute(const char * name);

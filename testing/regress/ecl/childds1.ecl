@@ -53,6 +53,6 @@ cntBad := COUNT(ds(assertTrue(seq > 10, 'seq > 10'))) + NOFOLD(100000);
 
 //NOFOLD is required to stop code generator converting this to a filter (trueValue && ...) which means that cntBad is evaluated always
 //See childds1err.ecl
-cond := IF(trueValue, ds, NOFOLD(ds)(seq != cntBad));
+cond := IF(trueValue, ds, NOFOLD(ds)(seq != cntBad, hint(testHintIsSupported(1))));
 output(cond);
 

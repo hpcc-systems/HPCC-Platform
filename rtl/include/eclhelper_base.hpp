@@ -3225,7 +3225,6 @@ class CThorLoopArg : public CThorArg, implements IHThorLoopArg
     virtual unsigned numIterations() { return 0; }
     virtual bool loopAgain(unsigned counter, unsigned num, const void * * _rows)    { return num != 0; }
     virtual unsigned defaultParallelIterations() { return 0; }
-    virtual void numParallelIterations(size32_t & retSize, void * & retData) { retSize = 0; retData = NULL; }
     virtual bool loopFirstTime() { return false; }
     virtual unsigned loopAgainResult() { return 0; }
 };

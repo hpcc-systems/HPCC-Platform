@@ -2545,7 +2545,6 @@ struct IHThorLoopArg : public IHThorArg
     virtual bool loopAgain(unsigned counter, unsigned numRows, const void * * _rows)    = 0;
     virtual void createParentExtract(rtlRowBuilder & builder) = 0;
     virtual unsigned defaultParallelIterations() = 0;
-    virtual void numParallelIterations(size32_t & retSize, void * & retData) = 0;
     //If new loop again is set the following should be used instead of loopAgain
     virtual bool loopFirstTime() = 0;
     virtual unsigned loopAgainResult() = 0;  // which result contains the indication of whether to loop again?

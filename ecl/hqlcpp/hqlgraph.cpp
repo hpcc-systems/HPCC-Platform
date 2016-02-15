@@ -60,9 +60,9 @@ void addGraphAttributeInt(IPropertyTree * node, const char * name, __int64 value
     addGraphAttribute(node, name)->setPropInt64("@value", value);
 }
 
-void addGraphAttributeBool(IPropertyTree * node, const char * name, bool value)
+void addGraphAttributeBool(IPropertyTree * node, const char * name, bool value, bool alwaysAdd)
 {
-    if (value)
+    if (value || alwaysAdd)
         addGraphAttribute(node, name)->setPropBool("@value", value);
 }
 
