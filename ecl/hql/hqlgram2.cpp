@@ -1216,6 +1216,7 @@ void HqlGram::processServiceFunction(const attribute & idAttr, IIdAtom * name, I
     IHqlExpression * formals = defineScopes.tos().createFormals(oldSetFormat);
     IHqlExpression * defaults = defineScopes.tos().createDefaults();
     IHqlExpression * func = createFunctionDefinition(name, call, formals, defaults, NULL);
+    func = attachPendingWarnings(func);
     serviceScope->defineSymbol(name, NULL, func, true, false, 0, NULL, idAttr.pos.lineno, idAttr.pos.column, 0, 0, 0);
     resetParameters();
 }
@@ -3631,13 +3632,11 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         attrs->unwindList(attrArray,no_comma);
     
     bool hasEntrypoint = false;
-    bool foldSeen = false;
-    bool nofoldSeen = false;
     unsigned count = attrArray.length();
     if (count>0)
     {
         // check attr one by one
-        bool bcdApi = false, rtlApi = false, cApi = false;
+        bool bcdApi = false, rtlApi = false, cApi = false, cppApi = false;
 
         for (unsigned i=0; i<count; i++)
         {
@@ -3739,6 +3738,11 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 bcdApi = true;
                 checkSvcAttrNoValue(attr, errpos);
             }
+            else if (name == cppAtom)
+            {
+                cppApi = true;
+                checkSvcAttrNoValue(attr, errpos);
+            }
             else if (name == pureAtom || name == templateAtom || name == volatileAtom || name == onceAtom || name == actionAtom)
             {
                 checkSvcAttrNoValue(attr, errpos);
@@ -3748,17 +3752,14 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
             {
                 checkSvcAttrNoValue(attr, errpos);
             }
-            else if ((name == userMatchFunctionAtom) || (name == costAtom) || (name == allocatorAtom) || (name == extendAtom) || (name == passParameterMetaAtom))
+            else if ((name == userMatchFunctionAtom) || (name == costAtom) || (name == allocatorAtom) || (name == extendAtom) || (name == passParameterMetaAtom) ||
+                     (name == namespaceAtom) || (name==prototypeAtom))
             {
             }
             else if (name == holeAtom)
             {
                 //backward compatibility
             }
-            else if (name == foldAtom)
-                foldSeen = true;
-            else if (name == nofoldAtom)
-                nofoldSeen = true;
             else // unsupported
                 reportWarning(CategorySyntax,WRN_SVC_UNSUPPORTED_ATTR, errpos.pos, "Unsupported service attribute: '%s'; ignored", str(name));
         }
@@ -3766,17 +3767,13 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         int apiAttrs = 0;
         if (rtlApi) apiAttrs++;
         if (cApi)   apiAttrs++;
+        if (cppApi)   apiAttrs++;
         if (bcdApi) apiAttrs++;
         if (apiAttrs>1)
             reportWarning(CategorySyntax, ERR_SVC_ATTRCONFLICTS, errpos.pos, "Attributes eclrtl, bcd, c are conflict: only 1 can be used at a time");
     }
-    if (foldSeen && !nofoldSeen)
-    {
-        // Check that we are allowed to fold...
-        if (!checkAllowed(errpos, "foldextern", "FOLD attribute"))
-            attrs = createComma(attrs, createAttribute(_disallowed_Atom));
-    }
-
+    if (!checkAllowed(errpos, "extern", "SERVICE declaration"))
+        attrs = createComma(attrs, createAttribute(_disallowed_Atom));
     if (!hasEntrypoint)
     {
         IHqlExpression *nameAttr = createAttribute(entrypointAtom, createConstant(str(name)));
