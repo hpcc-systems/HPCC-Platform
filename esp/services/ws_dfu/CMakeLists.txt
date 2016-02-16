@@ -47,6 +47,7 @@ include_directories (
          ./../ws_topology 
          ./../../../system/jlib 
          ./../../../rtl/eclrtl 
+         ./../../../rtl/nbcd
          ./../../../common/environment 
          ./../../services 
          ./../../../dali/ft 
