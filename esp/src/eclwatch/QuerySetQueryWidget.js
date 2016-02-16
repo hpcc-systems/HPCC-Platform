@@ -350,7 +350,7 @@ define([
                         }
                     },
                     Name: {
-                        label: this.i18n.Name,
+                        label: this.i18n.Name
                     },
                     QuerySetId:{
                         width: 140,
