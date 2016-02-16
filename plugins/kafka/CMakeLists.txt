@@ -25,9 +25,8 @@
 project(kafka)
 
 if(KAFKA)
-    ADD_PLUGIN(kafka PACKAGES OPTION MAKE_KAFKA)
+    ADD_PLUGIN(kafka)
     if(MAKE_KAFKA)
-
         # librdkafka packages do not include everything we need to properly
         # build against it; until/if they are ever fixed we will need to build
         # our own version of librdkafka from source and include it ourselves
@@ -57,22 +56,23 @@ if(KAFKA)
         # in order to make the built scripts function correctly
 
         add_custom_command(
-            OUTPUT ${LIBRDKAFKA_LIB}
-            COMMAND cp -r ${PROJECT_SOURCE_DIR}/librdkafka ${PROJECT_BINARY_DIR}/src
-            COMMAND cd ${PROJECT_BINARY_DIR}/src && ./configure --prefix=${PROJECT_BINARY_DIR}
-            COMMAND cd ${PROJECT_BINARY_DIR}/src && make && make install
-            COMMENT Copying and building librdkafka)
+		OUTPUT ${LIBRDKAFKA_LIB}
+		COMMAND cp -r ${PROJECT_SOURCE_DIR}/librdkafka ${PROJECT_BINARY_DIR}/src
+		COMMAND cd ${PROJECT_BINARY_DIR}/src && ./configure --prefix=${PROJECT_BINARY_DIR}
+		COMMAND cd ${PROJECT_BINARY_DIR}/src && make && make install
+		COMMENT Copying and building librdkafka)
 
-        add_custom_target(librdkafka-build ALL DEPENDS ${LIBRDKAFKA_LIB})
+	add_custom_target(librdkafka-build ALL DEPENDS ${LIBRDKAFKA_LIB})
 
-        # Add both libraries from librdkafka
+        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}/lib\")")
+	
         add_library(librdkafka SHARED IMPORTED)
-        set_property(TARGET librdkafka PROPERTY IMPORTED_LOCATION ${LIBRDKAFKA_LIB})
-        add_dependencies(librdkafka librdkafka-build)
+	set_property(TARGET librdkafka PROPERTY IMPORTED_LOCATION ${LIBRDKAFKA_LIB})
+	add_dependencies(librdkafka librdkafka-build)
 
-        add_library(librdkafkacpp STATIC IMPORTED)
-        set_property(TARGET librdkafkacpp PROPERTY IMPORTED_LOCATION ${LIBRDKAFKACPP_LIB})
-        add_dependencies(librdkafkacpp librdkafka-build)
+	add_library(librdkafkacpp SHARED IMPORTED)
+	set_property(TARGET librdkafkacpp PROPERTY IMPORTED_LOCATION ${LIBRDKAFKACPP_LIB})
+	add_dependencies(librdkafkacpp librdkafka-build)
 
         set(
             SRCS
@@ -102,7 +102,6 @@ if(KAFKA)
             TARGETS kafka
             DESTINATION plugins)
 
-        # Install our built librdkafka libraries into the RPM
         install(
             FILES ${LIBRDKAFKA_LIB} ${LIBRDKAFKA_LIB_REAL} ${LIBRDKAFKACPP_LIB} ${LIBRDKAFKACPP_LIB_REAL}
             DESTINATION ${LIB_DIR}

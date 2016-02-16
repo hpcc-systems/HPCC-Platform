@@ -29,7 +29,7 @@ set(DEBUG_PYTHON_LIBRARY "/usr/lib/libpython2.7_d.so")
 project(pyembed)
 
 if(PYEMBED)
-    ADD_PLUGIN(pyembed PACKAGES PythonLibs OPTION MAKE_PYEMBED MINVERSION 2.6 MAXVERSION 2.7)
+    ADD_PLUGIN(pyembed PACKAGES PythonLibs MINVERSION 2.6 MAXVERSION 2.7)
     if(MAKE_PYEMBED)
         set(
             SRCS

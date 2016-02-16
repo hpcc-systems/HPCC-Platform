@@ -221,8 +221,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       set(DEVEL OFF)
   endif()
 
-    # Leave REMBED OFF for compliance with licensing
     if(INCLUDE_PLUGINS)
+        set(REMBED ON)
         set(V8EMBED ON)
         set(MEMCACHED ON)
         set(PYEMBED ON)
@@ -474,70 +474,68 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   set ( SCM_GENERATED_DIR ${CMAKE_BINARY_DIR}/generated )
 
-  ###############################################################
-  # Macro for Logging Plugin build in CMake
+    ###############################################################
+    # Macro for Logging Plugin build in CMake
 
-  macro(LOG_PLUGIN)
-    PARSE_ARGUMENTS(pLOG
-      "OPTION;MDEPS"
-      ""
-      ${ARGN}
-    )
-    LIST(GET pLOG_DEFAULT_ARGS 0 PLUGIN_NAME)
-    if ( ${pLOG_OPTION} )
-        message(STATUS "Building Plugin: ${PLUGIN_NAME}" )
-    else()
-      message("---- WARNING -- Not Building Plugin: ${PLUGIN_NAME}")
-      foreach (dep ${pLOG_MDEPS})
-        MESSAGE("---- WARNING -- Missing dependency: ${dep}")
-      endforeach()
-      if (NOT USE_OPTIONAL)
-        message(FATAL_ERROR "Optional dependencies missing and USE_OPTIONAL not set")
-      endif()
-    endif()
-  endmacro()
-
-  ###############################################################
-  # Macro for adding an optional plugin to the CMake build.
-
-  macro(ADD_PLUGIN)
-    PARSE_ARGUMENTS(PLUGIN
-        "PACKAGES;OPTION;MINVERSION;MAXVERSION"
+    macro(LOG_PLUGIN)
+        PARSE_ARGUMENTS(pLOG
+        "OPTION;MDEPS"
         ""
-        ${ARGN}
-    )
-    LIST(GET PLUGIN_DEFAULT_ARGS 0 PLUGIN_NAME)
-    string(TOUPPER ${PLUGIN_NAME} name)
-    set(ALL_PLUGINS_FOUND 1)
-    set(PLUGIN_MDEPS ${PLUGIN_NAME}_mdeps)
-    set(${PLUGIN_MDEPS} "")
-
-    FOREACH(package ${PLUGIN_PACKAGES})
-      set(findvar ${package}_FOUND)
-      string(TOUPPER ${findvar} PACKAGE_FOUND)
-      if ("${PLUGIN_MINVERSION}" STREQUAL "")
-        find_package(${package})
-      else()
-        set(findvar ${package}_VERSION_STRING)
-        string(TOUPPER ${findvar} PACKAGE_VERSION_STRING)
-        find_package(${package} ${PLUGIN_MINVERSION} )
-        if ("${${PACKAGE_VERSION_STRING}}" VERSION_GREATER "${PLUGIN_MAXVERSION}")
-          set(${ALL_PLUGINS_FOUND} 0)
+        ${ARGN})
+        LIST(GET pLOG_DEFAULT_ARGS 0 PLUGIN_NAME)
+        if(${pLOG_OPTION})
+            message(STATUS "Building Plugin: ${PLUGIN_NAME}" )
+        else()
+            message(WARNING "Not Building Plugin: ${PLUGIN_NAME}")
+            foreach (dep ${pLOG_MDEPS})
+                message(WARNING "Missing dependency: ${dep}")
+            endforeach()
+            if(NOT USE_OPTIONAL)
+                message(FATAL_ERROR "Optional dependencies missing and USE_OPTIONAL OFF")
+            endif()
         endif()
-      endif()
-      if (NOT ${PACKAGE_FOUND})
-        set(ALL_PLUGINS_FOUND 0)
-        set(${PLUGIN_MDEPS} ${${PLUGIN_MDEPS}} ${package})
-      endif()
-    ENDFOREACH()
-    option(${PLUGIN_OPTION} "Turn on optional plugin based on availability of dependencies" ${ALL_PLUGINS_FOUND})
-    LOG_PLUGIN(${PLUGIN_NAME} OPTION ${PLUGIN_OPTION} MDEPS ${${PLUGIN_MDEPS}})
-    if(${ALL_PLUGINS_FOUND})
-      set(bPLUGINS ${bPLUGINS} ${PLUGIN_NAME})
-    else()
-      set(nbPLUGINS ${nbPLUGINS} ${PLUGIN_NAME})
-    endif()
-  endmacro()
+    endmacro()
+
+    ###############################################################
+    # Macro for adding an optional plugin to the CMake build.
+
+    macro(ADD_PLUGIN)
+        PARSE_ARGUMENTS(PLUGIN
+            "PACKAGES;MINVERSION;MAXVERSION"
+            ""
+            ${ARGN})
+        LIST(GET PLUGIN_DEFAULT_ARGS 0 PLUGIN_NAME)
+        string(TOUPPER ${PLUGIN_NAME} name)
+        set(ALL_PLUGINS_FOUND 1)
+        set(PLUGIN_MDEPS ${PLUGIN_NAME}_mdeps)
+        set(${PLUGIN_MDEPS} "")
+
+        foreach(package ${PLUGIN_PACKAGES})
+            set(findvar ${package}_FOUND)
+            string(TOUPPER ${findvar} PACKAGE_FOUND)
+            if("${PLUGIN_MINVERSION}" STREQUAL "")
+                find_package(${package})
+            else()
+                set(findvar ${package}_VERSION_STRING)
+                string(TOUPPER ${findvar} PACKAGE_VERSION_STRING)
+                find_package(${package} ${PLUGIN_MINVERSION} )
+                if ("${${PACKAGE_VERSION_STRING}}" VERSION_GREATER "${PLUGIN_MAXVERSION}")
+                    set(${ALL_PLUGINS_FOUND} 0)
+                endif()
+            endif()
+            if(NOT ${PACKAGE_FOUND})
+                set(ALL_PLUGINS_FOUND 0)
+                set(${PLUGIN_MDEPS} ${${PLUGIN_MDEPS}} ${package})
+            endif()
+        endforeach()
+        set(MAKE_${name} ${ALL_PLUGINS_FOUND})
+        LOG_PLUGIN(${PLUGIN_NAME} OPTION ${ALL_PLUGINS_FOUND} MDEPS ${${PLUGIN_MDEPS}})
+        if(${ALL_PLUGINS_FOUND})
+            set(bPLUGINS ${bPLUGINS} ${PLUGIN_NAME})
+        else()
+            set(nbPLUGINS ${nbPLUGINS} ${PLUGIN_NAME})
+        endif()
+    endmacro()
 
   ##################################################################
 
@@ -560,13 +558,13 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   ###########################################################################
 
-  if (USE_OPTIONAL)
-    message ("-- USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
-  endif()
+    if(USE_OPTIONAL)
+        message(WARNING "USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
+    endif()
 
-  if (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
-    message ("-- Using externals directory at ${EXTERNALS_DIRECTORY}")
-  endif()
+    if(NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
+        message(STATUS "Using externals directory at ${EXTERNALS_DIRECTORY}")
+    endif()
 
   IF ( NOT MAKE_DOCS_ONLY )
       IF ("${EXTERNALS_DIRECTORY}" STREQUAL "")
