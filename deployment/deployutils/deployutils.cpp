@@ -827,6 +827,12 @@ public:
               LoadComboBox("Software/DaliServerProcess", bAddBlank, m_pEnv, m_pEnv, strBuf);
               extraInfo = strBuf.str();
             }
+            else if (strcmp(type, "securityManagerType")==0)
+            {
+              nCtrlType = 4;//LVC_COMBO;
+              LoadComboBox("Software/*/[@type=\"SecurityManager\"]", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              extraInfo = strBuf.str();
+            }
             else if (strcmp(type, "dataBuildType")==0)
             {
               nCtrlType = 4;//LVC_COMBO;
