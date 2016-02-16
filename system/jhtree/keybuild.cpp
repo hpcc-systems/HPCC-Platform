@@ -40,7 +40,7 @@ class CRC32HT : public SuperHashTableOf<CRC32HTE, offset_t>
 public:
     CRC32HT(void) : SuperHashTableOf<CRC32HTE, offset_t>() { }
     CRC32HT(unsigned initsize) : SuperHashTableOf<CRC32HTE, offset_t>(initsize) { }
-    ~CRC32HT() { CRC32HT::kill(); }
+    ~CRC32HT() { _releaseAll(); }
     CRC32HTE *find(offset_t & fp) const { return SuperHashTableOf<CRC32HTE, offset_t>::find(&fp); }
     virtual void onAdd(void *et) { }
     virtual void onRemove(void *et) { }

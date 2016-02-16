@@ -1160,10 +1160,10 @@ void CGraphBase::clean()
     ::Release(doneBarrier);
     localResults.clear();
     graphLoopResults.clear();
-    childGraphsTable.kill();
+    childGraphsTable.releaseAll();
     childGraphs.kill();
     disconnectActivities();
-    containers.kill();
+    containers.releaseAll();
     sinks.kill();
     activeSinks.kill();
 }

@@ -37,7 +37,7 @@ public:
     SuperHashTable(void);
     SuperHashTable(unsigned initsize);
     ~SuperHashTable();
-    // Derived class destructor expected to call releaseAll()
+    // Derived class destructor expected to call _releaseAll()
     
     void             reinit(unsigned initsize);
     void             kill(void);
@@ -46,6 +46,7 @@ public:
     inline memsize_t queryMem() const { return tablesize * sizeof(void *); } // hash table table memory size
     void *           next(const void *et) const;
     void             ensure(unsigned mincount);
+    void             releaseAll(); // like kill(), but does not resize the table
 
 #ifdef TRACE_HASH
     void dumpStats();
@@ -53,7 +54,7 @@ public:
 
 protected:
     void             init(unsigned initsize);
-    void             releaseAll(void);
+    void             _releaseAll(void); // not guaranteed to be thread safe, typically called from destructor
     inline bool      add(void * et) { return doAdd(et, false); }
     inline bool      replace(void * et) { return doAdd(et, true); }
     void             addNew(void * et); //use this when you are sure the key does not already exist in the table (saves some needless matching)
@@ -321,12 +322,14 @@ class ThreadSafeSimpleHashTableOf : private SuperHashTable
     {
         return *(FP *)((const ET *)et)->queryFindParam() == *(FP *)fp;
     }
+protected:
+    using SuperHashTable::_releaseAll;
 public:
     mutable CriticalSection crit;
 
     ThreadSafeSimpleHashTableOf(void) : SuperHashTable() { }
     ThreadSafeSimpleHashTableOf(unsigned initsize) : SuperHashTable(initsize) { }
-    ~ThreadSafeSimpleHashTableOf() { SELF::kill(); }
+    ~ThreadSafeSimpleHashTableOf() { _releaseAll(); }
 
     ET *find(FP & fp) const
     {
@@ -340,7 +343,11 @@ public:
         CriticalBlock block(crit);
         SuperHashTable::kill();
     }
-
+    void releaseElements()
+    {
+        CriticalBlock block(crit);
+        SuperHashTable::releaseAll();
+    }
     bool add(ET & et)
     { 
         CriticalBlock block(crit);
@@ -388,7 +395,7 @@ class ThreadSafeOwningSimpleHashTableOf : public ThreadSafeSimpleHashTableOf<ET,
 {
     typedef ThreadSafeOwningSimpleHashTableOf<ET, FP> SELF;
 public:
-    ~ThreadSafeOwningSimpleHashTableOf<ET, FP>() { SELF::kill(); }
+    ~ThreadSafeOwningSimpleHashTableOf<ET, FP>() { SELF::_releaseAll(); }
     virtual void onRemove(void *et) { ((ET *)et)->Release(); }
 };
 
@@ -495,7 +502,7 @@ public:
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(HashKeyElement, constcharptr);
 
     AtomRefTable(bool _nocase=false) : SuperHashTableOf<HashKeyElement, constcharptr>(3000), nocase(_nocase) { }
-    ~AtomRefTable() { kill(); }
+    ~AtomRefTable() { _releaseAll(); }
 
     inline HashKeyElement *findLink(const char *_key)
     {

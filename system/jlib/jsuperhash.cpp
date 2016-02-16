@@ -481,28 +481,38 @@ void SuperHashTable::doKill(void)
     free(table);
 }
 
-void SuperHashTable::releaseAll(void)
+void SuperHashTable::_releaseAll(void)
 {
-    unsigned i;
-    for (i = 0; i < tablesize; i++)
+    if (tablecount)
     {
-        void * et = table[i];
-        table[i] = NULL;
-        if (et)
-            onRemove(et);
+        unsigned i;
+        for (i = 0; i < tablesize; i++)
+        {
+            void * et = table[i];
+            table[i] = NULL;
+            if (et)
+                onRemove(et);
+        }
+        tablecount = 0;
+        setCache(0);
     }
-    tablecount = 0;
+}
+
+void SuperHashTable::releaseAll()
+{
+    _releaseAll();
 }
 
 void SuperHashTable::kill(void)
 {
-    releaseAll();
-    doKill();
-    tablesize = InitialTableSize;
-    tablecount = 0;
-    setCache(0);
-    table = (void * *) checked_malloc(InitialTableSize*sizeof(void *),-604);
-    memset(table,0,InitialTableSize*sizeof(void *));
+    _releaseAll();
+    if (tablesize != InitialTableSize)
+    {
+        doKill();
+        tablesize = InitialTableSize;
+        table = (void * *)checked_malloc(InitialTableSize*sizeof(void *), -604);
+        memset(table, 0, InitialTableSize*sizeof(void *));
+    }
 }
 
 void *SuperHashTable::addOrFind(void * donor)
