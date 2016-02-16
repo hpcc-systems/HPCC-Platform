@@ -7552,7 +7552,8 @@ IHqlExpression * createJavadocAnnotation(IHqlExpression * _ownedBody, IPropertyT
 
 //==============================================================================================================
 
-CFileContents::CFileContents(IFile * _file, ISourcePath * _sourcePath) : file(_file), sourcePath(_sourcePath)
+CFileContents::CFileContents(IFile * _file, ISourcePath * _sourcePath, bool _isSigned)
+  : file(_file), sourcePath(_sourcePath), implicitlySigned(_isSigned)
 {
     delayedRead = false;
     if (!preloadFromFile())
@@ -7628,8 +7629,8 @@ void CFileContents::ensureLoaded()
         throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeRead, sizeToRead);
 }
 
-CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath) 
-: sourcePath(_sourcePath)
+CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath, bool _isSigned)
+: sourcePath(_sourcePath), implicitlySigned(_isSigned)
 {
     if (query)
         setContents(strlen(query), query);
@@ -7637,8 +7638,8 @@ CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath)
     delayedRead = false;
 }
 
-CFileContents::CFileContents(unsigned len, const char *query, ISourcePath * _sourcePath) 
-: sourcePath(_sourcePath)
+CFileContents::CFileContents(unsigned len, const char *query, ISourcePath * _sourcePath, bool _isSigned)
+: sourcePath(_sourcePath), implicitlySigned(_isSigned)
 {
     setContents(len, query);
     delayedRead = false;
@@ -7660,26 +7661,26 @@ void CFileContents::setContentsOwn(MemoryBuffer & buffer)
     fileContents.setOwn(len, buffer.detach());
 }
 
-IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath)
+IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath, bool isSigned)
 {
-    return new CFileContents(len, text, sourcePath);
+    return new CFileContents(len, text, sourcePath, isSigned);
 }
 
-IFileContents * createFileContentsFromText(const char * text, ISourcePath * sourcePath)
+IFileContents * createFileContentsFromText(const char * text, ISourcePath * sourcePath, bool isSigned)
 {
     //MORE: Treatment of nulls?
-    return new CFileContents(text, sourcePath);
+    return new CFileContents(text, sourcePath, isSigned);
 }
 
-IFileContents * createFileContentsFromFile(const char * filename, ISourcePath * sourcePath)
+IFileContents * createFileContentsFromFile(const char * filename, ISourcePath * sourcePath, bool isSigned)
 {
     Owned<IFile> file = createIFile(filename);
-    return new CFileContents(file, sourcePath);
+    return new CFileContents(file, sourcePath, isSigned);
 }
 
-IFileContents * createFileContents(IFile * file, ISourcePath * sourcePath)
+IFileContents * createFileContents(IFile * file, ISourcePath * sourcePath, bool isSigned)
 {
-    return new CFileContents(file, sourcePath);
+    return new CFileContents(file, sourcePath, isSigned);
 }
 
 class CFileContentsSubset : public CInterfaceOf<IFileContents>
@@ -7694,7 +7695,7 @@ public:
     virtual ISourcePath * querySourcePath() { return contents->querySourcePath(); }
     virtual const char *getText() { return contents->getText() + offset; }
     virtual size32_t length() { return len; }
-
+    virtual bool isImplicitlySigned() { return contents->isImplicitlySigned(); }
 protected:
     Linked<IFileContents> contents;
     size32_t offset;

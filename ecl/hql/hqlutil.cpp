@@ -8710,7 +8710,7 @@ IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext &
     //This might be cleaner if it was implemented by parsing the text myModule.myAttribute().
     //It would make implementing default parameters easy.  However it could introduce other problems
     //with implicitly importing myModule.
-    Owned<IFileContents> mappedContents = createFileContentsFromText(macroText.length(), macroText.str(), macroContents->querySourcePath());
+    Owned<IFileContents> mappedContents = createFileContentsFromText(macroText.length(), macroText.str(), macroContents->querySourcePath(), false);
     Owned<IHqlScope> scope = createPrivateScope();
     if (queryLegacyImportSemantics())
         importRootModulesToScope(scope, ctx);

@@ -56,8 +56,6 @@ interface IEclSource : public IInterface
         EclSourceType type = queryType();
         return (type==ESTlibrary) || (type==ESTplugin);
     }
-    //virtual bool isPluginDllScope(IHqlScope * scope)
-    //virtual bool allowImplicitImport(IHqlScope * scope)
 };
 
 typedef IIteratorOf<IEclSource> IEclSourceIterator;

@@ -343,7 +343,8 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
     moduleName = _containerScope->queryId();
     forceResult = false;
     parsingTemplateAttribute = false;
-    inSignedModule = false;
+    inSignedModule = _text->isImplicitlySigned();
+;
 
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
 
@@ -369,7 +370,7 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
     for (unsigned i=0;i<parent.defaultScopes.length();i++)
         defaultScopes.append(*LINK(&parent.defaultScopes.item(i)));
     sourcePath.set(parent.sourcePath);
-    inSignedModule = parent.inSignedModule;
+    inSignedModule = parent.inSignedModule || _text->isImplicitlySigned();
     errorHandler = lookupCtx.errs;
     moduleName = containerScope->queryId();
 
@@ -11619,7 +11620,7 @@ IHqlExpression * reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *sc
     text.append("=>").append(contents->length(), contents->getText());
 
     //Could use a merge string implementation of IFileContents instead of expanding...
-    Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath());
+    Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath(), contents->isImplicitlySigned());
     HqlGram parser(scope, scope, parseContents, ctx, NULL, hasFieldMap, true);
     unsigned startLine = funcdef->getStartLine();
 
@@ -11743,7 +11744,7 @@ extern HQL_API IHqlExpression * parseQuery(const char * text, IErrorReceiver * e
 {
     Owned<IHqlScope> scope = createScope();
     HqlDummyLookupContext ctx(errs);
-    Owned<IFileContents> contents = createFileContentsFromText(text, NULL);
+    Owned<IFileContents> contents = createFileContentsFromText(text, NULL, false);
     return parseQuery(scope, contents, ctx, NULL, NULL, true);
 }
 
