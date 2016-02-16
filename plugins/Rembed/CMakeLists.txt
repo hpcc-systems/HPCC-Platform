@@ -25,7 +25,7 @@
 project(Rembed)
 
 if(REMBED)
-    ADD_PLUGIN(Rembed PACKAGES R OPTION MAKE_REMBED)
+    ADD_PLUGIN(Rembed PACKAGES R)
     if(MAKE_REMBED)
         set(
             SRCS
