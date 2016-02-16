@@ -121,6 +121,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set(CLIENTTOOLS OFF)
         set(PLATFORM OFF)
         set(TEST_PLUGINS OFF)
+        set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
     endif()
 
     if(REMBED)
