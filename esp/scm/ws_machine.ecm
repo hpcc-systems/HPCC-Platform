@@ -393,14 +393,6 @@ ESPservice [version("1.13")] ws_machine
 
     ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/metrics.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")] 
        GetMetrics(MetricsRequest, MetricsResponse);
-
-    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/StartStopBegin.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
-       StartStopBegin(StartStopBeginRequest, StartStopBeginResponse);
-
-    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/StartStopDone.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
-        StartStopDone(StartStopDoneRequest, StartStopResponse);
-
-    ESPmethod StartStop(StartStopRequest, StartStopResponse);
 };
 
 
