@@ -30,14 +30,26 @@
 #define STANDARD_CONFIGXMLDIR COMPONENTFILES_DIR"/configxml/"
 #define STANDARD_CONFIG_DIR CONFIG_DIR
 
+CInstDetails::CInstDetails(StringBuffer compName, const StringArray &ipAssigned) : m_compName(compName)
+{
+    m_ipAssigned.clear();
+
+    for (int i = 0; i < ipAssigned.ordinality(); i++)
+    {
+        m_ipAssigned.append(ipAssigned.item(i));
+    }
+}
+
 //---------------------------------------------------------------------------
 //  CWizardInputs
 //---------------------------------------------------------------------------
 CWizardInputs::CWizardInputs(const char* xmlArg,const char *service, 
                              IPropertyTree * cfg, 
-                             MapStringTo<StringBuffer>* dirMap): m_service(service), 
+                             MapStringTo<StringBuffer>* dirMap,
+                             StringArray &arrBuildSetsWithAssignedIPs,
+                             StringArray &arrAssignedIPs): m_service(service),
                              m_cfg(cfg), m_overrideDirs(dirMap), m_roxieOnDemand(true),
-                             m_supportNodes(0)
+                             m_supportNodes(0), m_arrBuildSetsWithAssignedIPs(arrBuildSetsWithAssignedIPs), m_arrAssignedIPs(arrAssignedIPs)
 {
   m_pXml.setown(createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>"));
 }
@@ -259,14 +271,17 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
 
     if(m_compOnAllNodes.find(buildSetName) != NotFound)
       return instDetails;
-    
-    if (m_ipaddress.ordinality() + m_supportNodes == 1)
+
+    if (m_arrBuildSetsWithAssignedIPs.find(buildSetName) != NotFound)
+        instDetails = new CInstDetails(compName, getIpAddrMap(buildSetName));
+
+    if (m_ipaddress.ordinality() + m_supportNodes == 1 && instDetails == NULL)
     {
       instDetails = new CInstDetails(compName, m_ipaddress.item(0));
       m_compIpMap.setValue(buildSetName,instDetails);
       return instDetails;
     }
-    else if (m_supportNodes == 1 && strcmp(buildSetName, "roxie") && strcmp(buildSetName, "thor" ))
+    else if (m_supportNodes == 1 && strcmp(buildSetName, "roxie") && strcmp(buildSetName, "thor" ) && instDetails == NULL)
     {
       instDetails = new CInstDetails(compName, m_ipaddressSupport.item(0));
       m_compIpMap.setValue(buildSetName,instDetails);
@@ -280,10 +295,10 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
       {
         StringArray* pIpAddrMap = NULL;
 
-        if (x == 0 && m_supportNodes > 0 && !strcmp(buildSetName, "thor"))
-          pIpAddrMap = &m_ipaddressSupport;
-        else
+        if (m_arrBuildSetsWithAssignedIPs.find(buildSetName) != NotFound || !(x == 0 && m_supportNodes > 0 && !strcmp(buildSetName, "thor")))
           pIpAddrMap = &getIpAddrMap(buildSetName);
+        else
+          pIpAddrMap = &m_ipaddressSupport;
 
         unsigned numOfIPSAlreadyTaken = getCntForAlreadyAssignedIPS(buildSetName);
 
@@ -532,6 +547,28 @@ IPropertyTree* CWizardInputs::createEnvironment()
     pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
     pComputer->addProp(XML_ATTR_NAME, name.str());
     pComputer->addProp(XML_ATTR_NETADDRESS, m_ipaddress.item(i));
+  }
+
+  for(unsigned i = 0; i < m_arrBuildSetsWithAssignedIPs.ordinality(); i++)
+  {
+      const StringArray &strIPs = getIpAddrMap(m_arrBuildSetsWithAssignedIPs.item(i));
+
+      for (unsigned i2 = 0; i2 < strIPs.ordinality(); i2++)
+      {
+          VStringBuffer strXPath("./%s/[%s=\"%s\"]", XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, strIPs.item(i2));
+          if (pCompTree->hasProp(strXPath.str()))
+              continue;
+
+          IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree());
+          ipaddr.ipset(strIPs.item(i2));
+          ipaddr.getNetAddress(sizeof(x),&x);
+          name.setf("node%03d%03d", (x >> 16) & 0xFF, (x >> 24) & 0xFF);
+          getUniqueName(pCompTree, name, XML_TAG_COMPUTER, "");
+          pComputer->addProp(XML_ATTR_COMPUTERTYPE, "linuxmachine");
+          pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
+          pComputer->addProp(XML_ATTR_NAME, name.str());
+          pComputer->addProp(XML_ATTR_NETADDRESS, strIPs.item(i2));
+      }
   }
 
   pNewEnvTree->addPropTree(XML_TAG_HARDWARE, createPTreeFromIPT(pCompTree));
@@ -1171,6 +1208,19 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
           assignedIP.clear().append(m_ipaddress.item(i));
           addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName,sbl.str());
         }
+
+        int nCount = 1;
+        for (unsigned i = 0; i < m_arrBuildSetsWithAssignedIPs.ordinality(); i++)
+        {
+            const StringArray &strIPList = getIpAddrMap(m_arrBuildSetsWithAssignedIPs.item(i));
+
+            for (unsigned i2 = 0; i2 < strIPList.ordinality(); i2++)
+            {
+              sbl.set("s").append(m_ipaddress.ordinality() + m_ipaddressSupport.ordinality() + nCount++);
+              assignedIP.set(strIPList.item(i2));
+              addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName,sbl.str());
+            }
+        }
       }
       else if (numOfIpNeeded > 0)
       {
@@ -1208,13 +1258,25 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
 
 StringArray& CWizardInputs::getIpAddrMap(const char* buildSetName)
 {
-  if (m_supportNodes == 0)
-    return m_ipaddress;
-  else
-  {
-    if (!strcmp(buildSetName, "roxie") || !strcmp(buildSetName, "thor" ))
-      return m_ipaddress;
-  }
+    if (buildSetName && *buildSetName)
+    {
+        for (int i = 0; i < m_arrBuildSetsWithAssignedIPs.ordinality(); i++)
+        {
+            if (stricmp(buildSetName, m_arrBuildSetsWithAssignedIPs.item(i)) == 0)
+            {
+                m_sipaddress.clear();
+                formIPList(m_arrAssignedIPs.item(i), m_sipaddress);
+                return m_sipaddress;
+            }
+        }
+    }
+    if (m_supportNodes == 0)
+        return m_ipaddress;
+    else
+    {
+        if (!strcmp(buildSetName, "roxie") || !strcmp(buildSetName, "thor" ))
+          return m_ipaddress;
+    }
 
-  return m_ipaddressSupport;
+    return m_ipaddressSupport;
 }

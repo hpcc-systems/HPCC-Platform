@@ -3406,11 +3406,12 @@ void formIPList(const char* ip, StringArray& formattedIpList)
      throw MakeStringException(-1, "List of IP Addresses cannot be empty");
 }
 
-void buildEnvFromWizard(const char * wizardXml, const char* service,IPropertyTree* cfg, StringBuffer& envXml, MapStringTo<StringBuffer>* dirMap)
+void buildEnvFromWizard(const char * wizardXml, const char* service,IPropertyTree* cfg, StringBuffer& envXml, StringArray& arrBuildSetWithAssignedIPs,
+                StringArray& arrAssignedIPs, MapStringTo<StringBuffer>* dirMap)
 {
   if(wizardXml && *wizardXml)
   {
-    CWizardInputs wizardInputs(wizardXml, service, cfg, dirMap);
+    CWizardInputs wizardInputs(wizardXml, service, cfg, dirMap, arrBuildSetWithAssignedIPs, arrAssignedIPs);
     wizardInputs.setEnvironment();
     wizardInputs.generateEnvironment(envXml);
     if(envXml.length() == 0)
