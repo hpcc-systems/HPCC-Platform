@@ -1653,7 +1653,12 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
       StringBuffer xpath;
       xpath.appendf("%s[@name='%s']", pszCompType, pszCompName);
 
-      IPropertyTree* pComp = pEnvSoftware->queryPropTree(buf.str());
+      IPropertyTree* pComp =  NULL;
+      Owned<IPropertyTreeIterator> iter = pEnvSoftware->getElements(buf.str());
+
+      if (iter->first() == true)
+          pComp = &(iter->query());
+
       if (!pComp)
       {
         xpath.clear().appendf("*[@name='%s']", pszCompName);
