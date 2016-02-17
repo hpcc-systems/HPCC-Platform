@@ -144,7 +144,7 @@ void CEclCollection::ensureDefinition()
 class FileSystemFile : public CEclSource
 {
 public:
-    FileSystemFile(EclSourceType _type, IFile & _file);
+    FileSystemFile(EclSourceType _type, IFile & _file, bool _allowPlugins);
 
 //interface IEclSource
     virtual IProperties * getProperties();
@@ -243,11 +243,11 @@ static IIdAtom * deriveEclName(const char * filename)
 
 //---------------------------------------------------------------------------------------
 
-FileSystemFile::FileSystemFile(EclSourceType _type, IFile & _file)
+FileSystemFile::FileSystemFile(EclSourceType _type, IFile & _file, bool _allowPlugins)
 : CEclSource(deriveEclName(_file.queryFilename()), _type), file(&_file)
 {
     Owned<ISourcePath> path = createSourcePath(file->queryFilename());
-    fileContents.setown(createFileContents(file, path));
+    fileContents.setown(createFileContents(file, path, _allowPlugins));
     extraFlags = 0;
     switch (type)
     {
@@ -289,7 +289,7 @@ bool FileSystemFile::checkValid()
                         version.set(pb.version);
 
                         Owned<ISourcePath> pluginPath = createSourcePath(pb.moduleName);
-                        fileContents.setown(createFileContentsFromText(pb.ECL, pluginPath));
+                        fileContents.setown(createFileContentsFromText(pb.ECL, pluginPath, true));
 
                         //if (traceMask & PLUGIN_DLL_MODULE)
                         DBGLOG("Loading plugin %s[%s] version = %s", filename, pb.moduleName, version.get());
@@ -368,7 +368,7 @@ void FileSystemDirectory::addFile(IFile &file, bool allowPlugins)
             EclSourceType type = getEclSourceType(tail);
             if (type && ((type != ESTplugin) || allowPlugins))
             {
-                Owned<FileSystemFile> newFile = new FileSystemFile(type, file);
+                Owned<FileSystemFile> newFile = new FileSystemFile(type, file, allowPlugins);
                 if (allowPlugins)
                     newFile->extraFlags |= SOURCEFILE_PLUGIN;
                 if (newFile->checkValid())
@@ -665,7 +665,7 @@ IFileContents * CXmlEclElement::queryFileContents()
                 getFullName(defaultName);
                 sourcePath.setown(createSourcePath(defaultName));
             }
-            fileContents.setown(createFileContentsFromText(text, sourcePath));
+            fileContents.setown(createFileContentsFromText(text, sourcePath, false));
         }
     }
     return fileContents;
