@@ -20,7 +20,7 @@
     </indexterm>(</emphasis><emphasis>flag</emphasis> <emphasis role="bold">)]
   [, SINGLE<indexterm>
       <primary>SINGLE</primary>
-    </indexterm>] [, MULTIPLE<indexterm>
+    </indexterm> | MULTIPLE<indexterm>
       <primary>MULTIPLE</primary>
     </indexterm>[(</emphasis><emphasis>count</emphasis><emphasis
   role="bold">)]] ) <indexterm>
