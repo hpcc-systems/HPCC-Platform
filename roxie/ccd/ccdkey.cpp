@@ -1220,7 +1220,12 @@ public:
         }
         if (preload && !loadedIntoMemory) // loaded but NOT originally seen as preload, lets try to generate keys...
         {
-            assertex((size_t)totalSize == totalSize);
+            if ((size_t)totalSize != totalSize)
+            {
+                IException *E = makeStringException(ROXIE_MEMORY_ERROR, "Preload file is larger than maximum object size");
+                EXCLOG(MCoperatorError, E);
+                throw E;
+            }
             if (traceLevel > 2)
                 DBGLOG("Loading in-memory file, size %" I64F "d", totalSize);
             // MORE - 32-bit systems could wrap here if totalSize > 2^32
