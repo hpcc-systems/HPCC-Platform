@@ -1406,14 +1406,6 @@
 
                   <entry>Read</entry>
                 </row>
-
-                <row>
-                  <entry>ExecuteAccess</entry>
-
-                  <entry>Access to Remote Execution in ECL Watch</entry>
-
-                  <entry>Full</entry>
-                </row>
               </tbody>
             </tgroup>
           </informaltable></para>

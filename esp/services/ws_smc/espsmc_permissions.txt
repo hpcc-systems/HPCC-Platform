@@ -74,8 +74,6 @@ ws_machine:
         Read - GetMachineInfo
     MetricsAccess: 
         Read - Access to SNMP metrics information
-    ExecuteAccess: 
-        Full - access to remote execution of commands and start/stop
 
 ws_workunits:
     OwnWorkunitsAccess: 
