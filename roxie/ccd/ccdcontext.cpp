@@ -223,26 +223,69 @@ protected:
     {
         // MORE - should pre-do more of this work
         unsigned count = 0;
-        Owned<IConstWorkflowItemIterator> iter = createWorkflowItemIterator(workflowInfo);
-        for(iter->first(); iter->isValid(); iter->next())
-            count++;
-        workflow.setown(createWorkflowItemArray(count));
-        for(iter->first(); iter->isValid(); iter->next())
+        if (workunit)
         {
-            IConstWorkflowItem *item = iter->query();
-            bool isOnce = (item->queryMode() == WFModeOnce);
-            workflow->addClone(item);
-            if (isOnce != doOnce)
-                workflow->queryWfid(item->queryWfid()).setState(WFStateDone);
+            workflow.setown(workunit->getWorkflowClone());
+        }
+        else
+        {
+            Owned<IConstWorkflowItemIterator> iter = createWorkflowItemIterator(workflowInfo);
+            for(iter->first(); iter->isValid(); iter->next())
+                count++;
+            workflow.setown(createWorkflowItemArray(count));
+            for(iter->first(); iter->isValid(); iter->next())
+            {
+                IConstWorkflowItem *item = iter->query();
+                bool isOnce = (item->queryMode() == WFModeOnce);
+                workflow->addClone(item);
+                if (isOnce != doOnce)
+                    workflow->queryWfid(item->queryWfid()).setState(WFStateDone);
+            }
         }
     }
     virtual void end()
     {
+        if (workunit)
+        {
+            WorkunitUpdate w(&workunit->lock());
+            w->syncRuntimeWorkflow(workflow);
+        }
         workflow.clear();
     }
-    virtual void schedulingStart() { throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported in roxie"); }
-    virtual bool schedulingPull() { throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported in roxie"); }
-    virtual bool schedulingPullStop() { throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported in roxie"); }
+    virtual void schedulingStart()
+    {
+        if (!workunit)
+            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported when running predeployed queries");
+        if (!wfconn)
+            wfconn.setown(getWorkflowScheduleConnection(workunit->queryWuid()));
+
+        wfconn->lock();
+        wfconn->setActive();
+        wfconn->pull(workflow);
+        wfconn->unlock();
+    }
+    virtual bool schedulingPull()
+    {
+        if (!workunit)
+            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported when running predeployed queries");
+        wfconn->lock();
+        bool more = wfconn->pull(workflow);
+        wfconn->unlock();
+        return more;
+    }
+
+    virtual bool schedulingPullStop()
+    {
+        if (!workunit)
+            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported when running predeployed queries");
+        wfconn->lock();
+        bool more = wfconn->pull(workflow);
+        if(!more) wfconn->resetActive();
+        wfconn->unlock();
+        return more;
+    }
+
+
     virtual void reportContingencyFailure(char const * type, IException * e) {}
     virtual void checkForAbort(unsigned wfid, IException * handling) {}
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item)
@@ -642,6 +685,7 @@ private:
 
     IConstWorkUnit *workunit;
     IPropertyTree *workflowInfo;
+    Owned<IWorkflowScheduleConnection> wfconn;
     Owned<PersistVersion> persist;
     IArray persistReadLocks;
     bool doOnce;
@@ -2840,7 +2884,14 @@ public:
         if (workUnit)
         {
             WorkunitUpdate w(&workUnit->lock());
-            w->setState(aborted ? WUStateAborted : (failed ? WUStateFailed : WUStateCompleted));
+            if (aborted)
+                w->setState(WUStateAborted);
+            else if (failed)
+                w->setState(WUStateFailed);
+            else if (workflow && workflow->hasItemsWaiting())
+                w->setState(WUStateWait);
+            else
+                w->setState(WUStateCompleted);
             while (clusterNames.ordinality())
                 restoreCluster();
             addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
