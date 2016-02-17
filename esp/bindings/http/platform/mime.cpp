@@ -418,7 +418,7 @@ void CMimeMultiPart::unserialize(const char* contenttype, __int64 text_length, c
         if(be <= bb)
             continue;
 
-        body.append(be - bb, text + bb);
+        body.append((unsigned)(be - bb), text + bb);
 
         CMimeBodyPart* onepart = new CMimeBodyPart(ctype.str(), encoding.str(), cid.str(), "", &body, cdisp.str());
 

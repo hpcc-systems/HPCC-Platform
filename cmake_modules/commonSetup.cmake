@@ -329,6 +329,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set ( GIT_COMMAND "git.cmd" )
     endif ()
 
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHa")
+
     if (USE_SIGNED_CHAR AND USE_UNSIGNED_CHAR )
         message (FATAL_ERROR "Can't use USE_SIGNED_CHAR and USE_UNSIGNED_CHAR together!")
     else()

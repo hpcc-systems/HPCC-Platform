@@ -3347,7 +3347,7 @@ bool rtlCodepageToCodepage(unsigned outlen, char * out, unsigned inlen, char con
     unsigned len = target - out;
     if(len < outlen)
         codepageBlankFill(outcodepage, target, outlen-len);
-    return U_SUCCESS(err);
+    return U_SUCCESS(err) != FALSE;
 }
 
 bool rtlCodepageToCodepageX(unsigned & outlen, char * & out, unsigned maxoutlen, unsigned inlen, char const * in, char const * outcodepage, char const * incodepage)
@@ -3370,7 +3370,7 @@ bool rtlCodepageToCodepageX(unsigned & outlen, char * & out, unsigned maxoutlen,
         if (!out)
             out = tempBuffer;
     }
-    return U_SUCCESS(err);
+    return U_SUCCESS(err) != FALSE;
 }
 
 int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char const * outcodepage)
@@ -5030,7 +5030,7 @@ public:
 
         sample.setTo(_str + _from, _len);
         matcher->reset(sample);
-        matched = matcher->find();
+        matched = matcher->find() != FALSE;
         if (matched)
             matchedSize = (unsigned)matcher->groupCount() + 1;
     }
@@ -5414,7 +5414,7 @@ public:
         srccnv = ucnv_open(sourceName, &uerr);
         tgtcnv = ucnv_open(targetName, &uerr);
         tgtMaxRatio = ucnv_getMaxCharSize(tgtcnv);
-        failed = U_FAILURE(uerr);
+        failed = U_FAILURE(uerr) != FALSE;
     }
     ~rtlCodepageConverter()
     {
@@ -5449,14 +5449,14 @@ public:
             targetLength = ucnv_fromUChars(tgtcnv, target, ulen*tgtMaxRatio, ubuff, ulen, &uerr);
         }
         free(ubuff);
-        failed = U_FAILURE(uerr);
+        failed = U_FAILURE(uerr) != FALSE;
     }
     unsigned convert(unsigned targetLength, char * target, unsigned sourceLength, char const * source, bool & failed)
     {
         char * tgtStart = target;
         ucnv_convertEx(tgtcnv, srccnv, &target, target+targetLength, &source, source+sourceLength, 0, 0, 0, 0, true, true, &uerr);
         int32_t ret = target-tgtStart;
-        failed = U_FAILURE(uerr);
+        failed = U_FAILURE(uerr) != FALSE;
         return ret;
     }
 

@@ -55,7 +55,7 @@ CESPComponentStatusInfo::CESPComponentStatusInfo(const char* _reporter)
     { //A status report should be expired if it was reported >csCacheMinutes ago.
         CDateTime timeNow;
         timeNow.setNow();
-        timeNow.adjustTime(-csCacheMinutes);
+        timeNow.adjustTime(-(int)csCacheMinutes);
         expireTimeStamp = timeNow.getSimple();
     }
 }

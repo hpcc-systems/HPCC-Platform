@@ -129,12 +129,12 @@ void sendFileChunk(const char * filename, offset_t offset, ISocket * socket)
     if (in)
     {
         fseek(in, 0, SEEK_END);
-        size = ftell(in);
+        offset_t endOffset = ftell(in);
         fseek(in, offset, SEEK_SET);
-        if (size < offset)
+        if (endOffset < offset)
             size = 0;
         else
-            size -= offset;
+            size = (unsigned)(endOffset - offset);
         if (size > CHUNK_SIZE)
             size = CHUNK_SIZE;
         buff = malloc(size);
@@ -862,7 +862,7 @@ int main(int argc, char **argv)
                                 queryTime.setNow();
                                 queryTime.setTimeString(buffer, &query);
                                 nowTime.setNow();
-                                int sleeptime = (queryTime.getSimple()-firstTime.getSimple()) - (nowTime.getSimple()-startTime.getSimple());
+                                int sleeptime = (int)((queryTime.getSimple()-firstTime.getSimple()) - (nowTime.getSimple()-startTime.getSimple()));
                                 if (sleeptime < 0)
                                     DBGLOG("Running behind %d seconds", -sleeptime);
                                 else if (sleeptime)

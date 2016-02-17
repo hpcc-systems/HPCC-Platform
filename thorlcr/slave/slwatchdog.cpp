@@ -144,12 +144,12 @@ public:
 
         // Split edge string in activityId and edgeIdx
         const char *pEdge=edgeString.str();
-        const activity_id actId = _atoi64(pEdge);
+        const activity_id actId = (activity_id)_atoi64(pEdge);
         if (!actId) return;
 
         while (*pEdge && *pEdge!='_')  ++pEdge;
         if (!*pEdge) return;
-        const unsigned edgeIdx = _atoi64(++pEdge);
+        const unsigned edgeIdx = (unsigned)_atoi64(++pEdge);
 
         CriticalBlock b(crit);
         ForEachItemIn(g, activeGraphs) // NB: 1 for each slavesPerProcess

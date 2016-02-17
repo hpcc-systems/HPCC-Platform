@@ -593,7 +593,7 @@ void CRoxieClient::runQuery(const char* query, bool trim)
             qxml.append(query);
     }
 
-    int i;
+    unsigned i;
 
     for (i=0; i< m_numThreads; i++)
     {

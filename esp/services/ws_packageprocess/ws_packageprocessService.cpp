@@ -217,7 +217,7 @@ public:
 
     inline bool checkFlag(unsigned check)
     {
-        return flags & check;
+        return (flags & check) != 0;
     }
 
     inline void setFlag(unsigned flag, bool on=true)
