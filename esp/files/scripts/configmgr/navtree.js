@@ -275,7 +275,7 @@ function handleAdvance(createFile) {
         var treeData = getNavTreeData();
         createNavigationTree(treeData);
         top.document.stopWait();
-        top.document.title = 'HPCC Systems Configuration Manager - ' + form.sourcefile.value;
+        top.document.title = 'HPCC Systems' + '\u00AE' + 'Configuration Manager - ' + form.sourcefile.value;
 
         if (top.document.navDT.keepAliveInt)
           clearInterval(top.document.navDT.keepAliveInt);
@@ -2514,7 +2514,7 @@ function refreshNavTree(paramds, paramdt, selRec) {
         updateEnvCtrls(form.isLocked.value === "true");
 
         top.document.stopWait();
-        top.document.title = 'HPCC Systems Configuration Manager - ' + form.sourcefile.value;
+        top.document.title = 'HPCC Systems'+ '\u00AE' + 'Configuration Manager - ' + form.sourcefile.value;
       }
       else if (o.responseText.indexOf("<html") === 0) {
         document.forms['treeForm'].wizops.value = "1";
