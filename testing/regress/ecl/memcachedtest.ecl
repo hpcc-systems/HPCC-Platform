@@ -17,6 +17,7 @@
 
 //class=embedded
 //class=3rdparty
+//nothor
 
 IMPORT memcached FROM lib_memcached;
 IMPORT Std;
@@ -104,4 +105,11 @@ SEQUENTIAL(
     memcached.Exists('testDelete', servers, 'hashWithThis');
     memcached.Delete('testDelete', servers, 'hashWithThis');
     memcached.Exists('testDelete', servers, 'hashWithThis');
+    );
+
+//Test failure to connect
+STRING downServer := '--SERVER=127.0.0.1:6379';
+    ds := DATASET(NOFOLD(1), TRANSFORM({STRING value}, SELF.value := memcached.GetString('connectionTest', downServer)));
+SEQUENTIAL(
+    OUTPUT(CATCH(ds, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
     );
