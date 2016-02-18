@@ -76,12 +76,10 @@ class PtrToOffsetMapper
         // MORE - could cache last hit
         unsigned int a = 0;
         int b = numBases;
-        int rc;
         while ((int)a<b)
         {
             int i = (a+b+1)/2;
-            rc = pos - fragments[i-1].baseOffset;
-            if (rc>=0)
+            if (pos >= fragments[i-1].baseOffset)
                 a = i;
             else
                 b = i-1;
@@ -1222,10 +1220,16 @@ public:
         }
         if (preload && !loadedIntoMemory) // loaded but NOT originally seen as preload, lets try to generate keys...
         {
+            if ((size_t)totalSize != totalSize)
+            {
+                IException *E = makeStringException(ROXIE_MEMORY_ERROR, "Preload file is larger than maximum object size");
+                EXCLOG(MCoperatorError, E);
+                throw E;
+            }
             if (traceLevel > 2)
                 DBGLOG("Loading in-memory file, size %" I64F "d", totalSize);
             // MORE - 32-bit systems could wrap here if totalSize > 2^32
-            fileEnd = fileStart = (char *) malloc(totalSize);
+            fileEnd = fileStart = (char *) malloc((size_t)totalSize);
             if (!fileStart)
             {
                 IException *E = MakeStringException(ROXIE_MEMORY_ERROR, "Insufficient memory to preload file");

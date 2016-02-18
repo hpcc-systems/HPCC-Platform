@@ -22,7 +22,6 @@
 #ifdef _WIN32
 #include "winsock.h"
 #define ERRNO() WSAGetLastError()
-#define EWOULDBLOCK WSAEWOULDBLOCK
 #else
 #define ERRNO() (errno)
 #endif

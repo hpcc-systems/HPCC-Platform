@@ -2493,6 +2493,10 @@ public:
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
         int rc = LDAP_COMPARE_EXT_S(ld, (const char*)groupdn, (const char*)fldname, (const char*)userdn,0,0,0);
+#ifndef _WIN32
+        if (rc == -3)//389DirectoryServer always seems to return -3
+            rc = ldap_compare_s(ld, groupdn, fldname, userdn);
+#endif
         if(rc == LDAP_COMPARE_TRUE)
             return true;
         else
@@ -2642,9 +2646,17 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
             int compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"posixAccount",0,0,0);
+#ifndef _WIN32
+            if (compresult == -3)//389DirectoryServer always seems to return -3
+                compresult = ldap_compare_s(ld, userdn.str(), "objectclass", "posixAccount");
+#endif
             if(compresult != LDAP_COMPARE_TRUE)
                 attrs[ind++] = &oc_attr;
             compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"shadowAccount",0,0,0);
+#ifndef _WIN32
+            if (compresult == -3)//389DirectoryServer always seems to return -3
+                compresult = ldap_compare_s(ld, userdn.str(), "objectclass", "shadowAccount");
+#endif
             if(compresult != LDAP_COMPARE_TRUE)
                 attrs[ind++] = &oc1_attr;
             attrs[ind] = NULL;
@@ -2658,6 +2670,10 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
             int compresult = LDAP_COMPARE_EXT_S(ld, (const char*)userdn.str(), (const char*)"objectclass", (const char*)"posixAccount",0,0,0);
+#ifndef _WIN32
+            if (compresult == -3)//389DirectoryServer always seems to return -3
+                compresult = ldap_compare_s(ld, userdn.str(), "objectclass", "posixAccount");
+#endif
             if(compresult != LDAP_COMPARE_TRUE)
             {
                 rc = LDAP_SUCCESS;

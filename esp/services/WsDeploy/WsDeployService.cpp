@@ -1653,7 +1653,12 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
       StringBuffer xpath;
       xpath.appendf("%s[@name='%s']", pszCompType, pszCompName);
 
-      IPropertyTree* pComp = pEnvSoftware->queryPropTree(buf.str());
+      IPropertyTree* pComp =  NULL;
+      Owned<IPropertyTreeIterator> iter = pEnvSoftware->getElements(buf.str());
+
+      if (iter->first() == true)
+          pComp = &(iter->query());
+
       if (!pComp)
       {
         xpath.clear().appendf("*[@name='%s']", pszCompName);
@@ -6101,7 +6106,8 @@ bool CWsDeployFileInfo::buildEnvironment(IEspContext &context, IEspBuildEnvironm
   {
     if(!strcmp(sbName.str(), m_userWithLock.str()) || !strcmp(sbUserIp.str(), m_userIp.str()))
     { 
-        buildEnvFromWizard(xml, m_pService->getName(), m_pService->getCfg(), envXml);
+        StringArray empty;
+        buildEnvFromWizard(xml, m_pService->getName(), m_pService->getCfg(), envXml, empty, empty);
         setSkipNotification(true);
 
         if(envXml.length())

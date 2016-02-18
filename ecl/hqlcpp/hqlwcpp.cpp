@@ -590,6 +590,8 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
 {
     IHqlExpression *body = funcdef->queryChild(0);
     IHqlExpression *formals = funcdef->queryChild(1);
+    if (body->hasAttribute(_disallowed_Atom))
+        throwError(HQLERR_ServiceDefinitionNotAllowed);
 
     if (body->hasAttribute(includeAtom) || body->hasAttribute(ctxmethodAtom) || body->hasAttribute(gctxmethodAtom) || body->hasAttribute(methodAtom) || body->hasAttribute(sysAtom) || body->hasAttribute(omethodAtom))
         return false;

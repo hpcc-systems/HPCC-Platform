@@ -61,7 +61,10 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/esdllib
     )
 
-ADD_DEFINITIONS( -D_CONSOLE -O0 )
+ADD_DEFINITIONS( -D_CONSOLE )
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
+    ADD_DEFINITIONS( -O0 )
+endif ()
 
 HPCC_ADD_EXECUTABLE ( esdl ${SRCS} )
 

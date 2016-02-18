@@ -250,6 +250,25 @@ static void formatTimeStamp(StringBuffer & out, unsigned __int64 value)
     out.append(timeStamp).appendf(".%03uZ", us / 1000);
 }
 
+void formatTimeStampAsLocalTime(StringBuffer & out, unsigned __int64 value)
+{
+    time_t seconds = value / 1000000;
+    unsigned us = value % 1000000;
+    char timeStamp[64];
+    time_t tNow = seconds;
+#ifdef _WIN32
+    struct tm *gmtNow;
+    gmtNow = localtime(&tNow);
+    strftime(timeStamp, 64, "%H:%M:%S", gmtNow);
+#else
+    struct tm gmtNow;
+    localtime_r(&tNow, &gmtNow);
+    strftime(timeStamp, 64, "%H:%M:%S", &gmtNow);
+#endif //_WIN32
+    out.append(timeStamp).appendf(".%03u", us / 1000);
+}
+
+
 static const unsigned oneKb = 1024;
 static const unsigned oneMb = 1024 * 1024;
 static const unsigned oneGb = 1024 * 1024 * 1024;

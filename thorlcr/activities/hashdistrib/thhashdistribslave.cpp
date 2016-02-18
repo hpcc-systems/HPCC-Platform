@@ -672,7 +672,7 @@ protected:
             rowcount_t totalSent = 0;
             try
             {
-                while (!aborted && atomic_read(&numFinished) < owner.numnodes)
+                while (!aborted && (unsigned)atomic_read(&numFinished) < owner.numnodes)
                 {
                     while (queryTotalSz() >= owner.inputBufferSize)
                     {

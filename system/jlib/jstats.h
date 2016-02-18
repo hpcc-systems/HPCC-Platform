@@ -447,6 +447,8 @@ extern jlib_decl unsigned __int64 getTimeStampNowValue();
 extern jlib_decl unsigned __int64 getIPV4StatsValue(const IpAddress & ip);
 extern jlib_decl void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasure measure);
 extern jlib_decl void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticKind kind);
+extern jlib_decl void formatTimeStampAsLocalTime(StringBuffer & out, unsigned __int64 value);
+
 extern jlib_decl unsigned __int64 mergeStatistic(StatisticMeasure measure, unsigned __int64 value, unsigned __int64 otherValue);
 extern jlib_decl unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatsMergeAction mergeAction);
 

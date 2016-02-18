@@ -3021,25 +3021,27 @@ static CriticalSection ClientCountSect;
 
 class CClientStats : public CInterface
 {
-    SpinLock spin;
 public:
-    CClientStats(const char *_client) : client(_client) { count = 0; bRead = 0; bWritten = 0; }
+    CClientStats(const char *_client) : client(_client), count(0), bRead(0), bWritten(0) { }
     const char *queryFindString() const { return client; }
-    inline void addRead(unsigned len)
+    inline void addRead(unsigned __int64 len)
     {
-        SpinBlock b(spin); // rare event, but we should change to a atomic<__int64> for >= c++11
         bRead += len;
     }
-    inline void addWrite(unsigned len)
+    inline void addWrite(unsigned __int64 len)
     {
-        SpinBlock b(spin); // rare event, but we should change to a atomic<__int64> for >= c++11
         bWritten += len;
+    }
+    void getStatus(StringBuffer & info) const
+    {
+        info.appendf("Client %s - %" I64F "d requests handled, bytes read = %" I64F "d, bytes written = % " I64F "d",
+            client.get(), count, bRead.load(), bWritten.load()).newline();
     }
 
     StringAttr client;
     unsigned __int64 count;
-    unsigned __int64 bRead;
-    unsigned __int64 bWritten;
+    std::atomic<unsigned __int64> bRead;
+    std::atomic<unsigned __int64> bWritten;
 };
 class CClientStatsTable : public OwningStringSuperHashTableOf<CClientStats>
 {
@@ -3119,8 +3121,7 @@ public:
                 for (unsigned e=0; e<max; e++)
                 {
                     const CClientStats &element = *elements.item(e);
-                    info.appendf("Client %s - %" I64F "d requests handled, bytes read = %" I64F "d, bytes written = % " I64F "d",
-                            element.client.get(), element.count, element.bRead, element.bWritten).newline();
+                    element.getStatus(info);
                 }
             }
             else // list all
@@ -3129,8 +3130,7 @@ public:
                 ForEachItemIn(e, elements)
                 {
                     const CClientStats &element = *elements.item(e);
-                    info.appendf("Client %s - %" I64F "d requests handled, bytes read = %" I64F "d, bytes written = % " I64F "d",
-                            element.client.get(), element.count, element.bRead, element.bWritten).newline();
+                    element.getStatus(info);
                 }
             }
         }

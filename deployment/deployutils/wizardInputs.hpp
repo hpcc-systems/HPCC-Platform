@@ -48,7 +48,9 @@ class CInstDetails : public CInterface, implements IInterface
     CInstDetails(StringBuffer compName, StringBuffer ipAssigned):m_compName(compName)
     {
       m_ipAssigned.append(ipAssigned.str());
-    };
+    }
+    CInstDetails(StringBuffer compName, const StringArray &ipAssigned);
+
     virtual ~CInstDetails(){};
 
     IMPLEMENT_IINTERFACE;
@@ -77,8 +79,7 @@ class CWizardInputs : public CInterface, implements IInterface
 {
 // Construction
 public:
-  CWizardInputs(){};
-  CWizardInputs(const char* xmlArg, const char* service, IPropertyTree* cfg, MapStringTo<StringBuffer>* dirMap);
+  CWizardInputs(const char* xmlArg, const char* service, IPropertyTree* cfg, MapStringTo<StringBuffer>* dirMap, StringArray &arrBuildSetsWithAssignedIPs, StringArray &arrAssignedIPs);
   virtual ~CWizardInputs(); 
   
   void setEnvironment();
@@ -123,6 +124,8 @@ private:
    StringArray m_compOnAllNodes;
    StringArray m_doNotGenOptOnComps;
    StringArray m_clusterForTopology;
+   StringArray &m_arrBuildSetsWithAssignedIPs;
+   StringArray &m_arrAssignedIPs;
    MapStringToStringArray m_compForTopology; 
    MapStringToStringArray m_invalidServerCombo;
    unsigned m_supportNodes;
@@ -135,6 +138,7 @@ private:
    
    StringArray m_ipaddress;
    StringArray m_ipaddressSupport;
+   StringArray m_sipaddress; //user specified ip addresses
    MapStringToMyClass<CInstDetails> m_compIpMap; 
    Owned<IPropertyTree> m_pXml;
    IPropertyTree* m_cfg;

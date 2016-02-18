@@ -137,10 +137,6 @@
                           path="MetricsAccess"
                           resource="MetricsAccess"
                           service="ws_machine"/>
-     <AuthenticateFeature description="Access to remote execution"
-                          path="ExecuteAccess"
-                          resource="ExecuteAccess"
-                          service="ws_machine"/>
      <AuthenticateFeature description="Access to DFU workunits"
                           path="DfuWorkunitsAccess"
                           resource="DfuWorkunitsAccess"

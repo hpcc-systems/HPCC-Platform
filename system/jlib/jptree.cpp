@@ -6728,6 +6728,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
     virtual void resetState()
     {
         stack.kill();
+        more = true;
     }
 public:
     IMPLEMENT_IINTERFACE;

@@ -1001,7 +1001,7 @@ bool CSoapValue::get_value(const char* path, FloatArray& value)
 
             StringBuffer tmpval;
             onechild.serializeContent(tmpval, NULL);
-            value.append(atof(tmpval));
+            value.append((float)atof(tmpval));
         }
     }
     return (sv != NULL);

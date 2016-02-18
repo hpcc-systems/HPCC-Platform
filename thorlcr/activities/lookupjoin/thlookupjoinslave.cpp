@@ -1936,7 +1936,7 @@ protected:
                 throw e;
             IOutputMetaData *inputOutputMeta = rightITDL->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta();
             // rows may either be in separate slave row arrays or in single rhs array, or split.
-            rowidx_t total = rowLoader ? rowLoader->numRows() : (getGlobalRHSTotal() + rhs.ordinality());
+            rowcount_t total = rowLoader ? rowLoader->numRows() : (getGlobalRHSTotal() + rhs.ordinality());
             throw checkAndCreateOOMContextException(this, e, "gathering RHS rows for lookup join", total, inputOutputMeta, NULL);
         }
     }

@@ -343,7 +343,8 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
     moduleName = _containerScope->queryId();
     forceResult = false;
     parsingTemplateAttribute = false;
-    inSignedModule = false;
+    inSignedModule = _text->isImplicitlySigned();
+;
 
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
 
@@ -369,7 +370,7 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
     for (unsigned i=0;i<parent.defaultScopes.length();i++)
         defaultScopes.append(*LINK(&parent.defaultScopes.item(i)));
     sourcePath.set(parent.sourcePath);
-    inSignedModule = parent.inSignedModule;
+    inSignedModule = parent.inSignedModule || _text->isImplicitlySigned();
     errorHandler = lookupCtx.errs;
     moduleName = containerScope->queryId();
 
@@ -1216,6 +1217,7 @@ void HqlGram::processServiceFunction(const attribute & idAttr, IIdAtom * name, I
     IHqlExpression * formals = defineScopes.tos().createFormals(oldSetFormat);
     IHqlExpression * defaults = defineScopes.tos().createDefaults();
     IHqlExpression * func = createFunctionDefinition(name, call, formals, defaults, NULL);
+    func = attachPendingWarnings(func);
     serviceScope->defineSymbol(name, NULL, func, true, false, 0, NULL, idAttr.pos.lineno, idAttr.pos.column, 0, 0, 0);
     resetParameters();
 }
@@ -3631,13 +3633,11 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         attrs->unwindList(attrArray,no_comma);
     
     bool hasEntrypoint = false;
-    bool foldSeen = false;
-    bool nofoldSeen = false;
     unsigned count = attrArray.length();
     if (count>0)
     {
         // check attr one by one
-        bool bcdApi = false, rtlApi = false, cApi = false;
+        bool bcdApi = false, rtlApi = false, cApi = false, cppApi = false;
 
         for (unsigned i=0; i<count; i++)
         {
@@ -3739,6 +3739,11 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 bcdApi = true;
                 checkSvcAttrNoValue(attr, errpos);
             }
+            else if (name == cppAtom)
+            {
+                cppApi = true;
+                checkSvcAttrNoValue(attr, errpos);
+            }
             else if (name == pureAtom || name == templateAtom || name == volatileAtom || name == onceAtom || name == actionAtom)
             {
                 checkSvcAttrNoValue(attr, errpos);
@@ -3748,17 +3753,14 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
             {
                 checkSvcAttrNoValue(attr, errpos);
             }
-            else if ((name == userMatchFunctionAtom) || (name == costAtom) || (name == allocatorAtom) || (name == extendAtom) || (name == passParameterMetaAtom))
+            else if ((name == userMatchFunctionAtom) || (name == costAtom) || (name == allocatorAtom) || (name == extendAtom) || (name == passParameterMetaAtom) ||
+                     (name == namespaceAtom) || (name==prototypeAtom))
             {
             }
             else if (name == holeAtom)
             {
                 //backward compatibility
             }
-            else if (name == foldAtom)
-                foldSeen = true;
-            else if (name == nofoldAtom)
-                nofoldSeen = true;
             else // unsupported
                 reportWarning(CategorySyntax,WRN_SVC_UNSUPPORTED_ATTR, errpos.pos, "Unsupported service attribute: '%s'; ignored", str(name));
         }
@@ -3766,17 +3768,13 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         int apiAttrs = 0;
         if (rtlApi) apiAttrs++;
         if (cApi)   apiAttrs++;
+        if (cppApi)   apiAttrs++;
         if (bcdApi) apiAttrs++;
         if (apiAttrs>1)
             reportWarning(CategorySyntax, ERR_SVC_ATTRCONFLICTS, errpos.pos, "Attributes eclrtl, bcd, c are conflict: only 1 can be used at a time");
     }
-    if (foldSeen && !nofoldSeen)
-    {
-        // Check that we are allowed to fold...
-        if (!checkAllowed(errpos, "foldextern", "FOLD attribute"))
-            attrs = createComma(attrs, createAttribute(_disallowed_Atom));
-    }
-
+    if (!checkAllowed(errpos, "extern", "SERVICE declaration"))
+        attrs = createComma(attrs, createAttribute(_disallowed_Atom));
     if (!hasEntrypoint)
     {
         IHqlExpression *nameAttr = createAttribute(entrypointAtom, createConstant(str(name)));
@@ -11622,7 +11620,7 @@ IHqlExpression * reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *sc
     text.append("=>").append(contents->length(), contents->getText());
 
     //Could use a merge string implementation of IFileContents instead of expanding...
-    Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath());
+    Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath(), contents->isImplicitlySigned());
     HqlGram parser(scope, scope, parseContents, ctx, NULL, hasFieldMap, true);
     unsigned startLine = funcdef->getStartLine();
 
@@ -11746,7 +11744,7 @@ extern HQL_API IHqlExpression * parseQuery(const char * text, IErrorReceiver * e
 {
     Owned<IHqlScope> scope = createScope();
     HqlDummyLookupContext ctx(errs);
-    Owned<IFileContents> contents = createFileContentsFromText(text, NULL);
+    Owned<IFileContents> contents = createFileContentsFromText(text, NULL, false);
     return parseQuery(scope, contents, ctx, NULL, NULL, true);
 }
 

@@ -24,7 +24,7 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/ESPLogicalFile",
     "hpcc/ESPUtil",
-    "hpcc/SFDetailsWidget",
+    "hpcc/SFDetailsWidget"
 
 ], function (declare, i18n, nlsHPCC,
                 selector,

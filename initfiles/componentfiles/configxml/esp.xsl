@@ -100,7 +100,23 @@
                     </xsl:call-template>
                 </xsl:if>
             </xsl:for-each>
-            
+
+            <xsl:for-each select="SecurityManager">
+                <xsl:if test="../Authentication/@method='secmgrPlugin'">
+                    <xsl:if test="../SecurityManager/@libName = ''">
+                        <xsl:message terminate="yes">libName value is not set in the SecurityManager tab of ESP instance '<xsl:value-of select="../@name"/>', but the Authentication method is defined to be 'secmgrPlugin'</xsl:message>
+                    </xsl:if>
+                    <xsl:if test="../SecurityManager/@type = ''">
+                        <xsl:message terminate="yes">secMgrInstanceName is not set in the SecurityManager tab of ESP instance '<xsl:value-of select="../@name"/>', but the Authentication method is defined to be 'secmgrPlugin'</xsl:message>
+                    </xsl:if>
+                    <xsl:variable name="instanceName" select="@type"/>
+                    <xsl:copy>
+                        <xsl:apply-templates select="@*"/>
+                        <xsl:apply-templates select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']"/>
+                    </xsl:copy>
+               </xsl:if>
+            </xsl:for-each>
+
             <xsl:variable name="maxRequestEntityLength">
                 <xsl:choose>
                     <xsl:when test="EspBinding[1]">
