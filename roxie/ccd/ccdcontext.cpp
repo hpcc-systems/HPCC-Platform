@@ -286,8 +286,34 @@ protected:
     }
 
 
-    virtual void reportContingencyFailure(char const * type, IException * e) {}
-    virtual void checkForAbort(unsigned wfid, IException * handling) {}
+    virtual void reportContingencyFailure(char const * type, IException * e)
+    {
+        if (workunit)
+        {
+            StringBuffer msg;
+            msg.append(type).append(" clause failed (execution will continue): ").append(e->errorCode()).append(": ");
+            e->errorMessage(msg);
+            WorkunitUpdate wu(&workunit->lock());
+            addExceptionToWorkunit(wu, SeverityWarning, "user", e->errorCode(), msg.str(), NULL, 0, 0);
+        }
+    }
+    virtual void checkForAbort(unsigned wfid, IException * handling)
+    {
+        if (workunit && workunit->aborting())
+        {
+            if(handling)
+            {
+                StringBuffer msg;
+                msg.append("Abort takes precedence over error: ").append(handling->errorCode()).append(": ");
+                handling->errorMessage(msg);
+                msg.append(" (in item ").append(wfid).append(")");
+                WorkunitUpdate wu(&workunit->lock());
+                addExceptionToWorkunit(wu, SeverityWarning, "user", handling->errorCode(), msg.str(), NULL, 0, 0);
+                handling->Release();
+            }
+            throw new WorkflowException(0, "Workunit abort request received", wfid, WorkflowException::ABORT, MSGAUD_user);
+        }
+    }
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item)
     {
         if (!workunit)
@@ -3762,9 +3788,6 @@ public:
             throw MakeStringException(ROXIE_DALI_ERROR, "doNotify: no dali connection available");
     }
 
-    virtual void doWait(unsigned code, char const * extra) { UNIMPLEMENTED; }
-    virtual void doWaitCond(unsigned code, char const * extra, int sequence, char const * alias, unsigned wfid) { UNIMPLEMENTED; }
-
     static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename)
     {
         CDateTime dt;
@@ -3800,10 +3823,33 @@ public:
         return crc;
     }
 
-    virtual int queryLastFailCode() { UNIMPLEMENTED; }
-    virtual void getLastFailMessage(size32_t & outLen, char * &outStr, const char * tag) { UNIMPLEMENTED; }
-    virtual void getEventName(size32_t & outLen, char * & outStr) { UNIMPLEMENTED; }
-    virtual void getEventExtra(size32_t & outLen, char * & outStr, const char * tag) { UNIMPLEMENTED; }
+    virtual int queryLastFailCode()
+    {
+        if(!workflow)
+            return 0;
+        return workflow->queryLastFailCode();
+    }
+    virtual void getLastFailMessage(size32_t & outLen, char * &outStr, const char * tag)
+    {
+        const char * text = "";
+        if(workflow)
+            text = workflow->queryLastFailMessage();
+        rtlExceptionExtract(outLen, outStr, text, tag);
+    }
+    virtual void getEventName(size32_t & outLen, char * & outStr)
+    {
+        const char * text = "";
+        if(workflow)
+            text = workflow->queryEventName();
+        rtlExtractTag(outLen, outStr, text, NULL, "Event");
+    }
+    virtual void getEventExtra(size32_t & outLen, char * & outStr, const char * tag)
+    {
+        const char * text = "";
+        if(workflow)
+            text = workflow->queryEventExtra();
+        rtlExtractTag(outLen, outStr, text, tag, "Event");
+    }
 
     virtual bool fileExists(const char * filename) { throwUnexpected(); }
     virtual void deleteFile(const char * logicalName) { throwUnexpected(); }
