@@ -40,7 +40,7 @@
 #include <string>
 #include <time.h>
 
-#include "librdkafka/rdkafkacpp.h"
+#include "librdkafka/src-cpp/rdkafkacpp.h"
 
 #ifdef ECL_KAFKA_EXPORTS
 extern "C"

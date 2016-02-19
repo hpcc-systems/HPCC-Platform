@@ -25,7 +25,7 @@
 project(v8embed)
 
 if(V8EMBED)
-    ADD_PLUGIN(v8embed PACKAGES V8 OPTION MAKE_V8EMBED)
+    ADD_PLUGIN(v8embed PACKAGES V8)
     if(MAKE_V8EMBED)
         set(
             SRCS

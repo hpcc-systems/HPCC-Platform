@@ -24,7 +24,7 @@
 #include "jfile.hpp"
 #include "build-config.h"
 
-#include "librdkafka/rdkafka.h"
+#include "librdkafka/src/rdkafka.h"
 
 #include <map>
 #include <fstream>
