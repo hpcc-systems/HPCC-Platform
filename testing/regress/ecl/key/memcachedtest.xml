@@ -58,6 +58,3 @@
 <Dataset name='Result 20'>
  <Row><Result_20>false</Result_20></Row>
 </Dataset>
-<Dataset name='Result 21'>
- <Row><value>Memcached Plugin: Failed connecting to ALL servers. Check memcached on all servers and &quot;memcached -B ascii&quot; not used.</value></Row>
-</Dataset>
