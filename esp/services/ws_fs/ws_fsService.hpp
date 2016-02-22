@@ -24,15 +24,6 @@
 #include "dfuwu.hpp"
 #include "environment.hpp"
 
-struct CDropZoneFileFilter
-{
-    StringAttr name;
-    bool dirOnly;
-    bool fileOnly;
-    CDropZoneFileFilter(const char* _name, bool _dirOnly, bool _fileOnly)
-        : name(_name), dirOnly(_dirOnly), fileOnly(_fileOnly) {};
-};
-
 class Schedule : public Thread
 {
     bool stopping;
@@ -126,13 +117,11 @@ protected:
     void appendGroupNode(IArrayOf<IEspGroupNode>& groupNodes, const char* nodeName, const char* clusterType, bool replicateOutputs);
     bool getOneDFUWorkunit(IEspContext& context, const char* wuid, IEspGetDFUWorkunitsResponse& resp);
     void getDropZoneInfoByIP(const char* destIP, const char* destFile, StringBuffer& path, StringBuffer& mask);
-    void queryDropZoneInfo(const char* dropZone, const char* pathReq, StringBuffer& path, EnvMachineOS& os, IpAddress& ip);
-    void addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* path,
-        IArrayOf<IEspPhysicalFileStruct>& filesInFolder, IArrayOf<IEspPhysicalFileStruct>&files);
-    bool searchDropZoneFileInFolder(IEspContext& context, IFile* f, CDropZoneFileFilter& filter, bool skipMask,
-        StringBuffer& relPath, EnvMachineOS& os, IArrayOf<IEspPhysicalFileStruct>& files);
-    void searchDropZoneFileInFolder(IEspContext& context, CDropZoneFileFilter& filter, IpAddress& ip,
-        EnvMachineOS& os, const char* path, IArrayOf<IEspPhysicalFileStruct>& files);
+    void queryDropZoneInfo(const char* dropZone, StringBuffer& path, EnvMachineOS& os, IpAddress& ip);
+    void addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* dropZonePath, StringBuffer& relativePath,
+        const char pathSep, IArrayOf<IEspPhysicalFileStruct>& filesInFolder, IArrayOf<IEspPhysicalFileStruct>&files);
+    bool searchDropZoneFileInFolder(IEspContext& context, IFile* f, const char* nameFilter, bool returnAll,
+        const char* dropZonePath, StringBuffer& relativePath, const char pathSep, IArrayOf<IEspPhysicalFileStruct>& files);
 };
 
 #endif //_ESPWIZ_FileSpray_HPP__

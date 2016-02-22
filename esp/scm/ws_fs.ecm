@@ -540,10 +540,7 @@ ESPresponse [exceptions_inline] FileListResponse
 ESPrequest [nil_remove] DropZoneFileSearchRequest
 {
     string DropZoneName;
-    string FileName;
-    string Path;
-    bool DirectoryOnly(false);
-    bool FileOnly(false);
+    string NameFilter;
 };
 
 ESPresponse [exceptions_inline] DropZoneFileSearchResponse

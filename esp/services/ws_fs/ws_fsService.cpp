@@ -2820,8 +2820,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
     return true;
 }
 
-void CFileSprayEx::queryDropZoneInfo(const char* dropZone, const char* pathReq, StringBuffer& path,
-    EnvMachineOS& os, IpAddress& ip)
+void CFileSprayEx::queryDropZoneInfo(const char* dropZone, StringBuffer& path, EnvMachineOS& os, IpAddress& ip)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     factory->validateCache();
@@ -2847,24 +2846,15 @@ void CFileSprayEx::queryDropZoneInfo(const char* dropZone, const char* pathReq, 
 
     os = machine->getOS();
     pt->getProp("@directory", path);
-    if (!pathReq || !*pathReq)
-        return;//Return the path since the "pathReq" is not set from user request.
-
-    //If the "pathReq" is set from user request, we need to verify it and return it.
-    StringBuffer s = pathReq;
-    const char pathSep = (os == MachineOsW2K) ? '\\' : '/';
-    s.replace(pathSep=='\\'?'/':'\\', pathSep);
-    if (strncmp(s, path.str(), path.length()))
-    {
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone %s: path %s not in dropzone path %s.",
-            dropZone, pathReq, path.str());
-    }
-    path.set(s);
 }
 
-void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* path,
-    IArrayOf<IEspPhysicalFileStruct>& filesInFolder, IArrayOf<IEspPhysicalFileStruct>& files)
+void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* dropZonePath,
+    StringBuffer& relativePath, const char pathSep, IArrayOf<IEspPhysicalFileStruct>& filesInFolder, IArrayOf<IEspPhysicalFileStruct>& files)
 {
+    StringBuffer path = dropZonePath;
+    if (!relativePath.isEmpty())
+        path.append(pathSep).append(relativePath.str());
+
     Owned<IEspPhysicalFileStruct> aFile = createPhysicalFileStruct();
     aFile->setName(name);
     aFile->setPath(path);
@@ -2883,11 +2873,10 @@ void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di,
     files.append(*aFile.getLink());
 }
 
-bool CFileSprayEx::searchDropZoneFileInFolder(IEspContext& context, IFile* f, CDropZoneFileFilter& filter,
-    bool returnAll, StringBuffer& folder, EnvMachineOS& os, IArrayOf<IEspPhysicalFileStruct>& files)
+bool CFileSprayEx::searchDropZoneFileInFolder(IEspContext& context, IFile* f, const char* nameFilter,
+    bool returnAll, const char* dropZonePath, StringBuffer& relativePath, const char pathSep, IArrayOf<IEspPhysicalFileStruct>& files)
 {
     bool foundMatch = false;
-    const char pathSep = (os == MachineOsW2K) ? '\\' : '/';
     Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
     ForEach(*di)
     {
@@ -2896,46 +2885,34 @@ bool CFileSprayEx::searchDropZoneFileInFolder(IEspContext& context, IFile* f, CD
         if (!fname.length())
             continue;
 
-        StringBuffer newPath = folder;
-        newPath.append(pathSep).append(fname.str());
+        StringBuffer newPath = relativePath;
+        if (!newPath.isEmpty())
+            newPath.append(pathSep);
+        newPath.append(fname.str());
 
         IArrayOf<IEspPhysicalFileStruct> filesInFolder;
-        if (returnAll) //Every files in this folder have to be returned
+        if (returnAll) //Every files and subfolders in this folder have to be returned
         {
             if (di->isDir())
-                searchDropZoneFileInFolder(context, &di->get(), filter, returnAll, newPath, os, filesInFolder);
-            addDropZoneFile(context, di, fname.str(), folder.str(), filesInFolder, files);
+                searchDropZoneFileInFolder(context, &di->get(), NULL, returnAll, dropZonePath, newPath, pathSep, filesInFolder);
+            addDropZoneFile(context, di, fname.str(), dropZonePath, relativePath, pathSep, filesInFolder, files);
             continue;
         }
 
-        bool foundMatchNew = false;
-        if (((!filter.fileOnly && di->isDir()) || (!filter.dirOnly && !di->isDir()))
-            && (!filter.name.length() || WildMatch(fname.str(), filter.name.str(), true)))
+        bool foundMatchNew = WildMatch(fname.str(), nameFilter, true);
+        if (di->isDir() && searchDropZoneFileInFolder(context, &di->get(), nameFilter, foundMatchNew, dropZonePath,
+            newPath, pathSep, filesInFolder))
+        {
             foundMatchNew = true;
-        if (di->isDir() && searchDropZoneFileInFolder(context, &di->get(), filter, foundMatchNew, newPath, os, filesInFolder))
-            foundMatchNew = true;
+        }
+
         if (foundMatchNew)
         {
-            addDropZoneFile(context, di, fname.str(), folder.str(), filesInFolder, files);
+            addDropZoneFile(context, di, fname.str(), dropZonePath, relativePath, pathSep, filesInFolder, files);
             foundMatch = true;
         }
     }
     return foundMatch;
-}
-
-void CFileSprayEx::searchDropZoneFileInFolder(IEspContext& context, CDropZoneFileFilter& filter,
-    IpAddress& ip, EnvMachineOS& os, const char* path, IArrayOf<IEspPhysicalFileStruct>& files)
-{
-    RemoteFilename rfn;
-    SocketEndpoint ep;
-    ep.ipset(ip);
-    rfn.setPath(ep, path);
-    Owned<IFile> f = createIFile(rfn);
-    if(!f->isDirectory())
-        throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", path);
-
-    StringBuffer folder = path;
-    searchDropZoneFileInFolder(context, f, filter, false, folder, os, files);
 }
 
 bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSearchRequest &req, IEspDropZoneFileSearchResponse &resp)
@@ -2951,12 +2928,21 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
 
         IpAddress ip;
         EnvMachineOS os;
-        StringBuffer path;
-        queryDropZoneInfo(dropZone, req.getPath(), path, os, ip);
+        StringBuffer path, relativePath;
+        queryDropZoneInfo(dropZone, path, os, ip);
+
+        RemoteFilename rfn;
+        SocketEndpoint ep;
+        ep.ipset(ip);
+        rfn.setPath(ep, path);
+        Owned<IFile> f = createIFile(rfn);
+        if(!f->isDirectory())
+            throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", path.str());
 
         IArrayOf<IEspPhysicalFileStruct> files;
-        CDropZoneFileFilter filter(req.getFileName(), req.getDirectoryOnly(), req.getFileOnly());
-        searchDropZoneFileInFolder(context, filter, ip, os, path.str(), files);
+        const char* nameFilter = req.getNameFilter();
+        searchDropZoneFileInFolder(context, f, nameFilter, !nameFilter || !*nameFilter, path.str(),
+            relativePath, (os == MachineOsW2K) ? '\\' : '/', files);
         resp.setFiles(files);
     }
     catch(IException* e)
