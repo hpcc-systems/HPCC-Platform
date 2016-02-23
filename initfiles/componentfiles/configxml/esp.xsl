@@ -48,6 +48,7 @@
 
     <xsl:variable name="espProcess" select="/Environment/Software/EspProcess[@name=$process]"/>
     <xsl:variable name="espBindingProtocol" select="/Environment/Software/EspProcess[@name=$process]/EspBinding/@protocol"/>
+    <xsl:variable name="method" select="/Environment/Software/EspProcess[@name=$process]/EspBinding/@type"/>
     <xsl:variable name="controlPortSetting" select="/Environment/Software/EspProcess[@name=$process]/@controlPort"/>
     <xsl:variable name="controlPort">
         <xsl:choose>
@@ -101,21 +102,39 @@
                 </xsl:if>
             </xsl:for-each>
 
-            <xsl:for-each select="SecurityManager">
-                <xsl:if test="../Authentication/@method='secmgrPlugin'">
-                    <xsl:if test="../SecurityManager/@libName = ''">
-                        <xsl:message terminate="yes">libName value is not set in the SecurityManager tab of ESP instance '<xsl:value-of select="../@name"/>', but the Authentication method is defined to be 'secmgrPlugin'</xsl:message>
+             <xsl:if test="@type='secmgrPlugin'">
+                <xsl:call-template name="dosecmgrPlugin">
+                    <xsl:with-param name="method" select="@method"/>
+                </xsl:call-template>
+            </xsl:if>
+
+            <xsl:if test="./Authentication/@method='secmgrPlugin'">
+            <SecurityManagers>
+                <xsl:for-each select="./EspBinding[@type != '']">
+                    <xsl:if test="not(preceding-sibling::EspBinding/@type = current()/@type)">
+                        <SecurityManager>
+                            <xsl:variable name="instanceName" select="@type"/>
+                            <xsl:if test="not(/Environment/Software/*[@name=$instanceName and @type='SecurityManager'])">
+                                <xsl:message terminate="yes">Security Manager instance of name <xsl:value-of select="@type"/> is referenced in service <xsl:value-of select="@name"/> of ESP <xsl:value-of select="../@name"/> but does not exist"</xsl:message>
+                            </xsl:if>
+                            <xsl:attribute name="name">
+                                <xsl:value-of select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']/@name"/>
+                            </xsl:attribute>
+                            <xsl:attribute name="instanceFactoryName">
+                                <xsl:value-of select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']/@instanceFactoryName"/>
+                            </xsl:attribute>
+                            <xsl:attribute name="libName">
+                                <xsl:value-of select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']/@libName"/>
+                            </xsl:attribute>
+                            <xsl:attribute name="type">
+                                <xsl:value-of select="name(/Environment/Software/*[@name=$instanceName and @type='SecurityManager'])"/>
+                            </xsl:attribute>
+                            <xsl:copy-of select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']"/>
+                        </SecurityManager>
                     </xsl:if>
-                    <xsl:if test="../SecurityManager/@type = ''">
-                        <xsl:message terminate="yes">secMgrInstanceName is not set in the SecurityManager tab of ESP instance '<xsl:value-of select="../@name"/>', but the Authentication method is defined to be 'secmgrPlugin'</xsl:message>
-                    </xsl:if>
-                    <xsl:variable name="instanceName" select="@type"/>
-                    <xsl:copy>
-                        <xsl:apply-templates select="@*"/>
-                        <xsl:apply-templates select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']"/>
-                    </xsl:copy>
-               </xsl:if>
-            </xsl:for-each>
+                </xsl:for-each>
+            </SecurityManagers>
+           </xsl:if>
 
             <xsl:variable name="maxRequestEntityLength">
                 <xsl:choose>
@@ -181,8 +200,8 @@
             <xsl:apply-templates select="exslt:node-set($importedServiceDefinitionFiles)" mode="processImportedServiceDefinitions"/>
             <xsl:apply-templates select="node()"/>
         </xsl:copy>
+
     </xsl:template>
-    
     
     <xsl:template match="/Environment/Software/EspProtocol">
         <xsl:variable name="protocolName" select="@name"/>
@@ -190,8 +209,7 @@
             <xsl:apply-templates select="."/>
         </xsl:if>
     </xsl:template>
-    
-    
+
     <xsl:template name="importServiceDefinitionFiles">
         <xsl:param name="filesList"/>
         <xsl:if test="string($filesList) != ''">
@@ -204,8 +222,7 @@
             </xsl:call-template>
         </xsl:if>
     </xsl:template>
-    
-    
+
     <xsl:template name="getServiceDefinition">
         <xsl:param name="serviceFileName"/>
         <xsl:variable name="serviceFile" select="document(concat('file:///', translate($serviceFileName, '\', '/')))"/>
@@ -226,7 +243,7 @@
        <xsl:variable name="service" select="@service"/>
        <xsl:variable name="type" select="/Environment/Software/EspService[@name=$service]/Properties/@type"/>
        <xsl:variable name="defaultForPort" select="string(@defaultForPort)='true'"/>
-       
+
        <xsl:if test="string($service)=''">
           <xsl:message terminate="yes">No service is specified for ESP binding '<xsl:value-of select="$name"/>'.</xsl:message>
        </xsl:if>
@@ -258,7 +275,7 @@
                     </xsl:call-template>                
                 </xsl:when>
             </xsl:choose>
-       </xsl:for-each>     
+       </xsl:for-each>
     </xsl:template>
     
     
@@ -388,6 +405,14 @@
             <xsl:attribute name="htpasswdFile"> <xsl:value-of select="$htpasswdFile"/> </xsl:attribute>
         </xsl:element>
     </xsl:template>
+
+    <xsl:template name="dosecmgrPlugin">
+        <xsl:param name="method"/>
+        <xsl:copy-of select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']"/>
+        <xsl:element name="Authenticate">
+            <xsl:attribute name="method"> <xsl:value-of select="$method"/> </xsl:attribute>
+        </xsl:element>
+    </xsl:template>
     
     <xsl:template name="doAccurintSecurity">
         <xsl:param name="method"/>
@@ -507,7 +532,19 @@
                      <xsl:otherwise>ou=workunits,ou=ecl</xsl:otherwise>
                   </xsl:choose>
                </xsl:variable>
-               
+
+               <xsl:if test="$espProcess/Authentication/@method = 'secmgrPlugin'">
+                    <xsl:for-each select="$espProcess/EspBinding[@name = $origBindName]/Authenticate">
+                        <xsl:copy>
+                            <xsl:apply-templates select="@*" />
+                                <xsl:attribute name="method">
+                                    <xsl:value-of select="$envBindNode/@type"/>
+                                </xsl:attribute>
+                            <xsl:apply-templates select="node()"/>
+                        </xsl:copy>
+                    </xsl:for-each>
+               </xsl:if>
+
                <xsl:for-each select="$bindNode/Authenticate">
                   <xsl:copy>
                      <xsl:apply-templates select="@*[string(.) != '']" mode="processImportedServiceDefinitions"/>
@@ -544,6 +581,7 @@
         <xsl:for-each select="EspBinding">
             <xsl:variable name="protocol" select="@protocol"/>
                <xsl:variable name="port" select="@port"/>
+               <xsl:variable name="method" select="@type"/>
                <xsl:variable name="service" select="@service"/>
                <xsl:variable name="type" select="/Environment/Software/EspService[@name=$service]/Properties/@type"/>
                <xsl:if test="$type='WsSMC' and starts-with($protocol, 'http') and string($port)!=''">
