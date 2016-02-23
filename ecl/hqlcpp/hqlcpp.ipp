@@ -1900,6 +1900,7 @@ protected:
     void postProcessOptions();
     SourceFieldUsage * querySourceFieldUsage(IHqlExpression * expr);
     void noteAllFieldsUsed(IHqlExpression * expr);
+    IHqlExpression * translateGetGraphResult(BuildCtx & ctx, IHqlExpression * expr);
 
 public:
     IHqlExpression * convertToPhysicalIndex(IHqlExpression * tableExpr);
