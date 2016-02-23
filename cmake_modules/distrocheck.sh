@@ -26,6 +26,12 @@ elif [ -e /etc/redhat-release ]; then
 elif [ -e /etc/SuSE-release ]; then
     echo -n "RPM"
     exit 1;
+elif [ -e /etc/system-release ]; then
+    grep -q -i "Amazon Linux" /etc/system-release
+    if [ $? = 0 ]; then
+        echo -n "RPM"
+        exit 1;
+    fi
 fi
 
 cat /etc/*release > temp.txt
