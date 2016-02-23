@@ -1092,6 +1092,9 @@ void CWizardInputs::checkForDependencies()
       if((!strcmp(buildSetName,"roxie") && m_roxieNodes == 0 )|| (!strcmp(buildSetName,"thor")&& m_thorNodes == 0)){
           numOfNodesNeeded = 0;
           m_doNotGenComp.append(buildSetName);
+          m_compForTopology.remove("thor_roxie");
+          if (!strcmp(buildSetName,"thor"))
+             m_compForTopology.remove("thor");
       }
 
       if(numOfNodesNeeded == 0 || (m_doNotGenComp.find(buildSetName) != NotFound))
