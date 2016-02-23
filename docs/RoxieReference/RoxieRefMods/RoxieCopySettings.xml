@@ -103,6 +103,40 @@
   <para>A copy of the metakey is always stored on each Roxie server and in
   most cases is loaded into memory at startup to increase performance.</para>
 
+  <sect3 id="RoxiePreferredCluster">
+    <title>Preferred Clusters</title>
+
+    <para><emphasis role="bold">Preferred Clusters</emphasis> allows you to
+    set priorities for clusters from which you want Roxie to copy files. If
+    not otherwise specified Roxie copies from clusters in its own environment
+    first. To enable the Preferred Clusters feature, you can use the HPCC
+    Systems Configuration Manager. (for additional information about
+    Configuring your HPCC System see <emphasis>Installing and Running the HPCC
+    Platform</emphasis>)<figure>
+        <title>Roxie Preferred Clusters</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../../images/RxPrefCluster.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>The Preferred Clusters tab can be found on the RoxieCluster page
+    within the HPCC Configuration Manager.</para>
+
+    <para>On the Preferred Clusters tab, you can add the name and the priority
+    of your Roxie clusters. The highest priority number is the preferred
+    cluster. To exclude a peer Roxie, add it to the Preferred Clusters list
+    with a priority of 0. Roxie will then follow the priority specified in the
+    Preferred Clusters list providing the highest priority to the Roxie
+    cluster with the highest priority value when copying data.</para>
+
+    <para>You should number your priorities with a numbering scheme of at
+    least (the number of clusters)+1. Use a higher number to allow you to add
+    clusters later.</para>
+  </sect3>
+
   <sect3>
     <title><emphasis role="bold">Command Line support</emphasis></title>
 
