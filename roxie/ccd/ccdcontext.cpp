@@ -3864,7 +3864,10 @@ public:
                 Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
                 if (!clusterInfo)
                     throw MakeStringException(-1, "Unknown cluster '%s'", cluster);
-                clusterWidth = clusterInfo->getSize();
+                if (clusterInfo->getPlatform() == RoxieCluster)
+                    clusterWidth = numChannels;  // We assume it's the current roxie - that's ok so long as roxie's don't call other roxies.
+                else
+                    clusterWidth = clusterInfo->getSize();
             }
             return clusterWidth;
         }
