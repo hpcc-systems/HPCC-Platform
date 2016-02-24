@@ -1004,6 +1004,7 @@ void ParentExtract::beginCreateExtract(BuildCtx & ctx, bool doDeclare)
     //Collect a list of cursors together... NB these are in reverse order..
     gatherActiveRows(*buildctx);
 
+    serialization->BoundRow::setBuilder(queryExtractName());
     childSerialization->setBuilder(this);
 }
 
