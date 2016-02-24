@@ -143,6 +143,7 @@ private:
     StringAttrMapping desc_map;
     StringAttrMapping help_map;
 
+    void getXMLMessageTag(IEspContext& ctx, bool isRequest, const char *method, StringBuffer& tag);
 protected:
     MethodInfoArray m_methods;
     bool                    m_includeSoapTest;
