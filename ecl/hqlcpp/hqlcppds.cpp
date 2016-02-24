@@ -516,6 +516,18 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     case no_matchrow:
         return doBuildRowMatchRow(ctx, expr, true);
     case no_getgraphresult:
+    {
+        if (expr->hasAttribute(externalAtom))
+        {
+            OwnedHqlExpr translated = translateGetGraphResult(ctx, expr);
+            Owned<IReferenceSelector> selector = buildNewRow(ctx, translated);
+            //Ensure the no_getresult is also associated in the context, so requiresTemp() works correctly
+            Owned<BoundRow> boundRow = selector->getRow(ctx);
+            bindRow(ctx, expr, boundRow->queryBound());
+            return selector.getClear();
+        }
+        //fall through
+    }
     case no_call:
     case no_externalcall:
     case no_alias:
@@ -1353,10 +1365,11 @@ IHqlExpression * ChildGraphExprBuilder::addDataset(IHqlExpression * expr)
     IHqlExpression * recordCountAttr = queryRecordCountInfo(expr);
     if (recordCountAttr)
         args.append(*LINK(recordCountAttr));
-    OwnedHqlExpr ret = expr->isDictionary() ? createDictionary(no_getgraphresult, args) : createDataset(no_getgraphresult, args);
-    if (expr->isDatarow())
-        ret.setown(createRow(no_selectnth, LINK(ret), createComma(getSizetConstant(1), createAttribute(noBoundCheckAtom))));
-    return ret.getClear();
+    if (expr->isDictionary())
+         return createDictionary(no_getgraphresult, args);
+     if (expr->isDatarow())
+         return createRow(no_getgraphresult, args);
+     return createDataset(no_getgraphresult, args);
 }
 
 void ChildGraphExprBuilder::addAction(IHqlExpression * expr)
@@ -5074,7 +5087,7 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
     return bindFunctionCall(getLocalLinkedResultId, args, exprType);
 }
 
-void HqlCppTranslator::doBuildAssignGetGraphResult(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
+IHqlExpression * HqlCppTranslator::translateGetGraphResult(BuildCtx & ctx, IHqlExpression * expr)
 {
     if (expr->hasAttribute(_streaming_Atom))
     {
@@ -5085,11 +5098,7 @@ void HqlCppTranslator::doBuildAssignGetGraphResult(BuildCtx & ctx, const CHqlBou
     }
 
     if (expr->hasAttribute(externalAtom))
-    {
-        OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
-        buildExprAssign(ctx, target, call);
-        return;
-    }
+        return buildGetLocalResult(ctx, expr);
 
     if (!isCurrentActiveGraph(ctx, expr->queryChild(1)))
     {
@@ -5097,12 +5106,17 @@ void HqlCppTranslator::doBuildAssignGetGraphResult(BuildCtx & ctx, const CHqlBou
         if (!buildExprInCorrectContext(ctx, expr, match, false))
             throwError(HQLERR_GraphContextNotFound);
 
-        assign(ctx, target, match);
-        return;
+        return match.getTranslatedExpr();
     }
 
-    OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
-    buildExprAssign(ctx, target, call);
+    return buildGetLocalResult(ctx, expr);
+}
+
+
+void HqlCppTranslator::doBuildAssignGetGraphResult(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
+{
+    OwnedHqlExpr translated = translateGetGraphResult(ctx, expr);
+    buildExprAssign(ctx, target, translated);
 }
 
 
@@ -5129,6 +5143,12 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
     case type_groupedtable:
         buildTempExpr(ctx, call, tgt);
         break;
+    case type_row:
+        {
+            OwnedHqlExpr translated = translateGetGraphResult(ctx, expr);
+            buildExpr(ctx, translated, tgt);
+            break;
+        }
     default:
         buildExpr(ctx, call, tgt);
         break;

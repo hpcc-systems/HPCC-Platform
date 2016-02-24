@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noroxie
 //nothor
 //nothorlcr
 

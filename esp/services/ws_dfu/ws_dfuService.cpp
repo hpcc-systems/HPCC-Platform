@@ -44,6 +44,7 @@
 #include "roxiecommlibscm.hpp"
 #include "dfuwu.hpp"
 #include "fverror.hpp"
+#include "nbcd.hpp"
 
 #include "jstring.hpp"
 #include "exception_util.hpp"
@@ -1874,7 +1875,16 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
         {
             FileDetails.setIsCompressed(true);
             if (df->queryAttributes().hasProp("@compressedSize"))
-                FileDetails.setCompressedFileSize(df->queryAttributes().getPropInt64("@compressedSize"));
+            {
+                __int64 compressedSize = df->queryAttributes().getPropInt64("@compressedSize");
+                FileDetails.setCompressedFileSize(compressedSize);
+                if (version >= 1.34)
+                {
+                    Decimal d(((double) compressedSize)/size*100);
+                    d.round(2);
+                    FileDetails.setPercentCompressed(d.getCString());
+                }
+            }
         }
     }
 

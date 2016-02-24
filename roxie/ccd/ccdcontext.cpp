@@ -223,28 +223,97 @@ protected:
     {
         // MORE - should pre-do more of this work
         unsigned count = 0;
-        Owned<IConstWorkflowItemIterator> iter = createWorkflowItemIterator(workflowInfo);
-        for(iter->first(); iter->isValid(); iter->next())
-            count++;
-        workflow.setown(createWorkflowItemArray(count));
-        for(iter->first(); iter->isValid(); iter->next())
+        if (workunit)
         {
-            IConstWorkflowItem *item = iter->query();
-            bool isOnce = (item->queryMode() == WFModeOnce);
-            workflow->addClone(item);
-            if (isOnce != doOnce)
-                workflow->queryWfid(item->queryWfid()).setState(WFStateDone);
+            workflow.setown(workunit->getWorkflowClone());
+        }
+        else
+        {
+            Owned<IConstWorkflowItemIterator> iter = createWorkflowItemIterator(workflowInfo);
+            for(iter->first(); iter->isValid(); iter->next())
+                count++;
+            workflow.setown(createWorkflowItemArray(count));
+            for(iter->first(); iter->isValid(); iter->next())
+            {
+                IConstWorkflowItem *item = iter->query();
+                bool isOnce = (item->queryMode() == WFModeOnce);
+                workflow->addClone(item);
+                if (isOnce != doOnce)
+                    workflow->queryWfid(item->queryWfid()).setState(WFStateDone);
+            }
         }
     }
     virtual void end()
     {
+        if (workunit)
+        {
+            WorkunitUpdate w(&workunit->lock());
+            w->syncRuntimeWorkflow(workflow);
+        }
         workflow.clear();
     }
-    virtual void schedulingStart() { throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported in roxie"); }
-    virtual bool schedulingPull() { throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported in roxie"); }
-    virtual bool schedulingPullStop() { throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported in roxie"); }
-    virtual void reportContingencyFailure(char const * type, IException * e) {}
-    virtual void checkForAbort(unsigned wfid, IException * handling) {}
+    virtual void schedulingStart()
+    {
+        if (!workunit)
+            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported when running predeployed queries");
+        if (!wfconn)
+            wfconn.setown(getWorkflowScheduleConnection(workunit->queryWuid()));
+
+        wfconn->lock();
+        wfconn->setActive();
+        wfconn->pull(workflow);
+        wfconn->unlock();
+    }
+    virtual bool schedulingPull()
+    {
+        if (!workunit)
+            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported when running predeployed queries");
+        wfconn->lock();
+        bool more = wfconn->pull(workflow);
+        wfconn->unlock();
+        return more;
+    }
+
+    virtual bool schedulingPullStop()
+    {
+        if (!workunit)
+            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported when running predeployed queries");
+        wfconn->lock();
+        bool more = wfconn->pull(workflow);
+        if(!more) wfconn->resetActive();
+        wfconn->unlock();
+        return more;
+    }
+
+
+    virtual void reportContingencyFailure(char const * type, IException * e)
+    {
+        if (workunit)
+        {
+            StringBuffer msg;
+            msg.append(type).append(" clause failed (execution will continue): ").append(e->errorCode()).append(": ");
+            e->errorMessage(msg);
+            WorkunitUpdate wu(&workunit->lock());
+            addExceptionToWorkunit(wu, SeverityWarning, "user", e->errorCode(), msg.str(), NULL, 0, 0);
+        }
+    }
+    virtual void checkForAbort(unsigned wfid, IException * handling)
+    {
+        if (workunit && workunit->aborting())
+        {
+            if(handling)
+            {
+                StringBuffer msg;
+                msg.append("Abort takes precedence over error: ").append(handling->errorCode()).append(": ");
+                handling->errorMessage(msg);
+                msg.append(" (in item ").append(wfid).append(")");
+                WorkunitUpdate wu(&workunit->lock());
+                addExceptionToWorkunit(wu, SeverityWarning, "user", handling->errorCode(), msg.str(), NULL, 0, 0);
+                handling->Release();
+            }
+            throw new WorkflowException(0, "Workunit abort request received", wfid, WorkflowException::ABORT, MSGAUD_user);
+        }
+    }
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item)
     {
         if (!workunit)
@@ -642,6 +711,7 @@ private:
 
     IConstWorkUnit *workunit;
     IPropertyTree *workflowInfo;
+    Owned<IWorkflowScheduleConnection> wfconn;
     Owned<PersistVersion> persist;
     IArray persistReadLocks;
     bool doOnce;
@@ -2840,7 +2910,14 @@ public:
         if (workUnit)
         {
             WorkunitUpdate w(&workUnit->lock());
-            w->setState(aborted ? WUStateAborted : (failed ? WUStateFailed : WUStateCompleted));
+            if (aborted)
+                w->setState(WUStateAborted);
+            else if (failed)
+                w->setState(WUStateFailed);
+            else if (workflow && workflow->hasItemsWaiting())
+                w->setState(WUStateWait);
+            else
+                w->setState(WUStateCompleted);
             while (clusterNames.ordinality())
                 restoreCluster();
             addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
@@ -3711,9 +3788,6 @@ public:
             throw MakeStringException(ROXIE_DALI_ERROR, "doNotify: no dali connection available");
     }
 
-    virtual void doWait(unsigned code, char const * extra) { UNIMPLEMENTED; }
-    virtual void doWaitCond(unsigned code, char const * extra, int sequence, char const * alias, unsigned wfid) { UNIMPLEMENTED; }
-
     static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename)
     {
         CDateTime dt;
@@ -3749,10 +3823,33 @@ public:
         return crc;
     }
 
-    virtual int queryLastFailCode() { UNIMPLEMENTED; }
-    virtual void getLastFailMessage(size32_t & outLen, char * &outStr, const char * tag) { UNIMPLEMENTED; }
-    virtual void getEventName(size32_t & outLen, char * & outStr) { UNIMPLEMENTED; }
-    virtual void getEventExtra(size32_t & outLen, char * & outStr, const char * tag) { UNIMPLEMENTED; }
+    virtual int queryLastFailCode()
+    {
+        if(!workflow)
+            return 0;
+        return workflow->queryLastFailCode();
+    }
+    virtual void getLastFailMessage(size32_t & outLen, char * &outStr, const char * tag)
+    {
+        const char * text = "";
+        if(workflow)
+            text = workflow->queryLastFailMessage();
+        rtlExceptionExtract(outLen, outStr, text, tag);
+    }
+    virtual void getEventName(size32_t & outLen, char * & outStr)
+    {
+        const char * text = "";
+        if(workflow)
+            text = workflow->queryEventName();
+        rtlExtractTag(outLen, outStr, text, NULL, "Event");
+    }
+    virtual void getEventExtra(size32_t & outLen, char * & outStr, const char * tag)
+    {
+        const char * text = "";
+        if(workflow)
+            text = workflow->queryEventExtra();
+        rtlExtractTag(outLen, outStr, text, tag, "Event");
+    }
 
     virtual bool fileExists(const char * filename) { throwUnexpected(); }
     virtual void deleteFile(const char * logicalName) { throwUnexpected(); }
@@ -3767,7 +3864,10 @@ public:
                 Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
                 if (!clusterInfo)
                     throw MakeStringException(-1, "Unknown cluster '%s'", cluster);
-                clusterWidth = clusterInfo->getSize();
+                if (clusterInfo->getPlatform() == RoxieCluster)
+                    clusterWidth = numChannels;  // We assume it's the current roxie - that's ok so long as roxie's don't call other roxies.
+                else
+                    clusterWidth = clusterInfo->getSize();
             }
             return clusterWidth;
         }
