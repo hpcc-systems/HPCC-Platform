@@ -6715,7 +6715,82 @@ protected:
         ASSERT(numPagesAfter == expectedPages);
         delete [] rows;
     }
+    void testRepeatCompacting(IRowManager * rowManager, IFixedRowHeap * rowHeap, unsigned maxRows, unsigned milliFraction, unsigned numLocked)
+    {
+        unsigned numRows = maxRows;
+        const void * * rows = new const void * [numRows];
+        for (unsigned i1 = 0; i1 < numRows; i1++)
+            rows[i1] = rowHeap->allocate();
 
+        //shuffle
+        unsigned i=numRows;
+        while (i>1) {
+            unsigned j = getRandom()%i;  // NB i is correct here
+            i--;
+            const void * t = rows[j];
+            rows[j] = rows[i];
+            rows[i] = t;
+        }
+
+        const void * * locked = new const void * [numLocked];
+        for (unsigned i=0; i < numLocked; i++)
+        {
+            LinkRoxieRow(rows[i]);
+            locked[i] = rows[i];
+        }
+
+        for (unsigned pass=0; pass < 8; pass++)
+        {
+            unsigned numPagesFull = rowManager->numPagesAfterCleanup(true);
+            unsigned numRowsLeft = 0;
+            unsigned target=0;
+            for (unsigned i2 = 0; i2 < numRows; i2++)
+            {
+                const void * row = rows[i2];
+                rows[i2] = nullptr;
+                if ((i2 >= numLocked) && (i2 * 7) % 1000 >= milliFraction)
+                {
+                    ReleaseRoxieRow(row);
+                }
+                else
+                {
+                    rows[target++] = row;
+                    numRowsLeft++;
+                }
+            }
+
+            //NOTE: The efficiency of the packing does depend on the row order, so ideally this would test multiple orderings
+            //of the array
+            unsigned rowsPerPage = (HEAP_ALIGNMENT_SIZE - FixedSizeHeaplet::dataOffset()) / compactingAllocSize;
+            unsigned numPagesBefore = rowManager->numPagesAfterCleanup(false);
+            unsigned expectedPages = (numRowsLeft + rowsPerPage-1)/rowsPerPage;
+            //CPPUNIT_ASSERT_EQUAL(numPagesFull, numPagesBefore);
+            unsigned startTime = msTick();
+            memsize_t compacted = rowManager->compactRows(numRowsLeft, rows);
+            unsigned endTime = msTick();
+            unsigned numPagesAfter = rowManager->numPagesAfterCleanup(false);
+            if ((compacted>0) != (numPagesBefore != numPagesAfter))
+                DBGLOG("Compacted not returned correctly");
+            CPPUNIT_ASSERT_EQUAL(compacted != 0, (numPagesBefore != numPagesAfter));
+            DBGLOG("Compacting %d[%d] (%d->%d [%d] cf %d) Before: Time taken %u", numRows, milliFraction, numPagesBefore, numPagesAfter, (unsigned)compacted, expectedPages, endTime-startTime);
+
+            if (numLocked == 0)
+                CPPUNIT_ASSERT_EQUAL(expectedPages, numPagesAfter);
+
+            //Now fill the rest up with new rows
+            for (unsigned i=numRowsLeft; i < numRows; i++)
+                rows[i] = rowHeap->allocate();
+        }
+
+        for (unsigned i=0; i < numLocked; i++)
+            ReleaseRoxieRow(locked[i]);
+
+        for (unsigned i3 = 0; i3 < numRows; i3++)
+        {
+            ReleaseClearRoxieRow(rows[i3]);
+        }
+        delete [] rows;
+    }
     void testCompacting()
     {
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
@@ -6737,6 +6812,9 @@ protected:
         {
             testCompacting(rowManager, rowHeap1, rowCount, percent*10);
             testCompacting(rowManager, rowHeap2, rowCount, percent*10);
+            testRepeatCompacting(rowManager, rowHeap1, maxRows, percent*10, 0);
+            testRepeatCompacting(rowManager, rowHeap2, maxRows, percent*10, 0);
+            testRepeatCompacting(rowManager, rowHeap2, maxRows, percent*10, 50);
         }
 
         //Where the rows occupy a small fraction of the memory the time is approximately O(n)
