@@ -29,6 +29,7 @@ set (    SRCS
          ../../../platform/espcontext.cpp 
          ../../../platform/espprotocol.cpp 
          ../../../platform/espthread.cpp 
+         ../../../platform/esptxsummary.cpp
          ../../../platform/sechandler.cpp 
          ../../../protocols/http/mapinfo.cpp 
          ../../bindutil.cpp 
