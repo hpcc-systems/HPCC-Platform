@@ -540,6 +540,12 @@ inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned
     return s.appendulong(value);
 }
 
+template <typename TValue>
+inline StringBuffer& operator << (StringBuffer& s, const TValue& value)
+{
+    return s.append(value);
+}
+
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);
 extern jlib_decl bool strToBool(const char * text);
 extern jlib_decl bool strToBool(size_t len, const char * text);
