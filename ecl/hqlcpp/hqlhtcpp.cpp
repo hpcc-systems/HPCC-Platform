@@ -7073,7 +7073,9 @@ BoundRow * HqlCppTranslator::bindSelectorAsSelf(BuildCtx & ctx, IReferenceSelect
     }
 
     //Need to bind a delta address to a new variable.
-//  throwUnexpected();  // check this is actually called
+    if (!rootRow->queryBuilder())
+        UNIMPLEMENTED_X("expected a row builder");
+
     CHqlBoundExpr offset;
     selector->getOffset(ctx, offset);
     CHqlBoundExpr address;
