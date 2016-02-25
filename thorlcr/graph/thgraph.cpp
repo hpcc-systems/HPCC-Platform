@@ -1309,8 +1309,7 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
         }
         catch (IException *e)
         {
-            Owned<IThorException> e2 = MakeThorException(e);
-            e2->setGraphId(graphId);
+            Owned<IThorException> e2 = MakeGraphException(this, e);
             e2->setAction(tea_abort);
             queryJobChannel().fireException(e2);
             throw;
@@ -1408,7 +1407,6 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
             {
                 StringBuffer str;
                 Owned<IThorException> e = MakeGraphException(this, exception->errorCode(), "%s", exception->errorMessage(str).str());
-                e->setGraphId(graphId);
                 e->setAction(tea_abort);
                 fireException(e);
             }
@@ -2895,7 +2893,7 @@ IThorResult *CJobChannel::getOwnedResult(graph_id gid, activity_id ownerId, unsi
     if (!graph)
     {
         Owned<IThorException> e = MakeThorException(0, "getOwnedResult: graph not found");
-        e->setGraphId(gid);
+        e->setGraphInfo(queryJob().queryGraphName(), gid);
         throw e.getClear();
     }
     Owned<IThorResult> result;
