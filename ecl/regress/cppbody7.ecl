@@ -19,19 +19,19 @@
 
 integer4 mkRandom1 :=
 BEGINC++
-rtlRandom()
+return rtlRandom();
 ENDC++;
 
 integer4 mkRandom2 :=
 BEGINC++
 #option pure
-rtlRandom()
+return rtlRandom();
 ENDC++;
 
 integer4 mkRandom3 :=
 BEGINC++
 #option action
-rtlRandom()
+return rtlRandom();
 ENDC++;
 
 output(mkRandom1 * mkRandom1);

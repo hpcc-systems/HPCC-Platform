@@ -21,7 +21,7 @@ return strdup(""); ENDC++;
 output(EmptyString1());
 
 VarString EmptyString2 := BEGINC++
-strdup("") ENDC++;
+return strdup(""); ENDC++;
 
 
 output(EmptyString2);
