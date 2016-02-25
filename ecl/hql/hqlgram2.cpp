@@ -28,7 +28,6 @@
 #include "hqlgram.hpp"
 #include "hqlgram.h"
 
-#include "hqlgram.hpp"
 #include "hqlfold.hpp"
 #include "hqlpmap.hpp"
 
@@ -48,6 +47,7 @@
 #include "hqlvalid.hpp"
 #include "hqlrepository.hpp"
 #include "hqlir.hpp"
+#include "stringlib.hpp"
 
 #define ADD_IMPLICIT_FILEPOS_FIELD_TO_INDEX         TRUE
 #define FAST_FIND_FIELD
@@ -253,6 +253,17 @@ IHqlExpression * ActiveScopeInfo::queryParameter(IIdAtom * id)
     return NULL;
 }
 
+IHqlExpression * ActiveScopeInfo::queryNearestParameter(IIdAtom * id, NearestSymbol & nearest)
+{
+    ForEachItemIn(idx, activeParameters)
+    {
+        nearest.compare(&activeParameters.item(idx));
+        if (nearest.bestMatchFound())
+            return nearest.querySymbol();
+    }
+    return nearest.querySymbol();
+}
+
 bool HqlGramCtx::hasAnyActiveParameters()
 {
     ForEachItemIn(i2, defineScopes)
@@ -435,7 +446,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     resolveSymbols = true;
     lastpos = 0;
     inSignedModule = false;
-    
+
     containerScope = _containerScope;
     globalScope = _globalScope;
     parseScope.setown(createPrivateScope(_containerScope));
@@ -2838,6 +2849,7 @@ public:
     virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
     virtual void defineSymbol(IHqlExpression * value) { PSEUDO_UNIMPLEMENTED; ::Release(value); }
     virtual IHqlExpression *lookupSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual void removeSymbol(IIdAtom * name) { PSEUDO_UNIMPLEMENTED; }
 
     virtual void    getSymbols(HqlExprArray& exprs) const { PSEUDO_UNIMPLEMENTED; }
@@ -3341,11 +3353,153 @@ IHqlExpression *HqlGram::lookupSymbol(IHqlScope * scope, IIdAtom * searchName)
     return scope->lookupSymbol(searchName, LSFpublic, lookupCtx);
 }
 
+
 unsigned HqlGram::getExtraLookupFlags(IHqlScope * scope)
 {
     if (scope == containerScope)
         return LSFsharedOK;
     return 0;
+}
+
+IHqlExpression * HqlGram::lookupNearestSymbol(IIdAtom * searchName)
+{
+    NearestSymbol nearest(searchName);
+    lookupNearestSymbol(searchName, nearest);
+    return LINK(nearest.querySymbol());
+}
+
+IHqlExpression * HqlGram::lookupNearestSymbol(IIdAtom * searchName, NearestSymbol & nearest)
+{
+    //Check periodically if parsing a referenced identifier has caused the compile to abort.
+    if (lookupCtx.isAborting())
+        aborting = true;
+
+    unsigned penalty = 0;
+    try
+    {
+        // If there is a temporary scope, we only look up in that (and it must exist!).
+        if (dotScope)
+        {
+            if (dotScope->getOperator() == no_enum)
+            {
+                NearestSymbol tempNearest(searchName);
+                dotScope->queryScope()->lookupNearestSymbol(searchName, LSFrequired, lookupCtx, tempNearest);
+                nearest.compare(tempNearest, penalty);
+            }
+            else
+            {
+                IHqlExpression * dotRecord = dotScope->queryRecord();
+                if(dotRecord)
+                    nearest.branchSearch(dotRecord->querySimpleScope(), penalty);
+            }
+            // dotScope only works once
+            dotScope.clear();
+            if (nearest.bestMatchFound())
+                return nearest.querySymbol();
+        }
+
+        if (modScope)
+        {
+            NearestSymbol tempNearest(searchName);
+            IHqlExpression * resolved = modScope->lookupNearestSymbol(searchName, LSFrequired|LSFsharedOK, lookupCtx, tempNearest);
+            if (resolved && isExported(resolved))
+            {
+                nearest.compare(tempNearest, penalty);
+                if (nearest.bestMatchFound())
+                    return nearest.querySymbol();
+            }
+        }
+
+        // Then come implicitly defined fields...
+        IHqlExpression *top = queryTopScope();
+        if (top)
+        {
+            if (outerScopeAccessDepth == 0)
+            {
+                nearest.branchSearch(top->queryRecord()->querySimpleScope(), penalty);
+                if (nearest.bestMatchFound())
+                    return nearest.querySymbol();
+            }
+            else
+                outerScopeAccessDepth--;
+        }
+
+        if (outerScopeAccessDepth)
+            outerScopeAccessDepth++;
+
+        NearestSymbol tempNearest(searchName);
+        unsigned tempPenalty = 0;
+        IHqlScope * templateScope = NULL;
+        ForEachItemInRev(scopeIdx, defineScopes)
+        {
+            ActiveScopeInfo & cur = defineScopes.item(scopeIdx);
+            if (cur.templateAttrContext)
+                templateScope = cur.templateAttrContext;
+            if (outerScopeAccessDepth == 0)
+            {
+                {
+                    NearestSymbol innerTempNearest(searchName);
+                    cur.queryNearestParameter(searchName, innerTempNearest);
+                    tempNearest.compare(innerTempNearest, tempPenalty);
+                }
+                if (tempNearest.bestMatchFound())
+                {
+                    nearest.compare(tempNearest, penalty);
+                    break;
+                }
+
+                tempNearest.branchSearch(cur.privateScope, LSFsharedOK, lookupCtx, tempPenalty);
+                if (tempNearest.bestMatchFound())
+                {
+                    nearest.compare(tempNearest, penalty);
+                    break;
+                }
+
+                if (cur.localScope)
+                {
+                    tempNearest.branchSearch(cur.localScope, LSFsharedOK, lookupCtx, tempPenalty);
+                    if (tempNearest.bestMatchFound())
+                    {
+                        nearest.compare(tempNearest, penalty);
+                        break;
+                    }
+                }
+                nearest.compare(tempNearest, penalty);
+            }
+            else
+                outerScopeAccessDepth--;
+        }
+        if (nearest.bestMatchFound())
+            return nearest.querySymbol();
+
+        //Now look up imports
+        nearest.branchSearch(parseScope, LSFsharedOK, lookupCtx, penalty);
+        if (nearest.bestMatchFound())
+            return nearest.querySymbol();
+
+        // finally comes the local scope
+        tempPenalty = 0;
+        tempNearest.reset();
+        ForEachItemIn(idx2, defaultScopes)
+        {
+            IHqlScope & plugin = defaultScopes.item(idx2);
+            tempNearest.branchSearch(&plugin, LSFpublic|getExtraLookupFlags(&plugin), lookupCtx, tempPenalty);
+            if (tempNearest.bestMatchFound())
+            {
+                nearest.compare(tempNearest, penalty);
+                break;
+            }
+        }
+
+        return nearest.querySymbol();
+    }
+    catch(IError* error)
+    {
+        if(errorHandler && !errorDisabled)
+            errorHandler->report(error);
+        error->Release();
+    }
+    return NULL;
 }
 
 IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& errpos)
@@ -3384,7 +3538,17 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                     IHqlExpression* ds = dotScope->queryChild(0);
                     ret = ds->queryRecord()->querySimpleScope()->lookupSymbol(searchName);
                     if (!ret)
-                        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", str(ds->queryName()), str(searchName));
+                    {
+                        if(lookupCtx.queryParseContext().autoIdSuggestions)
+                        {
+                            StringBuffer msgSuffix;
+                            NearestSymbol nearest(searchName);
+                            ds->queryRecord()->querySimpleScope()->lookupNearestSymbol(searchName, nearest);
+                            reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'%s", str(ds->queryName()), str(searchName), nearest.composeSymbolSuggestionMsg(msgSuffix));
+                        }
+                        else
+                            reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", str(ds->queryName()), str(searchName));
+                    }
                 }
                 else
                 {
@@ -3393,11 +3557,20 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                     {
                         StringBuffer s;
                         getExprECL(dotScope, s);
-                        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", s.str(), str(searchName));
+
+                        if(lookupCtx.queryParseContext().autoIdSuggestions)
+                        {
+                            StringBuffer msgSuffix;
+                            NearestSymbol nearest(searchName);
+                            dotRecord->querySimpleScope()->lookupNearestSymbol(searchName, nearest);
+                            reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'%s", s.str(), str(searchName), nearest.composeSymbolSuggestionMsg(msgSuffix));
+                        }
+                        else
+                            reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", s.str(), str(searchName));
                     }
                 }
             }
-            
+
             // dotScope only works once
             dotScope.clear();
             return ret;
@@ -3408,15 +3581,38 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
             OwnedHqlExpr resolved = modScope->lookupSymbol(searchName, LSFrequired|LSFsharedOK, lookupCtx);
             if (!resolved)
             {
+                NearestSymbol nearest(searchName);
+                if(lookupCtx.queryParseContext().autoIdSuggestions)
+                    modScope->lookupNearestSymbol(searchName, LSFrequired, lookupCtx, nearest);
+                StringBuffer msgSuffix;
+                nearest.composeSymbolSuggestionMsg(msgSuffix);
                 if (modScope->queryName())
-                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a member named '%s'", str(modScope->queryName()), str(searchName));
+                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a member named '%s'%s", str(modScope->queryName()), str(searchName), msgSuffix.str());
                 else
-                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object does not have a member named '%s'", str(searchName));
+                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object does not have a member named '%s'%s", str(searchName), msgSuffix.str());
+                resolved.set(nearest.querySymbol());//prevents follow on unknown id syntax error (if(nearest)).
             }
             else if ((modScope != containerScope) && !isExported(resolved))
-                reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module", str(searchName));
+            {
+                if(lookupCtx.queryParseContext().autoIdSuggestions)
+                {
+                    StringBuffer msgSuffix;
+                    NearestSymbol nearest(searchName);
+                    modScope->lookupNearestSymbol(searchName, LSFrequired, lookupCtx, nearest);
+                    reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module%s", str(searchName), nearest.composeSymbolSuggestionMsg(msgSuffix));
+                }
+                else
+                    reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module", str(searchName));
+            }
             return resolved.getClear();
         }
+
+        /*Scopes are now searched for symbol. If not initially found, move onto the next scope.
+         *For each scope that doesn't find a match, the nearest symbol should be located and stored in an array.
+         *Once all scopes are searched, the array should be filtered to give suggested symbol.
+         *However, no errors are thrown below and thus and editDistance comparisons would be a hinderance and possible wasted.
+         *Copy this function and call when actually thowing an error for an unknownID e.g. in the grammar.
+         */
 
         // Then come implicitly defined fields...
         IHqlExpression *top = queryTopScope();
@@ -10922,6 +11118,61 @@ inline bool containsToken(int first, const int * expected)
     return false;
 }
 
+static bool containsIDToken(const int * expected)
+{
+    for (const int *finger = expected;*finger; finger++)
+    {
+        switch(*finger)
+        {
+        case DATAROW_ID:
+        case DATASET_ID:
+        case DICTIONARY_ID:
+        case SCOPE_ID:
+        case VALUE_ID:
+        case VALUE_ID_REF:
+        case ACTION_ID:
+        case RECORD_ID:
+        case ALIEN_ID:
+        case TRANSFORM_ID:
+        case PATTERN_ID:
+        case FEATURE_ID:
+        case EVENT_ID:
+        case ENUM_ID:
+        case LIST_DATASET_ID:
+        case SORTLIST_ID:
+        case TYPE_ID:
+        case SET_TYPE_ID:
+        case PATTERN_TYPE_ID:
+        case DATASET_TYPE_ID:
+        case DICTIONARY_TYPE_ID:
+            return true;
+        }
+    }
+    return false;
+}
+
+static unsigned lookupNearestExpected(const char * searchName, int * expected, StringBuffer & tokenFound)
+{
+    unsigned minDistance = (int) -1;
+    StringBuffer searchNameLower(searchName);
+    searchNameLower.toLowerCase();
+    for (const int *finger = expected; *finger; finger++)
+    {
+        if (*finger != ' ')
+        {
+            StringBuffer tokenText;
+            getTokenText(tokenText, *finger);
+            unsigned distance = slEditDistanceV2(strlen(searchNameLower.str()), searchNameLower.str(), tokenText.length(), tokenText.toLowerCase().str());
+            if (distance > 0 && distance < minDistance)
+            {
+                minDistance = distance;
+                tokenFound.setown(tokenText.toUpperCase());
+            }
+        }
+    }
+    return minDistance;
+}
+
 inline void removeToken(int token, int * expected)
 {
     for (int *finger = expected;*finger; finger++)
@@ -10982,8 +11233,8 @@ void HqlGram::simplifyExpected(int *expected)
     simplify(expected, END, '}', 0);
 }
 
-void HqlGram::syntaxError(const char *s, int token, int *expected)
-{ 
+void HqlGram::syntaxError(const char *s, int token, int *expected, attribute * yylval)
+{
     if (errorDisabled || !s || !errorHandler)
         return;
 
@@ -11006,14 +11257,44 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
     {
         msg.append("Unknown identifier");
         if (yytext && *yytext)
+        {
             msg.append(" \"").append(yytext).append('\"');
+            if(lookupCtx.queryParseContext().autoIdSuggestions)
+            {
+                if (containsIDToken(expected))
+                {
+                    IIdAtom * searchName = createIdAtom(yytext);
+                    NearestSymbol nearest(searchName);
+                    lookupNearestSymbol(searchName, nearest);
+
+                    StringBuffer nearestReservedWord;
+                    unsigned reservedWordDistance = lookupNearestExpected(yytext, expected, nearestReservedWord);
+                    unsigned nearestDistance = nearest.getDistance();
+
+                    if (reservedWordDistance < MAX_SYMBOL_DISTANCE && nearestDistance < MAX_SYMBOL_DISTANCE)
+                        msg.append(" - did you perhaps mean \"").append(nearest.querySymbol()->queryName()->queryStr()).append("\" or \"").append(nearestReservedWord).append("\"?");
+                    else if (reservedWordDistance < MAX_SYMBOL_DISTANCE)
+                        msg.append(" - did you perhaps mean \"").append(nearestReservedWord).append("\"?");
+                    else if (nearestDistance < MAX_SYMBOL_DISTANCE)
+                        nearest.composeSymbolSuggestionMsg(msg);
+                }
+                else
+                {
+                    StringBuffer nearestReservedWord;
+                    unsigned reservedWordDistance = lookupNearestExpected(yytext, expected, nearestReservedWord);
+                    if (reservedWordDistance < MAX_SYMBOL_DISTANCE)
+                         msg.append(" - did you perhaps mean \"").append(nearestReservedWord).append("\"?");
+                }
+            }
+        }
 
         reportError(ERR_UNKNOWN_IDENTIFIER,msg.str(), lineno, column, pos);
         return;
     }
     else if ((token == '.') && (expected[0] == ASSIGN) && !expected[1])
     {
-        reportError(ERR_UNKNOWN_IDENTIFIER,"Unknown identifier before \".\" (expected :=)", lineno, column, pos);
+        //reportError(ERR_UNKNOWN_IDENTIFIER,"Unknown identifier before \".\" (expected :=)", lineno, column, pos);//MORE: this message is confusing!
+        reportError(ERR_UNKNOWN_IDENTIFIER,"Unknown identifier before \".\" when expecting to be followed by :=", lineno, column, pos);
         return;
     }
     else switch(token)
@@ -11641,6 +11922,11 @@ PseudoPatternScope::PseudoPatternScope(IHqlExpression * _patternList) : CHqlScop
     patternList = _patternList;     // Do not link!
 }
 
+IHqlExpression * PseudoPatternScope::lookupNearestSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx)
+{
+    return NULL;
+}
+
 IHqlExpression * PseudoPatternScope::lookupSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     const char * text = str(name);
@@ -12008,4 +12294,5 @@ IHqlExpression *HqlGram::doParse()
     containerScope->defineSymbol(expectedAttribute, moduleName, actions.getClear(), true, false, 0, contents, 1, 1, 0, 0, lengthText);
     return NULL;
 }
+
 

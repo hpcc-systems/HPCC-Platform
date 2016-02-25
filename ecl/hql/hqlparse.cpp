@@ -269,6 +269,12 @@ IHqlExpression *HqlLex::lookupSymbol(IIdAtom * name, const attribute& errpos)
     return yyParser->lookupSymbol(name, errpos);
 }
 
+IHqlExpression * HqlLex::lookupNearestSymbol(IIdAtom * name, const attribute& errpos)
+{
+    NearestSymbol nearest(name);
+    return LINK(yyParser->lookupNearestSymbol(name, nearest));
+}
+
 unsigned HqlLex::hex2digit(char c)
 {
   if (c >= 'a')

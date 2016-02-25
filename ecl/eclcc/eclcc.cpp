@@ -186,13 +186,14 @@ static bool getHomeFolder(StringBuffer & homepath)
 struct EclCompileInstance
 {
 public:
-    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen) :
+    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen, bool _autoIdSuggestions) :
       inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename)
     {
         legacyImport = _legacyImport;
         legacyWhen = _legacyWhen;
         ignoreUnknownImport = false;
         fromArchive = false;
+        autoIdSuggestions = _autoIdSuggestions;
         stats.parseTime = 0;
         stats.generateTime = 0;
         stats.xmlSize = 0;
@@ -221,6 +222,7 @@ public:
     bool legacyWhen;
     bool fromArchive;
     bool ignoreUnknownImport;
+    bool autoIdSuggestions;
     struct {
         unsigned parseTime;
         unsigned generateTime;
@@ -263,6 +265,7 @@ public:
         optGenerateHeader = false;
         optShowPaths = false;
         optNoSourcePath = false;
+        optAutoIdSuggestions = true;
         optTargetClusterType = HThorCluster;
         optTargetCompiler = DEFAULT_COMPILER;
         optThreads = 0;
@@ -388,6 +391,7 @@ protected:
     bool optGenerateHeader;
     bool optShowPaths;
     bool optNoSourcePath;
+    bool optAutoIdSuggestions;
     int argc;
     const char **argv;
 };
@@ -1129,6 +1133,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             options.includeJavadoc = instance.wu->getDebugValueBool("metaIncludeJavadoc", true);
             parseCtx.setGatherMeta(options);
         }
+        parseCtx.autoIdSuggestions = instance.autoIdSuggestions;
 
         setLegacyEclSemantics(instance.legacyImport, instance.legacyWhen);
         if (instance.archive)
@@ -1807,7 +1812,7 @@ bool EclCC::processFiles()
     else if (inputFiles.ordinality() == 0)
     {
         assertex(optQueryRepositoryReference);
-        EclCompileInstance info(NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen);
+        EclCompileInstance info(NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optAutoIdSuggestions);
         processReference(info, optQueryRepositoryReference);
         ok = (errs->errCount() == 0);
 
@@ -1815,7 +1820,7 @@ bool EclCC::processFiles()
     }
     else
     {
-        EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen);
+        EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optAutoIdSuggestions);
         processFile(info);
         ok = (errs->errCount() == 0);
 
@@ -2071,6 +2076,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             setDebugOption("syntaxCheck", tempBool);
         }
+        else if (iter.matchFlag(optAutoIdSuggestions, "--auto-id-suggestions"))
+        {
+        }
         else if (iter.matchOption(optIniFilename, "-specs"))
         {
             if (!checkFileExists(optIniFilename))
@@ -2259,7 +2267,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             }
 
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
-            EclCompileInstance info(&file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen);
+            EclCompileInstance info(&file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen, optAutoIdSuggestions);
             processFile(info);
             //Following only produces output if the system has been compiled with TRANSFORM_STATS defined
             dbglogTransformStats(true);

@@ -310,6 +310,7 @@ public:
     IHqlExpression * createDefaults();
     IHqlExpression * createFormals(bool oldSetFormat);
     IHqlExpression * queryParameter(IIdAtom * name);
+    IHqlExpression * queryNearestParameter(IIdAtom * name, NearestSymbol & nearest);
 
 public:
     Owned<IHqlScope> localScope;
@@ -406,12 +407,13 @@ public:
 
     void yySetLexer(HqlLex *LexObject);
     HqlLex* getLexer() { return lexObject; }
+    const HqlLex * queryLexer() const { return lexObject; }
 
     void saveContext(HqlGramCtx & ctx, bool cloneScopes);
     IHqlScope * queryGlobalScope();
 
     bool canFollowCurrentState(int tok, const short * yyps);
-    void syntaxError(const char *s, int token, int *expected);
+    void syntaxError(const char *s, int token, int *expected, attribute * yylval);
     int mapToken(int lexToken) const;
     IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
     IHqlExpression *lookupSymbol(IHqlScope * scope, IIdAtom * name);
@@ -582,6 +584,8 @@ public:
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportMacroExpansionPosition(IError * warning, HqlLex * lexer);
     void reportErrorUnexpectedX(const attribute & errpos, IAtom * unexpected);
+    IHqlExpression * lookupNearestSymbol(IIdAtom * searchName);
+    IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, NearestSymbol & nearest);
 
     // Don't use overloading: va_list is the same as char*!!
     void reportErrorVa(int errNo, const ECLlocation & a, const char* format, va_list args) __attribute__((format(printf,4,0)));
@@ -1008,6 +1012,7 @@ protected:
 
 
 
+
 #ifndef YY_TYPEDEF_YY_SCANNER_T
 #define YY_TYPEDEF_YY_SCANNER_T
 typedef void* yyscan_t;
@@ -1027,7 +1032,7 @@ class HqlLex
 
         void enterEmbeddedMode();
         static int doyyFlex(YYSTYPE & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState);
-        static int lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText);
+        static int lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText);//Definition in hqllex.l
 
         int yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState);    /* lexical analyzer */
 
@@ -1115,6 +1120,7 @@ class HqlLex
         IXmlScope *ensureTopXmlScope();
 
         IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
+        IHqlExpression * lookupNearestSymbol(IIdAtom * name, const attribute& errpos);
         void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
         void reportWarning(WarnErrorCategory category, const YYSTYPE & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 5, 6)));
 

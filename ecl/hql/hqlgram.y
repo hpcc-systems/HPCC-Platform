@@ -88,8 +88,8 @@ inline int eclyylex(attribute * yylval, HqlGram* parser, const short int * yyssp
 
 
 
-static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int token);
-#define eclyyerror(parser, s)       eclsyntaxerror(parser, s, yystate, yychar)
+static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int token, attribute * yylval);
+#define eclyyerror(parser, s)       eclsyntaxerror(parser, s, yystate, yychar, &yylval)
 #define ignoreBisonWarning(x)
 #define ignoreBisonWarnings2(x,y)
 #define ignoreBisonWarnings3(x,y,z)
@@ -12783,13 +12783,13 @@ int yyuntranslate(int token)
 }
 
 /* Cloned and modified from the verbose yyerror implementation */
-static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int token)
+static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int token, attribute * yylval)
 {
   int yyn = yypact[yystate];
 
   if (! (YYPACT_NINF < yyn && yyn <= YYLAST))
   {
-    parser->syntaxError(s, token, NULL);
+    parser->syntaxError(s, token, NULL, yylval);
     return;
   }
 
@@ -12807,5 +12807,5 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
         expected[curExpected++] = yyuntranslate(yyx);
   }
   expected[curExpected++] = 0;
-  parser->syntaxError(s, token, expected);
+  parser->syntaxError(s, token, expected, yylval);
 }

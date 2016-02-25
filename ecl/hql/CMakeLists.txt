@@ -103,6 +103,7 @@ include_directories (
          ./../../system/jlib 
          ./../../ecl/hql 
          ./../../testing/unittests
+         ./../../plugins/stringlib
     )
 
 if (WIN32)
@@ -134,11 +135,12 @@ ADD_DEFINITIONS( -D_USRDLL -DHQL_EXPORTS -DHQLFOLD_EXPORTS -DHQLTRANS_EXPORTS )
 
 HPCC_ADD_LIBRARY( hql SHARED ${SRCS} ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hqllex.cpp  )
 install ( TARGETS hql RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( hql  
+target_link_libraries ( hql
          jlib
-         nbcd 
-         eclrtl 
-         deftype 
+         nbcd
+         eclrtl
+         deftype
+         stringlib
          ${CPPUNIT_LIBRARIES}
     )
 

@@ -40,6 +40,7 @@ const char * const helpText[] = {
     "    -foption[=value] Set an ecl option (#option)",
     "    -main <ref>   Compile definition <ref> from the source collection",
     "    -syntax       Perform a syntax check of the ECL",
+    "!   --auto-id-suggestions Include auto ID suggestions in error messages (where applicable),"
     "    -platform=hthor Generate code for hthor executable (default)",
     "    -platform=roxie Generate code for roxie cluster",
     "    -platform=thor  Generate code for thor cluster",

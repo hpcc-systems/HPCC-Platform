@@ -809,9 +809,13 @@ enum ExprPropKind
     typedef unsigned short node_operator;
 #endif
 
+class NearestSymbol;
+
 interface IHqlSimpleScope : public IInterface
 {
-    virtual IHqlExpression *lookupSymbol(IIdAtom * name) = 0;
+    virtual IHqlExpression * lookupSymbol(IIdAtom * name) = 0;
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * name) = 0;
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * name, NearestSymbol & nearest) = 0;
 };
 
 interface IHqlAlienTypeInfo : public IInterface
@@ -884,6 +888,7 @@ public:
         ignoreUnknownImport = false;
         _clear(metaState);
         aborting = false;
+        autoIdSuggestions = true;
     }
 
     void addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child);
@@ -917,6 +922,7 @@ public:
     bool expandCallsWhenBound;
     bool ignoreUnknownImport;
     bool aborting;
+    bool autoIdSuggestions;
     Linked<ICodegenContextCallback> codegenCtx;
 
 private:
@@ -1019,6 +1025,8 @@ interface IHqlScope : public IInterface
 {
     virtual IHqlExpression * queryExpression() = 0;
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx) = 0;
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx) = 0;
+    virtual IHqlExpression * lookupNearestSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx, NearestSymbol & nearest) = 0;
 
     virtual void getSymbols(HqlExprArray& exprs) const= 0;
     virtual IAtom * queryName() const = 0;
@@ -1200,6 +1208,37 @@ interface IHqlNamedAnnotation : public IHqlAnnotation
     virtual int getStartPos() const = 0;
     virtual int getBodyPos() const = 0;
     virtual int getEndPos() const = 0;
+};
+
+#define MAX_SYMBOL_DISTANCE 3
+class NearestSymbol : public CInterface
+{
+public :
+    enum metricType { optimalStringAlignment, damerauLevenshtein, weightedDamerauLevenshtein };
+
+    NearestSymbol(IIdAtom * _searchName, metricType _metric) : distance(-1), metric(_metric)
+    {
+        searchName = _searchName;
+    }
+    NearestSymbol(IIdAtom * _searchName) : NearestSymbol(_searchName, weightedDamerauLevenshtein) {}
+    void reset();
+
+    unsigned computeEditDistance(const IIdAtom * comparison) const;
+    const char * composeSymbolSuggestionMsg(StringBuffer & msg) const;
+    void compare(IHqlExpression * expr);
+    void compare(NearestSymbol & comparison);
+    void compare(NearestSymbol & comparison, unsigned & penalty);
+    inline unsigned getDistance() const { return distance; }
+    bool bestMatchFound() const;
+    IHqlExpression * branchSearch(IHqlSimpleScope * scope, unsigned & penalty);
+    IHqlExpression * branchSearch(IHqlScope * scope, unsigned lookupFlags, HqlLookupContext & ctx, unsigned & penalty);
+    IHqlExpression * querySymbol() const { return nearest; }
+
+private :
+    IIdAtom * searchName;
+    Owned<IHqlExpression> nearest;
+    unsigned distance;
+    metricType metric;
 };
 
 

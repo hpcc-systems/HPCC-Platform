@@ -83,7 +83,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         }
     }
     
-    IHqlExpression *expr; 
+    IHqlExpression *expr;
     //fprintf(stderr, "\nLookupSymbol %s\n",name->str());
     //Lookup expr last otherwise it leaks.
     if ( !lookup  || lexer->macroGathering || lexer->skipNesting|| !(expr=lexer->lookupSymbol(cname,returnToken)))
@@ -228,6 +228,53 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         returnToken.setId(cname);
         token = UNKNOWN_ID;
     }
+
+#ifdef TEST_ID_SUGGESTIONS
+    //test how well suggestions work
+    const char * sourcePath = str(lexer->sourcePath);
+    if (sourcePath && strcmp(sourcePath, "<system-definitions>") != 0)
+    {
+        switch(token)
+        {
+        case DATAROW_ID:
+        case DATASET_ID:
+        case DICTIONARY_ID:
+        case SCOPE_ID:
+        case VALUE_ID:
+        case VALUE_ID_REF:
+        case ACTION_ID:
+        //case UNKNOWN_ID:
+        case RECORD_ID:
+        case ALIEN_ID:
+        case TRANSFORM_ID:
+        case PATTERN_ID:
+        case FEATURE_ID:
+        case EVENT_ID:
+        case ENUM_ID:
+        case LIST_DATASET_ID:
+        case SORTLIST_ID:
+
+        case TYPE_ID:
+        case SET_TYPE_ID:
+        case PATTERN_TYPE_ID:
+        case DATASET_TYPE_ID:
+        case DICTIONARY_TYPE_ID:
+        {
+            if (cname && str(cname) != "")
+            {
+                IIdAtom * scrambledName = createScrambledIdAtom(cname, 1/*number of digits to edit*/, 100/*probability of editing at all*/, 1/*max number of IDs to scramble*/);
+                if (scrambledName)
+                {
+                    OwnedHqlExpr nearest = lexer->lookupNearestSymbol(scrambledName, returnToken);
+                    const char * suggestion = nearest ? str(nearest->queryId()) : NULL;
+                    if (!suggestion || (strcmp(str(lower(cname)), str(lower(nearest->queryId()))) != 0))
+                        lexer->reportError(returnToken, 0, "Unsuccessful ID suggestion: name '%s', scrambled to '%s', suggestion '%s'\n", str(cname), str(scrambledName), suggestion);
+                }
+            }
+        }
+        }//end switch
+    }
+#endif
 
     TraceReturnToken(token);
     return token;
@@ -1991,3 +2038,95 @@ void HqlLex::doEnterEmbeddedMode(yyscan_t yyscanner)
    struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
    BEGIN(CPP);
 }
+
+//#define TEST_ID_SUGGESTIONS
+#ifdef TEST_ID_SUGGESTIONS
+static char getNewIdChar(unsigned index)
+{
+    //1st char of an ID must be an alpha [a-z]
+    if (index == 0)
+        return 'a' + rand()%26;
+
+    unsigned n = rand()%37;
+    if (n < 10)
+        return '0' + n;
+    else if(n == 10)
+        return '_';
+    else if (n > 10  && n < 37)
+        return 'a' + n - 11;
+    else
+        throwUnexpected();
+}
+
+static unsigned scrambledIdCount = 0;
+
+class DummyAtom : public CInterfaceOf<IIdAtom>
+{
+public :
+    DummyAtom(const void * k): hash(0)
+    {
+        text = strdup((const char *)k);
+        lower = new LowerCaseAtom(text);
+    }
+    ~DummyAtom()
+    {
+        free(text);
+        lower->Release();
+    }
+
+//interface:IMapping
+    virtual const char *        queryStr() const { return text; }
+    virtual const void *        getKey() const { return text; }
+    virtual unsigned            getHash() const { return hash; }
+    virtual void                setHash(unsigned _hash) { hash = _hash; }
+    virtual IAtom *             queryLower() const { return lower; }
+
+private:
+    unsigned hash;
+    char * text;
+    IAtom * lower;
+};
+
+static IIdAtom * createScrambledIdAtom(const IIdAtom * idToScramble, unsigned nCharToScramble, unsigned probability, unsigned maxIdsToScramble)
+{
+    if (scrambledIdCount >= maxIdsToScramble)
+        return NULL;
+
+    if (probability == 0 || nCharToScramble == 0 || !idToScramble || (str(idToScramble) == ""))
+        return NULL;
+
+    if (probability < 100)
+    {
+        if (rand()%100 > probability)
+            return NULL;
+    }
+
+    if (nCharToScramble > 256)
+        nCharToScramble = 256;
+
+    unsigned length = strlen(str(idToScramble));
+    if (length > 256)
+        throwUnexpected();
+
+    if (nCharToScramble > length)
+        nCharToScramble = length;
+
+    char ret[length+1];
+    memcpy(ret, str(idToScramble), length);
+    ret[length] = '\0';
+    //srand(msTick());
+    for (unsigned i = 0; i < nCharToScramble; i++)
+    {
+        unsigned index = rand()%length;
+        char newChar = getNewIdChar(index);
+        while(ret[index] == newChar)
+        {
+            newChar = getNewIdChar(index);
+        }
+        ret[index] = newChar;
+    }
+    scrambledIdCount++;
+    return (IIdAtom *) new DummyAtom(ret);
+}
+#endif
+
