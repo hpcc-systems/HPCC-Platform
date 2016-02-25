@@ -183,12 +183,11 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
             if (!m_authmethod.isEmpty())
             {
                 Owned<IPropertyTree> secMgrCfg;
-                Owned<IPropertyTree> process_config = getProcessConfig(tree, procname);
-                if(process_config.get() != NULL)
+                if(proc_cfg.get() != NULL)
                 {
                     Owned<IPropertyTree> secMgrs;
                     VStringBuffer sm("SecurityManagers/SecurityManager[@name='%s']", m_authmethod.str());
-                    secMgrCfg.setown(process_config->getPropTree(sm.str()));
+                    secMgrCfg.setown(proc_cfg->getPropTree(sm.str()));
                 }
 
                 if (secMgrCfg)
@@ -207,8 +206,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                         Owned<IPropertyTree> lscfg = bnd_cfg->getPropTree(StringBuffer(".//ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str());
                         if(lscfg == NULL)
                         {
-                            if(process_config.get() != NULL)
-                                lscfg.setown(process_config->getPropTree(StringBuffer("ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str()));
+                            if(proc_cfg.get() != NULL)
+                                lscfg.setown(proc_cfg->getPropTree(StringBuffer("ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str()));
                             if(lscfg == NULL)
                             {
                                 ERRLOG("can't find bnd_cfg for LdapSecurity %s", lsname.str());
@@ -240,8 +239,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     else if(stricmp(m_authmethod.str(), "htpasswd") == 0)
                     {
                         Owned<IPropertyTree> cfg;
-                        if(process_config.get() != NULL)
-                            cfg.setown(process_config->getPropTree("htpasswdSecurity"));
+                        if(proc_cfg.get() != NULL)
+                            cfg.setown(proc_cfg->getPropTree("htpasswdSecurity"));
                         if(cfg == NULL)
                         {
                             ERRLOG("can't find htpasswdSecurity in configuration");
