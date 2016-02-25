@@ -2597,6 +2597,10 @@ void FileSprayer::setTarget(IDistributedFile * target)
         unknownTargetFormat = false;
     else
     {
+        const char* separator = srcFormat.separate.get();
+        if (separator && (strcmp(separator, ",") == 0))
+            srcFormat.separate.set("\\,");
+
         tgtFormat.set(srcFormat);
         if (!unknownSourceFormat)
         {
