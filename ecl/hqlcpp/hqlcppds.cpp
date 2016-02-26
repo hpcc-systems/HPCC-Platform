@@ -5135,14 +5135,16 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
         }
     }
 
-    OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
     switch (expr->queryType()->getTypeCode())
     {
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-        buildTempExpr(ctx, call, tgt);
-        break;
+        {
+            OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
+            buildTempExpr(ctx, call, tgt);
+            break;
+        }
     case type_row:
         {
             OwnedHqlExpr translated = translateGetGraphResult(ctx, expr);
@@ -5150,8 +5152,11 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
             break;
         }
     default:
-        buildExpr(ctx, call, tgt);
-        break;
+        {
+            OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
+            buildExpr(ctx, call, tgt);
+            break;
+        }
     }
 }
 
