@@ -78,7 +78,7 @@ define([
             item[this.idProperty] = item.QuerySetId + ":" + item.Id;
             if (lang.exists("Clusters", item)) {
                 arrayUtil.some(item.Clusters.ClusterQueryState, function(cqs, idx){
-                    if (lang.exists("Errors", cqs) && cqs.Errors) {
+                    if (lang.exists("Errors", cqs) && cqs.Errors || cqs.State !== "Available") {
                         ErrorCount++;
                         StatusMessage = context.i18n.SuspendedByCluster;
                         return false;
