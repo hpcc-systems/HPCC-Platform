@@ -4449,8 +4449,15 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
                 buildRowAssign(ctx, target, deserialized->queryChild(0));
             else if (!typeRequiresDeserialization(deserialized->queryType(), serializeForm))
                 buildRowAssign(ctx, target, deserialized);
-            else
+            else if (target->queryRootRow()->queryBuilder())
                 doBuildRowAssignSerializeRow(ctx, target, expr);
+            else
+            {
+                CHqlBoundExpr bound;
+                buildTempExpr(ctx, expr, bound);
+                OwnedHqlExpr translated = bound.getTranslatedExpr();
+                buildRowAssign(ctx, target, translated);
+            }
             return;
         }
     case no_if:
