@@ -50,7 +50,7 @@ define([
 
         createGrid: function (domID) {
             var context = this;
-            var retVal = new declare([ESPUtil.Grid(false, true)])({
+            var retVal = new declare([ESPUtil.Grid(true, true)])({
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
