@@ -17,15 +17,15 @@
 
 #pragma warning( disable : 4786 )
 
-#include "defaultsecuritymanager.hpp"
+#include "basesecurity.hpp"
 #include "authmap.ipp"
 #include <apr_md5.h>
 #include "htpasswdSecurity.hpp"
 
-class CHtpasswdSecurityManager : public CDefaultSecurityManager
+class CHtpasswdSecurityManager : public CBaseSecurityManager
 {
 public:
-	CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *authconfig) : CDefaultSecurityManager(serviceName, (IPropertyTree *)NULL)
+    CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *authconfig) : CBaseSecurityManager(serviceName, (IPropertyTree *)NULL)
 	{
 		if (authconfig)
 			authconfig->getProp("@htpasswdFile", pwFile);

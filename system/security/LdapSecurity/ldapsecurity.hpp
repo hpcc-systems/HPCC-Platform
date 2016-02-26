@@ -33,8 +33,6 @@
 #endif 
 
 extern "C" LDAPSECURITY_API ISecManager * newLdapSecManager(const char *serviceName, IPropertyTree &config);
-extern "C" LDAPSECURITY_API ISecManager * newDefaultSecManager(const char *serviceName, IPropertyTree &config);
-extern "C" LDAPSECURITY_API ISecManager * newLocalSecManager(const char *serviceName, IPropertyTree &config);
 extern "C" LDAPSECURITY_API IAuthMap *newDefaultAuthMap(IPropertyTree* config);
 
 #endif
