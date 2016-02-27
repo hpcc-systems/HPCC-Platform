@@ -27,34 +27,35 @@
 project( hql ) 
 
 set (   SRCS 
-        hqlatoms.cpp 
-        hqlattr.cpp 
+        hqlatoms.cpp
+        hqlattr.cpp
         hqlcollect.cpp
         hqldesc.cpp
-        hqldsparam.cpp 
-        hqlerror.cpp 
-        hqlesp.cpp 
-        hqlexpr.cpp 
-        hqlfold.cpp 
-        hqlgram2.cpp 
-        hqlmanifest.cpp 
-        hqlmeta.cpp 
-        hqlopt.cpp 
-        hqlparse.cpp 
-        hqlpmap.cpp 
+        hqldsparam.cpp
+        hqlerror.cpp
+        hqlesp.cpp
+        hqlexpr.cpp
+        hqlfold.cpp
+        hqlgram2.cpp
+        hqlmanifest.cpp
+        hqlmeta.cpp
+        hqlopt.cpp
+        hqlparse.cpp
+        hqlpmap.cpp
         hqlplugininfo.cpp
-        hqlpregex.cpp 
+        hqlpregex.cpp
         hqlrepository.cpp
-        hqlscope.cpp 
-        hqlstack.cpp 
-        hqlthql.cpp 
-        hqltrans.cpp 
+        hqlscope.cpp
+        hqlstack.cpp
+        hqlthql.cpp
+        hqltrans.cpp
         hqlusage.cpp
-        hqlutil.cpp 
+        hqlutil.cpp
         hqlir.cpp
-        hqlvalid.cpp 
-        hqlwuerr.cpp 
-        hqlxmldb.cpp 
+        hqlvalid.cpp
+        hqlwuerr.cpp
+        hqlxmldb.cpp
+        reservedwords.cpp
 
         hqlgram.y
         hqllex.l
@@ -87,6 +88,7 @@ set (   SRCS
         hqlvalid.hpp
         hqlwuerr.hpp
         hqlxmldb.hpp
+        reservedwords.hpp
     )
 
 include_directories ( 
@@ -134,11 +136,11 @@ ADD_DEFINITIONS( -D_USRDLL -DHQL_EXPORTS -DHQLFOLD_EXPORTS -DHQLTRANS_EXPORTS )
 
 HPCC_ADD_LIBRARY( hql SHARED ${SRCS} ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hqllex.cpp  )
 install ( TARGETS hql RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( hql  
+target_link_libraries ( hql
          jlib
-         nbcd 
-         eclrtl 
-         deftype 
+         nbcd
+         eclrtl
+         deftype
          ${CPPUNIT_LIBRARIES}
     )
 

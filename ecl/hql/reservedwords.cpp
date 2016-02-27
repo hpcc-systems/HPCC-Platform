@@ -105,6 +105,7 @@ static const char * eclReserved3[] = { //Template language
     "#trace",
     "#uniquename",
     "#warning",
+    "#webservice",
     "#workunit",
     "loadxml",
     NULL
@@ -119,7 +120,9 @@ static const char * eclReserved4[] = { //String functions
     "length",
     "realformat",
     "regexfind",
+    "regexfindset",
     "regexreplace",
+    "tojson",
     "tounicode",
     "toxml",
     "trim",
@@ -161,13 +164,15 @@ static const char * eclReserved5[] = { //Math
     NULL
 };
 
-static const char * eclReserved6[] = {
+static const char * eclReserved6[] = { //bit ops
     "&",
     "|",
     //"^", ambiguous group location
     "bnot",
     "<<",
     ">>",
+    "(>",
+    "<)",
     NULL
 };
 
@@ -176,7 +181,8 @@ static const char * eclReserved7[] = { //Comparison ops
     "<",
     "<=",
     ">",
-    //">=",     //x.<y>= n  really wants to be processed as x.<y> = n, not x.<y >=
+    //">=", //x.<y>= n  really wants to be processed as x.<y> = n, not x.<y >= (this token has been added to the internalTokens list instead)
+
     "!=",
     "<>",
     "between",
@@ -193,6 +199,15 @@ static const char * eclReserved8[] = { //Binary ops
     "and",
     "not",
     "or",
+    NULL
+};
+
+static const char * eclReserved19[] = { //Misc ops
+    ":=",
+    "<?>",
+    "<\?\?>",
+    "..",
+    "=>",
     NULL
 };
 
@@ -261,6 +276,7 @@ static const char * eclReserved11[] = {//Activities
     "enth",
     "fetch",
     "fromxml",
+    "fromjson",
     "graph",
     "group",
     "having",
@@ -272,9 +288,11 @@ static const char * eclReserved11[] = {//Activities
     "map",
     "merge",
     "mergejoin",
+    "nocombine",
     "nonempty",
     "normalize",
     "parse",
+    "pattern",
     "process",
     "project",
     "quantile",
@@ -286,11 +304,13 @@ static const char * eclReserved11[] = {//Activities
     "rollup",
     "row",
     "sample",
+    "score",
     "sort",
     "stepped",
     "subsort",
     "table",
     "topn",
+    "trace",
     "ungroup",
     "which",
     "within",
@@ -318,6 +338,7 @@ static const char * eclReserved12[] = {//Attributes
     "best",
     "bitmap",
     "blob",
+    "c++",
     "choosen:all",
     "const",
     "counter",
@@ -398,12 +419,14 @@ static const char * eclReserved14[] = { //Attribute functions (some might actual
     "compressed",
     "default",
     "escape",
+    "format",
     "global",
     "groupby",
     "guard",
     "httpheader",
     "internal",
     "joined",
+    "json",
     "keep",
     "keyed",
     "limit",
@@ -425,6 +448,7 @@ static const char * eclReserved14[] = { //Attribute functions (some might actual
     "penalty",
     "prefetch",
     "proxyaddress",
+    "refresh",
     "repeat",
     "response",
     "retry",
@@ -446,6 +470,7 @@ static const char * eclReserved14[] = { //Attribute functions (some might actual
     "width",
     "wild",
     "xml",
+    "xmlns",
     "xmldefault",
     "xpath",
     "xmlproject",
@@ -455,6 +480,7 @@ static const char * eclReserved14[] = { //Attribute functions (some might actual
 };
 
 static const char * eclReserved15[] = { //Actions and statements
+    "action",
     "apply",
     "as",
     "build",
@@ -554,7 +580,8 @@ static const Keywords keywordList[] = {
    {15, eclReserved15},
    {16, eclReserved16},
    {17, eclReserved17},
-   {18, eclReserved18}
+   {18, eclReserved18},
+   {19, eclReserved19}
 };
 
 void printKeywordsToXml()
@@ -576,4 +603,65 @@ void printKeywordsToXml()
      }
      buffer.append("</xml>");
      fprintf(stdout, "%s\n", buffer.str());
+}
+
+static const char * internalTokens[] = { //tokens present in the grammar that aren't in the language or are waiting to be deprecated
+    "",
+    ">=", //x.<y>= n  really wants to be processed as x.<y> = n, not x.<y >= (this token would otherwise belong to group7 - comparison ops)
+    "#elif",
+    "&&",
+    "constant",
+    "complex-macro",
+    "datarow",
+    "expression",
+    "feature-name",
+    "field list",
+    "field reference",
+    "function-name",
+    "hole",
+    "identifier",
+    "implements",
+    "inline",
+    "macro-name",
+    "module-name",
+    "number",
+    "of",
+    "or",
+    "order",
+    "pattern-name",
+    "physicalfilename",
+    "record-name",
+    "relationship",
+    "right2",
+    "skipped",
+    "swapped",
+    "transform-name",
+    "type name",
+    "type-name",
+    "unicode-string",
+    NULL
+};
+
+
+bool searchReservedWords(const char * tokenText)
+{
+    unsigned int nGroups = sizeof(keywordList)/sizeof(keywordList[0]);
+    for (unsigned i = 0; i < nGroups; ++i)
+    {
+        int j = 0;
+        while(keywordList[i].keywords[j])
+        {
+            if (strcmp(tokenText, keywordList[i].keywords[j]) == 0)
+                return true;
+            j++;
+        }
+    }
+    int i = 0;
+    while(internalTokens[i])
+    {
+        if (strcmp(tokenText, internalTokens[i]) == 0)
+            return true;
+        i++;
+    }
+    return false;
 }
