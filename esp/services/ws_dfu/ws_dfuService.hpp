@@ -64,7 +64,7 @@ class CThorNodeGroupCache: public SuperHashTableOf<CThorNodeGroup, const char>
 public:
     IMPLEMENT_IINTERFACE;
 
-    ~CThorNodeGroupCache() { releaseAll(); }
+    ~CThorNodeGroupCache() { _releaseAll(); }
 
     inline void onAdd(void *e)
     {

@@ -1032,7 +1032,7 @@ typedef StructArrayOf<Statistic> StatsArray;
 class CollectionHashTable : public SuperHashTableOf<CStatisticCollection, StatsScopeId>
 {
 public:
-    ~CollectionHashTable() { releaseAll(); }
+    ~CollectionHashTable() { _releaseAll(); }
     virtual void     onAdd(void *et);
     virtual void     onRemove(void *et);
     virtual unsigned getHashFromElement(const void *et) const;

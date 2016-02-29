@@ -713,7 +713,7 @@ public:
         numsockets = 0;
     }
     ~CConnectionTable() { 
-        releaseAll(); 
+        _releaseAll();
     }
 
     ISocket *lookup(const SocketEndpoint &ep)
@@ -3067,7 +3067,7 @@ public:
     }
     ~CClientStatsTable()
     {
-        kill();
+        _releaseAll();
     }
     CClientStats *getClientReference(RemoteFileCommandType cmd, const char *client)
     {

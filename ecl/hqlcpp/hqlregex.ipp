@@ -94,7 +94,7 @@ class HqlRegexHashTable : public SuperHashTable
 public:
     using SuperHashTable::add;
     using SuperHashTable::find;
-    ~HqlRegexHashTable() { releaseAll(); }
+    ~HqlRegexHashTable() { _releaseAll(); }
 
 private:
     virtual void     onAdd(void *et);

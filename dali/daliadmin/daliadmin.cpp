@@ -768,7 +768,7 @@ class CIpTable: public SuperHashTableOf<CIpItem,IpAddress>
 public:
     ~CIpTable()
     {
-        releaseAll();
+        _releaseAll();
     }
 
     void onAdd(void *)

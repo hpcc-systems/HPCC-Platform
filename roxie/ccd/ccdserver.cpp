@@ -7140,7 +7140,7 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
               keySize(helper.queryKeySize())
         {
         }
-        virtual ~HashDedupTable() { releaseAll(); }
+        virtual ~HashDedupTable() { _releaseAll(); }
 
         virtual unsigned getHashFromElement(const void *et) const       
         {
