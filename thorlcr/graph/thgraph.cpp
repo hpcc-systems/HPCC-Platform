@@ -1483,6 +1483,11 @@ void CGraphBase::done()
     }
 }
 
+unsigned CGraphBase::queryJobChannelNumber() const
+{
+    return queryJobChannel().queryChannel();
+}
+
 IMPServer &CGraphBase::queryMPServer() const
 {
     return jobChannel.queryMPServer();
@@ -2478,6 +2483,13 @@ CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
     jobGroup.set(&::queryClusterGroup());
     slaveGroup.setown(jobGroup->remove(0));
     nodeGroup.set(&queryNodeGroup());
+    myNodeRank = nodeGroup->rank(::queryMyNode());
+
+    unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+    jobChannelSlaveNumbers.allocateN(channelsPerSlave, true); // filled when channels are added.
+    jobSlaveChannelNum.allocateN(querySlaves()); // filled when channels are added.
+    for (unsigned s=0; s<querySlaves(); s++)
+        jobSlaveChannelNum[s] = NotFound;
 }
 
 void CJobBase::init()
@@ -3109,7 +3121,7 @@ IEngineRowAllocator *CActivityBase::getRowAllocator(IOutputMetaData * meta, roxi
     return queryJobChannel().getRowAllocator(meta, queryId(), flags);
 }
 
-bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
+bool CActivityBase::receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
 {
     BooleanOnOff onOff(receiving);
     CTimeMon t(timeout);
@@ -3117,15 +3129,25 @@ bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mpta
     // check 'cancelledReceive' every 10 secs
     while (!cancelledReceive && ((MP_WAIT_FOREVER==timeout) || !t.timedout(&remaining)))
     {
-        if (queryJobChannel().queryJobComm().recv(mb, rank, mpTag, sender, remaining>10000?10000:remaining))
+        if (comm.recv(mb, rank, mpTag, sender, remaining>10000?10000:remaining))
             return true;
     }
     return false;
 }
 
-void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
+bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
+{
+    return receiveMsg(queryJobChannel().queryJobComm(), mb, rank, mpTag, sender, timeout);
+}
+
+void CActivityBase::cancelReceiveMsg(ICommunicator &comm, const rank_t rank, const mptag_t mpTag)
 {
     cancelledReceive = true;
     if (receiving)
-        queryJobChannel().queryJobComm().cancel(rank, mpTag);
+        comm.cancel(rank, mpTag);
+}
+
+void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
+{
+    cancelReceiveMsg(queryJobChannel().queryJobComm(), rank, mpTag);
 }

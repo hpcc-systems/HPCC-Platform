@@ -43,7 +43,7 @@ private:
 public:
     InterruptableSemaphore(unsigned _initialCount = 0U) : Semaphore(_initialCount) {}
 
-    void interrupt(IException *_error = NULL)
+    void interrupt(IException *_error = NULL, unsigned count=1)
     {
         CriticalBlock b(crit);
         if (error)
@@ -53,7 +53,7 @@ public:
             if (!_error)
                 _error = new InterruptedSemaphoreException;
             error.setown(_error);
-            signal();
+            signal(count);
         }
     }
 

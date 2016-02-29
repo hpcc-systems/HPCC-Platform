@@ -100,7 +100,7 @@ StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *co
 {
     if (format)
         res.valist_appendf(format, args).append(" - ");
-    res.appendf("activity(%s, %" ACTPF "d)",activityKindStr(container->getKind()), container->queryId());
+    res.appendf("activity(ch=%d, %s, %" ACTPF "d)", container->queryOwner().queryJobChannelNumber(), activityKindStr(container->getKind()), container->queryId());
     if (0 != (flags & thorlog_ecl))
     {
         StringBuffer ecltext;
@@ -833,9 +833,9 @@ void setClusterGroup(INode *_masterNode, IGroup *_rawGroup, unsigned slavesPerNo
     IArrayOf<INode> clusterGroupNodes, nodeGroupNodes;
     clusterGroupNodes.append(*LINK(masterNode));
     nodeGroupNodes.append(*LINK(masterNode));
-    for (unsigned p=0; p<slavesPerNode; p++)
+    for (unsigned s=0; s<channelsPerSlave; s++)
     {
-        for (unsigned s=0; s<channelsPerSlave; s++)
+        for (unsigned p=0; p<slavesPerNode; p++)
         {
             for (unsigned n=0; n<rawGroup->ordinality(); n++)
             {
