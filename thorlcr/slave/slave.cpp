@@ -105,7 +105,7 @@ void ProcessSlaveActivity::main()
         {
             if (!e->queryActivityId())
             {
-                e->setGraphId(container.queryOwner().queryGraphId());
+                e->setGraphInfo(container.queryJob().queryGraphName(), container.queryOwner().queryGraphId());
                 e->setActivityKind(container.getKind());
                 e->setActivityId(container.queryId());
             }
