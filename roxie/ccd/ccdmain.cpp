@@ -133,7 +133,7 @@ unsigned defaultKeyedJoinPreload = 0;
 unsigned dafilesrvLookupTimeout = 10000;
 bool defaultCheckingHeap = false;
 unsigned defaultStrandBlockSize = 512;
-unsigned defaultForceNumStrands = 1;
+unsigned defaultForceNumStrands = 0;
 
 unsigned slaveQueryReleaseDelaySeconds = 60;
 unsigned coresPerQuery = 0;
@@ -764,7 +764,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultKeyedJoinPreload = topology->getPropInt("@defaultKeyedJoinPreload", 0);
         defaultPrefetchProjectPreload = topology->getPropInt("@defaultPrefetchProjectPreload", 10);
         defaultStrandBlockSize = topology->getPropInt("@defaultStrandBlockSize", 512);
-        defaultForceNumStrands = topology->getPropInt("@defaultForceNumStrands", 1);
+        defaultForceNumStrands = topology->getPropInt("@defaultForceNumStrands", 0);
         defaultCheckingHeap = topology->getPropBool("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
 
         slaveQueryReleaseDelaySeconds = topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60);

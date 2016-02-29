@@ -840,7 +840,7 @@ void clearRowQueue(IRowQueue * queue)
 //---------------------------------------------------------------------------------------------------------------------
 
 //Class for managing processing on a single ordered strand
-class OrderedStrandRowBlockInput : public CInterface, implements IEngineRowStream
+class OrderedStrandRowBlockInput : public CInterfaceOf<IEngineRowStream>
 {
     friend class OrderedManyToOneJunction;
 
@@ -850,7 +850,6 @@ public:
     {
         curInputBlock = nullptr;
     }
-    IMPLEMENT_IINTERFACE
 
  //interface IEngineRowStream for the rows being supplied to the strand.
     virtual const void *nextRow()
@@ -1079,7 +1078,7 @@ protected:
 //---------------------------------------------------------------------------------------------------------------------
 
 //Class for reading input from a streaming source activity.
-class OrderedStrandStreamInput : public CInterface, implements IEngineRowStream
+class OrderedStrandStreamInput : public CInterfaceOf<IEngineRowStream>
 {
     friend class OrderedManyToOneJunction;
 
@@ -1088,7 +1087,6 @@ public:
     : splitJunction(_splitJunction), callback(_callback)
     {
     }
-    IMPLEMENT_IINTERFACE
 
     void setInput(IEngineRowStream * _input)
     {
