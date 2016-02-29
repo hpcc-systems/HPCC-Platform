@@ -1721,7 +1721,7 @@ readAnother:
                     client->checkSendHttpException(httpHelper, E, queryName);
                 }
                 else
-                    client->sendException("Roxie", ROXIE_INTERNAL_ERROR, "Unknown exception", isBlocked, logctx);
+                    client->sendException("Roxie", ROXIE_INTERNAL_ERROR, "Unknown exception", (protocolFlags & HPCC_PROTOCOL_BLOCKED), logctx);
             }
         }
 #endif
