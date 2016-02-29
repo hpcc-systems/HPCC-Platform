@@ -236,6 +236,61 @@ static void usage()
     exit(1);
 }
 
+bool ensureProcessSession(IPropertyTree* sessionTree, const char* name)
+{
+    if (!name || !*name)
+        return false;
+
+    if (!sessionTree)
+        return false;
+
+    VStringBuffer xpath("Process[@name=\"%s\"]", name);
+    if (sessionTree->queryBranch(xpath.str()))
+        return true;
+
+    Owned<IPropertyTree> processSessionTree = createPTree();
+    processSessionTree->addProp("@name", name);
+    sessionTree->addPropTree("Process", LINK(processSessionTree));
+    return true;
+}
+
+bool ensureSDSProcessSession(const char* name)
+{
+    if (!name || !*name)
+        return false;
+
+    Owned<IRemoteConnection> conn = querySDS().connect(SESSION_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+    if (!conn)
+    {
+        conn.setown(querySDS().connect("/", myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT));
+        if (!conn)
+            throw MakeStringException(-1, "Failed to connect SDS.");
+
+        IPropertyTree* sdsRoot = conn->queryRoot();
+        if (!sdsRoot)
+            throw MakeStringException(-1, "Failed to get SDS.");
+
+        Owned<IPropertyTree> sessionTree = createPTree();
+        if (!ensureProcessSession(sessionTree, name))
+            throw MakeStringException(-1, "Failed to add ProcessSession.");
+
+        sdsRoot->addPropTree(SESSION_ROOT_PATH, LINK(sessionTree));
+    }
+    else
+    {
+        IPropertyTree* sessionTree = conn->queryRoot();
+        if (!sessionTree)
+            throw MakeStringException(-1, "Failed to get SDS session tree.");
+
+        if (!ensureProcessSession(sessionTree, name))
+            throw MakeStringException(-1, "Failed to add ProcessSession.");
+    }
+
+    conn->commit();
+    conn->close(false);
+    return true;
+}
+
 int init_main(int argc, char* argv[])
 {
     InitModuleObjects();
@@ -280,6 +335,7 @@ int init_main(int argc, char* argv[])
 
     Owned<CEspConfig> config;
     Owned<CEspServer> server;
+    StringBuffer processName;
     try
     {
         const char* cfgfile = NULL;
@@ -319,8 +375,8 @@ int init_main(int argc, char* argv[])
         const char* build_level = BUILD_LEVEL;
         setBuildLevel(build_level);
 
-        const char * processName = procpt->queryProp("@name");
-        setStatisticsComponentName(SCTesp, processName, true);
+        processName = procpt->queryProp("@name");
+        setStatisticsComponentName(SCTesp, processName.str(), true);
 
         openEspLogFile(envpt.get(), procpt.get());
 
@@ -374,6 +430,8 @@ int init_main(int argc, char* argv[])
             server.setown(srv);
             abortHandler.setServer(srv);
             setEspContainer(server.get());
+
+            ensureSDSProcessSession(processName.str());
 
             config->loadAll();
             config->bindServer(*server.get(), *server.get()); 

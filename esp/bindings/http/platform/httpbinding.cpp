@@ -36,8 +36,6 @@
 
 #include "bindutil.hpp"
 
-#include "espcontext.hpp"
-
 #include "httpbinding.hpp"
 #include "htmlpage.hpp"
 #include  "seclib.hpp"
@@ -45,6 +43,7 @@
 #include  "../../SOAP/Platform/soapmessage.hpp"
 #include "xmlvalidator.hpp"
 #include "xsdparser.hpp"
+#include "dasds.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
 
@@ -270,6 +269,41 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     }
     if(m_challenge_realm.length() == 0)
         m_challenge_realm.append("ESP");
+
+    processName.set(procname);
+    const char* authDomain = bnd_cfg->queryProp("@authDomain");
+    if (authDomain && *authDomain)
+        domainName.set(authDomain);
+    else
+        domainName.set("default");
+    domainSessionSDSPath.setf("%s/Process[@name=\"%s\"]/Domain[@name=\"%s\"]/", SESSION_ROOT_PATH, procname, domainName.str());
+    ensureSDSSessionDomain();
+
+    VStringBuffer xpath("AuthDomains/AuthDomain[@name=\"%s\"]/@authType", domainName.get());
+    domainAuthType = (AuthType) proc_cfg->getPropInt(xpath.str(), AuthTypeMixed);
+}
+
+void EspHttpBinding::ensureSDSSessionDomain()
+{
+    VStringBuffer xpath("%s/Process[@name=\"%s\"]", SESSION_ROOT_PATH, processName.str());
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+    if (!conn)
+        throw MakeStringException(-1, "Failed to connect SDS DomainSession.");
+
+    IPropertyTree* root = conn->queryRoot();
+    if (!root)
+        throw MakeStringException(-1, "Failed to get SDS DomainSession.");
+
+    xpath.setf("Domain[@name='%s']", domainName.str());
+    IPropertyTree* branch = root->queryBranch(xpath.str());
+    if (branch)
+        return;
+
+    Owned<IPropertyTree> ptree = createPTree();
+    ptree->addProp("@name", domainName.str());
+    root->addPropTree("Domain", LINK(ptree));
+    conn->commit();
+    conn->close();
 }
 
 StringBuffer &EspHttpBinding::generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns)

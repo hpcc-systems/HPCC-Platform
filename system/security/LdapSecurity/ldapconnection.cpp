@@ -1393,7 +1393,9 @@ public:
 
             const char* username = user.getName();
             const char* password = user.credentials().getPassword();
-            if(!username || !*username || !password || !*password)
+//            if(!username || !*username || !password || !*password)
+            if(!username || !*username) //TODO: This method is also called for feature authorization
+                //which should not need a password. See HPCC-14625
                 return false;
 
             if (getMaxPwdAge(m_connections,(char*)m_ldapconfig->getBasedn()) != PWD_NEVER_EXPIRES)

@@ -31,6 +31,9 @@
 #include "esp.hpp"
 #include "esphttp.hpp"
 
+static const char* SESSION_ROOT_PATH="Sessions";
+#define SESSION_SDS_LOCK_TIMEOUT (30*1000) // 30 seconds
+
 ESPHTTP_API IEspContext* createEspContext();
 
 // Get URL parameters (include these from Content)

@@ -57,6 +57,8 @@ include_directories (
          ./../../../../system/xmllib 
          ./.. 
          ./../../../bindings/SOAP/xpp 
+         ./../../../../system/mp 
+         ./../../../../dali/base
     )
 
 

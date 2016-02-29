@@ -1,0 +1,50 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title>User Log On</title>
+	<script>
+	    function keyupFunction()
+            {
+    		var f = document.getElementById("user_input_form");
+                if(f.username.value != '' && f.password.value != '')
+                    f.LogOn.disabled=false;
+                else
+                    f.LogOn.disabled=true;
+            }
+            function onLoad()
+            {
+                document.getElementById("username").focus();
+            }
+         </script>
+    </head>
+    <body class="yui-skin-sam" onload="onLoad()">
+        <p align="left" />
+        <h3>Please log on.</h3>
+        <form id="user_input_form" name="user_input_form" method="GET" action="/">
+            <table>
+                <tr>
+                    <td>
+                        <b>UserName: </b>
+                    </td>
+                    <td>
+                        <input type="text" id="username" name="username" size="20" onKeyUp="keyupFunction()"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>Password: </b>
+                    </td>
+                    <td>
+                        <input type="password" name="password" size="20" value="" onKeyUp="keyupFunction()"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td/>
+                    <td>
+                        <input type="submit" id="LogOn" name="LogOn" value="Log on" disabled="true"/>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </body>
+</html>

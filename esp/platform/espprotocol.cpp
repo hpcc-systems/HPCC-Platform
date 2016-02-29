@@ -153,14 +153,18 @@ const StringBuffer &CEspApplicationPort::getTitleBarHtml(IEspContext& ctx, bool 
 {
     if (xslp)
     {
-        StringBuffer titleBarXml;
-        const char* user = ctx.queryUserId();
-                if (!user || !*user)
-            titleBarXml.appendf("<EspHeader><BuildVersion>%s</BuildVersion><ConfigAccess>%d</ConfigAccess>"
-                "<LoginId>&lt;nobody&gt;</LoginId><NoUser>1</NoUser></EspHeader>", build_ver, viewConfig);
-                else
-            titleBarXml.appendf("<EspHeader><BuildVersion>%s</BuildVersion><ConfigAccess>%d</ConfigAccess>"
-                "<LoginId>%s</LoginId></EspHeader>", build_ver, viewConfig, user);
+        VStringBuffer titleBarXml("<EspHeader><BuildVersion>%s</BuildVersion><ConfigAccess>%d</ConfigAccess>", build_ver, viewConfig);
+
+        const char* authMethod = ctx.getAuthenticationMethod();
+        if (authMethod && !strieq(authMethod, "none") && (ctx.getDomainAuthType() != AuthPerRequestOnly))
+        {
+            titleBarXml.append("<LogOut>1</LogOut>");
+            const char* user = ctx.queryUserId();
+            if (user && *user)
+                titleBarXml.appendf("<LoginId>%s</LoginId>", user);
+        }
+
+        titleBarXml.append("</EspHeader>");
 
         if (rawXml)
         {
