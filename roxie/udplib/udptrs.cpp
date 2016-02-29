@@ -1100,7 +1100,7 @@ public:
             if (mem_buffer_size < len)
             {
                 free(mem_buffer);
-                mem_buffer = malloc(len);
+                mem_buffer = checked_malloc(len, ROXIE_MEMORY_ERROR);
                 mem_buffer_size = len;
             }
             packed_request = false;
