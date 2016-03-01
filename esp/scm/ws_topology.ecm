@@ -130,11 +130,12 @@ ESPStruct TpEclScheduler
 
 };
 //  ===========================================================================
-ESPStruct TpBinding
+ESPStruct [nil_remove] TpBinding
 {
     string Name;
     string Service;
     string ServiceType;
+    [min_ver("1.23")] string BindingType;
     string Port;
     string Protocol;
 
@@ -584,7 +585,7 @@ ESPresponse [exceptions_inline,encode(0)] TpGetServicePluginsResponse
     ESParray<ESPstruct TpEspServicePlugin, Plugin> Plugins;
 };
 
-ESPservice [noforms, version("1.22"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [noforms, version("1.23"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
     ESPuses ESPstruct TpCluster;
