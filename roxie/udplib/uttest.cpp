@@ -44,7 +44,7 @@ void usage()
 {
     printf("USAGE: uttest [options] iprange\n");
     printf("Options are:\n");
-    printf("--enableSocketMaxSetting\n"
+    printf(
         "--jumboFrames\n"
         "--udpLocalWriteSocketSize nn\n"
         "--udpRetryBusySenders nn\n"
@@ -627,11 +627,7 @@ int main(int argc, char * argv[] )
         const char *dash = strchr(ip, '-');
         if (dash==ip)
         {
-            if (strcmp(ip, "--enableSocketMaxSetting")==0)
-            {
-                enableSocketMaxSetting = true;
-            }
-            else if (strcmp(ip, "--udpQueueSize")==0)
+            if (strcmp(ip, "--udpQueueSize")==0)
             {
                 c++;
                 if (c==argc || !isdigit(*argv[c]))
