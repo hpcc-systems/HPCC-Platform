@@ -1851,6 +1851,24 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
             FileDetails.setNodeGroup(cluster);
         else if (clusters.length() == 1)
             FileDetails.setNodeGroup(clusters.item(0));
+
+        IArrayOf<IEspDFUFileProtect> protectList;
+        Owned<IPropertyTreeIterator> itr= df->queryAttributes().getElements("Protect");
+        ForEach(*itr)
+        {
+            IPropertyTree &tree = itr->query();
+            const char *owner = tree.queryProp("@name");
+            const char *modified = tree.queryProp("@modified");
+            int count = tree.getPropInt("@count", 0);
+            Owned<IEspDFUFileProtect> protect= createDFUFileProtect();
+            if(owner && *owner)
+                protect->setOwner(owner);
+            if(modified && *modified)
+                protect->setModified(modified);
+            protect->setCount(count);
+            protectList.append(*protect.getLink());
+        }
+        FileDetails.setProtectList(protectList);
     }
     StringBuffer strDesc = df->queryAttributes().queryProp("@description");
     if (description)
@@ -3320,6 +3338,8 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
                 lFile->setPersistent(true);
             if (file.hasProp(getDFUQResultFieldName(DFUQRFsuperowners)))
                 lFile->setSuperOwners(file.queryProp(getDFUQResultFieldName(DFUQRFsuperowners)));
+            if (file.hasProp(getDFUQResultFieldName(DFUQRFprotect)))
+                lFile->setIsProtected(true);
         }
 
         __int64 size = file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),0);
