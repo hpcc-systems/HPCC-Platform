@@ -2009,7 +2009,6 @@ copyHWSWTo = function (menuItemName, IsHW, HW_XPath)
         if (o.responseText.indexOf("<?xml") === 0)
         {
           var form = document.forms['treeForm'];
-          form.isChanged.value = "true";
           var temp = o.responseText.split(/<CompName>/g);
           var temp1 = temp[1].split(/<\/CompName>/g);
           top.document.lastSelectedRow = temp1[0];
