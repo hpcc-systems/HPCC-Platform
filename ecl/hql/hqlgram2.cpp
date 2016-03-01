@@ -49,6 +49,7 @@
 #include "hqlrepository.hpp"
 #include "hqlir.hpp"
 #include "reservedwords.hpp"
+#include "stringlib.hpp"
 
 #define ADD_IMPLICIT_FILEPOS_FIELD_TO_INDEX         TRUE
 #define FAST_FIND_FIELD
@@ -10565,7 +10566,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case EXCEPT: msg.append("EXCEPT"); break;
     case EXCLUSIVE: msg.append("EXCLUSIVE"); break;
     case EXISTS: msg.append("EXISTS"); break;
-    case EXP: msg.append("expression"); break;
+    case EXP: msg.append("EXP"); break;
     case EXPIRE: msg.append("EXPIRE"); break;
     case EXPORT: msg.append("EXPORT"); break;
     case EXTEND: msg.append("EXTEND"); break;
@@ -10879,7 +10880,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case SCOPE_ID: msg.append("module-name"); break;
     case ACTION_ID: msg.append("identifier"); break;
     case TRANSFORM_ID: msg.append("transform-name"); break;
-    case ALIEN_ID: msg.append("type name"); break;
+    case ALIEN_ID: msg.append("type-name"); break;
     case PATTERN_ID: msg.append("pattern-name"); break;
     case FEATURE_ID: msg.append("feature-name"); break;
     case EVENT_ID: msg.append("identifier"); break;
@@ -10887,11 +10888,11 @@ static void getTokenText(StringBuffer & msg, int token)
     case LIST_DATASET_ID: msg.append("identifier"); break;
     case SORTLIST_ID: msg.append("field list"); break;
 
-    case TYPE_ID: msg.append("type name"); break;
-    case SET_TYPE_ID: msg.append("type name"); break;
-    case PATTERN_TYPE_ID: msg.append("type name"); break;
-    case DICTIONARY_TYPE_ID: msg.append("type name"); break;
-    case DATASET_TYPE_ID: msg.append("type name"); break;
+    case TYPE_ID: msg.append("type-name"); break;
+    case SET_TYPE_ID: msg.append("type-name"); break;
+    case PATTERN_TYPE_ID: msg.append("type-name"); break;
+    case DICTIONARY_TYPE_ID: msg.append("type-name"); break;
+    case DATASET_TYPE_ID: msg.append("type-name"); break;
 
     case ACTION_FUNCTION: msg.append("action"); break;
     case PATTERN_FUNCTION: msg.append("pattern"); break;
@@ -10940,111 +10941,19 @@ static void getTokenText(StringBuffer & msg, int token)
     }
 }
 
-inline bool containsToken(int first, const int * expected)
+static bool containsToken(int searchToken, const int * array, unsigned length)
 {
-    for (const int *finger = expected;*finger; finger++)
+    for (unsigned i = 0; i < length; i++)
     {
-        if (*finger == first)
+        if (array[i] == searchToken)
             return true;
     }
     return false;
 }
 
-inline void removeToken(int token, int * expected)
+static bool isIdentifier(int token)
 {
-    for (int *finger = expected;*finger; finger++)
-    {
-        if (*finger == token)
-        {
-            *finger = ' ';
-            break;
-        }
-    }
-}
-
-void HqlGram::simplify(int *expected, int first, ...)
-{
-    if (!containsToken(first, expected))
-        return;
-
-    va_list args;
-    va_start(args, first);
-    for (;;)
-    {
-        int parm = va_arg(args, int);
-        if (!parm)
-            break;
-        removeToken(parm, expected);
-    }
-    va_end(args);
-}
-
-void HqlGram::simplifyExpected(int *expected)
-{
-    //simplify checks if the first item in the list is expected next, and if so it removes all of the others as expected tokens.
-    simplify(expected, DISTRIBUTE, DISTRIBUTE, ASCII, CHOOSEN, CHOOSESETS, DEDUP, DISTRIBUTED, EBCDIC, ENTH, SAMPLE, SORT, SORTED, TABLE, DATASET, FETCH,
-                       GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
-                       HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOCOMBINE, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
-                       COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, UNORDERED, 0);
-    simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
-                       COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
-                       TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,
-                       AVE, VARIANCE, COVARIANCE, CORRELATION, WHICH, REJECTED, SIZEOF, RANK, RANKED, COUNTER, '+', '-', '(', '~', TYPE_LPAREN, ROWDIFF, WORKUNIT,
-                       FAILCODE, FAILMESSAGE, FROMUNICODE, __GROUPED__, ISNULL, ISVALID, XMLDECODE, XMLENCODE, XMLTEXT, XMLUNICODE,
-                       MATCHED, MATCHLENGTH, MATCHPOSITION, MATCHTEXT, MATCHUNICODE, MATCHUTF8, NOFOLD, NOHOIST, NOTHOR, OPT, REGEXFIND, REGEXREPLACE, RELATIONSHIP, SEQUENTIAL, SKIP, TOUNICODE, UNICODEORDER, UNSORTED,
-                       KEYUNICODE, TOK_TRUE, TOK_FALSE, BOOL_CONST, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
-                       TOXML, TOJSON, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
-    simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
-    simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
-    simplify(expected, DICTIONARY_ID, DICTIONARY_FUNCTION, DICTIONARY, 0);
-    simplify(expected, ACTION_ID, ORDERED, 0); // more include other actions
-    simplify(expected, VALUE_ID, DATASET_ID, DICTIONARY_ID, RECORD_ID, ACTION_ID, UNKNOWN_ID, SCOPE_ID, VALUE_FUNCTION, DATAROW_FUNCTION, DATASET_FUNCTION, DICTIONARY_FUNCTION, LIST_DATASET_FUNCTION, LIST_DATASET_ID, ALIEN_ID, TYPE_ID, SET_TYPE_ID, TRANSFORM_ID, TRANSFORM_FUNCTION, RECORD_FUNCTION, FEATURE_ID, EVENT_ID, EVENT_FUNCTION, SCOPE_FUNCTION, ENUM_ID, PATTERN_TYPE_ID, DICTIONARY_TYPE_ID, DATASET_TYPE_ID, 0);
-    simplify(expected, LIBRARY, LIBRARY, SCOPE_FUNCTION, STORED, PROJECT, INTERFACE, MODULE, 0);
-    simplify(expected, MATCHROW, MATCHROW, LEFT, RIGHT, IF, IFF, ROW, HTTPCALL, SOAPCALL, PROJECT, GLOBAL, NOFOLD, NOHOIST, ALLNODES, THISNODE, SKIP, DATAROW_FUNCTION, TRANSFER, RIGHT_NN, FROMXML, FROMJSON, 0);
-    simplify(expected, TRANSFORM_ID, TRANSFORM_FUNCTION, TRANSFORM, '@', 0);
-    simplify(expected, RECORD, RECORDOF, RECORD_ID, RECORD_FUNCTION, SCOPE_ID, VALUE_MACRO, '{', '@', 0);
-    simplify(expected, IFBLOCK, ANY, PACKED, BIG, LITTLE, 0);
-    simplify(expected, SCOPE_ID, '$', 0);
-    simplify(expected, SIMPLE_TYPE, _ARRAY_, LINKCOUNTED, EMBEDDED, STREAMED, 0);
-    simplify(expected, END, '}', 0);
-}
-
-void HqlGram::syntaxError(const char *s, int token, int *expected)
-{ 
-    if (errorDisabled || !s || !errorHandler)
-        return;
-
-    int lineno = lexObject->getActualLineNo();
-    int column = lexObject->getActualColumn();
-    int pos = lexObject->get_yyPosition();
-    const char * yytext = lexObject->get_yyText();
-    if (yytext)
-        column -= strlen(yytext);
-
-    if (expected)
-        simplifyExpected(expected);
-
-    StringBuffer msg;
-    if (expected == NULL) // expected is NULL when fatal internal error occurs.
-    {
-        msg.append(s);
-    } 
-    else if (token==UNKNOWN_ID)
-    {
-        msg.append("Unknown identifier");
-        if (yytext && *yytext)
-            msg.append(" \"").append(yytext).append('\"');
-
-        reportError(ERR_UNKNOWN_IDENTIFIER,msg.str(), lineno, column, pos);
-        return;
-    }
-    else if ((token == '.') && (expected[0] == ASSIGN) && !expected[1])
-    {
-        reportError(ERR_UNKNOWN_IDENTIFIER,"Unknown identifier before \".\" (expected :=)", lineno, column, pos);
-        return;
-    }
-    else switch(token)
+    switch(token)
     {
     case DATAROW_ID:
     case DATASET_ID:
@@ -11062,6 +10971,16 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
     case FEATURE_ID:
     case EVENT_ID:
     case LIST_DATASET_ID:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool isFunction(int token)
+{
+    switch (token)
+    {
     case DATAROW_FUNCTION:
     case DATASET_FUNCTION:
     case DICTIONARY_FUNCTION:
@@ -11073,55 +10992,296 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
     case SCOPE_FUNCTION:
     case TRANSFORM_FUNCTION:
     case LIST_DATASET_FUNCTION:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool isType(int token)
+{
+    switch (token)
+    {
     case TYPE_ID:
     case SET_TYPE_ID:
     case PATTERN_TYPE_ID:
     case DATASET_TYPE_ID:
     case DICTIONARY_TYPE_ID:
-    {
-        for (int j = 0; expected[j] ; j++)
-        {
-            if (expected[j]==UNKNOWN_ID)
-            {
-                msg.append("Identifier '");
-                if (yytext && *yytext)
-                    msg.append(yytext);
-                msg.append("' is already defined");
-                reportError(ERR_ID_REDEFINE,msg.str(), lineno, column, pos);
-                return;
-            }
-        }
-        // fall into...
-    }
-    
+        return true;
     default:
-        msg.append(s);
-        if (yytext && *yytext)
-        { 
-            if (yytext[0]=='\n')
-                msg.append(" near the end of the line");
-            else
-                msg.append(" near \"").append(yytext).append('\"');
-        }
-
-        bool first = true;
-        for (int i = 0; expected[i] ; i++)
-        {
-            if (expected[i] == ' ')
-                continue;
-            if (first)
-                msg.append(" : expected ");
-            else
-                msg.append(", ");
-
-            first = false;
-            getTokenText(msg, expected[i]);
-        }
+        return false;
     }
-
-    reportError(ERR_EXPECTED, msg.str(), lineno, column, pos);
 }
 
+static bool isExpression(int token)
+{
+    switch (token)
+    {
+    case ABS:
+    case ACOS:
+    case ASIN:
+    case ATAN:
+    case ATAN2:
+    case AVE:
+    case COS:
+    case COSH:
+    case DIV:
+    case EXP:
+    case TOK_LOG:
+    case LN:
+    case POWER:
+    case SIN:
+    case SINH:
+    case SQRT:
+    case TAN:
+    case TANH:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static void getSensibleTokenText(StringBuffer & msg, int token)
+{
+    if (isIdentifier(token))
+        msg.append("identifier");
+    else if (isExpression(token))
+        msg.append("expression");
+    else if (isFunction(token))
+        msg.append("function");
+    else if (isType(token))
+        msg.append("type-name");
+    else switch (token)
+    {
+    case COMPLEX_MACRO:
+        msg.append("macro-name");
+    default:
+        getTokenText(msg, token);
+    }
+}
+
+static const unsigned MAX_EXPECTED_REPORTED = 5;
+static const unsigned DEFAULT_SIGNIFICANCE_PERCENTAGE = 25;
+
+static bool isSignificant(const int * expected, unsigned expectedLength, bool (*isInTokenGroup)(int), unsigned significance = DEFAULT_SIGNIFICANCE_PERCENTAGE)
+{
+    if (!expected || significance == 0)
+        return false;
+
+    significance = significance > 100 ? 100 : significance;
+    unsigned found = 0;
+    for (int i = 0; i < expectedLength; i++)
+    {
+       if (isInTokenGroup(expected[i]))
+           found++;
+    }
+    return (found*100)/expectedLength >= significance;
+}
+
+static void syntaxErrorCompareExpected(StringBuffer & msg, const char * text, const int * expected, unsigned expectedLength)
+{
+    if (!expected)
+        return;
+
+    StringBuffer tokenText(text);
+    tokenText.toLowerCase();
+    //Make comparisons to reserved words but only print at most MAX_EXPECTED_REPORTED nearest matches.
+    const unsigned radius = 2;
+    unsigned expectedMatchDistanceArray[MAX_EXPECTED_REPORTED] = {radius + 1};
+    int expectedMatchTokenArray[MAX_EXPECTED_REPORTED] = {0};
+    unsigned nFound = 0;
+    for (unsigned i = 0; i < expectedLength; i++)
+    {
+        StringBuffer expectedText;
+        getTokenText(expectedText, expected[i]);
+        if (islower(*expectedText.str()) || !isalpha(*expectedText.str()))
+            continue;
+        unsigned distance = slEditDistanceV2(tokenText.length(), tokenText.str(), expectedText.length(), expectedText.toLowerCase().str());
+        //The distance can never be zero as the lexer would have picked this up as a reserved word in the first place and the token generating the error would
+        //thus not be an UNKNOWN_ID.
+        if (distance > radius)
+            continue;
+        for (unsigned j = 0; j < MAX_EXPECTED_REPORTED; j++)
+        {
+            if (distance < expectedMatchDistanceArray[j])
+            {
+                for(unsigned k = MAX_EXPECTED_REPORTED; k > j; k--)
+                {
+                    expectedMatchDistanceArray[k] = expectedMatchDistanceArray[k-1];
+                    expectedMatchTokenArray[k] = expectedMatchTokenArray[k-1];
+                }
+                expectedMatchDistanceArray[j] = distance;
+                expectedMatchTokenArray[j] = expected[i];
+                nFound++;
+                break;
+            }
+        }
+    }
+    nFound = nFound > MAX_EXPECTED_REPORTED ? MAX_EXPECTED_REPORTED : nFound;
+    for (unsigned i = 0; i < nFound; i++)
+    {
+        StringBuffer expectedText;
+        getTokenText(expectedText, expectedMatchTokenArray[i]);
+        if (i == 0)
+            msg.append(" - did you perhaps mean ").append(expectedText.str());
+        else
+            msg.append(", ").append(expectedText.str());
+    }
+    if (nFound)
+        msg.append(", ...?");
+}
+
+static bool appendUniqueExpected(StringBuffer & msg, StringArray & array, const char * toAppend, bool & first)
+{
+    if (!array.appendUniq(toAppend))
+        return false;
+    if (first)
+    {
+        msg.append(" : expected ").append(toAppend);
+        first = false;
+    }
+    else
+        msg.append(", ").append(toAppend);
+    return true;
+}
+
+static void locateClusteredTokens(const int * expected, unsigned expectedLength, StringBuffer & msg, StringArray & expectedToReport,  bool & first)
+{
+    /* The idea here is to consolidate groups of tokens by their semantics and other categorizations,
+     * such that they can be reported as a single and more concise term, e.g. identifier, expression, function, etc.
+     * This prevents them from exhausting the limited number of expected tokens reported, allowing for others to
+     * be reported also.
+     */
+
+    if (!expected || expectedLength == 0)
+        return;
+
+    if (isSignificant(expected, expectedLength, isIdentifier))
+        appendUniqueExpected(msg, expectedToReport, "identifier", first);
+
+    if (isSignificant(expected, expectedLength, isExpression))
+        appendUniqueExpected(msg, expectedToReport, "expression", first);
+
+    if (isSignificant(expected, expectedLength, isFunction))
+        appendUniqueExpected(msg, expectedToReport, "function", first);
+
+    if (isSignificant(expected, expectedLength, isType))
+        appendUniqueExpected(msg, expectedToReport, "type", first);
+
+    //MORE: add further groups.
+}
+
+void HqlGram::syntaxError(const char *s, int token, const int *expected, unsigned expectedLength)
+{
+    if (errorDisabled || !s || !errorHandler)
+        return;
+
+    int lineno = lexObject->getActualLineNo();
+    int column = lexObject->getActualColumn();
+    int pos = lexObject->get_yyPosition();
+    const char * yytext = lexObject->get_yyText();
+    if (yytext)
+        column -= strlen(yytext);
+
+    StringBuffer msg;
+    if (expected == NULL) // expected is NULL when fatal internal error occurs.
+    {
+        msg.append(s);
+        reportError(ERR_EXPECTED, msg.str(), lineno, column, pos);
+        return;
+    }
+    else if (token==UNKNOWN_ID)
+    {
+        msg.append("Unknown identifier");
+        if (yytext && *yytext)
+        {
+            msg.append(" \"").append(yytext).append('\"');
+            syntaxErrorCompareExpected(msg, yytext, expected, expectedLength);
+        }
+        reportError(ERR_UNKNOWN_IDENTIFIER,msg.str(), lineno, column, pos);
+        return;
+    }
+    else if ((token == '.') && (expected[0] == ASSIGN) && !expected[1])
+    {
+        /* Ambiguous situation - := as the only expected token only occurs after an unknown_id (need to check this still)
+         * and thus assuming that the unknown_id was itentional it can be inferred that the '.' can't be as this needs a
+         * known_id. Alternatively, it can be assumed that the '.' was intentional and thus
+         * that the unknown_id is the error and should actually have been a known_id.
+         */
+        reportError(ERR_UNKNOWN_IDENTIFIER,"unknown identifier before \".\"", lineno, column, pos);
+        return;
+    }
+    //MORE: Add further conditions and explicit errors.
+
+    if (isIdentifier(token) || isFunction(token) || isType(token))
+    {
+        if (containsToken(UNKNOWN_ID, expected, expectedLength))
+        {
+            msg.append("Identifier '");
+            if (yytext && *yytext)
+            {
+                msg.append(yytext);
+                msg.append("' is already defined");
+                syntaxErrorCompareExpected(msg, yytext, expected, expectedLength);
+            }
+            reportError(ERR_ID_REDEFINE,msg.str(), lineno, column, pos);
+            return;
+        }
+    }
+
+    msg.append(s);
+    if (yytext && *yytext)
+    {
+        if (yytext[0]=='\n')
+            msg.append(" near the end of the line");
+        else
+            msg.append(" near \"").append(yytext).append('\"');
+    }
+
+    //Report a filtered, limited, & deduped expected list
+    StringArray expectedToReport;
+    bool first = true;
+    //Identify groups of tokens within the expected list and consolidates them.
+    locateClusteredTokens(expected, expectedLength, msg, expectedToReport, first);
+    unsigned nToReport = expectedToReport.length() < MAX_EXPECTED_REPORTED ? MAX_EXPECTED_REPORTED - expectedToReport.length() : 0;
+    if (nToReport > 0)
+    {
+        unsigned interval = expectedLength/nToReport;
+        unsigned maxIter = nToReport;
+        if (interval < 2)
+        {
+            maxIter = expectedLength;
+            interval = 1;
+        }
+        for (unsigned i = 0; i < maxIter; i++)
+        {
+            /* The collection of the expected tokens has no specific structure in that they are ordered
+             * in no really useful mannar. It thus makes sense to not simply report the first N expected
+             * but instead, report N expected tokens equally distributed over the expected set.
+             */
+            StringBuffer temp;
+            getSensibleTokenText(temp, expected[i*interval]);
+            //interval < 2 => expectedLength <= MAX_EXPECTED_REPORTED guaranteeing all unique expected tokens being reported
+            if (!appendUniqueExpected(msg, expectedToReport, temp.str(), first) && interval < 2)
+            {
+                /* The expected token encountered at the current index sample was already found.
+                 * Search for another unique expected token to report.
+                 */
+                for (unsigned j = 0; j < expectedLength; j++)
+                {
+                    StringBuffer temp;
+                    getSensibleTokenText(temp, expected[j]);
+                    if (appendUniqueExpected(msg, expectedToReport, temp.str(), first))
+                        break;
+                }
+            }
+        }
+    }
+
+    if ((expectedToReport.length() > 1) && (expectedToReport.length() < expectedLength))
+        msg.append(", ...");
+    reportError(ERR_EXPECTED, msg.str(), lineno, column, pos);
+}
 
 void HqlGram::abortParsing()
 {

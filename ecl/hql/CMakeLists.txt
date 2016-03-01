@@ -95,16 +95,17 @@ include_directories (
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated header files
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ./../../common/deftype 
-         ./../../system/hrpc 
-         ./../../common/thorhelper 
-         ./../../rtl/eclrtl 
-         ./../eclagent 
-         ./../../system/include 
+         ./../../common/deftype
+         ./../../system/hrpc
+         ./../../common/thorhelper
+         ./../../rtl/eclrtl
+         ./../eclagent
+         ./../../system/include
          ./../../common/workunit
-         ./../../system/jlib 
-         ./../../ecl/hql 
+         ./../../system/jlib
+         ./../../ecl/hql
          ./../../testing/unittests
+         ./../../plugins/stringlib
     )
 
 if (WIN32)
@@ -141,6 +142,7 @@ target_link_libraries ( hql
          nbcd
          eclrtl
          deftype
+         stringlib
          ${CPPUNIT_LIBRARIES}
     )
 

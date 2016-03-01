@@ -411,7 +411,7 @@ public:
     IHqlScope * queryGlobalScope();
 
     bool canFollowCurrentState(int tok, const short * yyps);
-    void syntaxError(const char *s, int token, int *expected);
+    void syntaxError(const char *s, int token, const int *expected, unsigned expectedLength);
     int mapToken(int lexToken) const;
     IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
     IHqlExpression *lookupSymbol(IHqlScope * scope, IIdAtom * name);
