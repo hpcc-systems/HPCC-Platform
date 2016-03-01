@@ -31,7 +31,6 @@ endif()
 set (    SRCS 
          ../shared/authmap.cpp 
          ../shared/caching.cpp 
-         ../shared/basesecurity.cpp
          aci.cpp 
          ldapconnection.cpp 
          ldapsecurity.cpp 
