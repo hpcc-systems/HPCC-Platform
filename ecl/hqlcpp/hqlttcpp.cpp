@@ -31,6 +31,7 @@
 #include "hqlfold.hpp"
 #include "hqlgraph.ipp"
 #include "hqllib.ipp"
+#include "hqlmeta.hpp"
 #include "hqlpmap.hpp"
 #include "hqlopt.hpp"
 #include "hqlcerrors.hpp"
@@ -96,6 +97,7 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
         case no_stepped:
         case no_distributed:
         case no_preservemeta:
+        case no_unordered:
         case no_nofold:
         case no_nohoist:
         case no_nocombine:
@@ -2571,6 +2573,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
     }
     else
     {
+        inputs.append(*getOrderedAttribute(false));
         //otherwise append the datasets and then sort them all
         OwnedHqlExpr appended = createDataset(no_addfiles, inputs);
         appended.setown(cloneInheritedAnnotations(expr, appended));
@@ -2847,7 +2850,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Tag a keyed join as ordered in the platforms that ensure it does remain ordered.  Extend if the others do.
     if (isKeyedJoin(expr))
     {
-        if ((translator.targetRoxie() || options.keyedJoinPreservesOrder) && !expr->hasAttribute(_ordered_Atom) && !expr->hasAttribute(unorderedAtom))
+        if ((translator.targetRoxie() || options.keyedJoinPreservesOrder) && !hasOrderedAttribute(expr))
             return appendOwnedOperand(expr, createAttribute(_ordered_Atom));
         return NULL;
     }
@@ -4378,6 +4381,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
     case no_sorted:
     case no_preservemeta:
     case no_distributed:
+    case no_unordered:
     case no_grouped:
     case no_stepped:
     case no_section:
@@ -12255,7 +12259,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 children.replace(*createAttribute(_selfJoinPlaceholder_Atom), 1);       // replace the 1st dataset with an attribute so parameters are still in the same place.
                 return createDataset(no_selfjoin, children);
             }
-            if (isKeyedJoin(transformed) && translator.targetRoxie() && !expr->hasAttribute(_ordered_Atom))
+            if (isKeyedJoin(transformed) && translator.targetRoxie() && !hasOrderedAttribute(expr))
                 return appendOwnedOperand(transformed, createAttribute(_ordered_Atom));
             return transformed.getClear();
         }

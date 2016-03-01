@@ -26,6 +26,7 @@
 
 #include "hql.hpp"
 #include "hqlattr.hpp"
+#include "hqlmeta.hpp"
 #include "hqlthql.hpp"
 #include "hqlhtcpp.ipp"
 #include "hqlttcpp.ipp"
@@ -179,6 +180,7 @@ bool isSimpleSource(IHqlExpression * expr)
         case no_stepped:
         case no_distributed:
         case no_preservemeta:
+        case no_unordered:
         case no_grouped:
         case no_compound_diskread:
         case no_compound_disknormalize:
@@ -965,6 +967,7 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     case no_sorted:
     case no_distributed:
     case no_preservemeta:
+    case no_unordered:
     case no_grouped:
     case no_alias_scope:
     case no_section:
@@ -1350,6 +1353,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
     case no_stepped:
     case no_distributed:
     case no_preservemeta:
+    case no_unordered:
     case no_grouped:
     case no_preload:
     case no_limit:
@@ -5993,6 +5997,7 @@ void MonitorExtractor::extractAllFilters(IHqlExpression * dataset)
         case no_hqlproject:
         case no_distributed:
         case no_preservemeta:
+        case no_unordered:
         case no_sorted:
         case no_stepped:
         case no_grouped:
@@ -6249,7 +6254,7 @@ void IndexReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     StringBuffer flags;
     if (tableExpr->hasAttribute(sortedAtom))
         flags.append("|TIRsorted");
-    else if (tableExpr->hasAttribute(unorderedAtom))
+    else if (!isOrdered(tableExpr))
         flags.append("|TIRunordered");
     if (!monitors.isFiltered())
         flags.append("|TIRnofilter");

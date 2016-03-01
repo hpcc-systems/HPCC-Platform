@@ -270,6 +270,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_sorted:
     case no_distributed:
     case no_preservemeta:
+    case no_unordered:
     case no_nofold:
     case no_nohoist:
     case no_nocombine:
@@ -727,6 +728,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr, bool optimize
     case no_sorted:
     case no_distributed:
     case no_preservemeta:
+    case no_unordered:
     case no_grouped:
     case no_alias_scope:
     case no_sequential:

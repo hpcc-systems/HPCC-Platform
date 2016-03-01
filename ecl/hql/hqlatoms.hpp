@@ -69,6 +69,8 @@ extern HQL_API IIdAtom * unknownId;
 extern HQL_API IIdAtom * unnamedId;
 extern HQL_API IIdAtom * valueId;
 
+//Any atom that is surrounded by underscores e.g., _aliased_Atom is an internal attribute.  They are used by the
+//code generator to annotate the graph (and are not included in regenerated ECL)
 extern HQL_API IAtom * abstractAtom;
 extern HQL_API IAtom * accessAtom;
 extern HQL_API IAtom * actionAtom;
@@ -304,8 +306,8 @@ extern HQL_API IAtom * onceAtom;
 extern HQL_API IAtom * onFailAtom;
 extern HQL_API IAtom * onWarningAtom;
 extern HQL_API IAtom * optAtom;
+extern HQL_API IAtom * orderedAtom;
 extern HQL_API IAtom * _ordered_Atom;
-extern HQL_API IAtom * _orderedPull_Atom;
 extern HQL_API IAtom * _origin_Atom;
 extern HQL_API IAtom * _original_Atom;
 extern HQL_API IAtom * outAtom;
@@ -429,7 +431,6 @@ extern HQL_API IAtom * _uid_Atom;
 extern HQL_API IAtom * unknownAtom;
 extern HQL_API IAtom * unknownSizeFieldAtom;
 extern HQL_API IAtom * unicodeAtom;
-extern HQL_API IAtom * unorderedAtom;
 extern HQL_API IAtom * unsortedAtom;
 extern HQL_API IAtom * unstableAtom;
 extern HQL_API IAtom * updateAtom;

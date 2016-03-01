@@ -14285,8 +14285,6 @@ class CRoxieServerParallelLoopActivity : public CRoxieServerLoopActivity
     QueueOf<const void, true> ready;
     CriticalSection helperCS;
     CriticalSection cs;
-    size32_t sizeNumParallel;
-    rtlDataAttr listNumParallel;
     unsigned defaultNumParallel;
     LoopExecutorThread executor;
     IProbeManager* probeManager;
@@ -14309,7 +14307,6 @@ public:
     {
         probeManager = _probeManager;
         defaultNumParallel = 0;
-        sizeNumParallel = 0;
     }
 
     virtual void onCreate(IHThorArg *_colocalParent)
@@ -14327,7 +14324,6 @@ public:
         defaultNumParallel = helper.defaultParallelIterations();
         if (!defaultNumParallel)
             defaultNumParallel = DEFAULT_PARALLEL_LOOP_THREADS;
-        helper.numParallelIterations(sizeNumParallel, listNumParallel.refdata());
 
         //MORE: If numIterations <= number of parallel iterations[1], 
         //then we don't need to create a separate thread to do the processing, and the results will also avoid
@@ -14398,9 +14394,7 @@ public:
 
     unsigned getNumParallel(unsigned iter)
     {
-        if (iter * sizeof(unsigned) >= sizeNumParallel)
-            return defaultNumParallel;
-        return ((unsigned *)listNumParallel.getdata())[iter];
+        return defaultNumParallel;
     }
 
     inline void enqueueResult(const void * row)

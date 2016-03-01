@@ -4147,6 +4147,8 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_filtergroup:
     case no_section:
     case no_related:
+    case no_unordered:
+    case no_preservemeta:
         if (isNull(child) || isFail(child))
             return removeParentNode(expr);
         break;
@@ -5985,6 +5987,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_assertgrouped:
     case no_distribute:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_assertdistributed:
     case no_keyeddistribute:
