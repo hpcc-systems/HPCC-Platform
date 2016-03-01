@@ -66,3 +66,5 @@ target_link_libraries ( wutool
 if ( USE_CPPUNIT )
   target_link_libraries ( wutool workunitservices )
 endif()
+
+install ( TARGETS wutool RUNTIME DESTINATION ${EXEC_DIR} )
