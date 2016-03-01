@@ -744,7 +744,7 @@ protected:
     void buildSteppedHelpers();
     void doBuildAggregateSelectIterator(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * expr, bool isChildIterator);
-    void buildAggregateHelpers(IHqlExpression * expr, bool needMerge);
+    void buildAggregateHelpers(IHqlExpression * expr);
     void buildCountHelpers(IHqlExpression * expr, bool allowMultiple);
     virtual void buildFlagsMember(IHqlExpression * expr) {}
     void buildGlobalGroupAggregateHelpers(IHqlExpression * expr);
@@ -2355,7 +2355,7 @@ void SourceBuilder::buildGroupingMonitors(IHqlExpression * expr, MonitorExtracto
 
 
 
-void SourceBuilder::buildAggregateHelpers(IHqlExpression * expr, bool needMerge)
+void SourceBuilder::buildAggregateHelpers(IHqlExpression * expr)
 {
     IHqlExpression * aggregate = expr->queryChild(0);
     node_operator op = aggregate->getOperator();
@@ -2372,8 +2372,7 @@ void SourceBuilder::buildAggregateHelpers(IHqlExpression * expr, bool needMerge)
     translator.doBuildAggregateClearFunc(instance->startctx, aggregate);
 
     //virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) = 0;      //only call if transform called at least once on src.
-    if (needMerge)
-        translator.doBuildAggregateMergeFunc(instance->startctx, aggregate, requiresOrderedMerge);
+    translator.doBuildAggregateMergeFunc(instance->startctx, aggregate, requiresOrderedMerge);
 }
 
 
@@ -3035,7 +3034,7 @@ void DiskAggregateBuilder::buildMembers(IHqlExpression * expr)
 
     buildFilenameMember();
     DiskReadBuilderBase::buildMembers(expr);
-    buildAggregateHelpers(expr, true);
+    buildAggregateHelpers(expr);
 
     //virtual void processRow(void * self, const void * src) = 0;
     BuildCtx rowctx(instance->startctx);
@@ -3340,7 +3339,7 @@ protected:
 void ChildAggregateBuilder::buildMembers(IHqlExpression * expr)
 {
     ChildBuilderBase::buildMembers(expr);
-    buildAggregateHelpers(expr, false);
+    buildAggregateHelpers(expr);
 }
 
 
@@ -6537,7 +6536,7 @@ void IndexAggregateBuilder::buildMembers(IHqlExpression * expr)
 
     buildFilenameMember();
     IndexReadBuilderBase::buildMembers(expr);
-    buildAggregateHelpers(expr, true);
+    buildAggregateHelpers(expr);
 
     //virtual void processRow(void * self, const void * src) = 0;
     BuildCtx rowctx(instance->startctx);
