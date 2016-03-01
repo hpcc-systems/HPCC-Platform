@@ -159,8 +159,6 @@ void CSoapService::addMessageToTraceSummary(IEspContext* ctx, CSoapValue* soapVa
 
 int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
 {
-    ESP_TIME_SECTION("CSoapService::processRequest()");
-
     CSoapRequest& request = *(dynamic_cast<CSoapRequest*>(&req));
     CSoapResponse& response = *(dynamic_cast<CSoapResponse*>(&resp));
 
