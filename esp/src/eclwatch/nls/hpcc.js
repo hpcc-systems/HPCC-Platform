@@ -567,6 +567,7 @@ define({root:
     Unsuspend: "Unsuspend",
     Unsuspended: "Unsuspended",
     Up: "Up",
+    UpdateSuperFiles: "Update Super Files",
     Upload: "Upload",
     Usage: "Usage",
     Used: "Used",
