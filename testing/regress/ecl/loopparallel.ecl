@@ -73,7 +73,7 @@ end;
 //Simple parallel loop, 2 iterations each item
 initial := dataset([], rec);
 
-results := LOOP(initial, 4, processLoop(rows(left), counter), parallel([2],2));
+results := LOOP(initial, 4, processLoop(rows(left), counter), parallel(2));
 output(results);
 
 //Do the whole lot in a single go - check parallel is bounded by actual number of iterations
@@ -81,7 +81,7 @@ results2 := LOOP(initial, 4, processLoop(rows(left), counter), parallel(10000));
 output(results2);
 
 //Same as first, but also include a row filter
-results3 := LOOP(initial, 4, (left.id1 > counter), processLoop(rows(left), counter), parallel([2],2));
+results3 := LOOP(initial, 4, (left.id1 > counter), processLoop(rows(left), counter), parallel(2));
 output(sort(results3, id1, id2, score));
 
 //Partial reading of a loop's final output

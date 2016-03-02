@@ -1,5 +1,10 @@
 ﻿define([], function () {
     function espTime2Seconds(duration) {
+        if (!duration) {
+            return 0;
+        } else if (!isNaN(duration)) {
+            return parseFloat(duration);
+        }
         //  GH:  <n>ns or <m>ms or <s>s or [<d> days ][<h>:][<m>:]<s>[.<ms>]
         var nsIndex = duration.indexOf("ns");
         if (nsIndex !== -1) {

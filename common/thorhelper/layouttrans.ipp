@@ -259,7 +259,7 @@ class CRecordLayoutTranslatorCache : public CacheTable, public IRecordLayoutTran
 {
 public:
     IMPLEMENT_IINTERFACE;
-    virtual ~CRecordLayoutTranslatorCache() { releaseAll(); }
+    virtual ~CRecordLayoutTranslatorCache() { _releaseAll(); }
     virtual IRecordLayoutTranslator * get(size32_t diskMetaSize, void const  * diskMetaData, size32_t activityMetaSize, void const * activityMetaData, IDefRecordMeta const * activityMeta = NULL);
     virtual unsigned count() const { return CacheTable::count(); }
 

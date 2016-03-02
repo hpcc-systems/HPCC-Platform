@@ -72,6 +72,7 @@ bool canBuildSequenceInline(IHqlExpression * expr)
         case no_sorted:
         case no_distributed:
         case no_preservemeta:
+        case no_unordered:
         case no_grouped:
         case no_preload:
         case no_limit:

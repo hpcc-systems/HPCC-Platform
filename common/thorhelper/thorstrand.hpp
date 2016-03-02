@@ -49,11 +49,20 @@ interface IStrandBranch : extends IInterface
     virtual IStrandJunction * queryOutputJunction() = 0;
 };
 
+interface IOrderedOutputCallback
+{
+    virtual bool noteEndOfInputChunk() = 0;
+    virtual void noteEndOfInput() = 0;
+};
+typedef PointerArrayOf<IOrderedOutputCallback> OrderedCallbackArray;
+
+
 extern THORHELPER_API IStrandJunction * createStrandJunction(roxiemem::IRowManager & _rowManager, unsigned numInputs, unsigned numOutputs, unsigned blockSize, bool isOrdered);
-extern THORHELPER_API IStrandBranch * createStrandBranch(roxiemem::IRowManager & _rowManager, unsigned numStrands, unsigned blockSize, bool isOrdered, bool isGrouped);
+extern THORHELPER_API IStrandBranch * createStrandBranch(roxiemem::IRowManager & _rowManager, unsigned numStrands, unsigned blockSize, bool isOrdered, bool isGrouped, bool inputIsStreamed);
 extern THORHELPER_API void clearRowQueue(IRowQueue * queue);
 
 extern THORHELPER_API IManyToOneRowStream * createManyToOneRowStream(roxiemem::IRowManager & _rowManager, unsigned numInputs, unsigned blockSize, bool isOrdered);
+extern THORHELPER_API const void * queryEndOfSectionMarker();
 
 //---------------------------------------------------------------------------------------------------------------------
 

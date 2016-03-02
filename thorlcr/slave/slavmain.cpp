@@ -461,8 +461,7 @@ public:
                                 Owned<CGraphBase> graph = jobChannel.getGraph(gid);
                                 if (graph)
                                 {
-                                    Owned<IThorException> e = MakeThorException(0, "GraphAbort");
-                                    e->setGraphId(gid);
+                                    Owned<IThorException> e = MakeGraphException(graph, 0, "GraphAbort");
                                     graph->abort(e);
                                 }
                             }

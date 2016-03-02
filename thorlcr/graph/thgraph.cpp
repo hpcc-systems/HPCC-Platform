@@ -1160,10 +1160,10 @@ void CGraphBase::clean()
     ::Release(doneBarrier);
     localResults.clear();
     graphLoopResults.clear();
-    childGraphsTable.kill();
+    childGraphsTable.releaseAll();
     childGraphs.kill();
     disconnectActivities();
-    containers.kill();
+    containers.releaseAll();
     sinks.kill();
     activeSinks.kill();
 }
@@ -1309,8 +1309,7 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
         }
         catch (IException *e)
         {
-            Owned<IThorException> e2 = MakeThorException(e);
-            e2->setGraphId(graphId);
+            Owned<IThorException> e2 = MakeGraphException(this, e);
             e2->setAction(tea_abort);
             queryJobChannel().fireException(e2);
             throw;
@@ -1408,7 +1407,6 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
             {
                 StringBuffer str;
                 Owned<IThorException> e = MakeGraphException(this, exception->errorCode(), "%s", exception->errorMessage(str).str());
-                e->setGraphId(graphId);
                 e->setAction(tea_abort);
                 fireException(e);
             }
@@ -1481,6 +1479,11 @@ void CGraphBase::done()
         CGraphElementBase &element = iter->query();
         element.queryActivity()->done();
     }
+}
+
+unsigned CGraphBase::queryJobChannelNumber() const
+{
+    return queryJobChannel().queryChannel();
 }
 
 IMPServer &CGraphBase::queryMPServer() const
@@ -2478,6 +2481,13 @@ CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
     jobGroup.set(&::queryClusterGroup());
     slaveGroup.setown(jobGroup->remove(0));
     nodeGroup.set(&queryNodeGroup());
+    myNodeRank = nodeGroup->rank(::queryMyNode());
+
+    unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+    jobChannelSlaveNumbers.allocateN(channelsPerSlave, true); // filled when channels are added.
+    jobSlaveChannelNum.allocateN(querySlaves()); // filled when channels are added.
+    for (unsigned s=0; s<querySlaves(); s++)
+        jobSlaveChannelNum[s] = NotFound;
 }
 
 void CJobBase::init()
@@ -2895,7 +2905,7 @@ IThorResult *CJobChannel::getOwnedResult(graph_id gid, activity_id ownerId, unsi
     if (!graph)
     {
         Owned<IThorException> e = MakeThorException(0, "getOwnedResult: graph not found");
-        e->setGraphId(gid);
+        e->setGraphInfo(queryJob().queryGraphName(), gid);
         throw e.getClear();
     }
     Owned<IThorResult> result;
@@ -3109,7 +3119,7 @@ IEngineRowAllocator *CActivityBase::getRowAllocator(IOutputMetaData * meta, roxi
     return queryJobChannel().getRowAllocator(meta, queryId(), flags);
 }
 
-bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
+bool CActivityBase::receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
 {
     BooleanOnOff onOff(receiving);
     CTimeMon t(timeout);
@@ -3117,15 +3127,25 @@ bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mpta
     // check 'cancelledReceive' every 10 secs
     while (!cancelledReceive && ((MP_WAIT_FOREVER==timeout) || !t.timedout(&remaining)))
     {
-        if (queryJobChannel().queryJobComm().recv(mb, rank, mpTag, sender, remaining>10000?10000:remaining))
+        if (comm.recv(mb, rank, mpTag, sender, remaining>10000?10000:remaining))
             return true;
     }
     return false;
 }
 
-void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
+bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
+{
+    return receiveMsg(queryJobChannel().queryJobComm(), mb, rank, mpTag, sender, timeout);
+}
+
+void CActivityBase::cancelReceiveMsg(ICommunicator &comm, const rank_t rank, const mptag_t mpTag)
 {
     cancelledReceive = true;
     if (receiving)
-        queryJobChannel().queryJobComm().cancel(rank, mpTag);
+        comm.cancel(rank, mpTag);
+}
+
+void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
+{
+    cancelReceiveMsg(queryJobChannel().queryJobComm(), rank, mpTag);
 }

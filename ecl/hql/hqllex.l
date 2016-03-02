@@ -620,6 +620,7 @@ ABS                 { RETURNSYM(ABS); }
 ACOS                { RETURNSYM(ACOS); }
 AFTER               { RETURNSYM(AFTER); }
 AGGREGATE           { RETURNSYM(AGGREGATE); }
+ALGORITHM           { RETURNSYM(ALGORITHM); }
 __ALIAS__           { RETURNSYM(ALIAS); }
 ALL                 { RETURNSYM(ALL); }
 ALLNODES            { RETURNSYM(ALLNODES); }
@@ -738,7 +739,6 @@ __GROUPED__         { RETURNSYM(__GROUPED__); }
 HAVING              { RETURNSYM(HAVING); }
 HEADING             { RETURNSYM(HEADING); }
 HINT                { RETURNSYM(HINT); }
-HOLE                { RETURNSYM(HOLE); }
 HTTPCALL            { RETURNSYM(HTTPCALL); }
 HTTPHEADER          { RETURNSYM(HTTPHEADER); }
 IF                  { RETURNSYM(IF); }

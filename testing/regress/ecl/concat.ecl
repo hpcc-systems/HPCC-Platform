@@ -62,7 +62,7 @@ output(SORT(TABLE(file1+g1+g1+g2, { value2, c := count(GROUP)} ), value2, c));
 
 output(TABLE(file1&g2, { value2, c := count(GROUP)} ));
 output(TABLE(file1&g2&g3, { value2, c := count(GROUP)} ));
-output(TABLE(file1&g1&g1&g2, { value2, c := count(GROUP)} ));
+output(TABLE((+)(file1,g1,g1,g2,ORDERED), { value2, c := count(GROUP)} ));
 
 // all inputs grouped - preserves grouping
 output(SORT(TABLE(g1+g2, { value2, c := count(GROUP)} ), value2, c));

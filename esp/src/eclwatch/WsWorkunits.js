@@ -274,6 +274,18 @@ define([
             return ESPRequest.send("WsWorkunits", "WUGetStats", params);
         },
 
+        WUCDebug: function (wuid, command) {
+            return ESPRequest.send("WsWorkunits", "WUCDebug", {
+                request: {
+                    Wuid: wuid,
+                    Command: command
+                }
+            }).then(function (response) {
+                console.log(JSON.stringify(response));
+                return response;
+            });
+        },
+
         //  Stub waiting for HPCC-10308
         visualisations: [
             { value: "DojoD3ScatterChart", label: "Scatter Chart" },

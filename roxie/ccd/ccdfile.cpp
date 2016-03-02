@@ -253,7 +253,7 @@ public:
                             DBGLOG("Looking for file using non-cached file open");
                     }
 
-                    fileStatus = queryFileCache().fileUpToDate(f, fileSize, fileDate, crc, isCompressed);
+                    fileStatus = queryFileCache().fileUpToDate(f, fileSize, fileDate, crc, isCompressed, false);
                     if (fileStatus == FileIsValid)
                     {
                         if (isCompressed)
@@ -594,17 +594,17 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
     Semaphore bctStarted;
     Semaphore hctStarted;
 
-    RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed)
+    RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed, bool autoDisconnect=true)
     {
         // Ensure that SockFile does not keep these sockets open (or we will run out)
         class AutoDisconnector
         {
         public:
-            AutoDisconnector(IFile *_f) : f(_f) {}
-            ~AutoDisconnector() { disconnectRemoteFile(f); }
+            AutoDisconnector(IFile *_f, bool isEnabled) { f = isEnabled ? _f : NULL; };
+            ~AutoDisconnector() { if (f) disconnectRemoteFile(f); }
         private:
             IFile *f;
-        } autoDisconnector(f);
+        } autoDisconnector(f, autoDisconnect);
 
         cacheFileConnect(f, dafilesrvLookupTimeout);  // set timeout to 10 seconds
         if (f->exists())

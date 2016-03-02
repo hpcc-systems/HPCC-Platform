@@ -36,7 +36,7 @@ sortedNames := sort(namesTable, -surname, forename);
 
 previousSort := sorted(thorNamesTable,(string25)thorNamesTable.forename,(string15)thorNamesTable.surname);
 
-myset := sort(person,person.per_last_name,person.per_first_name,stable('Insertion'));
+myset := sort(person,person.per_last_name,person.per_first_name,stable,algorithm('Insertion'));
 output(myset);
 string algo := '' : stored('algorithm');
 //myset2 := sort(namesTable,(string25)namesTable.surname,(string15)namesTable.forename,joined(myset));

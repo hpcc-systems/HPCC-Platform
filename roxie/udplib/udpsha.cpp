@@ -39,7 +39,6 @@ IDataBufferManager *bufferManager;
 
 unsigned udpTraceLevel = 0;
 unsigned udpTraceCategories = (unsigned) -1;
-bool     enableSocketMaxSetting = false;
 unsigned udpFlowSocketsSize = 131072;
 unsigned udpLocalWriteSocketSize = 1024000;
 
@@ -245,7 +244,7 @@ bool queue_t::dataQueued(void *key, PKT_CMP_FUN pkCmpFn)
 #include <netdb.h>
 #endif
 
-int check_set(const char *path, int value, bool modify)
+int check_set(const char *path, int value)
 {
 #ifdef __linux__
     FILE *f = fopen(path,"r");
@@ -256,45 +255,24 @@ int check_set(const char *path, int value, bool modify)
         r = fgets(res, sizeof(res), f);
         fclose(f);
     }
-    if (r) {
+    if (r)
         si = atoi(r);
+    if (!si)
+    {
+        DBGLOG("WARNING: Failed to read value for %s", path);
+        return 0;
     }
-    if (si<value) {
-        if (modify) {
-            f = fopen(path,"w");
-            if (f) {
-                sprintf(res, "%i", value);
-                fputs(res,f);
-                fclose(f);
-                DBGLOG("%s changed from %i to %i", path, si, value);
-                return 1;
-            } 
-            else {
-                DBGLOG("%s not set", path);
-                return -1;
-            }
-        }
-        else {
-            DBGLOG("%s value %i is less than %i", path, si, value);
-            return -1;
-        }
-    }
+    else if (si<value)
+        return -1;
 #endif
     return 0;
 }
 
-int check_set_max_socket_read_buffer(int size) {
-    return check_set("/proc/sys/net/core/rmem_max", size, true);
-}
-int check_set_max_socket_write_buffer(int size) {
-    return check_set("/proc/sys/net/core/wmem_max", size, true);
-}
-
 int check_max_socket_read_buffer(int size) {
-    return check_set("/proc/sys/net/core/rmem_max", size, false);
+    return check_set("/proc/sys/net/core/rmem_max", size);
 }
 int check_max_socket_write_buffer(int size) {
-    return check_set("/proc/sys/net/core/wmem_max", size, false);
+    return check_set("/proc/sys/net/core/wmem_max", size);
 }
 
 #ifdef __linux__

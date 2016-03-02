@@ -14,29 +14,29 @@
 #    limitations under the License.
 ################################################################################
 
-# - Try to find the libhiredislibrary
+# - Try to find the hiredis library
 # Once done this will define
 #
-#  LIBHEDIS_FOUND - system has the libhiredis library
-#  LIBHIREDIS_INCLUDE_DIR - the libhiredis include directory(s)
-#  LIBHIREDIS_LIBRARY - The library needed to use hiredis
+#  HIREDIS_FOUND - system has the hiredis library
+#  HIREDIS_INCLUDE_DIR - the hiredis include directory(s)
+#  HIREDIS_LIBRARY - The library needed to use hiredis
 
-IF (NOT LIBREDIS_FOUND)
+IF (NOT HIREDIS_FOUND)
   IF (WIN32)
     SET (libhiredis "libhiredis")
   ELSE()
     SET (libhiredis "hiredis")
   ENDIF()
 
-  FIND_PATH(LIBHIREDIS_INCLUDE_DIR hiredis/hiredis.h PATHS /usr/include /usr/share/include /usr/local/include PATH_SUFFIXES hiredis)
-  FIND_LIBRARY(LIBHIREDIS_LIBRARY NAMES ${libhiredis} PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64)
+  FIND_PATH(HIREDIS_INCLUDE_DIR hiredis/hiredis.h PATHS /usr/include /usr/share/include /usr/local/include PATH_SUFFIXES hiredis)
+  FIND_LIBRARY(HIREDIS_LIBRARY NAMES ${libhiredis} PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64)
 
   include(FindPackageHandleStandardArgs)
-  find_package_handle_standard_args(redis DEFAULT_MSG
-    LIBHIREDIS_LIBRARY
-    LIBHIREDIS_INCLUDE_DIR
+  find_package_handle_standard_args(hiredis DEFAULT_MSG
+    HIREDIS_LIBRARY
+    HIREDIS_INCLUDE_DIR
   )
 
-  MARK_AS_ADVANCED(LIBHIREDIS_INCLUDE_DIR LIBHIREDIS_LIBRARY)
+  MARK_AS_ADVANCED(HIREDIS_INCLUDE_DIR HIREDIS_LIBRARY)
 ENDIF()
 

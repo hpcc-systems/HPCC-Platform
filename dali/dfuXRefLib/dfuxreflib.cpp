@@ -165,7 +165,7 @@ class CFileEntryMap : public SuperHashTableOf<CFileEntry, const char>
 public:
     ~CFileEntryMap()
     {
-        releaseAll();
+        _releaseAll();
     }
     virtual void onAdd(void *e) 
     { 
@@ -359,7 +359,7 @@ class CEndpointTable: public SuperHashTableOf<CEndpointItem,SocketEndpoint>
 public:
     ~CEndpointTable()
     {
-        releaseAll();
+        _releaseAll();
     }
 
     void onAdd(void *)

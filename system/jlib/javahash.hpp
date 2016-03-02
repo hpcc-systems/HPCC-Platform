@@ -60,7 +60,7 @@ private:
   public:
     JavaHashTableOf(bool _keep = true)
         : SuperHashTableOf<ELEMENT, ELEMENT>(), keep(_keep) {}
-    ~JavaHashTableOf() { _SELF::releaseAll(); }
+    ~JavaHashTableOf() { _SELF::_releaseAll(); }
 
     IMPLEMENT_IINTERFACE
 

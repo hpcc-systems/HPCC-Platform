@@ -19,10 +19,13 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
-    "dojox/xml/parser"
+    "dojox/xml/parser",
+
+    "hpcc/Utility"
 
 ], function (declare, arrayUtil, i18n, nlsHPCC,
-    parser) {
+    parser,
+    Utility) {
 
     var i18n = nlsHPCC;
 
@@ -494,12 +497,17 @@ define([
                             case "att":
                                 var name = childNode.getAttribute("name");
                                 var value = childNode.getAttribute("value");
-                                retVal[name] = value;
+                                if (name.indexOf("Time") === 0) {
+                                    retVal["_" + name] = value;
+                                    retVal[name] = "" + Utility.espTime2Seconds(value);
+                                } else {
+                                    retVal[name] = value;
+                                }
                                 break;
                             case "edge":
                                 var edge = this.walkDocument(childNode, childNode.getAttribute("id"));
-                                if (edge.count) {
-                                    edge._eclwatchCount = edge.count.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                                if (edge.NumRowsProcessed) {
+                                    edge._eclwatchCount = edge.NumRowsProcessed.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                                 }
                                 if (edge.inputProgress) {
                                     edge._eclwatchInputProgress = "[" + edge.inputProgress.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "]";
