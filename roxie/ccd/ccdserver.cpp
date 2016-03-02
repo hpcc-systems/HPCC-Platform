@@ -40,6 +40,8 @@
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
 
+#include <algorithm>
+
 #include "dafdesc.hpp"
 #include "dautils.hpp"
 #include "ftbase.ipp"
