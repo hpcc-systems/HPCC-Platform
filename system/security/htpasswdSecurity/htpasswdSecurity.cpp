@@ -117,7 +117,7 @@ protected:
 
     const char * getDescription()
     {
-        return "HTPASSWD";
+        return "HTPASSWD Security Manager";
     }
 
     bool authorize(ISecUser & user, ISecResourceList * resources)
