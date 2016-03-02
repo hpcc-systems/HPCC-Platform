@@ -130,6 +130,11 @@ define([
                                         severity = "Info";
                                     }
                                     break;
+                                case "WsWorkunits.WUCDebug":
+                                    if (response.Exceptions.Exception[0].Code === -10) {
+                                        severity = "Info";
+                                    }
+                                    break;
                                 case "FileSpray.GetDFUWorkunit":
                                     if (response.Exceptions.Exception[0].Code === 20080) {
                                         severity = "Info";

@@ -590,9 +590,9 @@ define([
                 { label: this.i18n.Label, field: "label", width: 150 }
             ];
             if (this.isWorkunit()) {
-                this.verticesStore.appendColumns(columns, ["name"], ["ecl", "definition"]);
+                this.verticesStore.appendColumns(columns, ["name"], ["ecl", "definition"], null, true);
             } else if (this.isQuery()) {
-                this.verticesStore.appendColumns(columns, ["localTime", "totalTime", "label", "ecl"], ["definition"]);
+                this.verticesStore.appendColumns(columns, ["localTime", "totalTime", "label", "ecl"], ["definition"], null, true);
             }
             this.verticesGrid.set("columns", columns);
             this.verticesGrid.refresh();
