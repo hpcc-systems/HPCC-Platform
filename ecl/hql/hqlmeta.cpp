@@ -48,6 +48,8 @@ static IHqlExpression * cacheMatchGroupOrderSortlist;
 static IHqlExpression * cached_omitted_Attribute;
 static IHqlExpression * cacheAnyAttribute;
 static IHqlExpression * cacheAnyOrderSortlist;
+static IHqlExpression * cacheOrderedAttribute;
+static IHqlExpression * cacheUnorderedAttribute;
 static CHqlMetaProperty * nullMetaProperty;
 static CHqlMetaProperty * nullGroupedMetaProperty;
 
@@ -64,6 +66,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     cacheIndeterminateSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheIndeterminateAttribute));
     cacheMatchGroupOrderSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheGroupedElement));
     cacheAnyOrderSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheAnyAttribute));
+    cacheOrderedAttribute = createExprAttribute(_ordered_Atom);
+    cacheUnorderedAttribute = createExprAttribute(_ordered_Atom, createConstant(false));
     nullMetaProperty = new CHqlMetaProperty;
     nullGroupedMetaProperty = new CHqlMetaProperty;
     nullGroupedMetaProperty->meta.setUnknownGrouping();
@@ -73,6 +77,8 @@ MODULE_EXIT()
 {
     nullGroupedMetaProperty->Release();
     nullMetaProperty->Release();
+    cacheUnorderedAttribute->Release();
+    cacheOrderedAttribute->Release();
     cached_omitted_Attribute->Release();
     cacheAnyOrderSortlist->Release();
     cacheMatchGroupOrderSortlist->Release();
@@ -282,6 +288,14 @@ bool CHqlMetaInfo::appearsToBeSorted(bool isLocal, bool ignoreGrouping)
     if (!ignoreGrouping && grouping)
         return groupSortOrder != NULL;
     return globalSortOrder != NULL;
+}
+
+void CHqlMetaInfo::applyUnordered()
+{
+    if (!grouping)
+        groupSortOrder.clear();
+    else
+        removeAllSortOrders();
 }
 
 void CHqlMetaInfo::clearGrouping()
@@ -1890,6 +1904,24 @@ IHqlExpression * preserveTableInfo(IHqlExpression * newTable, IHqlExpression * o
 
 //---------------------------------------------------------------------------------------------------------------------
 
+bool hasOrderedAttribute(IHqlExpression * expr)
+{
+    return expr->hasAttribute(orderedAtom) || expr->hasAttribute(_ordered_Atom);
+}
+
+bool isOrdered(IHqlExpression * expr)
+{
+    //If no ordered or _ordered_ attributes are present, assume the order of an activity's output is significant.
+    if (expr->hasAttribute(orderedAtom))
+        return getBoolAttribute(expr, orderedAtom, true);
+    return getBoolAttribute(expr, _ordered_Atom, true);
+}
+
+IHqlExpression * getOrderedAttribute(bool value)
+{
+    return value ? LINK(cacheOrderedAttribute) : LINK(cacheUnorderedAttribute);
+}
+
 static void getMetaIntersection(CHqlMetaInfo & meta, IHqlExpression * other)
 {
     CHqlMetaProperty * otherMetaProp = queryMetaProperty(other);
@@ -2221,9 +2253,9 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
                 meta.set(parentMeta);
                 if (!createDefaultLeft)
                 {
-                    bool preservesOrder = !expr->queryAttribute(unorderedAtom);
+                    bool preservesOrder = getBoolAttribute(expr, orderedAtom, true);
                     if (isKeyedJoin)
-                        preservesOrder = expr->queryAttribute(_ordered_Atom) != NULL;
+                        preservesOrder = getBoolAttribute(expr, _ordered_Atom, false);
                     if (!preservesOrder)
                         meta.removeAllSortOrders();
 
@@ -2276,7 +2308,7 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
                     mapper.setMapping(transform, leftSelect);
 
                     meta.set(ungroupedMeta);
-                    if (expr->hasAttribute(unorderedAtom))
+                    if (!getBoolAttribute(expr, orderedAtom, true))
                         meta.removeAllSortOrders();
                     meta.applyProject(mapper);
                 }
@@ -2383,6 +2415,12 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
                 else
                     meta.applyDistribute(mappedDistributeInfo, NULL);
             }
+            break;
+        }
+    case no_unordered:
+        {
+            extractMeta(meta, dataset);
+            meta.applyUnordered();
             break;
         }
     case no_preservemeta:
@@ -2870,6 +2908,9 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
         break;
     }
 
+    if (!isOrdered(expr))
+        meta.applyUnordered();
+
     assertex(isGrouped(expr) == (meta.grouping != NULL));
 #ifdef _DEBUG
     assertex(!meta.grouping || meta.grouping->getOperator() == no_sortlist);
@@ -3309,6 +3350,7 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
         break;
     case no_distribute:
     case no_distributed:
+    case no_unordered:
     case no_assertdistributed:
         newRecordType.set(recordType);
         break;

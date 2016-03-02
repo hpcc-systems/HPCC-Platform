@@ -67,8 +67,8 @@ end;
 
 
 initial := dataset([], rec);
-results := LOOP(initial, 4, processLoop(rows(left), counter), parallel([2,2]));
+results := LOOP(initial, 4, processLoop(rows(left), counter), parallel(2));
 output(results);
 
-results2 := LOOP(initial, 4, (left.id1 > counter), processLoop(rows(left), counter), parallel([2],2));
+results2 := LOOP(initial, 4, (left.id1 > counter), processLoop(rows(left), counter), parallel(2));
 output(results2);

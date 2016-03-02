@@ -638,7 +638,7 @@ define([
                 },
                 { label: this.i18n.Label, field: "label", width: 150 }
             ];
-            this.verticesStore.appendColumns(columns, ["name"], ["ecl", "definition"]);
+            this.verticesStore.appendColumns(columns, ["name"], ["ecl", "definition"], null, true);
             this.verticesGrid.set("columns", columns);
             this.verticesGrid.refresh();
             this.widget.ActivitiesTreeMap.setActivities(vertices);
@@ -723,6 +723,16 @@ define([
             propertiesDom.innerHTML = "";
             for (var i = 0; i < selectedGlobalIDs.length; ++i) {
                 this.global.displayProperties(selectedGlobalIDs[i], propertiesDom);
+            }
+            var context = this;
+            if (selectedGlobalIDs.length) {
+                selectedGlobalIDs.filter(function (id) {
+                    return id && id.indexOf && id.indexOf("_") >= 0;
+                }).forEach(function (id) {
+                    WsWorkunits.WUCDebug(context.params.Wuid, "<debug:print edgeId='" + selectedGlobalIDs[0] + "'/>").then(function (response) {
+                        console.log(JSON.stringify(response));
+                    });
+                });
             }
             this.inSyncSelectionFrom = false;
         }, 500, false),

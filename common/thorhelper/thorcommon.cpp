@@ -61,7 +61,7 @@ void RowAggregator::reset()
         if (n)
             n->Release();
     }
-    SuperHashTable::releaseAll();
+    SuperHashTable::_releaseAll();
     eof = false;
     cursor = NULL;
     rowAllocator.clear();

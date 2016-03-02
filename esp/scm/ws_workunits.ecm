@@ -1021,6 +1021,7 @@ ESPrequest WUSyntaxCheckRequest
 ESPresponse [exceptions_inline] WUSyntaxCheckResponse
 {
     ESParray<ESPstruct ECLException> Errors;
+    [min_ver("1.57")] string Message;
 };
 
 

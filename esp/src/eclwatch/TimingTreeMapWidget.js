@@ -29,7 +29,6 @@ define([
     "dojox/treemap/TreeMap",
 
     "hpcc/_Widget",
-    "hpcc/Utility",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
@@ -37,7 +36,7 @@ define([
     function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, dom, domClass, domStyle,
             registry, 
             TreeMap,
-            _Widget, Utility, ESPWorkunit,
+            _Widget, ESPWorkunit,
             template) {
         return declare("TimingTreeMapWidget", [_Widget], {
             templateString: template,
@@ -176,7 +175,7 @@ define([
                             __hpcc_id: activity._globalID,
                             ActivityID: activity._globalID,
                             Name: activity.label,
-                            Seconds: Utility.espTime2Seconds(activity.TimeMaxLocalExecute)
+                            Seconds: activity.TimeMaxLocalExecute
                         };
                     }));
                 }, 20);

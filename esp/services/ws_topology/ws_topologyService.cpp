@@ -1282,7 +1282,7 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
             m_TpWrapper.getTpEclServers( ServiceList.getTpEclServers() );
             m_TpWrapper.getTpEclCCServers( ServiceList.getTpEclCCServers() );
             m_TpWrapper.getTpEclAgents( ServiceList.getTpEclAgents() );
-            m_TpWrapper.getTpEspServers( ServiceList.getTpEspServers() );   
+            m_TpWrapper.getTpEspServers( ServiceList.getTpEspServers() );
             m_TpWrapper.getTpDfuServers( ServiceList.getTpDfuServers() );   
             m_TpWrapper.getTpSashaServers( ServiceList.getTpSashaServers() );   
             m_TpWrapper.getTpGenesisServers( ServiceList.getTpGenesisServers() );

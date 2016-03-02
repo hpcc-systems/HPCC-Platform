@@ -76,7 +76,7 @@ class HQLCPP_API AssociationCache : public SuperHashTableOf<HqlExprAssociation, 
 {
 public:
     AssociationCache() {}
-    ~AssociationCache() { releaseAll(); }
+    ~AssociationCache() { _releaseAll(); }
 
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(HqlExprAssociation, IHqlExpression);
 

@@ -1124,10 +1124,31 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str()));
         WsWUExceptions errors(*cw);
         resp.setErrors(errors);
+
+        StringBuffer msg;
+        WUState st = cw->getState();
         cw.clear();
 
-        if (!factory->deleteWorkUnit(wuid.str()))
-            throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "%s: Workunit cannot be deleted. Please check ESP log.", wuid.str());
+        switch (st)
+        {
+        case WUStateAborted:
+        case WUStateCompleted:
+        case WUStateFailed:
+            if (!factory->deleteWorkUnit(wuid.str()))
+                throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "Workunit %s cannot be deleted.", wuid.str());
+            break;
+        default:
+            secAbortWorkUnit(wuid.str(), *context.querySecManager(), *context.queryUser());
+            if (!factory->deleteWorkUnit(wuid.str()))
+            {
+                throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT,
+                    "WUSyntaxCheckECL has timed out. Workunit %s cannot be deleted now. You may delete it when its status changes.", wuid.str());
+            }
+            if (context.getClientVersion() < 1.57)
+                throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "WUSyntaxCheckECL has timed out.");
+            resp.setMessage("WUSyntaxCheckECL has timed out.");
+            break;
+        }
     }
     catch(IException* e)
     {

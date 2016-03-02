@@ -100,7 +100,7 @@ StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *co
 {
     if (format)
         res.valist_appendf(format, args).append(" - ");
-    res.appendf("activity(%s, %" ACTPF "d)",activityKindStr(container->getKind()), container->queryId());
+    res.appendf("activity(ch=%d, %s, %" ACTPF "d)", container->queryOwner().queryJobChannelNumber(), activityKindStr(container->getKind()), container->queryId());
     if (0 != (flags & thorlog_ecl))
     {
         StringBuffer ecltext;
@@ -225,7 +225,7 @@ protected:
     unsigned slave;
     MemoryBuffer data; // extra exception specific data
     unsigned line, column;
-    StringAttr file, origin;
+    StringAttr file, origin, graphName;
     ErrorSeverity severity;
     Linked<IException> originalException;
 public:
@@ -236,6 +236,7 @@ public:
     {
         mb.read((unsigned &)action);
         mb.read(jobId);
+        mb.read(graphName);
         mb.read(graphId);
         mb.read((unsigned &)kind);
         mb.read(id);
@@ -264,6 +265,7 @@ public:
     virtual ThorExceptionAction queryAction() const { return action; }
     virtual ThorActivityKind queryActivityKind() const { return kind; }
     virtual activity_id queryActivityId() const { return id; }
+    virtual const char *queryGraphName() const { return graphName; }
     virtual graph_id queryGraphId() const { return graphId; }
     virtual const char *queryJobId() const { return jobId; }
     virtual unsigned querySlave() const { return slave; }
@@ -275,7 +277,7 @@ public:
     virtual IException *queryOriginalException() const { return originalException; }
     virtual void setActivityId(activity_id _id) { id = _id; }
     virtual void setActivityKind(ThorActivityKind _kind) { kind = _kind; }
-    virtual void setGraphId(graph_id _graphId) { graphId = _graphId; }
+    virtual void setGraphInfo(const char *_graphName, graph_id _graphId) { graphName.set(_graphName); graphId = _graphId; }
     virtual void setJobId(const char *_jobId) { jobId.set(_jobId); }
     virtual void setAction(ThorExceptionAction _action) { action = _action; }
     virtual void setAudience(MessageAudience _audience) { audience = _audience; }
@@ -293,7 +295,7 @@ public:
         if (!origin.length() || 0 != stricmp("user", origin.get())) // don't report slave in user message
         {
             if (graphId)
-                str.append("Graph[").append(graphId).append("], ");
+                str.append("Graph ").append(graphName).append("[").append(graphId).append("], ");
             if (kind)
                 str.append(activityKindStr(kind));
             if (id)
@@ -385,7 +387,7 @@ void setExceptionActivityInfo(CGraphElementBase &container, IThorException *e)
 {
     e->setActivityKind(container.getKind());
     e->setActivityId(container.queryId());
-    e->setGraphId(container.queryOwner().queryGraphId());
+    e->setGraphInfo(container.queryJob().queryGraphName(), container.queryOwner().queryGraphId());
 }
 
 IThorException *_MakeActivityException(CGraphElementBase &container, int code, const char *format, va_list args) __attribute__((format(printf,3,0)));
@@ -535,9 +537,17 @@ IThorException *MakeGraphException(CGraphBase *graph, int code, const char *form
     va_list args;
     va_start(args, format);
     IThorException *e = _MakeThorException(MSGAUD_user, code, format, args);
-    e->setGraphId(graph->queryGraphId());
+    e->setGraphInfo(graph->queryJob().queryGraphName(), graph->queryGraphId());
     va_end(args);
     return e;
+}
+
+IThorException *MakeGraphException(CGraphBase *graph, IException *e)
+{
+    StringBuffer msg;
+    IThorException *e2 = new CThorException(MSGAUD_user, e->errorCode(), e->errorMessage(msg).str());
+    e2->setGraphInfo(graph->queryJob().queryGraphName(), graph->queryGraphId());
+    return e2;
 }
 
 #if 0
@@ -833,9 +843,9 @@ void setClusterGroup(INode *_masterNode, IGroup *_rawGroup, unsigned slavesPerNo
     IArrayOf<INode> clusterGroupNodes, nodeGroupNodes;
     clusterGroupNodes.append(*LINK(masterNode));
     nodeGroupNodes.append(*LINK(masterNode));
-    for (unsigned p=0; p<slavesPerNode; p++)
+    for (unsigned s=0; s<channelsPerSlave; s++)
     {
-        for (unsigned s=0; s<channelsPerSlave; s++)
+        for (unsigned p=0; p<slavesPerNode; p++)
         {
             for (unsigned n=0; n<rawGroup->ordinality(); n++)
             {
@@ -913,6 +923,7 @@ void serializeThorException(IException *e, MemoryBuffer &out)
     out.append(1);
     out.append((unsigned)te->queryAction());
     out.append(te->queryJobId());
+    out.append(te->queryGraphName());
     out.append(te->queryGraphId());
     out.append((unsigned)te->queryActivityKind());
     out.append(te->queryActivityId());

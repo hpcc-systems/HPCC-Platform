@@ -238,6 +238,14 @@
                                 </xs:restriction>
                             </xs:simpleType>
                         </xs:attribute>
+                        <xs:attribute name="type" type="securityManagerType" use="optional">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>The Security Manager to be used by the Esp Service</tooltip>
+                                    <title>securityMgrPlugin</title>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="Authentication">
@@ -311,32 +319,6 @@
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>In this time period, ESP displays a warning about password expiration.</tooltip>
-                                </xs:appinfo>
-                            </xs:annotation>
-                        </xs:attribute>
-                    </xs:complexType>
-                </xs:element>
-                <xs:element name="SecurityManager">
-                    <xs:complexType>
-                        <xs:attribute name="type" type="securityManagerType" use="optional">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <tooltip>The Security Manager to be used by the ESP</tooltip>
-                                    <title>secMgrInstanceName</title>
-                                </xs:appinfo>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="libName" type="xs:string" use="optional">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <tooltip>The Security Manager library name (.so)</tooltip>
-                                </xs:appinfo>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="instanceFactoryName" type="xs:string" use="optional" default="createInstance">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <tooltip>The factory method name in the Security Mangager library (.so)</tooltip>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
