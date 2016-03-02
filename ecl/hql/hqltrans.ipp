@@ -316,10 +316,6 @@ public:
 
     inline void setUnvisited() { lastPass = (byte)-1; }
 
-#ifdef _USE_TBB
-    void *operator new(size32_t size) { return scalable_malloc(size); }
-    void operator delete(void *ptr) { return scalable_free(ptr); }
-#endif
 
 #ifdef OPTIMIZE_TRANSFORM_ALLOCATOR
     void *operator new(size32_t size, void * ptr) { return ptr; }                                                   
