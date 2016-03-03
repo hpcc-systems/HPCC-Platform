@@ -1503,7 +1503,7 @@ public:
         bool ok = true;
 #else
         bool ok = true;
-        if (ldapconn->getLDAPflags() & DLF_ENABLED)
+        if (ldapconn && ldapconn->getLDAPflags() & DLF_ENABLED)
             ok = ldapconn->clearPermissionsCache(udesc);
 #endif
         return ok;
