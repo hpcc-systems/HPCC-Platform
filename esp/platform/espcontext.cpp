@@ -67,6 +67,7 @@ private:
     SecHandler m_SecurityHandler;
     BoolHash  m_optGroups;
 
+    StringArray extraTraceValues;
     StringArray m_traceValues;
     unsigned    m_active;
     unsigned    m_creationTime;
@@ -408,6 +409,17 @@ public:
         m_custom_headers.append(StringBuffer(name).appendf(": %s", val?val:"").str());
     }
 
+    virtual void addExtraTraceSummaryValue(const char *name, const char *value)
+    {
+        StringBuffer str;
+        if (name && *name)
+            str.append(name).append('=');
+        if (value && *value)
+            str.append(value);
+        if (!str.isEmpty())
+            extraTraceValues.append(str.str());
+    }
+
     virtual void addTraceSummaryValue(const char *name, const char *value)
     {
         StringBuffer str;
@@ -468,6 +480,9 @@ public:
         {
             logstr.appendf("%s;", value.str());
         }
+        ForEachItemIn(idx, extraTraceValues)
+            logstr.append(extraTraceValues.item(idx)).append(";");
+        extraTraceValues.kill();
 
         DBGLOG("TxSummary[%s]", logstr.str());
     }

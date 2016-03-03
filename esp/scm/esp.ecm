@@ -144,6 +144,7 @@ interface IEspContext : extends IInterface
     virtual StringArray& queryCustomHeaders() = 0;
     virtual void addCustomerHeader(const char* name, const char* val) = 0;
 
+    virtual void addExtraTraceSummaryValue(const char *name, const char *value)=0;
     virtual void addTraceSummaryValue(const char *name, const char *value)=0;
     virtual void addTraceSummaryValue(const char *name, __int64 value)=0;
     virtual void addTraceSummaryTimeStamp(const char *name)=0;

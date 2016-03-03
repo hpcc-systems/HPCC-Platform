@@ -81,7 +81,6 @@ bool LogicFileWrapper::doDeleteFile(const char* logicalName,const char *cluster,
 
         fdir.removeEntry(cname.str(), udesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
         returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", cname.str());
-        DBGLOG("%s", returnStr.str());
         return true;
     }
     catch (IException *e)

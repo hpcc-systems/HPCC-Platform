@@ -37,6 +37,7 @@ private:
     Owned<IEspSoapBinding> m_soapbinding;
     IEspContainer* m_container;
 
+    void addMessageToTraceSummary(IEspContext* ctx, CSoapValue* soapValue, const char* parent);
 public:
     IMPLEMENT_IINTERFACE;
 
