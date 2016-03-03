@@ -18,5 +18,6 @@
 #define RESERVEDWORDS_HPP
 
 void printKeywordsToXml();
+bool searchReservedWords(const char * tokenText);
 
 #endif

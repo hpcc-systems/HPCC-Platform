@@ -26,8 +26,6 @@
 project( eclcc ) 
 
 set (    SRCS
-         reservedwords.hpp
-         reservedwords.cpp
          eclcc.hpp
          eclcc.cpp
     )
