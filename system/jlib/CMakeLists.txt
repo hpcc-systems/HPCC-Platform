@@ -55,6 +55,7 @@ set (    SRCS
          jkeyboard.cpp 
          jlib.cpp 
          jlog.cpp 
+         jlz4.cpp
          jlzma.cpp 
          jlzw.cpp 
          jmalloc.cpp 
@@ -99,6 +100,7 @@ set (    INCLUDES
         jencrypt.hpp
         jerror.hpp
         jexcept.hpp
+        jfcmp.hpp
         jfile.hpp
         jfile.ipp
         jflz.hpp
@@ -118,6 +120,7 @@ set (    INCLUDES
         jliball.hpp
         jlog.hpp
         jlog.ipp
+        jlz4.hpp
         jlzma.hpp
         jlzw.hpp
         jlzw.ipp
@@ -172,6 +175,7 @@ include_directories (
          ../../system/win32 
          ../../system/include 
          ../../system/lzma
+         ../../system/lz4_sm/lz4/lib
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
@@ -183,6 +187,7 @@ HPCC_ADD_LIBRARY( jlib SHARED ${SRCS} ${INCLUDES} )
 
 target_link_libraries ( jlib
         lzma
+        lz4
        )
 
 if ( ${USE_TBB} )

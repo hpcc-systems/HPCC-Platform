@@ -163,8 +163,9 @@ class CSpillableStreamBase : public CSimpleInterface, implements roxiemem::IBuff
 protected:
     CActivityBase &activity;
     IRowInterfaces *rowIf;
-    bool preserveNulls, ownsRows, useCompression;
+    bool preserveNulls, ownsRows;
     unsigned spillPriority;
+    unsigned spillCompInfo;
     CThorSpillableRowArray rows;
     OwnedIFile spillFile;
     bool mmRegistered;
@@ -182,7 +183,7 @@ protected:
         spillFile.setown(createIFile(tempName.str()));
 
         VStringBuffer spillPrefixStr("SpillableStream(%d)", SPILL_PRIORITY_SPILLABLE_STREAM); // const for now
-        rows.save(*spillFile, useCompression, false, spillPrefixStr.str()); // saves committed rows
+        rows.save(*spillFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
         return true;
     }
@@ -210,9 +211,9 @@ public:
     {
         assertex(inRows.isFlushed());
         rows.swap(inRows);
-        useCompression = false;
         mmRegistered = false;
         ownsRows = false;
+        spillCompInfo = 0x0;
     }
     ~CSpillableStreamBase()
     {
@@ -356,10 +357,10 @@ class CSpillableStream : public CSpillableStreamBase, implements IRowStream
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSpillableStream(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority, bool _compressSpills)
+    CSpillableStream(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority, unsigned _spillCompInfo)
         : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls, _spillPriority)
     {
-        useCompression = _compressSpills;
+        spillCompInfo = _spillCompInfo;
         pos = numReadRows = 0;
         granularity = 500; // JCSMORE - rows
 
@@ -386,10 +387,13 @@ public:
             {
                 block.clearCB = true;
                 unsigned rwFlags = DEFAULT_RWFLAGS;
+                if (spillCompInfo)
+                {
+                    rwFlags |= rw_compress;
+                    rwFlags |= spillCompInfo;
+                }
                 if (preserveNulls)
                     rwFlags |= rw_grouped;
-                if (useCompression)
-                    rwFlags |= rw_compress;
                 spillStream.setown(createRowStream(spillFile, rowIf, rwFlags));
                 return spillStream->nextRow();
             }
@@ -1277,19 +1281,22 @@ static int callbackSortRev(IInterface * const *cb2, IInterface * const *cb1)
     return 1;
 }
 
-rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, bool skipNulls, const char *tracingPrefix)
+rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, bool skipNulls, const char *tracingPrefix)
 {
     rowidx_t n = numCommitted();
     if (0 == n)
         return 0;
     ActPrintLog(&activity, "%s: CThorSpillableRowArray::save %" RIPF "d rows", tracingPrefix, n);
 
-    if (useCompression)
+    if (_spillCompInfo)
         assertex(0 == writeCallbacks.ordinality()); // incompatible
 
     unsigned rwFlags = DEFAULT_RWFLAGS;
-    if (useCompression)
+    if (_spillCompInfo)
+    {
         rwFlags |= rw_compress;
+        rwFlags |= _spillCompInfo;
+    }
     if (allowNulls)
         rwFlags |= rw_grouped;
 
@@ -1461,10 +1468,10 @@ void CThorSpillableRowArray::transferRowsCopy(const void **outRows, bool takeOwn
     }
 }
 
-IRowStream *CThorSpillableRowArray::createRowStream(unsigned spillPriority, bool compressSpills)
+IRowStream *CThorSpillableRowArray::createRowStream(unsigned spillPriority, unsigned spillCompInfo)
 {
     assertex(rowIf);
-    return new CSpillableStream(activity, *this, rowIf, allowNulls, spillPriority, compressSpills);
+    return new CSpillableStream(activity, *this, rowIf, allowNulls, spillPriority, spillCompInfo);
 }
 
 
@@ -1491,7 +1498,7 @@ protected:
     bool mmRegistered;
     Owned<CSharedSpillableRowSet> spillableRowSet;
     unsigned options;
-    bool compressSpills;
+    unsigned spillCompInfo;
     __uint64 spillCycles;
     __uint64 sortCycles;
 
@@ -1518,7 +1525,7 @@ protected:
         GetTempName(tempName, tempPrefix.str(), true);
         Owned<IFile> iFile = createIFile(tempName.str());
         VStringBuffer spillPrefixStr("RowCollector(%d)", spillPriority);
-        spillableRows.save(*iFile, compressSpills, false, spillPrefixStr.str()); // saves committed rows
+        spillableRows.save(*iFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
         spillFiles.append(new CFileOwner(iFile.getLink()));
         ++overflowCount;
         sizeSpill += iFile->size();
@@ -1598,8 +1605,11 @@ protected:
         // NB: CStreamFileOwner links CFileOwner - last usage will auto delete file
         // which may be one of these streams or CThorRowCollectorBase itself
         unsigned rwFlags = DEFAULT_RWFLAGS;
-        if (compressSpills)
+        if (spillCompInfo)
+        {
             rwFlags |= rw_compress;
+            rwFlags |= spillCompInfo;
+        }
         if (preserveGrouping)
             rwFlags |= rw_grouped;
         IArrayOf<IRowStream> instrms;
@@ -1641,7 +1651,7 @@ protected:
                     return NULL;
                 }
                 if (!shared)
-                    instrms.append(*spillableRows.createRowStream(spillPriority, compressSpills)); // NB: stream will take ownership of rows in spillableRows
+                    instrms.append(*spillableRows.createRowStream(spillPriority, spillCompInfo)); // NB: stream will take ownership of rows in spillableRows
                 else
                 {
                     spillableRowSet.setown(new CSharedSpillableRowSet(activity, spillableRows, rowIf, preserveGrouping, spillPriority));
@@ -1710,7 +1720,12 @@ public:
         maxCores = activity.queryMaxCores();
         options = 0;
         spillableRows.setup(rowIf, false, stableSort);
-        compressSpills = activity.getOptBool(THOROPT_COMPRESS_SPILLS, true);
+        if (activity.getOptBool(THOROPT_COMPRESS_SPILLS, true))
+        {
+            StringBuffer compType;
+            activity.getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+            setCompFlag(compType, spillCompInfo);
+        }
         spillCycles = 0;
         sortCycles = 0;
     }

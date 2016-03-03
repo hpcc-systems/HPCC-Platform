@@ -352,6 +352,8 @@ void CDiskWriteSlaveActivityBase::open()
         twFlags |= TW_RenameToPrimary;
     if (extend||(external&&!query))
         twFlags |= TW_Extend;
+    if (diskHelperBase->getFlags() & TDXtemporary)
+        twFlags |= TW_Temporary;
 
     {
         CriticalBlock block(statsCs);
@@ -360,7 +362,7 @@ void CDiskWriteSlaveActivityBase::open()
 
     if (compress)
     {
-        ActPrintLog("Performing row compression on output file: %s", fName.get());
+        ActPrintLog("Performing compression on output file: %s", fName.get());
         // NB: block compressed output has implicit crc of 0, no need to calculate in row  writer.
         calcFileCrc = false;
     }
