@@ -17,15 +17,15 @@
 
 #pragma warning( disable : 4786 )
 
-#include "defaultsecuritymanager.hpp"
+#include "basesecurity.hpp"
 #include "authmap.ipp"
 #include <apr_md5.h>
 #include "htpasswdSecurity.hpp"
 
-class CHtpasswdSecurityManager : public CDefaultSecurityManager
+class CHtpasswdSecurityManager : public CBaseSecurityManager
 {
 public:
-	CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *authconfig) : CDefaultSecurityManager(serviceName, (IPropertyTree *)NULL)
+    CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *authconfig) : CBaseSecurityManager(serviceName, (IPropertyTree *)NULL)
 	{
 		if (authconfig)
 			authconfig->getProp("@htpasswdFile", pwFile);
@@ -80,6 +80,7 @@ public:
 					unsigned requiredaccess = str2perm(required.str());
 					rs->setRequiredAccessFlags(requiredaccess);
 					rs->setDescription(description.str());
+                    rs->setAccessFlags(SecAccess_Full);//grant full access to authenticated users
 				}
 				loc_iter->next();
 			}
@@ -90,6 +91,7 @@ public:
 
 protected:
 
+    //ISecManager
 	bool IsPasswordValid(ISecUser& sec_user)
 	{
 		StringBuffer user;
@@ -112,6 +114,41 @@ protected:
 		DBGLOG("User %s not in htpasswd file", user.str());
 		return false;
 	}
+
+    const char * getDescription()
+    {
+        return "HTPASSWD Security Manager";
+    }
+
+    bool authorize(ISecUser & user, ISecResourceList * resources)
+    {
+        return IsPasswordValid(user);
+    }
+
+    unsigned getPasswordExpirationWarningDays()
+    {
+        return -2;//never expires
+    }
+
+    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
+    {
+        return SecAccess_Full;//grant full access to authenticated users
+    }
+
+    int getAccessFlagsEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename)
+    {
+        return SecAccess_Full;//grant full access to authenticated users
+    }
+
+    int authorizeFileScope(ISecUser & user, const char * filescope)
+    {
+        return SecAccess_Full;//grant full access to authenticated users
+    }
+
+    int authorizeWorkunitScope(ISecUser & user, const char * filescope)
+    {
+        return SecAccess_Full;//grant full access to authenticated users
+    }
 
 private:
 

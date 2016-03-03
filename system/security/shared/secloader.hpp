@@ -92,36 +92,6 @@ public:
             else
                 throw MakeStringException(-1, "procedure newLdapSecManager of %s can't be loaded", realName.str());
         }
-        else if(stricmp(model_name, "Local") == 0)
-        {
-            realName.append(SharedObjectPrefix).append(LDAPSECLIB).append(SharedObjectExtension);
-            HINSTANCE ldapseclib = LoadSharedObject(realName.str(), true, false);
-            if(ldapseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", realName.str());
-
-            newSecManager_t_ xproc = NULL;
-            xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newLocalSecManager");
-
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newLocalSecManager of %s can't be loaded", realName.str());
-        }
-        else if(stricmp(model_name, "Default") == 0)
-        {
-            realName.append(SharedObjectPrefix).append(LDAPSECLIB).append(SharedObjectExtension);
-            HINSTANCE ldapseclib = LoadSharedObject(realName.str(), true, false);
-            if(ldapseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", realName.str());
-
-            newSecManager_t_ xproc = NULL;
-            xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newDefaultSecManager");
-
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newDefaultSecManager of %s can't be loaded", realName.str());
-        }
         else if(stricmp(model_name, "htpasswd") == 0)
         {
             realName.append(SharedObjectPrefix).append(HTPASSWDSECLIB).append(SharedObjectExtension);

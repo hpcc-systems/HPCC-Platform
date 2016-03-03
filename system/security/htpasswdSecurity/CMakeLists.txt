@@ -27,8 +27,6 @@ project( htpasswdSecurity )
 set (    SRCS
          ../shared/authmap.cpp
          ../shared/caching.cpp
-         ../shared/basesecurity.cpp
-         ../shared/defaultsecuritymanager.cpp
          ./htpasswdSecurity.cpp
     )
 
