@@ -28,4 +28,7 @@ BOOLEAN isUpper(const string mystring) := EMBED(C++ : inline)
   return true;
 ENDEMBED;
 
-IsUpper('TOM');
+OUTPUT(IsUpper('TOM'));
+
+ds := dataset(4, transform({string1 id}, SELF.id := 'aBcD'[COUNTER]));
+output(TABLE(ds, { isUpper(id) }));

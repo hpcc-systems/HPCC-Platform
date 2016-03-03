@@ -11947,7 +11947,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         else
         {
             bool isInline = bodyCode->hasAttribute(inlineAtom);
-            if (isInline)
+            if (isInline && options.spanMultipleCpp)
             {
                 BuildCtx funcctx2(*code, parentHelpersAtom);
                 buildCppFunctionDefinition(funcctx2, bodyCode, proto);
