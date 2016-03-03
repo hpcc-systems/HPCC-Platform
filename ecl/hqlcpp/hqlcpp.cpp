@@ -11679,6 +11679,8 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
     const char * separator = strstr(body, cppSeparatorText);
     if (separator)
     {
+        if (bodyCode->hasAttribute(inlineAtom))
+            throwError(HQLERR_BodyNotAllowedWithInline);
         text.setCharAt(separator-text.str(), 0);
         if (location)
             funcctx.addLine(locationFilename, startLine);
@@ -11943,7 +11945,16 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         if (languageAttr)
             buildScriptFunctionDefinition(funcctx, funcdef, proto);
         else
-            buildCppFunctionDefinition(funcctx, bodyCode, proto);
+        {
+            bool isInline = bodyCode->hasAttribute(inlineAtom);
+            if (isInline && options.spanMultipleCpp)
+            {
+                BuildCtx funcctx2(*code, parentHelpersAtom);
+                buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+            }
+            else
+                buildCppFunctionDefinition(funcctx, bodyCode, proto);
+        }
     }
     else
     {
