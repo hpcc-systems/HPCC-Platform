@@ -296,62 +296,14 @@ void MemCachedPlugin::MCached::getVoidPtrLenPair(ICodeContext * ctx, const char 
 
 MemCachedPlugin::MCached::MCached(ICodeContext * ctx, const char * _options) : connection(NULL), pool(NULL), typeMismatchCount(0)
 {
-    options.set(_options);
-
-#if (LIBMEMCACHED_VERSION_HEX<0x53000)
-    memcached_st *memc = memcached_create(NULL);
-    memcached_return_t rc;
-    memcached_server_st *servers = NULL;
-    try
-    {
-        unsigned pool_min = 1;
-        unsigned pool_max = 1;
-        StringArray optionStrings;
-        optionStrings.appendList(_options, " ");
-        ForEachItemIn(idx, optionStrings)
-        {
-            const char *opt = optionStrings.item(idx);
-            if (strncmp(opt, "--SERVER=", 9) ==0)
-            {
-                opt += 9;
-                StringArray splitPort;
-                splitPort.appendList(opt, ":");
-                unsigned port;
-                if (splitPort.ordinality()==2)
-                    port = atoi(splitPort.item(1));
-                else
-                    port = 11211;
-                servers = memcached_server_list_append(NULL, splitPort.item(0), port, &rc);
-                assertOnError(rc, "memcached_server_list_append failed - ");
-            }
-            else if (strncmp(opt, "--POOL-MIN=", 11) ==0)
-                pool_min = atoi(opt+11);
-            else if (strncmp(opt, "--POOL-MAX=", 11) ==0)
-                pool_max = atoi(opt+11);
-            else
-            {
-                VStringBuffer err("MemCachedPlugin: unsupported option string %s", opt);
-                rtlFail(0, err.str());
-            }
-        }
-        if (!servers)
-            rtlFail(0, "No servers specified");
-        rc = memcached_server_push(memc, servers);
-        memcached_server_list_free(servers);
-        assertOnError(rc, "memcached_server_push failed - ");
-        pool = memcached_pool_create(memc, pool_min, pool_max);  // takes ownership of memc
-    }
-    catch (...)
-    {
-        if (servers)
-            memcached_server_list_free(servers);
-        if (memc)
-            memcached_free(memc);
-        throw;
-    }
-#else
-    pool = memcached_pool(_options, strlen(_options));
+#if (LIBMEMCACHED_VERSION_HEX < 0x01000010)
+    StringBuffer msg("Memcached Plugin: libmemcached version '");
+    msg.append(LIBMEMCACHED_VERSION_STRING).append("' incompatible with min version>=1.0.10");
+    rtlFail(0, msg.str());
 #endif
+
+    options.set(_options);
+    pool = memcached_pool(_options, strlen(_options));
     assertPool();
 
     setPoolSettings();
@@ -363,11 +315,8 @@ MemCachedPlugin::MCached::~MCached()
 {
     if (pool)
     {
-#if (LIBMEMCACHED_VERSION_HEX<0x53000)
-        memcached_pool_push(pool, connection);
-#else
+
         memcached_pool_release(pool, connection);
-#endif
         connection = NULL;//For safety (from changing this destructor) as not implicit in either the above or below.
         memcached_st *memc = memcached_pool_destroy(pool);
         if (memc)
