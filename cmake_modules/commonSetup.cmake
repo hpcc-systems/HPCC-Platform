@@ -46,7 +46,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(PLATFORM "Enable the building/inclusion of a Platform component." ON)
   option(DEVEL "Enable the building/inclusion of a Development component." OFF)
   option(CLIENTTOOLS_ONLY "Enable the building of Client Tools only." OFF)
-  option(TEST_PLUGINS "Enable the building of platform and all plugins for testing purposes" OFF)
+  option(INCLUDE_PLUGINS "Enable the building of platform and all plugins for testing purposes" OFF)
   option(PLUGIN "Enable building of a plugin" OFF)
   option(USE_SHLIBDEPS "Enable the use of dpkg-shlibdeps on ubuntu packagin" OFF)
 
@@ -120,7 +120,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set(PLUGIN ON)
         set(CLIENTTOOLS OFF)
         set(PLATFORM OFF)
-        set(TEST_PLUGINS OFF)
+        set(INCLUDE_PLUGINS OFF)
         set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
     endif()
 
@@ -222,7 +222,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
     # Leave REMBED OFF for compliance with licensing
-    if(TEST_PLUGINS)
+    if(INCLUDE_PLUGINS)
         set(V8EMBED ON)
         set(MEMCACHED ON)
         set(PYEMBED ON)
