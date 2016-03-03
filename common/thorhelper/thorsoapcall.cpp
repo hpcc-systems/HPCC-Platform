@@ -937,7 +937,7 @@ public:
         return error.getLink();
     }
     inline IEngineRowAllocator * queryOutputAllocator() const { return outputAllocator; }
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
     ISecureSocket *createSecureSocket(ISocket *sock)
     {
         {
@@ -1778,7 +1778,7 @@ public:
                     socket.setown(blacklist->connect(connUrl.port, connUrl.host, master->logctx, (unsigned)master->maxRetries, master->timeoutMS, master->roxieAbortMonitor));
                     if (stricmp(url.method, "https") == 0)
                     {
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
                         Owned<ISecureSocket> ssock = master->createSecureSocket(socket.getClear());
                         if (ssock) 
                         {
