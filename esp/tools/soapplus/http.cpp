@@ -461,7 +461,7 @@ HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname
 
         if(stricmp(m_protocol.str(), "HTTPS") == 0)
         {
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
             if(m_ssctx.get() == NULL)
                 m_ssctx.setown(createSecureSocketContext(ClientSocket));
 #else

@@ -40,7 +40,7 @@
 #include "defvalue.hpp"
 #include "hqlexpr.hpp"
 
-#ifdef USE_TBB
+#ifdef _USE_TBB
 #include "tbb/scalable_allocator.h"
 #endif
 
@@ -163,10 +163,6 @@ public:
     friend class CHqlExprMeta;
     typedef LinkedBaseIHqlExpression Parent;
 
-#ifdef USE_TBB
-    void *operator new(size32_t size) { return scalable_malloc(size); }
-    void operator delete(void *ptr) { return scalable_free(ptr); }
-#endif
 
 protected:
     unsigned hashcode;          // CInterface is 4 byte aligned in 64bits, so use this to pad
