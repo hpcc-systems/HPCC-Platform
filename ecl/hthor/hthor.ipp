@@ -550,7 +550,7 @@ public:
     }
     virtual ~HashDedupTable()
     { 
-        _releaseAll();
+        releaseAll();
     }
     virtual void onAdd(void *et)    {}
     virtual void onRemove(void *et)

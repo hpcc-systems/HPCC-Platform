@@ -200,9 +200,6 @@ define([
         },
 
         _onCopyOk: function (event) {
-            var copyPreserveCompressionCheckbox = registry.byId(this.id + "CopyPreserveCompression");
-            var value = copyPreserveCompressionCheckbox.get("checked") ? 1 : 0;
-            
             if (this.copyForm.validate()) {
                 var context = this;
                 arrayUtil.forEach(this.copyGrid.store.data, function (item, idx) {
@@ -210,7 +207,6 @@ define([
                     var request = domForm.toObject(context.id + "CopyForm");
                     request.RenameSourceName = item.Name;
                     request.destLogicalName = item.targetCopyName;
-                    request.preserveCompression = value;
                     logicalFile.copy({
                         request: request
                     }).then(function (response) {

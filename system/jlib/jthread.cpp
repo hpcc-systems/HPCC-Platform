@@ -2421,7 +2421,6 @@ void setProcessAffinity(const char * cpuList)
         throw makeStringException(errno, "Failed to set affinity");
     DBGLOG("Process affinity set to %s", cpuList);
 #endif
-    clearAffinityCache();
 }
 
 void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char * optNodes)
@@ -2463,7 +2462,6 @@ void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char
 
     DBGLOG("Process bound to numa node %u of %u", curNode, numNumaNodes);
 #endif
-    clearAffinityCache();
 }
 
 void bindMemoryToLocalNodes()

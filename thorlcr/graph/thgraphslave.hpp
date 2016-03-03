@@ -127,7 +127,8 @@ public:
         StringBuffer s;
         if (!te || !te->queryGraphId())
         {
-            Owned<IThorException> e2 = MakeGraphException(this, e);
+            Owned<IThorException> e2 = ThorWrapException(e, "CSlaveGraph trapped");         
+            e2->setGraphId(queryGraphId());
             e2->setAudience(e->errorAudience());
             return CGraphBase::fireException(e2);
         }

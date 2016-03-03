@@ -216,7 +216,7 @@ public:
     }
     ~CSessionStateTable() { 
         CHECKEDCRITICALBLOCK(sessstatesect,60000);
-        _releaseAll();
+        releaseAll(); 
     }
     bool add(CSessionState *e) // takes ownership
     {
@@ -340,7 +340,7 @@ public:
     ~CMapProcessToSession()
     {
         CHECKEDCRITICALBLOCK(mapprocesssect,60000);
-        _releaseAll();
+        releaseAll();
     }
 
     bool add(CProcessSessionState *e) 

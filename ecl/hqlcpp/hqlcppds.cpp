@@ -2172,7 +2172,6 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
-    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -2480,7 +2479,6 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
-    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -3487,7 +3485,6 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
-    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -3950,7 +3947,6 @@ BoundRow * HqlCppTranslator::buildDatasetIterate(BuildCtx & ctx, IHqlExpression 
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
-    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -4746,7 +4742,6 @@ IHqlExpression * HqlCppTranslator::ensureIteratedRowIsLive(BuildCtx & initctx, B
         case no_stepped:
         case no_sorted:
         case no_distributed:
-        case no_unordered:
         case no_preservemeta:
         case no_choosen:
         case no_selectnth:                      // can occur as the lhs of no_select
@@ -5140,16 +5135,14 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
         }
     }
 
+    OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
     switch (expr->queryType()->getTypeCode())
     {
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-        {
-            OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
-            buildTempExpr(ctx, call, tgt);
-            break;
-        }
+        buildTempExpr(ctx, call, tgt);
+        break;
     case type_row:
         {
             OwnedHqlExpr translated = translateGetGraphResult(ctx, expr);
@@ -5157,11 +5150,8 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
             break;
         }
     default:
-        {
-            OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
-            buildExpr(ctx, call, tgt);
-            break;
-        }
+        buildExpr(ctx, call, tgt);
+        break;
     }
 }
 

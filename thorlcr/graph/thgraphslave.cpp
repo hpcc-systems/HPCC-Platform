@@ -1153,12 +1153,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 
 void CJobSlave::addChannel(IMPServer *mpServer)
 {
-    unsigned nextChannelNum = jobChannels.ordinality();
-    CJobSlaveChannel *channel = new CJobSlaveChannel(*this, mpServer, nextChannelNum);
-    jobChannels.append(*channel);
-    unsigned slaveNum = channel->queryMyRank();
-    jobChannelSlaveNumbers[nextChannelNum] = slaveNum;
-    jobSlaveChannelNum[slaveNum-1] = nextChannelNum;
+    jobChannels.append(*new CJobSlaveChannel(*this, mpServer, jobChannels.ordinality()));
 }
 
 void CJobSlave::startJob()

@@ -828,7 +828,7 @@ typedef OwningStringSuperHashTableOf<CSubscriberContainerList> CSubscriberXPathT
 class CSubscriberTable : public ThreadSafeSimpleHashTableOf<CSubscriberContainer, SubscriptionId>
 {
 public:
-    ~CSubscriberTable() { _releaseAll(); }
+    ~CSubscriberTable() { kill(); }
 
     virtual void onAdd(void *et)
     {
@@ -2360,7 +2360,7 @@ class CServerRemoteTree : public CRemoteTreeBase
     {
     public:
         COrphanHandler() : ChildMap() { }
-        ~COrphanHandler() { _releaseAll(); }
+        ~COrphanHandler() { kill(); }
         static void setOrphans(CServerRemoteTree &tree, bool tf)
         {
             if (tf)
@@ -4664,7 +4664,7 @@ void CLock::clearLastRef()
 class ConnectionIdHashTable : public SuperHashTableOf<ConnectionId, ConnectionId>
 {
 public:
-    ~ConnectionIdHashTable() { _releaseAll(); }
+    ~ConnectionIdHashTable() { kill(); }
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(ConnectionId, ConnectionId);
     virtual void onAdd(void *et) { }
     virtual void onRemove(void *et) { delete (ConnectionId *)et; }

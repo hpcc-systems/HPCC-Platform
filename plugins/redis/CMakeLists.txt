@@ -25,7 +25,7 @@
 project(redis)
 
 if(REDIS)
-    ADD_PLUGIN(redis PACKAGES HIREDIS OPTION MAKE_REDIS)
+    ADD_PLUGIN(redis PACKAGES REDIS OPTION MAKE_REDIS)
     if(MAKE_REDIS)
         set(
             SRCS
@@ -38,7 +38,7 @@ if(REDIS)
             ./../../rtl/include
             ./../../common/deftype
             ./../../system/jlib
-            ${HIREDIS_INCLUDE_DIR})
+            ${LIBHIREDIS_INCLUDE_DIR})
 
         add_definitions(-D_USRDLL -DECL_REDIS_EXPORTS)
 
@@ -57,7 +57,7 @@ if(REDIS)
             redis
             eclrtl
             jlib
-            ${HIREDIS_LIBRARY})
+            ${LIBHIREDIS_LIBRARY})
     endif()
 endif()
 

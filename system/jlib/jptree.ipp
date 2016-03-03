@@ -79,7 +79,7 @@ public:
     }
     ~ChildMap() 
     { 
-        _releaseAll();
+        kill(); 
     }
     virtual unsigned numChildren();
     virtual IPropertyTreeIterator *getIterator(bool sort);

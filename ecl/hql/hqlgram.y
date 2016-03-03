@@ -111,7 +111,6 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   ACOS
   AFTER
   AGGREGATE
-  ALGORITHM
   ALIAS
   ALL
   ALLNODES
@@ -242,6 +241,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   HAVING
   HEADING
   HINT
+  HOLE
   HTTPCALL
   HTTPHEADER
   IF
@@ -2860,7 +2860,8 @@ buildFlags
     ;
 
 buildFlag
-    : OVERWRITE         { $$.setExpr(createAttribute(overwriteAtom)); $$.setPosition($1); }
+    : PARALLEL          { $$.setExpr(createAttribute(parallelAtom)); $$.setPosition($1); }
+    | OVERWRITE         { $$.setExpr(createAttribute(overwriteAtom)); $$.setPosition($1); }
     | NOOVERWRITE       { $$.setExpr(createAttribute(noOverwriteAtom)); $$.setPosition($1); }
     | BACKUP            { $$.setExpr(createAttribute(backupAtom)); $$.setPosition($1); }
     | NAMED '(' constExpression ')'
@@ -2998,7 +2999,6 @@ optCommonAttrs
 commonAttribute
     : localAttribute
     | hintAttribute
-    | orderAttribute
     ;
 
 hintAttribute
@@ -3076,79 +3076,6 @@ hintExpr
     | UNKNOWN_ID
                         {
                             $$.setExpr(createAttribute(lower($1.getId())), $1);
-                        }
-    ;
-
-orderAttribute
-    : UNORDERED
-                        {
-                            $$.setExpr(createExprAttribute(orderedAtom, createConstant(false)), $1);
-                        }
-    | ORDERED
-                        {
-                            $$.setExpr(createExprAttribute(orderedAtom), $1);
-                        }
-    | ORDERED '(' expression ')'
-                        {
-                            parser->normalizeExpression($3, type_boolean, true);
-                            $$.setExpr(createExprAttribute(orderedAtom, $3.getExpr()), $1);
-                        }
-    | PARALLEL
-                        {
-                            $$.setExpr(createExprAttribute(parallelAtom), $1);
-                        }
-    | PARALLEL '(' expression ')'
-                        {
-                            parser->normalizeExpression($3, type_int, true);
-                            $$.setExpr(createExprAttribute(parallelAtom, $3.getExpr()), $1);
-                        }
-    | STABLE
-                        {
-                            $$.setExpr(createExprAttribute(stableAtom));
-                            $$.setPosition($1);
-                        }
-    | STABLE '(' expression ')'
-                        {
-                            parser->normalizeExpression($3, type_string, false);
-                            $$.setExpr(createExprAttribute(stableAtom, $3.getExpr()));
-                            $$.setPosition($1);
-                        }
-    | UNSTABLE
-                        {
-                            $$.setExpr(createExprAttribute(unstableAtom));
-                            $$.setPosition($1);
-                        }
-    | UNSTABLE '(' expression ')'
-                        {
-                            parser->normalizeExpression($3, type_string, false);
-                            $$.setExpr(createExprAttribute(unstableAtom, $3.getExpr()));
-                            $$.setPosition($1);
-                        }
-    | ALGORITHM '(' expression ')'
-                        {
-                            parser->normalizeExpression($3, type_string, true);
-                            $$.setExpr(createExprAttribute(algorithmAtom, $3.getExpr()), $1);
-                        }
-    ;
-
-optAppendAttrs
-    :                   { $$.setNullExpr(); }
-    | ',' commonAttribute optCommonAttrs
-                        {
-                            $$.setExpr(createComma($2.getExpr(), $3.getExpr()));
-                            $$.setPosition($3);
-                        }
-    | ',' pullAttr optCommonAttrs
-                        {
-                            $$.setExpr(createComma($2.getExpr(), $3.getExpr()));
-                            $$.setPosition($3);
-                        }
-    ;
-
-pullAttr
-    : PULL
-                        {
-                            $$.setExpr(createComma(createAttribute(pullAtom),createExprAttribute(orderedAtom)), $1);
                         }
     ;
 
@@ -3244,6 +3171,7 @@ indexFlag
                             $$.setExpr(createAttribute(dynamicAtom));
                             $$.setPosition($1);
                         }
+    | UNORDERED         {   $$.setExpr(createAttribute(unorderedAtom)); $$.setPosition($1); }
     | FILEPOSITION optConstBoolArg
                         {
                             $$.setExpr(createExprAttribute(filepositionAtom, $2.getExpr()), $1);
@@ -3443,6 +3371,12 @@ soapFlag
                         {
                             parser->normalizeExpression($3, type_int, false);
                             $$.setExpr(createExprAttribute(mergeAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | PARALLEL '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, false);
+                            $$.setExpr(createExprAttribute(parallelAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | RETRY '(' expression ')'
@@ -5206,13 +5140,6 @@ endInlineFunctionToken
     | '}'               // see above
     ;
 
-optCondList
-    :                   {
-                            $$.setExpr(NULL);
-                        }
-    | condList
-    ;
-
 condList
     : booleanExpr       {
                             parser->normalizeExpression($1, type_boolean, false);
@@ -6218,13 +6145,12 @@ primexpr1
                             parser->normalizeExpression($7, type_numeric, false);
                             $$.setExpr(createValue(no_corrgroup, makeRealType(8), $5.getExpr(), $7.getExpr(), $8.getExpr()));
                         }
-    | WHICH '(' optCondList ')'
-                        {
-                            $$.setExpr(createList(no_which, LINK(parser->uint4Type), $3.getExpr()), $1);
+    | WHICH conditions  {
+                            $$.setExpr(createList(no_which, LINK(parser->uint4Type), $2.getExpr()));
                         }
-    | REJECTED '(' optCondList ')'
+    | REJECTED conditions
                         {
-                            $$.setExpr(createList(no_rejected, LINK(parser->uint4Type), $3.getExpr()), $1);
+                            $$.setExpr(createList(no_rejected, LINK(parser->uint4Type), $2.getExpr()));
                         }
     | SIZEOF '(' sizeof_type_target optMaxMin ')'
                         {
@@ -7176,22 +7102,6 @@ globalValueAttribute
                         }
     ;
 
-dataSetOrRowList
-    : dataSetOrRow
-    | dataSetOrRowList ',' dataSetOrRow
-                        {
-                            OwnedHqlExpr lhs = $1.getExpr();
-                            OwnedHqlExpr rhs = $3.getExpr();
-                            OwnedHqlExpr normRhs = parser->checkEnsureRecordsMatch(lhs, rhs, $2.pos, rhs->isDatarow());
-                            $$.setExpr(createComma(lhs.getClear(), normRhs.getClear()), $1);
-                        }
-    ;
-
-dataSetOrRow
-    : dataSet
-    | dataRow
-    ;
-
 dataRow
     : dataSet '[' expression ']'
                         {
@@ -7813,25 +7723,25 @@ dataSet
     | dataSet '&' dataSet
                         {   parser->createAppendFiles($$, $1, $3, _ordered_Atom);   }
     | dataSet ANDAND dataSet
-                        {   parser->createAppendFiles($$, $1, $3, pullAtom);   }
+                        {   parser->createAppendFiles($$, $1, $3, _orderedPull_Atom);   }
     | dataSet '+' dataRow
                         {   parser->createAppendFiles($$, $1, $3, NULL);    }
     | dataSet '&' dataRow
                         {   parser->createAppendFiles($$, $1, $3, _ordered_Atom);   }
     | dataSet ANDAND dataRow
-                        {   parser->createAppendFiles($$, $1, $3, pullAtom);   }
+                        {   parser->createAppendFiles($$, $1, $3, _orderedPull_Atom);   }
     | dataRow '+' dataSet
                         {   parser->createAppendFiles($$, $1, $3, NULL);    }
     | dataRow '&' dataSet
                         {   parser->createAppendFiles($$, $1, $3, _ordered_Atom);   }
     | dataRow ANDAND dataSet
-                        {   parser->createAppendFiles($$, $1, $3, pullAtom);   }
+                        {   parser->createAppendFiles($$, $1, $3, _orderedPull_Atom);   }
     | dataRow '+' dataRow
                         {   parser->createAppendFiles($$, $1, $3, NULL);    }
     | dataRow '&' dataRow
                         {   parser->createAppendFiles($$, $1, $3, _ordered_Atom);   }
     | dataRow ANDAND dataRow
-                        {   parser->createAppendFiles($$, $1, $3, pullAtom);   }
+                        {   parser->createAppendFiles($$, $1, $3, _orderedPull_Atom);   }
     | dataSet '[' expression DOTDOT expression ']'
                         {
                             parser->normalizeExpression($3, type_int, false);
@@ -7868,12 +7778,6 @@ simpleDataSet
                             parser->normalizeExpression($3, type_int, false);
                             $$.setExpr(createDataset(no_rowsetindex, $1.getExpr(), $3.getExpr()));
                             $$.setPosition($1);
-                        }
-    // Prefix form of the dataset append operator.
-    // There are no equivalents to '&' and '&&' - the operator below defaults to ordered, and options can be used to change that
-    | '(' '+' ')' '(' dataSetOrRowList optAppendAttrs ')'
-                        {
-                            $$.setExpr(parser->createAppendFiles($5, $6.getExpr()), $1);
                         }
     | ALIAS '(' dataSet ')'
                         {
@@ -8599,11 +8503,11 @@ simpleDataSet
                             $$.setExpr(createDataset(no_regroup, args));
                             $$.setPosition($1);
                         }
-    | HAVING '(' startLeftRowsSeqFilter ',' condList optCommonAttrs ')' endRowsGroup endSelectorSequence
+    | HAVING '(' startLeftRowsSeqFilter ',' condList ')' endRowsGroup endSelectorSequence
                         {
                             parser->checkGrouped($3);
-                            IHqlExpression *attr = $6.getExpr();
-                            $$.setExpr(createDataset(no_filtergroup, $3.getExpr(), createComma($5.getExpr(), attr, $8.getExpr(), $9.getExpr())));
+                            IHqlExpression *attr = NULL;        // possibly local may make sense if thor supported it as a global operation, but it would be too painful.
+                            $$.setExpr(createDataset(no_filtergroup, $3.getExpr(), createComma($5.getExpr(), attr, $7.getExpr(), $8.getExpr())));
                             $$.setPosition($1);
                         }
     | KEYED '(' dataSet indexListOpt ')' endTopFilter
@@ -9416,11 +9320,11 @@ simpleDataSet
                             OwnedHqlExpr ds = $3.getExpr();
                             $$.setExpr(parser->resolveRows($1, ds), $1);
                         }
-    | XMLPROJECT '(' expression ',' transform optCommonAttrs ')'
+    | XMLPROJECT '(' expression ',' transform ')'
                         {
                             parser->normalizeExpression($3, type_string, false);
                             parser->validateXPath($3);
-                            $$.setExpr(createDatasetF(no_xmlproject, $3.getExpr(), $5.getExpr(), parser->createUniqueId(), $6.getExpr(), NULL));
+                            $$.setExpr(createDatasetF(no_xmlproject, $3.getExpr(), $5.getExpr(), parser->createUniqueId(), NULL));
                             $$.setPosition($1);
                         }
     | MAP '(' mapDatarowSpec ',' dataRow ')'
@@ -9499,10 +9403,25 @@ simpleDataSet
                             OwnedHqlExpr transform = parser->createDefaultAssignTransform(ds->queryRecord(), leftSelect, $1);
                             $$.setExpr(createDatasetF(no_quantile, ds.getClear(), $5.getExpr(), sortlist.getClear(), transform.getClear(), selSeq.getClear(), options.getClear(), NULL), $1);
                         }
-    | UNORDERED '(' startTopFilter ')' endTopFilter
+/*
+  //This may cause s/r problems with the attribute version if a dataset name clashes with a hint id
+    | HINT '(' dataSet ','  hintList ')'
                         {
-                            $$.setExpr(createDataset(no_unordered, $3.getExpr()), $1);
+                            HqlExprArray hints;
+                            $5.unwindCommaList(hints);
+                            OwnedHqlExpr hint = createExprAttribute(hintAtom, hints);
+
+                            //Add a hint attribute to the dataset
+                            OwnedHqlExpr ds = $3.getExpr();
+                            $$.setExpr(appendOwnedOperand(ds, hint.getClear()), $1);
+
+                            //An alternative implementation is to add an annotation to the dataset, but these will then get commoned
+                            //up, and generally I suspect hints should be treated as not commoned up.  Maybe there should be a flag!
+                            //The code generator also doesn't yet preserve annotations from multiple branches.
+                            //$$.setExpr(createMetaAnnotation($3.getExpr(), args), $1);
                         }
+
+*/
     ;
 
 
@@ -9710,7 +9629,20 @@ loopOptions
     ;
 
 loopOption
-    : commonAttribute
+    : PARALLEL '(' expression ')'
+                        {
+                            parser->normalizeExpression($3);    // could check more...
+                            $$.setExpr(createExprAttribute(parallelAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | PARALLEL '(' expression ',' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_set, false);
+                            parser->normalizeExpression($5, type_int, false);
+                            $$.setExpr(createExprAttribute(parallelAtom, $3.getExpr(), $5.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | commonAttribute
     ;
 
 graphOptions
@@ -9724,7 +9656,12 @@ graphOptions
     ;
 
 graphOption
-    : commonAttribute
+    : PARALLEL
+                        {
+                            $$.setExpr(createExprAttribute(parallelAtom));
+                            $$.setPosition($1);
+                        }
+    | commonAttribute
     ;
 
 remoteOptions
@@ -10559,9 +10496,19 @@ JoinFlag
                             $$.setPosition($1);
                         }
     | onFailAction
+    | PARALLEL
+                        {
+                            $$.setExpr(createAttribute(parallelAtom));
+                            $$.setPosition($1);
+                        }
     | SEQUENTIAL
                         {
                             $$.setExpr(createAttribute(sequentialAtom));
+                            $$.setPosition($1);
+                        }
+    | UNORDERED
+                        {
+                            $$.setExpr(createAttribute(unorderedAtom));
                             $$.setPosition($1);
                         }
     | GROUP '(' startSortOrder heterogeneous_expr_list ')' endSortOrder
@@ -10572,6 +10519,16 @@ JoinFlag
                             OwnedHqlExpr groupAttr = createExprAttribute(groupAtom, sortlist.getClear());
                             OwnedHqlExpr impliedAttr = createComma(createAttribute(lookupAtom), createAttribute(manyAtom));
                             $$.setExpr(createComma(groupAttr.getClear(), impliedAttr.getClear()), $1);
+                        }
+    | STABLE
+                        {
+                            $$.setExpr(createExprAttribute(stableAtom));
+                            $$.setPosition($1);
+                        }
+    | UNSTABLE
+                        {
+                            $$.setExpr(createExprAttribute(unstableAtom));
+                            $$.setPosition($1);
                         }
     | STREAMED          {   $$.setExpr(createAttribute(streamedAtom)); $$.setPosition($1); }
     ;
@@ -10851,7 +10808,12 @@ parseFlag
                             parser->normalizeExpression($3, type_numeric, false);
                             $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                         }
-    | commonAttribute
+    | PARALLEL
+                        {
+                            $$.setExpr(createAttribute(parallelAtom));
+                            $$.setPosition($1);
+                        }
+    | hintAttribute
     ;
 
 xmlParseFlags
@@ -11597,6 +11559,22 @@ sortItem
                             $$.setExpr(createExprAttribute(bestAtom, args));
                         }
     | mergeJoinFlag
+    | STABLE
+                        {
+                            $$.setExpr(createExprAttribute(stableAtom));
+                            $$.setPosition($1);
+                        }
+    | STABLE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_string, false);
+                            $$.setExpr(createExprAttribute(stableAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | UNSTABLE
+                        {
+                            $$.setExpr(createExprAttribute(unstableAtom));
+                            $$.setPosition($1);
+                        }
     | KEYED
                         {
                             $$.setExpr(createAttribute(keyedAtom));
@@ -11605,6 +11583,16 @@ sortItem
     | GROUPED
                         {
                             $$.setExpr(createAttribute(groupedAtom), $1);
+                        }
+    | UNSTABLE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_string, false);
+                            $$.setExpr(createExprAttribute(unstableAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | PARALLEL
+                        {
+                            $$.setExpr(createAttribute(parallelAtom), $1);
                         }
     | prefetchAttribute
     ;
@@ -11696,9 +11684,8 @@ rollupFlag
     ;
 
 conditions
-    : '(' condList optCommonAttrs ')'
-                        {
-                            $$.setExpr(createComma($2.getExpr(), $3.getExpr()));
+    : '(' condList ')'  {
+                            $$.setExpr($2.getExpr());
                         }
     | '(' ')'           {
                             $$.setNullExpr();

@@ -2344,7 +2344,7 @@ public:
     {
         // NOTE: This is needed to ensure that owned activities are destroyed BEFORE I am,
         // to avoid pure virtual calls when they come to call noteProcessed()
-        childGraphs.releaseAll();
+        childGraphs.kill();
     }
 
     virtual IRoxieServerContext *queryServerContext()

@@ -177,24 +177,41 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
         Owned<IPropertyTree> authcfg = bnd_cfg->getPropTree("Authenticate");
         if(authcfg != NULL)
         {
+#ifdef _DEBUG
+            StringBuffer authXml;
+            toXML(authcfg, authXml);
+            PROGLOG("\nAUTHENTICATE(%s) PROPS\n%s\n", bindname, authXml.str());
+#endif
             //Instantiate a Security Manager
             m_authtype.set(authcfg->queryProp("@type"));
             m_authmethod.set(authcfg->queryProp("@method"));
             if (!m_authmethod.isEmpty())
             {
-                Owned<IPropertyTree> secMgrCfg;
-                if(proc_cfg.get() != NULL)
-                {
-                    Owned<IPropertyTree> secMgrs;
-                    VStringBuffer sm("SecurityManagers/SecurityManager[@name='%s']", m_authmethod.str());
-                    secMgrCfg.setown(proc_cfg->getPropTree(sm.str()));
-                }
+                PROGLOG("Configuring Authenticate method=%s", m_authmethod.str());
+                Owned<IPropertyTree> process_config = getProcessConfig(tree, procname);
 
+                Owned<IPropertyTree> secMgrCfg;
+                if(process_config.get() != NULL)
+                    secMgrCfg.setown(process_config->getPropTree("SecurityManager"));//Is this a Pluggable Security Manager
                 if (secMgrCfg)
                 {
+#ifdef _DEBUG
+                    StringBuffer secMgrXml;
+                    toXML(secMgrCfg, secMgrXml);
+                    PROGLOG("\nSECURITY MANAGER(%s) PROPS\n%s\n", bindname, secMgrXml.str());
+#endif
                     //This is a Pluggable Security Manager
-                    m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, authcfg, secMgrCfg));
-                    m_authmap.setown(m_secmgr->createAuthMap(authcfg));
+                    StringBuffer secMgrType;
+                    secMgrCfg->getProp("@type", secMgrType);
+                    if (!secMgrType.isEmpty() && 0==strcmp(secMgrType.str(), m_authmethod.str()))
+                    {
+                        m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, authcfg, secMgrCfg));
+                        m_authmap.setown(m_secmgr->createAuthMap(authcfg));
+                    }
+                    else
+                    {
+                        throw MakeStringException(-1, "Authorization type %s not found in SecurityManager configuration for %s", m_authmethod.str(), bindname);
+                    }
                 }
                 else
                 {
@@ -206,8 +223,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                         Owned<IPropertyTree> lscfg = bnd_cfg->getPropTree(StringBuffer(".//ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str());
                         if(lscfg == NULL)
                         {
-                            if(proc_cfg.get() != NULL)
-                                lscfg.setown(proc_cfg->getPropTree(StringBuffer("ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str()));
+                            if(process_config.get() != NULL)
+                                lscfg.setown(process_config->getPropTree(StringBuffer("ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str()));
                             if(lscfg == NULL)
                             {
                                 ERRLOG("can't find bnd_cfg for LdapSecurity %s", lsname.str());
@@ -239,8 +256,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     else if(stricmp(m_authmethod.str(), "htpasswd") == 0)
                     {
                         Owned<IPropertyTree> cfg;
-                        if(proc_cfg.get() != NULL)
-                            cfg.setown(proc_cfg->getPropTree("htpasswdSecurity"));
+                        if(process_config.get() != NULL)
+                            cfg.setown(process_config->getPropTree("htpasswdSecurity"));
                         if(cfg == NULL)
                         {
                             ERRLOG("can't find htpasswdSecurity in configuration");

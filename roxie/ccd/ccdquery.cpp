@@ -522,146 +522,146 @@ protected:
         case TAKalldenormalizegroup:
             return createRoxieServerAllJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKapply:
-            return createRoxieServerApplyActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerApplyActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKaggregate:
         case TAKexistsaggregate:    // could special case.
         case TAKcountaggregate:
-            return createRoxieServerAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKcase:
         case TAKchildcase:
-            return createRoxieServerCaseActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isGraphIndependent(node));
+            return createRoxieServerCaseActivityFactory(id, subgraphId, *this, helperFactory, kind, isGraphIndependent(node));
         case TAKcatch:
         case TAKskipcatch:
         case TAKcreaterowcatch:
-            return createRoxieServerCatchActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerCatchActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKchilditerator:
-            return createRoxieServerChildIteratorActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerChildIteratorActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKchoosesets:
-            return createRoxieServerChooseSetsActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerChooseSetsActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKchoosesetsenth:
-            return createRoxieServerChooseSetsEnthActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerChooseSetsEnthActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKchoosesetslast:
-            return createRoxieServerChooseSetsLastActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerChooseSetsLastActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKproject:
         case TAKcountproject:
             return createRoxieServerProjectActivityFactory(id, subgraphId, *this, helperFactory, kind, node); // code is common between Project, CountProject
         case TAKfilterproject:
-            return createRoxieServerFilterProjectActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerFilterProjectActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKdatasetresult:
         case TAKrowresult:
-            return createRoxieServerDatasetResultActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerDatasetResultActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKdedup:
-            return createRoxieServerDedupActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerDedupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKdegroup:
-            return createRoxieServerDegroupActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerDegroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKcsvread:
         case TAKxmlread:
         case TAKjsonread:
         case TAKdiskread:
         {       
             if (node.getPropBool("att[@name='_isSpill']/@value", false) || node.getPropBool("att[@name='_isSpillGlobal']/@value", false))
-                return createRoxieServerSpillReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+                return createRoxieServerSpillReadActivityFactory(id, subgraphId, *this, helperFactory, kind);
             else
             {
                 RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerDiskReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
+                return createRoxieServerDiskReadActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
             }
         }
         case TAKmemoryspillread:
-            return createRoxieServerSpillReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerSpillReadActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKdisknormalize:
         case TAKdiskcount:
         case TAKdiskaggregate:
         case TAKdiskgroupaggregate:
         {
             RemoteActivityId remoteId(id, hashValue);
-            return createRoxieServerDiskReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
+            return createRoxieServerDiskReadActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
         }
         case TAKchildnormalize:
-            return createRoxieServerNewChildNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNewChildNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKchildaggregate:
-            return createRoxieServerNewChildAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNewChildAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKchildgroupaggregate:
-            return createRoxieServerNewChildGroupAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNewChildGroupAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKchildthroughnormalize:
-            return createRoxieServerNewChildThroughNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNewChildThroughNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKcsvwrite:
         case TAKdiskwrite:
         case TAKxmlwrite:
         case TAKjsonwrite:
         case TAKmemoryspillwrite:
-            return createRoxieServerDiskWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerDiskWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKindexwrite:
-            return createRoxieServerIndexWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerIndexWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKenth:
-            return createRoxieServerEnthActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerEnthActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKfetch:
         case TAKcsvfetch:
         case TAKxmlfetch:
         case TAKjsonfetch:
             {
                 RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerFetchActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
+                return createRoxieServerFetchActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
             }
         case TAKfilter:
-            return createRoxieServerFilterActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerFilterActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKfiltergroup:
-            return createRoxieServerFilterGroupActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerFilterGroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKfirstn:
-            return createRoxieServerFirstNActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerFirstNActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKfunnel:
-            return createRoxieServerConcatActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerConcatActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKgroup:
-            return createRoxieServerGroupActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerGroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKhashaggregate:
             return createRoxieServerHashAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKif:
         case TAKchildif:
-            return createRoxieServerIfActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isGraphIndependent(node));
+            return createRoxieServerIfActivityFactory(id, subgraphId, *this, helperFactory, kind, isGraphIndependent(node));
         case TAKifaction:
-            return createRoxieServerIfActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerIfActionActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKparallel:
-            return createRoxieServerParallelActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerParallelActionActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKsequential:
-            return createRoxieServerSequentialActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerSequentialActionActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKindexread:
             {
                 RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerIndexReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
+                return createRoxieServerIndexReadActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
             }
         case TAKindexnormalize:
             {
                 RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerIndexNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
+                return createRoxieServerIndexNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
             }
         case TAKindexcount:
             {
                 RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerIndexCountActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
+                return createRoxieServerIndexCountActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
             }
         case TAKindexaggregate:
             {
                 RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerIndexAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
+                return createRoxieServerIndexAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
             }
         case TAKindexgroupaggregate:
         case TAKindexgroupexists:
         case TAKindexgroupcount:
             {
                 RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerIndexGroupAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
+                return createRoxieServerIndexGroupAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
             }
         case TAKhashdedup:
-            return createRoxieServerHashDedupActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerHashDedupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKhashdenormalize:
         case TAKhashdistribute:
         case TAKhashdistributemerge:
         case TAKhashjoin:
             throwUnexpected();  // Code generator should have removed or transformed
         case TAKiterate:
-            return createRoxieServerIterateActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerIterateActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKprocess:
-            return createRoxieServerProcessActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerProcessActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKjoin:
         case TAKjoinlight:
         case TAKdenormalize:
@@ -675,10 +675,10 @@ protected:
         {
             RemoteActivityId remoteId(id, hashValue);
             RemoteActivityId remoteId2(id | ROXIE_ACTIVITY_FETCH, hashValue);
-            return createRoxieServerKeyedJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId, remoteId2);
+            return createRoxieServerKeyedJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, remoteId2, node);
         }
         case TAKlimit:
-            return createRoxieServerLimitActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerLimitActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKlookupjoin:
         case TAKlookupdenormalize:
         case TAKlookupdenormalizegroup:
@@ -687,147 +687,147 @@ protected:
         case TAKsmartdenormalizegroup:
             return createRoxieServerLookupJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKmerge:
-            return createRoxieServerMergeActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerMergeActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKnormalize:
-            return createRoxieServerNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKnormalizechild:
-            return createRoxieServerNormalizeChildActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNormalizeChildActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKnormalizelinkedchild:
-            return createRoxieServerNormalizeLinkedChildActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNormalizeLinkedChildActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKnull:
-            return createRoxieServerNullActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNullActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKsideeffect:
-            return createRoxieServerSideEffectActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerSideEffectActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKsimpleaction:
-            return createRoxieServerActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), isRootAction(node));
+            return createRoxieServerActionActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKparse:
             return createRoxieServerParseActivityFactory(id, subgraphId, *this, helperFactory, kind, node, this);
         case TAKworkunitwrite:
-            return createRoxieServerWorkUnitWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), isRootAction(node));
+            return createRoxieServerWorkUnitWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKdictionaryworkunitwrite:
-            return createRoxieServerWorkUnitWriteDictActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), isRootAction(node));
+            return createRoxieServerWorkUnitWriteDictActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKpiperead:
-            return createRoxieServerPipeReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerPipeReadActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKpipethrough:
-            return createRoxieServerPipeThroughActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerPipeThroughActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKpipewrite:
-            return createRoxieServerPipeWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), isRootAction(node));
+            return createRoxieServerPipeWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKpull:
-            return createRoxieServerPullActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerPullActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKtrace:
-            return createRoxieServerTraceActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerTraceActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKlinkedrawiterator:
-            return createRoxieServerLinkedRawIteratorActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerLinkedRawIteratorActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKremoteresult:
-            return createRoxieServerRemoteResultActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), isRootAction(node));
+            return createRoxieServerRemoteResultActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKrollup:
-            return createRoxieServerRollupActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerRollupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKsample:
-            return createRoxieServerSampleActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerSampleActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKselectn:
-            return createRoxieServerSelectNActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerSelectNActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKselfjoin:
         case TAKselfjoinlight:
             return createRoxieServerSelfJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKskiplimit:
         case TAKcreaterowlimit:
-            return createRoxieServerSkipLimitActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerSkipLimitActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKhttp_rowdataset:
         case TAKsoap_rowdataset:
-            return createRoxieServerSoapRowCallActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerSoapRowCallActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKsoap_rowaction:
-            return createRoxieServerSoapRowActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerSoapRowActionActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKsoap_datasetdataset:
-            return createRoxieServerSoapDatasetCallActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerSoapDatasetCallActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKsoap_datasetaction:
-            return createRoxieServerSoapDatasetActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerSoapDatasetActionActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKsort:
             return createRoxieServerSortActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKspill:
         case TAKmemoryspillsplit:
-            return createRoxieServerThroughSpillActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerThroughSpillActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKsplit:
-            return createRoxieServerSplitActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerSplitActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKstreamediterator:
-            return createRoxieServerStreamedIteratorActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerStreamedIteratorActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKinlinetable:
-            return createRoxieServerInlineTableActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerInlineTableActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKthroughaggregate:
             throwUnexpected(); // Concept of through aggregates has been proven not to work in Roxie - codegen should not be creating them any more.
         case TAKtopn:
-            return createRoxieServerTopNActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerTopNActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKworkunitread:
-            return createRoxieServerWorkUnitReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerWorkUnitReadActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKxmlparse:
-            return createRoxieServerXmlParseActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerXmlParseActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKquantile:
-            return createRoxieServerQuantileActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerQuantileActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKregroup:
-            return createRoxieServerRegroupActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerRegroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKcombine:
-            return createRoxieServerCombineActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerCombineActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKcombinegroup:
-            return createRoxieServerCombineGroupActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerCombineGroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKrollupgroup:
-            return createRoxieServerRollupGroupActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerRollupGroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKlocalresultread:
             {
                 unsigned graphId = getGraphId(node);
-                return createRoxieServerLocalResultReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, graphId);
+                return createRoxieServerLocalResultReadActivityFactory(id, subgraphId, *this, helperFactory, kind, graphId);
             }
         case TAKlocalstreamread:
-            return createRoxieServerLocalResultStreamReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerLocalResultStreamReadActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKlocalresultwrite:
             {
                 unsigned graphId = getGraphId(node);
-                return createRoxieServerLocalResultWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), graphId, isRootAction(node));
+                return createRoxieServerLocalResultWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), graphId, isRootAction(node));
             }
         case TAKdictionaryresultwrite:
             {
                 unsigned graphId = getGraphId(node);
-                return createRoxieServerDictionaryResultWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), graphId, isRootAction(node));
+                return createRoxieServerDictionaryResultWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), graphId, isRootAction(node));
             }
         case TAKloopcount:
         case TAKlooprow:
         case TAKloopdataset:
             {
                 unsigned loopId = node.getPropInt("att[@name=\"_loopid\"]/@value", 0);
-                return createRoxieServerLoopActivityFactory(id, subgraphId, *this, helperFactory, kind, node, loopId);
+                return createRoxieServerLoopActivityFactory(id, subgraphId, *this, helperFactory, kind, loopId);
             }
         case TAKremotegraph:
             {
                 RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerRemoteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId, isRootAction(node));
+                return createRoxieServerRemoteActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, isRootAction(node));
             }
         case TAKgraphloopresultread:
             {
                 unsigned graphId = getGraphId(node);
-                return createRoxieServerGraphLoopResultReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, graphId);
+                return createRoxieServerGraphLoopResultReadActivityFactory(id, subgraphId, *this, helperFactory, kind, graphId);
             }
         case TAKgraphloopresultwrite:
             {
                 unsigned graphId = getGraphId(node);
-                return createRoxieServerGraphLoopResultWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), graphId);
+                return createRoxieServerGraphLoopResultWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), graphId);
             }
         case TAKnwaygraphloopresultread:
             {
                 unsigned graphId  = node.getPropInt("att[@name=\"_graphId\"]/@value", 0);
-                return createRoxieServerNWayGraphLoopResultReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, graphId);
+                return createRoxieServerNWayGraphLoopResultReadActivityFactory(id, subgraphId, *this, helperFactory, kind, graphId);
             }
         case TAKnwayinput:
-            return createRoxieServerNWayInputActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNWayInputActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKnwaymerge:
-            return createRoxieServerNWayMergeActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNWayMergeActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKnwaymergejoin:
         case TAKnwayjoin:
-            return createRoxieServerNWayMergeJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNWayMergeJoinActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKsorted:
-            return createRoxieServerSortedActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerSortedActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKgraphloop:
         case TAKparallelgraphloop:
             {
                 unsigned loopId = node.getPropInt("att[@name=\"_loopid\"]/@value", 0);
-                return createRoxieServerGraphLoopActivityFactory(id, subgraphId, *this, helperFactory, kind, node, loopId);
+                return createRoxieServerGraphLoopActivityFactory(id, subgraphId, *this, helperFactory, kind, loopId);
             }
         case TAKlibrarycall:
             {
@@ -848,20 +848,20 @@ protected:
                 ForEach(*iter)
                     extra.outputs.append(iter->query().getPropInt("@value"));
 
-                return createRoxieServerLibraryCallActivityFactory(id, subgraphId, *this, helperFactory, kind, node, extra);
+                return createRoxieServerLibraryCallActivityFactory(id, subgraphId, *this, helperFactory, kind, extra);
             }
         case TAKnwayselect:
-            return createRoxieServerNWaySelectActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNWaySelectActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKnonempty:
-            return createRoxieServerNonEmptyActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerNonEmptyActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKprefetchproject:
             return createRoxieServerPrefetchProjectActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKwhen_dataset:
-            return createRoxieServerWhenActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
+            return createRoxieServerWhenActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKwhen_action:
-            return createRoxieServerWhenActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerWhenActionActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKdistribution:
-            return createRoxieServerDistributionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerDistributionActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
 
         // These are not required in Roxie for the time being - code generator should trap them
         case TAKchilddataset:

@@ -122,7 +122,7 @@ private:
 class ChangeInfoMap : public SuperHashTableOf<ChangeInfo, IPropertyTree *>
 {
 public:
-    ~ChangeInfoMap() { _releaseAll(); }
+    ~ChangeInfoMap() { kill(); }
     virtual void onAdd(void *et) { }
     virtual void onRemove(void *et) { ((ChangeInfo *)et)->Release(); }
 

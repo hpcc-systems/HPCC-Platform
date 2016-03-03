@@ -711,6 +711,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         // MORE: think of a better way/value/check maybe/and/or based on Roxie server timeout
         if (udpRequestToSendTimeout == 0)
             udpRequestToSendTimeout = 5; 
+        // This is not added to deployment\xmlenv\roxie.xsd on purpose
+        enableSocketMaxSetting = topology->getPropBool("@enableSocketMaxSetting", false);
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
         udpMulticastBufferSize = topology->getPropInt("@udpMulticastBufferSize", 262142);
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);

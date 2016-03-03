@@ -17,8 +17,6 @@
 #ifndef __HQLMETA_HPP_
 #define __HQLMETA_HPP_
 
-#include "hqlexpr.hpp"
-
 class TableProjectMapper;
 
 class HQL_API CHqlMetaInfo
@@ -34,7 +32,6 @@ public:
     void applyGlobalSort(IHqlExpression * sortOrder);
     void applyProject(TableProjectMapper & mapper);
     void applySubSort(IHqlExpression * groupBy, IHqlExpression * sortOrder, bool isLocal);
-    void applyUnordered();
 
     void ensureAppearsSorted(bool isLocal, bool ignoreGrouping);
     void getIntersection(const CHqlMetaInfo & other);
@@ -102,10 +99,6 @@ extern HQL_API IHqlExpression * mapJoinDistribution(TableProjectMapper & mapper,
 
 extern HQL_API bool isPartitionedForGroup(IHqlExpression * table, IHqlExpression *grouping, bool isGroupAll);
 extern HQL_API bool isPartitionedForGroup(IHqlExpression * table, const HqlExprArray & grouping, bool isGroupAll);
-
-extern HQL_API bool hasOrderedAttribute(IHqlExpression * expr);
-extern HQL_API bool isOrdered(IHqlExpression * expr);  // Is the output of this activity considered to be ordered?
-extern HQL_API IHqlExpression * getOrderedAttribute(bool value);
 
 //The following only look at the sort order, and not the partitioning
 extern HQL_API bool isSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isLocal);

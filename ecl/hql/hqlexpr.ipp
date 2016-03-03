@@ -106,7 +106,7 @@ class HQL_API UsedExpressionHashTable : public SuperHashTableOf<IHqlExpression, 
 {
 public:
     UsedExpressionHashTable() : SuperHashTableOf<IHqlExpression,IHqlExpression>(false) {}
-    ~UsedExpressionHashTable() { _releaseAll(); }
+    ~UsedExpressionHashTable() { releaseAll(); }
 
     inline void zap(IHqlExpression & expr) { remove(&expr); }
 

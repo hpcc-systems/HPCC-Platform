@@ -77,7 +77,7 @@
 #define HDSendPrintLog5(M,P1,P2,P3,P4)
 #endif
 
-class CDistributorBase : public CInterface, implements IHashDistributor, implements IExceptionHandler
+class CDistributorBase : public CSimpleInterface, implements IHashDistributor, implements IExceptionHandler
 {
     Linked<IRowInterfaces> rowIf;
     IEngineRowAllocator *allocator;
@@ -973,7 +973,7 @@ protected:
     ICompressHandler *compressHandler;
     StringBuffer compressOptions;
 public:
-    IMPLEMENT_IINTERFACE_USING(CInterface);
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CDistributorBase(CActivityBase *_activity, bool _doDedup, IStopInput *_istop, const char *_id)
         : activity(_activity), recvthread(this), sendthread(this), sender(*this), id(_id)
@@ -1027,7 +1027,7 @@ public:
         ActPrintLog("targetWriterLimit : %d", targetWriterLimit);
     }
 
-    virtual void beforeDispose()
+    ~CDistributorBase()
     {
         try
         {

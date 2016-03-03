@@ -416,6 +416,7 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
     ForEach(*services)
     {
         IPropertyTree& serviceTree = services->query();
+
         Owned<IEspTpEspServer> pService = createTpEspServer("","");
         const char* name = serviceTree.queryProp("@name");
         pService->setName(name);
@@ -456,16 +457,9 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
                 StringBuffer xpath;
                 xpath.appendf("EspService[@name='%s']", service);
                 IPropertyTree* pServiceNode = root->queryPropTree(xpath.str());
-                const char* serviceType = pServiceNode ? pServiceNode->queryProp("Properties/@type") : NULL;
-                if (serviceType && *serviceType)
-                    pTpBinding->setServiceType(serviceType);
+                const char* serviceType = pServiceNode ? pServiceNode->queryProp("Properties/@type") : "INVALID";
+                pTpBinding->setServiceType(eqEsp);
 
-                if (pServiceNode)
-                {
-                    const char* bindingType = pServiceNode->queryProp("Properties/@bindingType");
-                    if (bindingType && *bindingType)
-                        pTpBinding->setBindingType(bindingType);
-                }
                 tpBindings.append(*pTpBinding.getLink());
             }
         }

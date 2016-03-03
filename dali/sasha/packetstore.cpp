@@ -131,7 +131,7 @@ public:
     void clear()
     {
         CriticalBlock block(sect);
-        _releaseAll();
+        releaseAll();
     }
 
 protected:

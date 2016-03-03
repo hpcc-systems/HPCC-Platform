@@ -812,7 +812,6 @@ public:
                 pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &cpuMask);
             }
         }
-        clearAffinityCache();
 #endif
     }
 
@@ -873,7 +872,6 @@ extern void updateAffinity(unsigned __int64 affinity)
         }
         if (sched_setaffinity(0, sizeof(cpu_set_t), &cpus))
             throw makeStringException(errno, "Failed to set affinity");
-        clearAffinityCache();
 #endif
     }
     RoxieListener::updateAffinity();

@@ -105,20 +105,6 @@ elif [ -e /etc/SuSE-release ]; then
           ;;
       esac
   fi
-elif [ -e /etc/system-release ]; then
-  if [ -x /bin/rpm ]; then
-      OS_GROUP=$(grep -i "Linux" /etc/system-release | awk '{ print  $1}')
-      case "$OS_GROUP" in
-        "Amazon" )
-          if [ ${NOARCH} -eq 0 ]; then
-              OUTPUT="amzn1.${ARCH}"
-          else
-              OUTPUT="amzn1"
-          fi
-          ;;
-
-      esac
-  fi
 elif [ -e /etc/gentoo-release ]; then
   OUTPUT="gentoo"
 else

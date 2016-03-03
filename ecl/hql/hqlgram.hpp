@@ -686,7 +686,6 @@ public:
 
     void createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind);
     void createAppendFiles(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind);
-    IHqlExpression * createAppendFiles(attribute & filesAttr, IHqlExpression * _attrs);
     IHqlExpression * processIfProduction(attribute & condAttr, attribute & trueAttr, attribute * falseAttr);
 
     IHqlExpression * createSymbolFromValue(IHqlExpression * primaryExpr, IHqlExpression * value);

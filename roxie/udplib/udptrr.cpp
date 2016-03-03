@@ -494,8 +494,11 @@ class CReceiveManager : public CInterface, implements IReceiveManager
         {
             snifferTable = new SnifferEntry[numNodes];
             sniffer_socket = ISocket::multicast_create(snifferPort, snifferIP, multicastTTL);
-            if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0)
-                throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
+            if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0) {
+                if (!enableSocketMaxSetting)
+                    throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
+                check_set_max_socket_read_buffer(udpFlowSocketsSize);
+            }
             sniffer_socket->set_receive_buffer_size(udpFlowSocketsSize);
             if (udpTraceLevel)
             {
@@ -583,7 +586,11 @@ class CReceiveManager : public CInterface, implements IReceiveManager
         {
             flow_port = flow_p;
             if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0) 
-                throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
+            {
+                if (!enableSocketMaxSetting)
+                    throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
+                check_set_max_socket_read_buffer(udpFlowSocketsSize);
+            }
             flow_socket.setown(ISocket::udp_create(flow_port));
             flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
             size32_t actualSize = flow_socket->get_receive_buffer_size();
@@ -676,7 +683,11 @@ class CReceiveManager : public CInterface, implements IReceiveManager
             unsigned ip_buffer = parent.input_queue_size*DATA_PAYLOAD;
             if (ip_buffer < udpFlowSocketsSize) ip_buffer = udpFlowSocketsSize;
             if (check_max_socket_read_buffer(ip_buffer) < 0) 
-                throw MakeStringException(ROXIE_UDP_ERROR, "System socket max read buffer is less than %u", ip_buffer);
+            {
+                if (!enableSocketMaxSetting)
+                    throw MakeStringException(ROXIE_UDP_ERROR, "System socket max read buffer is less than %u", ip_buffer);
+                check_set_max_socket_read_buffer(ip_buffer);
+            }
             receive_socket = ISocket::udp_create(parent.data_port);
             receive_socket->set_receive_buffer_size(ip_buffer);
             size32_t actualSize = receive_socket->get_receive_buffer_size();

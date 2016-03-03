@@ -637,7 +637,6 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
         case no_distributed:
         case no_keyeddistribute:
         case no_preservemeta:
-        case no_unordered:
             if (isScalarAggregate || !isGrouped(ds->queryChild(0)))
                 next = ds->queryChild(0);
             break;
@@ -2232,7 +2231,6 @@ IHqlExpression * CTreeOptimizer::queryMoveKeyedExpr(IHqlExpression * transformed
     case no_sorted:
     case no_stepped:
     case no_distributed:
-    case no_unordered:
     case no_preservemeta:
     case no_grouped:
     case no_nofold:
@@ -3012,7 +3010,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_sorted:
             case no_stepped:
             case no_distributed:
-            case no_unordered:
             case no_distribute:
             case no_group:
             case no_grouped:
@@ -3203,7 +3200,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             switch(childOp)
             {
             case no_distributed:
-            case no_unordered:
             case no_sorted:
             case no_limit:
             case no_choosen:
@@ -3330,7 +3326,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     break;
                 return moveProjectionOverSimple(transformed, true, false);
             case no_distributed:
-            case no_unordered:
             case no_sorted:
             case no_grouped:
                 if (transformedCountProject)
@@ -3524,7 +3519,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_distributed:
             case no_sorted:
             case no_grouped:
-            case no_unordered:
                 return moveProjectionOverSimple(transformed, false, false);
             case no_stepped:
                 return moveProjectionOverSimple(transformed, false, true);
@@ -3983,17 +3977,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     break;
                 }
             }
-            break;
         }
-    case no_unordered:
-        //This is only added if not shared.  A future transform will optimize shared expressions where all uses are unordered.
-        if (!hasOrderedAttribute(child))
-        {
-            OwnedHqlExpr unorderedChild = appendOwnedOperand(child, getOrderedAttribute(false));
-            return replaceChild(transformed, unorderedChild);
-        }
-        //MORE: Remove UNORDERED(SORT(ds,local|grouped)) and other optimizations see HPCC-10144
-        break;
     }
 
     return LINK(transformed);

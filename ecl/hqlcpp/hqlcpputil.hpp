@@ -21,6 +21,7 @@ interface IConstWorkUnit;
 class CHqlBoundExpr;
 
 extern ITypeInfo * queryBoolType();
+extern IHqlExpression * queryBoolExpr(bool value);
 extern IHqlExpression * queryNullChar();
 extern IHqlExpression * queryZero();
 extern IHqlExpression * getZero();

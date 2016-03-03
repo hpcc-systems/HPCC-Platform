@@ -64,7 +64,7 @@ class MPNodeCache: public SuperHashTableOf<MPNode,SocketEndpoint>
 public:
     ~MPNodeCache()
     {
-        _releaseAll();
+        releaseAll();
     }
 
     void onAdd(void *)

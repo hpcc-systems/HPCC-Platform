@@ -3149,7 +3149,6 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
         case no_grouped:
         case no_distributed:
         case no_preservemeta:
-        case no_unordered:
         case no_nofold:
         case no_nohoist:
         case no_nocombine:
@@ -3263,7 +3262,6 @@ bool ResourcerInfo::expandRatherThanSplit()
         case no_grouped:
         case no_distributed:
         case no_preservemeta:
-        case no_unordered:
         case no_compound_diskread:
         case no_compound_disknormalize:
         case no_compound_diskaggregate:
@@ -3587,7 +3585,6 @@ static bool isPotentialCompoundSteppedIndexRead(IHqlExpression * expr)
         case no_sorted:
         case no_preservemeta:
         case no_distributed:
-        case no_unordered:
         case no_grouped:
         case no_stepped:
         case no_section:
@@ -4803,7 +4800,7 @@ void EclResourcer::oldSpotUnbalancedSplitters(IHqlExpression * expr, unsigned wh
             switch (expr->getOperator())
             {
             case no_addfiles:
-                if (isOrdered(expr) || isGrouped(expr))
+                if (expr->hasAttribute(_ordered_Atom) || expr->hasAttribute(_orderedPull_Atom) || isGrouped(expr))
                     modify = true;
                 break;
             default:
@@ -5064,7 +5061,7 @@ bool CSplitterInfo::allInputsPulledIndependently(IHqlExpression * expr)
     switch (expr->getOperator())
     {
     case no_addfiles:
-        if (isOrdered(expr) || isGrouped(expr))
+        if (expr->hasAttribute(_ordered_Atom) || expr->hasAttribute(_orderedPull_Atom) || isGrouped(expr))
             return false;
         return true;
     case no_parallel:
@@ -5112,9 +5109,6 @@ void CSplitterInfo::gatherPotentialSplitters(IHqlExpression * expr, IHqlExpressi
     {
     case no_null:
     case no_fail:
-        return;
-    case no_attr:
-    case no_attr_expr:
         //Any sources that never generate any rows are always fine as a splitter
         return;
     //MORE: A source that generates a single row, and subsequent rows are never read, is always fine.

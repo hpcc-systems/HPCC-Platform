@@ -182,7 +182,7 @@ public:
 
     ~CLockStateTable()
     {
-        _releaseAll();
+        releaseAll();
     }
 
     bool lock(DistributedLockId id,SessionId owner,bool excl,unsigned timeout)

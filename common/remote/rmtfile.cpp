@@ -397,7 +397,7 @@ public:
     }
     ~CDafsOsCache()
     {
-        SuperHashTableOf<CDafsOsCacheEntry,SocketEndpoint>::_releaseAll();
+        SuperHashTableOf<CDafsOsCacheEntry,SocketEndpoint>::releaseAll();
     }
     DAFS_OS lookup(const SocketEndpoint &ep,ISocket *sock)
     {

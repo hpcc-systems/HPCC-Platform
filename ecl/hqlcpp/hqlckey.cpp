@@ -24,7 +24,6 @@
 #include "jdebug.hpp"
 
 #include "hql.hpp"
-#include "hqlmeta.hpp"
 #include "hqlthql.hpp"
 #include "hqlhtcpp.ipp"
 #include "hqlttcpp.ipp"
@@ -366,7 +365,6 @@ IHqlExpression * KeyedJoinInfo::querySimplifiedKey(IHqlExpression * expr)
         case no_nofold:
         case no_forcegraph:
         case no_nocombine:
-        case no_unordered:
             break;
         case no_newkeyindex:
             return LINK(expr);
@@ -1409,7 +1407,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
         flags.append("|JFindexoptional");
     if (info.needToExtractJoinFields())
         flags.append("|JFextractjoinfields");
-    if (!isOrdered(expr))
+    if (expr->hasAttribute(unorderedAtom))
         flags.append("|JFreorderable");
     if (transformReturnsSide(expr, no_left, 0))
         flags.append("|JFtransformmatchesleft");

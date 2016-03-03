@@ -270,7 +270,6 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_sorted:
     case no_distributed:
     case no_preservemeta:
-    case no_unordered:
     case no_nofold:
     case no_nohoist:
     case no_nocombine:
@@ -728,7 +727,6 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr, bool optimize
     case no_sorted:
     case no_distributed:
     case no_preservemeta:
-    case no_unordered:
     case no_grouped:
     case no_alias_scope:
     case no_sequential:
@@ -1314,8 +1312,6 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
     if (localisation == GraphCoLocal || localisation == GraphCoNonLocal)
     {
         OwnedHqlExpr colocal = createQuoted("colocal", makeVoidType());
-        HqlExprCopyArray matchBound;
-        HqlExprCopyArray matchAlias;
         ForEachItemInRev(i, activeRows)
         {
             BoundRow & cur = activeRows.item(i);
@@ -1341,25 +1337,16 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
             }
             else if (serialization)
             {
-                unsigned match = matchBound.find(*bound);
-                OwnedHqlExpr expandedAlias;
-                if (match == NotFound)
-                {
-                    //A cursor active in the current scope => add it to the extract, and create an alias in the
-                    //child contexts.
-                    //Need to add these fields to the extract record, and do the assignments at the point of call
-                    Owned<ITypeInfo> fieldType = makeRowReferenceType(cur.queryDataset());
-                    if (hasOutOfLineModifier(bound->queryType()))
-                        fieldType.setown(makeAttributeModifier(LINK(fieldType), getLinkCountedAttr()));
-                    expandedAlias.setown(serialization->createField(NULL, fieldType));
-                    OwnedHqlExpr castSource = createValue(no_implicitcast, LINK(fieldType), LINK(bound));
-                    OwnedHqlExpr translated = createTranslated(castSource);
-                    translator.buildAssign(ctx, expandedAlias, translated);
-                    matchBound.append(*bound);
-                    matchAlias.append(*expandedAlias);
-                }
-                else
-                    expandedAlias.set(&matchAlias.item(match));
+                //A cursor active in the current scope => add it to the extract, and create an alias in the
+                //child contexts.
+                //Need to add these fields to the extract record, and do the assignments at the point of call
+                Owned<ITypeInfo> fieldType = makeRowReferenceType(cur.queryDataset());
+                if (hasOutOfLineModifier(bound->queryType()))
+                    fieldType.setown(makeAttributeModifier(LINK(fieldType), getLinkCountedAttr()));
+                OwnedHqlExpr expandedAlias = serialization->createField(NULL, fieldType);
+                OwnedHqlExpr castSource = createValue(no_implicitcast, LINK(fieldType), LINK(bound));
+                OwnedHqlExpr translated = createTranslated(castSource);
+                translator.buildAssign(ctx, expandedAlias, translated);
 
                 newRow = new BoundAliasRow(cur, NULL, expandedAlias);
                 newRow->setInherited(true);

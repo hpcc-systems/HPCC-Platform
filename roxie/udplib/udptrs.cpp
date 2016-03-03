@@ -696,7 +696,11 @@ class CSendManager : public CInterface, implements ISendManager
         {
             receive_port = r_port;
             if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0) 
-                throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
+            {
+                if (!enableSocketMaxSetting)
+                    throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
+                check_set_max_socket_read_buffer(udpFlowSocketsSize);
+            }
             flow_socket.setown(ISocket::udp_create(receive_port));
             flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
             size32_t actualSize = flow_socket->get_receive_buffer_size();
@@ -817,7 +821,11 @@ class CSendManager : public CInterface, implements ISendManager
         {
             sniffer_socket = NULL;
             if (check_max_socket_write_buffer(udpLocalWriteSocketSize) < 0) 
-                throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max write buffer is less than %i", udpLocalWriteSocketSize);
+            {
+                if (!enableSocketMaxSetting)
+                    throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max write buffer is less than %i", udpLocalWriteSocketSize);
+                check_set_max_socket_write_buffer(udpLocalWriteSocketSize);
+            }
             start();
         }
         
@@ -1092,7 +1100,7 @@ public:
             if (mem_buffer_size < len)
             {
                 free(mem_buffer);
-                mem_buffer = checked_malloc(len, ROXIE_MEMORY_ERROR);
+                mem_buffer = malloc(len);
                 mem_buffer_size = len;
             }
             packed_request = false;

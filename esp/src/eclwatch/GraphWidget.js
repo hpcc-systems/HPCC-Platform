@@ -96,7 +96,7 @@ define([
             }
             return width;
         },
-        appendColumns: function (target, highPriority, lowPriority, skip, formatTime) {
+        appendColumns: function (target, highPriority, lowPriority, skip) {
             if (!highPriority) {
                 highPriority = [];
             }
@@ -128,15 +128,6 @@ define([
                     });
                 }
             }, this);
-            if (formatTime) {
-                arrayUtil.forEach(target, function (column, idx) {
-                    if (column.label.indexOf("Time") === 0) {
-                        column.formatter = function (_id, row) {
-                            return row["_" + column.field] || "";
-                        }
-                    }
-                });
-            }
         }
     });
 

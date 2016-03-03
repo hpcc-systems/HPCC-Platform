@@ -1822,9 +1822,9 @@ void ActivityInstance::addAttributeInt(const char * name, __int64 value)
     addGraphAttributeInt(graphNode, name, value);
 }
 
-void ActivityInstance::addAttributeBool(const char * name, bool value, bool alwaysAdd)
+void ActivityInstance::addAttributeBool(const char * name, bool value)
 {
-    addGraphAttributeBool(graphNode, name, value, alwaysAdd);
+    addGraphAttributeBool(graphNode, name, value);
 }
 
 void ActivityInstance::addAttribute(const char * name, IHqlExpression * expr)
@@ -2041,12 +2041,6 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
         addAttributeBool("coLocal", true);
     if (isNoAccess)
         addAttributeBool("noAccess", true);
-    if (dataset->hasAttribute(parallelAtom))
-        addAttributeInt("parallel", getIntValue(queryAttributeChild(dataset, parallelAtom, 0), -1));
-    if (hasOrderedAttribute(dataset))
-        addAttributeBool("ordered", isOrdered(dataset), true);
-    if (dataset->hasAttribute(algorithmAtom))
-        addAttribute("algorithm", queryAttributeChild(dataset, algorithmAtom, 0));
 
     if (!options.obfuscateOutput)
     {
@@ -6600,7 +6594,6 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             }
             case no_sorted:
             case no_preservemeta:
-            case no_unordered:
             case no_grouped:
             case no_nofold:
             case no_nohoist:
@@ -8188,12 +8181,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCloned(BuildCtx & ctx, IHqlExp
 //---------------------------------------------------------------------------
 // no_addfiles
 
-static void unwindAddFiles(HqlExprArray & args, IHqlExpression * expr, bool reqIsOrdered, bool isOrderedPull)
+static void unwindAddFiles(HqlExprArray & args, IHqlExpression * expr, bool isOrdered, bool isOrderedPull)
 {
-    if ((expr->getOperator() == no_addfiles) && (isOrdered(expr) == reqIsOrdered) && (expr->hasAttribute(pullAtom) == isOrderedPull))
+    if ((expr->getOperator() == no_addfiles) && (expr->hasAttribute(_ordered_Atom) == isOrdered) && (expr->hasAttribute(_orderedPull_Atom) == isOrderedPull))
     {
-        unwindAddFiles(args, expr->queryChild(0), reqIsOrdered, isOrderedPull);
-        unwindAddFiles(args, expr->queryChild(1), reqIsOrdered, isOrderedPull);
+        unwindAddFiles(args, expr->queryChild(0), isOrdered, isOrderedPull);
+        unwindAddFiles(args, expr->queryChild(1), isOrdered, isOrderedPull);
     }
     else
         args.append(*LINK(expr));
@@ -8223,8 +8216,8 @@ static IHqlExpression * queryRootConcatActivity(IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityConcat(BuildCtx & ctx, IHqlExpression * expr)
 {
     HqlExprArray inExprs;
-    bool ordered = isOrdered(expr);
-    bool orderedPull = expr->hasAttribute(pullAtom);
+    bool ordered = expr->hasAttribute(_ordered_Atom);
+    bool orderedPull = expr->hasAttribute(_orderedPull_Atom);
     unwindAddFiles(inExprs, expr, ordered, orderedPull);
 
     //If all coming from disk, probably better to pull them in order.
@@ -8603,9 +8596,34 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
 
     if (parallel)
     {
-        IHqlExpression * numThreads = parallel->queryChild(0);
+        IHqlExpression * arg0 = parallel->queryChild(0);
+        IHqlExpression * arg1 = parallel->queryChild(1);
+
+        LinkedHqlExpr parallelList;
+        LinkedHqlExpr numThreads;
+        if (arg0)
+        {
+            if (arg1)
+            {
+                parallelList.set(arg0);
+                numThreads.set(arg1);
+            }
+            else if (arg0->isList())
+                parallelList.set(arg0);
+            else
+                numThreads.set(arg0);
+        }
         if (numThreads)
             doBuildUnsignedFunction(instance->startctx, "defaultParallelIterations", numThreads);
+
+        if (parallelList)
+        {
+            Owned<ITypeInfo> setType = makeSetType(LINK(unsignedType));
+            BuildCtx funcctx(instance->startctx);
+            funcctx.addQuotedCompoundLiteral("virtual void numParallelIterations(size32_t & __lenResult, void * & __result)");
+            funcctx.addQuotedLiteral("bool __isAllResult;");
+            doBuildFunctionReturn(funcctx, setType, parallelList);
+        }
     }
 
     StringBuffer flags;
@@ -12180,7 +12198,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (isLookupJoin && isManyLookup) flags.append("|JFmanylookup");
     if (expr->hasAttribute(onFailAtom))
         flags.append("|JFonfail");
-    if (!isOrdered(expr))
+    if (expr->hasAttribute(unorderedAtom))
         flags.append("|JFreorderable");
     if (transformReturnsSide(expr, no_left, 0))
         flags.append("|JFtransformmatchesleft");
@@ -16567,8 +16585,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
             flags.append("|TAFunstable");
         }
     }
-    if (!method)
-        method = queryAttributeChild(expr, algorithmAtom, 0);
 
     if (spill)
         flags.append("|TAFspill");
@@ -18889,7 +18905,6 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_thor:
     case no_apply:
     case no_distributed:
-    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_limit:

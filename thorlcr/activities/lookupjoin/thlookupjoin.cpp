@@ -38,18 +38,23 @@ class CLookupJoinActivityMaster : public CMasterActivity
 public:
     CLookupJoinActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
     {
-        mpTag = container.queryJob().allocateMPTag(); // NB: base takes ownership and free's
-        if (!isAll())
+        if (container.queryLocal())
+            broadcast2MpTag = broadcast3MpTag, lhsDistributeTag = rhsDistributeTag = TAG_NULL;
+        else
         {
-            broadcast2MpTag = container.queryJob().allocateMPTag();
-            broadcast3MpTag = container.queryJob().allocateMPTag();
-            lhsDistributeTag = container.queryJob().allocateMPTag();
-            rhsDistributeTag = container.queryJob().allocateMPTag();
+            mpTag = container.queryJob().allocateMPTag(); // NB: base takes ownership and free's
+            if (!isAll())
+            {
+                broadcast2MpTag = container.queryJob().allocateMPTag();
+                broadcast3MpTag = container.queryJob().allocateMPTag();
+                lhsDistributeTag = container.queryJob().allocateMPTag();
+                rhsDistributeTag = container.queryJob().allocateMPTag();
+            }
         }
     }
     ~CLookupJoinActivityMaster()
     {
-        if (!isAll())
+        if (!container.queryLocal() && !isAll())
         {
             container.queryJob().freeMPTag(broadcast2MpTag);
             container.queryJob().freeMPTag(broadcast3MpTag);
@@ -60,20 +65,23 @@ public:
     }
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
-        serializeMPtag(dst, mpTag);
-        if (!isAll())
+        if (!container.queryLocal())
         {
-            serializeMPtag(dst, broadcast2MpTag);
-            serializeMPtag(dst, broadcast3MpTag);
-            serializeMPtag(dst, lhsDistributeTag);
-            serializeMPtag(dst, rhsDistributeTag);
+            serializeMPtag(dst, mpTag);
+            if (!isAll())
+            {
+                serializeMPtag(dst, broadcast2MpTag);
+                serializeMPtag(dst, broadcast3MpTag);
+                serializeMPtag(dst, lhsDistributeTag);
+                serializeMPtag(dst, rhsDistributeTag);
+            }
         }
     }
 };
 
 CActivityBase *createLookupJoinActivityMaster(CMasterGraphElement *container)
 {
-    if (container->queryLocal() || 1 == container->queryJob().querySlaves())
+    if (container->queryLocal())
         return new CMasterActivity(container);
     else
         return new CLookupJoinActivityMaster(container);

@@ -37,6 +37,7 @@
 //===========================================================================
 
 static ITypeInfo * cachedVoidType;
+static IHqlExpression * cachedBoolValue[2];
 static IHqlExpression * cachedZero;
 static IHqlExpression * cachedNullChar;
 static IHqlExpression * defaultAttrExpr;
@@ -84,6 +85,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     doubleType = makeRealType(8);
 
     cachedVoidType = makeVoidType();
+    cachedBoolValue[false] = createConstant(false);
+    cachedBoolValue[true] = createConstant(true);
     cachedZero = createIntConstant(0);
     cachedNullChar = createConstant(createCharValue(0, makeCharType()));
     defaultAttrExpr = createAttribute(defaultAtom);
@@ -111,6 +114,8 @@ MODULE_EXIT()
     defaultAttrExpr->Release();
     boolType->Release();
     cachedVoidType->Release();
+    cachedBoolValue[false]->Release();
+    cachedBoolValue[true]->Release();
     cachedZero->Release();
     cachedNullChar->Release();
     unsignedType->Release();
@@ -135,6 +140,7 @@ IHqlExpression * getZero()                              { return LINK(cachedZero
 ITypeInfo *     queryBoolType()                     { return boolType; }
 ITypeInfo *     queryVoidType()                     { return cachedVoidType; }
 
+IHqlExpression * queryBoolExpr(bool value){ return cachedBoolValue[value]; }
 IHqlExpression * queryNullChar()                    { return cachedNullChar; }
 IHqlExpression * queryZero()                            { return cachedZero; }
 IHqlExpression * getDefaultAttr() { return LINK(defaultAttrExpr); }

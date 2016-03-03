@@ -35,8 +35,8 @@ public:
     /// for the given ESP service
     ///
     /// @param  bindingName     Binding name ie 'WsTopology_smc_myesp'
-    /// @param  authCfg         'Authenticate' IPropertyTree from EspService component binding
     /// @param  secMgrCfg       'SecurityManager' IPropertyTree from component config file
+    /// @param  authCfg         'Authenticate' IPropertyTree from EspService component binding
     ///
     /// @return an ISecManager Security Manager instance
     ///
@@ -66,7 +66,6 @@ public:
             throw MakeStringException(-1, "%s cannot locate procedure %s of '%s'", lsm, instFactory.str(), libName.str());
 
         //Call ISecManager instance factory and return the new instance
-        DBGLOG("Calling '%s' in pluggable security manager '%s'", instFactory.str(), libName.str());
         return xproc(bindingName, *secMgrCfg, *authCfg);
     }
 

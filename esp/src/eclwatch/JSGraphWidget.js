@@ -21,11 +21,10 @@ define([
     "dojo/_base/array",
     "dojo/Evented",
 
-    "hpcc/WsWorkunits",
     "hpcc/GraphWidget",
     "hpcc/ESPGraph"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Evented,
-            WsWorkunits, GraphWidget, ESPGraph) {
+            GraphWidget, ESPGraph) {
 
     var persist = {
         remove: function (key) {
@@ -108,7 +107,7 @@ define([
     };
 
     var loadJSPlugin = function (callback) {
-        function requireWidgets() {
+        require(["src/hpcc-viz", "src/hpcc-viz-common", "src/hpcc-viz-graph", "src/hpcc-viz-layout"], function () {
             require(["src/common/Shape", "src/common/Icon", "src/common/TextBox", "src/graph/Graph", "src/graph/Vertex", "src/graph/Edge", "src/layout/Layered"], function (Shape, Icon, TextBox, Graph, Vertex, Edge, Layered) {
                 callback(declare([Evented], {
                     KeyState_None: 0,
@@ -138,7 +137,7 @@ define([
                         ;
                         this.layout = new Layered()
                             .target(domNode.id)
-                            .widgets([this.messageWidget, this.graphWidget])
+                            .widgets([ this.messageWidget, this.graphWidget])
                             .render()
                         ;
                         this._options = {};
@@ -261,22 +260,6 @@ define([
                         });
                     },
 
-                    cleanObject: function (object) {
-                        var retVal = {};
-                        for (var key in object) {
-                            if (object.hasOwnProperty(key) && typeof object[key] !== "function") {
-                                retVal[key] = object[key];
-                            }
-                        }
-                        return retVal;
-                    },
-
-                    cleanObjects: function (objects) {
-                        return objects.map(function (object) {
-                            return this.cleanObject(object);
-                        }, this);
-                    },
-
                     gatherTreeWithProperties: function (subgraph) {
                         subgraph = subgraph || this.graphData.subgraphs[0];
                         var retVal = subgraph.getProperties();
@@ -299,15 +282,15 @@ define([
                     },
 
                     getSubgraphsWithProperties: function () {
-                        return this.cleanObjects(this.graphData.subgraphs);
+                        return this.graphData.subgraphs;
                     },
 
                     getVerticesWithProperties: function () {
-                        return this.cleanObjects(this.graphData.vertices);
+                        return this.graphData.vertices;
                     },
 
                     getEdgesWithProperties: function () {
-                        return this.cleanObjects(this.graphData.edges);
+                        return this.graphData.edges;
                     },
 
                     getLocalisedXGMML: function (selectedItems, depth, distance) {
@@ -379,7 +362,6 @@ define([
                                 if (!merge || !subgraph.__widget) {
                                     subgraph.__widget = new Shape()
                                         .shape("rect")
-                                        .classed({ subgraph: true })
                                         .width(0)
                                         .height(0)
                                     ;
@@ -392,40 +374,41 @@ define([
                         var tooltipTpl = this.option("vtooltip");
                         arrayUtil.forEach(this.graphData.vertices, function (item, idx) {
                             if (!merge || !item.__widget) {
+                                var label = this.format(labelTpl, item);
+                                var tooltip = this.format(tooltipTpl, item);
                                 switch (item._kind) {
                                     case "point":
                                         item.__widget = new Shape()
                                             .radius(7)
+                                            .tooltip(label)
                                         ;
                                         break;
                                     default:
                                         if (this.option("vicon") && this.option("vlabel")) {
                                             item.__widget = new Vertex()
                                                 .faChar(faCharFactory(item._kind))
+                                                .text(label)
+                                                .tooltip(tooltip)
                                             ;
                                         } else if (this.option("vicon")) {
                                             item.__widget = new Icon()
                                                 .faChar(faCharFactory(item._kind))
+                                                .tooltip(tooltip)
                                             ;
                                         } else if (this.option("vlabel")) {
                                             item.__widget = new TextBox()
+                                                .text(label)
+                                                .tooltip(tooltip)
                                             ;
                                         } else {
                                             item.__widget = new Shape()
                                                 .radius(7)
+                                                .tooltip(tooltip)
                                             ;
                                         }
                                         break;
                                 }
                                 item.__widget.__hpcc_globalID = item.__hpcc_id;
-                            }
-                            if (item.__widget.text) {
-                                var label = this.format(labelTpl, item);
-                                item.__widget.text(label);
-                            }
-                            if (item.__widget.tooltip) {
-                                var tooltip = this.format(tooltipTpl, item);
-                                item.__widget.tooltip(tooltip);
                             }
                             vertices.push(item.__widget);
                         }, this);
@@ -445,28 +428,19 @@ define([
                                     strokeDasharray = "5,5,10,5";
                                 }
 
+                                var label = this.format(labelTpl, item);
+                                var tooltip = this.format(tooltipTpl, item);
                                 item.__widget = new Edge()
                                     .sourceVertex(item.getSource().__widget)
                                     .targetVertex(item.getTarget().__widget)
                                     .targetMarker("arrowHead")
                                     .weight(weight)
                                     .strokeDasharray(strokeDasharray)
+                                    .text(label)
+                                    .tooltip(tooltip)
                                 ;
                                 item.__widget.__hpcc_globalID = item.__hpcc_id;
                             }
-                            var label = this.format(labelTpl, item);
-                            var tooltip = this.format(tooltipTpl, item);
-                            var slavesTotal = parseInt(item.NumSlaves);
-                            var started = parseInt(item.NumStarted) > 0;
-                            var finished = parseInt(item.NumStopped) === parseInt(item.NumSlaves);
-                            var active = started && !finished;
-                            item.__widget.text(label);
-                            item.__widget.tooltip(tooltip);
-                            item.__widget.classed({
-                                started: started && !finished && !active,
-                                finished: finished && !active,
-                                active: active
-                            });
                             edges.push(item.__widget);
                         }, this);
                         if (this.option("subgraph")) {
@@ -489,22 +463,7 @@ define([
                     }
                 }));
             });
-        }
-        if (dojoConfig.vizDebug) {
-            requireWidgets();
-        } else {
-            require(["dist-amd/hpcc-viz"], function() {
-                require(["dist-amd/hpcc-viz-common"], function () {
-                    require(["dist-amd/hpcc-viz-api"], function () {
-                        require(["dist-amd/hpcc-viz-graph"], function () {
-                            require(["dist-amd/hpcc-viz-layout"], function () {
-                                requireWidgets();
-                            });
-                        });
-                    });
-                });
-            });
-        }
+        });
     };
 
     return declare("JSGraphWidget", [GraphWidget], {

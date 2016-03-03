@@ -5944,7 +5944,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CSocketEndpointHashTable() {}
-    ~CSocketEndpointHashTable() { _releaseAll(); }
+    ~CSocketEndpointHashTable() { kill(); }
     
     void add(const SocketEndpoint &ep, IInterface *i)
     {

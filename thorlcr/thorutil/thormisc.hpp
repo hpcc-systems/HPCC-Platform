@@ -310,7 +310,6 @@ interface IThorException : extends IException
     virtual ThorExceptionAction queryAction() const = 0;
     virtual ThorActivityKind queryActivityKind() const = 0;
     virtual activity_id queryActivityId() const = 0;
-    virtual const char *queryGraphName() const = 0;
     virtual graph_id queryGraphId() const = 0;
     virtual const char *queryJobId() const = 0;
     virtual unsigned querySlave() const = 0;
@@ -323,7 +322,7 @@ interface IThorException : extends IException
     virtual void setAction(ThorExceptionAction _action) = 0;
     virtual void setActivityKind(ThorActivityKind _kind) = 0;
     virtual void setActivityId(activity_id id) = 0;
-    virtual void setGraphInfo(const char *graphName, graph_id id) = 0;
+    virtual void setGraphId(graph_id id) = 0;
     virtual void setJobId(const char *jobId) = 0;
     virtual void setAudience(MessageAudience audience) = 0;
     virtual void setSlave(unsigned slave) = 0;
@@ -416,7 +415,6 @@ extern graph_decl IThorException *MakeActivityException(CGraphElementBase *activ
 extern graph_decl IThorException *MakeActivityWarning(CGraphElementBase *activity, int code, const char *_format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeActivityWarning(CGraphElementBase *activity, IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeGraphException(CGraphBase *graph, int code, const char *format, ...) __attribute__((format(printf, 3, 4)));
-extern graph_decl IThorException *MakeGraphException(CGraphBase *graph, IException *e);
 extern graph_decl IThorException *MakeThorException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 extern graph_decl IThorException *MakeThorException(IException *e);
 extern graph_decl IThorException *MakeThorAudienceException(LogMsgAudience audience, int code, const char *format, ...) __attribute__((format(printf, 3, 4)));

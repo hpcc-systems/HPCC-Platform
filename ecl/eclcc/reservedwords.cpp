@@ -312,7 +312,6 @@ static const char * eclReserved12[] = {//Attributes
     "__nostreaming__",
     "__owned__",
     "after",
-    "algorithm",
     "all",
     "any",
     "best",
