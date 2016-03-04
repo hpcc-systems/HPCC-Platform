@@ -1123,8 +1123,6 @@ protected:
     const IRoxieContextLogger &logctx;
 
 protected:
-    CriticalSection resultsCrit;
-    IPointerArrayOf<FlushingStringBuffer> resultMap;
     bool exceptionLogged;
     bool aborted;
     CriticalSection abortLock; // NOTE: we don't bother to get lock when just reading to see whether to abort
@@ -2546,10 +2544,12 @@ public:
 class CRoxieServerContext : public CRoxieContextBase, implements IRoxieServerContext, implements IGlobalCodeContext
 {
     const IQueryFactory *serverQueryFactory;
+    IHpccProtocolResponse *protocol;
+    IHpccProtocolResultsWriter *results;
+    IHpccNativeProtocolResponse *nativeProtocol;
     CriticalSection daliUpdateCrit;
     StringAttr querySetName;
 
-    TextMarkupFormat mlFmt;
     bool isRaw;
     bool sendHeartBeats;
     unsigned lastSocketCheckTime;
@@ -2559,34 +2559,23 @@ protected:
     Owned<CRoxieWorkflowMachine> workflow;
     Owned<ITimeReporter> myTimer;
     mutable MapStringToMyClass<IResolvedFile> fileCache;
-    SafeSocket *client;
     StringArray clusterNames;
     int clusterWidth = -1;
 
     bool isBlocked;
-    bool isHttp;
+    bool isNative;
     bool trim;
 
     void doPostProcess()
     {
-        CriticalBlock b(resultsCrit); // Probably not needed
+        if (!protocol)
+            return;
+
         if (!isRaw && !isBlocked)
-        {
-            ForEachItemIn(seq, resultMap)
-            {
-                FlushingStringBuffer *result = resultMap.item(seq);
-                if (result)
-                    result->flush(true);
-            }
-        }
+            protocol->flush();
 
         if (probeQuery)
         {
-            FlushingStringBuffer response(client, isBlocked, MarkupFmt_XML, false, isHttp, *this);
-
-            // create output stream
-            response.startDataset("_Probe", NULL, (unsigned) -1);  // initialize it
-
             // loop through all of the graphs and create a _Probe to output each xgmml
             Owned<IPropertyTreeIterator> graphs = probeQuery->getElements("Graph");
             ForEach(*graphs)
@@ -2595,8 +2584,7 @@ protected:
 
                 StringBuffer xgmml;
                 _toXML(&graph, xgmml, 0);
-                response.append("\n");
-                response.append(xgmml.str());
+                protocol->appendProbeGraph(xgmml.str());
             }
         }
     }
@@ -2608,13 +2596,10 @@ protected:
 
     void init()
     {
-        client = NULL;
         totSlavesReplyLen = 0;
-        mlFmt = MarkupFmt_XML;
         isRaw = false;
         isBlocked = false;
-        isHttp = false;
-        trim = false;
+        isNative = true;
         sendHeartBeats = false;
 
         lastSocketCheckTime = startTime;
@@ -2628,7 +2613,7 @@ protected:
         wu->subscribe(SubscribeOptionAbort);
         addTimeStamp(wu, SSTglobal, NULL, StWhenQueryStarted);
         if (!context->getPropBool("@outputToSocket", false))
-            client = NULL;
+            protocol = NULL;
         updateSuppliedXmlParams(wu);
         SCMStringBuffer wuParams;
         if (workUnit->getXmlParams(wuParams, false).length())
@@ -2657,9 +2642,9 @@ protected:
 
     void initDebugMode(bool breakAtStart, const char *debugUID)
     {
-        if (!debugPermitted || !ownEP.port)
+        if (!debugPermitted || !ownEP.port || !nativeProtocol)
             throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug queries are not permitted on this system");
-        debugContext.setown(new CRoxieServerDebugContext(this, logctx, factory->cloneQueryXGMML(), *client));
+        debugContext.setown(new CRoxieServerDebugContext(this, logctx, factory->cloneQueryXGMML(), *nativeProtocol->querySafeSocket()));
         debugContext->debugInitialize(debugUID, factory->queryQueryName(), breakAtStart);
         if (workUnit)
         {
@@ -2677,7 +2662,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CRoxieServerContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
-        : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory)
+        : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory), results(NULL)
     {
         init();
         rowManager->setMemoryLimit(options.memoryLimit);
@@ -2686,7 +2671,7 @@ public:
     }
 
     CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const ContextLogger &_logctx)
-        : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory)
+        : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory), results(NULL)
     {
         init();
         workUnit.set(_workUnit);
@@ -2700,18 +2685,20 @@ public:
         startWorkUnit();
     }
 
-    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
-        : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory), querySetName(_querySetName)
+    CRoxieServerContext(IPropertyTree *_context, IHpccProtocolResponse *_protocol, const IQueryFactory *_factory, unsigned flags, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
+        : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory), querySetName(_querySetName), protocol(_protocol), results(NULL)
     {
         init();
+        if (protocol)
+        {
+            nativeProtocol = dynamic_cast<IHpccNativeProtocolResponse*>(protocol);
+            results = protocol->queryHpccResultsSection();
+        }
         context.set(_context);
         options.setFromContext(context);
-        client = &_client;
-        mlFmt = _mlFmt;
-        isRaw = _isRaw;
-        isBlocked = _isBlocked;
-        isHttp = httpHelper.isHttp();
-        trim = _trim;
+        isNative = (flags & HPCC_PROTOCOL_NATIVE);
+        isRaw = (flags & HPCC_PROTOCOL_NATIVE_RAW);
+        isBlocked = (flags & HPCC_PROTOCOL_BLOCKED);
         xmlStoredDatasetReadFlags = _xmlReadFlags;
         sendHeartBeats = enableHeartBeat && isRaw && isBlocked && options.priority==0;
 
@@ -2738,7 +2725,7 @@ public:
         // MORE some of these might be appropriate in wu case too?
         rowManager->setActivityTracking(context->getPropBool("_TraceMemory", false));
         rowManager->setMemoryLimit(options.memoryLimit);
-        authToken.append(httpHelper.queryAuthToken());
+
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
     }
 
@@ -2805,14 +2792,14 @@ public:
                 }
             }
         }
-        if (client)
+        if (protocol)
         {
             if (socketCheckInterval)
             {
                 if (ticksNow - lastSocketCheckTime > socketCheckInterval)
                 {
                     CriticalBlock b(abortLock);
-                    if (!client->checkConnection())
+                    if (!protocol->checkConnection())
                         throw MakeStringException(ROXIE_CLIENT_CLOSED, "Client socket closed");
                     lastSocketCheckTime = ticksNow;
                 }
@@ -2823,7 +2810,7 @@ public:
                 if (hb > 30000)
                 {
                     lastHeartBeat = msTick();
-                    client->sendHeartBeat(*this);
+                    protocol->sendHeartBeat();
                 }
             }
         }
@@ -2945,30 +2932,14 @@ public:
         return this;
     }
 
-    // interface ICodeContext
-    virtual FlushingStringBuffer *queryResult(unsigned sequence)
-    {
-        if (!client && workUnit)
-            return NULL;    // when outputting to workunit only, don't output anything to stdout
-        CriticalBlock procedure(resultsCrit);
-        while (!resultMap.isItem(sequence))
-            resultMap.append(NULL);
-        FlushingStringBuffer *result = resultMap.item(sequence);
-        if (!result)
-        {
-            result = new FlushingStringBuffer(client, isBlocked, mlFmt, isRaw, isHttp, *this);
-            result->isSoap = isHttp;
-            result->trim = trim;
-            result->queryName.set(context->queryName());
-            resultMap.replace(result, sequence);
-        }
-        return result;
-    }
-
     virtual char *getDaliServers()
     {
         //MORE: Should this now be implemented using IRoxieDaliHelper?
         throwUnexpected();
+    }
+    virtual IHpccProtocolResponse *queryProtocol()
+    {
+        return protocol;
     }
 
     virtual void setResultBool(const char *name, unsigned sequence, bool value)
@@ -2978,18 +2949,11 @@ public:
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBool(name, value);
         }
-        else
+        else if (results)
         {
-            FlushingStringBuffer *r = queryResult(sequence);
-            if (r)
-            {
-                r->startScalar(name, sequence);
-                if (isRaw)
-                    r->append(sizeof(value), (char *)&value);
-                else
-                    r->append(value ? "true" : "false");
-            }
+            results->setResultBool(name, sequence, value);
         }
+
         if (workUnit)
         {
             try
@@ -3024,14 +2988,9 @@ public:
             IPropertyTree &ctx = useContext(sequence);
             ctx.setProp(name, s.str());
         }
-        else
+        else if (results)
         {
-            FlushingStringBuffer *r = queryResult(sequence);
-            if (r)
-            {
-                r->startScalar(name, sequence);
-                r->encodeData(data, len);
-            }
+            results->setResultData(name, sequence, len, data);
         }
         if (workUnit)
         {
@@ -3125,17 +3084,9 @@ public:
             ctx.setPropBin(name, len, data);
             ctx.queryPropTree(name)->setProp("@format", "raw");
         }
-        else
+        else if (results)
         {
-            FlushingStringBuffer *r = queryResult(sequence);
-            if (r)
-            {
-                r->startScalar(name, sequence);
-                if (isRaw)
-                    r->append(len, (const char *) data);
-                else
-                    UNIMPLEMENTED;
-            }
+            results->setResultRaw(name, sequence, len, data);
         }
 
         if (workUnit)
@@ -3169,42 +3120,9 @@ public:
             ctx.queryPropTree(name)->setProp("@format", "raw");
             ctx.queryPropTree(name)->setPropBool("@isAll", isAll);
         }
-        else
+        else if (results)
         {
-            FlushingStringBuffer *r = queryResult(sequence);
-            if (r)
-            {
-                r->startScalar(name, sequence);
-                if (isRaw)
-                    r->append(len, (char *)data);
-                else if (mlFmt==MarkupFmt_XML)
-                {
-                    assertex(transformer);
-                    CommonXmlWriter writer(getXmlFlags()|XWFnoindent, 0);
-                    transformer->toXML(isAll, len, (byte *)data, writer);
-                    r->append(writer.str());
-                }
-                else if (mlFmt==MarkupFmt_JSON)
-                {
-                    assertex(transformer);
-                    CommonJsonWriter writer(getXmlFlags()|XWFnoindent, 0);
-                    transformer->toXML(isAll, len, (byte *)data, writer);
-                    r->append(writer.str());
-                }
-                else
-                {
-                    assertex(transformer);
-                    r->append('[');
-                    if (isAll)
-                        r->appendf("*]");
-                    else
-                    {
-                        SimpleOutputWriter x;
-                        transformer->toXML(isAll, len, (const byte *) data, x);
-                        r->appendf("%s]", x.str());
-                    }
-                }
-            }
+            results->setResultSet(name, sequence, isAll, len, data, transformer);
         }
 
         if (workUnit)
@@ -3243,24 +3161,9 @@ public:
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBin(name, m.length(), m.toByteArray());
         }
-        else
+        else if (results)
         {
-            FlushingStringBuffer *r = queryResult(sequence);
-            if (r)
-            {
-                r->startScalar(name, sequence);
-                if (isRaw)
-                    r->append(len, (char *)val);
-                else
-                {
-                    StringBuffer s;
-                    if (isSigned)
-                        outputXmlDecimal(val, len, precision, NULL, s);
-                    else
-                        outputXmlUDecimal(val, len, precision, NULL, s);
-                    r->append(s);
-                }
-            }
+            results->setResultDecimal(name, sequence, len, precision, isSigned, val);
         }
         if (workUnit)
         {
@@ -3290,21 +3193,10 @@ public:
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropInt64(name, value);
         }
-        else
+        else if (results)
         {
-            FlushingStringBuffer *r = queryResult(sequence);
-            if (r)
-            {
-                if (isRaw)
-                {
-                    r->startScalar(name, sequence);
-                    r->append(sizeof(value), (char *)&value);
-                }
-                else
-                    r->setScalarInt(name, sequence, value, size);
-            }
+            results->setResultInt(name, sequence, value, size);
         }
-
         if (workUnit)
         {
             try
@@ -3334,19 +3226,9 @@ public:
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropInt64(name, value);
         }
-        else
+        else if (results)
         {
-            FlushingStringBuffer *r = queryResult(sequence);
-            if (r)
-            {
-                if (isRaw)
-                {
-                    r->startScalar(name, sequence);
-                    r->append(sizeof(value), (char *)&value);
-                }
-                else
-                    r->setScalarUInt(name, sequence, value, size);
-            }
+            results->setResultUInt(name, sequence, value, size);
         }
 
         if (workUnit)
@@ -3378,14 +3260,9 @@ public:
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBin(name, sizeof(value), &value);
         }
-        else
+        else if (results)
         {
-            FlushingStringBuffer *r = queryResult(sequence);
-            if (r)
-            {
-                r->startScalar(name, sequence);
-                r->append(value);
-            }
+            results->setResultReal(name, sequence, value);
         }
         if (workUnit)
         {
@@ -3415,23 +3292,10 @@ public:
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBin(name, len, str);
         }
-        else
+        else if (results)
         {
-            FlushingStringBuffer *r = queryResult(sequence);
-            if (r)
-            {
-                r->startScalar(name, sequence);
-                if (r->isRaw)
-                {
-                    r->append(len, str);
-                }
-                else
-                {
-                    r->encodeString(str, len);
-                }
-            }
+            results->setResultString(name, sequence, len, str);
         }
-
         if (workUnit)
         {
             try
@@ -3463,26 +3327,10 @@ public:
             CriticalBlock b(contextCrit);
             useContext(sequence).setPropBin(name, bufflen, buff.getstr());
         }
-        else
+        else if (results)
         {
-            FlushingStringBuffer *r = queryResult(sequence);
-            if (r)
-            {
-                r->startScalar(name, sequence);
-                if (r->isRaw)
-                {
-                    r->append(len*2, (const char *) str);
-                }
-                else
-                {
-                    rtlDataAttr buff;
-                    unsigned bufflen = 0;
-                    rtlUnicodeToCodepageX(bufflen, buff.refstr(), len, str, "utf-8");
-                    r->encodeString(buff.getstr(), bufflen, true); // output as UTF-8
-                }
-            }
+            results->setResultUnicode(name, sequence, len, str);
         }
-
         if (workUnit)
         {
             try
@@ -3519,7 +3367,9 @@ public:
 
     virtual IWorkUnitRowReader *createStreamedRawRowReader(IEngineRowAllocator *rowAllocator, bool isGrouped, const char *id)
     {
-        return new StreamedRawDataReader(this, rowAllocator, isGrouped, logctx, *client, id);
+        if (!nativeProtocol)
+            throwUnexpected();
+        return new StreamedRawDataReader(this, rowAllocator, isGrouped, logctx, *nativeProtocol->querySafeSocket(), id);
     }
 
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence)
@@ -3885,10 +3735,15 @@ public:
             superfileTransaction.setown(createDistributedFileTransaction(queryUserDescriptor(), queryCodeContext()));
         return superfileTransaction.get();
     }
-    virtual void flush(unsigned seqNo) { throwUnexpected(); }
+    virtual void finalize(unsigned seqNo)
+    {
+        if (!protocol)
+            throwUnexpected();
+        protocol->finalize(seqNo);
+    }
     virtual unsigned getPriority() const { return options.priority; }
     virtual IConstWorkUnit *queryWorkUnit() const { return workUnit; }
-    virtual bool outputResultsToSocket() const { return client != NULL; }
+    virtual bool outputResultsToSocket() const { return protocol != NULL; }
 
     virtual void selectCluster(const char * newCluster)
     {
@@ -3927,8 +3782,8 @@ private:
     StringAttr queryName;
 
 public:
-    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
-        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, httpHelper.getTrim(), _logctx, xmlReadFlags, _querySetName)
+    CSoapRoxieServerContext(IPropertyTree *_context, IHpccProtocolResponse *_protocol, const IQueryFactory *_factory, unsigned flags, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
+        : CRoxieServerContext(_context, _protocol, _factory, flags, _logctx, xmlReadFlags, _querySetName)
     {
         queryName.set(_context->queryName());
     }
@@ -3942,139 +3797,13 @@ public:
         else
             p->perform(this, 0);
     }
-
-    virtual void flush(unsigned seqNo)
-    {
-        CriticalBlock b(resultsCrit);
-        CriticalBlock b1(client->queryCrit());
-
-        StringBuffer responseHead, responseTail;
-        responseHead.append("<").append(queryName).append("Response");
-        responseHead.append(" sequence=\"").append(seqNo).append("\"");
-        responseHead.append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append("\">");
-        responseHead.append("<Results><Result>");
-        unsigned len = responseHead.length();
-        client->write(responseHead.detach(), len, true);
-
-        ForEachItemIn(seq, resultMap)
-        {
-            FlushingStringBuffer *result = resultMap.item(seq);
-            if (result)
-            {
-                result->flush(true);
-                for(;;)
-                {
-                    size32_t length;
-                    void *payload = result->getPayload(length);
-                    if (!length)
-                        break;
-                    client->write(payload, length, true);
-                }
-            }
-        }
-
-        responseTail.append("</Result></Results>");
-        responseTail.append("</").append(queryName).append("Response>");
-        len = responseTail.length();
-        client->write(responseTail.detach(), len, true);
-    }
 };
 
-class CJsonRoxieServerContext : public CRoxieServerContext
+IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, IHpccProtocolResponse *protocol, const IQueryFactory *factory, unsigned flags, const ContextLogger &_logctx, PTreeReaderOptions readFlags, const char *querySetName)
 {
-private:
-    StringAttr queryName;
-
-public:
-    CJsonRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
-        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, httpHelper.getTrim(), _logctx, xmlReadFlags, _querySetName)
-    {
-        queryName.set(_context->queryName());
-    }
-
-    virtual void process()
-    {
-        EclProcessFactory pf = (EclProcessFactory) factory->queryDll()->getEntry("createProcess");
-        Owned<IEclProcess> p = pf();
-        if (workflow)
-            workflow->perform(this, p);
-        else
-            p->perform(this, 0);
-    }
-
-    virtual void flush(unsigned seqNo)
-    {
-        CriticalBlock b(resultsCrit);
-        CriticalBlock b1(client->queryCrit());
-
-        StringBuffer responseHead, responseTail;
-        appendfJSONName(responseHead, "%sResponse", queryName.get()).append(" {");
-        appendJSONValue(responseHead, "sequence", seqNo);
-        appendJSONName(responseHead, "Results").append(" {");
-
-        unsigned len = responseHead.length();
-        client->write(responseHead.detach(), len, true);
-
-        bool needDelimiter = false;
-        ForEachItemIn(seq, resultMap)
-        {
-            FlushingStringBuffer *result = resultMap.item(seq);
-            if (result)
-            {
-                result->flush(true);
-                for(;;)
-                {
-                    size32_t length;
-                    void *payload = result->getPayload(length);
-                    if (!length)
-                        break;
-                    if (needDelimiter)
-                    {
-                        StringAttr s(","); //write() will take ownership of buffer
-                        size32_t len = s.length();
-                        client->write((void *)s.detach(), len, true);
-                        needDelimiter=false;
-                    }
-                    client->write(payload, length, true);
-                }
-                needDelimiter=true;
-            }
-        }
-
-        responseTail.append("}}");
-        len = responseTail.length();
-        client->write(responseTail.detach(), len, true);
-    }
-
-    virtual FlushingStringBuffer *queryResult(unsigned sequence)
-    {
-        if (!client && workUnit)
-            return NULL;    // when outputting to workunit only, don't output anything to stdout
-        CriticalBlock procedure(resultsCrit);
-        while (!resultMap.isItem(sequence))
-            resultMap.append(NULL);
-        FlushingStringBuffer *result = resultMap.item(sequence);
-        if (!result)
-        {
-            result = new FlushingJsonBuffer(client, isBlocked, isHttp, *this);
-            result->trim = trim;
-            result->queryName.set(context->queryName());
-            resultMap.replace(result, sequence);
-        }
-        return result;
-    }
-};
-
-IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &_logctx, PTreeReaderOptions readFlags, const char *querySetName)
-{
-    if (httpHelper.isHttp())
-    {
-        if (httpHelper.queryContentFormat()==MarkupFmt_JSON)
-            return new CJsonRoxieServerContext(context, factory, client, httpHelper, _logctx, readFlags, querySetName);
-        return new CSoapRoxieServerContext(context, factory, client, httpHelper, _logctx, readFlags, querySetName);
-    }
-    else
-        return new CRoxieServerContext(context, factory, client, isXml ? MarkupFmt_XML : MarkupFmt_Unknown, isRaw, isBlocked, httpHelper, trim, _logctx, readFlags, querySetName);
+    if (flags & HPCC_PROTOCOL_NATIVE)
+        return new CRoxieServerContext(context, protocol, factory, flags, _logctx, readFlags, querySetName);
+    return new CSoapRoxieServerContext(context, protocol, factory, flags, _logctx, readFlags, querySetName);
 }
 
 IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const IRoxieContextLogger &_logctx)

@@ -409,6 +409,24 @@ void saveTopology()
     }
 }
 
+class CHpccProtocolPluginCtx : public CInterface, implements IHpccProtocolPluginContext
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    virtual int ctxGetPropInt(const char *propName, int defaultValue) const
+    {
+        return topology->getPropInt(propName, defaultValue);
+    }
+    virtual bool ctxGetPropBool(const char *propName, bool defaultValue) const
+    {
+        return topology->getPropBool(propName, defaultValue);
+    }
+    virtual const char *ctxQueryProp(const char *propName) const
+    {
+        return topology->queryProp(propName);
+    }
+};
+
 int STARTQUERY_API start_query(int argc, const char *argv[])
 {
     EnableSEHtoExceptionMapping();
@@ -1008,9 +1026,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 #endif
         EnableSEHtoExceptionMapping();
         setSEHtoExceptionHandler(&abortHandler);
+        Owned<IHpccProtocolPluginContext> protocolCtx = new CHpccProtocolPluginCtx();
         if (runOnce)
         {
-            Owned <IRoxieListener> roxieServer = createRoxieSocketListener(0, 1, 0, false);
+            Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(protocolCtx, NULL);
+            Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(getNodeAddress(myNodeIndex), 0, 1, false), 0, 0, NULL);
             try
             {
                 const char *format = globals->queryProp("format");
@@ -1046,18 +1066,26 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 unsigned numThreads = roxieFarm.getPropInt("@numThreads", numServerThreads);
                 unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
                 unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
+                const IpAddress &ip = getNodeAddress(myNodeIndex);
                 if (!roxiePort)
                 {
                     roxiePort = port;
-                    ownEP.set(roxiePort, getNodeAddress(myNodeIndex));
+                    ownEP.set(roxiePort, ip);
                 }
                 bool suspended = roxieFarm.getPropBool("@suspended", false);
-                Owned <IRoxieListener> roxieServer;
+                Owned <IHpccProtocolListener> roxieServer;
                 if (port)
-                    roxieServer.setown(createRoxieSocketListener(port, numThreads, listenQueue, suspended));
+                {
+                    const char *protocol = roxieFarm.queryProp("@protocol");
+                    const char *soname =  roxieFarm.queryProp("@so");
+                    const char *config  = roxieFarm.queryProp("@config");
+                    Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
+                    roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config));
+                }
                 else
                     roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
 
+                IHpccProtocolMsgSink *sink = roxieServer->queryMsgSink();
                 const char *aclName = roxieFarm.queryProp("@aclName");
                 if (aclName && *aclName)
                 {
@@ -1069,7 +1097,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                         IPropertyTree &access = accesses->query();
                         try
                         {
-                            roxieServer->addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode"));
+                            sink->addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode"));
                         }
                         catch (IException *E)
                         {

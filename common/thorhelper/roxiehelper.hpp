@@ -231,7 +231,6 @@ protected:
     UnsignedArray lengths;
 
     bool needsFlush(bool closing);
-    void startBlock();
 public:
     TextMarkupFormat mlFmt;      // controls whether xml/json elements are output
     bool isRaw;      // controls whether output as binary or ascii
@@ -260,11 +259,13 @@ public:
     virtual void flush(bool closing) ;
     virtual void addPayload(StringBuffer &s, unsigned int reserve=0);
     virtual void *getPayload(size32_t &length);
+    virtual void startBlock();
     virtual void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL);
     virtual void startScalar(const char *resultName, unsigned sequence);
     virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size);
     virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size);
     virtual void incrementRowCount();
+    void setTail(const char *value){tail.set(value);}
 };
 
 class THORHELPER_API FlushingJsonBuffer : public FlushingStringBuffer
