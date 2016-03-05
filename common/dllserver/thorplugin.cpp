@@ -249,6 +249,7 @@ static void secscan (bfd *file, sec_ptr sec, void *userParam)
         bfd_get_section_contents(file, sec, data, 0, size);
     }
 }
+static CriticalSection bfdCs;
 #endif
 
 static bool getResourceFromMappedFile(const char * filename, const byte * start_addr, MemoryBuffer &data, const char * type, unsigned id)
@@ -332,6 +333,7 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
     FreeLibrary(dllHandle);
     return true;
 #elif defined (_USE_BINUTILS)
+    CriticalBlock block(bfdCs);
     bfd_init ();
     bfd *file = bfd_openr(filename, NULL);
     if (file)
