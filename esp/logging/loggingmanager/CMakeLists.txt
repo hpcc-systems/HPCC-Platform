@@ -38,7 +38,6 @@ set ( SRCS
 include_directories (
     ${HPCC_SOURCE_DIR}/esp/platform
     ${HPCC_SOURCE_DIR}/system/jlib
-    ${HPCC_SOURCE_DIR}/system/boost/include
     ${HPCC_SOURCE_DIR}/system/security/shared
     ${HPCC_SOURCE_DIR}/system/xmllib
     ${HPCC_SOURCE_DIR}/system/include
