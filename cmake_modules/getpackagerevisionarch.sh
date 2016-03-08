@@ -32,6 +32,10 @@ case "$ARCH" in
      ARCH="i386"
      ARCH2="i386"
      ;;
+   arm*)
+     ARCH="arm"
+     ARCH2="arm"
+     ;;
 esac
 
 
@@ -57,6 +61,13 @@ if [ -e /etc/debian_version ]; then
             OUTPUT="squeeze_${ARCH2}"
         else
             OUTPUT="squeeze"
+        fi
+        ;;
+      8.*)
+        if [ ${NOARCH} -eq 0 ]; then
+            OUTPUT="jessie_${ARCH2}"
+        else
+            OUTPUT="jessie"
         fi
         ;;
       "sid")
