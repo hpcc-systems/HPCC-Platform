@@ -495,7 +495,7 @@ public:
         if (_processed)
         {
             CriticalBlock b(statsCrit);
-            processed += processed;
+            processed += _processed;
         }
     }
 
