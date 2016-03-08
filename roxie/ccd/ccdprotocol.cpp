@@ -883,7 +883,7 @@ class CHpccJsonResponse : public CHpccNativeProtocolResponse
 {
 public:
     CHpccJsonResponse(const char *queryname, SafeSocket *_client, unsigned flags, bool _isHttp, const IContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) :
-        CHpccNativeProtocolResponse(queryname, _client, MarkupFmt_JSON, flags, _isHttp, logctx, _xmlReadFlags)
+        CHpccNativeProtocolResponse(queryname, _client, MarkupFmt_JSON, flags, _isHttp, _logctx, _xmlReadFlags)
     {
     }
 
@@ -1570,7 +1570,7 @@ readAnother:
                 Owned<IActiveQueryLimiter> l;
                 if (queryLimiterFactory)
                     l.setown(queryLimiterFactory->create(listener));
-                if (!l->isAccepted())
+                if (l && !l->isAccepted())
                 {
                     if (isHTTP)
                     {
@@ -1808,11 +1808,11 @@ extern IHpccProtocolPlugin *loadHpccProtocolPlugin(IHpccProtocolPluginContext *c
     if (!queryLimiterFactory)
         queryLimiterFactory.set(_limiterFactory);
     if (global)
-        return global;
+        return global.getLink();
     if (!ctx)
         return NULL;
     global.setown(new CHpccProtocolPlugin(*ctx));
-    return global;
+    return global.getLink();
 }
 
 
