@@ -33,7 +33,7 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/resource.h>
-#ifndef __APPLE__
+#ifdef _USE_NUMA
 #include <numa.h>
 #endif
 #endif
@@ -2426,7 +2426,7 @@ void setProcessAffinity(const char * cpuList)
 
 void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char * optNodes)
 {
-#if defined(CPU_ZERO) && !defined(__APPLE__)
+#if defined(CPU_ZERO) && defined(_USE_NUMA)
     if (processPerMachine <= 1)
         return;
 
