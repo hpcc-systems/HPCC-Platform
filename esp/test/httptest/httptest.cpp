@@ -151,7 +151,7 @@ HttpClient::HttpClient(int threads, int times, const char* host, int port, FILE*
     m_use_ssl = use_ssl;
     if(use_ssl)
     {
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
         if(sslconfig != NULL)
             m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ClientSocket));
         else
@@ -186,7 +186,7 @@ int HttpClient::getUrl(const char* url)
 
     if(m_use_ssl)
     {
-#if USE_OPENSSL
+#if _USE_OPENSSL
         if(m_ssctx.get() == NULL)
             m_ssctx.setown(createSecureSocketContext(ClientSocket));
 #else
@@ -283,7 +283,7 @@ int HttpClient::sendSoapRequest(const char* url, const char* soapaction, const c
 
     if(m_use_ssl)
     {
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
         if(m_ssctx.get() == NULL)
             m_ssctx.setown(createSecureSocketContext(ClientSocket));
 #else
@@ -613,7 +613,7 @@ HttpServer::HttpServer(int port, const char* in, FILE* ofile, bool use_ssl, IPro
     m_recvDelay = m_sendDelay = m_closeDelay = 0;
     if(use_ssl)
     {
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
         if(sslconfig != NULL)
             m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ServerSocket));
         else
@@ -1183,7 +1183,7 @@ HttpProxy::HttpProxy(int localport, const char* host, int port, FILE* ofile, boo
     m_use_ssl = use_ssl;
     if(use_ssl)
     {
-#if USE_OPENSSL
+#if _USE_OPENSSL
         if(sslconfig != NULL)
             m_ssctx.setown(createSecureSocketContextEx2(sslconfig, ClientSocket));
         else

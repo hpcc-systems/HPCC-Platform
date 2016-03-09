@@ -1963,6 +1963,7 @@ protected:
     unsigned            nextTypeId;
     unsigned            nextFieldId;
     unsigned            curWfid;
+    unsigned            implicitFunctionId = 0;
     HqlExprArray        internalFunctions;
     HqlExprArray        internalFunctionExternals;
     UniqueSequenceCounter spillSequence;

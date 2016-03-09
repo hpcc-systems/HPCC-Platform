@@ -29,7 +29,6 @@ include_directories (
      ${HPCC_SOURCE_DIR}/system/security/shared
      ${HPCC_SOURCE_DIR}/system/security/securesocket
      ${HPCC_SOURCE_DIR}/common/environment
-     ${MYSQL_INCLUDE_DIR}
      ${HPCC_SOURCE_DIR}/dali/base
      ${HPCC_SOURCE_DIR}/esp/platform
      ${HPCC_SOURCE_DIR}/esp/bindings

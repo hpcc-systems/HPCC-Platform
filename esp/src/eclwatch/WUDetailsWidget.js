@@ -192,6 +192,12 @@ define([
             } else {
                 allowForeign.value = 0;
             }
+            var updateSupers = registry.byId(this.id + "UpdateSuperFiles");
+            if (updateSupers.checked == true) {
+                updateSupers.value = 1;
+            } else {
+                updateSupers.value = 0;
+            }
             if (this.publishForm.validate()) {
                 registry.byId(this.id + "Publish").closeDropDown();
                 this.wu.publish(
@@ -200,7 +206,8 @@ define([
                     dom.byId(this.id + "SourceProcess").value,
                     registry.byId(this.id + "Priority").value,
                     dom.byId(this.id + "Comment").value,
-                    allowForeign.value
+                    allowForeign.value,
+                    updateSupers.value
                 );
             }
         },

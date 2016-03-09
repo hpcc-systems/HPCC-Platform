@@ -32,8 +32,6 @@
 
 #endif 
 
-#include "basesecurity.hpp"
-
 extern "C" 
 {
     HTPASSWDSECURITY_API ISecManager * newHtpasswdSecManager(const char *serviceName, IPropertyTree &config);

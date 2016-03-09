@@ -20,6 +20,7 @@
 
 #include "jiface.hpp"
 #include "jcrc.hpp"
+#include "jlzw.hpp"
 #include "jsort.hpp"
 #include "jdebug.hpp"
 #include "jfile.hpp"
@@ -90,10 +91,57 @@ enum RowReaderWriterFlags
     rw_compressblkcrc = 0x10, // block compression, this sets/checks crc's at block level
     rw_fastlz         = 0x20, // if rw_compress
     rw_autoflush      = 0x40,
-    rw_buffered       = 0x80
+    rw_buffered       = 0x80,
+    rw_lzw            = 0x100, // if rw_compress
+    rw_lz4            = 0x200  // if rw_compress
 };
 #define DEFAULT_RWFLAGS (rw_buffered|rw_autoflush|rw_compressblkcrc)
 inline bool TestRwFlag(unsigned flags, RowReaderWriterFlags flag) { return 0 != (flags & flag); }
+
+#define COMP_MASK (rw_compress|rw_compressblkcrc|rw_fastlz|rw_lzw|rw_lz4)
+#define COMP_TYPE_MASK (rw_fastlz|rw_lzw|rw_lz4)
+inline void setCompFlag(const StringBuffer compStr, unsigned &flags)
+{
+    flags &= ~COMP_TYPE_MASK;
+    if (compStr.length())
+    {
+        if (0 == stricmp("FLZ", compStr.str()))
+            flags |= rw_fastlz;
+        else if (0 == stricmp("LZ4", compStr.str()))
+            flags |= rw_lz4;
+        else // not specifically FLZ or LZ4 so set to LZW (or rowdif)
+            flags |= rw_lzw;
+    }
+    else // default is LZ4
+        flags |= rw_lz4;
+}
+
+inline unsigned getCompMethod(unsigned flags)
+{
+    unsigned compMethod = COMPRESS_METHOD_LZW;
+    if (TestRwFlag(flags, rw_lzw))
+        compMethod = COMPRESS_METHOD_LZW;
+    else if (TestRwFlag(flags, rw_fastlz))
+        compMethod = COMPRESS_METHOD_FASTLZ;
+    else if (TestRwFlag(flags, rw_lz4))
+        compMethod = COMPRESS_METHOD_LZ4;
+    return compMethod;
+}
+
+inline unsigned getCompMethod(const StringBuffer compStr)
+{
+    unsigned compMethod = COMPRESS_METHOD_LZW;
+    if (compStr.length())
+    {
+        if (0 == stricmp("FLZ", compStr.str()))
+            compMethod = COMPRESS_METHOD_FASTLZ;
+        else if (0 == stricmp("LZ4", compStr.str()))
+            compMethod = COMPRESS_METHOD_LZ4;
+    }
+    else // default is LZ4
+        compMethod = COMPRESS_METHOD_LZ4;
+    return compMethod;
+}
 
 interface IExtRowStream: extends IRowStream
 {

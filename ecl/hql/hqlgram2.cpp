@@ -48,6 +48,7 @@
 #include "hqlvalid.hpp"
 #include "hqlrepository.hpp"
 #include "hqlir.hpp"
+#include "reservedwords.hpp"
 
 #define ADD_IMPLICIT_FILEPOS_FIELD_TO_INDEX         TRUE
 #define FAST_FIND_FIELD
@@ -10551,7 +10552,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ENCRYPT: msg.append("ENCRYPT"); break;
     case ENCRYPTED: msg.append("ENCRYPTED"); break;
     case END: msg.append("END"); break;
-    case ENDCPP: msg.append("ENDCPP"); break;
+    case ENDCPP: msg.append("ENDC++"); break;
     case ENDEMBED: msg.append("ENDEMBED"); break;
     case ENTH: msg.append("ENTH"); break;
     case ENUM: msg.append("ENUM"); break;
@@ -10698,7 +10699,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ONLY: msg.append("ONLY"); break;
     case ONWARNING: msg.append("ONWARNING"); break;
     case OPT: msg.append("OPT"); break;
-    case OR : msg.append("OR "); break;
+    case OR : msg.append("OR"); break;
     case ORDER: msg.append("ORDER"); break;
     case ORDERED: msg.append("ORDERED"); break;
     case OUTER: msg.append("OUTER"); break;
@@ -11808,7 +11809,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     attrCtx.noteEndAttribute();
 }
 
-void testHqlInternals()
+int testHqlInternals()
 {
     printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u) prop(%u)\n",
             (unsigned)sizeof(CHqlConstant),
@@ -11865,12 +11866,33 @@ void testHqlInternals()
         }
     }
 
-    // 
-    // report test result
-    if (error)
-        printf("%d error%s found!\n", error, error<=1?"":"s");
-    else
-        printf("No errors\n");
+    return error;
+}
+
+int testReservedWords()
+{
+    printf("Testing --keywords is complete...\n");
+    int error = 0;
+
+    for (int token = 258; token < YY_LAST_TOKEN; token++)
+    {
+        try
+        {
+            StringBuffer tokenText;
+            getTokenText(tokenText, token);
+            tokenText.toLowerCase();
+            if (!searchReservedWords(tokenText.str()))
+            {
+                error++;
+                printf("   Error: '%s' is missing from reservedWords.cpp\n", tokenText.str());
+            }
+        }
+        catch (...)
+        {
+            printf("   Error: complete test not possible - getTokenText() does not handle expected: %d\n", token);
+        }
+    }
+    return error;
 }
 
 IHqlExpression *HqlGram::yyParse(bool _parsingTemplateAttribute, bool catchAbort)

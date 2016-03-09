@@ -265,7 +265,8 @@ enum secManagerType
     SMT_Default,
     SMT_Local,
     SMT_LDAP,
-    SMT_HTPasswd
+    SMT_HTPasswd,
+    SMT_HTPluggable
 };
 interface ISecManager : extends IInterface
 {

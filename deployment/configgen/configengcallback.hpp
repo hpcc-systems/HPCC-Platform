@@ -138,7 +138,7 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
         StringBuffer errMsg(szMessage);
         String str(errMsg.trim());
 
-#ifdef USE_XALAN
+#ifdef _USE_XALAN
         if (str.lastIndexOf('[') > 0)
         {
           errMsg.clear();

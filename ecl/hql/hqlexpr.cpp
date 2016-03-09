@@ -12184,6 +12184,10 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
     if (functionBodyUsesContext(body))
         attrs.append(*LINK(cachedContextAttribute));
 
+    IHqlExpression *child = body->queryChild(0);
+    if (child && child->getOperator()==no_embedbody)
+        unwindAttribute(attrs, child, inlineAtom);
+
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryId(), LINK(returnType), attrs);
     return replaceChild(funcdef, 0, externalExpr);

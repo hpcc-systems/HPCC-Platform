@@ -16,8 +16,10 @@
 ############################################################################## */
 
 #include "limits.h"
-#ifdef _USE_BOOST_REGEX
+#if defined(_USE_BOOST_REGEX)
 #include "boost/regex.hpp" // must precede platform.h ; n.b. this uses a #pragma comment(lib, ...) to link the appropriate .lib in MSVC
+#elif defined(_USE_C11_REGEX)
+#include <regex>
 #endif
 #include "platform.h"
 #include <math.h>
@@ -4830,18 +4832,34 @@ int rtlNewSearchUtf8Table(unsigned count, unsigned elemlen, char * * table, unsi
 }
 
 //---------------------------------------------------------------------------
-#ifdef _USE_BOOST_REGEX
+#if defined(_USE_BOOST_REGEX) || defined(_USE_C11_REGEX)
+
+#if defined(_USE_BOOST_REGEX)
+using boost::regex;
+using boost::regex_search;
+using boost::regex_replace;
+using boost::regex_iterator;
+using boost::cmatch;
+using boost::match_results;
+#else
+using std::regex;
+using std::regex_search;
+using std::regex_replace;
+using std::regex_iterator;
+using std::cmatch;
+using std::match_results;
+#endif
 
 class CStrRegExprFindInstance : implements IStrRegExprFindInstance
 {
 private:
     bool            matched;
-    const boost::regex * regEx;
-    boost::cmatch   subs;
+    const regex * regEx;
+    cmatch   subs;
     char *          sample; //only required if findstr/findvstr will be called
 
 public:
-    CStrRegExprFindInstance(const boost::regex * _regEx, const char * _str, size32_t _from, size32_t _len, bool _keep)
+    CStrRegExprFindInstance(const regex * _regEx, const char * _str, size32_t _from, size32_t _len, bool _keep)
         : regEx(_regEx)
     {
         matched = false;
@@ -4853,16 +4871,20 @@ public:
                 sample = (char *)rtlMalloc(_len + 1);  //required for findstr
                 memcpy(sample, _str + _from, _len);
                 sample[_len] = (char)NULL;
-                matched = boost::regex_search(sample, subs, *regEx);
+                matched = regex_search(sample, subs, *regEx);
             }
             else
             {
-                matched = boost::regex_search(_str + _from, _str + _len, subs, *regEx);
+                matched = regex_search(_str + _from, _str + _len, subs, *regEx);
             }
         }
         catch (const std::runtime_error & e)
         {
+#if defined(_USE_BOOST_REGEX)
             throw MakeStringException(0, "Error in regex search: %s (regex: %s)", e.what(), regEx->str().c_str());
+#else
+            throw MakeStringException(0, "Error in regex search: %s", e.what());
+#endif
         }
 
     }
@@ -4914,19 +4936,30 @@ public:
 class CCompiledStrRegExpr : implements ICompiledStrRegExpr
 {
 private:
-    boost::regex    regEx;
+    regex    regEx;
 
 public:
     CCompiledStrRegExpr(const char * _regExp, bool _isCaseSensitive = false) 
     {
         try
         {
+#if defined(_USE_BOOST_REGEX)
             if (_isCaseSensitive)
-                regEx.assign(_regExp, boost::regbase::perl);
+                regEx.assign(_regExp, regex::perl);
             else
-                regEx.assign(_regExp, boost::regbase::perl | boost::regbase::icase);                
+                regEx.assign(_regExp, regex::perl | regex::icase);
+#else
+            if (_isCaseSensitive)
+                regEx.assign(_regExp, regex::ECMAScript);
+            else
+                regEx.assign(_regExp, regex::ECMAScript | regex::icase);
+#endif
         }
+#if defined(_USE_BOOST_REGEX)
         catch(const boost::bad_expression & e)
+#else
+        catch(const std::regex_error & e)
+#endif
         {
             StringBuffer msg;
             msg.append("Bad regular expression: ").append(e.what()).append(": ").append(_regExp);
@@ -4944,11 +4977,19 @@ public:
         try
         {
 //          tgt = boost::regex_merge(src, cre->regEx, fmt, boost::format_perl); //Algorithm regex_merge has been renamed regex_replace, existing code will continue to compile, but new code should use regex_replace instead.
-            tgt = boost::regex_replace(src, regEx, fmt, boost::format_perl);
+#if defined(_USE_BOOST_REGEX)
+            tgt = regex_replace(src, regEx, fmt, boost::format_perl);
+#else
+            tgt = regex_replace(src, regEx, fmt);
+#endif
         }
         catch(const std::runtime_error & e)
         {
+#if defined(_USE_BOOST_REGEX)
             throw MakeStringException(0, "Error in regex replace: %s (regex: %s)", e.what(), regEx.str().c_str());
+#else
+            throw MakeStringException(0, "Error in regex replace: %s", e.what());
+#endif
         }
         outlen = tgt.length();
         out = (char *)rtlMalloc(outlen);
@@ -4967,11 +5008,11 @@ public:
         size32_t outBytes = 0;
         const char * search_end = _search+_srcLen;
 
-        boost::regex_iterator<const char *> cur(_search, search_end, regEx);
-        boost::regex_iterator<const char *> end; // Default contructor creates an end of list marker
+        regex_iterator<const char *> cur(_search, search_end, regEx);
+        regex_iterator<const char *> end; // Default contructor creates an end of list marker
         for (; cur != end; ++cur)
         {
-            const boost::match_results<const char *> &match = *cur;
+            const match_results<const char *> &match = *cur;
             if (match[0].first==search_end) break;
 
             const size32_t lenBytes = match[0].second - match[0].first;
@@ -5197,7 +5238,7 @@ ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * fin
         delete (CUStrRegExprFindInstance*)findInst;
 }
 
-#else // _USE_BOOST_REGEX not set
+#else // _USE_BOOST_REGEX or _USE_C11_REGEX not set
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive)
 {
     UNIMPLEMENTED_X("Boost regex disabled");
@@ -5223,7 +5264,7 @@ ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiledExp
 ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * findInst)
 {
 }
-#endif
+#endif // _USE_BOOST_REGEX or _USE_C11_REGEX
 //---------------------------------------------------------------------------
 
 ECLRTL_API int rtlQueryLocalFailCode(IException * e)

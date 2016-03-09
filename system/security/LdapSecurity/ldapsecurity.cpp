@@ -22,7 +22,6 @@
 #include "ldapsecurity.ipp"
 #include "ldapsecurity.hpp"
 #include "authmap.ipp"
-#include "defaultsecuritymanager.hpp"
 
 /**********************************************************
  *     CLdapSecUser                                       *
@@ -1315,16 +1314,6 @@ extern "C"
 LDAPSECURITY_API ISecManager * newLdapSecManager(const char *serviceName, IPropertyTree &config)
 {
     return new CLdapSecManager(serviceName, config);
-}
-
-LDAPSECURITY_API ISecManager * newDefaultSecManager(const char *serviceName, IPropertyTree &config)
-{
-    return new CDefaultSecurityManager(serviceName, &config);
-}
-
-LDAPSECURITY_API ISecManager * newLocalSecManager(const char *serviceName, IPropertyTree &config)
-{
-    return new CLocalSecurityManager(serviceName, &config);
 }
 
 LDAPSECURITY_API IAuthMap *newDefaultAuthMap(IPropertyTree* config)

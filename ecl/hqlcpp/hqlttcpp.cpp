@@ -1997,8 +1997,8 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
 
 
 static HqlTransformerInfo thorHqlTransformerInfo("ThorHqlTransformer");
-ThorHqlTransformer::ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * wu)
-: NewHqlTransformer(thorHqlTransformerInfo), translator(_translator), options(_translator.queryOptions())
+ThorHqlTransformer::ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * wu, unsigned & _implicitFunctionId)
+: NewHqlTransformer(thorHqlTransformerInfo), translator(_translator), options(_translator.queryOptions()), implicitFunctionId(_implicitFunctionId)
 {
     targetClusterType = _targetClusterType;
     topNlimit = options.topnLimit;
@@ -2091,6 +2091,25 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
     case no_debug_option_value:
         //pick best engine etc. definitely done by now, so substitute any options that haven't been processed already
         return getDebugValueExpr(translator.wu(), expr);
+    case no_embedbody:
+        {
+            //Convert all definitions of non functional embeds to implicit functions
+            StringBuffer funcname;
+            funcname.append("userx").append(++implicitFunctionId);
+            HqlExprArray args;
+            args.append(*LINK(expr));
+            if (expr->hasAttribute(languageAtom))
+            {
+                args.append(*createAttribute(contextAtom));
+                if (expr->isDatarow())
+                    args.append(*createAttribute(allocatorAtom));
+            }
+            OwnedHqlExpr body = createWrapper(no_outofline, expr->queryType(), args);
+            IHqlExpression * formals = createValue(no_sortlist, makeSortListType(NULL));
+            OwnedHqlExpr funcdef = createFunctionDefinition(createIdAtom(funcname), body.getClear(), formals, NULL, NULL);
+            HqlExprArray actuals;
+            return createBoundFunction(NULL, funcdef, actuals, nullptr, true);
+        }
     }
 
     if (normalized && (normalized != transformed))
@@ -3772,7 +3791,7 @@ void HqlCppTranslator::convertLogicalToActivities(WorkflowItem & curWorkflow)
 {
     {
         cycle_t startCycles = get_cycles_now();
-        ThorHqlTransformer transformer(*this, targetClusterType, wu());
+        ThorHqlTransformer transformer(*this, targetClusterType, wu(), implicitFunctionId);
 
         HqlExprArray & exprs = curWorkflow.queryExprs();
         HqlExprArray transformed;

@@ -183,7 +183,7 @@ protected:
 class ThorHqlTransformer : public NewHqlTransformer
 {
 public:
-    ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * _wu);
+    ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * _wu, unsigned & _implicitFunctionId);
 
 protected:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
@@ -221,6 +221,7 @@ protected:
     const HqlCppOptions & options;
     ClusterType         targetClusterType;
     unsigned            topNlimit;
+    unsigned &          implicitFunctionId;
     bool                groupAllDistribute;
 };
 

@@ -3007,6 +3007,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_xmlproject:
     case no_call:
     case no_externalcall:
+    case no_embedbody:
         info.setUnknown(RCMfew);
         break;
     case no_colon:

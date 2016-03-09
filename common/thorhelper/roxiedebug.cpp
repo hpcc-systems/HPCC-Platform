@@ -46,10 +46,9 @@ bool CDebugCommandHandler::checkCommand(IXmlWriter &out, const char *&supplied, 
     }
 }
 
-void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext *debugContext, FlushingStringBuffer &output)
+void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext *debugContext, IXmlWriter &out)
 {
     const char *commandName = query->queryName();
-    CommonXmlWriter out(0, 1);
     if (strnicmp(commandName, "b", 1)==0 && checkCommand(out, commandName, "breakpoint"))
     {
         const char *mode = query->queryProp("@mode");
@@ -207,7 +206,6 @@ void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext
     else
         throw MakeStringException(THORHELPER_DEBUG_ERROR, "Unknown command %s", commandName);
     out.outputEndNested(commandName);
-    output.append(out.str());
 }
 
 //=======================================================================================

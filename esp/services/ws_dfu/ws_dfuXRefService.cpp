@@ -532,7 +532,7 @@ inline void addLfnToUsedFileMap(MapStringTo<bool> &usedFileMap, const char *lfn)
         usedFileMap.setValue(lfn, true);
 }
 
-void addUsedFilesFromActivePackageMaps(MapStringTo<bool> &usedFileMap, const char *process)
+void addUsedFilesFromPackageMaps(MapStringTo<bool> &usedFileMap, const char *process)
 {
     Owned<IPropertyTree> packageSet = resolvePackageSetRegistry(process, true);
     if (!packageSet)
@@ -542,7 +542,7 @@ void addUsedFilesFromActivePackageMaps(MapStringTo<bool> &usedFileMap, const cha
     ForEach(*targets)
     {
         SCMStringBuffer target;
-        VStringBuffer xpath("PackageMap[@querySet='%s'][@active='1']", targets->str(target).str());
+        VStringBuffer xpath("PackageMap[@querySet='%s']", targets->str(target).str());
         Owned<IPropertyTreeIterator> activeMaps = packageSet->getElements(xpath);
         //Add files referenced in all active maps, for all targets configured for this process cluster
         ForEach(*activeMaps)
@@ -595,7 +595,7 @@ bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedF
     ForEach(*roxieFiles)
         addLfnToUsedFileMap(usedFileMap, roxieFiles->query().queryProp("@name"));
     if (req.getCheckPackageMaps())
-        addUsedFilesFromActivePackageMaps(usedFileMap, process);
+        addUsedFilesFromPackageMaps(usedFileMap, process);
     StringArray unusedFiles;
     findUnusedFilesInDFS(unusedFiles, process, usedFileMap);
     resp.setUnusedFileCount(unusedFiles.length());

@@ -47,9 +47,8 @@
 
 // adapted for jlib
 #include "platform.h"
-
+#include "jfcmp.hpp"
 #include "jflz.hpp"
-
 #include "jcrc.hpp"
 
 /*
@@ -593,49 +592,29 @@ static FASTLZ_INLINE int FASTLZ_DECOMPRESSOR(const void* input, int length, void
 
 #if defined(FASTLZ__JLIBCOMPRESSOR)
 
-
-#define COMMITTED ((size32_t)-1)
-
 /* Format:
     size32_t totalexpsize;
     { size32_t subcmpsize; bytes subcmpdata; }
     size32_t trailsize; bytes traildata;    // unexpanded
 */
 
-
-class jlib_decl CFastLZCompressor : public CInterface, public ICompressor
+class jlib_decl CFastLZCompressor : public CFcmpCompressor
 {
     HTAB_T ht;
-    size32_t blksz;
-    size32_t bufalloc;
-    MemoryBuffer inma;      // equals blksize len
-    MemoryBuffer *outBufMb; // used when dynamic output buffer (when open() used)
-    size32_t outBufStart;
-    byte *inbuf;
-    size32_t inmax;         // remaining
-    size32_t inlen;
-    size32_t inlenblk;      // set to COMMITTED when so
-    bool trailing;
-    byte *outbuf;
-    size32_t outlen;
-    size32_t wrmax;
-    size32_t dynamicOutSz;
 
-    inline void setinmax()
+    virtual void setinmax()
     {
         inmax = blksz-outlen-sizeof(size32_t);
         if (inmax<256)
             trailing = true;    // too small to bother compressing
-        else {
+        else
+        {
             trailing = false;
-            size32_t slack = inmax/17;
-            if (slack<66)
-                slack = 66;
-            inmax -= slack+sizeof(size32_t);
+            inmax -= (fastlzSlack(inmax) + sizeof(size32_t));
         }
     }
 
-    inline void flushcommitted()
+    virtual void flushcommitted()
     {
         // only does non trailing
         if (trailing)
@@ -675,203 +654,12 @@ class jlib_decl CFastLZCompressor : public CInterface, public ICompressor
         trailing = true;
     }
 
-    void initCommon()
-    {
-        blksz = inma.capacity();
-        *(size32_t *)outbuf = 0;
-        outlen = sizeof(size32_t);
-        inlen = 0;
-        inlenblk = COMMITTED;
-        setinmax();
-    }
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CFastLZCompressor()
-    {
-        outlen = 0;
-        outbuf = NULL;      // only set on close
-        bufalloc = 0;
-        wrmax = 0;          // set at open
-        dynamicOutSz = 0;
-        outBufMb = NULL;
-        outBufStart = 0;
-        inbuf = NULL;
-    }
-
-    virtual ~CFastLZCompressor()
-    {
-        if (bufalloc)
-            free(outbuf);
-    }
-
-
-    virtual void open(void *buf,size32_t max)
-    {
-        if (max<1024)
-            throw MakeStringException(-1,"CFastLZCompressor::open - block size (%d) not large enough", blksz);
-        wrmax = max;
-        if (buf)
-        {
-            if (bufalloc)
-                free(outbuf);
-            bufalloc = 0;
-            outbuf = (byte *)buf;
-        }
-        else if (max>bufalloc)
-        {
-            if (bufalloc)
-                free(outbuf);
-            bufalloc = max;
-            outbuf = (byte *)malloc(bufalloc);
-        }
-        outBufMb = NULL;
-        outBufStart = 0;
-        dynamicOutSz = 0;
-        inbuf = (byte *)inma.ensureCapacity(max);
-        initCommon();
-    }
-
-    virtual void open(MemoryBuffer &mb, size32_t initialSize)
-    {
-        if (!initialSize)
-            initialSize = 0x100000; // 1MB
-        if (initialSize<1024)
-            throw MakeStringException(-1,"CFastLZCompressor::open - block size (%d) not large enough", initialSize);
-        wrmax = initialSize;
-        if (bufalloc)
-        {
-            free(outbuf);
-            bufalloc = 0;
-        }
-        inbuf = (byte *)inma.ensureCapacity(initialSize);
-        outBufMb = &mb;
-        outBufStart = mb.length();
-        outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
-        dynamicOutSz = outBufMb->capacity();
-        initCommon();
-    }
-
-    virtual void close()
-    {
-        if (inlenblk!=COMMITTED) {
-            inlen = inlenblk; // transaction failed
-            inlenblk = COMMITTED;
-        }
-        flushcommitted();
-        size32_t totlen = outlen+sizeof(size32_t)+inlen;
-        assertex(blksz>=totlen);
-        size32_t *tsize = (size32_t *)(outbuf+outlen);
-        *tsize = inlen;
-        memcpy(tsize+1,inbuf,inlen);
-        outlen = totlen;
-        *(size32_t *)outbuf += inlen;
-        inbuf = NULL;
-        if (outBufMb)
-        {
-            outBufMb->setWritePos(outBufStart+outlen);
-            outBufMb = NULL;
-        }
-    }
-
-
-    size32_t write(const void *buf,size32_t len)
-    {
-        // no more than wrmax per write (unless dynamically sizing)
-        size32_t lenb = wrmax;
-        byte *b = (byte *)buf;
-        size32_t written = 0;
-        while (len)
-        {
-            if (len < lenb)
-                lenb = len;
-            if (lenb+inlen>inmax)
-            {
-                if (trailing)
-                    return written;
-                flushcommitted();
-                if (lenb+inlen>inmax)
-                {
-                    if (outBufMb) // sizing input buffer, but outBufMb!=NULL is condition of whether in use or not
-                    {
-                        blksz += len > 0x100000 ? len : 0x100000;
-                        verifyex(inma.ensureCapacity(blksz));
-                        blksz = inma.capacity();
-                        inbuf = (byte *)inma.bufferBase();
-                        wrmax = blksz;
-                        setinmax();
-                    }
-                    lenb = inmax-inlen;
-                    if (len < lenb)
-                        lenb = len;
-                }
-            }
-            if (lenb == 0)
-                return written;
-            memcpy(inbuf+inlen,b,lenb);
-            b += lenb;
-            inlen += lenb;
-            len -= lenb;
-            written += lenb;
-        }
-        return written;
-    }
-
-    void *  bufptr() 
-    { 
-        assertex(!inbuf);  // i.e. closed
-        return outbuf;
-    }
-    size32_t    buflen() 
-    { 
-        assertex(!inbuf);  // i.e. closed
-        return outlen;
-    }
-    void    startblock()
-    {
-        inlenblk = inlen;
-    }
-    void commitblock()
-    {
-        inlenblk = COMMITTED;
-    }
-
-
 };
 
 
-class jlib_decl CFastLZExpander : public CInterface, public IExpander
+class jlib_decl CFastLZExpander : public CFcmpExpander
 {
-
-    byte *outbuf;
-    size32_t outlen;
-    size32_t bufalloc;
-    const size32_t *in;  
-
 public:
-    IMPLEMENT_IINTERFACE;
-
-    CFastLZExpander()
-    {
-        outbuf = NULL;
-        outlen = 0;
-        bufalloc = 0;
-    }
-    ~CFastLZExpander()
-    {
-        if (bufalloc)
-            free(outbuf);
-
-    }
-
-    virtual size32_t  init(const void *blk)
-    {
-        const size32_t *expsz = (const size32_t *)blk;
-        outlen = *expsz;
-        in = (expsz+1);
-        return outlen;
-    }
-
     virtual void expand(void *buf)
     {
         if (!outlen)
@@ -910,8 +698,6 @@ public:
         }
     }
 
-    virtual void *bufptr() { return outbuf;}
-    virtual size32_t   buflen() { return outlen;}
 };
 
 void fastLZCompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
@@ -921,7 +707,8 @@ void fastLZCompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
     *sz = len;
     sz++;
     *sz = (len>16)?fastlz_compress(src, (int)len, sz+1):16;
-    if (*sz>=len) {
+    if (*sz>=len)
+    {
         *sz = len;
         memcpy(sz+1,src,len);
     }
@@ -999,30 +786,10 @@ IExpander *createFastLZExpander()
     return new CFastLZExpander;
 }
 
-#define FLZ_BUFFER_SIZE (0x100000)
+static const __uint64 FLZSTRMCOMPRESSEDFILEFLAG = I64C(0xc3518de42f15da57);
 
-static const __uint64 FLZCOMPRESSEDFILEFLAG = U64C(0xc3518de42f15da57);
-
-struct FlzCompressedFileTrailer
+class CFastLZStream : public CFcmpStream
 {
-    offset_t        zfill1;             // must be first
-    offset_t        expandedSize;
-    __uint64        compressedType;
-    unsigned        zfill2;             // must be last
-};
-
-
-class CFastLZStream : public CInterface, implements IFileIOStream
-{
-    Linked<IFileIO> baseio;
-    offset_t expOffset;     // expanded offset
-    offset_t cmpOffset;     // compressed offset in file
-    bool reading;
-    MemoryAttr ma;
-    size32_t bufsize;
-    size32_t bufpos;        // reading only
-    offset_t expSize;
-
     bool load()
     {
         bufpos = 0;
@@ -1064,132 +831,11 @@ class CFastLZStream : public CInterface, implements IFileIOStream
 
 
 public:
-    IMPLEMENT_IINTERFACE;
+    CFastLZStream() { compType = FLZSTRMCOMPRESSEDFILEFLAG; }
 
-    CFastLZStream() 
-    {
-        expOffset = 0;
-        cmpOffset = 0;
-        reading = true;
-        bufpos = 0;
-        bufsize = 0;
-    }
-
-    ~CFastLZStream()
-    {
-        flush();
-    }
-
-    bool attach(IFileIO *_baseio)
-    {
-        baseio.set(_baseio);
-        expOffset = 0;
-        cmpOffset = 0;
-        reading = true;
-        bufpos = 0;
-        bufsize = 0;
-
-        FlzCompressedFileTrailer trailer;
-        offset_t filesize = baseio->size();
-        if (filesize<sizeof(trailer))
-            return false;
-        baseio->read(filesize-sizeof(trailer),sizeof(trailer),&trailer);
-        expSize = trailer.expandedSize;
-        return trailer.compressedType==FLZCOMPRESSEDFILEFLAG;
-    }
-
-    void create(IFileIO *_baseio)
-    {
-        baseio.set(_baseio);
-        expOffset = 0;
-        cmpOffset = 0;
-        reading = false;
-        bufpos = 0;
-        bufsize = 0;
-        ma.allocate(FLZ_BUFFER_SIZE);
-        expSize = (offset_t)-1;
-    }
-
-    void seek(offset_t pos, IFSmode origin)
-    {
-        if ((origin==IFScurrent)&&(pos==0))
-            return;
-        if ((origin==IFSbegin)||(pos!=0))
-            throw MakeStringException(-1,"CFastLZStream seek not supported");
-        expOffset = 0;
-        bufpos = 0;
-        bufsize = 0;
-    }
-
-    offset_t size()
-    {
-        return (expSize==(offset_t)-1)?0:expSize;
-    }
-
-    offset_t tell()
-    {
-        return expOffset;
-    }
-
-
-    size32_t read(size32_t len, void * data)
-    {
-        if (!reading)
-            throw MakeStringException(-1,"CFastLZStream read to stream being written");
-        size32_t ret=0;
-        while (len) {
-            size32_t cpy = bufsize-bufpos;
-            if (!cpy) {
-                if (!load())
-                    break;
-                cpy = bufsize-bufpos;
-            }
-            if (cpy>len)
-                cpy = len;
-            memcpy(data,(const byte *)ma.get()+bufpos,cpy);
-            bufpos += cpy;
-            len -= cpy;
-            ret += cpy;
-        }
-        expOffset += ret;
-        return ret;
-    }
-
-    size32_t write(size32_t len, const void * data)
-    {
-        if (reading)
-            throw MakeStringException(-1,"CFastLZStream write to stream being read");
-        size32_t ret = len;
-        while (len+bufsize>FLZ_BUFFER_SIZE) {
-            size32_t cpy = FLZ_BUFFER_SIZE-bufsize;
-            memcpy((byte *)ma.bufferBase()+bufsize,data,cpy);
-            data = (const byte *)data+cpy;
-            len -= cpy;
-            bufsize = FLZ_BUFFER_SIZE;
-            save();
-        }
-        memcpy((byte *)ma.bufferBase()+bufsize,data,len);
-        bufsize += len;
-        expOffset += len;
-        return ret;
-    }
-
-    void flush()
-    {
-        if (!reading&&(expSize!=expOffset)) {
-            save();
-            FlzCompressedFileTrailer trailer;
-            memset(&trailer,0,sizeof(trailer));
-            trailer.compressedType = FLZCOMPRESSEDFILEFLAG;
-            trailer.expandedSize = expOffset;
-            baseio->write(cmpOffset,sizeof(trailer),&trailer);
-            expSize = expOffset;
-        }
-    }
+    virtual ~CFastLZStream() { flush(); }
 
 };
-
-
 
 IFileIOStream *createFastLZStreamRead(IFileIO *base)
 {
@@ -1206,7 +852,4 @@ IFileIOStream *createFastLZStreamWrite(IFileIO *base)
     return strm.getClear();
 }
 
-
 #endif
-
-

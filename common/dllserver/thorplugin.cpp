@@ -249,6 +249,7 @@ static void secscan (bfd *file, sec_ptr sec, void *userParam)
         bfd_get_section_contents(file, sec, data, 0, size);
     }
 }
+static CriticalSection bfdCs;
 #endif
 
 static bool getResourceFromMappedFile(const char * filename, const byte * start_addr, MemoryBuffer &data, const char * type, unsigned id)
@@ -269,7 +270,7 @@ static bool getResourceFromMappedFile(const char * filename, const byte * start_
     unsigned char *data2 = getsectiondata(mh, "__TEXT", sectname.str(), &len);
     data.append(len, data2);
     return true;
-#else
+#elif defined (__64bit__)
     // The first bytes are the ELF header
     const Elf64_Ehdr * hdr = (const Elf64_Ehdr *) start_addr;
     if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0)
@@ -309,6 +310,46 @@ static bool getResourceFromMappedFile(const char * filename, const byte * start_
 
     DBGLOG("Failed to extract resource %s: Does not include a matching entry", filename);
     return false;
+#else
+    // The first bytes are the ELF header
+    const Elf32_Ehdr * hdr = (const Elf32_Ehdr *) start_addr;
+    if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0)
+    {
+        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF binary", filename);
+        return false;
+    }
+    if (hdr->e_ident[EI_CLASS] != ELFCLASS32)
+    {
+        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF 32-bit binary", filename);
+        return false;
+    }
+
+    //Check that there is a symbol table for the sections.
+    if (hdr->e_shstrndx == SHN_UNDEF)
+    {
+        DBGLOG("Failed to extract resource %s: Does not include a section symbol table", filename);
+        return false;
+    }
+
+    //Now walk the sections comparing the section names
+    Elf32_Half numSections = hdr->e_shnum;
+    const Elf32_Shdr * sectionHeaders = reinterpret_cast<const Elf32_Shdr *>(start_addr + hdr->e_shoff);
+    const Elf32_Shdr & symbolTableSection = sectionHeaders[hdr->e_shstrndx];
+    const char * symbolTable = (const char *)start_addr + symbolTableSection.sh_offset;
+    VStringBuffer sectname("%s_%u", type, id);
+    for (unsigned iSect= 0; iSect < numSections; iSect++)
+    {
+        const Elf32_Shdr & section = sectionHeaders[iSect];
+        const char * sectionName = symbolTable + section.sh_name;
+        if (streq(sectionName, sectname))
+        {
+            data.append(section.sh_size, start_addr + section.sh_offset);
+            return true;
+        }
+    }
+
+    DBGLOG("Failed to extract resource %s: Does not include a matching entry", filename);
+    return false;
 #endif
 }
 
@@ -332,6 +373,7 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
     FreeLibrary(dllHandle);
     return true;
 #elif defined (_USE_BINUTILS)
+    CriticalBlock block(bfdCs);
     bfd_init ();
     bfd *file = bfd_openr(filename, NULL);
     if (file)

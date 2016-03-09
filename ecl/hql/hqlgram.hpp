@@ -1234,6 +1234,7 @@ private:
 
 IHqlExpression *reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *scope, HqlLookupContext & ctx, bool hasFieldMap);
 extern HQL_API void resetLexerUniqueNames();        // to make regression suite consistent
-extern HQL_API void testHqlInternals();
+extern HQL_API int testHqlInternals();
+extern HQL_API int testReservedWords();
 
 #endif

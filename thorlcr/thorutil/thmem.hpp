@@ -458,7 +458,7 @@ public:
 
     //A thread calling the following functions must own the lock, or guarantee no other thread will access
     void sort(ICompare & compare, unsigned maxcores);
-    rowidx_t save(IFile &file, bool useCompression, bool skipNulls, const char *tracingPrefix);
+    rowidx_t save(IFile &file, unsigned _spillCompInfo, bool skipNulls, const char *tracingPrefix);
 
     inline rowidx_t numCommitted() const { return commitRows - firstRow; } //MORE::Not convinced this is very safe!
 
@@ -472,7 +472,7 @@ public:
     void transferFrom(CThorExpandingRowArray &src);
     void transferFrom(CThorSpillableRowArray &src);
 
-    IRowStream *createRowStream(unsigned spillPriority, bool compressSpills);
+    IRowStream *createRowStream(unsigned spillPriority, unsigned spillCompInfo);
 
     offset_t serializedSize()
     {

@@ -20,21 +20,21 @@
 
 real8 s1 :=
 BEGINC++
-sqrt(2.0)
+return sqrt(2.0);
 ENDC++;
 s1p := s1 : persist('s1');
 output(s1p);
 
 real8 s2 :=
 BEGINC++
-sqrt(2.0)
+return sqrt(2.0);
 ENDC++;
 s2p := s2 : persist('s2');
 output(s2p);
 
 real8 s3 :=
 BEGINC++
-sqrt(3.0)
+return sqrt(3.0);
 ENDC++;
 s3p := s3 : persist('s3');
 output(s3p);

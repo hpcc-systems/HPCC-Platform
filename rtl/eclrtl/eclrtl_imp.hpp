@@ -100,7 +100,7 @@ public:
 };
 
 template <unsigned maxsize>
-class ECLRTL_API rtlFixedRowBuilder
+class rtlFixedRowBuilder
 {
 public:
     inline void ensureAvailable(size32_t size) {}
