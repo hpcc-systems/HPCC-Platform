@@ -23,6 +23,7 @@
 
 #include "platform.h"
 #include <string.h>
+#include <atomic>
 #include "jscm.hpp"
 #include "jatomic.hpp"
 
@@ -61,24 +62,36 @@ void jlib_decl raiseAssertCore(const char *assertion, const char *file, unsigned
 
 #define DEAD_PSEUDO_COUNT               0x3fffffff
 
+class CEmptyClass
+{
+};
+
+template <class INTERFACE>
+class CInterfaceOf;
+
+template <class INTERFACE>
+class CReusableInterfaceOf;
+
 //The simplest implementation of IInterface.  Can be used in situations where speed is critical, and
 //there will never be a need for the equivalent of beforeDispose().
 //It is generally recommended to use CInterface for general classes since derived classes may need beforeDispose().
-class jlib_decl CSimpleInterface
+template <class INTERFACE>
+class CSimpleInterfaceOf : public INTERFACE
 {
-    friend class CInterface;    // want to keep xxcount private outside this pair of classes
+    friend class CInterfaceOf<INTERFACE>;    // want to keep xxcount private outside this pair of classes
+    friend class CReusableInterfaceOf<INTERFACE>;
 public:
-    inline virtual ~CSimpleInterface() {}
+    inline virtual ~CSimpleInterfaceOf() {}
 
-    inline CSimpleInterface()           { atomic_set(&xxcount, 1); }
-    inline bool IsShared(void) const    { return atomic_read(&xxcount) > 1; }
-    inline int getLinkCount(void) const { return atomic_read(&xxcount); }
+    inline CSimpleInterfaceOf() : xxcount(1) { }
+    inline bool IsShared(void) const    { return xxcount.load(std::memory_order_relaxed) > 1; }
+    inline int getLinkCount(void) const { return xxcount.load(std::memory_order_relaxed); }
 
-    inline void Link() const            { atomic_inc(&xxcount); }
+    inline void Link() const { xxcount.fetch_add(1,std::memory_order_acq_rel); }
 
     inline bool Release(void) const
     {
-        if (atomic_dec_and_test(&xxcount))
+        if (xxcount.fetch_sub(1,std::memory_order_acq_rel) == 1)
         {
             delete this;
             return true;
@@ -87,30 +100,40 @@ public:
     }
 
 private:
-    mutable atomic_t xxcount;
+    CSimpleInterfaceOf(const CSimpleInterfaceOf &) = delete;
+    CSimpleInterfaceOf(CSimpleInterfaceOf &&) = delete;
+    CSimpleInterfaceOf & operator = (const CSimpleInterfaceOf &) = delete;
+
+private:
+    mutable std::atomic<unsigned> xxcount;
 };
+
+template jlib_decl class CSimpleInterfaceOf<CEmptyClass>;
+class jlib_decl CSimpleInterface : public CSimpleInterfaceOf<CEmptyClass> {};
 
 // A more general implementation of IInterface that includes a virtual function beforeDispose().
 // beforeDispose() allows an a fully constructed object to be cleaned up (which means that virtual
 // function calls still work (unlike a virtual destructor).
 // It makes it possible to implement a cache which doesn't link count the object, but is cleared when
 // the object is disposed without a critical section in Release().  (See pattern details below).
-class jlib_decl CInterface : public CSimpleInterface
+template <class INTERFACE>
+class CInterfaceOf : public CSimpleInterfaceOf<INTERFACE>
 {
 public:
-    virtual void beforeDispose();
+    virtual void beforeDispose() {}
 
-    inline bool isAlive() const         { return atomic_read(&xxcount) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
+    inline bool isAlive() const         { return xxcount.load(std::memory_order_relaxed) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
 
     inline bool Release(void) const
     {
-        if (atomic_dec_and_test(&xxcount))
+        if (xxcount.fetch_sub(1,std::memory_order_acq_rel) == 1)
         {
+            unsigned zero = 0;
             //Because beforeDispose could cause this object to be linked/released or call isAlive(), xxcount is set
             //to a a high mid-point positive number to avoid poss. of releasing again.
-            if (atomic_cas(&xxcount, DEAD_PSEUDO_COUNT, 0))
+            if (xxcount.compare_exchange_strong(zero, DEAD_PSEUDO_COUNT, std::memory_order_acq_rel))
             {
-                const_cast<CInterface *>(this)->beforeDispose();
+                const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
                 delete this;
                 return true;
             }
@@ -118,6 +141,8 @@ public:
         return false;
     }
 };
+
+class jlib_decl CInterface : public CInterfaceOf<CEmptyClass> {};
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -151,6 +176,7 @@ template <class INTERFACE>
 class CReusableInterfaceOf;
 
 // A thread safe basic implementation of IInterface that destroys the object when last Release() occurs.
+#if 0
 template <class INTERFACE>
 class CSimpleInterfaceOf : public INTERFACE
 {
@@ -240,6 +266,7 @@ public:
         return false;
     }
 };
+#endif
 
 //---------------------------------------------------------------------------------------------------------------------
 
