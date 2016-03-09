@@ -83,7 +83,7 @@ class CSimpleInterfaceOf : public INTERFACE
 public:
     inline virtual ~CSimpleInterfaceOf() {}
 
-    inline CSimpleInterfaceOf() : xxcount(1) { }
+    inline CSimpleInterfaceOf() { xxcount.store(1, std::memory_order_relaxed); }
     inline bool IsShared(void) const    { return xxcount.load(std::memory_order_relaxed) > 1; }
     inline int getLinkCount(void) const { return xxcount.load(std::memory_order_relaxed); }
 
@@ -103,12 +103,10 @@ private:
     CSimpleInterfaceOf(const CSimpleInterfaceOf &) = delete;
     CSimpleInterfaceOf(CSimpleInterfaceOf &&) = delete;
     CSimpleInterfaceOf & operator = (const CSimpleInterfaceOf &) = delete;
-
-private:
     mutable std::atomic<unsigned> xxcount;
 };
 
-template jlib_decl class CSimpleInterfaceOf<CEmptyClass>;
+template class CSimpleInterfaceOf<CEmptyClass>;
 class jlib_decl CSimpleInterface : public CSimpleInterfaceOf<CEmptyClass> {};
 
 // A more general implementation of IInterface that includes a virtual function beforeDispose().
@@ -122,16 +120,16 @@ class CInterfaceOf : public CSimpleInterfaceOf<INTERFACE>
 public:
     virtual void beforeDispose() {}
 
-    inline bool isAlive() const         { return xxcount.load(std::memory_order_relaxed) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
+    inline bool isAlive() const         { return this->xxcount.load(std::memory_order_relaxed) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
 
     inline bool Release(void) const
     {
-        if (xxcount.fetch_sub(1,std::memory_order_acq_rel) == 1)
+        if (this->xxcount.fetch_sub(1,std::memory_order_acq_rel) == 1)
         {
             unsigned zero = 0;
-            //Because beforeDispose could cause this object to be linked/released or call isAlive(), xxcount is set
+            //Because beforeDispose could cause this object to be linked/released or call isAlive(), this->xxcount is set
             //to a a high mid-point positive number to avoid poss. of releasing again.
-            if (xxcount.compare_exchange_strong(zero, DEAD_PSEUDO_COUNT, std::memory_order_acq_rel))
+            if (this->xxcount.compare_exchange_strong(zero, DEAD_PSEUDO_COUNT, std::memory_order_acq_rel))
             {
                 const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
                 delete this;
@@ -140,6 +138,7 @@ public:
         }
         return false;
     }
+
 };
 
 class jlib_decl CInterface : public CInterfaceOf<CEmptyClass> {};

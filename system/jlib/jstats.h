@@ -27,6 +27,7 @@ inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKi
 
 //---------------------------------------------------------------------------------------------------------------------
 
+#if 0
 interface IStatistic : extends IInterface
 {
 public:
@@ -43,6 +44,7 @@ interface IStatisticFilter
 interface IStatisticIterator : public IIteratorOf<IStatistic>
 {
 };
+#endif
 
 //Represents a single level of a scope
 class jlib_decl StatsScopeId

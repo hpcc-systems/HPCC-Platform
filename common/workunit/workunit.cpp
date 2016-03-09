@@ -689,9 +689,11 @@ protected:
 
     void ensureUniqueStatistic()
     {
+#if 0 // mck
         //If something else has linked this statistic, clone a unique one.
         if (curStat->IsShared())
             curStat.setown(new ExtractedStatistic(*curStat));
+#endif
     }
 private:
     Owned<IRemoteConnection> conn;
