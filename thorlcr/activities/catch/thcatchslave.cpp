@@ -30,7 +30,7 @@ protected:
     bool eos;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CCatchSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -59,8 +59,6 @@ public:
 class CCatchSlaveActivity : public CCatchSlaveActivityBase, public CThorSteppable
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CCatchSlaveActivity(CGraphElementBase *container) 
         : CCatchSlaveActivityBase(container), CThorSteppable(this)
     {

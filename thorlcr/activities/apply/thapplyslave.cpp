@@ -24,7 +24,7 @@ class CApplySlaveActivity : public ProcessSlaveActivity
     IThorDataLink *input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+//    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CApplySlaveActivity(CGraphElementBase *container) 
         : ProcessSlaveActivity(container)

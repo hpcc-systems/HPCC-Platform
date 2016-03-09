@@ -35,7 +35,7 @@ class CXmlParseSlaveActivity : public CSlaveActivity, public CThorDataLink, impl
     Owned<IEngineRowAllocator> allocator;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CXmlParseSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {

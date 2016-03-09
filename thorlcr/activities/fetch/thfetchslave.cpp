@@ -287,7 +287,7 @@ protected:
     mptag_t mptag;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CFetchSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -605,8 +605,6 @@ class CXmlFetchSlaveActivity : public CFetchSlaveBase
         }
     } *xmlSelect;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CXmlFetchSlaveActivity(CGraphElementBase *container) : CFetchSlaveBase(container)
     {
         parsers = NULL;

@@ -38,8 +38,6 @@ class CKeyPatchSlave : public ProcessSlaveActivity
     bool tlk, copyTlk;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CKeyPatchSlave(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {
         helper = NULL;

@@ -42,7 +42,7 @@ class CParseSlaveActivity : public CSlaveActivity, public CThorDataLink, impleme
     Owned<IEngineRowAllocator> allocator;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CParseSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {

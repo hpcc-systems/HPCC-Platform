@@ -26,7 +26,7 @@ class PullSlaveActivity : public CSlaveActivity, public CThorDataLink
     Owned<IThorDataLink> input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     PullSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
