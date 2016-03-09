@@ -17,7 +17,9 @@
 #ifndef RESERVEDWORDS_HPP
 #define RESERVEDWORDS_HPP
 
-void printKeywordsToXml();
-bool searchReservedWords(const char * tokenText);
+#include "hql.hpp"
+
+HQL_API void printKeywordsToXml();
+HQL_API bool searchReservedWords(const char * tokenText);
 
 #endif
