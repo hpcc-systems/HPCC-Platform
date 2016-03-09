@@ -19,6 +19,7 @@
 #define eclrtl_imp_hpp
 
 #include "eclrtl.hpp"
+#include "eclregex.hpp"
 
 class ECLRTL_API rtlDataAttr
 {

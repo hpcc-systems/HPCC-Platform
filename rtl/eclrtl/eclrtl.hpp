@@ -68,36 +68,6 @@ class MemoryBuffer;
 enum DBZaction { DBZnone, DBZzero, DBZnan, DBZfail }; // Different actions on divide by zero
 
 //-----------------------------------------------------------------------------
-
-// RegEx Compiler for ansii  strings (uses BOOST)
-interface IStrRegExprFindInstance
-{
-    virtual bool found() const = 0;
-    virtual void getMatchX(size32_t & outlen, char * & out, unsigned n = 0) const = 0;
-};
-
-interface ICompiledStrRegExpr
-{
-    virtual void replace(size32_t & outlen, char * & out, size32_t slen, char const * str, size32_t rlen, char const * replace) const = 0;
-    virtual IStrRegExprFindInstance * find(const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const = 0;
-    virtual void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const char * _search) = 0;
-};
-
-// RegEx Compiler for unicode strings
-interface IUStrRegExprFindInstance
-{
-    virtual bool found() const = 0;
-    virtual void getMatchX(size32_t & outlen, UChar * & out, unsigned n = 0) const = 0;
-};
-
-interface ICompiledUStrRegExpr
-{
-    virtual void replace(size32_t & outlen, UChar * & out, size32_t slen, UChar const * str, size32_t rlen, UChar const * replace) const = 0;
-    virtual IUStrRegExprFindInstance * find(const UChar * str, size32_t from, size32_t len) const = 0;
-    virtual void getMatchSet(bool  & __isAllResult, size32_t & __resultBytes, void * & __result, size32_t _srcLen, const UChar * _search) = 0;
-};
-
-//-----------------------------------------------------------------------------
 ECLRTL_API void * rtlMalloc(size32_t size);
 ECLRTL_API void rtlFree(void * x);
 ECLRTL_API void * rtlRealloc(void * _ptr, size32_t size);
@@ -672,14 +642,6 @@ ECLRTL_API void rtlConcatUtf8(unsigned & tlen, char * * tgt, ...);
 ECLRTL_API unsigned rtlConcatUtf8ToUtf8(unsigned tlen, char * tgt, unsigned idx, unsigned slen, const char * src);
 ECLRTL_API void rtlUtf8SpaceFill(unsigned tlne, char * tgt, unsigned idx);
 
-
-ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive);
-ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiled);
-ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * compiled);
-
-ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive);
-ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiled);
-ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * compiled);
 
 ECLRTL_API void rtlCreateRange(size32_t & outlen, char * & out, unsigned fieldLen, unsigned compareLen, size32_t len, const char * str, byte fill, byte pad);
 ECLRTL_API void rtlCreateRangeLow(size32_t & outlen, char * & out, unsigned fieldLen, unsigned compareLen, size32_t len, const char * str);
