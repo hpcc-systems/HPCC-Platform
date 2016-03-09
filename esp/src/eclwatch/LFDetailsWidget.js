@@ -324,6 +324,8 @@ define([
                 this.updateInput("DespraySourceName", oldValue, newValue);
                 this.updateInput("CopySourceName", oldValue, newValue);
                 this.updateInput("CopyTargetName", oldValue, newValue);
+            } else if (name === "IsProtected") {
+                dom.byId(this.id + "ProtectedImage").src = this.logicalFile.getProtectedImage();
             } else if (name === "Ecl" && newValue) {
             } else if (name === "StateID") {
                 this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
