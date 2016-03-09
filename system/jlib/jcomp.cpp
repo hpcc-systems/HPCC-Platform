@@ -810,6 +810,8 @@ void CppCompiler::setTargetBitLength(unsigned bitlength)
         }
         break;
     case GccCppCompiler:
+#if defined (_ARCH_X86_64_) || defined(_ARCH_X86_)
+        // Note that gcc only seems to support these options on the x86 architecture
         switch (bitlength)
         {
         case 32: option = "-m32"; break;
@@ -817,6 +819,7 @@ void CppCompiler::setTargetBitLength(unsigned bitlength)
         default:
             throwUnexpected();
         }
+#endif
         break;
     }
     if (option)
