@@ -743,7 +743,7 @@ class graph_decl CJobBase : public CInterface, implements IDiskUsage, implements
 {
 protected:
     CriticalSection crit;
-    Owned<ILoadedDllEntry> querySo;
+    Linked<ILoadedDllEntry> querySo;
     IUserDescriptor *userDesc;
     offset_t maxDiskUsage, diskUsage;
     StringAttr key, graphName;
@@ -770,7 +770,7 @@ protected:
     bool usePackedAllocator;
     unsigned memorySpillAt;
     rank_t myNodeRank;
-
+    Owned<IPropertyTree> graphXGMML;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -800,7 +800,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CJobBase(const char *graphName);
+    CJobBase(ILoadedDllEntry *querySo, const char *graphName);
     virtual void beforeDispose();
     ~CJobBase();
 
@@ -815,6 +815,7 @@ public:
     void init();
     void setXGMML(IPropertyTree *_xgmml) { xgmml.set(_xgmml); }
     IPropertyTree *queryXGMML() { return xgmml; }
+    IPropertyTree *queryGraphXGMML() const { return graphXGMML; }
     bool queryAborted() const { return aborted; }
     const char *queryKey() const { return key; }
     const char *queryGraphName() const { return graphName; }

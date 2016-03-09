@@ -1090,7 +1090,7 @@ public:
 };
 
 #define SLAVEGRAPHPOOLLIMIT 10
-CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, const char *graphName, const char *_querySo, mptag_t _mpJobTag, mptag_t _slavemptag) : CJobBase(graphName), watchdog(_watchdog)
+CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, const char *graphName, ILoadedDllEntry *_querySo, mptag_t _mpJobTag, mptag_t _slavemptag) : CJobBase(_querySo, graphName), watchdog(_watchdog)
 {
     workUnitInfo.set(_workUnitInfo);
     workUnitInfo->getProp("token", token);
@@ -1133,20 +1133,6 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
         }
         pluginMap->loadFromList(pluginsList.str());
     }
-#ifdef __linux__
-// only relevant if dllsToSlaves=false and query_so_dir was fully qualified remote path (e.g. //<ip>/path/file
-    RemoteFilename rfn;
-    rfn.setRemotePath(_querySo);
-    StringBuffer tempSo;
-    if (!rfn.isLocal())
-    {
-        WARNLOG("Cannot load shared object directly from remote path, creating temporary local copy: %s", _querySo);
-        GetTempName(tempSo,"so",true);
-        copyFile(tempSo.str(), _querySo);
-        _querySo = tempSo.str();
-    }
-#endif
-    querySo.setown(createDllEntry(_querySo, false, NULL));
     tmpHandler.setown(createTempHandler(true));
     channelMemorySize = globalMemorySize / globals->getPropInt("@channelsPerSlave", 1);
 }

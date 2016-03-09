@@ -57,7 +57,7 @@ interface IJobManager : extends IInterface
 };
 
 interface ILoadedDllEntry;
-extern graphmaster_decl CJobMaster *createThorGraph(const char *graphName, IPropertyTree *xgmml, IConstWorkUnit &workunit, const char *querySo, bool sendSo, const SocketEndpoint &agentEp);
+extern graphmaster_decl CJobMaster *createThorGraph(const char *graphName, IConstWorkUnit &workunit, ILoadedDllEntry *querySo, bool sendSo, const SocketEndpoint &agentEp);
 extern graphmaster_decl void setJobManager(IJobManager *jobManager);
 extern graphmaster_decl IJobManager *getJobManager();
 extern graphmaster_decl IJobManager &queryJobManager();

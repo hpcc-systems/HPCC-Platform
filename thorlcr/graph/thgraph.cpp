@@ -2467,7 +2467,7 @@ public:
 
 ////
 
-CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
+CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(_querySo), graphName(_graphName)
 {
     maxDiskUsage = diskUsage = 0;
     dirty = true;
@@ -2488,6 +2488,14 @@ CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
     jobSlaveChannelNum.allocateN(querySlaves()); // filled when channels are added.
     for (unsigned s=0; s<querySlaves(); s++)
         jobSlaveChannelNum[s] = NotFound;
+    StringBuffer wuXML;
+    if (!getEmbeddedWorkUnitXML(querySo, wuXML))
+        throw MakeStringException(0, "Failed to locate workunit info in query : %s", querySo->queryName());
+    Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
+    Owned<IConstWUGraph> graph = localWU->getGraph(graphName);
+    graphXGMML.setown(graph->getXGMMLTree(false));
+    if (!graphXGMML)
+    	throwUnexpected();
 }
 
 void CJobBase::init()
