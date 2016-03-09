@@ -7953,25 +7953,25 @@ void HqlCppTranslator::doBuildAssignUnicodeOrder(BuildCtx & ctx, const CHqlBound
 //---------------------------------------------------------------------------
 //-- no_order --
 
-static void buildIteratorFirst(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
-{
-    StringBuffer s;
-    translator.generateExprCpp(s, row).append(" = (byte*)");
-    translator.generateExprCpp(s, iter).append(".first();");
-    ctx.addQuoted(s);
-}
-
-static void buildIteratorNext(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
-{
-    StringBuffer s;
-    translator.generateExprCpp(s, row).append(" = (byte*)");
-    translator.generateExprCpp(s, iter).append(".next();");
-    ctx.addQuoted(s);
-}
-
 static void buildIteratorIsValid(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row, CHqlBoundExpr & bound)
 {
     bound.expr.set(row);
+}
+
+void HqlCppTranslator::buildIteratorFirst(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
+{
+    StringBuffer s;
+    generateExprCpp(s, row).append(" = (byte*)");
+    generateExprCpp(s, iter).append(".first();");
+    ctx.addQuoted(s);
+}
+
+void HqlCppTranslator::buildIteratorNext(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
+{
+    StringBuffer s;
+    generateExprCpp(s, row).append(" = (byte*)");
+    generateExprCpp(s, iter).append(".next();");
+    ctx.addQuoted(s);
 }
 
 void HqlCppTranslator::doBuildAssignCompareRow(BuildCtx & ctx, EvaluateCompareInfo & info, IHqlExpression * left, IHqlExpression * right)
@@ -8002,7 +8002,7 @@ void HqlCppTranslator::doBuildAssignCompareTable(BuildCtx & ctx, EvaluateCompare
     HqlExprAttr leftIter, leftRow;
     Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(subctx, left);
     cursor->buildIterateClass(subctx, leftIter, leftRow);
-    buildIteratorFirst(*this, subctx, leftIter, leftRow);
+    buildIteratorFirst(subctx, leftIter, leftRow);
 
     // i2; forEachIn(i2); {
     CHqlBoundExpr isValid;
@@ -8051,7 +8051,7 @@ void HqlCppTranslator::doBuildAssignCompareTable(BuildCtx & ctx, EvaluateCompare
         }
 
         //     i1.next();
-        buildIteratorNext(*this, loopctx, leftIter, leftRow);
+        buildIteratorNext(loopctx, leftIter, leftRow);
     }
 
     buildIteratorIsValid(subctx, leftIter, leftRow, isValid);
