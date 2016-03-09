@@ -3226,9 +3226,6 @@ public:
                 StringBuffer descbuf;
                 StringBuffer curname;
                 CLDAPGetAttributesWrapper   atts(ld, message);
-                for ( attribute = atts.getFirst();
-                      attribute != NULL;
-                      attribute = atts.getNext())
                 {
                     CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
