@@ -69,9 +69,6 @@ class CEmptyClass
 template <class INTERFACE>
 class CInterfaceOf;
 
-template <class INTERFACE>
-class CReusableInterfaceOf;
-
 //The simplest implementation of IInterface.  Can be used in situations where speed is critical, and
 //there will never be a need for the equivalent of beforeDispose().
 //It is generally recommended to use CInterface for general classes since derived classes may need beforeDispose().
@@ -79,11 +76,10 @@ template <class INTERFACE>
 class CSimpleInterfaceOf : public INTERFACE
 {
     friend class CInterfaceOf<INTERFACE>;    // want to keep xxcount private outside this pair of classes
-    friend class CReusableInterfaceOf<INTERFACE>;
 public:
     inline virtual ~CSimpleInterfaceOf() {}
 
-    inline CSimpleInterfaceOf() { xxcount.store(1, std::memory_order_relaxed); }
+    inline CSimpleInterfaceOf() : xxcount(1) { }
     inline bool IsShared(void) const    { return xxcount.load(std::memory_order_relaxed) > 1; }
     inline int getLinkCount(void) const { return xxcount.load(std::memory_order_relaxed); }
 
@@ -100,9 +96,9 @@ public:
     }
 
 private:
-    // CSimpleInterfaceOf(const CSimpleInterfaceOf &) = delete;
-    // CSimpleInterfaceOf(CSimpleInterfaceOf &&) = delete;
-    // CSimpleInterfaceOf & operator = (const CSimpleInterfaceOf &) = delete;
+    CSimpleInterfaceOf(const CSimpleInterfaceOf &) : xxcount(1) {};
+    CSimpleInterfaceOf(CSimpleInterfaceOf &&) = delete;
+    CSimpleInterfaceOf & operator = (const CSimpleInterfaceOf &) = delete;
     mutable std::atomic<unsigned> xxcount;
 };
 
@@ -167,107 +163,6 @@ public:
 };
 
 //- Template variants -------------------------------------------------------------------------------------------------
-
-template <class INTERFACE>
-class CInterfaceOf;
-
-template <class INTERFACE>
-class CReusableInterfaceOf;
-
-// A thread safe basic implementation of IInterface that destroys the object when last Release() occurs.
-#if 0
-template <class INTERFACE>
-class CSimpleInterfaceOf : public INTERFACE
-{
-    friend class CInterfaceOf<INTERFACE>;    // want to keep xxcount private outside this pair of classes
-    friend class CReusableInterfaceOf<INTERFACE>;
-public:
-    inline virtual ~CSimpleInterfaceOf() {}
-
-    inline CSimpleInterfaceOf()           { atomic_set(&xxcount, 1); }
-    inline bool IsShared(void) const    { return atomic_read(&xxcount) > 1; }
-    inline int getLinkCount(void) const { return atomic_read(&xxcount); }
-
-    inline void Link() const            { atomic_inc(&xxcount); }
-
-    inline bool Release(void) const
-    {
-        if (atomic_dec_and_test(&xxcount))
-        {
-            delete this;
-            return true;
-        }
-        return false;
-    }
-
-private:
-    mutable atomic_t xxcount;
-};
-
-// A more general implementation of IInterface that includes a virtual function beforeDispose().
-// beforeDispose() allows a fully constructed object to be cleaned up (which means that virtual
-// function calls still work (unlike a virtual destructor).
-// It makes it possible to implement a cache which doesn't link count the object, but is cleared when
-// the object is disposed without a critical section in Release().  (See pattern details below).
-template <class INTERFACE>
-class CInterfaceOf : public CSimpleInterfaceOf<INTERFACE>
-{
-public:
-    virtual void beforeDispose() {}
-
-    inline bool isAlive() const         { return atomic_read(&this->xxcount) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
-
-    inline bool Release(void) const
-    {
-        if (atomic_dec_and_test(&this->xxcount))
-        {
-            //Because beforeDispose could cause this object to be linked/released or call isAlive(), xxcount is set
-            //to a a high mid-point positive number to avoid poss. of releasing again.
-            if (atomic_cas(&this->xxcount, DEAD_PSEUDO_COUNT, 0))
-            {
-                const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
-                delete this;
-                return true;
-            }
-        }
-        return false;
-    }
-};
-
-// An extension of CInterfaceOf that allows objects that are being destroyed to be added to a free list instead.
-// Before disposing addToFree() is called.  That function can link the object and return true which will prevent
-// the object being destroyed.
-template <class INTERFACE>
-class CReusableInterfaceOf : public CInterfaceOf<INTERFACE>
-{
-public:
-    //If this function returns true the object is added to a free list - if so it must be linked in the process.
-    //It *must not* link and release the object if it returns false.
-    virtual bool addToFreeList() const { return false; }
-
-    inline bool Release(void) const
-    {
-        if (atomic_dec_and_test(&this->xxcount))
-        {
-            if (addToFreeList())
-            {
-                //It could have been added, reused and disposed between the call and this return, so must return immediately
-                //and in particular cannot check/modify link count
-                return true;
-            }
-
-            //NOTE: This class cannot be used for caches which don't link the pointers => use atomic_set instead of cas
-            atomic_set(&this->xxcount, DEAD_PSEUDO_COUNT);
-            const_cast<CReusableInterfaceOf<INTERFACE> *>(this)->beforeDispose();
-            delete this;
-            return true;
-        }
-        return false;
-    }
-};
-#endif
-
-//---------------------------------------------------------------------------------------------------------------------
 
 template <class INTERFACE>
 class CSingleThreadInterfaceOf;

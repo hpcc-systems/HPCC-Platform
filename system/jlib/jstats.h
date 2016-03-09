@@ -27,25 +27,6 @@ inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKi
 
 //---------------------------------------------------------------------------------------------------------------------
 
-#if 0
-interface IStatistic : extends IInterface
-{
-public:
-    virtual StatisticKind queryKind() const = 0;
-    virtual unsigned __int64 queryValue() const = 0;
-};
-
-interface IStatisticFilter
-{
-    virtual bool matches(IStatistic * stats) = 0;
-    virtual void getFilter(StringBuffer & out) = 0;
-};
-
-interface IStatisticIterator : public IIteratorOf<IStatistic>
-{
-};
-#endif
-
 //Represents a single level of a scope
 class jlib_decl StatsScopeId
 {

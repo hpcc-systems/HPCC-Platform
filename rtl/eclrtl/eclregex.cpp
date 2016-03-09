@@ -23,7 +23,6 @@
 #endif
 #include "platform.h"
 #include "eclrtl.hpp"
-#include "eclregex.hpp"
 #include "eclrtl_imp.hpp"
 #include "unicode/regex.h"
 

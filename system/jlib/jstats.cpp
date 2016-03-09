@@ -848,7 +848,7 @@ const StatisticsMapping diskWriteRemoteStatistics(StTimeDiskWriteIO, StSizeDiskW
 
 //--------------------------------------------------------------------------------------------------------------------
 
-class Statistic // : public CInterfaceOf<IStatistic>
+class Statistic
 {
 public:
     Statistic(StatisticKind _kind, unsigned __int64 _value) : kind(_kind), value(_value)
