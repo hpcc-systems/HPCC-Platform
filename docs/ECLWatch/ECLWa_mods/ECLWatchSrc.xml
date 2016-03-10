@@ -480,6 +480,16 @@
               query. If a Roxie query references foreign files and this is not
               enabled, publish will fail.</para>
             </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Update Super Files:</emphasis>
+              Affects the publish action behavior when a query using
+              superfiles is published with a remote dali ip or the superfile
+              is foreign. If it is not checked a referenced superfile that
+              doesn't already exist locally is created and copied from the
+              remote dali. If it is checked then the superfile is overwritten
+              with the remote definition. </para>
+            </listitem>
           </itemizedlist>
         </sect3>
 
