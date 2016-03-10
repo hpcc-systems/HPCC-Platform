@@ -488,7 +488,7 @@
               is foreign. If it is not checked a referenced superfile that
               doesn't already exist locally is created and copied from the
               remote dali. If it is checked then the superfile is overwritten
-              with the remote definition.</para>
+              with the remote definition. </para>
             </listitem>
           </itemizedlist>
         </sect3>
