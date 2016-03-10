@@ -83,12 +83,13 @@ public:
     inline bool IsShared(void) const    { return xxcount.load(std::memory_order_relaxed) > 1; }
     inline int getLinkCount(void) const { return xxcount.load(std::memory_order_relaxed); }
 
-    inline void Link() const { xxcount.fetch_add(1,std::memory_order_acq_rel); }
+    inline void Link() const { xxcount.fetch_add(1,std::memory_order_relaxed); }
 
     inline bool Release(void) const
     {
-        if (xxcount.fetch_sub(1,std::memory_order_acq_rel) == 1)
+        if (xxcount.fetch_sub(1,std::memory_order_release) == 1)
         {
+            std::atomic_thread_fence(std::memory_order_acquire);  // Because Herb says so.
             delete this;
             return true;
         }
@@ -120,7 +121,7 @@ public:
 
     inline bool Release(void) const
     {
-        if (this->xxcount.fetch_sub(1,std::memory_order_acq_rel) == 1)
+        if (this->xxcount.fetch_sub(1,std::memory_order_release) == 1)
         {
             unsigned zero = 0;
             //Because beforeDispose could cause this object to be linked/released or call isAlive(), this->xxcount is set

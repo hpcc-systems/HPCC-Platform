@@ -379,7 +379,6 @@ public:
 
     virtual const char *queryFilename() { return logical->queryFilename(); }
     virtual bool isAlive() const { return CInterface::isAlive(); }
-    virtual int getLinkCount() const { return CInterface::getLinkCount(); }
 
     virtual IMemoryMappedFile *queryMappedFile()
     {
@@ -2231,7 +2230,6 @@ public:
     {
         return CInterface::isAlive();
     }
-
     virtual const char *queryFileName() const
     {
         return lfn.get();
