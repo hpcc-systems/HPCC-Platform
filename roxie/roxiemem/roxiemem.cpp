@@ -24,6 +24,7 @@
 #include "tbb/task.h"
 #include "tbb/task_scheduler_init.h"
 #endif
+#include <atomic>
 #include <utility>
 
 #ifndef _WIN32
@@ -3444,7 +3445,7 @@ void initAllocSizeMappings(const unsigned * sizes)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-
+static std::atomic<unsigned> activeRowManagers;
 class CChunkingRowManager : public CRowManager
 {
     friend class CRoxieFixedRowHeap;
@@ -3525,7 +3526,8 @@ public:
         trackMemoryByActivity = false;
 #endif
         if (memTraceLevel >= 2)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%" I64F "u pageLimit=%u rowMgr=%p", (unsigned __int64)_memLimit, maxPageLimit, this);
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%" I64F "u pageLimit=%u rowMgr=%p num=%u",
+                          (unsigned __int64)_memLimit, maxPageLimit, this, activeRowManagers.load());
         if (timeLimit)
         {
             cyclesChecked = get_cycles_now();
@@ -3536,13 +3538,15 @@ public:
             cyclesChecked = 0;
             cyclesCheckInterval = 0;
         }
+        activeRowManagers++;
     }
 
     ~CChunkingRowManager()
     {
+        activeRowManagers--;
         if (memTraceLevel >= 2)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p", 
-                    maxPageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this);
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p num=%u",
+                    maxPageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this, activeRowManagers.load());
 
         if (!ignoreLeaks)
             reportLeaks(2);
@@ -4249,8 +4253,8 @@ protected:
         }
         else
         {
-            logctx.CTXLOG("RoxieMemMgr: pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p",
-                          maxPageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this);
+            logctx.CTXLOG("RoxieMemMgr: pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p cnt(%u)",
+                          maxPageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this, activeRowManagers.load());
             Owned<IActivityMemoryUsageMap> map = getActivityUsage();
             map->report(logctx, allocatorCache);
         }
