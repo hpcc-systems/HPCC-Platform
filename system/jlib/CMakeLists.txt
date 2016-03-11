@@ -209,10 +209,6 @@ else ()
  target_link_libraries ( jlib rt )
 endif ()
 
-if (USE_NUMA)
- target_link_libraries ( jlib numa )
-endif ()
-
 if (NOT PLUGIN)
     if (WIN32)
         FILE(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}" WINDOWS_CMAKE_CURRENT_BINARY_DIR)

@@ -103,6 +103,10 @@ target_link_libraries ( thorhelper
          dalibase 
     )
 
+if (USE_NUMA)
+ target_link_libraries ( thorhelper numa )
+endif ()
+
 
 IF (USE_OPENSSL)
     target_link_libraries ( thorhelper 

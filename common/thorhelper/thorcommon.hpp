@@ -577,5 +577,8 @@ extern THORHELPER_API bool isActivitySink(ThorActivityKind kind);
 extern THORHELPER_API bool isActivitySource(ThorActivityKind kind);
 extern THORHELPER_API const char * getActivityText(ThorActivityKind kind);
 
+extern THORHELPER_API void setProcessAffinity(const char * cpus);
+extern THORHELPER_API void setAutoAffinity(unsigned curProcess, unsigned processPerNode, const char * optNodes);
+extern THORHELPER_API void bindMemoryToLocalNodes();
 
 #endif // THORHELPER_HPP
