@@ -106,10 +106,11 @@ thorpid=0
 
 while [[ 1 ]]; do
     # update slaves file in case state of environment has been altered since last run
-    daliadmin server=$DALISERVER clusternodes ${component} slaves
+    errorMessage=$( daliadmin server=$DALISERVER clusternodes ${component} $instancedir/slaves 2>&1 )
     errcode=$?
     if [[ 0 != ${errcode} ]]; then
         log "failed to lookup dali group for ${component}"
+        log "$errorMessage"
         exit 1
     fi
 

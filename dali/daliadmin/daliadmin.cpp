@@ -669,15 +669,26 @@ static void dfsGroup(const char *name, const char *outputFilename)
     writeGroup(group, name, outputFilename);
 }
 
-static void clusterGroup(const char *name, const char *outputFilename)
+static int clusterGroup(const char *name, const char *outputFilename)
 {
-    Owned<IGroup> group = getClusterNodeGroup(name, "ThorCluster");
-    if (!group)
+    StringBuffer errStr;
+    try
     {
-        ERRLOG("cannot find group %s",name);
-        return;
+        Owned<IGroup> group = getClusterNodeGroup(name, "ThorCluster");
+        if (group)
+        {
+            writeGroup(group, name, outputFilename);
+            return 0; // success
+        }
+        errStr.appendf("cannot find group %s", name);
     }
-    writeGroup(group, name, outputFilename);
+    catch (IException *e)
+    {
+        e->errorMessage(errStr);
+        e->Release();
+    }
+    ERRLOG("%s", errStr.str());
+    return 1;
 }
 
 //=============================================================================
@@ -2811,7 +2822,7 @@ int main(int argc, char* argv[])
                     }
                     else if (stricmp(cmd,"clusternodes")==0) {
                         CHECKPARAMS(1,2);
-                        clusterGroup(params.item(1),(np>1)?params.item(2):NULL);
+                        ret = clusterGroup(params.item(1),(np>1)?params.item(2):NULL);
                     }
                     else if (stricmp(cmd,"dfsmap")==0) {
                         CHECKPARAMS(1,1);

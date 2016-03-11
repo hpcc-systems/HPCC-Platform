@@ -9639,8 +9639,8 @@ IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned 
     Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(nodeGroupName);
     CInitGroups init(timems);
     Owned<IGroup> expandedClusterGroup = init.getGroupFromCluster(type, cluster, true);
-    if (nodeGroup->ordinality() != expandedClusterGroup->ordinality()) // sanity check
-        throwUnexpected();
+    if (!expandedClusterGroup->equals(nodeGroup))
+        throwStringExceptionV(0, "DFS cluster topology for '%s', does not match existing DFS group layout for group '%s'", clusterName, nodeGroupName.str());
     Owned<IGroup> clusterGroup = init.getGroupFromCluster(type, cluster, false);
     ICopyArrayOf<INode> nodes;
     for (unsigned n=0; n<clusterGroup->ordinality(); n++)
