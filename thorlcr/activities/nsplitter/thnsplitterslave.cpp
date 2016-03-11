@@ -115,8 +115,6 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     class CNullInput : public CSplitterOutputBase
     {
     public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
         virtual const void *nextRow() { throwUnexpected(); return NULL; }
         virtual void stop() { throwUnexpected(); }
         virtual void start() { throwUnexpected(); }
@@ -131,8 +129,6 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         NSplitterSlaveActivity &activity;
 
     public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
         CInputWrapper(NSplitterSlaveActivity &_activity, IThorDataLink *_input) : activity(_activity), input(_input) { }
         virtual const void *nextRow()
         {
@@ -210,7 +206,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     IPointerArrayOf<CDelayedInput> delayInputsList;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     NSplitterSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), writer(*this)
     {

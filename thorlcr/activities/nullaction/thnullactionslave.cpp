@@ -27,7 +27,7 @@
 class CNullActionSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CNullActionSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this) { }
     ~CNullActionSlaveActivity()

@@ -24,7 +24,7 @@ protected:
     IThorDataLink * input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CFilterSlaveActivityBase(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorDataLink(this)
@@ -64,8 +64,6 @@ class CFilterSlaveActivity : public CFilterSlaveActivityBase, public CThorSteppa
     IHThorFilterArg *helper;
     unsigned matched;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CFilterSlaveActivity(CGraphElementBase *container)
         : CFilterSlaveActivityBase(container), CThorSteppable(this)
     {
@@ -172,8 +170,6 @@ class CFilterProjectSlaveActivity : public CFilterSlaveActivityBase
     rowcount_t recordCount;  // NB local (not really used for global)
     Owned<IEngineRowAllocator> allocator;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CFilterProjectSlaveActivity(CGraphElementBase *container) 
         : CFilterSlaveActivityBase(container)
     {
@@ -245,8 +241,6 @@ class CFilterGroupSlaveActivity : public CFilterSlaveActivityBase, public CThorS
     unsigned spillCompInfo;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CFilterGroupSlaveActivity(CGraphElementBase *container) : CFilterSlaveActivityBase(container), CThorSteppable(this)
     {
         groupLoader.setown(createThorRowLoader(*this, NULL, stableSort_none, rc_allMem));

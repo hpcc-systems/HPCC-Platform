@@ -729,8 +729,6 @@ class CThorResourceSlave : public CThorResourceBase
     Owned<IFileInProgressHandler> fipHandler;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CThorResourceSlave()
     {
         backupHandler.setown(createBackupHandler());

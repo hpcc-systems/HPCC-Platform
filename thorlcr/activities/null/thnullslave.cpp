@@ -21,7 +21,7 @@
 class CNullSinkSlaveActivity : public ProcessSlaveActivity
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CNullSinkSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {
@@ -44,7 +44,7 @@ public:
 class CNullSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CNullSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -90,7 +90,7 @@ public:
 class CThroughSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CThroughSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {

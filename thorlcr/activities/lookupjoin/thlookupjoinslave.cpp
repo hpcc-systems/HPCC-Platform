@@ -1234,7 +1234,7 @@ protected:
         return NULL;
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CInMemJoinBase(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this),
         HELPERBASE((HELPER *)queryHelper()), rhs(*this, NULL)

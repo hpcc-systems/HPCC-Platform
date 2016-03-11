@@ -32,7 +32,7 @@ protected:
         dataLinkStart();
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     BaseCountProjectActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {

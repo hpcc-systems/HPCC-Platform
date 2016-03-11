@@ -29,7 +29,7 @@ protected:
     Owned<IThorDataLink> input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     BaseChooseSetsActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -274,7 +274,7 @@ protected:
     InputCounter * inputCounter;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     ChooseSetsPlusActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {

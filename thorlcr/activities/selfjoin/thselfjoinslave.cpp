@@ -101,7 +101,7 @@ private:
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     SelfJoinSlaveActivity(CGraphElementBase *_container, bool _isLocal, bool _isLightweight)
         : CSlaveActivity(_container), CThorDataLink(this), spillStats(spillStatistics)

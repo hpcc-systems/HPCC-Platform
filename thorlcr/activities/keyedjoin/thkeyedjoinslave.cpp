@@ -1563,7 +1563,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     friend class CKeyLookupPoolMember;
     };
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CKeyedJoinSlave(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {

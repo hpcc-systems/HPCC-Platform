@@ -30,7 +30,7 @@ class CProjectSlaveActivity : public CSlaveActivity, public CThorDataLink
     Owned<IEngineRowAllocator> allocator;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CProjectSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this) { }
 
@@ -236,7 +236,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity, public CThorDataLin
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CPrefetchProjectSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this), prefetcher(*this)
     {
