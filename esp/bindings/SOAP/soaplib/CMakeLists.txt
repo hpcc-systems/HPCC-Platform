@@ -30,6 +30,7 @@ set (    SRCS
          ../../../platform/espprotocol.cpp 
          ../../../platform/espthread.cpp 
          ../../../platform/sechandler.cpp 
+         ../../../platform/txsummary.cpp
          ../../../protocols/http/mapinfo.cpp 
          ../../bindutil.cpp 
          ../../http/client/httpclient.cpp 

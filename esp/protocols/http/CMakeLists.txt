@@ -45,6 +45,7 @@ set (    SRCS
          ../../platform/espprotocol.cpp 
          ../../platform/espthread.cpp 
          ../../platform/sechandler.cpp 
+         ../../platform/txsummary.cpp
          mapinfo.cpp 
          plugin.cpp 
     )
