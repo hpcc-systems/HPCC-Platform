@@ -848,15 +848,18 @@ const StatisticsMapping diskWriteRemoteStatistics(StTimeDiskWriteIO, StSizeDiskW
 
 //--------------------------------------------------------------------------------------------------------------------
 
-class Statistic : public CInterfaceOf<IStatistic>
+class Statistic
 {
 public:
     Statistic(StatisticKind _kind, unsigned __int64 _value) : kind(_kind), value(_value)
     {
     }
-    static Statistic * deserialize(MemoryBuffer & in, unsigned version)
+    Statistic(MemoryBuffer & in, unsigned version)
     {
-        return new Statistic(in, version);
+        unsigned _kind;
+        in.read(_kind);
+        kind = (StatisticKind)_kind;
+        in.read(value);
     }
 
     virtual StatisticKind queryKind() const
@@ -877,15 +880,6 @@ public:
         //MORE: Could compress - e.g., store as a packed integers
         out.append((unsigned)kind);
         out.append(value);
-    }
-
-protected:
-    Statistic(MemoryBuffer & in, unsigned version)
-    {
-        unsigned _kind;
-        in.read(_kind);
-        kind = (StatisticKind)_kind;
-        in.read(value);
     }
 
 public:
@@ -1060,9 +1054,8 @@ public:
         stats.ensure(numStats);
         while (numStats-- > 0)
         {
-            Statistic * next = Statistic::deserialize(in, version);
-            stats.append(*next);
-            next->Release();
+            Statistic next (in, version);
+            stats.append(next);
         }
 
         unsigned numChildren;

@@ -31,7 +31,7 @@ class CTraceSlaveActivity : public CSlaveActivity, public CThorDataLink, public 
     bool traceEnabled;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CTraceSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container), CThorDataLink(this), CThorSteppable(this),

@@ -37,7 +37,7 @@ private:
     __uint64 maxRow;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CInlineTableSlaveActivity(CGraphElementBase *_container)
     : CSlaveActivity(_container), CThorDataLink(this)

@@ -296,7 +296,7 @@ protected:
     unsigned numToKeep;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CDedupBaseSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp)
         : CDedupRollupBaseActivity(_container, false, global, groupOp), CThorDataLink(this)
@@ -334,7 +334,7 @@ public:
 class CDedupSlaveActivity : public CDedupBaseSlaveActivity
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CDedupSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp)
         : CDedupBaseSlaveActivity(_container, global, groupOp)
@@ -416,7 +416,7 @@ class CDedupAllSlaveActivity : public CDedupBaseSlaveActivity
     Owned<CDedupAllHelper> dedupHelper;
     bool lastEog;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CDedupAllSlaveActivity(CGraphElementBase *_container, bool groupOp)
         : CDedupBaseSlaveActivity(_container, false, groupOp)
@@ -470,7 +470,7 @@ private:
     IHThorRollupArg * ruhelper;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CRollupSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp) 
         : CDedupRollupBaseActivity(_container, true, global, groupOp), CThorDataLink(this)
@@ -579,7 +579,7 @@ class CRollupGroupSlaveActivity : public CSlaveActivity, public CThorDataLink
     CThorExpandingRowArray rows;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CRollupGroupSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this), rows(*this, NULL)
     {

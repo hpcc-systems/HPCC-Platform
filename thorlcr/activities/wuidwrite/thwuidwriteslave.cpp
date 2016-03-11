@@ -37,7 +37,7 @@ protected:
     bool grouped;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CWorkUnitWriteSlaveBase(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {

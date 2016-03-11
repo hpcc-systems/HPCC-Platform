@@ -154,8 +154,6 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CIndexReadSlaveBase(CGraphElementBase *container) 
         : CSlaveActivity(container)
     {
@@ -551,7 +549,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CIndexReadSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), CThorDataLink(this)
     {
@@ -770,7 +768,7 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, public CTh
     Owned<IHashDistributor> distributor;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CIndexGroupAggregateSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), CThorDataLink(this)
     {
@@ -881,7 +879,7 @@ class CIndexCountSlaveActivity : public CIndexReadSlaveBase, public CThorDataLin
     bool totalCountKnown;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CIndexCountSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), CThorDataLink(this)
     {
@@ -1034,7 +1032,7 @@ class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase, public CThorDat
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CIndexNormalizeSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), CThorDataLink(this), partHelper(*this)
     {
@@ -1231,7 +1229,7 @@ class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase, public CThorDat
         }
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CIndexAggregateSlaveActivity(CGraphElementBase *_container) 
         : CIndexReadSlaveBase(_container), CThorDataLink(this), partHelper(*this), aggregator(*this)

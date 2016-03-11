@@ -51,7 +51,7 @@ class GroupSlaveActivity : public CSlaveActivity, public CThorDataLink
             return NULL;
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     GroupSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container), CThorDataLink(this)

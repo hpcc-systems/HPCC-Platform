@@ -283,7 +283,7 @@ protected: friend class CSortMerge;
     CriticalSection rowifsect;
     Semaphore rowifsem;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface)
+    IMPLEMENT_IINTERFACE_USING(Thread)
 
     void start() 
     { 

@@ -33,8 +33,7 @@ private:
     bool anyThisGroup;
     IThorDataLink *input;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     GroupIterateSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -130,7 +129,7 @@ class GroupProcessSlaveActivity : public CSlaveActivity, public CThorDataLink
     Owned<IEngineRowAllocator> rightAllocator;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     GroupProcessSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {

@@ -40,8 +40,6 @@ class CKeyDiffSlave : public ProcessSlaveActivity
     unsigned patchCrc, tlkPatchCrc;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CKeyDiffSlave(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {
         helper = NULL;

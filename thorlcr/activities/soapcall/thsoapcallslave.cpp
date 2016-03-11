@@ -39,7 +39,7 @@ class CWscRowCallSlaveActivity : public CSlaveActivity, public CThorDataLink, im
     StringBuffer authToken;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CWscRowCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this) { }
 
@@ -131,7 +131,7 @@ class SoapDatasetCallSlaveActivity : public CSlaveActivity, public CThorDataLink
     IThorDataLink *input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     SoapDatasetCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this) { }
 
@@ -215,7 +215,7 @@ class SoapRowActionSlaveActivity : public ProcessSlaveActivity, implements IWSCR
     Owned<IWSCHelper> wscHelper;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     SoapRowActionSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container) { }
 
@@ -267,7 +267,7 @@ class SoapDatasetActionSlaveActivity : public ProcessSlaveActivity, implements I
     IThorDataLink *input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     SoapDatasetActionSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container) { }
 
