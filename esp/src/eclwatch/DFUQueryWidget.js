@@ -460,6 +460,19 @@ define([
                         },
                         selectorType: 'checkbox'
                     }),
+                    IsProtected: {
+                        renderHeaderCell: function (node) {
+                            node.innerHTML = dojoConfig.getImageHTML("locked.png", context.i18n.Protected);
+                        },
+                        width: 25,
+                        sortable: false,
+                        formatter: function (_protected) {
+                            if (_protected == true) {
+                                return dojoConfig.getImageHTML("locked.png");
+                            }
+                            return "";
+                        }
+                    },
                     IsCompressed: {
                         width: 25, sortable: false,
                         renderHeaderCell: function (node) {
