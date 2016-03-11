@@ -27,7 +27,7 @@ project(cassandraembed)
 if(CASSANDRAEMBED)
     # There is not yet a standard package for cassandra cpp client, and only very modern distros have libuv-dev
     # When there is (and the distros catch up) we may want to add them as dependencies here
-    ADD_PLUGIN(cassandraembed PACKAGES OPTION MAKE_CASSANDRAEMBED)
+    ADD_PLUGIN(cassandraembed)
     if(MAKE_CASSANDRAEMBED)
 
         # until then, we build the required libraries from source
@@ -104,6 +104,8 @@ if(CASSANDRAEMBED)
                 set_target_properties(cassandraembed PROPERTIES NO_SONAME 1)
             endif()
         endif()
+
+        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/cassandra\")")
 
         install(
             TARGETS cassandraembed

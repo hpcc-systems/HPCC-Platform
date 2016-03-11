@@ -25,7 +25,7 @@
 project(mysqlembed)
 
 if(MYSQLEMBED)
-    ADD_PLUGIN(mysqlembed PACKAGES MYSQL OPTION MAKE_MYSQLEMBED)
+    ADD_PLUGIN(mysqlembed PACKAGES MYSQL)
     if(MAKE_MYSQLEMBED)
         set(
             SRCS

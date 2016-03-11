@@ -25,7 +25,7 @@
 project(redis)
 
 if(REDIS)
-    ADD_PLUGIN(redis PACKAGES HIREDIS OPTION MAKE_REDIS)
+    ADD_PLUGIN(redis PACKAGES HIREDIS)
     if(MAKE_REDIS)
         set(
             SRCS
