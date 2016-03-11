@@ -30,6 +30,15 @@ CHECK_LIBRARY_EXISTS(dl dlopen "" HAVE_LIBDL)
 CHECK_LIBRARY_EXISTS(crypt crypt "" HAVE_LIBCRYPT) 
 endif ()
 
+if(NOT TARGET lzma)
+  add_subdirectory(../lzma ${CMAKE_BINARY_DIR}/system/lzma)
+endif(NOT TARGET lzma)
+
+if(NOT TARGET lz4)
+  add_subdirectory(../lz4_sm ${CMAKE_BINARY_DIR}/system/lz4_sm)
+endif(NOT TARGET lz4)
+
+
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
   SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror")
 endif()
