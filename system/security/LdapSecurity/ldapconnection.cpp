@@ -1146,7 +1146,14 @@ private:
             if (rc != LDAP_SUCCESS)
             {
                 int err = GetLastError();
-                throw MakeStringException(-1, "ldap_parse_result failed with 0x%x (%s)",err, ldap_err2string( err ));
+                if (err)
+                {
+                    throw MakeStringException(-1, "ldap_parse_result failed with 0x%x (%s)",err, ldap_err2string( err ));
+                }
+                else
+                {
+                    DBGLOG("ldap_parse_result returned unexpected rc=%x, err=%x, ignoring",rc,err);
+                }
             }
 
             pageCtrlMem.setRetControls(returnedCtrls);
@@ -1159,7 +1166,14 @@ private:
             if (rc != LDAP_SUCCESS)
             {
                 int err = GetLastError();
-                throw MakeStringException(-1, "ldap_parse_page_control failed with 0x%x (%s)",err, ldap_err2string( err ));
+                if (err)
+                {
+                    throw MakeStringException(-1, "ldap_parse_page_control failed with 0x%x (%s)",err, ldap_err2string( err ));
+                }
+                else
+                {
+                    DBGLOG("ldap_parse_page_control returned unexpected rc=%x, err=%x, ignoring",rc,err);
+                }
             }
 
             if (!(m_pCookie && m_pCookie->bv_val != NULL && (strlen(m_pCookie->bv_val) > 0)))
