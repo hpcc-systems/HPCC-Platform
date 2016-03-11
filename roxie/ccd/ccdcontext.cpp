@@ -2543,10 +2543,10 @@ public:
 
 class CRoxieServerContext : public CRoxieContextBase, implements IRoxieServerContext, implements IGlobalCodeContext
 {
-    const IQueryFactory *serverQueryFactory;
-    IHpccProtocolResponse *protocol;
-    IHpccProtocolResultsWriter *results;
-    IHpccNativeProtocolResponse *nativeProtocol;
+    const IQueryFactory *serverQueryFactory = nullptr;
+    IHpccProtocolResponse *protocol = nullptr;
+    IHpccProtocolResultsWriter *results = nullptr;
+    IHpccNativeProtocolResponse *nativeProtocol = nullptr;
     CriticalSection daliUpdateCrit;
     StringAttr querySetName;
 
