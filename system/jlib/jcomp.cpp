@@ -734,8 +734,6 @@ void CppCompiler::removeTemporaries()
             remove(temp.clear().append(targetDir).append(coreName).append(".lib").str());
 #ifdef _WIN32
             remove(temp.clear().append(targetDir).append(coreName).append(".res").str());
-#elif defined (_USE_BINUTILS)
-            remove(temp.clear().append(targetDir).append(coreName).append(".res.o").str());
 #else
             temp.clear().append(coreName).append(".res.s*");
             DBGLOG("Remove %s%s",targetDir.str(), temp.str());
