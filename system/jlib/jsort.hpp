@@ -76,9 +76,6 @@ extern jlib_decl void qsortvec(void **a, size32_t n, const ICompare & compare1, 
 
 // Call with n rows of data in rows, index an (uninitialized) array of size n. The function will fill index with a stably sorted index into rows.
 extern jlib_decl void qsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp);
-extern jlib_decl void msortvecstableinplace(void ** rows, size_t n, const ICompare & compare, void ** temp);
-extern jlib_decl void parmsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, void ** temp, unsigned ncpus=0);
-
 
 extern jlib_decl void parqsortvec(void **a, size32_t n, const ICompare & compare, unsigned ncpus=0); // runs in parallel on multi-core
 extern jlib_decl void parqsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp, unsigned ncpus=0); // runs in parallel on multi-core
@@ -93,24 +90,8 @@ extern jlib_decl bool heap_push_down(unsigned p, unsigned num, unsigned * heap, 
 // assuming that all elements <c form a heap, this function pushes c up to its correct position; it returns true if no change is made
 extern jlib_decl bool heap_push_up(unsigned c, unsigned * heap, const void ** rows, ICompare * compare);
 
-
-
-inline void parsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, void ** stableTablePtr, unsigned maxCores=0)
-{
-#ifdef _USE_TBB
-    parmsortvecstableinplace(rows, n, compare, stableTablePtr, maxCores);
-#else
-    parqsortvecstableinplace(rows, n, compare, stableTablePtr, maxCores);
-#endif
-}
-
-extern jlib_decl void tbbqsortvec(void **a, size_t n, const ICompare & compare);
-extern jlib_decl void tbbqsortstable(void ** rows, size_t n, const ICompare & compare, void ** temp);
-
-
 extern jlib_decl IRowStream *createRowStreamMerger(unsigned numstreams,IRowProvider &provider,ICompare *icmp, bool partdedup=false);
 extern jlib_decl IRowStream *createRowStreamMerger(unsigned numstreams,IRowStream **instreams,ICompare *icmp, bool partdedup, IRowLinkCounter *linkcounter);
-
 
 class ISortedRowProvider
 {

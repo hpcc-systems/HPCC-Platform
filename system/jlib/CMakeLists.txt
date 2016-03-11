@@ -179,7 +179,6 @@ include_directories (
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ${TBB_INCLUDE_DIR}
     )
 
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=1 -D_USRDLL -DJLIB_EXPORTS )
@@ -189,10 +188,6 @@ target_link_libraries ( jlib
         lzma
         lz4
        )
-
-if ( ${USE_TBB} )
-   target_link_libraries ( jlib ${TBB_LIBRARIES})
-endif()
 
 if ( ${HAVE_LIBDL} )
 target_link_libraries ( jlib dl)

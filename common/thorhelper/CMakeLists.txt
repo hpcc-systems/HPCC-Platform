@@ -64,6 +64,8 @@ set (    SRCS
          roxierow.hpp
          thorralgo.ipp
          thorrparse.ipp
+         thorsort.cpp
+         thorsort.hpp
          
          roxiedebug.hpp
          roxiedebug.ipp
@@ -88,6 +90,7 @@ include_directories (
          ./../../rtl/include 
          ./../../roxie/roxiemem
          ./../../testing/unittests
+         ${TBB_INCLUDE_DIR}
     )
 
 ADD_DEFINITIONS( -DTHORHELPER_EXPORTS -D_USRDLL )
@@ -106,6 +109,10 @@ target_link_libraries ( thorhelper
 if (USE_NUMA)
  target_link_libraries ( thorhelper numa )
 endif ()
+
+if (${USE_TBB} )
+   target_link_libraries ( thorhelper ${TBB_LIBRARIES})
+endif()
 
 
 IF (USE_OPENSSL)
