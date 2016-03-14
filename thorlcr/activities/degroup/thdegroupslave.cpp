@@ -22,7 +22,7 @@ class CDegroupSlaveActivity : public CSlaveActivity, public CThorDataLink, publi
     IThorDataLink *input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CDegroupSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container) , CThorDataLink(this), CThorSteppable(this)

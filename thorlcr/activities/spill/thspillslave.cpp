@@ -43,7 +43,7 @@ class SpillSlaveActivity : public CSlaveActivity, public CThorDataLink
     unsigned usageCount;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     SpillSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {

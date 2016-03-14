@@ -7648,7 +7648,6 @@ class CRemoveSuperFileAction: public CDFAction
         IDistributedFileTransactionExt *transaction;
         CIArrayOf<CDFAction> actions;
     public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
         CNestedTransaction(IDistributedFileTransactionExt *_transaction, IUserDescriptor *user)
             : CDistributedFileTransaction(user), transaction(_transaction)
         {

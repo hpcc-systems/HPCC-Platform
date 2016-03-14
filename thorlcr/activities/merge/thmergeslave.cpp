@@ -241,7 +241,7 @@ public:
         return createRowStreamMerger(streams.ordinality(), streams.getArray(), helper->queryCompare(), helper->dedup(), linkcounter);
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     GlobalMergeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -414,7 +414,7 @@ class LocalMergeSlaveActivity : public CSlaveActivity, public CThorDataLink
     Owned<IRowStream> out;
     IHThorMergeArg *helper;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     LocalMergeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this) { }
 
@@ -530,7 +530,7 @@ class CNWayMergeActivity : public CThorNarySlaveActivity, public CThorDataLink, 
     bool initializedMeta;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CNWayMergeActivity(CGraphElementBase *container) : CThorNarySlaveActivity(container), CThorDataLink(this), CThorSteppable(this)
     {

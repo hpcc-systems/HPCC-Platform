@@ -116,6 +116,8 @@ protected:
         queryJobChannel().queryJobComm().send(mb, dst, mpTag);
     }
 public:
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
+
     AggregateSlaveBase(CGraphElementBase *_container)
         : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -139,8 +141,6 @@ class AggregateSlaveActivity : public AggregateSlaveBase
     IHThorAggregateArg * helper;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     AggregateSlaveActivity(CGraphElementBase *container) : AggregateSlaveBase(container)
     {
         helper = (IHThorAggregateArg *)queryHelper();
@@ -256,8 +256,6 @@ class ThroughAggregateSlaveActivity : public AggregateSlaveBase
         }
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     ThroughAggregateSlaveActivity(CGraphElementBase *container) : AggregateSlaveBase(container), partResult(NULL)
     {
         helper = (IHThorThroughAggregateArg *)queryHelper();

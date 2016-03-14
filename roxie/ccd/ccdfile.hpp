@@ -40,7 +40,6 @@ interface ILazyFileIO : extends IFileIO
     virtual IFile *querySource() = 0;
     virtual IFile *queryTarget() = 0;
     virtual void copyComplete() = 0;
-    virtual int getLinkCount() const = 0;
     virtual bool createHardFileLink() = 0;
 
     virtual unsigned getLastAccessed() const = 0;

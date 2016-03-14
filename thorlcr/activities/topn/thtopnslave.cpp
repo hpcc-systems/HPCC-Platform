@@ -80,7 +80,7 @@ class TopNSlaveActivity : public CSlaveActivity, public CThorDataLink
     MemoryBuffer topology;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     TopNSlaveActivity(CGraphElementBase *_container, bool _global, bool _grouped)
         : CSlaveActivity(_container), CThorDataLink(this), global(_global), grouped(_grouped), sortedRows(*this, this)

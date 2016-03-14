@@ -297,7 +297,7 @@ class FunnelSlaveActivity : public CSlaveActivity, public CThorDataLink
     Owned<IRowStream> parallelOutput;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     FunnelSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -495,7 +495,7 @@ class CombineSlaveActivity : public CSlaveActivity, public CThorDataLink
     CThorExpandingRowArray rows;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
 
     CombineSlaveActivity(CGraphElementBase *_container) 
@@ -599,7 +599,7 @@ class RegroupSlaveActivity : public CSlaveActivity, public CThorDataLink
     bool eogNext;
     unsigned curinput;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     RegroupSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -709,7 +709,7 @@ class NonEmptySlaveActivity : public CSlaveActivity, public CThorDataLink
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     NonEmptySlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -804,7 +804,7 @@ class CNWaySelectActivity : public CSlaveActivity, public CThorDataLink, public 
     IHThorNWaySelectArg *helper;
     IThorDataLink *selectedInput;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CNWaySelectActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this), CThorSteppable(this)
     {
@@ -925,7 +925,7 @@ class CThorNWayInputSlaveActivity : public CSlaveActivity, public CThorDataLink,
     bool grouped;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CThorNWayInputSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), CThorDataLink(this)
     {

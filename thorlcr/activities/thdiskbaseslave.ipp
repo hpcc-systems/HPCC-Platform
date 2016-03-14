@@ -44,7 +44,7 @@ protected:
 
     bool eoi;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CPartHandler);
 
     CDiskPartHandlerBase(CDiskReadSlaveActivityBase &activity);
     virtual void close(CRC32 &fileCRC) = 0;
