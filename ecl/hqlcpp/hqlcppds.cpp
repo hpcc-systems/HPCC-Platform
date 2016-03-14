@@ -3244,15 +3244,27 @@ void HqlCppTranslator::buildDatasetAssignCombine(BuildCtx & ctx, IHqlCppDatasetB
 
     iterctx.addGroup();  // stop bound cursors leaking outside the block.
 
-    // i1 iter1; i1.first();
+    // right iter1; right.first();
     HqlExprAttr rightIter, rightRow;
     Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(iterctx, right);
     cursor->buildIterateClass(iterctx, rightIter, rightRow);
     buildIteratorFirst(iterctx, rightIter, rightRow);
-
     BoundRow * sourceCursor = buildDatasetIterate(iterctx, left, false);
     if (!sourceCursor)
         return;
+
+    // handle right rows < left rows failure
+    BuildCtx failctx(iterctx);
+    StringBuffer s("if (!");
+    generateExprCpp(s, rightRow).append(")");
+    iterctx.addQuoted(s);
+    LinkedHqlExpr fail = createFailMessage("Combine: right dataset smaller than left", NULL, NULL, queryCurrentActivityId(ctx));
+    HqlExprArray args;
+    args.append(*createConstant(0));
+    args.append(*fail);
+    OwnedHqlExpr call = bindFunctionCall(_failId, args);
+    failctx.addBlock();
+    buildStmt(failctx, call);
 
     bindTableCursor(iterctx, right, rightRow, no_right, querySelSeq(expr));
 
@@ -3263,13 +3275,19 @@ void HqlCppTranslator::buildDatasetAssignCombine(BuildCtx & ctx, IHqlCppDatasetB
 
     target->finishRow(iterctx, targetRow);
 
-    //     i1.next();
+    // right.next();
     buildIteratorNext(iterctx, rightIter, rightRow);
 
-    /* TODO: Need to check -
-     * a) Whether excess rhs rows and fail with error
-     * b) Whether hit end of stream on RHS..
-     */
+    // handle right rows > left rows failure
+    s.clear().append("if ("); generateExprCpp(s, rightRow).append(")");
+    ctx.addQuoted(s);
+    LinkedHqlExpr fail2 = createFailMessage("Combine: right has more elements left", NULL, NULL, queryCurrentActivityId(ctx));
+    HqlExprArray args2;
+    args2.append(*createConstant(0));
+    args2.append(*fail2);
+    OwnedHqlExpr call2 = bindFunctionCall(_failId, args2);
+    ctx.addBlock();
+    buildStmt(ctx, call2);
 }
 
 void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
