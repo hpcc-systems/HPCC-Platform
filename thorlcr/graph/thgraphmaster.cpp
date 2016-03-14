@@ -1274,8 +1274,8 @@ void loadPlugin(SafePluginMap *pluginMap, const char *_path, const char *name)
     pluginMap->addPlugin(path.str(), name);
 }
 
-CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const char *_querySo, bool _sendSo, const SocketEndpoint &_agentEp)
-    : CJobBase(graphName), workunit(&_workunit), sendSo(_sendSo), agentEp(_agentEp)
+CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoadedDllEntry *querySo, bool _sendSo, const SocketEndpoint &_agentEp)
+    : CJobBase(querySo, graphName), workunit(&_workunit), sendSo(_sendSo), agentEp(_agentEp)
 {
     SCMStringBuffer _token, _scope;
     workunit->getScope(_scope);
@@ -1304,13 +1304,13 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const c
         plugin.getPluginName(name);
         loadPlugin(pluginMap, pluginsDir.str(), name.str());
     }
-    querySo.setown(createDllEntry(_querySo, false, NULL));
     Owned<IMPServer> mpServer = getMPServer();
     addChannel(mpServer);
     mpJobTag = allocateMPTag();
     slavemptag = allocateMPTag();
     slaveMsgHandler = new CSlaveMessageHandler(*this, slavemptag);
     tmpHandler.setown(createTempHandler(true));
+    xgmml.set(graphXGMML);
 }
 
 CJobMaster::~CJobMaster()
@@ -2465,7 +2465,7 @@ void CMasterGraph::sendGraph()
     CMessageBuffer msg;
     msg.append(GraphInit);
     msg.append(job.queryKey());
-    node->serialize(msg); // everything
+    msg.append(queryGraphId());
     if (TAG_NULL == executeReplyTag)
         executeReplyTag = jobM->allocateMPTag();
     serializeMPtag(msg, executeReplyTag);
@@ -2928,14 +2928,14 @@ void ProgressInfo::getStats(IStatisticGatherer & stats)
 
 ///////////////////////////////////////////////////
 
-CJobMaster *createThorGraph(const char *graphName, IPropertyTree *xgmml, IConstWorkUnit &workunit, const char *querySo, bool sendSo, const SocketEndpoint &agentEp)
+CJobMaster *createThorGraph(const char *graphName, IConstWorkUnit &workunit, ILoadedDllEntry *querySo, bool sendSo, const SocketEndpoint &agentEp)
 {
     Owned<CJobMaster> jobMaster = new CJobMaster(workunit, graphName, querySo, sendSo, agentEp);
-    jobMaster->setXGMML(xgmml);
-    Owned<IPropertyTreeIterator> iter = xgmml->getElements("node");
+    IPropertyTree *graphXGMML = jobMaster->queryGraphXGMML();
+    Owned<IPropertyTreeIterator> iter = graphXGMML->getElements("node");
     ForEach(*iter)
         jobMaster->addSubGraph(iter->query());
-    jobMaster->addDependencies(xgmml);
+    jobMaster->addDependencies(graphXGMML);
     return LINK(jobMaster);
 }
 
