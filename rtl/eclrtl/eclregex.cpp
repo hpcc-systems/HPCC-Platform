@@ -444,7 +444,7 @@ ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * fin
 #else // _USE_BOOST_REGEX or _USE_C11_REGEX not set
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive)
 {
-    UNIMPLEMENTED_X("Boost regex disabled");
+    rtlFail(0, "Boost/C++11 regex disabled");
 }
 
 ECLRTL_API void rtlDestroyCompiledStrRegExpr(ICompiledStrRegExpr * compiledExpr)
@@ -457,7 +457,7 @@ ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * findI
 
 ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive)
 {
-    UNIMPLEMENTED_X("Boost regex disabled");
+    rtlFail(0, "Boost/C++11 regex disabled");
 }
 
 ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiledExpr)
@@ -468,65 +468,3 @@ ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * fin
 {
 }
 #endif // _USE_BOOST_REGEX or _USE_C11_REGEX
-
-#ifdef _USE_CPPUNIT
-#include "unittests.hpp"
-
-class EclRtlTests : public CppUnit::TestFixture
-{
-    CPPUNIT_TEST_SUITE( EclRtlTests );
-        CPPUNIT_TEST(RegexTest);
-        CPPUNIT_TEST(MultiRegexTest);
-    CPPUNIT_TEST_SUITE_END();
-
-protected:
-    void RegexTest()
-    {
-        rtlCompiledStrRegex r;
-        size32_t outlen;
-        char * out = NULL;
-        r.setPattern("([A-Z]+)[ ]?'(S) ", true);
-        r->replace(outlen, out, 7, "ABC'S  ", 5, "$1$2 ");
-        ASSERT(outlen==6);
-        ASSERT(out != NULL);
-        ASSERT(memcmp(out, "ABCS  ", outlen)==0);
-        rtlFree(out);
-    }
-
-    void MultiRegexTest()
-    {
-        class RegexTestThread : public Thread
-        {
-            virtual int run()
-            {
-                for (int i = 0; i < 100000; i++)
-                {
-                    rtlCompiledStrRegex r;
-                    size32_t outlen;
-                    char * out = NULL;
-                    r.setPattern("([A-Z]+)[ ]?'(S) ", true);
-                    r->replace(outlen, out, 7, "ABC'S  ", 5, "$1$2 ");
-                    ASSERT(outlen==6);
-                    ASSERT(out != NULL);
-                    ASSERT(memcmp(out, "ABCS  ", outlen)==0);
-                    rtlFree(out);
-                }
-                return 0;
-            }
-        };
-        RegexTestThread t1;
-        RegexTestThread t2;
-        RegexTestThread t3;
-        t1.start();
-        t2.start();
-        t3.start();
-        t1.join();
-        t2.join();
-        t3.join();
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION( EclRtlTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( EclRtlTests, "EclRtlTests" );
-
-#endif
