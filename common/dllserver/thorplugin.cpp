@@ -23,11 +23,7 @@
 #include "jdebug.hpp"
 #include "jlzw.hpp"
 #include "eclrtl.hpp"
-#ifdef _USE_BINUTILS
-#define PACKAGE "hpcc-system"
-#define PACKAGE_VERSION "1.0"
-#include "bfd.h"
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 #include <mach-o/getsect.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -228,33 +224,9 @@ bool HelperDll::getResource(size32_t & len, const void * & data, const char * ty
 #endif
 }
 
-#ifdef _USE_BINUTILS
-struct SecScanParam
-{
-    MemoryBuffer &result;
-    const char *sectionName;
-    SecScanParam(MemoryBuffer &_result, const char *_sectionName) 
-        : result(_result), sectionName(_sectionName)
-    {
-    }
-};
-
-static void secscan (bfd *file, sec_ptr sec, void *userParam)
-{
-    SecScanParam *param = (SecScanParam *) userParam;
-    if (strcmp(param->sectionName, bfd_section_name (file, sec))==0)
-    {
-        bfd_size_type size = bfd_section_size (file, sec);
-        void *data = (void *) param->result.reserve(size);
-        bfd_get_section_contents(file, sec, data, 0, size);
-    }
-}
-static CriticalSection bfdCs;
-#endif
-
 static bool getResourceFromMappedFile(const char * filename, const byte * start_addr, MemoryBuffer &data, const char * type, unsigned id)
 {
-#if defined(_WIN32) || defined (_USE_BINUTILS)
+#if defined(_WIN32)
     throwUnexpected();
 #elif defined(__APPLE__)
     VStringBuffer sectname("%s_%u", type, id);
@@ -270,7 +242,7 @@ static bool getResourceFromMappedFile(const char * filename, const byte * start_
     unsigned char *data2 = getsectiondata(mh, "__TEXT", sectname.str(), &len);
     data.append(len, data2);
     return true;
-#elif defined (__64bit__)
+#elif defined (__64BIT__)
     // The first bytes are the ELF header
     const Elf64_Ehdr * hdr = (const Elf64_Ehdr *) start_addr;
     if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0)
@@ -372,20 +344,6 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
     data.append(len, rdata);
     FreeLibrary(dllHandle);
     return true;
-#elif defined (_USE_BINUTILS)
-    CriticalBlock block(bfdCs);
-    bfd_init ();
-    bfd *file = bfd_openr(filename, NULL);
-    if (file)
-    {
-        StringBuffer sectionName;
-        sectionName.append(type).append("_").append(id).append(".data");
-        SecScanParam param(data, sectionName.str());
-        if (bfd_check_format (file, bfd_object))
-            bfd_map_over_sections (file, secscan, &param);
-        bfd_close (file);
-   }
-   return data.length() != 0;
 #else
     struct stat stat_buf;
     VStringBuffer sectname("%s_%u", type, id);
