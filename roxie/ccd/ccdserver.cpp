@@ -28,6 +28,7 @@
 #include "thorxmlwrite.hpp"
 #include "thorsoapcall.hpp"
 #include "thorcommon.ipp"
+#include "thorsort.hpp"
 #include "jlzw.hpp"
 #include "javahash.hpp"
 #include "javahash.tpp"

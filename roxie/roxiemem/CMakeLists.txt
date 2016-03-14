@@ -46,6 +46,11 @@ HPCC_ADD_LIBRARY( roxiemem SHARED ${SRCS} ${INCLUDES})
 if (NOT PLUGIN)
   install ( TARGETS roxiemem RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 endif()
+
+if (${USE_TBB} )
+   target_link_libraries ( roxiemem ${TBB_LIBRARIES})
+endif()
+
 target_link_libraries ( roxiemem
          jlib
          ${CPPUNIT_LIBRARIES}
