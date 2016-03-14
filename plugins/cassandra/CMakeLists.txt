@@ -109,7 +109,7 @@ if(CASSANDRAEMBED)
 
         install(
             TARGETS cassandraembed
-            DESTINATION plugins
+            DESTINATION ${LIB_DIR}
             COMPONENT Runtime )
         # until such time as the cassandra cpp driver and libuv are available as standard in all distros we want to support,
         # include them in our rpm
