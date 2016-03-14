@@ -8788,9 +8788,20 @@ public:
         ForEachItemIn(i,filters)
         {
             CDFUSFFilter &filter = filters.item(i);
-            bool match = filter.checkFilter(file);
-            if (!match)
-                return match;
+            const char* attrPath = filter.getAttrPath();
+            try
+            {
+                if (!filter.checkFilter(file))
+                    return false;
+            }
+            catch (IException *e)
+            {
+                VStringBuffer msg("Failed to check filter %s for %s: ", attrPath, name);
+                int code = e->errorCode();
+                e->errorMessage(msg);
+                e->Release();
+                throw MakeStringException(code, "%s", msg.str());
+            }
         }
         return true;
     }
