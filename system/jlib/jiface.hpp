@@ -44,20 +44,18 @@ void jlib_decl raiseAssertCore(const char *assertion, const char *file, unsigned
  #define assertex(p)
  #define assert(p)
 #endif
-
 #if defined(_DEBUG)||defined(_TESTING)
-#define verifyex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
-#define verify(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
+ #define verifyex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
+ #define verify(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
 #else
-#define verifyex(p) ((void) (p))
-#define verify(p) ((void) (p))
+ #define verifyex(p) ((void) (p))
+ #define verify(p) ((void) (p))
 #endif
 
-//Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
 #ifdef _DEBUG
-#define dbgassertex(x) assertex(x)
+ #define dbgassertex(x) assertex(x)   //Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
 #else
-#define dbgassertex(x)
+ #define dbgassertex(x)
 #endif
 
 #define DEAD_PSEUDO_COUNT               0x3fffffff
@@ -128,7 +126,17 @@ public:
             //to a a high mid-point positive number to avoid poss. of releasing again.
             if (this->xxcount.compare_exchange_strong(zero, DEAD_PSEUDO_COUNT, std::memory_order_acq_rel))
             {
-                const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
+                try
+                {
+                    const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
+                }
+                catch (...)
+                {
+#if _DEBUG
+                    assert(!"ERROR - Exception in beforeDispose - object will be leaked");
+#endif
+                    throw;
+                }
                 delete this;
                 return true;
             }

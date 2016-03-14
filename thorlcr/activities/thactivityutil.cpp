@@ -675,8 +675,10 @@ public:
         if (globals->getPropBool("@replicateAsync", true))
             cancelReplicates(&activity, partDesc);
     }
-    ~CWriteHandler()
+    virtual void beforeDispose()
     {
+        // Can't throw in destructor...
+        // Note that if we do throw the CWriteHandler object is liable to be leaked...
         primaryio.clear(); // should close
         if (aborted && *aborted)
         {
