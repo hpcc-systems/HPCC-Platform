@@ -640,7 +640,7 @@ int main( int argc, char *argv[]  )
 #ifndef __64BIT__
             if (maxMem > 2048)
             {
-            	// 32 bit OS doesn't handle whole physically installed RAM
+                // 32 bit OS doesn't handle whole physically installed RAM
                 maxMem = 2048;
             }
 #ifdef __ARM_ARCH_7A__

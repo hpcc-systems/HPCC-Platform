@@ -272,8 +272,10 @@ void CDiskRecordPartHandler::close(CRC32 &fileCRC)
 
 /////////////////////////////////////////////////
 
-class CDiskReadSlaveActivity : public CDiskReadSlaveActivityRecord, public CThorDataLink
+class CDiskReadSlaveActivity : public CDiskReadSlaveActivityRecord
 {
+    typedef CDiskReadSlaveActivityRecord PARENT;
+
     class CDiskPartHandler : public CDiskRecordPartHandler
     {
         CDiskReadSlaveActivity &activity;
@@ -397,9 +399,7 @@ public:
 
     IHThorDiskReadArg *helper;
 
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    CDiskReadSlaveActivity(CGraphElementBase *_container, IHThorArg *_helper) : CDiskReadSlaveActivityRecord(_container, _helper), CThorDataLink(this)
+    CDiskReadSlaveActivity(CGraphElementBase *_container, IHThorArg *_helper) : CDiskReadSlaveActivityRecord(_container, _helper)
     {
         helper = (IHThorDiskReadArg *)queryHelper();
         unsorted = 0 != (TDRunsorted & helper->getFlags());
@@ -465,7 +465,7 @@ public:
             gotMeta = true;
             initMetaInfo(cachedMetaInfo);
             cachedMetaInfo.isSource = true;
-            getPartsMetaInfo(cachedMetaInfo, *this, partDescs.ordinality(), partDescs.getArray(), partHandler);
+            getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), partDescs.getArray(), partHandler);
         }
         info = cachedMetaInfo;
         if (info.totalRowsMin==info.totalRowsMax)
@@ -478,9 +478,8 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
         out = createSequentialPartHandler(partHandler, partDescs, grouped); // **
-        dataLinkStart();
     }
-    virtual bool isGrouped() { return grouped; }
+    virtual bool isGrouped() const override { return grouped; }
 
 // IRowStream
     virtual void stop()
@@ -491,7 +490,7 @@ public:
             out->Release();
             out = NULL;
         }
-        dataLinkStop();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {
@@ -526,8 +525,10 @@ CActivityBase *createDiskReadSlave(CGraphElementBase *container, IHThorArg *help
 // CDiskNormalizeSlave
 //
 
-class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord, public CThorDataLink
+class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
 {
+    typedef CDiskReadSlaveActivityRecord PARENT;
+
     class CNormalizePartHandler : public CDiskRecordPartHandler
     {
         RtlDynamicRowBuilder outBuilder;
@@ -590,10 +591,8 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord, public CThorDat
     IRowStream *out;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CDiskNormalizeSlave(CGraphElementBase *_container) 
-        : CDiskReadSlaveActivityRecord(_container), CThorDataLink(this)
+        : CDiskReadSlaveActivityRecord(_container)
     {
         helper = (IHThorDiskNormalizeArg *)queryHelper();
         if (helper->getFlags() & TDRlimitskips)
@@ -624,7 +623,7 @@ public:
             gotMeta = true;
             initMetaInfo(cachedMetaInfo);
             cachedMetaInfo.isSource = true;
-            getPartsMetaInfo(cachedMetaInfo, *this, partDescs.ordinality(), partDescs.getArray(), partHandler);
+            getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), partDescs.getArray(), partHandler);
             cachedMetaInfo.unknownRowsOutput = true; // JCSMORE
         }
         info = cachedMetaInfo;
@@ -634,9 +633,8 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
         out = createSequentialPartHandler(partHandler, partDescs, false);
-        dataLinkStart();
     }
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() const override { return false; }
 
 // IRowStream
     virtual void stop()
@@ -647,7 +645,7 @@ public:
             out->Release();
             out = NULL;
         }
-        dataLinkStop();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {
@@ -713,18 +711,18 @@ public:
     }
 };
 
-class CDiskAggregateSlave : public CDiskReadSlaveActivityRecord, public CThorDataLink
+class CDiskAggregateSlave : public CDiskReadSlaveActivityRecord
 {
+    typedef CDiskReadSlaveActivityRecord PARENT;
+
     IHThorDiskAggregateArg *helper;
     Owned<IEngineRowAllocator> allocator;
     bool eoi, hadElement;
     CPartialResultAggregator aggregator;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CDiskAggregateSlave(CGraphElementBase *_container) 
-        : CDiskReadSlaveActivityRecord(_container), aggregator(*this), CThorDataLink(this)
+        : CDiskReadSlaveActivityRecord(_container), aggregator(*this)
     {
         helper = (IHThorDiskAggregateArg *)queryHelper();
         eoi = false;
@@ -756,13 +754,12 @@ public:
         info.totalRowsMax = 1;
         // MORE TBD
     }
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() const override { return false; }
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
         eoi = hadElement = false;
-        dataLinkStart();
     }
 
 // IRowStream
@@ -770,7 +767,7 @@ public:
     {
         if (partHandler)
             partHandler->stop();
-        dataLinkStop();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {
@@ -832,16 +829,16 @@ CActivityBase *createDiskAggregateSlave(CGraphElementBase *container)
 }
 
 
-class CDiskCountSlave : public CDiskReadSlaveActivityRecord, public CThorDataLink
+class CDiskCountSlave : public CDiskReadSlaveActivityRecord
 {
+    typedef CDiskReadSlaveActivityRecord PARENT;
+
     IHThorDiskCountArg *helper;
     rowcount_t stopAfter, preknownTotalCount;
     bool eoi, totalCountKnown;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    CDiskCountSlave(CGraphElementBase *_container) : CDiskReadSlaveActivityRecord(_container), CThorDataLink(this)
+    CDiskCountSlave(CGraphElementBase *_container) : CDiskReadSlaveActivityRecord(_container)
     {
         helper = (IHThorDiskCountArg *)queryHelper();
         totalCountKnown = eoi = false;
@@ -876,7 +873,7 @@ public:
         info.isSource = true;
         // MORE TBD
     }
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() const override { return false; }
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
@@ -887,7 +884,6 @@ public:
             totalCountKnown = true;
             preknownTotalCount = 0;
         }
-        dataLinkStart();
     }
 
 // IRowStream
@@ -895,7 +891,7 @@ public:
     {
         if (partHandler)
             partHandler->stop();
-        dataLinkStop();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {
@@ -954,8 +950,10 @@ CActivityBase *createDiskCountSlave(CGraphElementBase *container)
 }
 
 class CDiskGroupAggregateSlave 
-  : public CDiskReadSlaveActivityRecord, public CThorDataLink, implements IHThorGroupAggregateCallback
+  : public CDiskReadSlaveActivityRecord, implements IHThorGroupAggregateCallback
 {
+    typedef CDiskReadSlaveActivityRecord PARENT;
+
     IHThorDiskGroupAggregateArg *helper;
     bool gathered, eoi;
     Owned<RowAggregator> localAggTable;
@@ -967,7 +965,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CDiskReadSlaveActivityRecord);
 
     CDiskGroupAggregateSlave(CGraphElementBase *_container) 
-        : CDiskReadSlaveActivityRecord(_container), CThorDataLink(this)
+        : CDiskReadSlaveActivityRecord(_container)
     {
         helper = (IHThorDiskGroupAggregateArg *)queryHelper();
         merging = false;
@@ -1001,7 +999,6 @@ public:
         gathered = eoi = false;
         localAggTable.setown(new RowAggregator(*helper, *helper));
         localAggTable->start(queryRowAllocator());
-        dataLinkStart();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
@@ -1009,13 +1006,13 @@ public:
         info.isSource = true;
         // MORE TBD
     }
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() const override { return false; }
 // IRowStream
     virtual void stop()
     {
         if (partHandler)
             partHandler->stop();
-        dataLinkStop();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {

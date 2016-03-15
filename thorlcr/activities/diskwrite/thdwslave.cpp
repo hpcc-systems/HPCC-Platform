@@ -39,13 +39,13 @@ protected:
 
         while(!abortSoon)
         {       
-            OwnedConstThorRow r = input->nextRow();
+            OwnedConstThorRow r = inputStream->nextRow();
             if (!r.get()) {
                 if (grouped) {
                     if ((processed & THORDATALINK_COUNT_MASK)!=0)
                         out->putRow(NULL);
                 }
-                r.setown(input->nextRow());
+                r.setown(inputStream->nextRow());
                 if (!r.get())
                     break;
             }
@@ -97,7 +97,7 @@ protected:
         }
         while(!abortSoon)
         {
-            OwnedConstThorRow r(input->ungroupedNextRow());
+            OwnedConstThorRow r(inputStream->ungroupedNextRow());
             if (!r) 
                 break;
 

@@ -21,14 +21,12 @@
 class CApplySlaveActivity : public ProcessSlaveActivity
 {
     IHThorApplyArg *helper;
-    IThorDataLink *input;
 
 public:
     CApplySlaveActivity(CGraphElementBase *container) 
         : ProcessSlaveActivity(container)
     { 
         helper = NULL;
-        input = NULL;
     }
 
 // IThorSlaveActivity overloaded methods
@@ -39,9 +37,8 @@ public:
 // IThorSlaveProcess overloaded methods
     virtual void process()
     {
+        start();
         processed = 0;
-        input = inputs.item(0);
-        startInput(input);
         processed = THORDATALINK_STARTED;
         try
         {
@@ -50,7 +47,7 @@ public:
             while(!abortSoon)
             {
                 ActivityTimer t(totalCycles, timeActivities);
-                OwnedConstThorRow r = input->ungroupedNextRow();
+                OwnedConstThorRow r = inputStream->ungroupedNextRow();
                 if (!r)
                     break;
                 helper->apply(r);
@@ -69,7 +66,7 @@ public:
     {
         if (processed & THORDATALINK_STARTED)
         {
-            stopInput(input);
+            stop();
             processed |= THORDATALINK_STOPPED;
         }
     }

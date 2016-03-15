@@ -21,56 +21,48 @@
 #include "thbufdef.hpp"
 #include "thpullslave.ipp"
 
-class PullSlaveActivity : public CSlaveActivity, public CThorDataLink
+class PullSlaveActivity : public CSlaveActivity
 {
-    Owned<IThorDataLink> input;
+    typedef CSlaveActivity PARENT;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    PullSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
-    {
-    }
-    ~PullSlaveActivity() 
+    PullSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
     }
 
 // IThorSlaveActivity overloaded methods
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
     }
 
 // IThorDataLink methods
-    virtual void start()
+    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
+    {
+        PARENT::setInputStream(index, _input, consumerOrdered);
+        setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), PULL_SMART_BUFFER_SIZE, true, false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()));
+    }
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input.setown(createDataLinkSmartBuffer(this,inputs.item(0),PULL_SMART_BUFFER_SIZE,true,false,RCUNBOUND,NULL,false,&container.queryJob().queryIDiskUsage()));
-        startInput(input);
-        dataLinkStart();
+        PARENT::start();
     }
-    virtual void stop()
-    {
-        stopInput(input);
-        dataLinkStop();
-    }
-
-    const void * nextRow()
+    const void * nextRow() override
     {
         ActivityTimer t(totalCycles, timeActivities);
-        OwnedConstThorRow row = input->nextRow();
+        OwnedConstThorRow row = inputStream->nextRow();
         if (!row)
             return NULL;
         dataLinkIncrement();
         return row.getClear();
     }
 
-    virtual bool isGrouped() { return false; } // or input->isGrouped?
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return false; } // or input->isGrouped?
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.buffersInput = true;
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 };
 

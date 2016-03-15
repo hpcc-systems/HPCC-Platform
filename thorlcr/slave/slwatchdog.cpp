@@ -137,7 +137,7 @@ public:
             activeGraphs.zap(graph);
         }
     }
-    virtual void debugRequest(CMessageBuffer &msg, const char *request) const
+    virtual void debugRequest(MemoryBuffer &msg, const char *request) const
     {
         Owned<IPTree> req = createPTreeFromXMLString(request);
 
@@ -161,7 +161,7 @@ public:
             if (element)
             {
                 CSlaveActivity *activity = (CSlaveActivity*) element->queryActivity();
-                if (activity) activity->debugRequest(edgeIdx,msg);
+                if (activity) activity->debugRequest(edgeIdx, msg);
             }
         }
     }

@@ -25,11 +25,8 @@
 class CResultSlaveActivity : public ProcessSlaveActivity
 {
     mptag_t masterMpTag;
-    IThorDataLink *input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CResultSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container) { }
 
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -38,14 +35,12 @@ public:
     }
     void process()
     {
+        start();
         processed = 0;
-
-        input = inputs.item(0);
-        startInput(input);
 
         processed = THORDATALINK_STARTED;
 
-        OwnedConstThorRow row = input->ungroupedNextRow();
+        OwnedConstThorRow row = inputStream->ungroupedNextRow();
         CMessageBuffer mb;
         DelayedSizeMarker sizeMark(mb);
         if (row)
@@ -62,7 +57,7 @@ public:
     {
         if (processed & THORDATALINK_STARTED)
         {
-            stopInput(input);
+            stop();
             processed |= THORDATALINK_STOPPED;
         }
     }

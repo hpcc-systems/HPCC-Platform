@@ -33,19 +33,12 @@
 class CWorkUnitWriteSlaveBase : public ProcessSlaveActivity
 {
 protected:
-    Owned<IThorDataLink> input;
     bool grouped;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CWorkUnitWriteSlaveBase(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {
         grouped = false;
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
     void processBlock(unsigned &numGot, MemoryBuffer &mb)
     {
@@ -55,12 +48,12 @@ public:
         do
         {
             if (abortSoon) break;
-            OwnedConstThorRow row = input->nextRow();
+            OwnedConstThorRow row = inputStream->nextRow();
             if (grouped && !first)
                 mb.append(NULL == row.get());
             if (!row)
             {
-                row.setown(input->nextRow());
+                row.setown(inputStream->nextRow());
                 if (!row)
                     break;
             }
@@ -70,28 +63,37 @@ public:
             serializer->serialize(mbs,(const byte *)row.get());
         } while (mb.length() < PIPE_BUFFER_SIZE); // NB: allows at least 1
     }
-    void endProcess()
+
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
+    {
+        mpTag = container.queryJobChannel().deserializeMPTag(data);
+    }
+    virtual void endProcess() override
     {
         if (processed & THORDATALINK_STARTED)
         {
-            stopInput(input);
+            stop();
             processed |= THORDATALINK_STOPPED;
         }
-        input.clear();
     }
 };
 
 class CWorkUnitWriteGlobalSlaveBaseActivity : public CWorkUnitWriteSlaveBase
 {
+    typedef CWorkUnitWriteSlaveBase PARENT;
+
 public:
     CWorkUnitWriteGlobalSlaveBaseActivity(CGraphElementBase *container) : CWorkUnitWriteSlaveBase(container)
     {
     }
-    void process()
+    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {
-        input.setown(createDataLinkSmartBuffer(this, inputs.item(0), WORKUNITWRITE_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), grouped, RCUNBOUND, NULL, false, &container.queryJob().queryIDiskUsage()));
-        startInput(input);
-
+        PARENT::setInputStream(index, _input, consumerOrdered);
+        setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), WORKUNITWRITE_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), grouped, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()));
+    }
+    virtual void process() override
+    {
+        start();
         processed = THORDATALINK_STARTED;
 
         ActPrintLog("WORKUNITWRITE: processing first block");
@@ -123,9 +125,9 @@ public:
             queryJobChannel().queryJobComm().send(msgMb, 0, mpTag);
         } while (!abortSoon && numGot);
     }
-    void abort()
+    virtual void abort() override
     {
-        CWorkUnitWriteSlaveBase::abort();
+        PARENT::abort();
         cancelReceiveMsg(0, mpTag);
     }
 };
@@ -141,10 +143,9 @@ public:
         grouped = 0 != (POFgrouped & helper->getFlags());
         replyTag = queryMPServer().createReplyTag();
     }
-    void process()
+    virtual void process() override
     {
-        input.set(inputs.item(0));
-        startInput(input);
+        start();
         processed = THORDATALINK_STARTED;
 
         ActPrintLog("WORKUNITWRITELOCAL: processing first block");
@@ -198,7 +199,7 @@ public:
             }
         } while (!abortSoon && numGot);
     }
-    void abort()
+    virtual void abort() override
     {
         CWorkUnitWriteSlaveBase::abort();
         cancelReceiveMsg(0, replyTag);

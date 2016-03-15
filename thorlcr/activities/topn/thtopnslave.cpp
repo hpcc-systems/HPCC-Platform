@@ -67,34 +67,32 @@ IRowStream *createFirstNReadSeqVar(IRowStream *input, unsigned limit)
     return new CFirstNReadSeqVar(input, limit);
 }
 
-class TopNSlaveActivity : public CSlaveActivity, public CThorDataLink
+class TopNSlaveActivity : public CSlaveActivity
 {
-    bool eos, eog, global, grouped, inputStopped;
+    typedef CSlaveActivity PARENT;
+
+    bool eos, eog, global, grouped;
     ICompare *compare;
     CThorExpandingRowArray sortedRows;
     Owned<IRowStream> out;
-    IThorDataLink *input;
     IHThorTopNArg *helper;
     rowidx_t topNLimit;
     Owned<IRowServer> rowServer;
     MemoryBuffer topology;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     TopNSlaveActivity(CGraphElementBase *_container, bool _global, bool _grouped)
-        : CSlaveActivity(_container), CThorDataLink(this), global(_global), grouped(_grouped), sortedRows(*this, this)
+        : CSlaveActivity(_container), global(_global), grouped(_grouped), sortedRows(*this, this)
     {
         assertex(!(global && grouped));
         eog = eos = false;
-        inputStopped = true;
     }
     ~TopNSlaveActivity()
     {
         out.clear();
         sortedRows.kill();
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
         helper = (IHThorTopNArg *) queryHelper();
@@ -176,27 +174,17 @@ public:
         }
         if (global || 0 == topNLimit || 0 == sortedCount)
         {
-            doStopInput();
+            PARENT::stop();
             if (!global || 0 == topNLimit)
                 eos = true;
         }
         return retStream.getClear();
     }
-    void doStopInput()
-    {
-        if (!inputStopped)
-        {
-            inputStopped = true;
-            stopInput(input);
-        }
-    }
 // IThorDataLink
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input = inputs.item(0);
-        startInput(input);
-        inputStopped = false;
+        PARENT::start();
         // NB: topNLimit shouldn't be stupid size, resourcing will guarantee this
         __int64 _topNLimit = helper->getLimit();
         assertex(_topNLimit < RCIDXMAX); // hopefully never this big, but if were must be max-1 for binary insert
@@ -204,23 +192,21 @@ public:
         if (0 == topNLimit)
         {
             eos = true;
-            doStopInput();
+            PARENT::stop();
         }
         else
         {
-            out.setown(getNextSortGroup(input));
+            out.setown(getNextSortGroup(inputStream));
             eos = false;
         }
         eog = false;
-        dataLinkStart();
     }
-    virtual bool isGrouped() { return grouped; }
-    void stop()
+    virtual bool isGrouped() const override { return grouped; }
+    virtual void stop()
     {
         if (out)
             out->stop();
-        doStopInput();
-        dataLinkStop();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {
@@ -229,7 +215,7 @@ public:
             return NULL;
         if (NULL == out)
         {
-            out.setown(getNextSortGroup(input));
+            out.setown(getNextSortGroup(inputStream));
             if (NULL == out)
             {
                 eos = true;
@@ -249,7 +235,7 @@ public:
             {
                 if (eog)
                 {
-                    out.setown(getNextSortGroup(input));
+                    out.setown(getNextSortGroup(inputStream));
                     if (NULL == out)
                         eos = true;
                     else
@@ -264,7 +250,7 @@ public:
                 else
                 {
                     eog = true;
-                    out.setown(getNextSortGroup(input));
+                    out.setown(getNextSortGroup(inputStream));
                     if (NULL == out)
                         eos = true;
                 }

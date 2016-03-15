@@ -867,7 +867,7 @@ public:
     virtual IThorAllocator *getThorAllocator(unsigned channel);
 
     virtual void abort(IException *e);
-    virtual void debugRequest(CMessageBuffer &msg, const char *request) const { }
+    virtual void debugRequest(MemoryBuffer &msg, const char *request) const { }
 
 //
     virtual void addCreatedFile(const char *file) { assertex(false); }

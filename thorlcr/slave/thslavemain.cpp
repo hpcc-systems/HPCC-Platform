@@ -71,6 +71,9 @@ USE_JLIB_ALLOC_HOOK;
 static SocketEndpoint slfEp;
 static unsigned mySlaveNum;
 
+static const unsigned defaultStrandBlockSize = 512;
+static const unsigned defaultForceNumStrands = 0;
+
 static char **cmdArgs;
 void mergeCmdParams(IPropertyTree *props)
 {
@@ -122,6 +125,23 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
         setClusterGroup(masterNode, rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
+
+        unsigned numStrands, blockSize;
+        if (globals->hasProp("Debug/@forceNumStrands"))
+            numStrands = globals->getPropInt("Debug/@forceNumStrands");
+        else
+        {
+            numStrands = defaultForceNumStrands;
+            globals->setPropInt("Debug/@forceNumStrands", defaultForceNumStrands);
+        }
+        if (globals->hasProp("Debug/@strandBlockSize"))
+            blockSize = globals->getPropInt("Debug/@strandBlockSize");
+        else
+        {
+            blockSize = defaultStrandBlockSize;
+            globals->setPropInt("Debug/@strandBlockSize", defaultStrandBlockSize);
+        }
+        PROGLOG("Strand defaults: numStrands=%u, blockSize=%u", numStrands, blockSize);
 
         const char *_masterBuildTag = globals->queryProp("@masterBuildTag");
         const char *masterBuildTag = _masterBuildTag?_masterBuildTag:"no build tag";

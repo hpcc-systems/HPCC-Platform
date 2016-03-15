@@ -264,8 +264,10 @@ IFetchStream *createFetchStream(CSlaveActivity &owner, IThorRowInterfaces *keyRo
     return new CFetchStream(owner, keyRowIf, fetchRowIf, abortSoon, parts, offsetCount, offsetMapSz, offsetMap, iFetchHandler, tag, eexp);
 }
 
-class CFetchSlaveBase : public CSlaveActivity, public CThorDataLink, implements IFetchHandler
+class CFetchSlaveBase : public CSlaveActivity, implements IFetchHandler
 {
+    typedef CSlaveActivity PARENT;
+
     IRowStream *fetchStreamOut;
     unsigned maxKeyRecSize;
     rowcount_t limit;
@@ -289,7 +291,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CFetchSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    CFetchSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         fetchStream = NULL;
         keyIn = NULL;
@@ -304,7 +306,7 @@ public:
         ::Release(fetchStream);
     }
 
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         unsigned numParts;
         data.read(numParts);
@@ -356,9 +358,11 @@ public:
     }
 
 // IThorDataLink impl.
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
+
         class CKeyFieldExtractBase : public CSimpleInterface, implements IRowStream
         {
         protected:
@@ -380,10 +384,6 @@ public:
             virtual void stop() { in.stop(); }
         };
 
-        startInput(inputs.item(0));
-        dataLinkStart();
-
-        IThorDataLink *in = inputs.item(0);
         Owned<IThorRowInterfaces> keyInIf;
         if (indexRowExtractNeeded)
         {
@@ -412,12 +412,12 @@ public:
 
             if (fetchBaseHelper->extractAllJoinFields())
             {
-                keyIn = LINK(in);
-                keyInMeta.set(in->queryFromActivity()->queryRowMetaData());
+                keyIn = LINK(inputStream);
+                keyInMeta.set(input->queryFromActivity()->queryRowMetaData());
             }
             else
             {
-                keyIn = new CKeyFieldExtract(this, *in, *fetchBaseHelper, *fetchContext);
+                keyIn = new CKeyFieldExtract(this, *inputStream, *fetchBaseHelper, *fetchContext);
                 keyInMeta.set(QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData));
             }
             keyInIf.setown(createThorRowInterfaces(queryRowManager(), keyInMeta,queryId(),queryCodeContext()));
@@ -450,7 +450,7 @@ public:
             };
             Owned<IOutputMetaData> fmeta = createFixedSizeMetaData(sizeof(offset_t)); // should be provided by Gavin?
             keyInIf.setown(createThorRowInterfaces(queryRowManager(), fmeta,queryId(),queryCodeContext()));
-            keyIn = new CKeyFPosExtract(keyInIf, this, *in, *fetchBaseHelper, *fetchContext);
+            keyIn = new CKeyFPosExtract(keyInIf, this, *inputStream, *fetchBaseHelper, *fetchContext);
         }
 
         Owned<IThorRowInterfaces> rowIf = createThorRowInterfaces(queryRowManager(), queryRowMetaData(), queryId(), queryCodeContext());
@@ -459,7 +459,7 @@ public:
         fetchStream->start(keyIn);
         initializeFileParts();
     }
-    virtual void stop()
+    virtual void stop() override
     {
         fetchStreamOut->stop();
         dataLinkStop();
@@ -486,8 +486,8 @@ public:
         }
         return NULL;
     }
-    virtual bool isGrouped() { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return false; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.canStall = true;

@@ -148,9 +148,6 @@ class CDualCache: public CSimpleInterface
     unsigned pos2;
     QueueOf<CRollingCacheElem,true> cache;
 public:
-
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CDualCache()
     {
         strm1 = NULL;

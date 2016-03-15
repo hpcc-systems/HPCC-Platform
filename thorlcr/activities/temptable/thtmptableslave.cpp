@@ -28,8 +28,10 @@
  * up consuming a lot of rows.
  *
  */
-class CInlineTableSlaveActivity : public CSlaveActivity, public CThorDataLink
+class CInlineTableSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
 private:
     IHThorInlineTableArg * helper;
     __uint64 startRow;
@@ -37,26 +39,24 @@ private:
     __uint64 maxRow;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CInlineTableSlaveActivity(CGraphElementBase *_container)
-    : CSlaveActivity(_container), CThorDataLink(this)
+    : CSlaveActivity(_container)
     {
         helper = NULL;
         startRow = 0;
         currentRow = 0;
         maxRow = 0;
     }
-    virtual bool isGrouped() { return false; }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual bool isGrouped() const override { return false; }
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
         helper = static_cast <IHThorInlineTableArg *> (queryHelper());
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        dataLinkStart();
+        PARENT::start();
         __uint64 numRows = helper->numRows();
         // local when generated from a child query (the range is per node, don't split)
         bool isLocal = container.queryLocalData() || container.queryOwner().isLocalChild();
@@ -81,10 +81,6 @@ public:
         }
         currentRow = startRow;
     }
-    void stop()
-    {
-        dataLinkStop();
-    }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -101,7 +97,7 @@ public:
         }
         return NULL;
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.isSource = true;

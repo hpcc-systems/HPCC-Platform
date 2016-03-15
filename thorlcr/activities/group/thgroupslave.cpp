@@ -20,15 +20,16 @@
 #include "thgroupslave.ipp"
 
 
-class GroupSlaveActivity : public CSlaveActivity, public CThorDataLink
+class GroupSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     IHThorGroupArg * helper;
     bool eogNext, prevEog, eof;
     bool rolloverEnabled, useRollover;
     rowcount_t numGroups;
     rowcount_t numGroupMax;
     rowcount_t startLastGroup;
-    IThorDataLink *input;
     Owned<IRowStream> stream, nextNodeStream;
     OwnedConstThorRow next;
     Owned<IRowServer> rowServer;
@@ -51,10 +52,8 @@ class GroupSlaveActivity : public CSlaveActivity, public CThorDataLink
             return NULL;
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     GroupSlaveActivity(CGraphElementBase *_container)
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorGroupArg *> (queryHelper());
         rolloverEnabled = false;
@@ -72,10 +71,11 @@ public:
             rolloverEnabled = true;
         }
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         ActPrintLog(rolloverEnabled ? "GROUP: is global" : "GROUP: is local");
+        PARENT::start();
         eogNext = prevEog = eof = false;
         if (rolloverEnabled)
         {
@@ -85,10 +85,7 @@ public:
 #endif
         }
 
-        input = inputs.item(0);
-        stream.set(input);
-        startInput(input);
-        dataLinkStart();
+        stream.set(inputStream);
         startLastGroup = getDataLinkGlobalCount();
         next.setown(getNext());
 
@@ -124,12 +121,11 @@ public:
             rowServer.setown(createRowServer(this, strm, queryJobChannel().queryJobComm(), mpTag));
         }
     }
-    virtual void stop()
+    virtual void stop() override
     {
         if (nextNodeStream)
             nextNodeStream->stop();
-        stopInput(input);
-        dataLinkStop();
+        PARENT::stop();
     }
     virtual void kill()
     {
@@ -176,7 +172,7 @@ public:
             numGroupMax = numThisGroup;
         numGroups++;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         if (rolloverEnabled)
@@ -184,10 +180,10 @@ public:
             info.isSequential = true;
             info.unknownRowsOutput = true; // don't know how many rolled over
         }
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
-    virtual bool isGrouped() { return true; }
-    void serializeStats(MemoryBuffer &mb)
+    virtual bool isGrouped() const override{ return true; }
+    virtual void serializeStats(MemoryBuffer &mb) override
     {
         CSlaveActivity::serializeStats(mb);
         mb.append(numGroups);
