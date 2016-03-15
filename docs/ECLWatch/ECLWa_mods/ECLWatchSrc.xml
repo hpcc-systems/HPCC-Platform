@@ -482,19 +482,12 @@
             </listitem>
 
             <listitem>
-              <para><emphasis role="bold">Update Super Files:</emphasis> When
-              checked and a query using foreign superfiles or a remote Dali ip
-              is published the super files will be copied from the remote
-              Dali. If superfiles already exist locally then the current
-              definition will be overwritten. If it is not checked the current
-              definition will not change. </para>
-
-              <para>Update Super Files: Use when a query uses foreign
-              superfiles or a remote Dali. When such a query is published the
-              superfiles are copied from the remote Dali. If superfiles
-              already exist locally, then the current definition is
-              overwritten only when this box is checked. If it is not checked,
-              the current definition will not change. </para>
+              <para><emphasis role="bold">Update Super Files:</emphasis> Use
+              when a query uses foreign superfiles or a remote Dali. When such
+              a query is published the superfiles are copied from the remote
+              Dali. If superfiles already exist locally, then the current
+              definition is overwritten only when this box is checked. If it
+              is not checked, the current definition will not change. </para>
             </listitem>
           </itemizedlist>
         </sect3>
