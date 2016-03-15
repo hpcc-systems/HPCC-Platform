@@ -8271,6 +8271,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityConcat(BuildCtx & ctx, IHqlExp
 
     if (orderedPull || (allFromDisk && !targetRoxie()))
         ordered = true;
+    if (!expr->hasAttribute(orderedAtom) && insideChildQuery(ctx))
+        ordered = true;
 
     bool useImplementationClass = options.minimizeActivityClasses && targetRoxie();
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKfunnel, expr, "Funnel");

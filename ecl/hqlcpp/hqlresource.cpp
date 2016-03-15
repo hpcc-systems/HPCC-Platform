@@ -5059,21 +5059,6 @@ void CSplitterLink::mergeSinkLink(CSplitterLink & sinkLink)
     sinkInfo->balancedLinks.replace(OLINK(*this), sinkPos);
 }
 
-bool CSplitterInfo::allInputsPulledIndependently(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_addfiles:
-        if (isOrdered(expr) || isGrouped(expr))
-            return false;
-        return true;
-    case no_parallel:
-        //MORE; This can probably return true - and generate fewer unbalanced splitters.
-        break;
-    }
-    return false;
-}
-
 bool CSplitterInfo::isSplitOrBranch(IHqlExpression * expr) const
 {
     unsigned num = getNumActivityArguments(expr);
@@ -5323,6 +5308,24 @@ bool EclResourcer::removePassThrough(CSplitterInfo & connections, ResourcerInfo 
     return true;
 }
 
+bool EclResourcer::allInputsPulledIndependently(IHqlExpression * expr) const
+{
+    switch (expr->getOperator())
+    {
+    case no_addfiles:
+        if (isOrdered(expr) || isGrouped(expr))
+            return false;
+        if (!expr->hasAttribute(orderedAtom) && options.isChildQuery)
+            return false;
+        return true;
+    case no_parallel:
+        //MORE; This can probably return true - and generate fewer unbalanced splitters.
+        break;
+    }
+    return false;
+}
+
+
 void EclResourcer::removeDuplicateIndependentLinks(CSplitterInfo & connections, ResourcerInfo & info)
 {
     IHqlExpression * expr = info.original;
@@ -5337,7 +5340,7 @@ void EclResourcer::removeDuplicateIndependentLinks(CSplitterInfo & connections, 
                 IHqlExpression * sink = cur.queryOther(expr);
                 assertex(sink);
                 ResourcerInfo & sinkInfo = *queryResourceInfo(sink);
-                if (CSplitterInfo::allInputsPulledIndependently(sink))
+                if (allInputsPulledIndependently(sink))
                 {
                     unsigned numRemoved = 0;
                     for (unsigned j=info.balancedLinks.ordinality()-1; j > i; j--)

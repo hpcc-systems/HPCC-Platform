@@ -67,7 +67,7 @@ public:
     bool     noConditionalLinks;
     bool     minimiseSpills;
     bool     hoistResourced;
-    bool     isChildQuery;
+    bool     isChildQuery; // Is a child query, or a loop inside a child query
     bool     groupedChildIterators;
     bool     allowSplitBetweenSubGraphs;
     bool     preventKeyedSplit;
@@ -294,7 +294,6 @@ public:
     ~CSplitterInfo();
 
     void addLink(IHqlExpression * source, IHqlExpression * sink, bool isExternal);
-    static bool allInputsPulledIndependently(IHqlExpression * expr);
     void gatherPotentialSplitters(IHqlExpression * expr, IHqlExpression * sink, ResourceGraphInfo * graph, bool isDependency);
     bool isSplitOrBranch(IHqlExpression * expr) const;
     bool isBalancedSplitter(IHqlExpression * expr) const;
@@ -526,6 +525,7 @@ protected:
     void spotSharedInputs(IHqlExpression * expr, ResourceGraphInfo * graph);
     void spotSharedInputs();
 
+    bool allInputsPulledIndependently(IHqlExpression * expr) const;
     bool removePassThrough(CSplitterInfo & connections, ResourcerInfo & info);
     void removeDuplicateIndependentLinks(CSplitterInfo & connections, ResourcerInfo & info);
     void optimizeIndependentLinks(CSplitterInfo & connections, ResourcerInfo & info);
