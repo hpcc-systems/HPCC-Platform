@@ -151,7 +151,7 @@ define([
                         id: id,
                         title: row.Name,
                         closable: true,
-                        delayWidget: "GraphPageWidget",
+                        delayWidget: "GraphTreeWidget",
                         hpcc: {
                             type: "graph",
                             params: localParams

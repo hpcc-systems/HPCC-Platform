@@ -392,6 +392,12 @@ define([
             }
         },
 
+        refresh: function (params) {
+            if (params.SubGraphId) {
+                this.syncSelectionFrom([params.SubGraphId]);
+            }
+        },
+
         doInit: function (params) {
             if (this.global.version.major < 5) {
                 dom.byId(this.id + "Warning").innerHTML = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
@@ -407,8 +413,28 @@ define([
                 dotAttrs = dotAttrs.replace("\ngraph[splines=\"line\"];", "\n//graph[splines=\"line\"];");
                 this.global.setDotMetaAttributes(dotAttrs);
             }
+
+            this.graphName = params.GraphName;
+            this.widget.TimingsTreeMap.init(lang.mixin({
+                query: {
+                    graphsOnly: true,
+                    graphName: this.graphName,
+                    subGraphId: "*"
+                },
+                hideHelp: true
+            }, params));
+
+            this.widget.ActivitiesTreeMap.init(lang.mixin({
+                query: {
+                    activitiesOnly: true,
+                    graphName: this.graphName,
+                    subGraphId: "*"
+                },
+                hideHelp: true
+            }, params));
+
+
             if (this.isWorkunit()) {
-                this.graphName = params.GraphName;
                 this.wu = ESPWorkunit.Get(params.Wuid);
 
                 var firstLoad = true;
@@ -433,28 +459,9 @@ define([
             } else if (this.isQuery()) {
                 this.targetQuery = params.Target;
                 this.queryId = params.QueryId;
-                this.graphName = params.GraphName;
 
                 this.loadGraphFromQuery(this.targetQuery, this.queryId, this.graphName);
             }
-
-            this.widget.TimingsTreeMap.init(lang.mixin({
-                query: {
-                    graphsOnly: true,
-                    graphName: this.graphName,
-                    subGraphId: "*"
-                },
-                hideHelp: true
-            }, params));
-
-            this.widget.ActivitiesTreeMap.init(lang.mixin({
-                query: {
-                    activitiesOnly: true,
-                    graphName: this.graphName,
-                    subGraphId: "*"
-                },
-                hideHelp: true
-            }, params));
         },
 
         refreshData: function () {
@@ -468,19 +475,20 @@ define([
         loadGraphFromXGMML: function (xgmml) {
             if (this.global.loadXGMML(xgmml, false, this.graphTimers, true)) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
-                var initialSelection = [];
                 var mainRoot = [0];
                 var complexityInfo = this.global.getComplexityInfo();
-                if (complexityInfo.isComplex()) {
+                if (this.params.SubGraphId) {
+                    mainRoot = [this.params.SubGraphId];
+                } else if (complexityInfo.isComplex()) {
                     if (confirm(lang.replace(this.i18n.ComplexityWarning, complexityInfo) + "\n" + this.i18n.ManualTreeSelection)) {
                         mainRoot = [];
                     }
                 }
-                this.setMainRootItems(mainRoot, initialSelection);
                 this.loadTree();
                 this.loadSubgraphs();
                 this.loadVertices();
                 this.loadEdges();
+                this.syncSelectionFrom(mainRoot);
             }
         },
 
@@ -662,36 +670,38 @@ define([
             }
         },
 
-        _syncSelectionFrom: dojoConfig.debounce(function (sourceControl) {
+        _syncSelectionFrom: dojoConfig.debounce(function (sourceControlOrGlobalIDs) {
             this.inSyncSelectionFrom = true;
-            var selectedGlobalIDs = [];
-
-            //  Get Selected Items  ---
-            if (sourceControl == this.widget.TimingsTreeMap) {
-                var items = sourceControl.getSelected();
-                for (var i = 0; i < items.length; ++i) {
-                    if (items[i].SubGraphId) {
-                        selectedGlobalIDs.push(items[i].SubGraphId);
+            var sourceControl = sourceControlOrGlobalIDs instanceof Array ? null : sourceControlOrGlobalIDs;
+            var selectedGlobalIDs = sourceControlOrGlobalIDs instanceof Array ? sourceControlOrGlobalIDs : [];
+            if (sourceControl) {
+                //  Get Selected Items  ---
+                if (sourceControl == this.widget.TimingsTreeMap) {
+                    var items = sourceControl.getSelected();
+                    for (var i = 0; i < items.length; ++i) {
+                        if (items[i].SubGraphId) {
+                            selectedGlobalIDs.push(items[i].SubGraphId);
+                        }
                     }
-                }
-            } else if (sourceControl == this.widget.ActivitiesTreeMap) {
+                } else if (sourceControl == this.widget.ActivitiesTreeMap) {
                     var items = sourceControl.getSelected();
                     for (var i = 0; i < items.length; ++i) {
                         if (items[i].ActivityID) {
                             selectedGlobalIDs.push(items[i].ActivityID);
                         }
                     }
-            } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid || sourceControl == this.subgraphsGrid || sourceControl == this.treeGrid) {
-                var items = sourceControl.getSelected();
-                for (var i = 0; i < items.length; ++i) {
-                    if (lang.exists("_globalID", items[i])) {
-                        selectedGlobalIDs.push(items[i]._globalID);
+                } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid || sourceControl == this.subgraphsGrid || sourceControl == this.treeGrid) {
+                    var items = sourceControl.getSelected();
+                    for (var i = 0; i < items.length; ++i) {
+                        if (lang.exists("_globalID", items[i])) {
+                            selectedGlobalIDs.push(items[i]._globalID);
+                        }
                     }
+                } else if (sourceControl === this.found) {
+                    selectedGlobalIDs = this.found;
+                } else {
+                    selectedGlobalIDs = sourceControl.getSelectionAsGlobalID();
                 }
-            } else if (sourceControl === this.found ) {
-                selectedGlobalIDs = this.found;
-            } else {
-                selectedGlobalIDs = sourceControl.getSelectionAsGlobalID();
             }
 
             //  Set Selected Items  ---
@@ -743,7 +753,7 @@ define([
 
         setMainRootItems: function (globalIDs) {
             var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"));
-            graphView.navigateTo(this.main);
+            return graphView.navigateTo(this.main);
         },
 
         refreshMainXGMML: function () {
