@@ -2473,7 +2473,8 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
     dirty = true;
     aborted = false;
     mpJobTag = TAG_NULL;
-    globalMemorySize = globals->getPropInt("@globalMemorySize"); // in MB
+    globalMemoryMB = globals->getPropInt("@globalMemorySize"); // in MB
+    numChannels = globals->getPropInt("@channelsPerSlave", 1);
     oldNodeCacheMem = 0;
     pluginMap = new SafePluginMap(&pluginCtx, true);
 
@@ -2523,9 +2524,11 @@ void CJobBase::init()
 
     crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", false));
     usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", true));
-    memorySpillAt = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
+    memorySpillAtPercentage = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
+    sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
+    sharedMemoryMB = globalMemoryMB*sharedMemoryLimitPercentage/100;
 
-    PROGLOG("Global memory size = %d MB, memory spill at = %d%%", globalMemorySize, memorySpillAt);
+    PROGLOG("Global memory size = %d MB, shared memory = %d%%, memory spill at = %d%%", globalMemoryMB, sharedMemoryLimitPercentage, memorySpillAtPercentage);
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
         tracing.append(maxActivityCores);
@@ -2543,6 +2546,7 @@ void CJobBase::beforeDispose()
 
 CJobBase::~CJobBase()
 {
+    jobChannels.kill(); // avoiding circular references. Kill before other CJobBase components are destroyed that channels reference.
     ::Release(userDesc);
     ::Release(pluginMap);
 
@@ -2713,9 +2717,9 @@ __int64 CJobBase::getOptInt64(const char *opt, __int64 dft)
     return getWorkUnitValueInt(opt, globals->getPropInt64(gOpt, dft));
 }
 
-IThorAllocator *CJobBase::createThorAllocator()
+IThorAllocator *CJobBase::getThorAllocator(unsigned channel)
 {
-    return ::createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, *logctx, crcChecking, usePackedAllocator);
+    return sharedAllocator.getLink();
 }
 
 /// CJobChannel
@@ -2724,8 +2728,7 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
     : job(_job), mpServer(_mpServer), channel(_channel)
 {
     aborted = false;
-    codeCtx = NULL;
-    thorAllocator.setown(job.createThorAllocator());
+    thorAllocator.setown(job.getThorAllocator(channel));
     timeReporter = createStdTimeReporter();
     jobComm.setown(mpServer->createCommunicator(&job.queryJobGroup()));
     myrank = job.queryJobGroup().rank(queryMyNode());
@@ -2739,7 +2742,7 @@ CJobChannel::~CJobChannel()
     thorAllocator.clear();
     wait();
     clean();
-    ::Release(codeCtx);
+    codeCtx.clear();
     timeReporter->Release();
 }
 
@@ -2757,6 +2760,11 @@ void CJobChannel::wait()
 ICodeContext &CJobChannel::queryCodeContext() const
 {
     return *codeCtx;
+}
+
+ICodeContext &CJobChannel::querySharedMemCodeContext() const
+{
+    return *sharedMemCodeCtx;
 }
 
 mptag_t CJobChannel::deserializeMPTag(MemoryBuffer &mb)

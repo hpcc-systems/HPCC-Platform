@@ -758,7 +758,8 @@ protected:
     Owned<IPropertyTree> xgmml;
     Owned<IGraphTempHandler> tmpHandler;
     bool timeActivities;
-    unsigned maxActivityCores, globalMemorySize;
+    unsigned numChannels;
+    unsigned maxActivityCores, globalMemoryMB, sharedMemoryMB;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     Owned<IContextLogger> logctx;
     Owned<IPerfMonHook> perfmonhook;
@@ -768,9 +769,11 @@ protected:
     OwnedMalloc<unsigned> jobSlaveChannelNum;
     bool crcChecking;
     bool usePackedAllocator;
-    unsigned memorySpillAt;
     rank_t myNodeRank;
     Owned<IPropertyTree> graphXGMML;
+    unsigned memorySpillAtPercentage, sharedMemoryLimitPercentage;
+    CriticalSection sharedAllocatorCrit;
+    Owned<IThorAllocator> sharedAllocator;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -860,7 +863,8 @@ public:
     unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
     __int64 getOptInt64(const char *opt, __int64 dft=0);
     unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
-    virtual IThorAllocator *createThorAllocator();
+    IThorAllocator *querySharedAllocator() const { return sharedAllocator; }
+    virtual IThorAllocator *getThorAllocator(unsigned channel);
 
     virtual void abort(IException *e);
     virtual void debugRequest(CMessageBuffer &msg, const char *request) const { }
@@ -904,7 +908,8 @@ protected:
     rank_t myrank;
     Linked<IMPServer> mpServer;
     bool aborted;
-    CThorCodeContextBase *codeCtx;
+    Owned<CThorCodeContextBase> codeCtx;
+    Owned<CThorCodeContextBase> sharedMemCodeCtx;
     unsigned channel;
 
     void removeAssociates(CGraphBase &graph)
@@ -960,8 +965,9 @@ public:
     }
 
     ICodeContext &queryCodeContext() const;
+    ICodeContext &querySharedMemCodeContext() const;
     IThorResult *getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId);
-    IThorAllocator &queryThorAllocator() const { return *thorAllocator; }
+    IThorAllocator *queryThorAllocator() const { return thorAllocator; }
     ICommunicator &queryJobComm() const { return *jobComm; }
     IMPServer &queryMPServer() const { return *mpServer; }
     const rank_t &queryMyRank() const { return myrank; }

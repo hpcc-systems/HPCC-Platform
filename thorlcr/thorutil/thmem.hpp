@@ -161,10 +161,12 @@ interface IThorAllocator : extends IInterface
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId) const = 0;
     virtual roxiemem::IRowManager *queryRowManager() const = 0;
     virtual roxiemem::RoxieHeapFlags queryFlags() const = 0;
+    virtual IContextLogger *queryLoggingContext() const = 0;
     virtual bool queryCrc() const = 0;
+    virtual IThorAllocator *getSlaveAllocator(unsigned channel) = 0;
 };
 
-extern graph_decl IThorAllocator *createThorAllocator(memsize_t memSize, unsigned memorySpillAt, IContextLogger &logctx, bool crcChecking, bool usePacked);
+extern graph_decl IThorAllocator *createThorAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, unsigned numChannels, unsigned memorySpillAtPercentage, IContextLogger &logctx, bool crcChecking, bool usePacked);
 
 extern graph_decl IOutputMetaData *createOutputMetaDataWithExtra(IOutputMetaData *meta, size32_t sz);
 extern graph_decl IOutputMetaData *createOutputMetaDataWithChildRow(IEngineRowAllocator *childAllocator, size32_t extraSz);
@@ -195,7 +197,8 @@ extern graph_decl void setMultiThorMemoryNotify(size32_t size,ILargeMemLimitNoti
 /////////////
 
 // JCSMORE
-enum {
+enum
+{
     InitialSortElements = 0,
     //The number of rows that can be added without entering a critical section, and therefore also the number
     //of rows that might not get freed when memory gets tight.

@@ -2853,7 +2853,7 @@ public:
         iCompare = helper->queryCompare();
 
         // JCSMORE - really should ask / lookup what flags the allocator created for extractKey has...
-        allocFlags = queryJobChannel().queryThorAllocator().queryFlags();
+        allocFlags = queryJobChannel().queryThorAllocator()->queryFlags();
 
         // JCSMORE - it may not be worth extracting the key,
         // if there's an upstream activity that holds onto rows for periods of time (e.g. sort)
