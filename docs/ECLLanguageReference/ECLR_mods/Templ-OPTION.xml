@@ -951,10 +951,10 @@
             <row>
               <entry><emphasis>optimizeLevel</emphasis></entry>
 
-              <entry>Default: 3 for roxie, else -1</entry>
+              <entry>Default: 3 for roxie, else 0</entry>
 
-              <entry>Set the optimization level (optimizing compiler can be a
-              lot slower...).</entry>
+              <entry>Set the C++ compiler optimization level (optimizations can cause the compiler
+              to take a lot longer).</entry>
             </row>
 
             <row>
