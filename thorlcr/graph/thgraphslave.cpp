@@ -903,7 +903,7 @@ IThorGraphResults *CSlaveGraph::createThorGraphResults(unsigned num)
     return new CThorSlaveGraphResults(*this, num);
 }
 
-IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, activity_id ownerId, unsigned id)
+IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IThorRowInterfaces *rowIf, activity_id ownerId, unsigned id)
 {
     mptag_t replyTag = queryMPServer().createReplyTag();
     CMessageBuffer msg;

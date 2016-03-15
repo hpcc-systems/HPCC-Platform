@@ -45,7 +45,7 @@ class CThorGraphResult : public CInterface, implements IThorResult, implements I
     rowcount_t rowStreamCount;
     IOutputMetaData *meta;
     Owned<IRowWriterMultiReader> rowBuffer;
-    IRowInterfaces *rowIf;
+    IThorRowInterfaces *rowIf;
     IEngineRowAllocator *allocator;
     bool stopped, readers, distributed;
 
@@ -81,7 +81,7 @@ class CThorGraphResult : public CInterface, implements IThorResult, implements I
 public:
     IMPLEMENT_IINTERFACE;
 
-    CThorGraphResult(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _distributed, unsigned spillPriority) : activity(_activity), rowIf(_rowIf), distributed(_distributed)
+    CThorGraphResult(CActivityBase &_activity, IThorRowInterfaces *_rowIf, bool _distributed, unsigned spillPriority) : activity(_activity), rowIf(_rowIf), distributed(_distributed)
     {
         init();
         if (SPILL_PRIORITY_DISABLE == spillPriority)
@@ -116,7 +116,7 @@ public:
         readers = true;
         return rowBuffer->getReader();
     }
-    virtual IRowInterfaces *queryRowInterfaces() { return rowIf; }
+    virtual IThorRowInterfaces *queryRowInterfaces() { return rowIf; }
     virtual CActivityBase *queryActivity() { return &activity; }
     virtual bool isDistributed() const { return distributed; }
     virtual void serialize(MemoryBuffer &mb)
@@ -191,7 +191,7 @@ public:
 
 /////
 
-IThorResult *CThorGraphResults::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *CThorGraphResults::createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
     Owned<IThorResult> result = ::createResult(activity, rowIf, distributed, spillPriority);
     setResult(id, result);
@@ -200,7 +200,7 @@ IThorResult *CThorGraphResults::createResult(CActivityBase &activity, unsigned i
 
 /////
 
-IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
     return new CThorGraphResult(activity, rowIf, distributed, spillPriority);
 }
@@ -212,7 +212,7 @@ class CThorBoundLoopGraph : public CInterface, implements IThorBoundLoopGraph
     activity_id activityId;
     Linked<IOutputMetaData> resultMeta;
     Owned<IOutputMetaData> counterMeta, loopAgainMeta;
-    Owned<IRowInterfaces> resultRowIf, countRowIf, loopAgainRowIf;
+    Owned<IThorRowInterfaces> resultRowIf, countRowIf, loopAgainRowIf;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -225,7 +225,7 @@ public:
     virtual void prepareCounterResult(CActivityBase &activity, IThorGraphResults *results, unsigned loopCounter, unsigned pos)
     {
         if (!countRowIf)
-            countRowIf.setown(createRowInterfaces(counterMeta, activityId, activity.queryCodeContext()));
+            countRowIf.setown(createThorRowInterfaces(activity.queryRowManager(), counterMeta, activityId, activity.queryCodeContext()));
         RtlDynamicRowBuilder counterRow(countRowIf->queryRowAllocator());
         thor_loop_counter_t * res = (thor_loop_counter_t *)counterRow.ensureCapacity(sizeof(thor_loop_counter_t),NULL);
         *res = loopCounter;
@@ -237,13 +237,13 @@ public:
     virtual void prepareLoopAgainResult(CActivityBase &activity, IThorGraphResults *results, unsigned pos)
     {
         if (!loopAgainRowIf)
-            loopAgainRowIf.setown(createRowInterfaces(loopAgainMeta, activityId, activity.queryCodeContext()));
+            loopAgainRowIf.setown(createThorRowInterfaces(activity.queryRowManager(), loopAgainMeta, activityId, activity.queryCodeContext()));
         activity.queryGraph().createResult(activity, pos, results, loopAgainRowIf, !activity.queryGraph().isLocalChild(), SPILL_PRIORITY_DISABLE);
     }
     virtual void prepareLoopResults(CActivityBase &activity, IThorGraphResults *results)
     {
         if (!resultRowIf)
-            resultRowIf.setown(createRowInterfaces(resultMeta, activityId, activity.queryCodeContext()));
+            resultRowIf.setown(createThorRowInterfaces(activity.queryRowManager(), resultMeta, activityId, activity.queryCodeContext()));
         IThorResult *loopResult = results->createResult(activity, 0, resultRowIf, !activity.queryGraph().isLocalChild()); // loop output
         IThorResult *inputResult = results->createResult(activity, 1, resultRowIf, !activity.queryGraph().isLocalChild()); // loop input
     }
@@ -1983,17 +1983,17 @@ IThorResult *CGraphBase::getGraphLoopResult(unsigned id, bool distributed)
     return graphLoopResults->getResult(id, distributed);
 }
 
-IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
     return results->createResult(activity, id, rowIf, distributed, spillPriority);
 }
 
-IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
     return localResults->createResult(activity, id, rowIf, distributed, spillPriority);
 }
 
-IThorResult *CGraphBase::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *CGraphBase::createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
     return graphLoopResults->createResult(activity, rowIf, distributed, spillPriority);
 }
@@ -2734,7 +2734,7 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
 
 CJobChannel::~CJobChannel()
 {
-    queryRowManager().reportMemoryUsage(false);
+    queryRowManager()->reportMemoryUsage(false);
     PROGLOG("CJobBase resetting memory manager");
     thorAllocator.clear();
     wait();
@@ -2776,7 +2776,7 @@ IEngineRowAllocator *CJobChannel::getRowAllocator(IOutputMetaData * meta, activi
     return thorAllocator->getRowAllocator(meta, activityId, flags);
 }
 
-roxiemem::IRowManager &CJobChannel::queryRowManager() const
+roxiemem::IRowManager *CJobChannel::queryRowManager() const
 {
     return thorAllocator->queryRowManager();
 }
@@ -3116,10 +3116,10 @@ IOutputRowDeserializer * CActivityBase::queryRowDeserializer()
     return rowDeserializer;
 }
 
-IRowInterfaces *CActivityBase::getRowInterfaces()
+IThorRowInterfaces *CActivityBase::getRowInterfaces()
 {
     // create an independent instance, to avoid circular link dependency problems
-    return createRowInterfaces(queryRowMetaData(), container.queryId(), queryCodeContext());
+    return createThorRowInterfaces(queryRowManager(), queryRowMetaData(), container.queryId(), queryCodeContext());
 }
 
 IEngineRowAllocator *CActivityBase::getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags) const

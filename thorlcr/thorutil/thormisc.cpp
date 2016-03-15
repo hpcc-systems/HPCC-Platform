@@ -1293,7 +1293,7 @@ IRowStream *createUngroupStream(IRowStream *input)
     return new CUngroupStream(input);
 }
 
-void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IRowInterfaces *rowIf)
+void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IThorRowInterfaces *rowIf)
 {
     CMessageBuffer msg;
     MemoryBuffer mb;

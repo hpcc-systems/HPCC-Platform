@@ -234,7 +234,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
         rightpartition = (container.getKind()==TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
 
-        Linked<IRowInterfaces> primaryRowIf, secondaryRowIf;
+        Linked<IThorRowInterfaces> primaryRowIf, secondaryRowIf;
 
         StringAttr primaryInputStr, secondaryInputStr;
         bool *secondaryInputStopped, *primaryInputStopped;
@@ -450,7 +450,7 @@ public:
     {
         rightpartition = (container.getKind()==TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
 
-        Linked<IRowInterfaces> primaryRowIf, secondaryRowIf;
+        Linked<IThorRowInterfaces> primaryRowIf, secondaryRowIf;
         ICompare *primaryCompare, *secondaryCompare;
         ISortKeySerializer *primaryKeySerializer;
 

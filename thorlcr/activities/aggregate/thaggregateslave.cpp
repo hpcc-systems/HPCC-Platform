@@ -221,7 +221,7 @@ class ThroughAggregateSlaveActivity : public AggregateSlaveBase
     IHThorThroughAggregateArg *helper;
     RtlDynamicRowBuilder partResult;
     size32_t partResultSize;
-    Owned<IRowInterfaces> aggrowif;
+    Owned<IThorRowInterfaces> aggrowif;
 
     void doStopInput()
     {
@@ -265,7 +265,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         doStart();
-        aggrowif.setown(createRowInterfaces(helper->queryAggregateRecordSize(),queryId(),queryCodeContext()));
+        aggrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryAggregateRecordSize(),queryId(),queryCodeContext()));
         partResult.setAllocator(aggrowif->queryRowAllocator()).ensureRow();
         helper->clearAggregate(partResult);
         dataLinkStart();

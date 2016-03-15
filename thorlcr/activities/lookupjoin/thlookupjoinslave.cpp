@@ -608,7 +608,7 @@ public:
         else
         {
             size32_t bitSetMemSz = getBitSetMemoryRequirement(rowCount);
-            void *pBitSetMem = activity.queryRowManager().allocate(bitSetMemSz, activity.queryContainer().queryId(), SPILL_PRIORITY_LOW);
+            void *pBitSetMem = activity.queryRowManager()->allocate(bitSetMemSz, activity.queryContainer().queryId(), SPILL_PRIORITY_LOW);
             if (!pBitSetMem)
                 return false;
 
@@ -729,7 +729,7 @@ public:
 class CThorRowArrayWithFlushMarker : public CThorSpillableRowArray
 {
 public:
-    CThorRowArrayWithFlushMarker(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep)
+    CThorRowArrayWithFlushMarker(CActivityBase &activity, IThorRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep)
         : CThorSpillableRowArray(activity, rowIf, allowNulls, stableSort, initialSize, commitDelta)
     {
         flushMarker = 0;
@@ -1874,7 +1874,7 @@ protected:
                 overflowWriteCount = 0;
                 overflowWriteFile.clear();
                 overflowWriteStream.clear();
-                queryRowManager().addRowBuffer(this);
+                queryRowManager()->addRowBuffer(this);
             }
             doBroadcastRHS(stopping);
 
@@ -1962,7 +1962,7 @@ protected:
                  * Need to remove spill callback and broadcast one last message to know.
                  */
 
-                queryRowManager().removeRowBuffer(this);
+                queryRowManager()->removeRowBuffer(this);
 
                 ActPrintLog("Broadcasting final split status");
                 broadcaster->reset();
@@ -1979,12 +1979,12 @@ protected:
                 /* Add IBufferedRowCallback to all channels, because memory pressure can come on any IRowManager
                  * However, all invoked callbacks are handled by ch0
                  */
-                queryRowManager().addRowBuffer(lkJoinCh0);
+                queryRowManager()->addRowBuffer(lkJoinCh0);
             }
             doBroadcastRHS(stopping);
             InterChannelBarrier(); // wait for channel 0, which will have marked rhsCollated and broadcast spilt status to all others
             if (isSmart())
-                queryRowManager().removeRowBuffer(lkJoinCh0);
+                queryRowManager()->removeRowBuffer(lkJoinCh0);
             if (lkJoinCh0->hasFailedOverToLocal())
                 setFailoverToLocal(true);
             rhsCollated = lkJoinCh0->isRhsCollated();
@@ -2114,7 +2114,7 @@ protected:
          * However, all invoked callbacks are handled by ch0 and round-robin freeing channel collectors
          */
         roxiemem::IBufferedRowCallback *callback = ((CLookupJoinActivityBase *)channels[0])->channelDistributors[0]->queryCallback();
-        queryRowManager().addRowBuffer(callback);
+        queryRowManager()->addRowBuffer(callback);
         Owned<IRowStream> stream;
         Owned<IException> exception;
         try
@@ -2144,7 +2144,7 @@ protected:
             EXCLOG(e, "During channel distribution");
             exception.setown(e);
         }
-        queryRowManager().removeRowBuffer(callback);
+        queryRowManager()->removeRowBuffer(callback);
         InterChannelBarrier(); // need barrier point to ensure all have removed callback before channelDistributor is destroyed
         if (exception)
             throw exception.getClear();
@@ -2665,7 +2665,7 @@ public:
         memsize_t sz = (memsize_t)_sz;
         if (sz != _sz) // treat as OOM exception for handling purposes.
             throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Unsigned overflow, trying to allocate hash table of size: %" I64F "d ", _sz);
-        void *ht = activity->queryRowManager().allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
+        void *ht = activity->queryRowManager()->allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
         memset(ht, 0, sz);
         htMemory.setown(ht);
         tableSize = size;

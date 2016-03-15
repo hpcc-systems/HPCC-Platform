@@ -161,7 +161,7 @@ class CDedupRollupBaseActivity : public CSlaveActivity, implements IStopInput
 {
     bool rollup;
     CriticalSection stopsect;
-    Linked<IRowInterfaces> rowif;
+    Linked<IThorRowInterfaces> rowif;
 
 protected:
     bool eogNext, eos;

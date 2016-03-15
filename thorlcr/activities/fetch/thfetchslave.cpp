@@ -80,7 +80,7 @@ protected:
     mptag_t tag;
     Owned<IRowStream> keyOutStream;
     CActivityBase &owner;
-    Linked<IRowInterfaces> keyRowIf, fetchRowIf;
+    Linked<IThorRowInterfaces> keyRowIf, fetchRowIf;
 
     class CFPosHandler : public CSimpleInterface, implements IHash
     {
@@ -122,7 +122,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CFetchStream(CActivityBase &_owner, IRowInterfaces *_keyRowIf, IRowInterfaces *_fetchRowIf, bool &_abortSoon, CPartDescriptorArray &_parts, unsigned _offsetCount, size32_t offsetMapSz, const void *offsetMap, IFetchHandler *_iFetchHandler, mptag_t _tag, IExpander *_eexp)
+    CFetchStream(CActivityBase &_owner, IThorRowInterfaces *_keyRowIf, IThorRowInterfaces *_fetchRowIf, bool &_abortSoon, CPartDescriptorArray &_parts, unsigned _offsetCount, size32_t offsetMapSz, const void *offsetMap, IFetchHandler *_iFetchHandler, mptag_t _tag, IExpander *_eexp)
         : owner(_owner), keyRowIf(_keyRowIf), fetchRowIf(_fetchRowIf), abortSoon(_abortSoon), iFetchHandler(_iFetchHandler), offsetCount(_offsetCount), tag(_tag), eexp(_eexp)
     {
         distributor = NULL;
@@ -259,7 +259,7 @@ public:
 };
 
 
-IFetchStream *createFetchStream(CSlaveActivity &owner, IRowInterfaces *keyRowIf, IRowInterfaces *fetchRowIf, bool &abortSoon, CPartDescriptorArray &parts, unsigned offsetCount, size32_t offsetMapSz, const void *offsetMap, IFetchHandler *iFetchHandler, mptag_t tag, IExpander *eexp)
+IFetchStream *createFetchStream(CSlaveActivity &owner, IThorRowInterfaces *keyRowIf, IThorRowInterfaces *fetchRowIf, bool &abortSoon, CPartDescriptorArray &parts, unsigned offsetCount, size32_t offsetMapSz, const void *offsetMap, IFetchHandler *iFetchHandler, mptag_t tag, IExpander *eexp)
 {
     return new CFetchStream(owner, keyRowIf, fetchRowIf, abortSoon, parts, offsetCount, offsetMapSz, offsetMap, iFetchHandler, tag, eexp);
 }
@@ -276,7 +276,7 @@ class CFetchSlaveBase : public CSlaveActivity, public CThorDataLink, implements 
     Owned<IEngineRowAllocator> keyRowAllocator;
 
 protected:
-    Owned<IRowInterfaces> fetchDiskRowIf;
+    Owned<IThorRowInterfaces> fetchDiskRowIf;
     IFetchStream *fetchStream;
     IHThorFetchBaseArg *fetchBaseHelper;
     IHThorFetchContext *fetchContext;
@@ -341,7 +341,7 @@ public:
             memset(encryptedKey, 0, encryptedKeyLen);
             free(encryptedKey);
         }
-        fetchDiskRowIf.setown(createRowInterfaces(fetchContext->queryDiskRecordSize(),queryId(),queryCodeContext()));
+        fetchDiskRowIf.setown(createThorRowInterfaces(queryRowManager(), fetchContext->queryDiskRecordSize(),queryId(),queryCodeContext()));
         if (fetchBaseHelper->extractAllJoinFields())
         {
             IOutputMetaData *keyRowMeta = QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData);
@@ -384,7 +384,7 @@ public:
         dataLinkStart();
 
         IThorDataLink *in = inputs.item(0);
-        Owned<IRowInterfaces> keyInIf;
+        Owned<IThorRowInterfaces> keyInIf;
         if (indexRowExtractNeeded)
         {
             Linked<IOutputMetaData> keyInMeta;
@@ -420,15 +420,15 @@ public:
                 keyIn = new CKeyFieldExtract(this, *in, *fetchBaseHelper, *fetchContext);
                 keyInMeta.set(QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData));
             }
-            keyInIf.setown(createRowInterfaces(keyInMeta,queryId(),queryCodeContext()));
+            keyInIf.setown(createThorRowInterfaces(queryRowManager(), keyInMeta,queryId(),queryCodeContext()));
         }
         else
         {
             class CKeyFPosExtract : public CKeyFieldExtractBase
             {
-                Linked<IRowInterfaces> rowif;
+                Linked<IThorRowInterfaces> rowif;
             public:
-                CKeyFPosExtract(IRowInterfaces *_rowif, CFetchSlaveBase *activity, IRowStream &in, IHThorFetchBaseArg &fetchBaseHelper, IHThorFetchContext & fetchContext)
+                CKeyFPosExtract(IThorRowInterfaces *_rowif, CFetchSlaveBase *activity, IRowStream &in, IHThorFetchBaseArg &fetchBaseHelper, IHThorFetchContext & fetchContext)
                     : CKeyFieldExtractBase(activity, in, fetchBaseHelper, fetchContext), rowif(_rowif)
                 {
                 }
@@ -449,11 +449,11 @@ public:
                 }
             };
             Owned<IOutputMetaData> fmeta = createFixedSizeMetaData(sizeof(offset_t)); // should be provided by Gavin?
-            keyInIf.setown(createRowInterfaces(fmeta,queryId(),queryCodeContext()));
+            keyInIf.setown(createThorRowInterfaces(queryRowManager(), fmeta,queryId(),queryCodeContext()));
             keyIn = new CKeyFPosExtract(keyInIf, this, *in, *fetchBaseHelper, *fetchContext);
         }
 
-        Owned<IRowInterfaces> rowIf = createRowInterfaces(queryRowMetaData(), queryId(), queryCodeContext());
+        Owned<IThorRowInterfaces> rowIf = createThorRowInterfaces(queryRowManager(), queryRowMetaData(), queryId(), queryCodeContext());
         fetchStream = createFetchStream(*this, keyInIf, rowIf, abortSoon, parts, offsetCount, offsetMapSz, offsetMapBytes.toByteArray(), this, mptag, eexp);
         fetchStreamOut = fetchStream->queryOutput();
         fetchStream->start(keyIn);

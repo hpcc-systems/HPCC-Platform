@@ -76,7 +76,7 @@ void getPartsMetaInfo(ThorDataLinkMetaInfo &metaInfo, CThorDataLink &link, unsig
 
 class CDiskReadSlaveActivityBase : public CSlaveActivity
 {
-    Owned<IRowInterfaces> diskRowIf;
+    Owned<IThorRowInterfaces> diskRowIf;
 protected:
     StringAttr logicalFilename;
     StringArray subfileLogicalFilenames;
@@ -91,7 +91,7 @@ protected:
 public:
     CDiskReadSlaveActivityBase(CGraphElementBase *_container);
     const char *queryLogicalFilename(unsigned index);
-    IRowInterfaces * queryDiskRowInterfaces();
+    IThorRowInterfaces * queryDiskRowInterfaces();
     void start();
 
     

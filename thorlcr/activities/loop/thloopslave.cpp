@@ -146,7 +146,7 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
         Owned<ISmartRowBuffer> smartbuf;
         bool stopped, stopping;
         Owned<IException> exception;
-        IRowInterfaces *rowInterfaces;
+        IThorRowInterfaces *rowInterfaces;
 
         void stopThread()
         {

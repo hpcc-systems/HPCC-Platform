@@ -79,7 +79,7 @@
 
 class CDistributorBase : public CInterface, implements IHashDistributor, implements IExceptionHandler
 {
-    Linked<IRowInterfaces> rowIf;
+    Linked<IThorRowInterfaces> rowIf;
     IEngineRowAllocator *allocator;
     IOutputRowSerializer *serializer;
     IOutputMetaData *meta;
@@ -1066,7 +1066,7 @@ public:
         if (_pullBufferSize) pullBufferSize = _pullBufferSize;
     }
 
-    virtual IRowStream *connect(IRowInterfaces *_rowIf, IRowStream *_input, IHash *_ihash, ICompare *_iCompare)
+    virtual IRowStream *connect(IThorRowInterfaces *_rowIf, IRowStream *_input, IHash *_ihash, ICompare *_iCompare)
     {
         ActPrintLog("HASHDISTRIB: connect");
 
@@ -1124,10 +1124,10 @@ public:
                 throw recvException.getClear();
         }
         rowIf.clear();
-        allocator = NULL;;
-        meta = NULL;;
-        serializer = NULL;;
-        deserializer = NULL;;
+        allocator = NULL;
+        meta = NULL;
+        serializer = NULL;
+        deserializer = NULL;
         fixedEstSize = 0;
         input.clear();
         piperd.clear();
@@ -2013,7 +2013,7 @@ public:
         }
         if (!passthrough)
         {
-            Owned<IRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
+            Owned<IThorRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
             out.setown(distributor->connect(myRowIf, instrm, ihash, mergecmp));
         }
         dataLinkStart();
@@ -2447,7 +2447,7 @@ class CHashTableRowTable : private CThorExpandingRowArray
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CHashTableRowTable(HashDedupSlaveActivityBase &_activity, IRowInterfaces *rowIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare);
+    CHashTableRowTable(HashDedupSlaveActivityBase &_activity, IThorRowInterfaces *rowIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare);
     inline const void *query(rowidx_t i) const { return CThorExpandingRowArray::query(i); }
     inline void setOwner(CBucket *_owner) { owner = _owner; }
     bool kill()
@@ -2522,7 +2522,7 @@ public:
 class CSpill : public CSimpleInterface, implements IRowWriter
 {
     CActivityBase &owner;
-    IRowInterfaces *rowIf;
+    IThorRowInterfaces *rowIf;
     rowcount_t count;
     Owned<CFileOwner> spillFile;
     IRowWriter *writer;
@@ -2532,7 +2532,7 @@ class CSpill : public CSimpleInterface, implements IRowWriter
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSpill(CActivityBase &_owner, IRowInterfaces *_rowIf, const char *_desc, unsigned _bucketN)
+    CSpill(CActivityBase &_owner, IThorRowInterfaces *_rowIf, const char *_desc, unsigned _bucketN)
         : owner(_owner), rowIf(_rowIf), desc(_desc), bucketN(_bucketN)
     {
         count = 0;
@@ -2601,7 +2601,7 @@ public:
 class CBucket : public CSimpleInterface, implements IInterface
 {
     HashDedupSlaveActivityBase &owner;
-    IRowInterfaces *rowIf, *keyIf;
+    IThorRowInterfaces *rowIf, *keyIf;
     IHash *iRowHash, *iKeyHash;
     ICompare *iCompare;
     Owned<IEngineRowAllocator> _keyAllocator;
@@ -2616,7 +2616,7 @@ class CBucket : public CSimpleInterface, implements IInterface
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CBucket(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _bucketN, CHashTableRowTable *_htRows);
+    CBucket(HashDedupSlaveActivityBase &_owner, IThorRowInterfaces *_rowIf, IThorRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _bucketN, CHashTableRowTable *_htRows);
     bool addKey(const void *key, unsigned hashValue);
     bool addRow(const void *row, unsigned hashValue);
     void clear();
@@ -2648,7 +2648,7 @@ public:
 class CBucketHandler : public CSimpleInterface, implements IInterface, implements roxiemem::IBufferedRowCallback
 {
     HashDedupSlaveActivityBase &owner;
-    IRowInterfaces *rowIf, *keyIf;
+    IThorRowInterfaces *rowIf, *keyIf;
     IHash *iRowHash, *iKeyHash;
     ICompare *iCompare;
     bool extractKey;
@@ -2711,7 +2711,7 @@ class CBucketHandler : public CSimpleInterface, implements IInterface, implement
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CBucketHandler(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _depth, unsigned _div);
+    CBucketHandler(HashDedupSlaveActivityBase &_owner, IThorRowInterfaces *_rowIf, IThorRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _depth, unsigned _div);
     ~CBucketHandler();
     unsigned getBucketEstimate(rowcount_t totalRows) const;
     unsigned getBucketEstimateWithPrev(rowcount_t totalRows, rowidx_t prevPeakKeys, rowidx_t keyCount) const;
@@ -2783,8 +2783,8 @@ protected:
     IHThorHashDedupArg *helper;
     IHash *iHash, *iKeyHash;
     ICompare *iCompare, *rowKeyCompare;
-    Owned<IRowInterfaces> _keyRowInterfaces;
-    IRowInterfaces *keyRowInterfaces;
+    Owned<IThorRowInterfaces> _keyRowInterfaces;
+    IThorRowInterfaces *keyRowInterfaces;
     Owned<CBucketHandler> bucketHandler;
     IArrayOf<CBucketHandler> bucketHandlerStack;
     SpinLock stopSpin;
@@ -2865,16 +2865,15 @@ public:
             isVariable = km->isVariableSize();
             if (!isVariable && helper->queryOutputMeta()->isFixedSize())
             {
-                roxiemem::IRowManager &rM = queryRowManager();
-                memsize_t keySize = rM.getExpectedCapacity(km->getMinRecordSize(), allocFlags);
-                memsize_t rowSize = rM.getExpectedCapacity(helper->queryOutputMeta()->getMinRecordSize(), allocFlags);
+                memsize_t keySize = queryRowManager()->getExpectedCapacity(km->getMinRecordSize(), allocFlags);
+                memsize_t rowSize = queryRowManager()->getExpectedCapacity(helper->queryOutputMeta()->getMinRecordSize(), allocFlags);
                 if (keySize >= rowSize)
                     extractKey = false;
             }
         }
         if (extractKey)
         {
-            _keyRowInterfaces.setown(createRowInterfaces(km, queryId(), queryCodeContext()));
+            _keyRowInterfaces.setown(createThorRowInterfaces(queryRowManager(), km, queryId(), queryCodeContext()));
             keyRowInterfaces = _keyRowInterfaces;
             rowKeyCompare = helper->queryRowKeyCompare();
             iKeyHash = helper->queryKeyHash();
@@ -3010,7 +3009,7 @@ friend class CHashTableRowTable;
 friend class CBucket;
 };
 
-CHashTableRowTable::CHashTableRowTable(HashDedupSlaveActivityBase &_activity, IRowInterfaces *rowIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare)
+CHashTableRowTable::CHashTableRowTable(HashDedupSlaveActivityBase &_activity, IThorRowInterfaces *rowIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare)
     : CThorExpandingRowArray(_activity, rowIf, true),
       activity(_activity), iRowHash(_iRowHash), iKeyHash(_iKeyHash), iCompare(_iCompare)
 {
@@ -3021,7 +3020,7 @@ CHashTableRowTable::CHashTableRowTable(HashDedupSlaveActivityBase &_activity, IR
 void CHashTableRowTable::init(rowidx_t sz)
 {
     // reinitialize if need bigger or if requested size is much smaller than existing
-    rowidx_t newMaxRows = activity.queryRowManager().getExpectedCapacity(sz * sizeof(rowidx_t *), activity.allocFlags) / sizeof(rowidx_t *);
+    rowidx_t newMaxRows = activity.queryRowManager()->getExpectedCapacity(sz * sizeof(rowidx_t *), activity.allocFlags) / sizeof(rowidx_t *);
     if (newMaxRows <= maxRows && ((maxRows-newMaxRows) <= HASHDEDUP_HT_INC_SIZE))
         return;
     ReleaseThorRow(rows);
@@ -3073,7 +3072,7 @@ void CHashTableRowTable::rehash(const void **newRows)
 
 //
 
-CBucket::CBucket(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _bucketN, CHashTableRowTable *_htRows)
+CBucket::CBucket(HashDedupSlaveActivityBase &_owner, IThorRowInterfaces *_rowIf, IThorRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _bucketN, CHashTableRowTable *_htRows)
     : owner(_owner), rowIf(_rowIf), keyIf(_keyIf), iRowHash(_iRowHash), iKeyHash(_iKeyHash), iCompare(_iCompare), extractKey(_extractKey), bucketN(_bucketN), htRows(_htRows),
       rowSpill(owner, _rowIf, "rows", _bucketN), keySpill(owner, _keyIf, "keys", _bucketN)
 
@@ -3264,7 +3263,7 @@ bool CBucket::addRow(const void *row, unsigned hashValue)
 
 //
 
-CBucketHandler::CBucketHandler(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _depth, unsigned _div)
+CBucketHandler::CBucketHandler(HashDedupSlaveActivityBase &_owner, IThorRowInterfaces *_rowIf, IThorRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _depth, unsigned _div)
     : owner(_owner), rowIf(_rowIf), keyIf(_keyIf), iRowHash(_iRowHash), iKeyHash(_iKeyHash), iCompare(_iCompare), extractKey(_extractKey), depth(_depth), div(_div), postSpillFlush(*this)
 {
     currentBucket = 0;
@@ -3277,16 +3276,16 @@ CBucketHandler::CBucketHandler(HashDedupSlaveActivityBase &_owner, IRowInterface
 
 CBucketHandler::~CBucketHandler()
 {
-    owner.queryRowManager().removeRowBuffer(this);
-    owner.queryRowManager().removeRowBuffer(&postSpillFlush);
+    owner.queryRowManager()->removeRowBuffer(this);
+    owner.queryRowManager()->removeRowBuffer(&postSpillFlush);
     for (unsigned i=0; i<numBuckets; i++)
         ::Release(buckets[i]);
 }
 
 void CBucketHandler::flushBuckets()
 {
-    owner.queryRowManager().removeRowBuffer(this);
-    owner.queryRowManager().removeRowBuffer(&postSpillFlush);
+    owner.queryRowManager()->removeRowBuffer(this);
+    owner.queryRowManager()->removeRowBuffer(&postSpillFlush);
     for (unsigned i=0; i<numBuckets; i++)
     {
         CBucket &bucket = *buckets[i];
@@ -3335,11 +3334,10 @@ unsigned CBucketHandler::getBucketEstimate(rowcount_t totalRows) const
         // likely to be way off for variable
 
         // JCSMORE - will need to change based on whether upstream keeps packed or not.
-        roxiemem::IRowManager &rM = owner.queryRowManager();
 
         memsize_t availMem = roxiemem::getTotalMemoryLimit()-0x500000;
-        memsize_t initKeySize = rM.getExpectedCapacity(keyIf->queryRowMetaData()->getMinRecordSize(), owner.allocFlags);
-        memsize_t minBucketSpace = retBuckets * rM.getExpectedCapacity(HASHDEDUP_HT_BUCKET_SIZE * sizeof(void *), owner.allocFlags);
+        memsize_t initKeySize = owner.queryRowManager()->getExpectedCapacity(keyIf->queryRowMetaData()->getMinRecordSize(), owner.allocFlags);
+        memsize_t minBucketSpace = retBuckets * owner.queryRowManager()->getExpectedCapacity(HASHDEDUP_HT_BUCKET_SIZE * sizeof(void *), owner.allocFlags);
 
         rowcount_t _maxRowGuess = (availMem-minBucketSpace) / initKeySize; // without taking into account ht space / other overheads
         rowidx_t maxRowGuess;
@@ -3347,7 +3345,7 @@ unsigned CBucketHandler::getBucketEstimate(rowcount_t totalRows) const
             maxRowGuess = (rowidx_t)RCIDXMAX/sizeof(void *);
         else
             maxRowGuess = (rowidx_t)_maxRowGuess;
-        memsize_t bucketSpace = retBuckets * rM.getExpectedCapacity(((maxRowGuess+retBuckets-1)/retBuckets) * sizeof(void *), owner.allocFlags);
+        memsize_t bucketSpace = retBuckets * owner.queryRowManager()->getExpectedCapacity(((maxRowGuess+retBuckets-1)/retBuckets) * sizeof(void *), owner.allocFlags);
         // now rebase maxRowGuess
         _maxRowGuess = (availMem-bucketSpace) / initKeySize;
         if (_maxRowGuess >= RCIDXMAX/sizeof(void *))
@@ -3387,9 +3385,9 @@ void CBucketHandler::init(unsigned _numBuckets, IRowStream *keyStream)
         htRows.setOwner(buckets[i]);
     }
     ActPrintLog(&owner, "Max %d buckets, current depth = %d", numBuckets, depth+1);
-    owner.queryRowManager().addRowBuffer(this);
+    owner.queryRowManager()->addRowBuffer(this);
     // postSpillFlush not needed until after 1 spill event, but not safe to add within callback
-    owner.queryRowManager().addRowBuffer(&postSpillFlush);
+    owner.queryRowManager()->addRowBuffer(&postSpillFlush);
     if (keyStream)
     {
         loop
@@ -3506,7 +3504,7 @@ public:
     {
         HashDedupSlaveActivityBase::start();
         ActivityTimer s(totalCycles, timeActivities);
-        Owned<IRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
+        Owned<IThorRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
         instrm.setown(distributor->connect(myRowIf, input, iHash, iCompare));
         input = instrm.get();
     }
@@ -3753,13 +3751,13 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
         class CRowAggregatedStream : public CInterface, implements IRowStream
         {
             CActivityBase &activity;
-            IRowInterfaces *rowIf;
+            IThorRowInterfaces *rowIf;
             Linked<RowAggregator> localAggregated;
             RtlDynamicRowBuilder outBuilder;
             size32_t node;
         public:
             IMPLEMENT_IINTERFACE;
-            CRowAggregatedStream(CActivityBase &_activity, IRowInterfaces *_rowIf, RowAggregator *_localAggregated) : activity(_activity), rowIf(_rowIf), localAggregated(_localAggregated), outBuilder(_rowIf->queryRowAllocator())
+            CRowAggregatedStream(CActivityBase &_activity, IThorRowInterfaces *_rowIf, RowAggregator *_localAggregated) : activity(_activity), rowIf(_rowIf), localAggregated(_localAggregated), outBuilder(_rowIf->queryRowAllocator())
             {
                 node = activity.queryContainer().queryJobChannel().queryMyRank();
             }
@@ -3777,7 +3775,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
             virtual void stop() { }
         };
         Owned<IOutputMetaData> nodeRowMeta = createOutputMetaDataWithChildRow(activity.queryRowAllocator(), sizeof(size32_t));
-        Owned<IRowInterfaces> nodeRowMetaRowIf = createRowInterfaces(nodeRowMeta, activity.queryId(), activity.queryCodeContext());
+        Owned<IThorRowInterfaces> nodeRowMetaRowIf = createThorRowInterfaces(activity.queryRowManager(), nodeRowMeta, activity.queryId(), activity.queryCodeContext());
         Owned<IRowStream> localAggregatedStream = new CRowAggregatedStream(activity, nodeRowMetaRowIf, localAggTable);
         class CNodeCompare : implements ICompare, implements IHash
         {
@@ -3834,7 +3832,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
         Owned<IRowStream> localAggregatedStream = new CRowAggregatedStream(localAggTable);
         if (!distributor)
             distributor.setown(createHashDistributor(&activity, activity.queryContainer().queryJobChannel().queryJobComm(), mptag, false, NULL, "MERGEAGGS"));
-        Owned<IRowInterfaces> rowIf = activity.getRowInterfaces(); // create new rowIF / avoid using activities IRowInterface, otherwise suffer from circular link
+        Owned<IThorRowInterfaces> rowIf = activity.getRowInterfaces(); // create new rowIF / avoid using activities IRowInterface, otherwise suffer from circular link
         strm.setown(distributor->connect(rowIf, localAggregatedStream, helperExtra.queryHashElement(), NULL));
         loop
         {
