@@ -2100,7 +2100,7 @@ protected:
             }
             virtual bool spill()
             {
-                return channelCollector->spill();
+                return channelCollector->spill(false);
             }
             virtual roxiemem::IBufferedRowCallback *queryCallback() { return this; }
         } channelDistributor(*this, cmp);

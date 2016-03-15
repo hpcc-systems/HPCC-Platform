@@ -1210,7 +1210,7 @@ public:
         rowCompare = _rowCompare;
         if (keyserializer)
         {
-            keyIf.setown(createThorRowInterfaces(activity->queryRowManager(), keyserializer->queryRecordSize(), activity->queryContainer().queryId(), activity->queryCodeContext()));
+            keyIf.setown(createThorRowInterfaces(rowif->queryRowManager(), keyserializer->queryRecordSize(), activity->queryContainer().queryId(), activity->queryCodeContext()));
             rowToKeySerializer.setown(new CRowToKeySerializer(auxrowif, keyIf, keyserializer));
             keyRowCompare = keyserializer->queryCompareKeyRow();
         }

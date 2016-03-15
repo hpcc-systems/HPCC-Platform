@@ -176,7 +176,7 @@ class CSocketRowWriter: public CSimpleInterface, implements ISocketRowWriter
     unsigned id;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CSocketRowWriter(unsigned _id,IThorRowInterfaces *_rowif,ISocket *_socket,size32_t _bufsize)
+    CSocketRowWriter(unsigned _id, IThorRowInterfaces *_rowif,ISocket *_socket,size32_t _bufsize)
         : rowif(_rowif), socket(_socket), rsz(outbuf)
     {
         id = _id;
@@ -277,7 +277,7 @@ public:
 };
 
 
-IRowStream *ConnectMergeRead(unsigned id,IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs)
+IRowStream *ConnectMergeRead(unsigned id, IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs)
 {
     Owned<ISocket> socket = DoConnect(nodeaddr);
     TransferStreamHeader hdr(startrec,numrecs,0,id);
