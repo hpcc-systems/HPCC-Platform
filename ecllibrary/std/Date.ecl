@@ -601,7 +601,7 @@ EXPORT Seconds_t SecondsFromDateTimeRec(DateTime_rec datetime, BOOLEAN is_local_
  * @param date_text     The string to be converted.
  * @param format        The format of the input string.
  *                      (See documentation for strftime)
- * @return              The date that was matched in the string.  Returns 0 if failed to match 
+ * @return              The date that was matched in the string.  Returns 0 if failed to match
  *                      or if the date components match but the result is an invalid date.
  *
  * Supported characters:
@@ -799,8 +799,13 @@ EXPORT STRING ConvertTimeFormat(STRING time_text, VARSTRING from_format='%H%M%S'
  * @return              The converted string, or blank if it failed to match the format.
  */
 
-EXPORT STRING ConvertDateFormatMultiple(STRING date_text, SET OF VARSTRING from_formats, VARSTRING to_format='%Y%m%d') :=
-    DateToString(MatchDateString(date_text, from_formats), to_format);
+EXPORT STRING ConvertDateFormatMultiple(STRING date_text, SET OF VARSTRING from_formats, VARSTRING to_format='%Y%m%d') := FUNCTION
+    matchResult := MatchDateString(date_text, from_formats);
+
+    reformatResult := IF(matchResult = (Date_t)0, '', DateToString(matchResult, to_format));
+
+    RETURN reformatResult;
+END;
 
 
 /**
