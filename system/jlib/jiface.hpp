@@ -103,8 +103,15 @@ private:
     mutable std::atomic<unsigned> xxcount;
 };
 
+#ifdef _WIN32
+#pragma warning(push)
+#pragma warning(disable : 4251)
+#endif
 template class CSimpleInterfaceOf<CEmptyClass>;
 class jlib_decl CSimpleInterface : public CSimpleInterfaceOf<CEmptyClass> {};
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 
 // A more general implementation of IInterface that includes a virtual function beforeDispose().
 // beforeDispose() allows an a fully constructed object to be cleaned up (which means that virtual
