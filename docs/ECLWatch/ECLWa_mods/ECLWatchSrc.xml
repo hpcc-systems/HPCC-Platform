@@ -480,6 +480,15 @@
               query. If a Roxie query references foreign files and this is not
               enabled, publish will fail.</para>
             </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Update Super Files:</emphasis> Use
+              when a query uses foreign superfiles or a remote Dali. When such
+              a query is published the superfiles are copied from the remote
+              Dali. If superfiles already exist locally, then the current
+              definition is overwritten only when this box is checked. If it
+              is not checked, the current definition will not change. </para>
+            </listitem>
           </itemizedlist>
         </sect3>
 
