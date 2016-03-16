@@ -1485,16 +1485,17 @@ readAnother:
         StringAttr queryName;
         StringAttr queryPrefix;
         bool stripWhitespace = msgctx->getStripWhitespace();
-        if (mlFmt==MarkupFmt_XML || mlFmt==MarkupFmt_JSON)
-        {
-            QueryNameExtractor extractor(mlFmt, stripWhitespace);
-            extractor.extractName(rawText.str(), logctx, peerStr, ep.port);
-            queryName.set(extractor.name);
-            queryPrefix.set(extractor.prefix);
-            stripWhitespace = extractor.stripWhitespace;
-        }
         try
         {
+            if (mlFmt==MarkupFmt_XML || mlFmt==MarkupFmt_JSON)
+            {
+                QueryNameExtractor extractor(mlFmt, stripWhitespace);
+                extractor.extractName(rawText.str(), logctx, peerStr, ep.port);
+                queryName.set(extractor.name);
+                queryPrefix.set(extractor.prefix);
+                stripWhitespace = extractor.stripWhitespace;
+            }
+
             if (streq(queryPrefix.str(), "control"))
             {
                 if (httpHelper.isHttp())
