@@ -59,6 +59,17 @@ print_usage ()
     exit 0
 }
 
+if [[ ! -e "${CONFIG_DIR}/${ENV_XML_FILE}" ]]; then
+    echo "${CONFIG_DIR}/${ENV_XML_FILE} not found.  Attempting to generate..."
+    ${INSTALL_DIR}/sbin/create-env-xml.sh > /dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        echo "Environment file not found.  Failed to generate ${ENV_XML_FILE}"
+        exit 1
+    fi
+    [[ ! -d ${CONFIG_DIR}/source ]] && mkdir -p ${CONFIG_DIR}/source
+    cp ${CONFIG_DIR}/${ENV_XML_FILE} ${CONFIG_DIR}/source/${ENV_XML_FILE} > /dev/null 2>&1
+fi
+
 set_environmentvars
 
 exec_script_path=${path}/bin

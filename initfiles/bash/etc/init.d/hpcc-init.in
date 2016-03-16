@@ -111,6 +111,18 @@ log_dir_owner=$(ls -ld $LOG_DIR | awk '{print $3}')
 [ "log_dir_owner" != "${user}" ] && chown ${user}:${user} $LOG_DIR
 chown ${user}:${user} $logfile
 
+if [[ ! -e "${CONFIG_DIR}/${ENV_XML_FILE}" ]]; then
+    log "${CONFIG_DIR}/${ENV_XML_FILE} not found.  Attempting to generate..."
+    ${INSTALL_DIR}/sbin/create-env-xml.sh > /dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        log  "Environment file not found.  Failed to generate ${ENV_XML_FILE}"
+        echo "Environment file not found.  Failed to generate ${ENV_XML_FILE}"
+        exit 1
+    fi
+    [[ ! -d ${CONFIG_DIR}/source ]] && mkdir -p ${CONFIG_DIR}/source
+    cp ${CONFIG_DIR}/${ENV_XML_FILE} ${CONFIG_DIR}/source/${ENV_XML_FILE} > /dev/null 2>&1
+fi
+
 #Sourcing the hpcc environment
 configgen_path=${path}/sbin
 bin_path=${path}/bin
