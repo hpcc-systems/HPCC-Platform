@@ -302,7 +302,7 @@ configGenCmd() {
     validate_configuration
     configcmd="${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
     log "$configcmd"
-    if [ "${USER}" != "${user}" ]; then
+    if [ "$(whoami)" != "${user}" ]; then
         su ${user} -c "$configcmd" 2>/dev/null
     else
         ${configcmd} 2>/dev/null
