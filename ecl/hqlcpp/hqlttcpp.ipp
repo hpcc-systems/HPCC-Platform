@@ -460,6 +460,7 @@ protected:
 
     void setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int  numPersistInstances, bool refresh);
     void setWorkflowSchedule(IWorkflowItem * wf, ScheduleData const & sched);
+    void setWorkflowCritical(IWorkflowItem * wf, char const * criticalName);
 
     virtual IHqlExpression *  createTransformed(IHqlExpression * expr);
     void                      inheritDependencies(IHqlExpression * expr);

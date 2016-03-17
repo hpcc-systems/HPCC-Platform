@@ -1081,7 +1081,7 @@ public:
         else
             transaction = NULL;
     }
-    ~CImplicitSuperTransaction()
+    ~CImplicitSuperTransaction() noexcept(false)
     {
         if (transaction)
             transaction->commit();
