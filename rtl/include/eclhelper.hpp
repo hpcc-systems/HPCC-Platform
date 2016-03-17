@@ -356,7 +356,7 @@ interface RtlITypeInfo
 //The core interface for the field meta information.
 struct RtlTypeInfo : public RtlITypeInfo
 {
-    inline RtlTypeInfo(unsigned _fieldType, unsigned _length) : fieldType(_fieldType), length(_length) {}
+    constexpr inline RtlTypeInfo(unsigned _fieldType, unsigned _length) : fieldType(_fieldType), length(_length) {}
 
 // Some inline helper functions to avoid having to interpret the flags.
     inline bool canSerialize() const { return (fieldType & RFTMnoserialize) == 0; }
@@ -381,7 +381,7 @@ public:
 //Core struct used for representing meta for a field.
 struct RtlFieldInfo
 {
-    inline RtlFieldInfo(IAtom * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer = NULL)
+    constexpr inline RtlFieldInfo(IAtom * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer = NULL)
     : name(_name), xpath(_xpath), type(_type), initializer((const byte *) _initializer) {}
 
     IAtom * name;
