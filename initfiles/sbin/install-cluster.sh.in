@@ -136,7 +136,7 @@ removePayload(){
 ######################################################################
 cluster_tools_init
 
-if [ "${USER}" != "root" ]; then
+if [ "$(whoami)" != "root" ]; then
    echo ""
    echo "The script must run as root or sudo."
    echo ""
