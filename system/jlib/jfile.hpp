@@ -252,6 +252,7 @@ extern jlib_decl void setPasswordProvider(IPasswordProvider * provider);
 
 
 extern jlib_decl size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer);
+extern jlib_decl void renameFile(const char *target, const char *source, bool overwritetarget);
 extern jlib_decl void copyFile(const char *target, const char *source, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL,CFflags copyFlags=CFnone);
 extern jlib_decl void copyFile(IFile * target, IFile * source,size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL,CFflags copyFlags=CFnone);
 extern jlib_decl bool recursiveCreateDirectory(const char * path);

@@ -179,7 +179,12 @@ fprintf(stdout, "\nESDL State to be stored:\n%s", dESDLState.str());
 #endif
 
     Owned<IPropertyTree> serviceESDLDef = createPTreeFromXMLString(dESDLState.str(), ipt_caseInsensitive);
-    saveXML(stateFileFullPath, serviceESDLDef);
+
+    // Saving to tmp file first, this should prob be an atomic action
+    StringBuffer tempname;
+    makeTempCopyName(tempname, stateFileFullPath);
+    saveXML(tempname, serviceESDLDef);
+    renameFile(stateFileFullPath, tempname, true);
 }
 
 /* if the target ESDL binding contains an ESDL service definition matching this espServiceName, load it.
