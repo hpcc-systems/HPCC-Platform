@@ -746,18 +746,24 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
     }
 }
 
-static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, StringBuffer& out)
+static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, const char* name, StringBuffer& out)
 {
     Owned<IXmlSchema> sp = createXmlSchema(schema);
     Owned<IPTree> tree = createPTreeFromXMLString(in);
 
     //VStringBuffer name("tns:%s", tree->queryName());
-    const char* name = tree->queryName();
     IXmlType* type = sp->queryElementType(name);
     if (!type)
     {
-        StringBuffer method(strlen(name)-7, name);
-        type = sp->queryElementType(method);
+        name = tree->queryName();
+        type = sp->queryElementType(name);
+        if (!type)
+        {
+            StringBuffer method = name;
+            if (method.length() > 7)
+                method.setLength(method.length()-7);
+            type = sp->queryElementType(method);
+        }
     }
 
     if (type)
@@ -767,6 +773,23 @@ static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, StringBuff
         const char* value = tree->queryProp(NULL);
         DBGLOG("Unknown xml tag ignored: <%s>%s</%s>", name, value?value:"", name);
     }
+}
+
+void EspHttpBinding::getXMLMessageTag(IEspContext& ctx, bool isRequest, const char *method, StringBuffer& tag)
+{
+    MethodInfoArray info;
+    getQualifiedNames(ctx, info);
+    for (unsigned i=0; i<info.length(); i++)
+    {
+        CMethodInfo& m = info.item(i);
+        if (!stricmp(m.m_label, method))
+        {
+            tag.set(isRequest ? m.m_requestLabel : m.m_responseLabel);
+            break;
+        }
+    }
+    if (!tag.length())
+        tag.append(method).append(isRequest ? "Request" : "Response");
 }
 
 // new way to generate soap message
@@ -780,11 +803,12 @@ void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHt
     Owned<IRpcRequestBinding> rpcreq = createReqBinding(ctx, request, serv, method);
     rpcreq->serialize(*msg);
 
-    StringBuffer req, schema, filtered;
+    StringBuffer req, tag, schema, filtered;
     msg->marshall(req, NULL);
 
     getSchema(schema,ctx,request,serv,method,false);
-    filterXmlBySchema(req,schema,filtered);
+    getXMLMessageTag(ctx, true, method, tag);
+    filterXmlBySchema(req,schema,tag.str(),filtered);
     
     StringBuffer ns;
     soapmsg.appendf(
@@ -1326,24 +1350,8 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
     if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName))
         return;
 
-    MethodInfoArray info;
-    getQualifiedNames(context, info);
-    StringBuffer element;
-    for (unsigned i=0; i<info.length(); i++)
-    {
-        CMethodInfo& m = info.item(i);
-        if (stricmp(m.m_label, methodQName)==0)
-        {
-            element.set(isRequest ? m.m_requestLabel : m.m_responseLabel);
-            break;
-        }
-    }
-
-    if (!element.length())
-        element.append(methodQName.str()).append(isRequest ? "Request" : "Response");
-
-    StringBuffer schemaXml;
-
+    StringBuffer schemaXml, element;
+    getXMLMessageTag(context, isRequest, methodQName.str(), element);
     getSchema(schemaXml,context,request,serv,method,false);
     Owned<IXmlSchema> schema = createXmlSchema(schemaXml);
     if (schema.get())
@@ -1378,23 +1386,8 @@ void EspHttpBinding::generateSampleXmlFromSchema(bool isRequest, IEspContext &co
     if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName))
         return;
 
-    MethodInfoArray info;
-    getQualifiedNames(context, info);
-    StringBuffer element;
-    for (unsigned i=0; i<info.length(); i++)
-    {
-        CMethodInfo& m = info.item(i);
-        if (stricmp(m.m_label, methodQName)==0)
-        {
-            element.set(isRequest ? m.m_requestLabel : m.m_responseLabel);
-            break;
-        }
-    }
-
-    if (!element.length())
-        element.append(methodQName.str()).append(isRequest ? "Request" : "Response");
-
-    StringBuffer schemaXmlbuff(schemaxml);
+    StringBuffer element, schemaXmlbuff(schemaxml);
+    getXMLMessageTag(context, isRequest, methodQName.str(), element);
 
     Owned<IXmlSchema> schema = createXmlSchema(schemaXmlbuff);
     if (schema.get())
