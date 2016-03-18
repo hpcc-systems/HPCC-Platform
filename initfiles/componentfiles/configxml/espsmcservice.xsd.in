@@ -132,6 +132,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="enableLogDaliConnection" type="xs:boolean" use="optional" default="false">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Enable ESP/Dali Connection ID to be logged into esp.xml.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
                         <xs:attribute name="allowNewRoxieOnDemandQuery" type="xs:boolean" use="optional" default="false">
                                 <xs:annotation>
                                         <xs:appinfo>
