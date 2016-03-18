@@ -11558,6 +11558,12 @@ sortItem
     | FEW               {   $$.setExpr(createAttribute(fewAtom));   }
     | MANY              {   $$.setExpr(createAttribute(manyAtom));  }
     | MERGE             {   $$.setExpr(createAttribute(mergeAtom)); }
+    | MERGE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_boolean, true);
+                            $$.setExpr(createExprAttribute(mergeAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
     | SORTED            {   $$.setExpr(createAttribute(sortedAtom));    }
     | UNSORTED          {   $$.setExpr(createAttribute(unsortedAtom)); }
     | skewAttribute

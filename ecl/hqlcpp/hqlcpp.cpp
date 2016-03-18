@@ -1734,6 +1734,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.implicitGroupSubSort,"implicitGroupSubSort",true),
         DebugOption(options.implicitGroupHashAggregate,"implicitGroupHashAggregate",false),
         DebugOption(options.implicitGroupHashDedup,"implicitGroupHashDedup",false),
+        DebugOption(options.implicitMergeTable,"implicitMergeTable",true),
         DebugOption(options.reportFieldUsage,"reportFieldUsage",false),
         DebugOption(options.reportFileUsage,"reportFileUsage",false),
         DebugOption(options.subsortLocalJoinConditions,"subsortLocalJoinConditions",false),
