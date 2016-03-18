@@ -211,7 +211,9 @@ define([
                     this.stdDev = Math.sqrt(variance);
                     for (var i = 0; i < timers.length; ++i) {
                         var prefix = "other";
-                        if (timers[i].Name.indexOf("Graph graph") == 0) {
+                        timers[i].__hpcc_name = timers[i].Name;
+                        if (timers[i].Name.indexOf("Graph graph") === 0) {
+                            timers[i].__hpcc_name = timers[i].SubGraphId;
                             if (!timers[i].SubGraphId) {
                                 continue;
                             }
@@ -251,7 +253,7 @@ define([
                     };
                 });
                 this.treeMap.set("groupAttrs", ["__hpcc_prefix"]);
-                this.treeMap.set("labelAttr", "Name");
+                this.treeMap.set("labelAttr", "__hpcc_name");
                 this.treeMap.set("tooltipFunc", function (item) {
                     return item.Name + " " + item.Seconds;
                 });
