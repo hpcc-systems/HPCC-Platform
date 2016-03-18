@@ -615,8 +615,9 @@ public:
                 result->flush(true);
         }
     }
-    virtual void finalize(unsigned seqNo)
+    virtual void finalize(unsigned seqNo, const char *delim)
     {
+        bool needDelimiter = false;
         ForEachItemIn(seq, resultMap)
         {
             FlushingStringBuffer *result = resultMap.item(seq);
@@ -629,8 +630,17 @@ public:
                     void *payload = result->getPayload(length);
                     if (!length)
                         break;
+                    if (needDelimiter)
+                    {
+                        StringAttr s(delim); //write() will take ownership of buffer
+                        size32_t len = s.length();
+                        client->write((void *)s.detach(), len, true);
+                        needDelimiter=false;
+                    }
                     client->write(payload, length, true);
                 }
+                if (delim)
+                    needDelimiter=true;
             }
         }
     }
@@ -978,7 +988,7 @@ public:
 
         outputContent();
         if (results)
-            results->finalize(seqNo);
+            results->finalize(seqNo, ",");
 
         responseTail.append("}");
         len = responseTail.length();
@@ -1079,7 +1089,7 @@ public:
 
         outputContent();
         if (results)
-            results->finalize(seqNo);
+            results->finalize(seqNo, NULL);
 
         responseTail.append("</").append(queryName);
         if (isHTTP)
