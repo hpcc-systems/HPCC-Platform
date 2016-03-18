@@ -61,6 +61,7 @@ typedef enum ESPSerializationFormat_
 #define ESPCTX_ALL_ANNOTATION   0x00010000
 
 class CTxSummary;
+interface IEspSecureContext;
 
 interface IEspContext : extends IInterface
 {
@@ -155,6 +156,8 @@ interface IEspContext : extends IInterface
 
     virtual void setAcceptLanguage(const char * acceptLanguage) = 0;
     virtual StringBuffer& getAcceptLanguage(StringBuffer& acceptLanguage) = 0;
+
+    virtual IEspSecureContext* querySecureContext() = 0;
 };
 
 

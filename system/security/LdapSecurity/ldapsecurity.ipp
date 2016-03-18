@@ -354,9 +354,9 @@ public:
     ISecResourceList * createResourceList(const char * rlname);
     bool subscribe(ISecAuthenticEvents & events);
     bool unsubscribe(ISecAuthenticEvents & events);
-    bool authorize(ISecUser& sec_user, ISecResourceList * Resources);
-    bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources);
-    int authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename);
+    bool authorize(ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext);
+    bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext = NULL);
+    int authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, IEspSecureContext* secureContext = NULL);
     virtual int authorizeFileScope(ISecUser & user, const char * filescope);
     virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources);
     virtual int authorizeWorkunitScope(ISecUser & user, const char * wuscope);
@@ -377,7 +377,7 @@ public:
     virtual IAuthMap * createAuthMap(IPropertyTree * authconfig);
     virtual IAuthMap * createFeatureMap(IPropertyTree * authconfig);
     virtual IAuthMap * createSettingMap(struct IPropertyTree *){return 0;}
-    virtual bool updateSettings(ISecUser & User,ISecPropertyList * settings){return false;}
+    virtual bool updateSettings(ISecUser & User,ISecPropertyList * settings, IEspSecureContext* secureContext){return false;}
     virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword = 0);
     virtual bool updateUser(const char* type, ISecUser& user);
     virtual bool updateUserPassword(const char* username, const char* newPassword);

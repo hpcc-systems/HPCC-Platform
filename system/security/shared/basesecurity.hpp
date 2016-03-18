@@ -70,19 +70,19 @@ public:
         return false;
     }
 
-    bool authorize(ISecUser & user, ISecResourceList * resources)
+    bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext)
     {
         UNIMPLEMENTED;
         return false;
     }
 
-    bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources)
+    bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext)
     {
         UNIMPLEMENTED;
         return false;
     }
 
-    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
+    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
     {
         UNIMPLEMENTED;
         return 0;
@@ -136,7 +136,7 @@ public:
         return false;
     }
 
-    bool updateSettings(ISecUser & user, ISecPropertyList * resources)
+    bool updateSettings(ISecUser & user, ISecPropertyList * resources, IEspSecureContext* secureContext)
     {
         UNIMPLEMENTED;
         return false;

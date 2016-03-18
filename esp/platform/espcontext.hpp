@@ -31,7 +31,9 @@
 #include "esp.hpp"
 #include "esphttp.hpp"
 
-ESPHTTP_API IEspContext* createEspContext();
+interface IEspSecureContext;
+
+ESPHTTP_API IEspContext* createEspContext(IEspSecureContext* secureContext = NULL);
 
 // Get URL parameters (include these from Content)
 // Return: a=b&c=d format. 

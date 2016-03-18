@@ -61,6 +61,11 @@ void SecHandler::setFeatureAuthMap(IAuthMap * map)
         m_feature_authmap.set(map);
 }
 
+void SecHandler::setSecureContext(IEspSecureContext* secureContext)
+{
+    m_secureContext.set(secureContext);
+}
+
 bool SecHandler::authorizeSecFeature(const char * pszFeatureUrl, const char* UserID, const char* CompanyID, SecAccessFlags & required_access,bool bCheckTrial,int DebitUnits, SecUserStatus & user_status)
 {
     if(m_user.get()==0)
@@ -220,7 +225,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
     bool auth_ok = false;
     try
     {
-        auth_ok = m_secmgr->authorize(*m_user.get(), plist);
+        auth_ok = m_secmgr->authorize(*m_user.get(), plist, m_secureContext.get());
     }
     catch(IException* e)
     {
