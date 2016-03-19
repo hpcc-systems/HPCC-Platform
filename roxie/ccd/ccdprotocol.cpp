@@ -1104,7 +1104,7 @@ IHpccProtocolResponse *createProtocolResponse(const char *queryname, SafeSocket 
 {
     if (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW || protocolFlags & HPCC_PROTOCOL_NATIVE_ASCII)
         return new CHpccNativeProtocolResponse(queryname, client, MarkupFmt_Unknown, protocolFlags, false, logctx, xmlReadFlags);
-    else if (httpHelper.queryContentFormat()==MarkupFmt_JSON)
+    else if (httpHelper.queryResponseMlFormat()==MarkupFmt_JSON)
         return new CHpccJsonResponse(queryname, client, protocolFlags, httpHelper.isHttp(), logctx, xmlReadFlags);
     return new CHpccXmlResponse(queryname, client, protocolFlags, httpHelper.isHttp(), logctx, xmlReadFlags);
 
@@ -1350,7 +1350,7 @@ private:
             isRequestArray = false;
             if (httpHelper.isHttp())
             {
-                if (httpHelper.queryContentFormat()==MarkupFmt_JSON)
+                if (httpHelper.queryRequestMlFormat()==MarkupFmt_JSON)
                 {
                     if (strieq(queryName, "__object__"))
                     {
@@ -1418,12 +1418,14 @@ private:
         else
             throw MakeStringException(ROXIE_DATA_ERROR, "Malformed request");
     }
-    void parseQueryPTFromString(Owned<IPropertyTree> &queryPT, HttpHelper &httpHelper, const char *text, PTreeReaderOptions options)
+    void createQueryPTree(Owned<IPropertyTree> &queryPT, HttpHelper &httpHelper, const char *text, byte flags, PTreeReaderOptions options)
     {
-        if (strieq(httpHelper.queryContentType(), "application/json"))
-            queryPT.setown(createPTreeFromJSONString(text, ipt_caseInsensitive, options));
+        if (httpHelper.queryRequestMlFormat()==MarkupFmt_URL)
+            queryPT.setown(httpHelper.createPTreeFromParameters(flags));
+        else if (httpHelper.queryRequestMlFormat()==MarkupFmt_JSON)
+            queryPT.setown(createPTreeFromJSONString(text, flags, options));
         else
-            queryPT.setown(createPTreeFromXMLString(text, ipt_caseInsensitive, options));
+            queryPT.setown(createPTreeFromXMLString(text, flags, options));
     }
 
     void doMain(const char *runQuery)
@@ -1477,7 +1479,8 @@ readAnother:
         }
 
         bool isHTTP = httpHelper.isHttp();
-        TextMarkupFormat mlFmt = isHTTP ? httpHelper.queryContentFormat() : MarkupFmt_XML;
+        TextMarkupFormat mlResponseFmt = isHTTP ? httpHelper.queryResponseMlFormat() : MarkupFmt_XML;
+        TextMarkupFormat mlRequestFmt = isHTTP ? httpHelper.queryRequestMlFormat() : MarkupFmt_XML;
 
         bool failed = false;
         bool isRequest = false;
@@ -1497,15 +1500,20 @@ readAnother:
         bool stripWhitespace = msgctx->getStripWhitespace();
         try
         {
-            if (mlFmt==MarkupFmt_XML || mlFmt==MarkupFmt_JSON)
+            if (httpHelper.isHttpGet() || httpHelper.isFormPost())
             {
-                QueryNameExtractor extractor(mlFmt, stripWhitespace);
+                queryName.set(httpHelper.queryQueryName());
+                if (httpHelper.isControlUrl())
+                    queryPrefix.set("control");
+            }
+            else if (mlRequestFmt==MarkupFmt_XML || mlRequestFmt==MarkupFmt_JSON)
+            {
+                QueryNameExtractor extractor(mlRequestFmt, stripWhitespace);
                 extractor.extractName(rawText.str(), logctx, peerStr, ep.port);
                 queryName.set(extractor.name);
                 queryPrefix.set(extractor.prefix);
                 stripWhitespace = extractor.stripWhitespace;
             }
-
             if (streq(queryPrefix.str(), "control"))
             {
                 if (httpHelper.isHttp())
@@ -1514,10 +1522,7 @@ readAnother:
                 bool aclupdate = strieq(queryName, "aclupdate"); //ugly
                 byte iptFlags = aclupdate ? ipt_caseInsensitive : 0;
 
-                if (mlFmt==MarkupFmt_JSON)
-                    queryPT.setown(createPTreeFromJSONString(rawText.str(), iptFlags, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces)));
-                else
-                    queryPT.setown(createPTreeFromXMLString(rawText.str(), iptFlags, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces)));
+                createQueryPTree(queryPT, httpHelper, rawText, iptFlags, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
 
                 IPropertyTree *root = queryPT;
                 skipProtocolRoot(queryPT, httpHelper, queryName, isRequest, isRequestArray);
@@ -1543,7 +1548,7 @@ readAnother:
                 readFlags |= (stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none);
                 try
                 {
-                    parseQueryPTFromString(queryPT, httpHelper, rawText.str(), (PTreeReaderOptions)readFlags);
+                    createQueryPTree(queryPT, httpHelper, rawText.str(), ipt_caseInsensitive, (PTreeReaderOptions)readFlags);
                 }
                 catch (IException *E)
                 {
@@ -1619,7 +1624,6 @@ readAnother:
                         IArrayOf<IPropertyTree> requestArray;
                         if (isHTTP)
                         {
-                            mlFmt = httpHelper.queryContentFormat();
                             if (isRequestArray)
                             {
                                 StringBuffer reqIterString;
@@ -1658,7 +1662,7 @@ readAnother:
                                 if (stricmp(format, "raw") == 0)
                                 {
                                     protocolFlags |= HPCC_PROTOCOL_NATIVE_RAW;
-                                    mlFmt = MarkupFmt_Unknown;
+                                    mlResponseFmt = MarkupFmt_Unknown;
                                 }
                                 else if (stricmp(format, "bxml") == 0)
                                 {
@@ -1667,7 +1671,7 @@ readAnother:
                                 else if (stricmp(format, "ascii") == 0)
                                 {
                                     protocolFlags |= HPCC_PROTOCOL_NATIVE_ASCII;
-                                    mlFmt = MarkupFmt_Unknown;
+                                    mlResponseFmt = MarkupFmt_Unknown;
                                 }
                                 else if (stricmp(format, "xml") != 0) // xml is the default
                                     throw MakeStringException(ROXIE_INVALID_INPUT, "Unsupported format specified: %s", format);
@@ -1770,7 +1774,7 @@ readAnother:
                 {
                     if (msgctx->getIntercept())
                     {
-                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
+                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
                         response.startDataset("Tracing", NULL, (unsigned) -1);
                         msgctx->outputLogXML(response);
                     }

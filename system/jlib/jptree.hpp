@@ -28,7 +28,8 @@ enum TextMarkupFormat
 {
     MarkupFmt_Unknown=0,
     MarkupFmt_XML,
-    MarkupFmt_JSON
+    MarkupFmt_JSON,
+    MarkupFmt_URL
 };
 enum PTreeExceptionCodes
 {

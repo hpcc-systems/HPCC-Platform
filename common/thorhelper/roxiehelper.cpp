@@ -16,7 +16,6 @@
 ############################################################################## */
 
 #include "jexcept.hpp"
-#include "thorherror.h"
 #include "thorsort.hpp"
 #include "roxiehelper.hpp"
 #include "roxielmj.hpp"
@@ -1529,7 +1528,6 @@ extern ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm _algorithm, ICompa
 CSafeSocket::CSafeSocket(ISocket *_sock)
 {
     httpMode = false;
-    mlFmt = MarkupFmt_Unknown;
     sent = 0; 
     heartbeat = false; 
     sock.setown(_sock);
@@ -1648,6 +1646,31 @@ int readHttpHeaderLine(IBufferedSocket *linereader, char *headerline, unsigned m
     return bytesread;
 }
 
+void parseHttpParameterString(IProperties *p, const char *str)
+{
+    while (*str)
+    {
+        StringBuffer s, prop, val;
+        while (*str && *str != '&' && *str != '=')
+            s.append(*str++);
+        appendDecodedURL(prop, s.trim());
+        if (!*str || *str == '&')
+            val.set("1");
+        else
+        {
+            s.clear();
+            str++;
+            while (*str && *str != '&')
+                s.append(*str++);
+            appendDecodedURL(val, s.trim());
+        }
+        if (prop.length())
+            p->setProp(prop, val);
+        if (*str)
+            str++;
+    }
+}
+
 bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &continuationNeeded, bool &isStatus, unsigned maxBlockSize)
 {
     continuationNeeded = false;
@@ -1677,7 +1700,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         if (pHttpHelper != NULL && strncmp((char *)&len, "POST", 4) == 0)
         {
 #define MAX_HTTP_HEADERSIZE 8000
-            pHttpHelper->setIsHttp(true);
+            pHttpHelper->setHttpMethod(HttpMethod::POST);
             char header[MAX_HTTP_HEADERSIZE + 1]; // allow room for \0
             sock->read(header, 1, MAX_HTTP_HEADERSIZE, bytesRead, timeout);
             header[bytesRead] = 0;
@@ -1706,7 +1729,12 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                     buf = ret.reserveTruncate(len);
                     left = len - (bytesRead - (payload - header));
                     if (len > left)
-                        memcpy(buf, payload, len - left); 
+                        memcpy(buf, payload, len - left);
+                    if (pHttpHelper->isFormPost())
+                    {
+                        pHttpHelper->checkTarget();
+                        pHttpHelper->setFormContent(ret);
+                    }
                 }
                 else
                     left = len = 0;
@@ -1720,7 +1748,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         else if (pHttpHelper != NULL && strncmp((char *)&len, "GET", 3) == 0)
         {
 #define MAX_HTTP_GET_LINE 16000 //arbitrary per line limit, most web servers are lower, but urls for queries can be complex..
-                pHttpHelper->setIsHttp(true);
+                pHttpHelper->setHttpMethod(HttpMethod::GET);
                 char headerline[MAX_HTTP_GET_LINE + 1];
                 Owned<IBufferedSocket> linereader = createBufferedSocket(sock);
 
@@ -1736,22 +1764,10 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                     bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
                 }
 
-                StringBuffer queryName;
-                const char *target = pHttpHelper->queryTarget();
-                if (!target || !*target)
-                    throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not specified");
-                else if (!pHttpHelper->validateTarget(target))
-                    throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not found");
+                pHttpHelper->checkTarget();
                 const char *query = pHttpHelper->queryQueryName();
                 if (!query || !*query)
                     throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Query not specified");
-
-                queryName.append(query);
-                Owned<IPropertyTree> req = createPTreeFromHttpParameters(queryName, pHttpHelper->queryUrlParameters(), true, pHttpHelper->queryContentFormat()==MarkupFmt_JSON);
-                if (pHttpHelper->queryContentFormat()==MarkupFmt_JSON)
-                    toJSON(req, ret);
-                else
-                    toXML(req, ret);
                 return true;
         }
         else if (strnicmp((char *)&len, "STAT", 4) == 0)
@@ -1797,10 +1813,10 @@ void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, HttpHelper 
 {
     CriticalBlock c(crit); // Should not be needed
     httpMode = true;
-    mlFmt = httphelper.queryContentFormat();
+    mlResponseFmt = httphelper.queryResponseMlFormat();
     heartbeat = false;
     assertex(contentHead.length()==0 && contentTail.length()==0);
-    if (mlFmt==MarkupFmt_JSON)
+    if (mlResponseFmt==MarkupFmt_JSON)
     {
         contentHead.set("{");
         contentTail.set("}");
@@ -1827,7 +1843,7 @@ void CSafeSocket::checkSendHttpException(HttpHelper &httphelper, IException *E, 
 {
     if (!httphelper.isHttp())
         return;
-    if (httphelper.queryContentFormat()==MarkupFmt_JSON)
+    if (httphelper.queryResponseMlFormat()==MarkupFmt_JSON)
         sendJsonException(E, queryName);
     else
         sendSoapException(E, queryName);
@@ -1948,7 +1964,7 @@ void CSafeSocket::flush()
 
         StringBuffer header;
         header.append("HTTP/1.0 200 OK\r\n");
-        header.append("Content-Type: ").append(mlFmt == MarkupFmt_JSON ? "application/json" : "text/xml").append("\r\n");
+        header.append("Content-Type: ").append(mlResponseFmt == MarkupFmt_JSON ? "application/json" : "text/xml").append("\r\n");
         header.append("Content-Length: ").append(length).append("\r\n\r\n");
 
 
@@ -2819,26 +2835,5 @@ void HttpHelper::parseURL()
         pathNodes.appendList(path, "/");
     if (!finger)
         return;
-    finger++;
-    while (*finger)
-    {
-        StringBuffer s, prop, val;
-        while (*finger && *finger != '&' && *finger != '=')
-            s.append(*finger++);
-        appendDecodedURL(prop, s.trim());
-        if (!*finger || *finger == '&')
-            val.set("1");
-        else
-        {
-            s.clear();
-            finger++;
-            while (*finger && *finger != '&')
-                s.append(*finger++);
-            appendDecodedURL(val, s.trim());
-        }
-        if (prop.length())
-            parameters->setProp(prop, val);
-        if (*finger)
-            finger++;
-    }
+    parseHttpParameterString(parameters, ++finger);
 }
