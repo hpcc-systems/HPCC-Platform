@@ -2332,7 +2332,7 @@ void EclAgentWorkflowMachine::doExecuteCriticalItem(IRuntimeWorkflowItem & item)
     unsigned wfid = item.queryWfid();
 
     Owned<IRemoteConnection> rlock = obtainCriticalLock(criticalName);
-    if (!rlock.get())
+    if (!rlock)
         throw MakeStringException(0, "Cannot obtain Critical section lock");
 
     doExecuteItemDependencies(item, wfid);

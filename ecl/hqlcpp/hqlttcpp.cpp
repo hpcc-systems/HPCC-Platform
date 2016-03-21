@@ -5662,7 +5662,6 @@ void WorkflowTransformer::setWorkflowPersist(IWorkflowItem * wf, char const * pe
 
 void WorkflowTransformer::setWorkflowCritical(IWorkflowItem * wf, char const * criticalName)
 {
-
     wf->setCriticalInfo(criticalName);
 }
 
@@ -6059,21 +6058,11 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             UnsignedArray visited;
             extractDependentInputs(visited, dependencies, queryDirectDependencies(setValue));
             gatherDependencies(setValue, dependencies, GatherAll);
-
-            HqlExprArray checkArgs;
-            checkArgs.append(*createExprAttribute(_files_Atom, dependencies.tablesRead));
-            inheritDependencies(&checkArgs.item(0));
-            if (dependencies.resultsRead.ordinality())
-            {
-                checkArgs.append(*createExprAttribute(_results_Atom, dependencies.resultsRead));
-                inheritDependencies(&checkArgs.item(1));
-            }
-
             workflowOut->append(*createWorkflowItem(setValue, wfid, no_critical));
 
             Owned<IWorkflowItem> wfPersist = addWorkflowToWorkunit(criticalWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), NULL);
         }
-         else
+        else
         if(info.persistOp == no_persist)
         {
             StringBuffer persistName;
