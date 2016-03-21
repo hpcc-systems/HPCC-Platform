@@ -1664,7 +1664,7 @@ static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpressi
     unsigned match1 = sort1.find(*distribute1->queryBody());
     unsigned match2 = sort2.find(*distribute2->queryBody());
     if ((match1 != NotFound) || (match2 != NotFound))
-        return match1 == match2;
+        return (match1 == match2);
 
     node_operator op = distribute1->getOperator();
     if (op != distribute2->getOperator())
@@ -1685,7 +1685,7 @@ static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpressi
     }
 
     if (max == 0)
-        return true;
+        return (distribute1->queryBody() == distribute2->queryBody());
 
     for (unsigned idx = 0; idx < max; idx++)
     {
