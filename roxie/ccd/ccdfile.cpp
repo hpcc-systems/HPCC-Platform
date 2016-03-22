@@ -754,7 +754,6 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             StringBuffer prevTempFile;
             splitFilename(targetFilename, &destPath, &destPath, &prevTempFile, &prevTempFile);
             prevTempFile.append("*.$$$");
-
             Owned<IFile> dirf = createIFile(destPath.str());
             Owned<IDirectoryIterator> iter = dirf->directoryFiles(prevTempFile.str(),false,false);
             ForEach(*iter)

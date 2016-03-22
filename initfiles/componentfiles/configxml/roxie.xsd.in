@@ -799,13 +799,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="useTreeCopy" type="xs:boolean" use="optional" default="false">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Should data file copies use new tree copy mechanism or old individual style copy</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="useMemoryMappedIndexes" type="xs:boolean" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>

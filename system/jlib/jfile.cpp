@@ -1530,21 +1530,11 @@ public:
         ifile->copySection(dest,toOfs,fromOfs,size,progress,copyFlags);
     }
 
-
     IMemoryMappedFile *openMemoryMapped(offset_t ofs, memsize_t len, bool write)
     {
         throw MakeStringException(-1,"Remote file cannot be memory mapped");
         return NULL;
     }
-
-    void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom, bool usetmp, CFflags copyFlags)
-    {
-        // no special action for windows
-        GetHostIp(resfrom);
-        copyTo(dest,DEFAULT_COPY_BLKSIZE,NULL,usetmp,copyFlags);
-    }
-
-
 };
 #endif
 
