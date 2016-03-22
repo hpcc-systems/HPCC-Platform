@@ -293,6 +293,18 @@
           </varlistentry>
         </variablelist>
 
+        <para>When you specify any Filter options, the Filter Action button
+        displays <emphasis>Filter Set</emphasis>. <figure>
+            <title>Filter Set</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA416.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
         <sect3 id="ECLWatch_SortingColumns">
           <title>Sorting Columns</title>
 
@@ -487,7 +499,7 @@
               a query is published the superfiles are copied from the remote
               Dali. If superfiles already exist locally, then the current
               definition is overwritten only when this box is checked. If it
-              is not checked, the current definition will not change. </para>
+              is not checked, the current definition will not change.</para>
             </listitem>
           </itemizedlist>
         </sect3>
@@ -940,6 +952,18 @@
           </varlistentry>
         </variablelist>
 
+        <para>When you specify any Filter options, the Filter Action button
+        displays <emphasis>Filter Set</emphasis>. <figure>
+            <title>DFU Filter Set</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA414.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
         <sect3 id="DFU_Column_Sorting">
           <title>Sorting Columns</title>
 
@@ -1353,6 +1377,18 @@
               </listitem>
             </varlistentry>
           </variablelist>
+
+          <para>When you specify any Filter options, the Filter Action button
+          displays <emphasis>Filter Set</emphasis>. <figure>
+              <title>Logical Files Filter Set</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA426.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
         </sect3>
       </sect2>
 
