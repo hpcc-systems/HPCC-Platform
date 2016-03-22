@@ -38,7 +38,7 @@ static const char* ESDL_BINDING_ENTRY="Binding";
 static const char* ESDL_METHOD_DESCRIPTION="description";
 static const char* ESDL_METHOD_HELP="help";
 
-#define SDS_LOCK_TIMEOUT (30*1000) // 5mins, 30s a bit short
+#define SDS_LOCK_TIMEOUT (30*1000)
 
 #include "SOAP/Platform/soapbind.hpp"
 
@@ -243,7 +243,6 @@ private:
             thisBinding = binding;
             //for some reason subscriptions based on xpaths with attributes don't seem to work correctly
             //fullBindingPath.set("/ESDL/Bindings/Binding[@EspBinding=\'WsAccurint\'][@EspProcess=\'myesp\']");
-
             CriticalBlock b(daliSubscriptionCritSec);
             try
             {
@@ -298,6 +297,7 @@ private:
     Owned<CESDLBindingSubscription>         m_pBindingSubscription;
     Owned<CESDLDefinitionSubscription>      m_pDefinitionSubscription;
     CriticalSection                         configurationLoadCritSec;
+    StringBuffer                            m_esdlStateFilesLocation;
 
     virtual void clearDESDLState()
     {
@@ -379,8 +379,9 @@ private:
     bool getRoxieConfig(StringBuffer & queryName, StringBuffer & url, StringBuffer & username, StringBuffer & password, const char *method);
     void getSoapMessage(StringBuffer& out,StringBuffer& soapresp,const char * starttxt,const char * endtxt);
 
-    bool reloadBinding(const char *binding, const char *process);
-    bool reloadDefinitions(IPropertyTree * esdlBndCng);
+    bool reloadBindingFromDali(const char *binding, const char *process);
+    bool reloadDefinitionsFromDali(IPropertyTree * esdlBndCng);
+    void saveDESDLState();
 };
 
 #endif //_EsdlBinding_HPP__
