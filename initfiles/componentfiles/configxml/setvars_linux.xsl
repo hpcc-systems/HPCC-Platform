@@ -81,7 +81,7 @@ export refreshrate=<xsl:call-template name="setOrDefault">
                         <xsl:with-param name="default" select="'3'"/>
                      </xsl:call-template>
 export autoSwapNode=<xsl:choose>
-           <xsl:when test="boolean(SwapNode/@AutoSwapNode) = true()">true</xsl:when>
+           <xsl:when test="SwapNode/@AutoSwapNode = 'true'">true</xsl:when>
            <xsl:otherwise>false</xsl:otherwise>
             </xsl:choose>
 <!-- Following SSH elements are required, being empty is fine -->
