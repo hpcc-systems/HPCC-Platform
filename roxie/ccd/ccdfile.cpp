@@ -753,11 +753,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             StringBuffer destPath;
             StringBuffer prevTempFile;
             splitFilename(targetFilename, &destPath, &destPath, &prevTempFile, &prevTempFile);
-
-            if (useTreeCopy)
-                prevTempFile.append("*.tmp");
-            else
-                prevTempFile.append("*.$$$");
+            prevTempFile.append("*.$$$");
 
             Owned<IFile> dirf = createIFile(destPath.str());
             Owned<IDirectoryIterator> iter = dirf->directoryFiles(prevTempFile.str(),false,false);
@@ -811,7 +807,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         {
             IpSubNet subnet; // preferred set but not required
             IpAddress fromip; // returned
-            Owned<IFile> destFile = createIFile(useTreeCopy?targetFilename:tempFile);
+            Owned<IFile> destFile = createIFile(tempFile);
 
             bool hardLinkCreated = false;
             unsigned start = msTick();
@@ -830,17 +826,11 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                         StringBuffer str;
                         str.appendf("doCopyFile %s", sourceFile->queryFilename());
                         TimeSection timing(str.str());
-                        if (useTreeCopy)
-                            sourceFile->treeCopyTo(destFile, subnet, fromip, true, copyFlags);
-                        else
-                            sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
+                        sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
                     }
                     else
                     {
-                        if (useTreeCopy)
-                            sourceFile->treeCopyTo(destFile, subnet, fromip, true, copyFlags);
-                        else
-                            sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
+                        sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
                     }
                 }
                 f->setCopying(false);
@@ -849,26 +839,20 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             catch(IException *E)
             {
                 f->setCopying(false);
-                if (!useTreeCopy)
-                { // done by tree copy
-                    EXCLOG(E, "Copy exception - remove templocal");
-                    destFile->remove(); 
-                }
+                EXCLOG(E, "Copy exception - remove templocal");
+                destFile->remove();
                 deleteTempFiles(targetFilename);
                 throw;
             }
             catch(...)
             {
                 f->setCopying(false);
-                if (!useTreeCopy)
-                { // done by tree copy
-                    DBGLOG("%s exception - remove templocal", msg);
-                    destFile->remove(); 
-                }
+                DBGLOG("%s exception - remove templocal", msg);
+                destFile->remove();
                 deleteTempFiles(targetFilename);
                 throw;
             }
-            if (!hardLinkCreated && !useTreeCopy)  // for hardlinks / treeCopy - no rename needed
+            if (!hardLinkCreated)  // for hardlinks no rename needed
             {
                 try
                 {
