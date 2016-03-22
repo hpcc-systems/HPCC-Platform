@@ -594,8 +594,16 @@ public:
             {
                 keySize = ki->keySize();
                 keyedSize = ki->keyedSize();
-                assertex(keySize);
+                if (!keySize)
+                {
+                    StringBuffer err;
+                    err.appendf("Key appears corrupt - key file (%s) indicates record size is zero", keyName.get());
+                    IException *e = MakeStringExceptionDirect(1000, err.str());
+                    EXCLOG(e, err.str());
+                    throw e;
+                }
                 keyBuffer = (char *) malloc(keySize);
+
             }
             else
             {
