@@ -639,6 +639,38 @@ WORKUNITSERVICES_API void wsWorkunitTimeStamps( ICodeContext *ctx, size32_t & __
             }
         }
     }
+    Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
+    if (wu)
+    {
+        Owned<StatisticsFilter> filter = new StatisticsFilter(SCTall, SSTall, SMeasureTimestampUs, StKindAll);
+        filter->setScopeDepth(1, 2);
+        Owned<IConstWUStatisticIterator> stats = &wu->getStatistics(filter);
+        ForEach(*stats)
+        {
+            IConstWUStatistic & cur = stats->query();
+
+            SCMStringBuffer scope;
+            cur.getScope(scope);
+
+            StatisticKind kind = cur.getKind();
+            const char * kindName = queryStatisticName(kind);
+            assertex(kindName && memicmp(kindName, "when", 4) == 0);
+            kindName += 4;
+
+            StringBuffer formattedTime;
+            convertTimestampToStr(cur.getValue(), formattedTime, true);
+
+            SCMStringBuffer creator;
+            cur.getCreator(creator);
+            const char * at = strchr(creator.str(), '@');
+            const char * instance = at ? at + 1 : creator.str();
+
+            fixedAppend(mb, 32, scope.str());
+            fixedAppend(mb, 16, kindName); // id
+            fixedAppend(mb, 20, formattedTime);            // time
+            fixedAppend(mb, 16, instance);
+        }
+    }
     __lenResult = mb.length();
     __result = mb.detach();
 }
