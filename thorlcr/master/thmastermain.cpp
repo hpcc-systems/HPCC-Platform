@@ -508,7 +508,7 @@ int main( int argc, char *argv[]  )
         Owned<IFile> iFile = createIFile("thor.xml");
         globals = iFile->exists() ? createPTree(*iFile, ipt_caseInsensitive) : createPTree("Thor", ipt_caseInsensitive);
     }
-    setStatisticsComponentName(SCTthor, globals->queryProp("@name"), false);
+    setStatisticsComponentName(SCTthor, globals->queryProp("@name"), true);
 
     globals->setProp("@masterBuildTag", BUILD_TAG);
     char **pp = argv+1;
