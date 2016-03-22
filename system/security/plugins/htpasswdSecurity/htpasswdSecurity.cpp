@@ -25,11 +25,13 @@
 class CHtpasswdSecurityManager : public CBaseSecurityManager
 {
 public:
-    CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *authconfig) : CBaseSecurityManager(serviceName, (IPropertyTree *)NULL)
+    CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *secMgrCfg, IPropertyTree *authconfig) : CBaseSecurityManager(serviceName, (IPropertyTree *)NULL)
 	{
-		if (authconfig)
-			authconfig->getProp("@htpasswdFile", pwFile);
-		apr_initialized = false;
+        if (secMgrCfg)
+            pwFile.set(secMgrCfg->queryProp("@htpasswdFile"));
+        if(pwFile.isEmpty())
+            throw MakeStringException(-1, "htpasswdFile not found in configuration");
+        apr_initialized = false;
 	}
 
 	~CHtpasswdSecurityManager()
@@ -242,9 +244,10 @@ private:
 
 extern "C"
 {
-    HTPASSWDSECURITY_API ISecManager * newHtpasswdSecManager(const char *serviceName, IPropertyTree &config)
+    HTPASSWDSECURITY_API ISecManager * createInstance(const char *serviceName, IPropertyTree &secMgrCfg, IPropertyTree &authCfg)
     {
-        return new CHtpasswdSecurityManager(serviceName, &config);
+        return new CHtpasswdSecurityManager(serviceName, &secMgrCfg, &authCfg);
     }
+
 }
 

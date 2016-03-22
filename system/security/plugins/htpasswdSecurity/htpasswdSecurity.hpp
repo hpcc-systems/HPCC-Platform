@@ -34,7 +34,7 @@
 
 extern "C" 
 {
-    HTPASSWDSECURITY_API ISecManager * newHtpasswdSecManager(const char *serviceName, IPropertyTree &config);
+    HTPASSWDSECURITY_API ISecManager * createInstance(const char *serviceName, IPropertyTree &secMgrCfg, IPropertyTree &authCfg);
 }
 
 #endif // HTPASSWDSECURITY_HPP_

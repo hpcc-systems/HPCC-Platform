@@ -215,14 +215,6 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                     </xsl:for-each>
                 </Authenticate>
             </xsl:when>
-            <xsl:when test="$authMethod='htpasswd'">
-              <Authenticate method="htpasswd">
-                <xsl:attribute name="htpasswdFile"> <xsl:value-of select="$bindingNode/../Authentication/@htpasswdFile"/> </xsl:attribute>
-                <xsl:for-each select="$bindingNode/Authenticate[@path='/']">
-                    <Location path="/" resource="{@resource}" required="{@access}" description="{@description}"/>
-                </xsl:for-each>
-              </Authenticate>
-            </xsl:when>
         </xsl:choose>
     </xsl:template>
 

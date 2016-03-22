@@ -24,18 +24,20 @@
 
 project( htpasswdSecurity )
 
+HPCC_ADD_SUBDIRECTORY (initfiles)
+
 set (    SRCS
-         ../shared/authmap.cpp
-         ../shared/caching.cpp
-         ./htpasswdSecurity.cpp
+         ${HPCC_SOURCE_DIR}/system/security/shared/authmap.cpp
+         ${HPCC_SOURCE_DIR}/system/security/shared/caching.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/htpasswdSecurity.cpp
     )
 
 include_directories (
-         ./../../include
-         ./../shared
-         ./../../jlib
-         ./../../../esp/platform
-         ./../../../dali/base
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/esp/platform
+         ${HPCC_SOURCE_DIR}/dali/base
          ${APR_INCLUDE_DIR}
          ${APRUTIL_INCLUDE_DIR}
     )

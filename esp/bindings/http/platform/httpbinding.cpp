@@ -187,7 +187,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 if(proc_cfg.get() != NULL)
                 {
                     Owned<IPropertyTree> secMgrs;
-                    VStringBuffer sm("SecurityManagers/SecurityManager[@name='%s']", m_authmethod.str());
+                    VStringBuffer sm("SecurityManagers/SecurityManager[@name='%s']/HtpasswdSecurityManager", m_authmethod.str());
                     secMgrCfg.setown(proc_cfg->getPropTree(sm.str()));
                 }
 
@@ -235,20 +235,6 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     else if(stricmp(m_authmethod.str(), "Local") == 0)
                     {
                         m_secmgr.setown(SecLoader::loadSecManager("Local", "EspHttpBinding", NULL));
-                        m_authmap.setown(m_secmgr->createAuthMap(authcfg));
-                    }
-                    else if(stricmp(m_authmethod.str(), "htpasswd") == 0)
-                    {
-                        Owned<IPropertyTree> cfg;
-                        if(proc_cfg.get() != NULL)
-                            cfg.setown(proc_cfg->getPropTree("htpasswdSecurity"));
-                        if(cfg == NULL)
-                        {
-                            ERRLOG("can't find htpasswdSecurity in configuration");
-                            throw MakeStringException(-1, "can't find htpasswdSecurity in configuration");
-                        }
-
-                        m_secmgr.setown(SecLoader::loadSecManager("htpasswd", "EspHttpBinding", LINK(cfg)));
                         m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                     }
                     IRestartManager* restartManager = dynamic_cast<IRestartManager*>(m_secmgr.get());
