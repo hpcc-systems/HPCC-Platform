@@ -11291,8 +11291,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDictionaryWorkunitWrite(BuildC
     IHqlExpression * name = queryResultName(expr);
     int sequence = (int)getIntValue(seq, ResultSequenceInternal);
 
-    assertex(dictionary->getOperator() == no_createdictionary);
-    IHqlExpression * dataset = dictionary->queryChild(0);
+    OwnedHqlExpr dataset;
+    switch (dictionary->getOperator())
+    {
+    case no_null:
+        dataset.setown(createNullDataset(dictionary));
+        break;
+    case no_createdictionary:
+        dataset.set(dictionary->queryChild(0));
+        break;
+    default:
+        throwUnexpectedOp(dictionary->getOperator());
+    }
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
 

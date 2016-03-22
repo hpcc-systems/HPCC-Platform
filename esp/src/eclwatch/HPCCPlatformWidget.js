@@ -200,7 +200,7 @@ define([
             this.activity.watch("Build", function (name, oldValue, newValue) {
                 context.build = WsSMC.parseBuildString(newValue);
             });
-            this.activity.watch("changedCount", function (name, oldValue, newValue) {
+            this.activity.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 context.refreshBanner(context.activity);
             });
 
