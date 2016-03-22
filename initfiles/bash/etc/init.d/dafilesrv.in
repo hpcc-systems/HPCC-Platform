@@ -56,6 +56,10 @@ source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 source  ${INSTALL_DIR}/etc/init.d/init-functions
 source  ${INSTALL_DIR}/etc/init.d/export-path
 
+export logfile=${LOG_DIR}/dafilesrv.log
+
+[ ! -e ${logfile}  ] && touch $logfile
+
 ## Debug variable allowing verbose debug output
 ##
 DEBUG=${DEBUG:-NO_DEBUG}
@@ -66,8 +70,20 @@ configgen_path=${INSTALL_DIR}/sbin
 basepath=`pwd`
 set_environmentvars
 envfile=$configs/$environment
-bin_path=${INSTALL_DIR}/bin
 
+if [[ ! -e "${CONFIG_DIR}/${ENV_XML_FILE}" ]]; then
+    log "${CONFIG_DIR}/${ENV_XML_FILE} not found.  Attempting to generate..."
+    ${INSTALL_DIR}/sbin/create-env-xml.sh > /dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        log  "Environment file not found.  Failed to generate ${ENV_XML_FILE}"
+        echo "Environment file not found.  Failed to generate ${ENV_XML_FILE}"
+        exit 1
+    fi
+    [[ ! -d ${CONFIG_DIR}/source ]] && mkdir -p ${CONFIG_DIR}/source
+    cp ${CONFIG_DIR}/${ENV_XML_FILE} ${CONFIG_DIR}/source/${ENV_XML_FILE} > /dev/null 2>&1
+fi
+
+bin_path=${INSTALL_DIR}/bin
 component=""
 runSetupOnly=0
 source ${configgen_path}/hpcc_setenv
