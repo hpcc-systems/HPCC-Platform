@@ -102,12 +102,6 @@
                 </xsl:if>
             </xsl:for-each>
 
-             <xsl:if test="@type='secmgrPlugin'">
-                <xsl:call-template name="dosecmgrPlugin">
-                    <xsl:with-param name="method" select="@method"/>
-                </xsl:call-template>
-            </xsl:if>
-
             <xsl:if test="./Authentication/@method='secmgrPlugin'">
             <SecurityManagers>
                 <xsl:for-each select="./EspBinding[@type != '']">
@@ -406,14 +400,6 @@
         </xsl:element>
     </xsl:template>
 
-    <xsl:template name="dosecmgrPlugin">
-        <xsl:param name="method"/>
-        <xsl:copy-of select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']"/>
-        <xsl:element name="Authenticate">
-            <xsl:attribute name="method"> <xsl:value-of select="$method"/> </xsl:attribute>
-        </xsl:element>
-    </xsl:template>
-    
     <xsl:template name="doAccurintSecurity">
         <xsl:param name="method"/>
         <xsl:param name="accurintSecurity"/>
@@ -532,18 +518,6 @@
                      <xsl:otherwise>ou=workunits,ou=ecl</xsl:otherwise>
                   </xsl:choose>
                </xsl:variable>
-
-               <xsl:if test="$espProcess/Authentication/@method = 'secmgrPlugin'">
-                    <xsl:for-each select="$espProcess/EspBinding[@name = $origBindName]/Authenticate">
-                        <xsl:copy>
-                            <xsl:apply-templates select="@*" />
-                                <xsl:attribute name="method">
-                                    <xsl:value-of select="$envBindNode/@type"/>
-                                </xsl:attribute>
-                            <xsl:apply-templates select="node()"/>
-                        </xsl:copy>
-                    </xsl:for-each>
-               </xsl:if>
 
                <xsl:for-each select="$bindNode/Authenticate">
                   <xsl:copy>
