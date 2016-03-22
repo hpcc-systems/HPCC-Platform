@@ -392,7 +392,6 @@ extern bool probeAllRows;
 extern bool steppingEnabled;
 extern bool simpleLocalKeyedJoins;
 extern bool enableKeyDiff;
-extern bool useTreeCopy;
 extern PTreeReaderOptions defaultXmlReadFlags;
 extern bool mergeSlaveStatistics;
 extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to slaves
