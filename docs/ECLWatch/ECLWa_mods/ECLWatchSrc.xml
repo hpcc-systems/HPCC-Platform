@@ -1149,7 +1149,9 @@
             </mediaobject>
           </figure></para>
 
-        <para>There are three columns to indicate some file attributes:</para>
+        <para>There are three columns with icons to indicate some file
+        attributes. There is also an icon that appears next to the Logical
+        Name that indicates what type of file it is.</para>
 
         <para><informaltable colsep="1" frame="all">
             <tgroup cols="2">
@@ -1158,6 +1160,13 @@
               <colspec colwidth="110pt" />
 
               <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/ECLWa-Locked.jpg" /></entry>
+
+                  <entry>Locked File</entry>
+                </row>
+
                 <row>
                   <entry><inlinegraphic
                   fileref="../../images/ECLWa-compressed.jpg" /></entry>
@@ -1170,6 +1179,13 @@
                   fileref="../../images/ECLWa-index0.jpg" /></entry>
 
                   <entry>Key File (index)</entry>
+                </row>
+
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/ECLWa-Logical.jpg" /></entry>
+
+                  <entry>Logical file</entry>
                 </row>
 
                 <row>
