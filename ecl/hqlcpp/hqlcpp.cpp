@@ -1206,6 +1206,20 @@ void HqlCppInstance::addPluginsAsResource()
 }
 
 
+void HqlCppInstance::getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId)
+{
+    if (cppInfo.isItem(cppIndex))
+    {
+        minActivityId = cppInfo.item(cppIndex).minActivityId;
+        maxActivityId = cppInfo.item(cppIndex).maxActivityId;
+    }
+    else
+    {
+        minActivityId = 0;
+        maxActivityId = 0;
+    }
+}
+
 bool HqlCppInstance::useFunction(IHqlExpression * func)
 {
     assertex(func);
@@ -1804,10 +1818,12 @@ void HqlCppTranslator::cacheOptions()
     //Or where one debug options sets more than one option
     if (options.spanMultipleCpp)
     {
+        code->cppInfo.append(* new CppFileInfo(0)); // Add an entry for the main file which contains no activities
         options.activitiesPerCpp = wu()->getDebugValueInt("activitiesPerCpp", DEFAULT_ACTIVITIES_PER_CPP);
         curCppFile = 1;
     }
 
+    code->cppInfo.append(* new CppFileInfo(0));
     options.targetCompiler = DEFAULT_COMPILER;
     if (wu()->hasDebugValue("targetGcc"))
         options.targetCompiler = wu()->getDebugValueBool("targetGcc", false) ? GccCppCompiler : Vs6CppCompiler;
@@ -11934,7 +11950,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
     if (options.spanMultipleCpp)
     {
         const bool inChildActivity = true;  // assume the worst
-        OwnedHqlExpr pass = getSizetConstant(cppIndexNextActivity(inChildActivity));
+        OwnedHqlExpr pass = getSizetConstant(beginFunctionGetCppIndex(0, inChildActivity));
         funcctx.addGroupPass(pass);
     }
     expandFunctionPrototype(proto, funcdef);
