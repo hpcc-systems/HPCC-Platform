@@ -55,8 +55,10 @@ ProcessSlaveActivity::ProcessSlaveActivity(CGraphElementBase *container) : CSlav
     lastCycles = 0;
 }
 
-ProcessSlaveActivity::~ProcessSlaveActivity()
+void ProcessSlaveActivity::beforeDispose()
 {
+    // Note - we can't throw from the destructor, so do this in beforeDispose instead
+    // If the exception is thrown then we are liable to leak the object, but we are dying anyway...
     ActPrintLog("destroying ProcessSlaveActivity");
     ActPrintLog("ProcessSlaveActivity : joining process thread");
     // NB: The activity thread should have already stopped,

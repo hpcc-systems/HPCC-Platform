@@ -1140,13 +1140,27 @@ public:
 
     ~CBufferedIIOStream()
     {
-        try { flush(); }
-        catch (IException *)
-        {
-            delete [] buffer;
-            throw;
-        }
         delete [] buffer;
+    }
+
+    virtual void beforeDispose()
+    {
+        try
+        {
+            // NOTE - flush may throw an exception and thus cannot be done in the destructor.
+            flush();
+        }
+        catch (IException *E)
+        {
+            EXCLOG(E, "ERROR - Exception in CBufferedIIOStream::flush ignored");
+            E->Release();
+            assert(!"ERROR - Exception in CBufferedIIOStream::flush ignored");
+        }
+        catch (...)
+        {
+            DBGLOG("ERROR - Unknown exception in CBufferedIIOStream::flush ignored");
+            assert(!"ERROR - Unknown exception in CBufferedIIOStream::flush ignored");
+        }
     }
 
     virtual bool fillBuffer()

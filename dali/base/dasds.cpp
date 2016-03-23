@@ -5236,7 +5236,7 @@ class CStoreHelper : public CInterface, implements IStoreHelper
                 MilliSleep(100);
             }
         }
-        ~CheckDeltaBlock()
+        ~CheckDeltaBlock() noexcept(false)
         {
             if (detachIPIFile)
             {
