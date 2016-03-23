@@ -764,6 +764,7 @@ struct HqlCppOptions
     bool                optimizeSortAllFields;
     bool                optimizeSortAllFieldsStrict;
     bool                alwaysReuseGlobalSpills;
+    bool                forceAllDatasetsParallel;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
