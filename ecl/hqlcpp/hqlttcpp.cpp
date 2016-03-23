@@ -6050,20 +6050,13 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
          {
             StringBuffer criticalName;
             info.storedName->queryValue()->getStringValue(criticalName);
-            unsigned criticalWfid = ++wfidCount;
             Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCritical, queryDirectDependencies(setValue), conts, info.queryCluster());
             setWorkflowCritical(wf, criticalName.str());
 
-            DependenciesUsed dependencies(false);
-            UnsignedArray visited;
-            extractDependentInputs(visited, dependencies, queryDirectDependencies(setValue));
-            gatherDependencies(setValue, dependencies, GatherAll);
-            workflowOut->append(*createWorkflowItem(setValue, wfid, no_critical));
-
-            Owned<IWorkflowItem> wfPersist = addWorkflowToWorkunit(criticalWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), NULL);
+            workflowOut->append(*createWorkflowItem(getValue, wfid, no_none));
+            getValue.setown(createNullExpr(expr->queryType()));
         }
-        else
-        if(info.persistOp == no_persist)
+        else if(info.persistOp == no_persist)
         {
             StringBuffer persistName;
             info.storedName->queryValue()->getStringValue(persistName);

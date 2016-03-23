@@ -9377,6 +9377,10 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     // type specific handling
     IHqlExpression * base = queryNonDelayedBaseAttribute(expr); 
     node_operator op = base->getOperator();
+
+    if (isCritical(failure) && !base->isAction())
+        reportError(ERR_CRITICAL_NON_ACTION, nameattr, "Critical may only be used for actions");
+
     switch(op)
     {
     case no_service:  // service
@@ -9391,7 +9395,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
             activeScope.resetParameters();
         }
         break;
-    
+
     case no_macro:
         if (!activeScope.isParametered)
         {
@@ -11248,6 +11252,19 @@ bool HqlGram::isSaved(IHqlExpression * failure)
         case no_once:
             return true;
         }
+    }
+    return false;
+}
+
+bool HqlGram::isCritical(IHqlExpression * failure)
+{
+    if (!failure) return false;
+    HqlExprArray args;
+    failure->unwindList(args, no_comma);
+    ForEachItemIn(idx, args)
+    {
+        if (args.item(idx).getOperator()==no_critical)
+            return true;
     }
     return false;
 }

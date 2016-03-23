@@ -514,6 +514,7 @@ public:
     bool isDiskFile(IHqlExpression * expr);
     bool isFilteredDiskFile(IHqlExpression * expr);
     bool isSaved(IHqlExpression * failure);
+    bool isCritical(IHqlExpression * failure);
     bool okToAddSideEffects(IHqlExpression * expr);
     void processUpdateAttr(attribute & attr);
     IHqlExpression * createArithmeticOp(node_operator op, attribute &a1, attribute &a2);

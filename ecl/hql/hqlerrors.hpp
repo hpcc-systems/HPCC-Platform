@@ -298,6 +298,7 @@
 #define ERR_EXPECTED_DATASET        2255 /* expected a DATASET(...) */
 #define ERR_INDEX_COMPONENTS        2256 /* Only one arg supplied in record for INDEX */
 #define ERR_NAME_NOT_VALID_ID       2257 /* Parameter to STORED() should be a valid id */
+#define ERR_CRITICAL_NON_ACTION     2258 /* Critical may only be used for actions */
 
 /* dataset parameter */
 #define ERR_DSPARM_MAPDUPLICATE     2260 /* A field is mapped more than once */
