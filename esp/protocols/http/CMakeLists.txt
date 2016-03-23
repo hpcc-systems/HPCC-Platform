@@ -32,6 +32,7 @@ set (    SRCS
          ../../bindings/http/platform/htmlpage.cpp 
          ../../bindings/http/platform/httpbinding.cpp 
          ../../bindings/http/platform/httpprot.cpp 
+         ../../bindings/http/platform/httpsecurecontext.cpp
          ../../bindings/http/platform/httpservice.cpp 
          ../../bindings/http/platform/httptransport.cpp 
          ../../bindings/http/platform/mime.cpp 

@@ -29,6 +29,7 @@
 #include "http/platform/httptransport.ipp"
 #include "sechandler.hpp"
 #include "espprotocol.hpp"
+#include "espsecurecontext.hpp"
 
 class CEspContext : public CInterface, implements IEspContext
 {
@@ -78,10 +79,12 @@ private:
 
     ESPSerializationFormat respSerializationFormat;
 
+    Owned<IEspSecureContext> m_secureContext;
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CEspContext()
+    CEspContext(IEspSecureContext* secureContext)
     : m_servPort(0)
     , m_bindingValue(0)
     , m_serviceValue(0)
@@ -98,6 +101,8 @@ public:
     {
         m_txSummary.setown(new CTxSummary(m_creationTime));
         updateTraceSummaryHeader();
+        m_secureContext.setown(secureContext);
+        m_SecurityHandler.setSecureContext(secureContext);
     }
 
     ~CEspContext()
@@ -454,6 +459,10 @@ public:
     virtual void setResponseFormat(ESPSerializationFormat fmt){respSerializationFormat = fmt;}
 
     void updateTraceSummaryHeader();
+    IEspSecureContext* querySecureContext() override
+    {
+        return m_secureContext.get();
+    }
 };
 
 //---------------------------------------------------------
@@ -546,9 +555,9 @@ void CEspContext::updateTraceSummaryHeader()
     }
 }
 
-IEspContext* createEspContext()
+IEspContext* createEspContext(IEspSecureContext* secureContext)
 {
-    return new CEspContext;
+    return new CEspContext(secureContext);
 }
 
 bool getUrlParams(IProperties *props, StringBuffer& params)

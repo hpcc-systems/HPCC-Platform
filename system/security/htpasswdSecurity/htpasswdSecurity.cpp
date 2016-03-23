@@ -130,7 +130,7 @@ protected:
         return -2;//never expires
     }
 
-    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
+    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
