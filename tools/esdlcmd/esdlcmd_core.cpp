@@ -187,7 +187,7 @@ public:
 
         if(optTargetNamespace.isEmpty())
         {
-            optTargetNamespace.set(ESDLBINDING_URN_BASE);
+            optTargetNamespace.set(DEFAULT_NAMESPACE_BASE);
         }
 
         return true;
@@ -385,10 +385,14 @@ public:
 
     StringBuffer & generateNamespace(StringBuffer &ns)
     {
-       ns.appendf("%s:%s", optTargetNamespace.get(), optService.get());
+        bool urlNamespace = false;
+        if (startsWith(optTargetNamespace.get(), "http://"))
+            urlNamespace = true;
+
+       ns.appendf("%s%c%s", optTargetNamespace.get(), urlNamespace ? '/' : ':', optService.get());
        //only add methodname if single method used.
        if (!optMethod.isEmpty() && !strstr(optMethod.get(), ESDLOPTLIST_DELIMITER))
-           ns.append(':').append(optMethod.get());
+           ns.append(urlNamespace ? '/' : ':').append(optMethod.get());
 
        //todo
        /*

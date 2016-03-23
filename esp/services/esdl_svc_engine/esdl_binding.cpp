@@ -330,6 +330,15 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
         }
         else
             ESPLOG(LogNormal, "ESP Service %s is not attached to any logging manager.", service);
+
+        m_usesURLNameSpace = false;
+        if (srvcfg->hasProp("@namespaceBase"))
+        {
+            m_serviceNameSpaceBase.set(srvcfg->queryProp("@namespaceBase")).trim();
+            m_usesURLNameSpace = startsWith(m_serviceNameSpaceBase.str(), "http://") ? true : false;
+        }
+        else
+            m_serviceNameSpaceBase.set(DEFAULT_ESDLBINDING_URN_BASE);
     }
     else
         throw MakeStringException(-1, "Could not access ESDL service configuration: esp process '%s' service name '%s'", process, service);
@@ -1184,9 +1193,6 @@ void EsdlBindingImpl::initEsdlServiceInfo(IEsdlDefService &srvdef)
             m_defaultSvcVersion.set(verstr);
     }
 
-    StringBuffer urn;
-    urn.appendf("%s:%s", ESDLBINDING_URN_BASE, srvdef.queryName());
-
     //superclass binding sets up wsdladdress
     //setWsdlAddress(bndcfg->queryProp("@wsdlServiceAddress"));
 
@@ -1382,25 +1388,19 @@ static bool getSoapMethodInfo(const char * xmlin,
     return false;
 }
 
-void parseNamespace(const char *ns,
-                    StringBuffer &service,
-                    StringBuffer &method,
-                    StringArray &opts,
-                    StringBuffer &version)
+void parseNamespace(const char *ns, StringBuffer &service, StringBuffer &method, StringArray &opts, StringBuffer &version, const char * namespacebase)
 {
-    //only handling soap requests from hpccsystems:ws ??
-    if (ns && !strnicmp(ns, ESDLBINDING_URN_BASE, 18))
+    if (ns && !strnicmp(ns, namespacebase, strlen(namespacebase)))
     {
-        //const char *str=ns+18;
-        const char *str=ns+strlen(ESDLBINDING_URN_BASE);
-        if (*str==':')
+        const char *str=ns+strlen(namespacebase);
+        if (*str==':' || *str=='/')
             str++;
-        while (*str && !strchr(":(@", *str))
+        while (*str && !strchr(":(@/", *str))
             service.append(*str++);
-        if (*str==':')
+        if (*str==':' || *str=='/')
         {
             str++;
-            while (*str && !strchr(":(@", *str))
+            while (*str && !strchr(":(@/", *str))
                 method.append(*str++);
             while (*str && !strchr("(@", *str))
                 str++;
@@ -1465,7 +1465,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
             StringBuffer nsver;
             StringArray nsopts;
 
-            parseNamespace(ns.str(), nssrv, nsmth, nsopts, nsver);
+            parseNamespace(ns.str(), nssrv, nsmth, nsopts, nsver, m_pESDLService->m_serviceNameSpaceBase.str());
 
             IProperties *qps=ctx->queryRequestParameters();
             if (nsopts.ordinality())
@@ -1590,15 +1590,18 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
     return 0;
 }
 
-StringBuffer &EsdlBindingImpl::generateNamespace(IEspContext &context,
-                                        CHttpRequest* request,
-                                        const char *serv,
-                                        const char *method,
-                                        StringBuffer &ns)
+StringBuffer & EsdlBindingImpl::generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char * method, StringBuffer & ns)
 {
-    ns.appendf("%s:%s", ESDLBINDING_URN_BASE, serv);
-    if (method && strlen(method) > 0)
-        ns.append(':').append(method);
+    if (m_pESDLService->m_serviceNameSpaceBase.length()>0)
+    {
+        ns.appendf("%s%c%s", m_pESDLService->m_serviceNameSpaceBase.str(), m_pESDLService->m_usesURLNameSpace ? '/' : ':', serv);
+
+        if (method && strlen(method) > 0)
+            ns.append(m_pESDLService->m_usesURLNameSpace ? '/': ':').append(method);
+    }
+    else
+        throw MakeStringExceptionDirect(-1, "Could not generate namespace, ensure namespace base is correctly configured.");
+
     StringBuffer ns_optionals;
     IProperties *params = context.queryRequestParameters();
     if (m_esdl)
