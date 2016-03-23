@@ -14,7 +14,18 @@
 #    limitations under the License.
 ################################################################################
 
-add_subdirectory(std)
+set(
+    SRCS
+    Debug.ecl
+    Email.ecl
+    Job.ecl
+    Log.ecl
+    Thorlib.ecl
+    Util.ecl
+    Workunit.ecl
+    )
 
-Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/StyleGuide.html DESTINATION share/ecllibrary COMPONENT Runtime )
-Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/teststd DESTINATION share/ecllibrary COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN ".svn" EXCLUDE )
+foreach(module ${SRCS})
+    SIGN_MODULE(${module})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${module} DESTINATION share/ecllibrary/std/system COMPONENT Runtime)
+endforeach()

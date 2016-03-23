@@ -14,7 +14,21 @@
 #    limitations under the License.
 ################################################################################
 
-add_subdirectory(std)
+add_subdirectory(system)
 
-Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/StyleGuide.html DESTINATION share/ecllibrary COMPONENT Runtime )
-Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/teststd DESTINATION share/ecllibrary COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN ".svn" EXCLUDE )
+set(
+    SRCS
+    Audit.ecl
+    BundleBase.ecl
+    Date.ecl
+    File.ecl
+    Metaphone3.ecl
+    Metaphone.ecl
+    Str.ecl
+    Uni.ecl
+    )
+
+foreach(module ${SRCS})
+    SIGN_MODULE(${module})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${module} DESTINATION share/ecllibrary/std COMPONENT Runtime)
+endforeach()
