@@ -3269,7 +3269,7 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
         if (containsSkip)
         {
             OwnedHqlExpr callback = createUnknown(no_unknown, makeVoidType(), NULL, new InlineDatasetSkipCallback);
-            skipAssociation = ctx.associateExpr(skipActionMarker, callback);
+            skipAssociation = iterctx.associateExpr(skipActionMarker, callback);
         }
 
         Owned<IReferenceSelector> targetRef = buildActiveRow(iterctx, targetRow->querySelector());
@@ -3283,7 +3283,6 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
             break;
         }
 
-        ctx.removeAssociation(skipAssociation);
         target->finishRow(iterctx, targetRow);
     }
 }
