@@ -393,9 +393,7 @@ public:
 
     virtual void stop()
     {
-        //A stop on any unordered branch implies that there is no need to read any more on other threads?
-        //??Is this strictly correct?
-        queue.abort();
+        queue.noteReaderStopped();
         junction.processConsumerStop();
     }
 
@@ -584,18 +582,27 @@ public:
         }
         abortSoon = false;
         finishedWriting = false;
+        finishedReading = false;
     }
 
     bool enqueue(RoxieRowBlock * next)
     {
-        if (abortSoon)
+        if (abortSoon || finishedReading)
             return false;
         space.wait();
-        if (abortSoon)
+        if (abortSoon || finishedReading)
             return false;
         value = next;
         avail.signal();
         return true;
+    }
+
+    void noteReaderStopped()
+    {
+        if (abortSoon)
+            return;
+        finishedReading = true;
+        space.signal();
     }
 
     void noteWriterStopped()
@@ -631,6 +638,7 @@ protected:
     RoxieRowBlock * value = nullptr;
     bool abortSoon = false;
     bool finishedWriting = false;
+    bool finishedReading = false;
     Semaphore space __attribute__((aligned(CACHE_LINE_SIZE)));
     Semaphore avail __attribute__((aligned(CACHE_LINE_SIZE)));
 };
@@ -933,7 +941,7 @@ public:
     virtual void stop()
     {
         //reading no more records => abort the queue and prevent the producer adding any more rows
-        inputQueue.abort();
+        inputQueue.noteReaderStopped();
         splitJunction.processConsumerStop();
     }
 
@@ -1602,8 +1610,7 @@ public:
     }
     virtual void stop()
     {
-        //MORE: What should this do?
-        queue->abort();
+        queue->noteReaderStopped();
     }
     virtual void reset()
     {
