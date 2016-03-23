@@ -117,37 +117,37 @@ protected:
 		return false;
 	}
 
-    const char * getDescription()
+    const char * getDescription() override
     {
         return "HTPASSWD Security Manager";
     }
 
-    bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext)
+    bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext) override
     {
         return IsPasswordValid(user);
     }
 
-    unsigned getPasswordExpirationWarningDays()
+    unsigned getPasswordExpirationWarningDays() override
     {
         return -2;//never expires
     }
 
-    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
+    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    int getAccessFlagsEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename)
+    int getAccessFlagsEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    int authorizeFileScope(ISecUser & user, const char * filescope)
+    int authorizeFileScope(ISecUser & user, const char * filescope) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    int authorizeWorkunitScope(ISecUser & user, const char * filescope)
+    int authorizeWorkunitScope(ISecUser & user, const char * filescope) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
