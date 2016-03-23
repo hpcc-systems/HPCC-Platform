@@ -370,7 +370,7 @@ int main(int argc, const char *argv[])
             {
                 StringBuffer base, wuid, ext;
                 splitFilename(files.item(idx), &base, &base, &wuid, &ext, true);
-                if (streq(ext, "xml"))
+                if (streq(ext, ".xml"))
                 {
                     if (base.length()==0)
                         base.append('.');
