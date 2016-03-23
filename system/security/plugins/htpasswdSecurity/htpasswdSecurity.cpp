@@ -25,7 +25,7 @@
 class CHtpasswdSecurityManager : public CBaseSecurityManager
 {
 public:
-    CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *secMgrCfg, IPropertyTree *authconfig) : CBaseSecurityManager(serviceName, (IPropertyTree *)NULL)
+    CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *secMgrCfg, IPropertyTree *authConfig) : CBaseSecurityManager(serviceName, (IPropertyTree *)NULL)
 	{
         if (secMgrCfg)
             pwFile.set(secMgrCfg->queryProp("@htpasswdFile"));

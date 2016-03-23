@@ -186,9 +186,11 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 Owned<IPropertyTree> secMgrCfg;
                 if(proc_cfg.get() != NULL)
                 {
-                    Owned<IPropertyTree> secMgrs;
-                    VStringBuffer sm("SecurityManagers/SecurityManager[@name='%s']/HtpasswdSecurityManager", m_authmethod.str());
-                    secMgrCfg.setown(proc_cfg->getPropTree(sm.str()));
+                    VStringBuffer sb("SecurityManagers/SecurityManager[@name='%s']", m_authmethod.str());
+                    Owned<IPropertyTree> smTree;
+                    smTree.setown(proc_cfg->getPropTree(sb.str()));
+                    if (smTree && smTree->hasProp("@type"))
+                        secMgrCfg.setown(smTree->getPropTree(smTree->queryProp("@type")));
                 }
 
                 if (secMgrCfg)
