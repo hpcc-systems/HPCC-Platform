@@ -33,29 +33,22 @@ void jlib_decl raiseAssertCore(const char *assertion, const char *file, unsigned
 #undef assert
 #undef assertex
 
-#ifdef _PREFAST_
- #pragma warning (disable : 6244)   // generates too much noise at the moment
- #define assertex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__), __analysis_assume(p))))
- #define assert(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__), __analysis_assume(p))))
-#elif defined(_DEBUG)||defined(_TESTING)
+#if defined(_DEBUG)||defined(_TESTING)
  #define assertex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
- #define assert(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
+ #define verifyex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
 #else
  #define assertex(p)
- #define assert(p)
-#endif
-#if defined(_DEBUG)||defined(_TESTING)
- #define verifyex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
- #define verify(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
-#else
  #define verifyex(p) ((void) (p))
- #define verify(p) ((void) (p))
 #endif
 
 #ifdef _DEBUG
  #define dbgassertex(x) assertex(x)   //Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
+ #define assert(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
+ #define verify(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
 #else
  #define dbgassertex(x)
+ #define assert(p)
+ #define verify(p) ((void) (p))
 #endif
 
 #define DEAD_PSEUDO_COUNT               0x3fffffff
