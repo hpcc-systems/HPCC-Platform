@@ -122,7 +122,7 @@ protected:
         return "HTPASSWD Security Manager";
     }
 
-    bool authorize(ISecUser & user, ISecResourceList * resources)
+    bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext)
     {
         return IsPasswordValid(user);
     }
