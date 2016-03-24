@@ -35,6 +35,14 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="namespaceBase" type="xs:string" use="optional" default="urn:hpccsystems:ws">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <title>ESDL service namespace base</title>
+                        <tooltip>Overrides default urn for this ESDL service</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="LoggingManager" type="loggingmanagerType" use="optional">
                 <xs:annotation>
                     <xs:appinfo>

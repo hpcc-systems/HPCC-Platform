@@ -80,7 +80,6 @@ private:
 #endif
     Owned<IEmbedContext> javaplugin;
 
-
 public:
     StringBuffer                m_espServiceType;
     StringBuffer                m_espServiceName;
@@ -89,6 +88,8 @@ public:
     Owned<IPropertyTree>        m_pServiceMethodTargets;
     Owned<IEsdlTransformer>     m_pEsdlTransformer;
     Owned<IEsdlDefinition>      m_esdl;
+    StringBuffer                m_serviceNameSpaceBase;
+    bool                        m_usesURLNameSpace;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -168,8 +169,7 @@ public:
     void getSoapError(StringBuffer& out,StringBuffer& soapresp,const char *,const char *);
 };
 
-//RODRIGO: BASE URN should be configurable.
-#define ESDLBINDING_URN_BASE "urn:hpccsystems:ws"
+#define DEFAULT_ESDLBINDING_URN_BASE "urn:hpccsystems:ws"
 
 class EsdlBindingImpl : public CHttpSoapBinding
 {
