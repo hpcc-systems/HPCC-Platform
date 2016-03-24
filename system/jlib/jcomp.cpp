@@ -82,10 +82,10 @@ static const char * COMPILE_ONLY[] = { "/c", "-c" };
 
 static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1" };
 static const char * LINK_OPTION_CORE[] = { "/DLL /libpath:." , "" };
-static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC -std=c++11 -O0" };
+static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC  -O0" };
 
 
-static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC -std=c++11 -O0" };
+static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC  -O0" };
 
 static const char * CC_OPTION_PRECOMPILEHEADER[] = { "", " -x c++-header" };
 
@@ -810,6 +810,8 @@ void CppCompiler::setTargetBitLength(unsigned bitlength)
         }
         break;
     case GccCppCompiler:
+#if defined (_ARCH_X86_64_) || defined(_ARCH_X86_)
+        // Note that gcc only seems to support these options on the x86 architecture
         switch (bitlength)
         {
         case 32: option = "-m32"; break;
@@ -817,6 +819,7 @@ void CppCompiler::setTargetBitLength(unsigned bitlength)
         default:
             throwUnexpected();
         }
+#endif
         break;
     }
     if (option)

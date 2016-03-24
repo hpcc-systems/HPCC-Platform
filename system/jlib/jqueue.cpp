@@ -25,7 +25,7 @@ template <typename state_t, unsigned readerBits, unsigned writerBits, unsigned m
 class CRowQueue : implements CInterfaceOf<IRowQueue>
 {
 public:
-    CRowQueue(unsigned _maxItems, unsigned _numProducers) : queue(_numProducers, _maxItems), numProducers(_numProducers)
+    CRowQueue(unsigned _maxItems, unsigned _numProducers, unsigned _numConsumers) : queue(_numProducers, _numConsumers, _maxItems), numConsumers(_numConsumers), numProducers(_numProducers)
     {
     }
 
@@ -47,6 +47,10 @@ public:
         queue.reset();
         //How clean up the queue and ensure the elements are disposed of?
     }
+    virtual void noteReaderStopped()
+    {
+        queue.noteReaderStopped();
+    }
     virtual void noteWriterStopped()
     {
         queue.noteWriterStopped();
@@ -58,6 +62,7 @@ public:
 
 private:
     ReaderWriterQueue<const void *, state_t, readerBits, writerBits, maxSlotBits, slotBits> queue;
+    const unsigned numConsumers;
     const unsigned numProducers;
 };
 
@@ -69,22 +74,22 @@ IRowQueue * createRowQueue(unsigned numReaders, unsigned numWriters, unsigned ma
     assertex(maxSlots == 0 || maxItems < maxSlots);
 
     if ((numReaders == 1) && (numWriters == 1) && (maxItems < 256))
-        return new CRowQueue<unsigned, 1, 1, 8, 8>(maxItems, numWriters);
+        return new CRowQueue<unsigned, 1, 1, 8, 8>(maxItems, numWriters, numReaders);
 
     if ((numReaders == 1) && (numWriters == 1) && (maxItems < 0x4000))
-        return new CRowQueue<unsigned, 1, 1, 14, 0>(maxItems, numWriters);
+        return new CRowQueue<unsigned, 1, 1, 14, 0>(maxItems, numWriters, numReaders);
 
     if ((numReaders == 1) && (numWriters <= 127) && (maxItems < 256))
-        return new CRowQueue<unsigned, 1, 7, 8, 0>(maxItems, numWriters);
+        return new CRowQueue<unsigned, 1, 7, 8, 0>(maxItems, numWriters, numReaders);
 
     if ((numWriters == 1) && (numReaders <= 255) && (maxItems < 2048))
-        return new CRowQueue<unsigned, 8, 1, 11, 0>(maxItems, numWriters);
+        return new CRowQueue<unsigned, 8, 1, 11, 0>(maxItems, numWriters, numReaders);
 
     if ((numReaders <= 31) && (numWriters <= 31) && (maxItems < 128))
-        return new CRowQueue<unsigned, 6, 6, 7, 0>(maxItems, numWriters);
+        return new CRowQueue<unsigned, 6, 6, 7, 0>(maxItems, numWriters, numReaders);
 
     assertex((numReaders < 0x1000) && (numWriters < 0x400));
-    return new CRowQueue<unsigned __int64, 12, 10, 16, 0>(maxItems, numWriters);
+    return new CRowQueue<unsigned __int64, 12, 10, 16, 0>(maxItems, numWriters, numReaders);
 }
 
 //MORE:

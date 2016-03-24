@@ -3117,6 +3117,17 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
     return factory.getLink();
 }
 
+extern WORKUNIT_API IWorkUnitFactory * getDaliWorkUnitFactory()
+{
+    if (!factory)
+    {
+        CriticalBlock b(factoryCrit);
+        if (!factory)   // NOTE - this "double test" paradigm is not guaranteed threadsafe on modern systems/compilers - I think in this instance that is harmless even in the (extremely) unlikely event that it resulted in the setown being called twice.
+            factory.setown(new CDaliWorkUnitFactory());
+    }
+    return factory.getLink();
+}
+
 // A SecureWorkUnitFactory allows the security params to be supplied once to the factory rather than being supplied to each call.
 // They can still be supplied if you want...
 

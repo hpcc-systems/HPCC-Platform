@@ -6909,6 +6909,7 @@ aggregateFlag
     : KEYED             { $$.setExpr(createAttribute(keyedAtom), $1); }
     | prefetchAttribute
     | hintAttribute
+    | orderAttribute
     ;
 
 transfer

@@ -5097,10 +5097,11 @@ void CSplitterInfo::gatherPotentialSplitters(IHqlExpression * expr, IHqlExpressi
     {
     case no_null:
     case no_fail:
+        //Any sources that never generate any rows are always fine as a splitter
         return;
     case no_attr:
     case no_attr_expr:
-        //Any sources that never generate any rows are always fine as a splitter
+        //Anything that doesn't correspond to an activity should do nothing
         return;
     //MORE: A source that generates a single row, and subsequent rows are never read, is always fine.
     //      but if read as a dataset it could deadlock unless there was a 1 row read-ahead.

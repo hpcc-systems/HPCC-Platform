@@ -34,6 +34,7 @@ public:
     virtual bool enqueue(const ELEMENT item) = 0;
     virtual bool dequeue(ELEMENT & result) = 0;
     virtual bool tryDequeue(ELEMENT & result) = 0;
+    virtual void noteReaderStopped() = 0;
     virtual void noteWriterStopped() = 0;
     virtual void abort() = 0;
     virtual void reset() = 0;
@@ -100,7 +101,7 @@ class ReaderWriterQueue
     const static state_t fixedSlotMask = (1U << fixedSlotBits) - 1;
 
 public:
-    ReaderWriterQueue(unsigned _maxWriters, unsigned _maxItems) : maxItems(_maxItems), maxWriters(_maxWriters)
+    ReaderWriterQueue(unsigned _maxWriters, unsigned _maxReaders, unsigned _maxItems) : maxItems(_maxItems), maxReaders(_maxReaders), maxWriters(_maxWriters)
     {
         //printf("element(%u) pad(%u) write(%u), read(%u) slot(%u) count(%u) max(%u)\n", stateBits, padBits, writerBits, readerBits, maxSlotBits, countBits, maxItems);
         //Check all the bits are used, and none of the bits overlap.
@@ -130,6 +131,7 @@ public:
             dynamicSlotMask = fixedSlotMask;
         }
 
+        activeReaders.store(maxReaders, std::memory_order_relaxed);
         activeWriters.store(maxWriters, std::memory_order_relaxed);
         aborted.store(false, std::memory_order_relaxed);
         state.store(0, std::memory_order_relaxed);
@@ -160,6 +162,9 @@ public:
             unsigned curCount = (curState & countMask);
             if (curCount == maxItems)
             {
+                if (allReadersStopped())
+                    return false;
+
                 if (--numSpins != 0) // likely
                 {
                     curState = state.load(std::memory_order_acquire);
@@ -173,6 +178,8 @@ public:
                 if (state.compare_exchange_weak(curState, nextState, std::memory_order_relaxed))
                 {
                     if (aborted.load(std::memory_order_acquire))
+                        return false;
+                    if (allReadersStopped())
                         return false;
                     writers.wait();
                     if (aborted.load(std::memory_order_acquire))
@@ -236,6 +243,8 @@ public:
     {
         if (aborted.load(std::memory_order_relaxed))
             return false;
+
+        dbgassertex(!allReadersStopped());
 
         unsigned numSpins = initialSpinsBeforeWait;
         //Note, compare_exchange_weak updates curState when it fails, so don't read inside the main loop
@@ -341,10 +350,21 @@ public:
 
     virtual void reset()
     {
+        activeReaders.store(maxReaders, std::memory_order_relaxed);
         activeWriters.store(maxWriters, std::memory_order_relaxed);
         aborted.store(false, std::memory_order_relaxed);
         readers.reinit(0);
         writers.reinit(0);
+    }
+    virtual void noteReaderStopped()
+    {
+        //MORE: If this reduces activeProducers to 0 then it may need to wake up any waiting threads.
+        if (--activeReaders <= 0)
+        {
+            state_t curState = state.load(std::memory_order_acquire);
+            unsigned writersWaiting = (unsigned)((curState & writerMask) >> writerShift);
+            writers.signal(writersWaiting);
+        }
     }
     virtual void noteWriterStopped()
     {
@@ -367,12 +387,15 @@ public:
         writers.signal(writersWaiting);
     }
     inline bool allWritersStopped() const { return activeWriters.load(std::memory_order_acquire) <= 0; }
+    inline bool allReadersStopped() const { return activeReaders.load(std::memory_order_acquire) <= 0; }
 
 protected:
     BufferElement * values;
     unsigned dynamicSlotMask;
     unsigned maxItems;
+    unsigned maxReaders;
     unsigned maxWriters;
+    std::atomic<int> activeReaders;
     std::atomic<int> activeWriters;
     std::atomic<bool> aborted;
     Semaphore readers __attribute__((aligned(CACHE_LINE_SIZE)));

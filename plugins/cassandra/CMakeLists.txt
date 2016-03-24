@@ -107,10 +107,18 @@ if(CASSANDRAEMBED)
 
         install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/cassandra\")")
 
+        # Note we install to both plugins dir and libs dir - the latter is to make life easier when using it as a dali workunit plugin.
+
         install(
             TARGETS cassandraembed
             DESTINATION plugins
             COMPONENT Runtime )
+
+        install(
+            TARGETS cassandraembed
+            DESTINATION ${LIB_DIR}
+            COMPONENT Runtime )
+
         # until such time as the cassandra cpp driver and libuv are available as standard in all distros we want to support,
         # include them in our rpm
         # Note that the cassandra driver CMake file already includes the relevant install commands
