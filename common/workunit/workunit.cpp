@@ -1424,6 +1424,10 @@ public:
             { return c->updateStats(graphName, creatorType, creator, subgraph); }
     virtual void clearGraphProgress() const
             { c->clearGraphProgress(); }
+    virtual IStringVal & getAbortBy(IStringVal & str) const
+            { return c->getAbortBy(str); }
+    virtual unsigned __int64 getAbortTimeStamp() const
+            { return c->getAbortTimeStamp(); }
 
 
     virtual void clearExceptions()
@@ -1482,6 +1486,8 @@ public:
             { c->setTracingValue(propname, value); }
     virtual void setTracingValueInt(const char * propname, int value)
             { c->setTracingValueInt(propname, value); }
+    virtual void setTracingValueInt64(const char * propname, __int64 value)
+            { c->setTracingValueInt64(propname, value); }
     virtual void setUser(const char * value)
             { c->setUser(value); }
     virtual void setWuScope(const char * value)
@@ -5393,6 +5399,13 @@ void CLocalWorkUnit::setTracingValueInt(const char *propname, int value)
     p->setPropInt(prop.append(propname).str(), value); 
 }
 
+void CLocalWorkUnit::setTracingValueInt64(const char *propname, __int64 value)
+{
+    CriticalBlock block(crit);
+    VStringBuffer prop("Tracing/%s", propname);
+    p->setPropInt64(prop.str(), value);
+}
+
 IConstWUQuery* CLocalWorkUnit::getQuery() const
 {
     // For this to be legally called, we must have the read-able interface. So we are already locked for (at least) read.
@@ -8793,8 +8806,22 @@ extern WORKUNIT_API void secSubmitWorkUnit(const char *wuid, ISecManager &secmgr
 
 extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser)
 {
-    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Write, "Submit", true, true))
-        abortWorkUnit(wuid);
+    if (!checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Write, "Submit", true, true))
+        return;
+
+    abortWorkUnit(wuid);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+    if(!cw)
+        return;
+
+    WorkunitUpdate wu(&cw->lock());
+    if (&secuser)
+    {
+        const char *abortBy = secuser.getName();
+        if (abortBy && *abortBy)
+            wu->setTracingValue("AbortBy", abortBy);
+    }
+    wu->setTracingValueInt64("AbortTimeStamp", getTimeStampNowValue());
 }
 
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
@@ -9082,6 +9109,19 @@ unsigned CLocalWorkUnit::addLocalFileUpload(LocalFileUploadType type, char const
     Owned<CLocalFileUpload> upload = new CLocalFileUpload(id, type, source, destination, eventTag);
     s->addPropTree("LocalFileUpload", upload->getTree());
     return id;
+}
+
+IStringVal & CLocalWorkUnit::getAbortBy(IStringVal & str) const
+{
+    CriticalBlock block(crit);
+    str.set(p->queryProp("Tracing/AbortBy"));
+    return str;
+}
+
+unsigned __int64 CLocalWorkUnit::getAbortTimeStamp() const
+{
+    CriticalBlock block(crit);
+    return p->getPropInt64("Tracing/AbortTimeStamp", 0);
 }
 
 #if 0
