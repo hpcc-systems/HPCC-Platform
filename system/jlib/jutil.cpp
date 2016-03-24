@@ -2544,7 +2544,7 @@ const char * queryCurrentProcessPath()
                 char * biggerPath = new char[size]; 
                 if (_NSGetExecutablePath(biggerPath, &size) == 0)
                     processPath.set(biggerPath);
-                delete biggerPath;
+                delete [] biggerPath;
             }
             break;
         case 0:
