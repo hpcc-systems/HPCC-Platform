@@ -1258,7 +1258,7 @@ interface IWorkUnitFactory : extends IPluggableFactory
     virtual IConstWorkUnit * openWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
-    virtual bool restoreWorkUnit(const char *base, const char *wuid) = 0;
+    virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociatedFiles) = 0;
     virtual int setTracingLevel(int newlevel) = 0;
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
@@ -1300,7 +1300,7 @@ interface IExtendedWUInterface
 {
     virtual unsigned calculateHash(unsigned prevHash) = 0;
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all) = 0;
-    virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned) = 0;
+    virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned,bool exportAssociatedFiles) = 0;
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const = 0;
     virtual IPropertyTree *queryPTree() const = 0;
     

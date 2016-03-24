@@ -49,8 +49,8 @@ void usage()
            "   delete <workunits>  - Delete workunits\n"
            "   results <workunits> - Dump results from specified workunits\n"
            "\n"
-           "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [KEEPFILERESULTS=1]\n"
-           "   restore <filenames> - Restore from xml files\n"
+           "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [KEEPFILERESULTS=1] [INCLUDEFILES=1]\n"
+           "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
             "\n"
            "   orphans             - Delete orphaned information from store\n"
            "   cleanup [days=NN]   - Delete workunits older than NN days\n"
@@ -107,7 +107,7 @@ void process(IConstWorkUnit &w, IProperties *globals)
         if (to.length()==0)
             to.append('.');
         StringAttr wuid(w.queryWuid());
-        if (QUERYINTERFACE(&w, IExtendedWUInterface)->archiveWorkUnit(to.str(), globals->getPropBool("DEL", false), true, !globals->getPropBool("KEEPFILERESULTS", false)))
+        if (QUERYINTERFACE(&w, IExtendedWUInterface)->archiveWorkUnit(to.str(), globals->getPropBool("DEL", false), true, !globals->getPropBool("KEEPFILERESULTS", true), globals->getPropBool("INCLUDEFILES", false)))
             printf("archived %s\n", wuid.str());
         else
             printf("archive of %s failed\n", wuid.str());
@@ -374,7 +374,7 @@ int main(int argc, const char *argv[])
                 {
                     if (base.length()==0)
                         base.append('.');
-                    if (factory->restoreWorkUnit(base.str(), wuid))
+                    if (factory->restoreWorkUnit(base.str(), wuid, globals->getPropBool("INCLUDEFILES", false)))
                         printf("restored %s\n", wuid.str());
                     else
                         printf("failed to restore %s\n", wuid.str());
