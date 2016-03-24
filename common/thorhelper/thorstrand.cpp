@@ -29,6 +29,55 @@ const void * queryEndOfSectionMarker() { return &endOfSectionMarker; }
 
 //---------------------------------------------------------------------------------------------------------------------
 
+class CStrandBarrier : public CInterfaceOf<IStrandBarrier>
+{
+public:
+    virtual void reset()
+    {
+        producerStopSem.reinit(0);
+    }
+
+    virtual void startStrand(IStrandThreaded & strand)
+    {
+        CThreaded * thread = new CThreaded("Strand", &strand);
+        threads.append(*thread);
+        thread->start();
+    }
+
+    virtual void waitForStrands()
+    {
+        producerStopSem.signal(threads.ordinality());
+        ForEachItemIn(i, threads)
+            threads.item(i).join();
+        threads.kill();
+    }
+
+    virtual void noteStrandFinished(IRowStream * stream)
+    {
+        waitForStop();
+        if (stream)
+            stream->stop();
+    }
+
+protected:
+    void waitForStop()
+    {
+        producerStopSem.wait();
+    }
+
+protected:
+    Semaphore producerStopSem;
+    CIArrayOf<CThreaded> threads;
+};
+
+
+IStrandBarrier * createStrandBarrier()
+{
+    return new CStrandBarrier;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class CStrandJunction : public CInterfaceOf<IStrandJunction>
 {
 public:
@@ -79,6 +128,17 @@ public:
             stopInactiveProducers();
     }
 
+    void noteProducerFinished(IRowStream * stream)
+    {
+        waitForStop();
+        if (stream)
+            stream->stop();
+        notifyStopped();
+    }
+
+    inline unsigned getNumProducers() const { return numProducers; }
+
+protected:
     void waitForStop()
     {
         producerStopSem.wait();
@@ -89,16 +149,19 @@ public:
         producerStoppedSem.signal();
     }
 
-    inline unsigned getNumProducers() const { return numProducers; }
-
-protected:
-    //Stop producers that have already been started()
-    virtual void stopActiveProducers()
+    //Wait for all active producers to complete - including calling stop on their inputs
+    void waitForProducers()
     {
         producerStopSem.signal(numProducers);
         ForEachItemIn(i, threads)
             threads.item(i).join();
         threads.kill();
+    }
+
+    //Stop producers that have already been started()
+    virtual void stopActiveProducers()
+    {
+        waitForProducers();
     }
 
     //Stop producers that have never been started()
@@ -265,9 +328,7 @@ public:
             }
         }
         queue->noteWriterStopped();
-        junction.waitForStop();
-        stream->stop();
-        junction.notifyStopped();
+        junction.noteProducerFinished(stream);
     }
 
     void setInput(IEngineRowStream * _input)
@@ -332,6 +393,7 @@ public:
 
     virtual void stop()
     {
+        queue.noteReaderStopped();
         junction.processConsumerStop();
     }
 
@@ -408,11 +470,6 @@ public:
     }
 
 protected:
-    virtual void stopActiveProducers()
-    {
-        queue->abort();
-        CStrandJunction::stopActiveProducers();
-    }
     virtual void stopInactiveProducers()
     {
         for (unsigned i=0; i < numStrands; i++)
@@ -478,12 +535,6 @@ public:
     }
 
 protected:
-    virtual void stopActiveProducers()
-    {
-        queue->abort();
-        CStrandJunction::stopActiveProducers();
-    }
-
     virtual void stopInactiveProducers()
     {
         for (unsigned i=0; i < numStrands; i++)
@@ -531,18 +582,27 @@ public:
         }
         abortSoon = false;
         finishedWriting = false;
+        finishedReading = false;
     }
 
     bool enqueue(RoxieRowBlock * next)
     {
-        if (abortSoon)
+        if (abortSoon || finishedReading)
             return false;
         space.wait();
-        if (abortSoon)
+        if (abortSoon || finishedReading)
             return false;
         value = next;
         avail.signal();
         return true;
+    }
+
+    void noteReaderStopped()
+    {
+        if (abortSoon)
+            return;
+        finishedReading = true;
+        space.signal();
     }
 
     void noteWriterStopped()
@@ -578,6 +638,7 @@ protected:
     RoxieRowBlock * value = nullptr;
     bool abortSoon = false;
     bool finishedWriting = false;
+    bool finishedReading = false;
     Semaphore space __attribute__((aligned(CACHE_LINE_SIZE)));
     Semaphore avail __attribute__((aligned(CACHE_LINE_SIZE)));
 };
@@ -609,9 +670,7 @@ public:
             }
         }
         noteWriterStopped();
-        junction.waitForStop();
-        stream->stop();
-        junction.notifyStopped();
+        junction.noteProducerFinished(stream);
     }
 
     void abort()
@@ -697,8 +756,7 @@ public:
     }
     virtual void abort()
     {
-        for (unsigned i=0; i < numStrands; i++)
-            producers[i]->abort();
+        abortProducers();
     }
     virtual void reset()
     {
@@ -764,6 +822,8 @@ public:
 
     virtual void stop()
     {
+        //reading no more records => abort the queue and prevent the producers adding any more rows
+        abortProducers();
         processConsumerStop();
     }
 
@@ -783,17 +843,16 @@ protected:
         } while (!producers[curStrand]->isAlive());
     }
 
-    virtual void stopActiveProducers()
-    {
-        for (unsigned i=0; i < numStrands; i++)
-            producers[i]->abort();
-        CStrandJunction::stopActiveProducers();
-    }
-
     virtual void stopInactiveProducers()
     {
         for (unsigned i=0; i < numStrands; i++)
             producers[i]->stopInput();
+    }
+
+    void abortProducers()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            producers[i]->abort();
     }
 
 
@@ -881,6 +940,8 @@ public:
 
     virtual void stop()
     {
+        //reading no more records => abort the queue and prevent the producer adding any more rows
+        inputQueue.noteReaderStopped();
         splitJunction.processConsumerStop();
     }
 
@@ -920,12 +981,12 @@ protected:
 class OrderedInputJunction : public CStrandJunction, implements IThreaded
 {
 public:
-    OrderedInputJunction(roxiemem::IRowManager & _rowManager, unsigned _numStrands, unsigned _blockSize, bool _isGrouped, const OrderedCallbackArray & callbacks)
+    OrderedInputJunction(roxiemem::IRowManager & _rowManager, unsigned _numStrands, unsigned _blockSize, bool _isGrouped, IOrderedCallbackCollection * callbacks)
     : CStrandJunction(1, _numStrands), inputBlockAllocator(_rowManager, _blockSize), isGrouped(_isGrouped)
     {
         strands = new OrderedStrandRowBlockInput * [numStrands];
         for (unsigned i=0; i < numStrands; i++)
-            strands[i] = new OrderedStrandRowBlockInput(*this, *callbacks.item(i));
+            strands[i] = new OrderedStrandRowBlockInput(*this, *callbacks->queryCallback(i));
 
         blockSize = inputBlockAllocator.maxRowsPerBlock();
         minGroupBlockSize = (blockSize * 7 + 4) / 8;  // Fill with groups until at least 7/8 filled.
@@ -958,11 +1019,6 @@ public:
         for (unsigned i=0; i < numStrands; i++)
             strands[i]->reset();
         CStrandJunction::reset();
-    }
-    virtual void stopActiveProducers()
-    {
-        abort();
-        CStrandJunction::stopActiveProducers();
     }
     virtual void stopInactiveProducers()
     {
@@ -1048,9 +1104,12 @@ public:
                 break;
             }
 
-            curStrand = curStrand+1;
-            if (curStrand == numStrands)
-                curStrand = 0;
+            if (isEndOfChunk)
+            {
+                curStrand = curStrand+1;
+                if (curStrand == numStrands)
+                    curStrand = 0;
+            }
         }
 
         for (unsigned i=0; i < numStrands; i++)
@@ -1061,9 +1120,7 @@ public:
                 curStrand = 0;
         }
 
-        waitForStop();
-        input->stop();
-        notifyStopped();
+        noteProducerFinished(input);
     }
 
 protected:
@@ -1142,12 +1199,12 @@ protected:
 class OrderedSourceJunction : public CStrandJunction
 {
 public:
-    OrderedSourceJunction(unsigned _numStrands, const OrderedCallbackArray & callbacks)
+    OrderedSourceJunction(unsigned _numStrands, IOrderedCallbackCollection * callbacks)
     : CStrandJunction(_numStrands, _numStrands)
     {
         strands = new OrderedStrandStreamInput * [numStrands];
         for (unsigned i=0; i < numStrands; i++)
-            strands[i] = new OrderedStrandStreamInput(*this, *callbacks.item(i));
+            strands[i] = new OrderedStrandStreamInput(*this, *callbacks->queryCallback(i));
     }
     ~OrderedSourceJunction()
     {
@@ -1253,9 +1310,7 @@ public:
         }
         finished = true;
         outputQueue.noteWriterStopped();
-        joinJunction.waitForStop();
-        strand->stop();
-        joinJunction.notifyStopped();
+        joinJunction.noteProducerFinished(strand);
     }
 
     virtual bool noteEndOfInputChunk()
@@ -1317,7 +1372,7 @@ protected:
     bool eoi = false;
 };
 
-class OrderedOutputJunction : public CStrandJunction, implements IEngineRowStream
+class OrderedOutputJunction : public CStrandJunction, implements IEngineRowStream, implements IOrderedCallbackCollection
 {
 public:
     OrderedOutputJunction(roxiemem::IRowManager & _rowManager, unsigned _numStrands, unsigned _blockSize)
@@ -1348,12 +1403,6 @@ public:
         for (unsigned i=0; i < numStrands; i++)
             strands[i]->abort();
     }
-    virtual void stopActiveProducers()
-    {
-        for (unsigned i=0; i < numStrands; i++)
-            strands[i]->abort();
-        CStrandJunction::stopActiveProducers();
-    }
     virtual void reset()
     {
         curOutputStrand = 0;
@@ -1369,12 +1418,11 @@ public:
         for (unsigned i=0; i < numStrands; i++)
             strands[i]->stopStrand();
     }
-    void gatherCallbacks(OrderedCallbackArray & callbacks)
+    virtual IOrderedOutputCallback * queryCallback(unsigned i)
     {
-        for (unsigned i=0; i < numStrands; i++)
-            callbacks.append(strands[i]);
+        assertex(i < numStrands);
+        return strands[i];
     }
-
 //implementation of IEngineRowStream
      virtual const void *nextRow()
      {
@@ -1406,6 +1454,9 @@ public:
 
      virtual void stop()
      {
+         //reading no more records => abort all strand queues and prevent the producers adding any more rows
+         for (unsigned i=0; i < numStrands; i++)
+             strands[i]->abort();
          processConsumerStop();
      }
 
@@ -1447,7 +1498,7 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-extern THORHELPER_API IStrandBranch * createStrandBranch(roxiemem::IRowManager & rowManager, unsigned numStrands, unsigned blockSize, bool isOrdered, bool isGrouped, bool inputIsStreamed)
+extern THORHELPER_API IStrandBranch * createStrandBranch(roxiemem::IRowManager & rowManager, unsigned numStrands, unsigned blockSize, bool isOrdered, bool isGrouped, bool inputIsStreamed, IOrderedCallbackCollection * orderedCallbacks)
 {
     Linked<IStrandJunction> input;
     Linked<IStrandJunction> output;
@@ -1463,16 +1514,12 @@ extern THORHELPER_API IStrandBranch * createStrandBranch(roxiemem::IRowManager &
     {
         //MORE To allow parallel sinks allow callbacks to be provided and have a dummy output junction or none
         //But the number will not be known until the branch is created, so the callback will need to create them
-        OrderedCallbackArray callbacks;
-        if (true)
+        IOrderedCallbackCollection * callbacks = orderedCallbacks;
+        if (!callbacks)
         {
             Owned<OrderedOutputJunction> outputJunction = new OrderedOutputJunction(rowManager, numStrands, blockSize);
-            outputJunction->gatherCallbacks(callbacks);
+            callbacks = outputJunction;
             output.setown(outputJunction.getClear());
-        }
-        else
-        {
-            //Create and gather the appropriate number of callbacks from the sink.
         }
 
         if (inputIsStreamed)
@@ -1563,8 +1610,7 @@ public:
     }
     virtual void stop()
     {
-        //MORE: What should this do?
-        queue->abort();
+        queue->noteReaderStopped();
     }
     virtual void reset()
     {

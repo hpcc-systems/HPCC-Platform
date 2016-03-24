@@ -869,25 +869,30 @@ private:
     IRoxieServerActivityCopyArray & activities;
 };
 
+extern IEngineRowStream * ensureSingleStream(IRoxieSlaveContext *ctx, PointerArrayOf<IEngineRowStream> & instreams, Owned<IStrandJunction> &junction)
+{
+    if (instreams.length() != 1)
+    {
+        assertex(instreams.length());
+        if (!junction)
+            junction.setown(createStrandJunction(ctx->queryRowManager(), instreams.length(), 1, ctx->queryOptions().strandBlockSize, false));
+        ForEachItemIn(stream, instreams)
+        {
+            junction->setInput(stream, instreams.item(stream));
+        }
+        return junction->queryOutput(0);
+    }
+    else
+        return instreams.item(0);
+}
+
 extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, bool consumerOrdered)
 {
     if (input)
     {
         PointerArrayOf<IEngineRowStream> instreams;
-        junction.setown(input->getOutputStreams(ctx, idx, instreams, NULL, consumerOrdered));
-        if (instreams.length() != 1)
-        {
-            assertex(instreams.length());
-            if (!junction)
-                junction.setown(createStrandJunction(ctx->queryRowManager(), instreams.length(), 1, ctx->queryOptions().strandBlockSize, false));
-            ForEachItemIn(stream, instreams)
-            {
-                junction->setInput(stream, instreams.item(stream));
-            }
-            return junction->queryOutput(0);
-        }
-        else
-            return instreams.item(0);
+        junction.setown(input->getOutputStreams(ctx, idx, instreams, NULL, consumerOrdered, nullptr));
+        return ensureSingleStream(ctx, instreams, junction);
     }
     else
         return NULL;
@@ -1409,11 +1414,15 @@ public:
     {
         if (!factory)
             return true;
+        //Grouping implies the stream processing must be ordered - I think this always applies
+        IFinalRoxieInput * curInput = queryInput(idx);
+        if (curInput && curInput->queryOutputMeta()->isGrouped())
+            return true;
         return factory->isInputOrdered(consumerOrdered, idx);
     }
 
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         assertex(!idx);
         // By default, activities are assumed NOT to support streams
@@ -1602,10 +1611,11 @@ protected:
     unsigned numProcessedLastGroup = 0;
     const bool timeActivities;
     bool stopped = false;
+    std::atomic<bool> abortRequested;
 
 public:
     explicit StrandProcessor(CRoxieServerActivity &_parent, IEngineRowStream *_inputStream, bool needsAllocator)
-      : parent(_parent), inputStream(_inputStream), stats(parent.queryStatsMapping()), timeActivities(_parent.timeActivities)
+      : parent(_parent), inputStream(_inputStream), stats(parent.queryStatsMapping()), timeActivities(_parent.timeActivities), abortRequested(false)
     {
         if (needsAllocator)
             rowAllocator = parent.queryContext()->getRowAllocatorEx(parent.queryOutputMeta(), parent.queryId(), roxiemem::RHFunique);
@@ -1637,11 +1647,14 @@ public:
     virtual void reset()
     {
         stopped = false;
+        abortRequested.store(false, std::memory_order_relaxed);
     }
     virtual void resetEOF()
     {
         inputStream->resetEOF();
     }
+    inline void requestAbort() { abortRequested.store(true, std::memory_order_relaxed); }
+    inline bool isAborting() { return abortRequested.load(std::memory_order_relaxed); }
 };
 
 class CRoxieServerStrandedActivity : public CRoxieServerActivity
@@ -1691,7 +1704,13 @@ public:
             CRoxieServerActivity::stop();
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    void requestAbort()
+    {
+        ForEachItemIn(idx, strands)
+            strands.item(idx).requestAbort();
+    }
+
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
         assertex(idx == 0);
         assertex(strands.empty());
@@ -1725,14 +1744,14 @@ public:
             else
             {
                 PointerArrayOf<IEngineRowStream> instreams;
-                recombiner.setown(input->getOutputStreams(ctx, sourceIdx, instreams, &strandOptions, inputOrdered));
+                recombiner.setown(input->getOutputStreams(ctx, sourceIdx, instreams, &strandOptions, inputOrdered, orderedCallbacks));
                 if ((instreams.length() == 1) && (strandOptions.numStrands != 0))  // 0 means did not specify - we should use the strands that our upstream provides
                 {
                     assertex(recombiner == NULL);
                     // Create a splitter to split the input into n... and a recombiner if need to preserve sorting
                     if (inputOrdered)
                     {
-                        branch.setown(createStrandBranch(ctx->queryRowManager(), strandOptions.numStrands, strandOptions.blockSize, true, input->queryOutputMeta()->isGrouped(), false));
+                        branch.setown(createStrandBranch(ctx->queryRowManager(), strandOptions.numStrands, strandOptions.blockSize, true, input->queryOutputMeta()->isGrouped(), false, orderedCallbacks));
                         splitter.set(branch->queryInputJunction());
                         recombiner.set(branch->queryOutputJunction());
                     }
@@ -1764,9 +1783,10 @@ public:
                 {
                     //If the output activities are also stranded then need to create a version of the branch
                     bool isGrouped = queryOutputMeta()->isGrouped();
-                    branch.setown(createStrandBranch(ctx->queryRowManager(), strandOptions.numStrands, strandOptions.blockSize, true, isGrouped, true));
+                    branch.setown(createStrandBranch(ctx->queryRowManager(), strandOptions.numStrands, strandOptions.blockSize, true, isGrouped, true, orderedCallbacks));
                     sourceJunction.set(branch->queryInputJunction());
                     recombiner.set(branch->queryOutputJunction());
+                    assertex((orderedCallbacks && !recombiner) || (!orderedCallbacks && recombiner));
 
                     //This is different from the branch above.  The first "junction" has the source activity as the input, and the outputs as the result of the activity
                     for (unsigned strandNo = 0; strandNo < strandOptions.numStrands; strandNo++)
@@ -1781,7 +1801,10 @@ public:
                     return recombiner.getClear();
                 }
                 else
+                {
+                    //Feeding into a non threaded activity, so create a M:1 junction to combine the source strands
                     recombiner.setown(createStrandJunction(ctx->queryRowManager(), numStrands, 1, strandOptions.blockSize, inputOrdered));
+                }
             }
         }
         ForEachItemIn(i, strands)
@@ -2173,7 +2196,7 @@ public:
         return puller.queryInput()->queryActivity();
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
         assertex(!idx);
         puller.connectInputStreams(ctx, consumerOrdered);
@@ -2416,10 +2439,11 @@ public:
         }   
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
         inputStream1 = connectSingleStream(ctx, input1, sourceIdx1, junction1, isInputOrdered(consumerOrdered, 1));
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered);
+        //Assumes input1 will be stranded if any.
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 };
 
@@ -2497,11 +2521,12 @@ public:
         sourceIdxArray[idx] = _sourceIdx;
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
+        //There could be situations (e.g., NONEMPTY), where you might want to strand the activity.
         for (unsigned i = 0; i < numInputs; i++)
             streamArray[i] = connectSingleStream(ctx, inputArray[i], sourceIdxArray[i], junctionArray[i], consumerOrdered);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered);//MORE?
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, NULL, consumerOrdered, nullptr); // The input basesclass does not have an input
     }
 
 };
@@ -4248,11 +4273,11 @@ public:
         onReset();
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         // Make sure parent activity calls up the tree
         PointerArrayOf<IEngineRowStream> instreams;
-        IStrandJunction *junction = activity.getOutputStreams(ctx, idx, instreams, consumerOptions, consumerOrdered);
+        IStrandJunction *junction = activity.getOutputStreams(ctx, idx, instreams, consumerOptions, consumerOrdered, orderedCallbacks);
         assertex (junction == NULL);
         // I return a single strand (we could change that sometime I guess...)
         streams.append(this);
@@ -5989,7 +6014,7 @@ public:
     CSafeRoxieInput(unsigned _sourceIdx, IFinalRoxieInput * _input) : input(_input), inputStream(NULL), sourceIdx(_sourceIdx) {}
     IMPLEMENT_IINTERFACE
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
         connectInputStreams(ctx, consumerOrdered);
         streams.append(this);
@@ -6082,7 +6107,7 @@ public:
         throwUnexpected();
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
         assertex(!idx);
         streams.append(this);
@@ -6175,7 +6200,7 @@ public:
     {
         stream = connectSingleStream(ctx, input, sourceIdx, junction, consumerOrdered);
     }
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
         assertex(idx == 0);
         connectInputStreams(ctx, consumerOrdered);
@@ -8597,7 +8622,7 @@ public:
             parent->start(oid, parentExtractSize, parentExtract, paused);
         }
 
-        virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+        virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
         {
             parent->connectInputStreams(consumerOrdered);
             streams.append(this);
@@ -9183,10 +9208,10 @@ public:
         inputMeta.set(_in->queryOutputMeta());
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         puller.connectInputStreams(ctx, consumerOrdered);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -10576,17 +10601,278 @@ public:
     }
 };
 
+class CRoxieServerStrandedAggregateActivity : public CRoxieServerStrandedActivity, implements IOrderedCallbackCollection
+{
+    class AggregateProcessor : public StrandProcessor, implements IStrandThreaded, implements IOrderedOutputCallback
+    {
+    protected:
+        IHThorAggregateArg &helper;
+        OwnedConstRoxieRow result;
+        bool eof = false;
+        bool isInputGrouped = false;
+        bool abortEarly = false;
+
+    public:
+        AggregateProcessor(CRoxieServerActivity &_parent, IEngineRowStream *_inputStream, IHThorAggregateArg &_helper, bool _isInputGrouped, bool _abortEarly)
+        : StrandProcessor(_parent, _inputStream, true), helper(_helper), isInputGrouped(_isInputGrouped), abortEarly(_abortEarly)
+        {
+        }
+        virtual const void * nextRow() override
+        {
+            ActivityTimer t(totalCycles, timeActivities);
+            if (eof || isAborting())
+                return NULL;
+
+            const void * next = inputStream->nextRow();
+            if (!next && isInputGrouped)
+            {
+                eof = true;
+                return NULL;
+            }
+
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            size32_t finalSize = helper.clearAggregate(rowBuilder);
+
+            if (next)
+            {
+                finalSize = helper.processFirst(rowBuilder, next);
+                ReleaseRoxieRow(next);
+
+                if (!abortEarly)
+                {
+                    loop
+                    {
+                        next = inputStream->nextRow();
+                        if (!next)
+                            break;
+
+                        finalSize = helper.processNext(rowBuilder, next);
+                        ReleaseRoxieRow(next);
+                        if (isAborting())
+                            break;
+                    }
+                }
+            }
+
+            if (!isInputGrouped)        // either read all, or aborted early
+                eof = true;
+
+            processed++;
+            return rowBuilder.finalizeRowClear(finalSize);
+        }
+        virtual void main() override
+        {
+            isInputGrouped = true; // gather no row if there are no input rows.
+            result.setown(nextRow());
+            queryActivity().noteStrandFinished(inputStream);
+        }
+        virtual void reset() override
+        {
+            StrandProcessor::reset();
+            result.clear();
+            eof = false;
+        }
+ //interface IOutputOutputCallback
+        virtual bool noteEndOfInputChunk() { return true; }
+        virtual void noteEndOfInput() {}
+
+        virtual void stopStream()
+        {
+            inputStream->stop();
+        }
+        const void * queryResult() const { return result; }
+        CRoxieServerStrandedAggregateActivity & queryActivity() { return static_cast<CRoxieServerStrandedAggregateActivity &>(parent); }
+    };
+
+    //This class is only used when a single aggregate is being calculated.
+    class AggregateCombiner : public CInterfaceOf<IEngineRowStream>
+    {
+    public:
+        explicit AggregateCombiner(CRoxieServerStrandedAggregateActivity & _parent) : parent(_parent)
+        {
+        }
+        virtual const void *nextRow()
+        {
+            return parent.getCombinedAggregate();
+        }
+        virtual void stop()
+        {
+            parent.outputStopped();
+        }
+        virtual void resetEOF()
+        {
+            throwUnexpected();
+        }
+    protected:
+        CRoxieServerStrandedAggregateActivity & parent;
+    } combiner;
+
+    class NullCallback : implements IOrderedOutputCallback
+    {
+    public:
+        virtual bool noteEndOfInputChunk() { return true; }
+        virtual void noteEndOfInput() {}
+    } nullCallback;
+
+public:
+    CRoxieServerStrandedAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const StrandOptions &_strandOptions)
+        : CRoxieServerStrandedActivity(_ctx, _factory, _probeManager, _strandOptions), helper((IHThorAggregateArg &)basehelper), combiner(*this)
+    {
+        isInputGrouped = false;
+        abortEarly = false;
+    }
+
+    virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
+    {
+        CRoxieServerStrandedActivity::setInput(idx, _sourceIdx, _in);
+        isInputGrouped = input->queryOutputMeta()->isGrouped();     // could be done earlier, in setInput?
+        abortEarly = !isInputGrouped && (factory->getKind() == TAKexistsaggregate); // ditto
+
+        //For EXISTS(), and aggregates that rely on the input order, force to execute single threaded
+        //MORE: Ordered should be able to process a block at a time and then merge them, similar to disk write processing.
+        if (abortEarly || (!isInputGrouped && queryFactory()->isInputOrdered(false, 0)))
+            strandOptions.numStrands = 1;
+        else if (!isInputGrouped)
+            combineStreams = true;
+    }
+
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
+    {
+        PointerArrayOf<IEngineRowStream> localStreams;
+        //If streams are being combined, this class should be notified of end of sections, otherwise grouped aggregates can inform a downstream activity.
+        IOrderedCallbackCollection * callbacks = combineStreams ? static_cast<IOrderedCallbackCollection *>(this) : orderedCallbacks;
+        Owned<IStrandJunction> outJunction = CRoxieServerStrandedActivity::getOutputStreams(ctx, idx, localStreams, consumerOptions, consumerOrdered, callbacks);
+        if (localStreams.ordinality() == 1)
+            combineStreams = false;  // Select a more efficient/simpler code path
+        if (combineStreams)
+        {
+            assertex(!outJunction); // this needs more thought!
+            streams.append(&combiner);
+        }
+        else
+        {
+            streams.swapWith(localStreams);
+        }
+        return outJunction.getClear();
+    }
+    virtual StrandProcessor *createStrandProcessor(IEngineRowStream *instream)
+    {
+        DBGLOG("Create aggregate strand processor %u", strandOptions.numStrands);
+        return new AggregateProcessor(*this, instream, (IHThorAggregateArg &) basehelper, isInputGrouped && !combineStreams, abortEarly);
+    }
+    virtual StrandProcessor *createStrandSourceProcessor(bool inputOrdered) { throwUnexpected(); }
+    virtual bool needsAllocator() const { return true; }
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
+    {
+        CRoxieServerStrandedActivity::start(parentExtractSize, parentExtract, paused);
+        if (combineStreams)
+        {
+            barrier.setown(createStrandBarrier());
+            ForEachItemIn(i, strands)
+                barrier->startStrand(queryAggregate(i));
+            active.store(1);
+        }
+        else
+            active.store(0);
+    }
+    virtual void reset() override
+    {
+        CRoxieServerStrandedActivity::reset();
+        barrier.clear();
+        calculated = false;
+    }
+
+    //Helper functions for the single aggregate case
+    const void * getCombinedAggregate()
+    {
+        if (calculated)
+            return NULL;
+        calculated= true;
+
+        barrier->waitForStrands();
+
+        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        size32_t finalSize = helper.clearAggregate(rowBuilder);
+
+        bool isFirst = true;
+        for (unsigned i=0; i < numStrands(); i++)
+        {
+            const void * next = queryAggregate(i).queryResult();
+            if (next)
+            {
+                if (isFirst)
+                {
+                    finalSize = cloneRow(rowBuilder, next, helper.queryOutputMeta());
+                    isFirst = false;
+                }
+                else
+                    finalSize = helper.mergeAggregate(rowBuilder, next);
+            }
+        }
+
+        return rowBuilder.finalizeRowClear(finalSize);
+    }
+
+    void outputStopped()
+    {
+        //only called if generating a single result.
+        assertex(combineStreams);
+        if (barrier)
+        {
+            requestAbort(); // if strands are still running, abort them
+            barrier->waitForStrands();
+        }
+        else
+        {
+            ForEachItemIn(i, strands)
+                queryAggregate(i).stopStream();
+        }
+        CRoxieServerStrandedActivity::stop();
+    }
+
+    void noteStrandFinished(IRowStream * stream)
+    {
+        barrier->noteStrandFinished(stream);
+    }
+
+    virtual IOrderedOutputCallback * queryCallback(unsigned i)
+    {
+        //The non-ordered aggregate does not need to process the ordered call back information.
+        //If the ordered single aggregate was implemented then it would need to be processed instead of ignored,
+        //however it needs some care since the strands are not yet created.  So cannot return strand(i).
+        return &nullCallback;
+    }
+
+    inline AggregateProcessor & queryAggregate(unsigned i)
+    {
+        return static_cast<AggregateProcessor &>(strands.item(i));
+    }
+
+protected:
+    IHThorAggregateArg &helper;
+    Owned<IStrandBarrier> barrier;
+    IEngineRowStream * combinedStream = nullptr;
+    bool isInputGrouped;
+    bool abortEarly;
+    bool combineStreams = false;
+    bool calculated = false;
+};
+
 class CRoxieServerAggregateActivityFactory : public CRoxieServerActivityFactory
 {
+    StrandOptions strandOptions;
 public:
     CRoxieServerAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), strandOptions(_graphNode)
     {
+        Owned<IHThorAggregateArg> helper = (IHThorAggregateArg *) helperFactory();
+        if (!(helper->getAggregateFlags() & TAForderedmerge))
+            optStableInput = false;
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerAggregateActivity(_ctx, this, _probeManager);
+        return new CRoxieServerStrandedAggregateActivity(_ctx, this, _probeManager, strandOptions);
     }
 };
 
@@ -12748,11 +13034,11 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         ForEachItemIn(i, pullers)
             pullers.item(i).connectInputStreams(ctx, consumerOrdered);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, nullptr, consumerOrdered, nullptr); // No input actually connected
     }
 
     virtual const void * nextRow()
@@ -13982,10 +14268,10 @@ public:
         puller.setInput(this, _sourceIdx, _in);
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         puller.connectInputStreams(ctx, consumerOrdered);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -14438,8 +14724,8 @@ typedef SafeQueueOf<const void, true> SafeRowQueue;
 class CRowQueuePseudoInput : public CPseudoRoxieInput
 {
 public:
-    CRowQueuePseudoInput(SafeRowQueue & _input) : 
-        input(_input)
+    CRowQueuePseudoInput(SafeRowQueue & _input, IOutputMetaData * _meta)
+    : meta(_meta), input(_input)
     {
         eof = false;
     }
@@ -14454,8 +14740,11 @@ public:
         return ret;
     }
 
+    virtual IOutputMetaData * queryOutputMeta() const { return meta; }
+
 protected:
     SafeRowQueue & input;
+    IOutputMetaData * meta;
     bool eof;
 };
 
@@ -14596,10 +14885,10 @@ public:
         executor.setInput(this, _sourceIdx, _in, flags);
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         executor.connectInputStreams(consumerOrdered);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, nullptr, consumerOrdered, nullptr);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -14788,7 +15077,7 @@ void LoopExecutorThread::executeLoop()
         {
             SafeRowQueue & inputQueue = tempResults[1-outputIndex];
             inputQueue.enqueue(NULL);
-            curInput.setown(new CRowQueuePseudoInput(inputQueue));
+            curInput.setown(new CRowQueuePseudoInput(inputQueue, activity->queryOutputMeta()));
         }
 
         SafeRowQueue * curOutput = NULL;
@@ -15383,6 +15672,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
 
     public:
         CRoxieServerLibraryCallActivity *parent;
+        IOutputMetaData * meta = nullptr;
         unsigned oid;
         unsigned processed;
 
@@ -15408,6 +15698,13 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             }
         }
 
+        void setParent(CRoxieServerLibraryCallActivity * _parent, IOutputMetaData * _meta, unsigned _oid)
+        {
+            parent = _parent;
+            meta = _meta;
+            oid = _oid;
+        }
+
         void init()
         {
             processed = 0;
@@ -15420,16 +15717,22 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
         }
 
-        virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+        virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
         {
             //MORE value of consumerOrdered depends on whether this activity is marked as ordered.
             if (!oid)  // Only need to set up once
             {
                 parent->connectInputStreams(true);  // To handle dependencies etc
             }
-            return CExtractMapperInput::getOutputStreams(ctx, 0, streams, consumerOptions, true);
+            return CExtractMapperInput::getOutputStreams(ctx, 0, streams, nullptr, true, nullptr);
         }
 
+
+        //This override should not really be needed, but input is set up too late for the call to connect strands
+        virtual IOutputMetaData * queryOutputMeta() const
+        {
+            return meta;
+        }
 
         virtual void stop()
         {
@@ -15489,8 +15792,7 @@ public:
         outputUsed = new bool[numOutputs];
         for (unsigned i2 = 0; i2 < numOutputs; i2++)
         {
-            outputAdaptors[i2].parent = this;
-            outputAdaptors[i2].oid = i2;
+            outputAdaptors[i2].setParent(this, helper.queryOutputMeta(i2), i2);
             outputUsed[i2] = false;
         }
         started = false;
@@ -15505,7 +15807,7 @@ public:
         delete [] outputAdaptors;
         delete [] outputUsed;
     }
- 
+
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_colocalParent);
@@ -19749,11 +20051,12 @@ public:
         }
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
+        //It should be possible to stream IF(), but the number of strands would need to match on the two branches.
         streamTrue = connectSingleStream(ctx, inputTrue, sourceIdxTrue, junctionTrue, consumerOrdered);
         streamFalse = connectSingleStream(ctx, inputFalse, sourceIdxFalse, junctionFalse, consumerOrdered);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, nullptr, consumerOrdered, nullptr);
     }
 
     virtual const void *nextRow()
@@ -23925,10 +24228,10 @@ public:
         puller.setInput(this, _sourceIdx, _in);
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         puller.connectInputStreams(ctx, consumerOrdered);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -24630,11 +24933,11 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         puller.connectInputStreams(ctx, consumerOrdered);
         //No rows are read from indexReadInput, so no need to extract the streams
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -25381,10 +25684,10 @@ public:
         head.setInput(idx, _sourceIdx, _in);
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         connectInputStreams(consumerOrdered);
-        return head.getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered);
+        return head.getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -27097,7 +27400,7 @@ public:
         ASSERT(state == STATEreset);
         state = STATEstarted; 
     }
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         streams.append(this);
         return NULL;
