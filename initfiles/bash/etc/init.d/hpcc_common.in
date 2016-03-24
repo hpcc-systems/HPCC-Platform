@@ -556,63 +556,33 @@ stop_component() {
 
     cd ${compPath}
 
-    ####
-    ## This is handling for when daemon is running as an orphan daemon. That is process is
-    ## not running but associated pidfile and/or lockfiles do exist.
-    ###
-    FAILED=0
-    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
-    RCSTOP=$?
-    if [[ ${RCSTOP} -eq 1 ]];then
-        log "Already stopped"
-        log_success_msg
-        return 0
-    elif [[ ${RCSTOP} -eq 4 ]]; then
-        log "Orphaned process found"
-        cleanup_component
-        local ccReturn=$?
-        if [[ ${ccReturn} -eq 0 ]]; then
-            cleanupRuntimeEnvironment
-            log_success_msg
-            return 0
-        else
-            log "Failed to clean up orphans for $compName"
+    if [[ -e "${PIDPATH}" ]]; then
+        stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH} >> tmp.txt 2>&1"
+        log "$stopcmd"
+        eval $stopcmd
+
+        local RESULT=1
+        local WAITTIME=30
+        [[ $compType = "dali" ]] && WAITTIME=720
+        while [[ $RESULT -ne 0 && $WAITTIME -gt 0 ]]; do
+            checkPidExist $PIDPATH
+            RESULT=$__pidExists
+            ((WAITTIME--))
+            if ! ((WAITTIME % 60)); then
+                echo "still stopping ..."
+            fi
+            [[ $RESULT -ne 0 ]] && sleep 1
+        done
+
+        if [[ $RESULT -ne 0 ]]; then
             log_failure_msg
-            return 1
+            return $RESULT
         fi
     fi
 
-    stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH} >> tmp.txt 2>&1"
-    log "$stopcmd"
-
-    eval $stopcmd
-
-    RESULT=0
-    local waittime=30
-    [[ $compType = "dali" ]] && waittime=720
-    while [[ $RESULT -ne 1 && $waittime -gt 0 ]]; do
-        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
-        RESULT=$?
-        ((waittime--))
-        if ! ((waittime % 60)); then
-            echo "still stopping ..."
-        fi
-        [[ $RESULT -ne 1 ]] && sleep 1
-    done
-
-    if [[ $RESULT -ne 1 ]]; then
-        if [[ $waittime -eq 0 ]]; then
-            log_failure_msg "Process may still be attempting to shut down cleanly"
-        else
-            log_failure_msg
-        fi
-    else
-        log_success_msg
-    fi
+    log_success_msg
     cleanupRuntimeEnvironment
-    RCSTOP=0
-
-    return ${RCSTOP}
+    return $RESULT
 }
 
 
