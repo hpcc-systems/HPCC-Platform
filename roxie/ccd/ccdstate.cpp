@@ -620,7 +620,6 @@ protected:
                         if (resolved)
                         {
                             files.append(*const_cast<IResolvedFile *>(resolved));
-                            doPreload(0, resolved);
                             Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
                             ForEach(*it)
                             {
