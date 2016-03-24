@@ -8271,6 +8271,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityConcat(BuildCtx & ctx, IHqlExp
 
     if (orderedPull || (allFromDisk && !targetRoxie()))
         ordered = true;
+    if (!expr->hasAttribute(orderedAtom) && insideChildQuery(ctx))
+        ordered = true;
 
     bool useImplementationClass = options.minimizeActivityClasses && targetRoxie();
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKfunnel, expr, "Funnel");
@@ -11289,8 +11291,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDictionaryWorkunitWrite(BuildC
     IHqlExpression * name = queryResultName(expr);
     int sequence = (int)getIntValue(seq, ResultSequenceInternal);
 
-    assertex(dictionary->getOperator() == no_createdictionary);
-    IHqlExpression * dataset = dictionary->queryChild(0);
+    OwnedHqlExpr dataset;
+    switch (dictionary->getOperator())
+    {
+    case no_null:
+        dataset.setown(createNullDataset(dictionary));
+        break;
+    case no_createdictionary:
+        dataset.set(dictionary->queryChild(0));
+        break;
+    default:
+        throwUnexpectedOp(dictionary->getOperator());
+    }
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
 

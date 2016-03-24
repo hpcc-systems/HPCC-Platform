@@ -23,11 +23,6 @@
 #include "jexcept.hpp"
 #include "hqlcerrors.hpp"
 #include "thorplugin.hpp"
-#ifdef _USE_BINUTILS
-#define PACKAGE "hpcc-system"
-#define PACKAGE_VERSION "1.0"
-#include "bfd.h"
-#endif
 
 #define BIGSTRING_BASE 101
 #define MANIFEST_BASE 1000
@@ -462,85 +457,6 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
             putbytes(h, "\x00\x00\x00",4-(totalbytes & 3));
     }
     _close(h);
-#elif defined(_USE_BINUTILS)
-    filename.append(basename).append(".res.o");
-    asymbol **syms = NULL;
-    bfd *file = NULL;
-    StringArray names;  // need to make sure that the strings we use in symbol table have appropriate lifetime 
-    try 
-    {
-        bfd_init ();
-        bfd_set_default_target(target64bit ? "x86_64-unknown-linux-gnu" : "x86_32-unknown-linux-gnu");
-#ifdef _ARCH_PPC64EL_
-        const bfd_arch_info_type *temp_arch_info = bfd_scan_arch ("powerpc");
-#else
-        const bfd_arch_info_type *temp_arch_info = bfd_scan_arch ("i386");
-#endif
-
-#if defined __APPLE__
-        file = bfd_openw(filename, NULL);//MORE: Quick fix to get working on OSX
-#elif defined _ARCH_PPC64EL_
-        file = bfd_openw(filename, "elf64-powerpcle");
-#else
-        file = bfd_openw(filename, target64bit ? "elf64-x86-64" : NULL);//MORE: Test on 64 bit to see if we can always pass NULL
-#endif
-        verifyex(file);
-        verifyex(bfd_set_arch_mach(file, temp_arch_info->arch, temp_arch_info->mach));
-        verifyex(bfd_set_start_address(file, 0));
-        verifyex(bfd_set_format(file, bfd_object));
-        syms = new asymbol *[resources.length()*2+1];
-        ForEachItemIn(idx, resources)
-        {
-            ResourceItem&s = (ResourceItem&)resources.item(idx);
-            unsigned len = (unsigned)s.data.length();
-            unsigned id = s.id;
-            StringBuffer baseName;
-            baseName.append(s.type).append("_").append(id);
-            StringBuffer str;
-            str.clear().append(baseName).append(".data");
-            names.append(str);
-            sec_ptr osection = bfd_make_section_anyway_with_flags (file, names.tos(), SEC_HAS_CONTENTS|SEC_ALLOC|SEC_LOAD|SEC_DATA|SEC_READONLY);
-            verifyex(osection);
-            verifyex(bfd_set_section_size(file, osection, len));
-            verifyex(bfd_set_section_vma(file, osection, 0));
-            bfd_set_reloc (file, osection, NULL, 0);
-            osection->lma=0;
-            osection->entsize=0;
-            syms[idx*2] = bfd_make_empty_symbol(file);
-            syms[idx*2]->flags = BSF_GLOBAL;
-            syms[idx*2]->section = osection;
-            names.append(str.clear().append(baseName).append("_txt_start"));
-            syms[idx*2]->name = names.tos();
-            syms[idx*2]->value = 0;
-            syms[idx*2+1] = bfd_make_empty_symbol(file);
-            syms[idx*2+1]->flags = BSF_GLOBAL;
-            syms[idx*2+1]->section = bfd_abs_section_ptr;
-            names.append(str.clear().append(baseName).append("_txt_size"));
-            syms[idx*2+1]->name = names.tos();
-            syms[idx*2+1]->value = len;
-        }
-        syms[resources.length()*2] = NULL;
-        bfd_set_symtab (file, syms, resources.length()*2);
-        // experience suggests symtab need to be in place before setting contents
-        ForEachItemIn(idx2, resources)
-        {
-            ResourceItem &s = (ResourceItem&)resources.item(idx2);
-            verifyex(bfd_set_section_contents(file, syms[idx2*2]->section, s.data.get(), 0, s.data.length()));
-        }
-        verifyex(bfd_close(file));
-        delete [] syms;
-    }
-    catch (IException *E)
-    {
-        E->Release();
-        //translate the assert exceptions into something else...
-        StringBuffer msg;
-        msg.appendf("%s: %s", filename.str(), bfd_errmsg(bfd_get_error()));
-        delete syms;
-        if (file)
-            bfd_close_all_done(file); // allow bfd to clean up memory
-        throwError1(HQLERR_ResourceCreateFailed, msg.str());
-    }
 #else
     isObjectFile = false;
     filename.append(basename).append(".res.s");

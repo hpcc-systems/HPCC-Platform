@@ -25,11 +25,13 @@
 class CHtpasswdSecurityManager : public CBaseSecurityManager
 {
 public:
-    CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *authconfig) : CBaseSecurityManager(serviceName, (IPropertyTree *)NULL)
+    CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *secMgrCfg, IPropertyTree *authConfig) : CBaseSecurityManager(serviceName, (IPropertyTree *)NULL)
 	{
-		if (authconfig)
-			authconfig->getProp("@htpasswdFile", pwFile);
-		apr_initialized = false;
+        if (secMgrCfg)
+            pwFile.set(secMgrCfg->queryProp("@htpasswdFile"));
+        if(pwFile.isEmpty())
+            throw MakeStringException(-1, "htpasswdFile not found in configuration");
+        apr_initialized = false;
 	}
 
 	~CHtpasswdSecurityManager()
@@ -115,37 +117,37 @@ protected:
 		return false;
 	}
 
-    const char * getDescription()
+    const char * getDescription() override
     {
         return "HTPASSWD Security Manager";
     }
 
-    bool authorize(ISecUser & user, ISecResourceList * resources)
+    bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext) override
     {
         return IsPasswordValid(user);
     }
 
-    unsigned getPasswordExpirationWarningDays()
+    unsigned getPasswordExpirationWarningDays() override
     {
         return -2;//never expires
     }
 
-    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
+    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    int getAccessFlagsEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename)
+    int getAccessFlagsEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    int authorizeFileScope(ISecUser & user, const char * filescope)
+    int authorizeFileScope(ISecUser & user, const char * filescope) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    int authorizeWorkunitScope(ISecUser & user, const char * filescope)
+    int authorizeWorkunitScope(ISecUser & user, const char * filescope) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
@@ -242,9 +244,10 @@ private:
 
 extern "C"
 {
-    HTPASSWDSECURITY_API ISecManager * newHtpasswdSecManager(const char *serviceName, IPropertyTree &config)
+    HTPASSWDSECURITY_API ISecManager * createInstance(const char *serviceName, IPropertyTree &secMgrCfg, IPropertyTree &authCfg)
     {
-        return new CHtpasswdSecurityManager(serviceName, &config);
+        return new CHtpasswdSecurityManager(serviceName, &secMgrCfg, &authCfg);
     }
+
 }
 

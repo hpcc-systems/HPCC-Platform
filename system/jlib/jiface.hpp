@@ -23,6 +23,7 @@
 
 #include "platform.h"
 #include <string.h>
+#include <atomic>
 #include "jscm.hpp"
 #include "jatomic.hpp"
 
@@ -32,54 +33,54 @@ void jlib_decl raiseAssertCore(const char *assertion, const char *file, unsigned
 #undef assert
 #undef assertex
 
-#ifdef _PREFAST_
- #pragma warning (disable : 6244)   // generates too much noise at the moment
- #define assertex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__), __analysis_assume(p))))
- #define assert(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__), __analysis_assume(p))))
-#elif defined(_DEBUG)||defined(_TESTING)
+#if defined(_DEBUG)||defined(_TESTING)
  #define assertex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
- #define assert(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
+ #define verifyex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
 #else
  #define assertex(p)
- #define assert(p)
+ #define verifyex(p) ((void) (p))
 #endif
 
-#if defined(_DEBUG)||defined(_TESTING)
-#define verifyex(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertException(#p, __FILE__, __LINE__))))
-#define verify(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
-#else
-#define verifyex(p) ((void) (p))
-#define verify(p) ((void) (p))
-#endif
-
-//Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
 #ifdef _DEBUG
-#define dbgassertex(x) assertex(x)
+ #define dbgassertex(x) assertex(x)   //Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
+ #define assert(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
+ #define verify(p) (likely(p) ? ((void) 0) : (( (void) raiseAssertCore(#p, __FILE__, __LINE__))))
 #else
-#define dbgassertex(x)
+ #define dbgassertex(x)
+ #define assert(p)
+ #define verify(p) ((void) (p))
 #endif
 
 #define DEAD_PSEUDO_COUNT               0x3fffffff
 
+class CEmptyClass
+{
+};
+
+template <class INTERFACE>
+class CInterfaceOf;
+
 //The simplest implementation of IInterface.  Can be used in situations where speed is critical, and
 //there will never be a need for the equivalent of beforeDispose().
 //It is generally recommended to use CInterface for general classes since derived classes may need beforeDispose().
-class jlib_decl CSimpleInterface
+template <class INTERFACE>
+class CSimpleInterfaceOf : public INTERFACE
 {
-    friend class CInterface;    // want to keep xxcount private outside this pair of classes
+    friend class CInterfaceOf<INTERFACE>;    // want to keep xxcount private outside this pair of classes
 public:
-    inline virtual ~CSimpleInterface() {}
+    inline virtual ~CSimpleInterfaceOf() {}
 
-    inline CSimpleInterface()           { atomic_set(&xxcount, 1); }
-    inline bool IsShared(void) const    { return atomic_read(&xxcount) > 1; }
-    inline int getLinkCount(void) const { return atomic_read(&xxcount); }
+    inline CSimpleInterfaceOf() : xxcount(1) { }
+    inline bool IsShared(void) const    { return xxcount.load(std::memory_order_relaxed) > 1; }
+    inline int getLinkCount(void) const { return xxcount.load(std::memory_order_relaxed); }
 
-    inline void Link() const            { atomic_inc(&xxcount); }
+    inline void Link() const { xxcount.fetch_add(1,std::memory_order_relaxed); }
 
     inline bool Release(void) const
     {
-        if (atomic_dec_and_test(&xxcount))
+        if (xxcount.fetch_sub(1,std::memory_order_release) == 1)
         {
+            std::atomic_thread_fence(std::memory_order_acquire);  // Because Herb says so.
             delete this;
             return true;
         }
@@ -87,37 +88,65 @@ public:
     }
 
 private:
-    mutable atomic_t xxcount;
+    CSimpleInterfaceOf(const CSimpleInterfaceOf &) : xxcount(1) {};
+    CSimpleInterfaceOf(CSimpleInterfaceOf &&) = delete;
+    CSimpleInterfaceOf & operator = (const CSimpleInterfaceOf &) = delete;
+    mutable std::atomic<unsigned> xxcount;
 };
+
+#ifdef _WIN32
+#pragma warning(push)
+#pragma warning(disable : 4251)
+#endif
+template class CSimpleInterfaceOf<CEmptyClass>;
+class jlib_decl CSimpleInterface : public CSimpleInterfaceOf<CEmptyClass> {};
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 
 // A more general implementation of IInterface that includes a virtual function beforeDispose().
 // beforeDispose() allows an a fully constructed object to be cleaned up (which means that virtual
 // function calls still work (unlike a virtual destructor).
 // It makes it possible to implement a cache which doesn't link count the object, but is cleared when
 // the object is disposed without a critical section in Release().  (See pattern details below).
-class jlib_decl CInterface : public CSimpleInterface
+template <class INTERFACE>
+class CInterfaceOf : public CSimpleInterfaceOf<INTERFACE>
 {
 public:
-    virtual void beforeDispose();
+    virtual void beforeDispose() {}
 
-    inline bool isAlive() const         { return atomic_read(&xxcount) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
+    inline bool isAlive() const         { return this->xxcount.load(std::memory_order_relaxed) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
 
     inline bool Release(void) const
     {
-        if (atomic_dec_and_test(&xxcount))
+        if (this->xxcount.fetch_sub(1,std::memory_order_release) == 1)
         {
-            //Because beforeDispose could cause this object to be linked/released or call isAlive(), xxcount is set
+            unsigned zero = 0;
+            //Because beforeDispose could cause this object to be linked/released or call isAlive(), this->xxcount is set
             //to a a high mid-point positive number to avoid poss. of releasing again.
-            if (atomic_cas(&xxcount, DEAD_PSEUDO_COUNT, 0))
+            if (this->xxcount.compare_exchange_strong(zero, DEAD_PSEUDO_COUNT, std::memory_order_acq_rel))
             {
-                const_cast<CInterface *>(this)->beforeDispose();
+                try
+                {
+                    const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
+                }
+                catch (...)
+                {
+#if _DEBUG
+                    assert(!"ERROR - Exception in beforeDispose - object will be leaked");
+#endif
+                    throw;
+                }
                 delete this;
                 return true;
             }
         }
         return false;
     }
+
 };
+
+class jlib_decl CInterface : public CInterfaceOf<CEmptyClass> {};
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -143,105 +172,6 @@ public:
 };
 
 //- Template variants -------------------------------------------------------------------------------------------------
-
-template <class INTERFACE>
-class CInterfaceOf;
-
-template <class INTERFACE>
-class CReusableInterfaceOf;
-
-// A thread safe basic implementation of IInterface that destroys the object when last Release() occurs.
-template <class INTERFACE>
-class CSimpleInterfaceOf : public INTERFACE
-{
-    friend class CInterfaceOf<INTERFACE>;    // want to keep xxcount private outside this pair of classes
-    friend class CReusableInterfaceOf<INTERFACE>;
-public:
-    inline virtual ~CSimpleInterfaceOf() {}
-
-    inline CSimpleInterfaceOf()           { atomic_set(&xxcount, 1); }
-    inline bool IsShared(void) const    { return atomic_read(&xxcount) > 1; }
-    inline int getLinkCount(void) const { return atomic_read(&xxcount); }
-
-    inline void Link() const            { atomic_inc(&xxcount); }
-
-    inline bool Release(void) const
-    {
-        if (atomic_dec_and_test(&xxcount))
-        {
-            delete this;
-            return true;
-        }
-        return false;
-    }
-
-private:
-    mutable atomic_t xxcount;
-};
-
-// A more general implementation of IInterface that includes a virtual function beforeDispose().
-// beforeDispose() allows a fully constructed object to be cleaned up (which means that virtual
-// function calls still work (unlike a virtual destructor).
-// It makes it possible to implement a cache which doesn't link count the object, but is cleared when
-// the object is disposed without a critical section in Release().  (See pattern details below).
-template <class INTERFACE>
-class CInterfaceOf : public CSimpleInterfaceOf<INTERFACE>
-{
-public:
-    virtual void beforeDispose() {}
-
-    inline bool isAlive() const         { return atomic_read(&this->xxcount) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
-
-    inline bool Release(void) const
-    {
-        if (atomic_dec_and_test(&this->xxcount))
-        {
-            //Because beforeDispose could cause this object to be linked/released or call isAlive(), xxcount is set
-            //to a a high mid-point positive number to avoid poss. of releasing again.
-            if (atomic_cas(&this->xxcount, DEAD_PSEUDO_COUNT, 0))
-            {
-                const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
-                delete this;
-                return true;
-            }
-        }
-        return false;
-    }
-};
-
-// An extension of CInterfaceOf that allows objects that are being destroyed to be added to a free list instead.
-// Before disposing addToFree() is called.  That function can link the object and return true which will prevent
-// the object being destroyed.
-template <class INTERFACE>
-class CReusableInterfaceOf : public CInterfaceOf<INTERFACE>
-{
-public:
-    //If this function returns true the object is added to a free list - if so it must be linked in the process.
-    //It *must not* link and release the object if it returns false.
-    virtual bool addToFreeList() const { return false; }
-
-    inline bool Release(void) const
-    {
-        if (atomic_dec_and_test(&this->xxcount))
-        {
-            if (addToFreeList())
-            {
-                //It could have been added, reused and disposed between the call and this return, so must return immediately
-                //and in particular cannot check/modify link count
-                return true;
-            }
-
-            //NOTE: This class cannot be used for caches which don't link the pointers => use atomic_set instead of cas
-            atomic_set(&this->xxcount, DEAD_PSEUDO_COUNT);
-            const_cast<CReusableInterfaceOf<INTERFACE> *>(this)->beforeDispose();
-            delete this;
-            return true;
-        }
-        return false;
-    }
-};
-
-//---------------------------------------------------------------------------------------------------------------------
 
 template <class INTERFACE>
 class CSingleThreadInterfaceOf;

@@ -4190,114 +4190,69 @@ bool CWsDeployFileInfo::addCopyToPropTree(IPropertyTree* pPropTree, IPropertyTre
   StringBuffer strTag;
   strTag.clear().appendf("%s/%s", XML_TAG_HARDWARE, tag_name);
 
-  return pPropTree->addPropTree(strTag.str(), pDupTree) != NULL;
+  return NULL != (pPropTree->addPropTree(strTag.str(), pDupTree));
 }
 
 bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IPropertyTree *pEnvRoot)
 {
-  StringBuffer xpath;
-  StringBuffer xpath3;
-  StringBuffer filePath;
-  xpath.clear().appendf("%s", XML_TAG_HARDWARE);
+    bool bWrite = false;
+    StringBuffer filePath;
+    IPropertyTree* dupTree;
 
-  Owned<IPropertyTreeIterator> iterComp = pComponents->getElements("*");
-  Owned<IPropertyTreeIterator> iter = pEnvRoot->getElements("*");
+    Owned<IPropertyTreeIterator> iterComp = pComponents->getElements("*");
 
-  if (!iterComp->first())
-    return false;
-
-  CWsDeployFileInfo::setFilePath(filePath, iterComp->query().queryProp(XML_ATTR_TARGET));
-
-  Owned<CWsDeployFileInfo> fi = new CWsDeployFileInfo(m_pService, filePath, false);
-
-  fi->m_skipEnvUpdateFromNotification = false;
-  fi->initFileInfo(false,false);
-  Owned<IPropertyTree> pEnvRoot2 = &(fi->m_Environment->getPTree());
-
-  bool bWrite = false;
-  StringArray elems;
-
-  ForEach(*iter)
-  {
-    IPropertyTree& pComp = iter->query();
-    const char* name = pComp.queryProp(XML_ATTR_NAME);
-    const char* tag_name = pComp.queryName();
-
-    StringBuffer xpath2;
-    xpath2.appendf("./%s/%s[%s = \"%s\"]", XML_TAG_HARDWARE, tag_name, XML_ATTR_NAME, name);
-
-    if (pEnvRoot2->queryPropTree(xpath2.str()) != NULL) // check if target configuration has same named element
-    {
-      elems.append(name);
-      continue;
-    }
-
-    StringBuffer xml;
-
-    xml.appendf("<%s", tag_name);
-    Owned<IAttributeIterator> pAttribIter = pComp.getAttributes();
-
-    ForEach(*pAttribIter)
-    {
-      const char* name = &(pAttribIter->queryName()[1]);
-      const char* value = pAttribIter->queryValue();
-
-      xml.appendf(" %s=\"%s\" ", name, value);
-    }
-    xml.append("/>");
-
-    IPropertyTree *dupTree = NULL;
-
-    if (iterComp->query().queryProp(XML_ATTR_HWXPATH) && strlen(iterComp->query().queryProp(XML_ATTR_HWXPATH)) > 0)
-    {
-      xpath3.clear().appendf("<%s/>", iterComp->query().queryProp(XML_ATTR_HWXPATH));
-
-      dupTree = createPTreeFromXMLString((xpath3.replace('\'','\"')).str());
-
-      String strTagName(xpath3);
-      strTagName = *strTagName.substring(1,strTagName.indexOf(' '));
-
-      if (CWsDeployFileInfo::addCopyToPropTree(pEnvRoot2, dupTree, strTagName.str()) == false)
-        return false;
-
-      bWrite = true;
-      break;
-    }
-    else
-      dupTree = createPTreeFromXMLString(xml.str());
-
-    if (CWsDeployFileInfo::addCopyToPropTree(pEnvRoot2, dupTree, tag_name) == false)
+    if (!iterComp->first()) // check to make sure that is some actions to do
       return false;
 
-    bWrite = true;
-  }
+    CWsDeployFileInfo::setFilePath(filePath, iterComp->query().queryProp(XML_ATTR_TARGET));  // get file path from first entry
+    Owned<CWsDeployFileInfo> fi = new CWsDeployFileInfo(m_pService, filePath, false);
 
-  if (bWrite == true)
-  {
-    StringBuffer err;
-    fi->saveEnvironment(NULL, NULL, err);
+    fi->m_skipEnvUpdateFromNotification = false;
+    fi->initFileInfo(false,false);
+    Owned<IPropertyTree> pEnvRoot2 = &(fi->m_Environment->getPTree());
 
-    if (elems.ordinality() > 0 && !(iterComp->query().queryProp(XML_ATTR_HWXPATH) && strlen(iterComp->query().queryProp(XML_ATTR_HWXPATH)) > 0))
+    ForEach(*iterComp)
     {
-      StringBuffer errMsg;
-      errMsg.appendf("Saved succeeded but some some element(s) could not be copied.  Element(s) may already exist in the target configuration.\n[");
+        IPropertyTree& pComp = iterComp->query();
 
-      ForEachItemIn(i, elems)
-      {
-        errMsg.appendf("%s, ",elems.item(i));
-      }
+        String strHWPath(pComp.hasProp(XML_ATTR_HWXPATH) ? pComp.queryProp(XML_ATTR_HWXPATH) : "" );
+        if (strHWPath.length() == 0)
+             throw MakeStringException(-1, "Copy failed. Did you select anything to copy?.");
 
-      errMsg.setCharAt(errMsg.length()-2 , ']');
+        StringBuffer strHWChild(strHWPath);
+        String strParse(strHWChild.str());
+        strHWChild.setLength(strParse.indexOf(' '));
 
-      throw MakeStringExceptionDirect(-1, errMsg.str());
+        if (iterComp->query().queryProp(XML_ATTR_HWXPATH) && strlen(iterComp->query().queryProp(XML_ATTR_HWXPATH)) > 0)
+        {
+            VStringBuffer xpath3("<%s/>", iterComp->query().queryProp(XML_ATTR_HWXPATH));
+            xpath3.replace('\'','\"');
+
+            dupTree = (createPTreeFromXMLString(xpath3.str()));
+
+            VStringBuffer strTemp("%s/%s[%s='%s']", XML_TAG_HARDWARE, dupTree->queryName(), XML_ATTR_NAME, dupTree->queryProp(XML_ATTR_NAME));
+
+            if (pEnvRoot2->hasProp(strTemp.str()) == true) // check if target configuration has same named element
+                continue;
+
+            if (CWsDeployFileInfo::addCopyToPropTree(pEnvRoot2, dupTree, strHWChild.str()) == false)
+              return false;
+
+            bWrite = true;
+        }
     }
-  }
-  else
-  {
-    throw MakeStringException(-1, "Copy failed.  All elements may already exist in the target configuration.");
-  }
 
-  return true;
+    if (bWrite == true)
+    {
+        StringBuffer err;
+        fi->saveEnvironment(NULL, NULL, err);
+    }
+    else
+    {
+        VStringBuffer err("Copy failed. Element %s may already exist in the target configuration.", dupTree->queryProp(XML_ATTR_NAME));
+        throw MakeStringException(-1, "%s", err.str());
+    }
+    return true;
 }
 
 bool CWsDeployFileInfo::handleComponentCopy(IPropertyTree *pComponents, IPropertyTree *pEnvRoot)
@@ -4317,8 +4272,6 @@ bool CWsDeployFileInfo::handleComponentCopy(IPropertyTree *pComponents, IPropert
   fi->initFileInfo(false,false);
 
   Owned<IPropertyTree> pEnvRoot2 = &(fi->m_Environment->getPTree());
-  Owned<IPropertyTreeIterator> iterComp2 = pComponents->getElements("*");
-
   StringBuffer xpath;
 
   ForEach(*iterComp)
@@ -4336,7 +4289,7 @@ bool CWsDeployFileInfo::handleComponentCopy(IPropertyTree *pComponents, IPropert
       continue;
     }
 
-    const char* compType = pComp.queryProp("@compType");
+    const char* compType = pComp.queryProp(XML_ATTR_COMPTYPE);
     StringBuffer sbNewName = compName;
 
     xpath.clear().appendf("%s", compType);
@@ -4811,81 +4764,99 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
   }
   else if (!strcmp(operation, "Delete"))
   {
-    StringBuffer refs;
-    StringBuffer refName;
-    Owned<IPropertyTreeIterator> iterComputers = pParams->getElements("Item");
-    ForEach (*iterComputers)
-    {
-      IPropertyTree* pComp = &iterComputers->query();
+      StringBuffer refs;
+      StringBuffer refName;
+      Owned<IPropertyTreeIterator> iterComputers = pParams->getElements("Item");
 
-      const char* name = pComp->queryProp(XML_ATTR_NAME);
-      if (!strcmp(type, XML_TAG_COMPUTER))
-        xpath.clear().appendf(XML_TAG_SOFTWARE"//[" XML_ATTR_COMPUTER "=\"%s\"]", name);
-      else if (!strcmp(type, XML_TAG_COMPUTERTYPE))
-        xpath.clear().appendf(XML_TAG_HARDWARE "//[" XML_ATTR_COMPUTERTYPE "=\"%s\"]", name);
-      else if (!strcmp(type, XML_TAG_DOMAIN))
-        xpath.clear().appendf(XML_TAG_HARDWARE "//[" XML_ATTR_DOMAIN "=\"%s\"]", name);
-      else if (!strcmp(type, XML_TAG_SWITCH))
-        xpath.clear().appendf(XML_TAG_HARDWARE "//[" XML_ATTR_SWITCH "=\"%s\"]", name);
-
-      Owned<IPropertyTreeIterator> iter = pEnvRoot->getElements(xpath.str());
-
-      ForEach(*iter)
+      ForEach (*iterComputers)
       {
-        IPropertyTree& pComp = iter->query();
-        const char* compName = pComp.queryProp(XML_ATTR_NAME);
-        const char* parentName = pComp.queryName();
+          IPropertyTree* pComp = &iterComputers->query();
+          const char* name = pComp->queryProp(XML_ATTR_NAME);
+          refName = pComp->queryProp(XML_ATTR_NAME);
 
-        if (compName != NULL)
-          refs.append("\n").append(parentName).append(" name=").append(compName);
+          if (!strcmp(type, XML_TAG_COMPUTER))
+          {
+            xpath.setf(XML_TAG_SOFTWARE "/*");
+            Owned<IPropertyTreeIterator> iter = pEnvRoot->getElements(xpath.str());
+
+            ForEach(*iter)
+            {
+
+                IPropertyTree& pComp = iter->query();
+                const char* compName = pComp.queryProp(XML_ATTR_NAME);
+                const char* parentName = pComp.queryName();
+                VStringBuffer xpath2("./" XML_TAG_INSTANCE "/[%s=\"%s\"]", XML_ATTR_COMPUTER, name);
+                VStringBuffer xpath3("./" XML_TAG_ROXIE_SERVER "/[%s=\"%s\"]", XML_ATTR_COMPUTER, name);
+
+                if (pComp.hasProp(xpath2.str()))
+                    refs.append("\n").append(parentName).append(" name=").append(compName);
+                else if (pComp.hasProp(xpath3.str()))
+                    refs.append("\n").append(parentName).append(" name=").append(compName);
+                }
+          }
+          else if (!strcmp(type, XML_TAG_COMPUTERTYPE))
+          {
+              xpath.setf(XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "[%s=\"%s\"]", XML_ATTR_COMPUTERTYPE, name);
+              if (pEnvRoot->hasProp(xpath.str()))
+              {
+                    const char* compName = pComp->queryProp(XML_ATTR_NAME);
+                    refs.appendf("Hardware computer instance exists of computerType %s", compName);
+              }
+          }
+          else if (!strcmp(type, XML_TAG_DOMAIN))
+          {
+              xpath.setf(XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "[%s=\"%s\"]", XML_ATTR_DOMAIN, name);
+              if (pEnvRoot->hasProp(xpath.str()))
+              {
+                    const char* domainName = pComp->queryProp(XML_ATTR_NAME);
+                    refs.appendf("Hardware computer instance exists with domain %s", domainName);
+              }
+          }
       }
 
       if (refs.length())
+        throw MakeStringException(-1, "Cannot delete %s with name %s as it is being referenced by components: %s.", type, refName.str(), refs.str());
+      else
       {
-        refName.clear().append(name);
-        break;
-      }
-    }
-    
-    if (refs.length())
-      throw MakeStringException(-1, "Cannot delete %s with name %s as it is being referenced by components: %s.", type, refName.str(), refs.str());
-    else
-    {
-      if (m_bCloud && !strcmp(type, XML_TAG_COMPUTER))
-      {
-        StringBuffer sb, sbMsg;
-        sb.append("<Computers>");
-        ForEach (*iterComputers)
-        {
-          IPropertyTree* pComp = &iterComputers->query();
-          xpath.clear().appendf(XML_TAG_HARDWARE "/%s[" XML_ATTR_NAME "=\"%s\"]", type, pComp->queryProp(XML_ATTR_NAME));
-          IPropertyTree* pTree = pEnvRoot->queryPropTree(xpath.str());
-          sb.appendf("<Computer netAddress='%s'/>", pTree->queryProp(XML_ATTR_NETADDRESS));
-        }
-        sb.append("</Computers>");
-        Owned<IPropertyTree> pComputers = createPTreeFromXMLString(sb.str());
+          if (m_bCloud && !strcmp(type, XML_TAG_COMPUTER))
+          {
+            StringBuffer sb, sbMsg;
+            sb.append("<Computers>");
+            ForEach (*iterComputers)
+            {
+              IPropertyTree* pComp = &iterComputers->query();
+              xpath.clear().appendf(XML_TAG_HARDWARE "/%s[" XML_ATTR_NAME "=\"%s\"]", type, pComp->queryProp(XML_ATTR_NAME));
+              IPropertyTree* pTree = pEnvRoot->queryPropTree(xpath.str());
+              sb.appendf("<Computer netAddress='%s'/>", pTree->queryProp(XML_ATTR_NETADDRESS));
+            }
+            sb.append("</Computers>");
+            Owned<IPropertyTree> pComputers = createPTreeFromXMLString(sb.str());
 
-        CCloudActionHandler unlockCloud(this, CLOUD_UNLOCK_ENV, CLOUD_LOCK_ENV, m_userWithLock.str(), "8015", pComputers);
-        bool ret = unlockCloud.start(sbMsg);
-        if (!ret || sbMsg.length())
-          throw MakeStringException(-1, "Cannot delete computers as they cannot be unlocked. Reason(s):\n%s", sbMsg.str());
+            CCloudActionHandler unlockCloud(this, CLOUD_UNLOCK_ENV, CLOUD_LOCK_ENV, m_userWithLock.str(), "8015", pComputers);
+            bool ret = unlockCloud.start(sbMsg);
+            if (!ret || sbMsg.length())
+              throw MakeStringException(-1, "Cannot delete computers as they cannot be unlocked. Reason(s):\n%s", sbMsg.str());
+          }
       }
 
       ForEach (*iterComputers)
       {
-        IPropertyTree* pComp = &iterComputers->query();
-        xpath.clear().appendf(XML_TAG_HARDWARE "/%s[" XML_ATTR_NAME "=\"%s\"]", type, pComp->queryProp(XML_ATTR_NAME));
-        IPropertyTree* pTree = pEnvRoot->queryPropTree(xpath.str());
-        pEnvRoot->queryPropTree(XML_TAG_HARDWARE)->removeTree(pTree);
+          IPropertyTree* pComp = &iterComputers->query();
+          xpath.setf(XML_TAG_HARDWARE "/%s[" XML_ATTR_NAME "=\"%s\"]", type, pComp->queryProp(XML_ATTR_NAME));
+
+         Owned<IPropertyTreeIterator> iterComputerInstance = pEnvRoot->getElements(xpath.str());
+
+         ForEach(*iterComputerInstance)
+         {
+            IPropertyTree* pTreeComputerInstance = &iterComputerInstance->query();
+            pEnvRoot->queryPropTree(XML_TAG_HARDWARE)->removeTree(pTreeComputerInstance);
+            break;
+        }
       }
-       
       resp.setStatus("true");
     }
-  }
-
-  return true;
+    return true;
 }
-
 
 bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyRequest &req, IEspHandleTopologyResponse &resp)
 {

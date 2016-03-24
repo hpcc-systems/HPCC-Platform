@@ -27,6 +27,7 @@
 #include "thbufdef.hpp"
 #include "thor.hpp"
 #include "thormisc.hpp"
+#include "thorsort.hpp"
 #include "eclhelper.hpp"
 #include "dautils.hpp"
 #include "daclient.hpp"

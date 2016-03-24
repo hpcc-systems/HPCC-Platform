@@ -115,7 +115,6 @@ if ( PLUGIN )
     HPCC_ADD_SUBDIRECTORY (roxie/roxiemem)
     HPCC_ADD_SUBDIRECTORY (rtl/nbcd)
     HPCC_ADD_SUBDIRECTORY (rtl/eclrtl)
-    HPCC_ADD_SUBDIRECTORY (system/lzma)
     HPCC_ADD_SUBDIRECTORY (system/jlib)
     HPCC_ADD_SUBDIRECTORY (dali/base)
     HPCC_ADD_SUBDIRECTORY (common/workunit "CASSANDRAEMBED")
@@ -419,16 +418,4 @@ if(PLATFORM OR CLIENTTOOLS OR REMBED)
     install(FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION "." COMPONENT Runtime)
 endif()
 
-if(USE_SHLIBDEPS AND "${packageManagement}" STREQUAL "DEB")
-    install(CODE "
-            execute_process(COMMAND mkdir -p ${INSTALL_DIR}
-                            WORKING_DIRECTORY ${PREFIX})
-            if(EXISTS \"${INSTALL_DIR}/lib\")
-                execute_process(COMMAND rm -f lib
-                                WORKING_DIRECTORY ${INSTALL_DIR})
-            endif()
-            execute_process(COMMAND ln -sf ${CMAKE_BINARY_DIR}/_CPack_Packages/${CPACK_SYSTEM_NAME}/${CPACK_GENERATOR}/${CPACK_PACKAGE_FILE_NAME}${INSTALL_DIR}/lib lib
-                            WORKING_DIRECTORY ${INSTALL_DIR})"
-    COMPONENT Runtime)
-endif()
 include(CPack)

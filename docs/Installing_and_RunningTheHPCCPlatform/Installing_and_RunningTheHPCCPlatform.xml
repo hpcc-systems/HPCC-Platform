@@ -128,7 +128,7 @@
 
           <para>On CentOS/Red Hat:</para>
 
-          <para><programlisting> sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>On
+          <para><programlisting> sudo yum install hpccsystems-platform&lt;rpm_file_name&gt;</programlisting>On
           Ubuntu/Debian:</para>
 
           <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
@@ -139,7 +139,7 @@
 
           <para>On CentOS/Red Hat:</para>
 
-          <para><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+          <para><programlisting>sudo service hpcc-init start</programlisting></para>
 
           <para>Ubuntu:</para>
 
@@ -260,7 +260,7 @@
 
         <para>Packages are available from the HPCC
         Systems<superscript>®</superscript> website: <ulink
-        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink></para>
+        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/</ulink></para>
 
         <para>To install the package, follow the appropriate installation
         instructions:</para>
@@ -268,64 +268,15 @@
         <sect3 id="Installing_CentOS-RedHat-Suse">
           <title>CentOS/Red Hat</title>
 
-          <para>Install RPM with the -Uvh switch.</para>
+          <para>To install the Platform you should have the appropriate
+          permissions to install packages. If you have sudo rights, then you
+          can install the platform using yum.</para>
 
-          <para>This is the upgrade command and will perform an automatic
-          upgrade if a previous version is installed or it will just install
-          fresh if no other version has been installed.</para>
+          <programlisting>sudo yum install &lt;hpccsystems platform rpm package&gt;</programlisting>
 
-          <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
-
-          <sect4 id="Optional_Plug-ins">
-            <title>Optional Plug-ins</title>
-
-            <para>For RPM based systems, there are two different installation
-            packages available. One package includes the optional plug-ins to
-            support embedded code from other languages, such as JAVA,
-            JavaScript, R, or Python.</para>
-
-            <para>If you do not want support for other languages, choose the
-            package for your distro that begins with:</para>
-
-            <programlisting> hpccsystems-platform_community-  </programlisting>
-
-            <para>If you want support for other languages, choose the package
-            for your distro that begins with:</para>
-
-            <programlisting>hpccsystems-platform_community-with-plugins- </programlisting>
-
-            <para>You must install the packages that <emphasis
-            role="bold">have</emphasis> the plug-ins using the --nodeps
-            option. For example:</para>
-
-            <programlisting>sudo rpm -Uvh --nodeps &lt;rpm file name&gt;</programlisting>
-
-            <para>Then you must install the dependencies for each language you
-            wish to support. The dependencies to support each language are
-            installed separately.</para>
-
-            <para>The optional plug-ins are:</para>
-
-            <para><blockquote>
-                <para><itemizedlist>
-                    <listitem>
-                      <para>Python : pyembed</para>
-                    </listitem>
-
-                    <listitem>
-                      <para>JAVA : jniembed</para>
-                    </listitem>
-
-                    <listitem>
-                      <para>JavaScript : v8embed</para>
-                    </listitem>
-
-                    <listitem>
-                      <para>R : Rembed</para>
-                    </listitem>
-                  </itemizedlist></para>
-              </blockquote></para>
-          </sect4>
+          <para>Optionally you can install the package with rpm (recommended
+          using the -Uvh options), however then you would have to negotiate
+          installing any additional dependencies.</para>
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
@@ -335,10 +286,91 @@
           install the package, use:</para>
 
           <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+
+          <para>After installing the package, you should run the following to
+          update any dependencies.</para>
+
+          <para><programlisting>sudo apt-get install -f </programlisting>Alternatively
+          you could combine the two:</para>
+
+          <para><programlisting>sudo dpkg –I &lt;deb filename&gt; &amp;&amp; sudo apt-get install –f</programlisting></para>
+        </sect3>
+
+        <sect3 id="HPCC_Plug-Ins" role="brk">
+          <title>Plug-Ins</title>
+
+          <para>There are several optional plug-ins that you could choose to
+          add to your installation. </para>
+
+          <para>For RPM based systems, you could install using yum.</para>
+
+          <para><programlisting>sudo yum install &lt;hpccsystems plugin plug-in_name&gt;  </programlisting>Optionally,
+          you could also choose to add optional plug-ins using rpm:</para>
+
+          <programlisting>sudo rpm -Uvh &lt;hpccsystems plugin plug-in_name&gt; </programlisting>
+
+          <para>To install the optional plug ins for a Ubuntu/Debian package,
+          use:</para>
+
+          <programlisting>sudo dpkg -i &lt;hpccsystems plugin plug-in_name&gt;  </programlisting>
+
+          <para>The optional plug-ins are:</para>
+
+          <para><informaltable>
+              <tgroup cols="2">
+                <tbody>
+                  <row>
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Python : pyembed</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>JAVA : javaembed</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>JavaScript : v8embed</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>R : rembed</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>MySql : mysqlembed</para>
+                        </listitem>
+                      </itemizedlist></entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Cassandra : cassandraembed</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Kafka : kafka</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>MemCache : memcached</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Redis : redis</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>SQL Lite : sqlite3embed</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
         </sect3>
       </sect2>
 
-      <sect2 id="initial-startup">
+      <sect2 id="initial-startup" role="brk">
         <title><emphasis>Initial Startup</emphasis></title>
 
         <orderedlist>
@@ -346,7 +378,7 @@
             <para>Start the system using the default configuration.</para>
 
             <para><emphasis role="bold">Centos/Red
-            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+            Hat</emphasis><programlisting>sudo service hpcc-init start</programlisting></para>
 
             <para><emphasis role="bold">Ubuntu</emphasis></para>
 
@@ -2538,7 +2570,9 @@ OUTPUT(ValidWords)
 
       <para><emphasis role="bold">Centos/Red Hat</emphasis></para>
 
-      <programlisting>sudo rpm -e hpccsystems-platform </programlisting>
+      <programlisting>sudo yum remove hpccsystems-platform </programlisting>
+
+      <para>Alternatively you can still use.</para>
 
       <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
 

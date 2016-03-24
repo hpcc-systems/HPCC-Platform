@@ -17,6 +17,7 @@
 
 #include "jexcept.hpp"
 #include "thorherror.h"
+#include "thorsort.hpp"
 #include "roxiehelper.hpp"
 #include "roxielmj.hpp"
 #include "roxierow.hpp"

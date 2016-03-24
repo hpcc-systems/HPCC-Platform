@@ -25,5 +25,5 @@ if (USE_ZLIB)
 endif()
 
 IF (USE_APR)
-  HPCC_ADD_SUBDIRECTORY (htpasswdSecurity)
+  HPCC_ADD_SUBDIRECTORY (plugins/htpasswdSecurity)
 ENDIF(USE_APR)

@@ -18,14 +18,6 @@
 #ifndef HQLEXPR_INCL
 #define HQLEXPR_INCL
 
-#ifdef _DEBUG
-   #define ENABLE_ENUM_TYPE
-#endif
-
-#ifndef _DEBUG
-//  #define USE_TBB
-#endif
-
 #define USE_SELSEQ_UID
 //It is impossible to ensure that LEFT/RIGHT are unique, and cannot be nested.  For instance
 //x := PROJECT(ds, t(LEFT));
@@ -197,7 +189,7 @@ enum
 };
 
 //Removed spaces so it is easier to translate from a number to a node when debugging.
-enum _node_operator {
+enum node_operator : unsigned short {
         no_none,
         no_scope,
         no_list,
@@ -802,12 +794,6 @@ enum ExprPropKind
     EPmax
 };
 
-
-#ifdef ENABLE_ENUM_TYPE
-    typedef enum _node_operator node_operator;
-#else
-    typedef unsigned short node_operator;
-#endif
 
 interface IHqlSimpleScope : public IInterface
 {

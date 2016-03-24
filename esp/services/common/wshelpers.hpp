@@ -23,8 +23,6 @@
 #ifndef _ESPWIZ_WSHELPERS_HPP__
 #define _ESPWIZ_WSHELPERS_HPP__
 
-template<typename T> inline StringBuffer& operator<<(StringBuffer& buf, const T& t) { return buf.append(t); }
-
 static StringBuffer &buildComma(StringBuffer &s, unsigned __int64 val)
 {
     if (val)

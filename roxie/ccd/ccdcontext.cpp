@@ -1971,16 +1971,18 @@ protected:
                     persists = createPTree();
                 return *persists;
             }
+        case ResultSequenceOnce:
+            {
+                if (!workUnit)
+                	return factory->queryOnceContext(logctx);
+                // fall into...
+            }
         case ResultSequenceInternal:
             {
                 CriticalBlock b(contextCrit);
                 if (!temporaries)
                     temporaries = createPTree();
                 return *temporaries;
-            }
-        case ResultSequenceOnce:
-            {
-                return factory->queryOnceContext(logctx);
             }
         default:
             {
@@ -1998,7 +2000,9 @@ protected:
         switch ((int) sequence)
         {
         case ResultSequenceOnce:
-            return factory->queryOnceResultStore();
+        	if (!workUnit)
+        		return factory->queryOnceResultStore();
+        	// fall into...
         default:
             // No need to have separate stores for other temporaries...
             CriticalBlock b(contextCrit);
@@ -2543,10 +2547,10 @@ public:
 
 class CRoxieServerContext : public CRoxieContextBase, implements IRoxieServerContext, implements IGlobalCodeContext
 {
-    const IQueryFactory *serverQueryFactory;
-    IHpccProtocolResponse *protocol;
-    IHpccProtocolResultsWriter *results;
-    IHpccNativeProtocolResponse *nativeProtocol;
+    const IQueryFactory *serverQueryFactory = nullptr;
+    IHpccProtocolResponse *protocol = nullptr;
+    IHpccProtocolResultsWriter *results = nullptr;
+    IHpccNativeProtocolResponse *nativeProtocol = nullptr;
     CriticalSection daliUpdateCrit;
     StringAttr querySetName;
 

@@ -78,7 +78,7 @@ chmod +x ${SCRIPT_FILE}
 ############################################
 cluster_tools_init
 
-if [ "${USER}" != "root" ] && [ "${USER}" != "${user}" ]; then
+if [ "$(whoami)" != "root" ] && [ "$(whoami)" != "${user}" ]; then
    echo ""
    echo "The script must run as root, $user or sudo."
    echo ""

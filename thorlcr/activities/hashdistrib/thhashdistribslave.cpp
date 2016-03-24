@@ -1359,9 +1359,6 @@ class CRowDistributor: public CDistributorBase
     ICommunicator &comm;
     bool stopping;
 public:
-
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CRowDistributor(CActivityBase *activity, ICommunicator &_comm, mptag_t _tag, bool doDedup, IStopInput *istop, const char *id)
         : CDistributorBase(activity, doDedup, istop, id), comm(_comm), tag(_tag)
     {
@@ -1955,7 +1952,7 @@ protected:
     ICompare *mergecmp;     // if non-null is merge distribute
     bool eofin;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     HashDistributeSlaveBase(CGraphElementBase *_container)
         : CSlaveActivity(_container), CThorDataLink(this)
@@ -2827,7 +2824,7 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     HashDedupSlaveActivityBase(CGraphElementBase *_container, bool _local)
         : CSlaveActivity(_container), CThorDataLink(this), local(_local)
@@ -3449,7 +3446,7 @@ bool CBucketHandler::addRow(const void *row)
 class LocalHashDedupSlaveActivity : public HashDedupSlaveActivityBase
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     LocalHashDedupSlaveActivity(CGraphElementBase *container)
         : HashDedupSlaveActivityBase(container, true)
@@ -3476,7 +3473,7 @@ class GlobalHashDedupSlaveActivity : public HashDedupSlaveActivityBase, implemen
     Owned<IRowStream> instrm;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     GlobalHashDedupSlaveActivity(CGraphElementBase *container)
         : HashDedupSlaveActivityBase(container, false)
@@ -3566,7 +3563,7 @@ class HashJoinSlaveActivity : public CSlaveActivity, public CThorDataLink, imple
 
 public:
 
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     HashJoinSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container), CThorDataLink(this)
@@ -3903,7 +3900,7 @@ class CHashAggregateSlave : public CSlaveActivity, public CThorDataLink, impleme
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CHashAggregateSlave(CGraphElementBase *_container)
         : CSlaveActivity(_container), CThorDataLink(this)
@@ -3998,7 +3995,7 @@ class CHashDistributeSlavedActivity : public CSlaveActivity, public CThorDataLin
     unsigned myNode, nodes;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CHashDistributeSlavedActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {

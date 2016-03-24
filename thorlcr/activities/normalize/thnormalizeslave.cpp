@@ -38,7 +38,7 @@ class NormalizeSlaveActivity : public CSlaveActivity, public CThorDataLink
 
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     NormalizeSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorDataLink(this)
@@ -120,7 +120,7 @@ class CNormalizeChildSlaveActivity : public CSlaveActivity, public CThorDataLink
     Owned<IEngineRowAllocator> allocator;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CNormalizeChildSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorDataLink(this)
@@ -221,7 +221,7 @@ class CNormalizeLinkedChildSlaveActivity : public CSlaveActivity, public CThorDa
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CNormalizeLinkedChildSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorDataLink(this)

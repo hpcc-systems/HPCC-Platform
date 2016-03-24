@@ -7648,7 +7648,6 @@ class CRemoveSuperFileAction: public CDFAction
         IDistributedFileTransactionExt *transaction;
         CIArrayOf<CDFAction> actions;
     public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
         CNestedTransaction(IDistributedFileTransactionExt *_transaction, IUserDescriptor *user)
             : CDistributedFileTransaction(user), transaction(_transaction)
         {
@@ -8789,9 +8788,20 @@ public:
         ForEachItemIn(i,filters)
         {
             CDFUSFFilter &filter = filters.item(i);
-            bool match = filter.checkFilter(file);
-            if (!match)
-                return match;
+            const char* attrPath = filter.getAttrPath();
+            try
+            {
+                if (!filter.checkFilter(file))
+                    return false;
+            }
+            catch (IException *e)
+            {
+                VStringBuffer msg("Failed to check filter %s for %s: ", attrPath, name);
+                int code = e->errorCode();
+                e->errorMessage(msg);
+                e->Release();
+                throw MakeStringException(code, "%s", msg.str());
+            }
         }
         return true;
     }
@@ -9639,8 +9649,8 @@ IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned 
     Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(nodeGroupName);
     CInitGroups init(timems);
     Owned<IGroup> expandedClusterGroup = init.getGroupFromCluster(type, cluster, true);
-    if (nodeGroup->ordinality() != expandedClusterGroup->ordinality()) // sanity check
-        throwUnexpected();
+    if (!expandedClusterGroup->equals(nodeGroup))
+        throwStringExceptionV(0, "DFS cluster topology for '%s', does not match existing DFS group layout for group '%s'", clusterName, nodeGroupName.str());
     Owned<IGroup> clusterGroup = init.getGroupFromCluster(type, cluster, false);
     ICopyArrayOf<INode> nodes;
     for (unsigned n=0; n<clusterGroup->ordinality(); n++)

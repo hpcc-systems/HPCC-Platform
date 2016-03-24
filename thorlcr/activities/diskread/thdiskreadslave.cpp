@@ -397,7 +397,7 @@ public:
 
     IHThorDiskReadArg *helper;
 
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CDiskReadSlaveActivity(CGraphElementBase *_container, IHThorArg *_helper) : CDiskReadSlaveActivityRecord(_container, _helper), CThorDataLink(this)
     {
@@ -590,7 +590,7 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord, public CThorDat
     IRowStream *out;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CDiskNormalizeSlave(CGraphElementBase *_container) 
         : CDiskReadSlaveActivityRecord(_container), CThorDataLink(this)
@@ -721,7 +721,7 @@ class CDiskAggregateSlave : public CDiskReadSlaveActivityRecord, public CThorDat
     CPartialResultAggregator aggregator;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CDiskAggregateSlave(CGraphElementBase *_container) 
         : CDiskReadSlaveActivityRecord(_container), aggregator(*this), CThorDataLink(this)
@@ -839,7 +839,7 @@ class CDiskCountSlave : public CDiskReadSlaveActivityRecord, public CThorDataLin
     bool eoi, totalCountKnown;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CDiskCountSlave(CGraphElementBase *_container) : CDiskReadSlaveActivityRecord(_container), CThorDataLink(this)
     {
@@ -964,7 +964,7 @@ class CDiskGroupAggregateSlave
     Owned<IHashDistributor> distributor;
     
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CDiskReadSlaveActivityRecord);
 
     CDiskGroupAggregateSlave(CGraphElementBase *_container) 
         : CDiskReadSlaveActivityRecord(_container), CThorDataLink(this)

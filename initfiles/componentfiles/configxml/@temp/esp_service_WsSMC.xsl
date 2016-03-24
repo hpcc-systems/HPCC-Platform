@@ -677,13 +677,34 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             </xsl:if>         
          </Authenticate>
       </xsl:when>
-      <xsl:when test="$authMethod='htpasswd'">
-        <Authenticate method="htpasswd">
-          <xsl:attribute name="htpasswdFile"> <xsl:value-of select="$bindingNode/../Authentication/@htpasswdFile"/> </xsl:attribute>
+      <xsl:when test="$authMethod='secmgrPlugin'">
+         <Authenticate>
+            <xsl:attribute name="method">
+               <xsl:value-of select="$bindingNode/@type"/>
+            </xsl:attribute>
+            <xsl:copy-of select="$bindingNode/@resourcesBasedn"/>
+            <xsl:copy-of select="$bindingNode/@workunitsBasedn"/>
+
             <xsl:for-each select="$bindingNode/Authenticate[@path='/']">
               <Location path="/" resource="{@resource}" required="{@access}" description="{@description}"/>
-             </xsl:for-each>
-        </Authenticate>
+            </xsl:for-each>
+
+            <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
+               <xsl:if test="$service='ws_smc' or @service=$service">
+                  <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
+               </xsl:if>
+            </xsl:for-each>
+
+            <xsl:if test="$service = 'ws_topology'">
+               <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
+                  <xsl:if test="starts-with(@path, 'MachineInfoAccess')">
+                     <Feature path="{@path}" resource="{@resource}" required="{@access}" description="{@description}">
+                        <xsl:copy-of select="*"/>
+                     </Feature>
+                  </xsl:if>
+               </xsl:for-each>
+            </xsl:if>
+         </Authenticate>
       </xsl:when>
         </xsl:choose>
     </xsl:template>

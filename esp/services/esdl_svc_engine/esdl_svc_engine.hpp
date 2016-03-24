@@ -57,7 +57,7 @@ public:
 
     virtual void addService(const char * name, const char * host, unsigned short port, IEspService & service)
     {
-         m_pESDLService = dynamic_cast<CEsdlSvcEngine*>(&service);
+        m_pESDLService = dynamic_cast<CEsdlSvcEngine*>(&service);
         EsdlBindingImpl::addService(name, host, port, service);
     }
 

@@ -69,7 +69,7 @@ enum DBZaction { DBZnone, DBZzero, DBZnan, DBZfail }; // Different actions on di
 
 //-----------------------------------------------------------------------------
 
-// RegEx Compiler for ansii  strings (uses BOOST)
+// RegEx Compiler for ansii  strings (uses BOOST or std::regex)
 interface IStrRegExprFindInstance
 {
     virtual bool found() const = 0;

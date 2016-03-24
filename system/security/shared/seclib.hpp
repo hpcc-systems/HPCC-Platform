@@ -36,7 +36,6 @@
 
 #define SECLIB "seclib"
 #define LDAPSECLIB "LdapSecurity"
-#define HTPASSWDSECLIB "htpasswdSecurity"
 
 enum NewSecAccessFlags
 {
@@ -268,15 +267,16 @@ enum secManagerType
     SMT_HTPasswd,
     SMT_HTPluggable
 };
+interface IEspSecureContext;
 interface ISecManager : extends IInterface
 {
     virtual ISecUser * createUser(const char * user_name) = 0;
     virtual ISecResourceList * createResourceList(const char * rlname) = 0;
     virtual bool subscribe(ISecAuthenticEvents & events) = 0;
     virtual bool unsubscribe(ISecAuthenticEvents & events) = 0;
-    virtual bool authorize(ISecUser & user, ISecResourceList * resources) = 0;
-    virtual bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources) = 0;
-    virtual int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename) = 0;
+    virtual bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext) = 0;
+    virtual bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = NULL) = 0;
+    virtual int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext = NULL) = 0;
     virtual int getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename) = 0;
     virtual int authorizeFileScope(ISecUser & user, const char * filescope) = 0;
     virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources) = 0;
@@ -285,7 +285,7 @@ interface ISecManager : extends IInterface
     virtual bool addResourceEx(SecResourceType rtype, ISecUser & user, const char * resourcename, SecPermissionType ptype, const char * basedn) = 0;
     virtual bool getResources(SecResourceType rtype, const char * basedn, IResourceArray & resources) = 0;
     virtual bool updateResources(ISecUser & user, ISecResourceList * resources) = 0;
-    virtual bool updateSettings(ISecUser & user, ISecPropertyList * resources) = 0;
+    virtual bool updateSettings(ISecUser & user, ISecPropertyList * resources, IEspSecureContext* secureContext) = 0;
     virtual bool addUser(ISecUser & user) = 0;
     virtual ISecUser * findUser(const char * username) = 0;
     virtual ISecUser * lookupUser(unsigned uid) = 0;

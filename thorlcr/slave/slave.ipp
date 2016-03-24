@@ -42,10 +42,10 @@ protected:
     virtual void process() { }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     ProcessSlaveActivity(CGraphElementBase *container);
-    ~ProcessSlaveActivity();
+    virtual void beforeDispose();
 
     virtual void startProcess(bool async=true);
     virtual bool wait(unsigned timeout);

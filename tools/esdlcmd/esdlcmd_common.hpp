@@ -77,7 +77,7 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 
 #define ESDLOPT_WSDL_ADDRESS            "--wsdl-address"
 
-#define ESDLBINDING_URN_BASE            "urn:hpccsystems:ws"
+#define DEFAULT_NAMESPACE_BASE          "urn:hpccsystems:ws"
 #define ESDLOPTLIST_DELIMITER           ";"
 
 #define ESDL_OPT_SERVICE_SERVER         "-s"

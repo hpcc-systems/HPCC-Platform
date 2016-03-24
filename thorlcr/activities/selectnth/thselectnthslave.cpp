@@ -62,7 +62,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, public CThorDataLink, imp
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CSelectNthSlaveActivity(CGraphElementBase *_container, bool _isLocal) : CSlaveActivity(_container), CThorDataLink(this)
     {

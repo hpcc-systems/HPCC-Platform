@@ -78,7 +78,6 @@ unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
 unsigned restarts = 0;
 bool fieldTranslationEnabled = false;
-bool useTreeCopy = true;
 bool mergeSlaveStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
@@ -824,7 +823,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
-        useTreeCopy = topology->getPropBool("@useTreeCopy", true);
         mergeSlaveStatistics = topology->getPropBool("@mergeSlaveStatistics", true);
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);

@@ -118,7 +118,7 @@ class graphmaster_decl CJobMaster : public CJobBase
 public:
     IMPLEMENT_IINTERFACE;
 
-    CJobMaster(IConstWorkUnit &workunit, const char *_graphName, const char *querySo, bool _sendSo, const SocketEndpoint &_agentEp);
+    CJobMaster(IConstWorkUnit &workunit, const char *_graphName, ILoadedDllEntry *querySo, bool _sendSo, const SocketEndpoint &_agentEp);
     ~CJobMaster();
 
     virtual void addChannel(IMPServer *mpServer);

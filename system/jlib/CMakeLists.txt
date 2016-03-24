@@ -30,6 +30,15 @@ CHECK_LIBRARY_EXISTS(dl dlopen "" HAVE_LIBDL)
 CHECK_LIBRARY_EXISTS(crypt crypt "" HAVE_LIBCRYPT) 
 endif ()
 
+if(NOT TARGET lzma)
+  add_subdirectory(../lzma ${CMAKE_BINARY_DIR}/system/lzma)
+endif(NOT TARGET lzma)
+
+if(NOT TARGET lz4)
+  add_subdirectory(../lz4_sm ${CMAKE_BINARY_DIR}/system/lz4_sm)
+endif(NOT TARGET lz4)
+
+
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
   SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror")
 endif()
@@ -179,7 +188,6 @@ include_directories (
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ${TBB_INCLUDE_DIR}
     )
 
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=1 -D_USRDLL -DJLIB_EXPORTS )
@@ -189,10 +197,6 @@ target_link_libraries ( jlib
         lzma
         lz4
        )
-
-if ( ${USE_TBB} )
-   target_link_libraries ( jlib ${TBB_LIBRARIES})
-endif()
 
 if ( ${HAVE_LIBDL} )
 target_link_libraries ( jlib dl)
@@ -207,10 +211,6 @@ if (WIN32)
 elseif (("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" ))
 else ()
  target_link_libraries ( jlib rt )
-endif ()
-
-if (USE_NUMA)
- target_link_libraries ( jlib numa )
 endif ()
 
 if (NOT PLUGIN)

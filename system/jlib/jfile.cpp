@@ -1530,21 +1530,11 @@ public:
         ifile->copySection(dest,toOfs,fromOfs,size,progress,copyFlags);
     }
 
-
     IMemoryMappedFile *openMemoryMapped(offset_t ofs, memsize_t len, bool write)
     {
         throw MakeStringException(-1,"Remote file cannot be memory mapped");
         return NULL;
     }
-
-    void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom, bool usetmp, CFflags copyFlags)
-    {
-        // no special action for windows
-        GetHostIp(resfrom);
-        copyTo(dest,DEFAULT_COPY_BLKSIZE,NULL,usetmp,copyFlags);
-    }
-
-
 };
 #endif
 
@@ -2891,6 +2881,25 @@ size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer)
     if (lenRead != len)
         buffer.rewrite(buffer.length() - (len - lenRead));
     return lenRead;
+}
+
+void renameFile(const char *target, const char *source, bool overwritetarget)
+{
+    OwnedIFile src = createIFile(source);
+    if (!src)
+        throw MakeStringException(-1, "renameFile: source '%s' not found", source);
+    if (!src->isFile())
+        throw MakeStringException(-1, "renameFile: source '%s' is not a valid file", source);
+    if (src->isReadOnly())
+        throw MakeStringException(-1, "renameFile: source '%s' is readonly", source);
+
+    OwnedIFile tgt = createIFile(target);
+    if (!tgt)
+        throw MakeStringException(-1, "renameFile: target path '%s' could not be created", target);
+    if (tgt->exists() && !overwritetarget)
+        throw MakeStringException(-1, "renameFile: target file already exists: '%s' will not overwrite", target);
+
+    src->rename(target);
 }
 
 void copyFile(const char *target, const char *source, size32_t buffersize, ICopyFileProgress *progress, CFflags copyFlags)

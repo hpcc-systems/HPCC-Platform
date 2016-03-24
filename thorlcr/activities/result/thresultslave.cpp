@@ -28,7 +28,7 @@ class CResultSlaveActivity : public ProcessSlaveActivity
     IThorDataLink *input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CResultSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container) { }
 

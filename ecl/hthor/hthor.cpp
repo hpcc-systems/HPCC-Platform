@@ -40,6 +40,7 @@
 #include "dasess.hpp"
 #include "dadfs.hpp"
 #include "thorfile.hpp"
+#include "thorsort.hpp"
 #include "thorparse.ipp"
 #include "thorxmlwrite.hpp"
 #include "jsmartsock.hpp"

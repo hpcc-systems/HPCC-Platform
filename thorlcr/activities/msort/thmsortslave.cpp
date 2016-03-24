@@ -57,7 +57,7 @@ class MSortSlaveActivity : public CSlaveActivity, public CThorDataLink
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     MSortSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this), spillStats(spillStatistics)
     {

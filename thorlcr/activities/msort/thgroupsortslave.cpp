@@ -42,7 +42,7 @@ class CLocalSortSlaveActivity : public CSlaveActivity, public CThorDataLink
     CRuntimeStatisticCollection spillStats;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CLocalSortSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container), CThorDataLink(this), spillStats(spillStatistics)
@@ -135,7 +135,7 @@ class CSortedSlaveActivity : public CSlaveActivity, public CThorDataLink, public
     OwnedConstThorRow prev; 
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CSortedSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container), CThorDataLink(this), CThorSteppable(this)

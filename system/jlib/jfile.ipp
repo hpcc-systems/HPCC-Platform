@@ -81,14 +81,7 @@ public:
     virtual void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp, CFflags copyFlags=CFnone);
 
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false);
-    
-    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp,CFflags copyFlags=CFnone)
-    {
-        // not really for local but simulate
-        GetHostIp(resfrom);
-        copyTo(dest,DEFAULT_COPY_BLKSIZE,NULL,usetmp,copyFlags);
-    }
-    
+
 protected:
     StringAttr filename;
     unsigned flags;

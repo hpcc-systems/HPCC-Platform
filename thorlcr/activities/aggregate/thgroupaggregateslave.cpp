@@ -26,7 +26,7 @@ private:
     IThorDataLink *input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     GroupAggregateSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorDataLink(this)

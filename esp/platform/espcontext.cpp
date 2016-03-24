@@ -25,9 +25,11 @@
 
 #include "jliball.hpp"
 #include "espcontext.hpp"
+#include "txsummary.hpp"
 #include "http/platform/httptransport.ipp"
 #include "sechandler.hpp"
 #include "espprotocol.hpp"
+#include "espsecurecontext.hpp"
 
 class CEspContext : public CInterface, implements IEspContext
 {
@@ -67,7 +69,7 @@ private:
     SecHandler m_SecurityHandler;
     BoolHash  m_optGroups;
 
-    StringArray m_traceValues;
+    Owned<CTxSummary> m_txSummary;
     unsigned    m_active;
     unsigned    m_creationTime;
     unsigned    m_processingTime;
@@ -77,15 +79,30 @@ private:
 
     ESPSerializationFormat respSerializationFormat;
 
+    Owned<IEspSecureContext> m_secureContext;
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CEspContext() : m_servPort(0), m_bindingValue(0), m_serviceValue(0), m_toBeAuthenticated(false), options(0), m_clientVer(-1)
+    CEspContext(IEspSecureContext* secureContext)
+    : m_servPort(0)
+    , m_bindingValue(0)
+    , m_serviceValue(0)
+    , m_toBeAuthenticated(false)
+    , m_clientVer(-1)
+    , options(0)
+    , m_active(ActiveRequests::getCount())
+    , m_creationTime(msTick())
+    , m_processingTime(0)
+    , m_exceptionTime(0)
+    , m_hasException(false)
+    , m_exceptionCode(0)
+    , respSerializationFormat(ESPSerializationANY)
     {
-        m_hasException =  false;
-        m_creationTime = msTick();
-        m_active=ActiveRequests::getCount();
-        respSerializationFormat=ESPSerializationANY;
+        m_txSummary.setown(new CTxSummary(m_creationTime));
+        updateTraceSummaryHeader();
+        m_secureContext.setown(secureContext);
+        m_SecurityHandler.setSecureContext(secureContext);
     }
 
     ~CEspContext()
@@ -187,10 +204,6 @@ public:
         return m_servName.str();
     }
 
-    virtual void setCreationTime()
-    {
-        m_creationTime = msTick();
-    }
     virtual const unsigned queryCreationTime()
     {
         return m_creationTime;
@@ -408,72 +421,48 @@ public:
         m_custom_headers.append(StringBuffer(name).appendf(": %s", val?val:"").str());
     }
 
+    virtual CTxSummary* getTxSummary()
+    {
+        return m_txSummary.get();
+    }
+
     virtual void addTraceSummaryValue(const char *name, const char *value)
     {
-        StringBuffer str;
-        if (name && *name)
-            str.append(name).append('=');
-        if (value && *value)
-            str.append(value);
-        m_traceValues.append(str.str());
+        if (m_txSummary)
+            m_txSummary->append(name, value);
     }
 
     virtual void addTraceSummaryValue(const char *name, __int64 value)
     {
-        StringBuffer str;
-        if (name && *name)
-            str.append(name).append('=');
-        str.append(value);
-        m_traceValues.append(str.str());
+        if (m_txSummary)
+            m_txSummary->append(name, value);
     }
 
     virtual void addTraceSummaryTimeStamp(const char *name)
     {
-        if (name && *name)
-        {
-            unsigned timeval=msTick()-m_creationTime;
-            StringBuffer value;
-            value.append(name).append('=').appendulong(timeval).append("ms");
-            m_traceValues.append(value.str());
-        }
+        if (m_txSummary && name && *name)
+            m_txSummary->append(name, m_txSummary->getElapsedTime(), "ms");
     }
     virtual void flushTraceSummary()
     {
-        StringBuffer logstr;
-        logstr.appendf("activeReqs=").append(m_active).append(';');
-        logstr.append("user=").append(queryUserId());
-        if (m_peer.length())
-            logstr.append('@').append(m_peer.get());
-        logstr.append(';');
-
-        if (m_hasException)
+        if (m_txSummary)
         {
-            logstr.appendf("exception@%dms=%d;", m_exceptionTime, m_exceptionCode);
-        }
+            if (!m_hasException && (getEspLogLevel() <= LogNormal))
+                m_txSummary->clear();
 
-        StringBuffer value;
-        value.append("total=").appendulong(m_processingTime).append("ms");
-        if (m_hasException || (getEspLogLevel() > LogNormal))
-        {
-            m_traceValues.append(value.str());
-
-            if (m_traceValues.length())
-            {
-                ForEachItemIn(idx, m_traceValues)
-                    logstr.append(m_traceValues.item(idx)).append(";");
-                m_traceValues.kill();
-            }
+            updateTraceSummaryHeader();
+            m_txSummary->append("total", m_processingTime, "ms");
         }
-        else
-        {
-            logstr.appendf("%s;", value.str());
-        }
-
-        DBGLOG("TxSummary[%s]", logstr.str());
     }
 
     virtual ESPSerializationFormat getResponseFormat(){return respSerializationFormat;}
     virtual void setResponseFormat(ESPSerializationFormat fmt){respSerializationFormat = fmt;}
+
+    void updateTraceSummaryHeader();
+    IEspSecureContext* querySecureContext() override
+    {
+        return m_secureContext.get();
+    }
 };
 
 //---------------------------------------------------------
@@ -555,9 +544,20 @@ bool CEspContext::isMethodAllowed(double version, const char* optional, const ch
     return true;
 }
 
-IEspContext* createEspContext()
+void CEspContext::updateTraceSummaryHeader()
 {
-    return new CEspContext;
+    if (m_txSummary)
+    {
+        m_txSummary->set("activeReqs", m_active);
+        m_txSummary->set("user", VStringBuffer("%s%s%s", (queryUserId() ? queryUserId() : ""), (m_peer.length() ? "@" : ""), m_peer.str()).str());
+        if (m_hasException)
+            m_txSummary->set(VStringBuffer("exception@%ums", m_exceptionTime), m_exceptionCode);
+    }
+}
+
+IEspContext* createEspContext(IEspSecureContext* secureContext)
+{
+    return new CEspContext(secureContext);
 }
 
 bool getUrlParams(IProperties *props, StringBuffer& params)

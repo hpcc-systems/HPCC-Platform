@@ -134,8 +134,7 @@ class JoinSlaveActivity : public CSlaveActivity, public CThorDataLink, implement
     } compareReverse, compareReverseUpper;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     JoinSlaveActivity(CGraphElementBase *_container, bool local)
         : CSlaveActivity(_container), CThorDataLink(this), spillStats(spillStatistics)
@@ -605,7 +604,7 @@ protected:
     void beforeProcessing();
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CMergeJoinSlaveBaseActivity(CGraphElementBase *container, CMergeJoinProcessor &_processor) : CThorNarySlaveActivity(container), CThorDataLink(this), CThorSteppable(this), processor(_processor)
     {

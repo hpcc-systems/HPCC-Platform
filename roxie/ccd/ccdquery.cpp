@@ -1280,7 +1280,7 @@ public:
         assertex(name && *name);
         ActivityArrayPtr *graph = graphMap.getValue(name);
         assertex(graph);
-        Owned<IActivityGraph> ret = ::createActivityGraph(ctx, name, 0, **graph, parentActivity, probeManager, logctx);
+        Owned<IActivityGraph> ret = ::createActivityGraph(ctx, name, 0, **graph, parentActivity, probeManager, logctx, 1);
         return ret.getClear();
     }
 

@@ -35,6 +35,7 @@
             </xsl:choose>
         </xsl:variable>
 
+        <xsl:variable name="namespaceBase" select="@namespaceBase"/>
         <xsl:variable name="serviceName" select="@name"/>
         <xsl:variable name="bindName" select=" $bindingNode/@name"/>
         <xsl:variable name="bindType">
@@ -53,7 +54,7 @@
                 <xsl:with-param name="plugin" select="Properties/@plugin"/>
             </xsl:call-template>
         </xsl:variable>
-        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
+        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}" namespaceBase="{$namespaceBase}">
             <xsl:if test="string(@LoggingManager) != ''">
                 <xsl:variable name="managerName" select="@LoggingManager"/>
                 <xsl:variable name="managerNode" select="/Environment/Software/LoggingManager[@name=$managerName]"/>

@@ -36,7 +36,7 @@ class CWuidReadSlaveActivity : public CSlaveActivity, public CThorDataLink
     CMessageBuffer masterReplyMsg;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CWuidReadSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorDataLink(this)

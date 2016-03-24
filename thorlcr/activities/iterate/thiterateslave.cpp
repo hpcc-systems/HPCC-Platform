@@ -32,7 +32,7 @@ protected:
     bool eof, nextPut;
     rowcount_t count;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     IterateSlaveActivityBase(CGraphElementBase *_container, bool _global) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -287,7 +287,7 @@ class CChildIteratorSlaveActivity : public CSlaveActivity, public CThorDataLink
     rowcount_t count;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CChildIteratorSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
@@ -343,7 +343,7 @@ class CLinkedRawIteratorSlaveActivity : public CSlaveActivity, public CThorDataL
     bool dohere, grouped;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CLinkedRawIteratorSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorDataLink(this)
@@ -404,7 +404,7 @@ class CStreamedIteratorSlaveActivity : public CSlaveActivity, public CThorDataLi
     bool eof;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CStreamedIteratorSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorDataLink(this)

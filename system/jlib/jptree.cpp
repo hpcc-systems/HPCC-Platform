@@ -3857,19 +3857,21 @@ protected:
     }
     bool checkBOM()
     {
-        bool unsupportedUnicode = false;
+        bool utf16 = false;
         bool utf8 = false;
+        // Note - technically the utf16 LE case could also be utf32 LE (utf32 BE would be 0x00 0x00 0xfe 0xff)
+        // But utf32 is so rare that we ignore it for now
         switch ((unsigned char)nextChar)
         {
         case 0xff:
             readNext();
             if (0xfe == (unsigned char)nextChar)
-                unsupportedUnicode = true;
+                utf16 = true;
             break;
         case 0xfe:
             readNext();
             if (0xff == (unsigned char)nextChar)
-                unsupportedUnicode = true;
+                utf16 = true;
             break;
         case 0xef:
             readNext();
@@ -3885,8 +3887,8 @@ protected:
         }
         if (utf8)
             return true;
-        else if (unsupportedUnicode)
-            error("Unsupported unicode detected in BOM header", false);
+        else if (utf16)
+            error("Unsupported utf16 format detected in BOM header", false);
         return false;
     }
     inline void expecting(const char *str)

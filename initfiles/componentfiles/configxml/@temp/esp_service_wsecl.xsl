@@ -204,7 +204,7 @@
          <xsl:when test="$authMethod='ldap' or $authMethod='ldaps'">
             <Authenticate method="LdapSecurity" config="ldapserver">
                <xsl:copy-of select="$bindingNode/@resourcesBasedn"/> <!--if binding has an ldap resourcebasedn specified then copy it out -->
-               
+
                <xsl:for-each select="$bindingNode/Authenticate[string(@path) != '']">
                   <Location path="{@path}" resource="{@resource}" access="{@access}" description="{@description}"/>
                </xsl:for-each>
@@ -214,12 +214,23 @@
                </xsl:for-each>                              
             </Authenticate>
          </xsl:when>
-         <xsl:when test="$authMethod='htpasswd'">
-           <Authenticate method="htpasswd">
-             <xsl:attribute name="htpasswdFile"> <xsl:value-of select="$bindingNode/../Authentication/@htpasswdFile"/> </xsl:attribute>
-           </Authenticate>
+         <xsl:when test="$authMethod='secmgrPlugin'">
+            <Authenticate>
+               <xsl:attribute name="method">
+                 <xsl:value-of select="$bindingNode/@type"/>
+               </xsl:attribute>
+               <xsl:copy-of select="$bindingNode/@resourcesBasedn"/>
+               <xsl:for-each select="$bindingNode/Authenticate[string(@path) != '']">
+
+                  <Location path="{@path}" resource="{@resource}" access="{@access}" description="{@description}"/>
+               </xsl:for-each>
+
+               <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
+                  <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
+               </xsl:for-each>
+            </Authenticate>
          </xsl:when>
-      </xsl:choose>
+
    </xsl:template>
    
 
