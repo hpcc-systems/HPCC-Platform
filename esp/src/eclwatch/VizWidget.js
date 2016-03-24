@@ -28,12 +28,15 @@ define([
     "dijit/registry",
     "dijit/layout/ContentPane",
     "dijit/form/Select",
+    "dijit/form/CheckBox",
+
+    "dgrid/editor",
 
     "hpcc/TableContainer",
-
     "hpcc/_Widget",
     "hpcc/ESPWorkunit",
     "hpcc/WsWorkunits",
+    "hpcc/SelectionGridWidget",
 
     "dojo/text!../templates/VizWidget.html",
 
@@ -44,12 +47,14 @@ define([
     "dijit/TooltipDialog",
     "dijit/form/Form",
     "dijit/form/Button",
-    "dijit/form/DropDownButton"
+    "dijit/form/NumberSpinner",
+    "dijit/form/DropDownButton",
+    "dijit/Fieldset"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
-                registry, ContentPane, Select,
-                TableContainer,
-                _Widget, ESPWorkunit, WsWorkunits,
+                registry, ContentPane, Select, CheckBox,
+                editor,
+                TableContainer, _Widget, ESPWorkunit, WsWorkunits, SelectionGridWidget,
                 template) {
     return declare("VizWidget", [_Widget], {
         templateString: template,
@@ -70,9 +75,15 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.borderContainer = registry.byId(this.id + "BorderContainer");
+            this.limit = registry.byId(this.id + "Limit");
+            this.aggregateMode = registry.byId(this.id + "AggregateMode");
+            this.vizSelect = registry.byId(this.id + "VizSelect");
+
             this.vizSelect = registry.byId(this.id + "VizSelect");
             this.mappingDropDown = registry.byId(this.id + "Mappings");
-            this.mappingItems = registry.byId(this.id + "MappingItems");
+            this.mappingForm = registry.byId(this.id + "MappingForm");
+            this.mappingLabel = registry.byId(this.id + "MappingLabel");
+            this.mappingValues = registry.byId(this.id + "MappingValues");
         },
 
         startup: function (args) {
@@ -104,7 +115,7 @@ define([
         },
 
         _onVizSelect: function (value) {
-            this.vizOnChange(value);
+            this.vizOnChange(value, true);
         },
 
         _onMappingsApply: function (evt) {
@@ -128,9 +139,14 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            this.rows = [];
+
             this.loading = true;
 
             var context = this;
+            if (params.limit) {
+                this.limit.set("value", params.limit);
+            }
             WsWorkunits.GetVisualisations().then(function (vizResponse) {
                 context.vizSelect.set("options", vizResponse);
                 if (params.viz) {
@@ -162,7 +178,7 @@ define([
                         }
                         context.doFetchAllStructures().then(function (response) {
                             context.loading = false;
-                            context.vizOnChange(context.vizSelect.get("value"), params.mapping);
+                            context.vizOnChange(context.vizSelect.get("value"), true);
                         });
                     });
                 }
@@ -201,8 +217,8 @@ define([
             return retVal;
         },
 
-        getFieldOptions: function (sequence) {
-            var retVal = [];
+        getFieldOptions: function (sequence, optional) {
+            var retVal = optional ? [{ label: "&nbsp;", value: "" }] : [];
             arrayUtil.forEach(this.resultStructures[sequence], function (item, idx) {
                 if (item.field.indexOf("_") !== 0) {
                     retVal.push({
@@ -212,6 +228,29 @@ define([
                 }
             });
             return retVal;
+        },
+
+        getFieldValue: function (options, id, defIdx) {
+            defIdx = defIdx || 0;
+            var retVal = options[defIdx].value;
+            if (lang.exists("defaultSelection." + id, this)) {
+                retVal = this.defaultSelection[id];
+            } else {
+                arrayUtil.forEach(options, function (optionItem, idx) {
+                    if (optionItem.label === id) {
+                        retVal = optionItem.value;
+                        return true;
+                    }
+                });
+            }
+            return retVal;
+        },
+
+        getFieldAggregation: function (id) {
+            if (lang.exists("defaultSelection." + id + "_aggr", this)) {
+                return this.defaultSelection[id + "_aggr"];
+            }
+            return "mean";
         },
 
         vizOnChange: function (value, autoShow) {
@@ -235,42 +274,79 @@ define([
             });
         },
 
-        datasetOnChange: function (select, sequence) {
+        refreshMappings: function () {
+            this.datasetMappings = this.d3Viz.cloneDatasetMappings();
+
+            var context = this;
+            arrayUtil.forEach(this.datasetMappings, function (datasetMapping, idx) {
+                context.datasetOnChange(datasetMapping.getFieldMappings(), context.params.Sequence);
+            });
+        },
+
+        datasetOnChange: function (fieldMappings, sequence) {
             if (this.loading)
                 return;
 
             if (sequence != null) {
-                select.datasetMapping.sequence = sequence;
-                select.datasetMapping.result = this.wu.results[sequence];
-                select.datasetMapping.data = null;
+                var result = this.wu.results[sequence];
+                var data = null;
 
                 this.foundMatchingFields = false;
                 var foundMatchingFieldCount = 0;
-                var fieldMappings = select.datasetMapping.getFieldMappings();
+                var options = this.getFieldOptions(sequence);
+                this.mappingLabel.set("options", options)
+                var value = this.getFieldValue(options, "label");
+                this.mappingLabel.set("value", value);
+
+                var options2 = this.getFieldOptions(sequence, true);
+                if (!this.mappingValues.grid) {
+                    this.mappingValues.createGrid({
+                        idProperty: "id",
+                        columns: {
+                            field: editor({
+                                label: "Field",
+                                autoSave: true,
+                                editorArgs: {
+                                    style: "width:75px;",
+                                    options: options2
+                                }
+                            }, Select),
+                            aggregation: editor({
+                                label: "Value",
+                                autoSave: true,
+                                editorArgs: {
+                                    style: "width:75px;",
+                                    options: [
+                                        { value: "", label: "&nbsp;" },
+                                        { value: "mean", label: "Mean" },
+                                        { value: "sum", label: "Sum" },
+                                        { value: "max", label: "Max" },
+                                        { value: "min", label: "Min" },
+                                        { value: "median", label: "Median" },
+                                        { value: "variance", label: "Variance" },
+                                        { value: "deviation", label: "Deviation" },
+                                        { value: "cnt", label: "Count" }
+                                    ]
+                                }
+                            }, Select)
+                        }
+                    });
+                }
+
+                var data = [];
                 var context = this;
                 arrayUtil.forEach(fieldMappings, function (fieldMapping, idx) {
-                    var options = context.getFieldOptions(sequence);
-                    fieldMapping.select.set("options", options);
-
-                    //  Auto select field priority:
-                    //  1.  "defaultSelection" (typically from URL mapping)
-                    //  2.  Match by field name
-                    //  3.  Match by field index
-                    //  4.  Just use option[0]
-                    var value = options[idx < options.length ? idx : 0].value;  //  If no default value or matching name, revert to field order and failing that use options[0]
-                    if (lang.exists("defaultSelection." + fieldMapping.select.name, context)) {
-                        value = context.defaultSelection[fieldMapping.select.name];
-                    } else {
-                        arrayUtil.forEach(fieldMapping.select.options, function (optionItem, idx) {
-                            if (optionItem.label === fieldMapping.getID()) {
-                                ++foundMatchingFieldCount;
-                                value = optionItem.value;
-                                return true;
-                            }
+                    if (idx > 0) {
+                        var value = context.getFieldValue(options2, fieldMapping._id, idx === 1 ? 2 : 0);
+                        var aggr = context.getFieldAggregation(fieldMapping._id);
+                        data.push({
+                            id: "value" + (idx > 1 ? idx : ""),
+                            field: value,
+                            aggregation: value ? aggr : ""
                         });
                     }
-                    fieldMapping.select.set("value", value);
                 });
+                this.mappingValues.setData(data);
                 if (foundMatchingFieldCount === fieldMappings.length) {
                     this.foundMatchingFields = true;
                 }
@@ -284,86 +360,32 @@ define([
             this.d3Viz.setFieldMapping(select.fieldMapping.getID(), value, select.datasetMapping.getID());
         },
 
-        refreshMappings: function () {
-            this.datasetMappings = this.d3Viz.cloneDatasetMappings();
-
-            var placeHolder = registry.byId(this.id + "MappingItems");
-            if (this.mappingWidget) {
-                this.mappingWidget.destroyRecursive();
-            }
-            this.mappingWidget = new ContentPane({
-            });
-            var context = this;
-            arrayUtil.forEach(this.datasetMappings, function (datasetMapping, idx) {
-                var tableContainer = new TableContainer({
-                    cols: 1,
-                    customClass: "labelsAndValues",
-                    "labelWidth": "120"
-                });
-
-                datasetMapping.select = new Select({
-                    id: context.id + datasetMapping.getID(),
-                    label: datasetMapping.getDisplay(),
-                    name: datasetMapping.getID(),
-                    datasetMapping: datasetMapping,
-                    options: context.getResultOptions(),
-                    onChange: function (value) {
-                        context.datasetOnChange(this, value);
-                    }
-                });
-                tableContainer.addChild(datasetMapping.select);
-
-                arrayUtil.forEach(datasetMapping.getFieldMappings(), function (fieldMapping, idx) {
-                    fieldMapping.select = new Select({
-                        id: context.id + datasetMapping.getID() + ":" + fieldMapping.getID(),
-                        datasetMapping: datasetMapping,
-                        fieldMapping: fieldMapping,
-                        label: "&nbsp;&nbsp;&nbsp;&nbsp;" + fieldMapping.getDisplay(),
-                        name: datasetMapping.getID() + ":" + fieldMapping.getID(),
-                        options: [],
-                        onChange: function (value) {
-                            context.fieldOnChange(this, value);
-                        }
-                    });
-                    tableContainer.addChild(fieldMapping.select);
-                });
-                context.mappingWidget.addChild(tableContainer);
-
-                //  "sequence" auto select priority:
-                //  1.  "defaultSelection" (typically from URL mapping)
-                //  2.  Match by field name
-                //  3.  Just use sequence = 0
-                var sequence = 0;
-                if (lang.exists("defaultSelection." + datasetMapping.select.name, context)) {
-                    sequence = context.defaultSelection[datasetMapping.select.name];
-                } else  {
-                    arrayUtil.forEach(datasetMapping.select.options, function (optionItem, idx) {
-                        if (optionItem.label === datasetMapping.getID()) {
-                            sequence = optionItem.value;
-                            return true;
-                        }
-                    });
-                }
-                if (datasetMapping.select.get("value") != sequence) {
-                    datasetMapping.select.set("value", sequence);
-                } else {
-                    context.datasetOnChange(datasetMapping.select, sequence);
-                }
-            });
-            placeHolder.addChild(this.mappingWidget);
-        },
-
         vizType: "",
         refreshVizType: function (_value) {
             var valueParts = _value.split(" ");
             var value = valueParts[0];
             var chartType = valueParts[1];
             var deferred = new Deferred();
-            if (this.vizType !== value) {
+            if (this.vizType !== value || this.chartType !== chartType) {
                 this.vizType = value;
+                this.chartType = chartType;
                 var context = this;
-                require(["src/hpcc-viz", "src/hpcc-viz-common", "src/hpcc-viz-api", "src/hpcc-viz-chart", "src/hpcc-viz-c3chart", "src/hpcc-viz-map", "src/hpcc-viz-graph"], function () {
-                    require(["hpcc/viz/" + context.vizType], function (D3Viz) {
+                if (dojoConfig.vizDebug) {
+                    requireWidget();
+                } else {
+                    require(["dist-amd/hpcc-viz"], function () {
+                        require(["dist-amd/hpcc-viz-common"], function () {
+                            require(["dist-amd/hpcc-viz-api"], function () {
+                                require(["dist-amd/hpcc-viz-chart", "dist-amd/hpcc-viz-layout", "dist-amd/hpcc-viz-other", "dist-amd/hpcc-viz-map"], function () {
+                                    requireWidget();
+                                });
+                            });
+                        });
+                    });
+                }
+
+                function requireWidget() {
+                    require(["src/layout/Grid", "hpcc/viz/" + context.vizType], function (Grid, D3Viz) {
                         context.d3Viz = new D3Viz();
                         context.d3Viz._chartType = chartType;
                         domConstruct.empty(context.id + "VizCP");
@@ -372,12 +394,7 @@ define([
                         });
                         deferred.resolve(context.vizType);
                     });
-                });
-            } else {
-                if (chartType && this.d3Viz.chart) {
-                    this.d3Viz.chart.chartType(chartType);
                 }
-                deferred.resolve(this.vizType);
             }
             return deferred.promise;
         },
@@ -394,23 +411,63 @@ define([
         },
 
         refreshData: function () {
-            if (this.d3Viz) {
+            if (this.limit.get("value") > this.rows.length) {
+                var result = this.wu.results[this.params.Sequence];
                 var context = this;
-                var allArray = [];
-                arrayUtil.forEach(this.datasetMappings, function (datasetMapping, idx) {
-                    allArray.push(datasetMapping.result.fetchContent().then(function (response) {
-                        context.d3Viz.setData(response, datasetMapping.getID());
-                        return response;
-                    }));
+                result.fetchNRows(this.rows.length, this.limit.get("value")).then(function (response) {
+                    context.rows = context.rows.concat(response);
+                    context.loadData();
                 });
-                all(allArray).then(function (response) {
-                    var valueParts = context.vizSelect.get("value").split(" ");
-                    context.params.viz = valueParts[0];
-                    context.params.chartType = valueParts[1];
-                    context.params.mapping = domForm.toQuery(context.id + "MappingForm");
-                    context.d3Viz.display();
-                });
+            } else {
+                this.loadData();
             }
+        },
+
+        loadData: function () {
+            var request = domForm.toObject(this.id + "MappingForm");
+            arrayUtil.forEach(this.mappingValues.store.data, function (row, idx) {
+                if (row.field) {
+                    request[row.id] = row.field;
+                    request[row.id + "_aggr"] = row.aggregation;
+                }
+            }, this);
+            var context = this;
+            var data = d3.nest()
+                .key(function (d) { return d[request.label] })
+                .rollup(function (leaves) {
+                    var retVal = {
+                    };
+                    arrayUtil.forEach(context.mappingValues.store.data, function (row, idx) {
+                        if (row.field) {
+                            switch(row.aggregation) {
+                                case "cnt":
+                                    retVal[row.id] = leaves.length;
+                                    break;
+                                default:
+                                    retVal[row.id] = d3[row.aggregation || "mean"](leaves, function (d) {
+                                        return d[row.field];
+                                    });
+                                    break;
+                            }
+                        }
+                    }, this);
+                    return retVal;
+                })
+                .entries(this.rows).map(function (d) {
+                    var retVal = d.values;
+                    retVal.label = d.key;
+                    return retVal;
+                })
+            ;
+
+            this.d3Viz.setData(data, null, request);
+
+            this.params.limit = this.limit.get("value");
+            this.params.viz = this.vizSelect.get("value");
+            this.params.mapping = ioQuery.objectToQuery(request);
+            this.defaultSelection = request;
+            this.refreshHRef();
+            this.d3Viz.display();
         }
     });
 });

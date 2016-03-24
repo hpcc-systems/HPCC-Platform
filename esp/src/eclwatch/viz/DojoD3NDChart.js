@@ -10,11 +10,15 @@ define([
     DojoD3, Mapping) {
     return declare([Mapping, DojoD3], {
         mapping: {
-            _2DChart: {
-                display: "2D Chart Data",
+            NDChart: {
+                display: "ND Chart Data",
                 fields: {
                     label: "Label",
-                    value: "Value"
+                    value: "Value",
+                    value2: "Value 2",
+                    value3: "Value 3",
+                    value4: "Value 4",
+                    value5: "Value 5"
                 }
             }
         },
@@ -46,13 +50,19 @@ define([
 
             var data = this.getMappedData();
 
-            var columns = [this.getFieldMapping("label"), this.getFieldMapping("value")];
-            var chartData = [];
-            arrayUtil.forEach(data, function (row, idx) {
-                chartData.push([row.label, row.value]);
+            var chartColumns = [];
+            var chartData = arrayUtil.map(data, function (d, idx) {
+                var retVal = [];
+                for (var key in d) {
+                    if (idx === 0) {
+                        chartColumns.push(key);
+                    }
+                    retVal.push(d[key]);
+                }
+                return retVal;
             });
             this.chart
-                .columns(columns)
+                .columns(chartColumns)
                 .data(chartData)
                 .render()
             ;
