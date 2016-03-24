@@ -92,21 +92,6 @@ public:
             else
                 throw MakeStringException(-1, "procedure newLdapSecManager of %s can't be loaded", realName.str());
         }
-        else if(stricmp(model_name, "htpasswd") == 0)
-        {
-            realName.append(SharedObjectPrefix).append(HTPASSWDSECLIB).append(SharedObjectExtension);
-            HINSTANCE htpasswdseclib = LoadSharedObject(realName.str(), true, false);
-            if(htpasswdseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", realName.str());
-
-            newSecManager_t_ xproc = NULL;
-            xproc = (newSecManager_t_)GetSharedProcedure(htpasswdseclib, "newHtpasswdSecManager");
-
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newHtpasswdSecManager of %s can't be loaded", realName.str());
-        }
         else
             throw MakeStringException(-1, "Security model %s not supported", model_name);
     }   

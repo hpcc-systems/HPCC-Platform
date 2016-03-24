@@ -94,12 +94,6 @@
                         <xsl:with-param name="localDomain" select="/Environment/Hardware/Computer[@name=$computerName]/@domain"/>
                     </xsl:call-template>
                 </xsl:if>
-                 <xsl:if test="@method='htpasswd'">
-                    <xsl:call-template name="dohtpasswdSecurity">
-                        <xsl:with-param name="method" select="@method"/>
-                        <xsl:with-param name="htpasswdFile" select="@htpasswdFile"/>
-                    </xsl:call-template>
-                </xsl:if>
             </xsl:for-each>
 
             <xsl:if test="./Authentication/@method='secmgrPlugin'">

@@ -36,7 +36,6 @@
 
 #define SECLIB "seclib"
 #define LDAPSECLIB "LdapSecurity"
-#define HTPASSWDSECLIB "htpasswdSecurity"
 
 enum NewSecAccessFlags
 {
