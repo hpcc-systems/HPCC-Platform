@@ -374,9 +374,9 @@ to
     </sect2>
 
     <sect2>
-      <title>Roxie Results </title>
+      <title>Roxie Results</title>
 
-      <para>By default, Roxie results from HTTP queries do return empty
+      <para>By default, Roxie results from HTTP queries do not return empty
       elements (tags). If a field's value is empty, the tag is not returned.
       However, at times an application may expect all tags to be returned, so
       you can add a URL decoration to override the default behavior. This
@@ -385,20 +385,34 @@ to
       <para><programlisting>.trim=o</programlisting></para>
 
       <para>The <emphasis role="bold">.trim=0</emphasis> option can be added
-      to WsECL, SOAP, JSON, or Web form queries. </para>
+      to WsECL, SOAP, JSON, or Web form queries.</para>
 
       <para><emphasis role="bold">WsECL RESTful:</emphasis></para>
 
-      <para>http://ip:port/WsEcl/submit/query/roxie/myquery?param1=abc&amp;.trim=0
-      </para>
+      <para><programlisting>http://ip:port/WsEcl/submit/query/roxie/myquery?param1=abc&amp;.trim=0</programlisting></para>
 
       <para><emphasis role="bold">WsECL SOAP:</emphasis></para>
 
-      <para>http://ip:port/WsEcl/soap/query/roxie/myquery?.trim=0 </para>
+      <para><programlisting>http://ip:port/WsEcl/soap/query/roxie/myquery?.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">WsECL JSON:</emphasis></para>
+
+      <para><programlisting>http://ip:port/WsEcl/json/query/roxie/myquery?.trim=0</programlisting></para>
 
       <para><emphasis role="bold">Roxie Direct SOAP or JSON:</emphasis></para>
 
       <para><programlisting>http://ip:port/target?.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">Roxie Direct RESTful:</emphasis></para>
+
+      <para><programlisting>http://ip:port/roxie?param1=abc&amp;.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">Form submission:</emphasis></para>
+
+      <para>For a RESTful form submission, add the .trim=0 decoration to your
+      URL.</para>
+
+      <para></para>
 
       <para>Running any custom XSLT should automatically set the .trim=0
       option.</para>
