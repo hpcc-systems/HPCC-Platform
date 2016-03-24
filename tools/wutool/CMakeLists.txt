@@ -15,17 +15,17 @@
 ################################################################################
 
 
-# Component: wutest 
+# Component: wutool
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for wutest
+#    Cmake Input File for wutool
 #####################################################
 
-project( wutest ) 
+project( wutool ) 
 
 set (    SRCS 
-         wutest.cpp 
+         wutool.cpp 
     )
 
 include_directories ( 
@@ -48,13 +48,9 @@ if ( USE_CPPUNIT )
 endif()
 
 ADD_DEFINITIONS( -D_CONSOLE )
-if ( FORCE_WORKUNITS_TO_CASSANDRA )
-  ADD_DEFINITIONS( -DFORCE_WORKUNITS_TO_CASSANDRA )
-endif()
 
-
-HPCC_ADD_EXECUTABLE ( wutest ${SRCS} )
-target_link_libraries ( wutest 
+HPCC_ADD_EXECUTABLE ( wutool ${SRCS} )
+target_link_libraries ( wutool 
          jlib
          remote 
          dalibase 
@@ -67,10 +63,8 @@ target_link_libraries ( wutest
          ${CPPUNIT_LIBRARIES}
     )
     
-if ( FORCE_WORKUNITS_TO_CASSANDRA )
-  target_link_libraries ( wutest cassandraembed )
-endif ()
-
 if ( USE_CPPUNIT )
-  target_link_libraries ( wutest workunitservices )
+  target_link_libraries ( wutool workunitservices )
 endif()
+
+install ( TARGETS wutool RUNTIME DESTINATION ${EXEC_DIR} )
