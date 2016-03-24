@@ -93,7 +93,8 @@ public:
                 if (sizeRead < chunkSize)
                 {
                     buf.setLength(buf.length() - (chunkSize - sizeRead));
-                    break;
+                    if (!sizeRead)
+                        break;
                 }
             }
             pipe->closeOutput();
