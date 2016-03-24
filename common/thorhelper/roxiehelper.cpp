@@ -1646,27 +1646,31 @@ int readHttpHeaderLine(IBufferedSocket *linereader, char *headerline, unsigned m
     return bytesread;
 }
 
+inline bool endOfParameters(const char *str)
+{
+    return (*str==0 || *str=='#');
+}
 void parseHttpParameterString(IProperties *p, const char *str)
 {
-    while (*str)
+    while (!endOfParameters(str))
     {
         StringBuffer s, prop, val;
-        while (*str && *str != '&' && *str != '=')
+        while (!endOfParameters(str) && *str != '&' && *str != '=')
             s.append(*str++);
         appendDecodedURL(prop, s.trim());
-        if (!*str || *str == '&')
+        if (endOfParameters(str) || *str == '&')
             val.set("1");
         else
         {
             s.clear();
             str++;
-            while (*str && *str != '&')
+            while (!endOfParameters(str) && *str != '&')
                 s.append(*str++);
             appendDecodedURL(val, s.trim());
         }
         if (prop.length())
             p->setProp(prop, val);
-        if (*str)
+        if (!endOfParameters(str))
             str++;
     }
 }
