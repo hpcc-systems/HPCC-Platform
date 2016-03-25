@@ -385,7 +385,7 @@ to
       <para><programlisting>.trim=o</programlisting></para>
 
       <para>The <emphasis role="bold">.trim=0</emphasis> option can be added
-      to WsECL, SOAP, JSON, or Web form queries.</para>
+      to SOAP, JSON, URL, or Web form queries for both WsECL and Roxie.</para>
 
       <para><emphasis role="bold">WsECL RESTful:</emphasis></para>
 
@@ -401,16 +401,16 @@ to
 
       <para><emphasis role="bold">Roxie Direct SOAP or JSON:</emphasis></para>
 
-      <para><programlisting>http://ip:port/target?.trim=0</programlisting></para>
+      <para><programlisting>http://ip:port/target/myquery?.trim=0</programlisting></para>
 
       <para><emphasis role="bold">Roxie Direct RESTful:</emphasis></para>
 
-      <para><programlisting>http://ip:port/roxie?param1=abc&amp;.trim=0</programlisting></para>
+      <para><programlisting>http://ip:port/roxie/myquery?param1=abc&amp;.trim=0</programlisting></para>
 
       <para><emphasis role="bold">Form submission:</emphasis></para>
 
-      <para>For a RESTful form submission, add the .trim=0 decoration to your
-      URL.</para>
+      <para>For a RESTful form submission to either WsECL or Roxie, add the
+      .trim=0 decoration to your URL.</para>
 
       <para></para>
 
