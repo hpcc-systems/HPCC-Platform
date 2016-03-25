@@ -148,16 +148,16 @@
 
       <para><emphasis role="bold">DESDL and LDAP Security</emphasis></para>
 
-      <para>If your HPCC platform is configured to use for LDAP security, you
-      must ensure any user who will be publishing ESDL Definitions has Access
-      to <emphasis role="bold">ESDL configuration service</emphasis> set to
+      <para>If your HPCC platform is configured to use LDAP security, you must
+      ensure any user who will be publishing ESDL Definitions has Access to
+      <emphasis role="bold">ESDL configuration service</emphasis> set to
       <emphasis role="bold">Allow Full</emphasis>, as shown below.</para>
 
       <para><graphic fileref="images/desdl-LDAP.jpg" /></para>
 
       <para></para>
 
-      <para> </para>
+      <para></para>
     </sect1>
 
     <sect1>
