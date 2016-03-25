@@ -182,6 +182,41 @@ void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const c
         psEntryNew->setPropBool("@active", activate);
 }
 
+void fixPackageMapFileIds(IPropertyTree *pm, bool preloadAll)
+{
+    if (!pm)
+        return;
+    Owned<IPropertyTreeIterator> iter = pm->getElements("Package");
+    ForEach(*iter)
+    {
+        IPropertyTree &item = iter->query();
+        if (preloadAll)
+            item.setPropBool("@preload", true);
+        Owned<IPropertyTreeIterator> superFiles = item.getElements("SuperFile");
+        ForEach(*superFiles)
+        {
+            IPropertyTree &superFile = superFiles->query();
+            StringBuffer lc(superFile.queryProp("@id"));
+            const char *id = lc.toLowerCase().str();
+            if (*id == '~')
+                id++;
+            superFile.setProp("@id", id);
+
+            Owned<IPropertyTreeIterator> subFiles = superFile.getElements("SubFile");
+            ForEach(*subFiles)
+            {
+                IPropertyTree &subFile = subFiles->query();
+                id = subFile.queryProp("@value");
+                if (id && *id == '~')
+                {
+                    StringAttr value(id+1);
+                    subFile.setProp("@value", value.get());
+                }
+            }
+        }
+    }
+}
+
 //////////////////////////////////////////////////////////
 
 #define PKGADD_DFS_OVERWRITE    0x0001
@@ -308,35 +343,7 @@ public:
         StringBuffer lcPmid(pmid);
         pmid = lcPmid.toLowerCase().str();
 
-        Owned<IPropertyTreeIterator> iter = pmPart->getElements("Package");
-        ForEach(*iter)
-        {
-            IPropertyTree &item = iter->query();
-            if (checkFlag(PKGADD_PRELOAD_ALL))
-                item.setPropBool("@preload", true);
-            Owned<IPropertyTreeIterator> superFiles = item.getElements("SuperFile");
-            ForEach(*superFiles)
-            {
-                IPropertyTree &superFile = superFiles->query();
-                StringBuffer lc(superFile.queryProp("@id"));
-                const char *id = lc.toLowerCase().str();
-                if (*id == '~')
-                    id++;
-                superFile.setProp("@id", id);
-
-                Owned<IPropertyTreeIterator> subFiles = superFile.getElements("SubFile");
-                ForEach(*subFiles)
-                {
-                    IPropertyTree &subFile = subFiles->query();
-                    id = subFile.queryProp("@value");
-                    if (id && *id == '~')
-                    {
-                        StringAttr value(id+1);
-                        subFile.setProp("@value", value.get());
-                    }
-                }
-            }
-        }
+        fixPackageMapFileIds(pmPart, checkFlag(PKGADD_PRELOAD_ALL));
     }
     void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound)
     {
@@ -957,6 +964,7 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
         mapTree.setown(createPTreeFromXMLString(info));
         if (!mapTree)
             throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error processing package file content");
+        fixPackageMapFileIds(mapTree, false);
     }
     else
     {
