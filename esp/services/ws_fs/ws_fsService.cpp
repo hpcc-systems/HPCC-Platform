@@ -52,6 +52,7 @@ int Schedule::run()
 {
     try
     {
+        PROGLOG("DfuWorkunit WUSchedule Thread started.");
         while(!stopping)
         {
             {
@@ -1062,9 +1063,11 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
         IArrayOf<IEspDFUWorkunit> result;
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         unsigned numWUs;
+        PROGLOG("GetDFUWorkunits: getWorkUnitsSorted");
         Owned<IConstDFUWorkUnitIterator> itr = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), (int) displayFrom, (int) pagesize+1, req.getOwner(), &cacheHint, &numWUs);
         if (version >= 1.07)
             resp.setCacheHint(cacheHint);
+        PROGLOG("GetDFUWorkunits: getWorkUnitsSorted done");
 
         //unsigned actualCount = 0;
         itr->first();
@@ -1358,7 +1361,7 @@ bool CFileSprayEx::onGetDFUWorkunit(IEspContext &context, IEspGetDFUWorkunit &re
         if(wu)
         {
             IEspDFUWorkunit &result = resp.updateResult();
-            
+            PROGLOG("GetDFUWorkunit: %s", wuid);
             DeepAssign(context, wu, result);
             int n = resp.getResult().getState();
             if (n == DFUstate_scheduled || n == DFUstate_queued || n == DFUstate_started)
@@ -1402,6 +1405,7 @@ bool CFileSprayEx::onGetDFUProgress(IEspContext &context, IEspProgressRequest &r
 
         resp.setWuid(req.getWuid());
 
+        PROGLOG("GetDFUProgress: %s", wuid);
         IConstDFUprogress *prog = wu->queryProgress();
         if (prog)
         {
@@ -1474,6 +1478,7 @@ bool CFileSprayEx::onUpdateDFUWorkunit(IEspContext &context, IEspUpdateDFUWorkun
         if(!wu)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Dfu workunit %s not found.", reqWU.getID());
 
+        PROGLOG("UpdateDFUWorkunit: %s", reqWU.getID());
         IDFUprogress *prog = wu->queryUpdateProgress();
         if (prog && req.getStateOrig() != reqWU.getState())
         {
@@ -1580,13 +1585,15 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
         for(unsigned i = 0; i < wuids.ordinality(); ++i)
         {
             const char* wuid = wuids.item(i);
+            const char* actionStr = (action < NumOfDFUWUActionNames) ? DFUWUActionNames[action] : "Unknown";
 
             Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
             res->setID(wuid);
-            res->setAction((action < NumOfDFUWUActionNames) ? DFUWUActionNames[action] : "Unknown");
+            res->setAction(actionStr);
 
             try
             {
+                PROGLOG("%s %s", actionStr, wuid);
                 switch (action)
                 {
                 case CDFUWUActions_Delete:
@@ -1632,6 +1639,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                     res->setResult("Success");
                     break;
                 }
+                PROGLOG("%s %s done", actionStr, wuid);
             }
             catch (IException *e)
             {
@@ -1664,8 +1672,12 @@ bool CFileSprayEx::onDeleteDFUWorkunits(IEspContext &context, IEspDeleteDFUWorku
         StringArray & wuids = req.getWuids();
         for(unsigned i = 0; i < wuids.ordinality(); ++i)
         {
-            if (markWUFailed(factory, wuids.item(i)))
-                factory->deleteWorkUnit(wuids.item(i));
+            const char* wuid = wuids.item(i);
+            if (markWUFailed(factory, wuid))
+            {
+                factory->deleteWorkUnit(wuid);
+                PROGLOG("DeleteDFUWorkunits: %s deleted", wuid);
+            }
         }
         resp.setRedirectUrl("/FileSpray/GetDFUWorkunits");
     }
@@ -1684,9 +1696,13 @@ bool CFileSprayEx::onDeleteDFUWorkunit(IEspContext &context, IEspDeleteDFUWorkun
         if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to delete DFU workunit. Permission denied.");
 
+        const char* wuid = req.getWuid();
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        if (markWUFailed(factory, req.getWuid()))
-            resp.setResult(factory->deleteWorkUnit(req.getWuid()));
+        if (markWUFailed(factory, wuid))
+        {
+            resp.setResult(factory->deleteWorkUnit(wuid));
+            PROGLOG("DeleteDFUWorkunit: %s deleted", wuid);
+        }
         else
             resp.setResult(false);
 
@@ -1706,6 +1722,10 @@ bool CFileSprayEx::onSubmitDFUWorkunit(IEspContext &context, IEspSubmitDFUWorkun
     {
         if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to submit DFU workunit. Permission denied.");
+
+        if (!req.getWuid() || !*req.getWuid())
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Workunit ID required");
+        PROGLOG("SubmitDFUWorkunit: %s", req.getWuid());
 
         submitDFUWorkUnit(req.getWuid());
 
@@ -1731,6 +1751,7 @@ bool CFileSprayEx::onAbortDFUWorkunit(IEspContext &context, IEspAbortDFUWorkunit
         if(!wu)
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Dfu workunit %s not found.", req.getWuid());
 
+        PROGLOG("AbortDFUWorkunit: %s", req.getWuid());
         wu->requestAbort();
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(req.getWuid()).str());
     }
@@ -1755,6 +1776,7 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
         if(!wu)
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Dfu workunit %s not found.", req.getWuid());
 
+        PROGLOG("GetDFUExceptions: %s", req.getWuid());
         Owned<IExceptionIterator> itr = wu->getExceptionIterator();
         itr->first();
         while(itr->isValid())
@@ -1809,6 +1831,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         if (!lfn.setValidate(destname))
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid destination filename");
         destname = lfn.get();
+        PROGLOG("SprayFixed: DestLogicalName %s, DestGroup %s", destname, destNodeGroup);
 
         StringBuffer gName, ipAddr;
         const char *pTr = strchr(destNodeGroup, ' ');
@@ -1990,6 +2013,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         if (!lfn.setValidate(destname))
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename");
         destname = lfn.get();
+        PROGLOG("SprayVariable: DestLogicalName %s, DestGroup %s", destname, destNodeGroup);
 
         if (ipAddr.length() > 0)
             ParseLogicalPath(destname, ipAddr.str(), NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
@@ -2138,6 +2162,7 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
         if(!srcname || !*srcname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source logical file not specified.");
 
+        PROGLOG("Replicate %s", srcname);
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
 
@@ -2240,6 +2265,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         if(!srcname || !*srcname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source logical file not specified.");
 
+        PROGLOG("Despray %s", srcname);
         const char* destip = req.getDestIP();
         StringBuffer fnamebuf(req.getDestPath());
         const char* destfile = fnamebuf.trim().str();
@@ -2360,6 +2386,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         if(!dstname || !*dstname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination logical file not specified.");
 
+        PROGLOG("Copy from %s to %s", srcname, dstname);
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
         StringBuffer srcNodeGroup, destNodeGroup;
         bool bRoxie = false;
@@ -2531,6 +2558,7 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
         if(!dstname || !*dstname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination logical file not specified.");
 
+        PROGLOG("Rename from %s to %s", srcname, dstname);
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
 
@@ -2606,6 +2634,7 @@ bool CFileSprayEx::onDFUWUFile(IEspContext &context, IEspDFUWUFileRequest &req, 
             if(!wu)
                 throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Dfu workunit %s not found.", req.getWuid());
 
+            PROGLOG("DFUWUFile: %s", req.getWuid());
             StringBuffer xmlbuf;
             xmlbuf.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 
@@ -2730,6 +2759,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Network address not specified.");
         const char* mask = req.getMask();
         bool directoryOnly = req.getDirectoryOnly();
+        PROGLOG("FileList:  Netaddr %s, Path %s", netaddr, path);
 
         StringBuffer sPath(path);
         const char* osStr = req.getOS();
@@ -2925,6 +2955,7 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
         const char* dropZone = req.getDropZoneName();
         if (!dropZone || !*dropZone)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone not specified.");
+        PROGLOG("DropZoneFileSearch: %s", dropZone);
 
         IpAddress ip;
         EnvMachineOS os;
@@ -3230,6 +3261,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         if (*(directoryStr.str() + directoryStr.length() -1) != pathSep)
             directoryStr.append( pathSep );
 
+        PROGLOG("getDropZoneFiles: netAddress %s, path %s", netAddressStr.str(), directoryStr.str());
         getDropZoneFiles(context, netAddressStr.str(), osStr.str(), directoryStr.str(), req, resp);
 
         if (pathSep=='\\')
@@ -3304,6 +3336,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
             if (!file || !*file)
                 continue;
 
+            PROGLOG("DeleteDropZoneFiles: netAddress %s, path %s, file %s", netAddress, directory, file);
             Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
             res->setID(files.item(i));
             res->setAction("Delete");
