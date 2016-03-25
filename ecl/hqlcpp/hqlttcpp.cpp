@@ -1899,7 +1899,7 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
                 ds.setown(cloneInheritedAnnotations(expr, ds));
             }
 
-            if (expr->hasAttribute(mergeAtom))
+            if (getBoolAttribute(expr, mergeAtom, false))
             {
                 LinkedHqlExpr sortedIndex = index;
                 if (!index->hasAttribute(sortedAtom))
@@ -3713,7 +3713,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
     else
         ret.setown(expr->cloneAllAnnotations(ret));
 
-    if (expr->hasAttribute(mergeAtom))
+    if (getBoolAttribute(expr, mergeAtom, false))
         ret.setown(normalizeMergeAggregate(ret));
 
     if (extraSelectNeeded)
@@ -3736,10 +3736,12 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
 
     if (group)
     {
-        if (expr->hasAttribute(mergeAtom))
+        bool useHashAggregate = expr->hasAttribute(fewAtom);
+        // Historically, MERGE overrode FEW - but now that MERGE is assumed we need to be more careful
+        // An explicit MERGE overrides FEW but a default one does not
+        if (getBoolAttribute(expr, mergeAtom, false))
             return normalizeMergeAggregate(expr);
 
-        bool useHashAggregate = expr->hasAttribute(fewAtom);
         if (expr->getOperator() == no_aggregate)
         {
             OwnedHqlExpr selector = createSelector(no_left, dataset->queryRecord(), querySelSeq(expr));
@@ -10762,6 +10764,7 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     options.constantFoldNormalize = translatorOptions.constantFoldNormalize;
     options.allowActivityForKeyedJoin = translatorOptions.allowActivityForKeyedJoin;
     options.implicitSubSort = translatorOptions.implicitBuildIndexSubSort;
+    options.implicitMergeTable = translatorOptions.implicitMergeTable;
     errorProcessor = &translator.queryErrorProcessor();
     nextSequenceValue = 1;
 }
@@ -11982,6 +11985,11 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
     case no_selectfields:
         {
             OwnedHqlExpr newRecord = transform(expr->queryChild(1));
+            if (options.implicitMergeTable && !expr->hasAttribute(mergeAtom) && datasetHasGroupBy(expr)
+                    && !getBoolAttribute(expr, fewAtom, false)
+                    && !getBoolAttribute(expr, localAtom, false)
+                    && !getBoolAttribute(expr, keyedAtom, false))
+                expr = replaceOwnedAttribute(expr, createAttribute(mergeAtom, createConstant(true)));
             return convertSelectToProject(newRecord, expr);
         }
     case no_parse:

@@ -1230,6 +1230,7 @@ protected:
         bool constantFoldNormalize;
         bool allowActivityForKeyedJoin;
         bool implicitSubSort;
+        bool implicitMergeTable;
     } options;
     unsigned nextSequenceValue;
     bool seenForceLocal;

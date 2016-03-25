@@ -716,6 +716,7 @@ struct HqlCppOptions
     bool                implicitGroupSubSort;  // use subsort if some sort conditions match when grouping
     bool                implicitGroupHashAggregate;  // convert aggregate(sort(x,a),{..},a,d) to aggregate(group(sort(x,a),a_,{},d))
     bool                implicitGroupHashDedup;
+    bool                implicitMergeTable;  // assume ,MERGE on TABLE unless explicitly indicated otherwise
     bool                reportFieldUsage;
     bool                reportFileUsage;
     bool                subsortLocalJoinConditions;
