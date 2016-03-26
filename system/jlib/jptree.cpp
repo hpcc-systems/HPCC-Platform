@@ -6407,11 +6407,24 @@ protected:
             if (!isdigit(nextChar))
                 error("Bad value");
             type = elementTypeInteger;
-            while (isdigit(nextChar) || '.'==nextChar)
+            bool exponent = false;
+            while (isdigit(nextChar) || '.'==nextChar || 'e'==nextChar || 'E'==nextChar)
             {
+                if ('e'==nextChar || 'E'==nextChar)
+                {
+                    if (exponent)
+                        error("Bad value");
+                    exponent=true;
+                    value.append(nextChar);
+                    readNext();
+                    if ('-'==nextChar)
+                        type=elementTypeReal;
+                    else if (!isdigit(nextChar) && '+'!=nextChar)
+                        error("Bad value");
+                }
                 if ('.'==nextChar)
                 {
-                    if (type==elementTypeReal) //already found decimal
+                    if (exponent || type==elementTypeReal) //already found decimal
                         error("Bad value");
                     type = elementTypeReal;
                 }
