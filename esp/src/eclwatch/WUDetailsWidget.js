@@ -98,6 +98,9 @@ define([
         zapDescription: null,
         warnHistory: null,
         warnTimings: null,
+        logDate: null,
+        clusterGroup: null,
+        maxSlaves: null,
 
         prevState: "",
 
@@ -117,6 +120,12 @@ define([
             this.warnTimings = registry.byId(this.id + "WarnTimings");
             this.clusters = registry.byId(this.id + "Clusters");
             this.allowedClusters = registry.byId(this.id + "AllowedClusters");
+            this.thorProcess = registry.byId(this.id + "ThorProcess");
+            this.slaveNumber = registry.byId(this.id + "SlaveNumber");
+            this.fileFormat = registry.byId(this.id + "FileFormat");
+            this.slaveLogs = registry.byId(this.id + "SlaveLogs");
+            this.logsForm = registry.byId(this.id + "LogsForm");
+            this.allowOnlyNumber = registry.byId(this.id + "AllowOnlyNumber");
 
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
             this.zapDialog = registry.byId(this.id + "ZapDialog");
@@ -255,6 +264,7 @@ define([
             }
             this.infoGridWidget.init(params);
             this.checkIfClustersAllowed();
+            this.checkThorLogStatus();
         },
 
         initTab: function () {
@@ -366,6 +376,49 @@ define([
                     }
                 }
             });
+        },
+
+        checkThorLogStatus: function () {
+            var context = this;
+            WsWorkunits.WUInfo({
+                request: {
+                    Wuid: this.wu.Wuid
+                }
+            }).then(function (response) {
+                if (lang.exists("WUInfoResponse.Workunit.ThorLogList.ThorLogInfo", response)) {
+                    context.maxSlaves = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].NumberSlaves;
+                    context.slaveNumber.set("maxLength", context.maxSlaves);
+                    dom.byId("SlavesMaxNumber").innerHTML = context.i18n.NumberofSlaves + " " + response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].NumberSlaves;
+                    context.logDate = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].LogDate;
+                    context.clusterGroup = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].ClusterGroup;
+                    context.slaveLogs.set("disabled", false);
+                    var targetData = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo;
+                        for (var i = 0; i < targetData.length; ++i) {
+                            context.thorProcess.options.push({
+                                label: targetData[i].ClusterGroup,
+                                value: targetData[i].ClusterGroup
+                            });
+                        }
+                        context.thorProcess.set("value", targetData[0].ClusterGroup);
+                } else {
+                   context.slaveLogs.set("disabled", true);
+                }
+            });
+        },
+
+        _getURL: function (completeURL) {
+            return ESPRequest.getBaseURL() + completeURL;
+        },
+
+        _getDownload: function () {
+            var context = this;
+            if (this.logsForm.validate() && context.slaveNumber.get("value") <= context.maxSlaves) {
+                dom.byId("AllowOnlyNumber").innerHTML = "";
+                var buildURL = "/WUFile?" + "Wuid=" + this.wu.Wuid + "&Type=ThorSlaveLog" + "&Process=" + this.thorProcess.get("value") + "&ClusterGroup=" + this.clusterGroup + "&LogDate=" + this.logDate + "&SlaveNumber=" + this.slaveNumber.get("value") + "&Option=" + this.fileFormat.get("value");
+                window.open(this._getURL(buildURL));
+            } else if (context.slaveNumber.get("value") > context.maxSlaves) {
+                dom.byId("AllowOnlyNumber").innerHTML = context.i18n.PleaseEnterANumber + context.maxSlaves;
+            }
         },
 
         updateInput: function (name, oldValue, newValue) {
