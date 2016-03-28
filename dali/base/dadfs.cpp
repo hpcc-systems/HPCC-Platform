@@ -591,26 +591,26 @@ public:
     {
         // SuperOwnerLock while holding fcl
         IRemoteConnection *fclConn = fcl.queryConnection();
+        if (!fclConn)
+            return false; // throw ?
         CTimeMon tm(timeout);
         unsigned remaining = timeout;
         unsigned interval = 5000;
         loop
         {
-            if (tm.timedout(&remaining))
-                return false;
             try
             {
                 if (init(logicalName, conn, 0, msg))
                     return true;
+                else
+                    return false; // throw ?
             }
             catch (ISDSException *e)
             {
-                if (SDSExcpt_LockTimeout != e->errorCode())
+                if (SDSExcpt_LockTimeout != e->errorCode() || tm.timedout(&remaining))
                     throw;
                 e->Release();
             }
-            if (tm.timedout(&remaining))
-                return false;
             unsigned delta = remaining;
             if (delta < interval)
                 delta = interval;
@@ -618,7 +618,6 @@ public:
             {
                 CriticalBlock block(superOwnerLockSect);
                 fclConn->changeMode(RTM_NONE, delta);
-                fclConn->reload();
             }
             tm.timedout(&remaining);
             unsigned stime = 1000 * (2+getRandom()%15); // 2-15 sec
@@ -7415,18 +7414,23 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                 CFileLock fcl;
                 unsigned mode = RTM_LOCK_READ | RTM_SUB;
                 if (hold) mode |= RTM_LOCK_HOLD;
-                // initWithFileLock() will loop (releasing and relocking fcl) if it cannot get SuperOwner lock
-                // another way to solve this could be to:
+                // initWithFileLock() below will loop (releasing and relocking fcl) if it cannot get SuperOwner lock
+                // MCK - another way to solve this could be to use RTM_LOCK_WRITE for fcl
                 // if (lockSuperOwner)
                 // {
                 //     mode &= ~RTM_LOCK_READ;
                 //     mode |= RTM_LOCK_WRITE;
                 // }
+                CTimeMon tm(timeout);
                 if (!fcl.init(*logicalname, mode, timeout, "CDistributedFileDirectory::lookup"))
                     break;
                 CFileSuperOwnerLock superOwnerLock;
                 if (lockSuperOwner)
-                    verifyex(superOwnerLock.initWithFileLock(*logicalname, NULL, defaultTimeout, "CDistributedFileDirectory::dolookup(SuperOwnerLock)", fcl, mode));
+                {
+                    unsigned remaining;
+                    tm.timedout(&remaining);
+                    verifyex(superOwnerLock.initWithFileLock(*logicalname, NULL, remaining, "CDistributedFileDirectory::dolookup(SuperOwnerLock)", fcl, mode));
+                }
                 if (fcl.getKind() == DXB_File)
                 {
                     StringBuffer cname;
@@ -11467,10 +11471,15 @@ bool CDistributedFileDirectory::getFileSuperOwners(const char *logicalname, Stri
         throw MakeStringException(-1,"CDistributedFileDirectory::getFileSuperOwners: Invalid file name '%s'",logicalname);
     if (lfn.isMulti()||lfn.isExternal()||lfn.isForeign()) 
         return false;
+    // initWithFileLock() below will loop (releasing and relocking lock) if it cannot get SuperOwner lock
+    // MCK - another way to solve this could be to use RTM_LOCK_WRITE mode for lock
+    CTimeMon tm(defaultTimeout);
     if (!lock.init(lfn, RTM_LOCK_READ, defaultTimeout, "CDistributedFileDirectory::getFileSuperOwners"))
         return false;
     CFileSuperOwnerLock superOwnerLock;
-    verifyex(superOwnerLock.initWithFileLock(lfn, NULL, defaultTimeout, "CDistributedFileDirectory::getFileSuperOwners(SuperOwnerLock)", lock, RTM_LOCK_READ));
+    unsigned remaining;
+    tm.timedout(&remaining);
+    verifyex(superOwnerLock.initWithFileLock(lfn, NULL, remaining, "CDistributedFileDirectory::getFileSuperOwners(SuperOwnerLock)", lock, RTM_LOCK_READ));
     Owned<IPropertyTreeIterator> iter = lock.queryRoot()->getElements("SuperOwner");
     StringBuffer pname;
     ForEach(*iter) {
