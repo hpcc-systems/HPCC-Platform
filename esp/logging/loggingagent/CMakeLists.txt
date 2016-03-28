@@ -14,3 +14,4 @@
 #    limitations under the License.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (espserverloggingagent)
+HPCC_ADD_SUBDIRECTORY (cassandraloggingagent)
