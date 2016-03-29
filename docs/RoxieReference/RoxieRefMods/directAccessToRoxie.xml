@@ -349,8 +349,7 @@ to
       interface in the following manner:</para>
 
       <para><programlisting>http://&lt;ip&gt;:9876/&lt;target&gt;/&lt;queryid&gt;?&lt;stored1&gt;=&lt;value&gt;
-       &amp;&lt;storeddataset&gt;.Row.0.name=abc&amp;storeddataset.Row.0.id=123</programlisting>where,
-      </para>
+       &amp;&lt;storeddataset&gt;.Row.0.name=abc&amp;storeddataset.Row.0.id=123</programlisting>where,</para>
 
       <para>ip is the IP address or hostname of your Roxie server or a VIP to
       a range of IPs for a farm of Roxie servers</para>
@@ -372,6 +371,51 @@ to
       <para><programlisting>http://127.0.0.1:9876/roxie/echotest.1?echoValue=Ziggy%20played%20guitar</programlisting></para>
 
       <para></para>
+    </sect2>
+
+    <sect2>
+      <title>Roxie Results</title>
+
+      <para>By default, Roxie results from HTTP queries do not return empty
+      elements (tags). If a field's value is empty, the tag is not returned.
+      However, at times an application may expect all tags to be returned, so
+      you can add a URL decoration to override the default behavior. This
+      causes the empty tags to return with a value of an empty string.</para>
+
+      <para><programlisting>.trim=o</programlisting></para>
+
+      <para>The <emphasis role="bold">.trim=0</emphasis> option can be added
+      to SOAP, JSON, URL, or Web form queries for both WsECL and Roxie.</para>
+
+      <para><emphasis role="bold">WsECL RESTful:</emphasis></para>
+
+      <para><programlisting>http://ip:port/WsEcl/submit/query/roxie/myquery?param1=abc&amp;.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">WsECL SOAP:</emphasis></para>
+
+      <para><programlisting>http://ip:port/WsEcl/soap/query/roxie/myquery?.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">WsECL JSON:</emphasis></para>
+
+      <para><programlisting>http://ip:port/WsEcl/json/query/roxie/myquery?.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">Roxie Direct SOAP or JSON:</emphasis></para>
+
+      <para><programlisting>http://ip:port/target/myquery?.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">Roxie Direct RESTful:</emphasis></para>
+
+      <para><programlisting>http://ip:port/roxie/myquery?param1=abc&amp;.trim=0</programlisting></para>
+
+      <para><emphasis role="bold">Form submission:</emphasis></para>
+
+      <para>For a RESTful form submission to either WsECL or Roxie, add the
+      .trim=0 decoration to your URL.</para>
+
+      <para></para>
+
+      <para>Running any custom XSLT should automatically set the .trim=0
+      option.</para>
     </sect2>
   </sect1>
 </chapter>
