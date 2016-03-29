@@ -177,6 +177,16 @@ void CassandraClusterSession::setOptions(const StringArray &options)
                 unsigned max_concurrent_creation = getUnsignedOption(val, "max_concurrent_creation");
                 checkSetOption(cass_cluster_set_max_concurrent_creation(cluster, max_concurrent_creation), "max_concurrent_creation");
             }
+            else if (stricmp(optName, "write_bytes_high_water_mark")==0)
+            {
+                unsigned write_bytes_high_water_mark = getUnsignedOption(val, "write_bytes_high_water_mark");
+                checkSetOption(cass_cluster_set_write_bytes_high_water_mark(cluster, write_bytes_high_water_mark), "write_bytes_high_water_mark");
+            }
+            else if (stricmp(optName, "write_bytes_low_water_mark")==0)
+            {
+                unsigned write_bytes_low_water_mark = getUnsignedOption(val, "write_bytes_low_water_mark");
+                checkSetOption(cass_cluster_set_write_bytes_low_water_mark(cluster, write_bytes_low_water_mark), "write_bytes_low_water_mark");
+            }
             else if (stricmp(optName, "pending_requests_high_water_mark")==0)
             {
                 unsigned pending_requests_high_water_mark = getUnsignedOption(val, "pending_requests_high_water_mark");
