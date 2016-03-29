@@ -340,6 +340,8 @@ public:
 };
 
 void outputMultiExceptions(const IMultiException &me);
+bool checkMultiExceptionsQueryNotFound(const IMultiException &me);
+
 
 class EclCmdURL : public StringBuffer
 {
