@@ -273,6 +273,7 @@ protected:
     virtual void reportContingencyFailure(char const * type, IException * e);
     virtual void checkForAbort(unsigned wfid, IException * handling);
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item);
+    virtual void doExecuteCriticalItem(IRuntimeWorkflowItem & item);
     virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item);
 
 private:
@@ -284,6 +285,8 @@ private:
     void obtainRunlock();
     void releaseRunlock();
     void syncWorkflow();
+    IRemoteConnection * obtainCriticalLock(const char *name);
+    void releaseCriticalLock(IRemoteConnection *r);
     Owned<IWorkflowScheduleConnection> wfconn;
     Owned<PersistVersion> persist;
     bool persistsPrelocked;

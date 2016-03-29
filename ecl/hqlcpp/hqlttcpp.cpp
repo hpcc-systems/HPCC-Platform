@@ -966,6 +966,8 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             type = NULL;        // don't check the return type
             break;
         }
+    case no_evaluate_stmt:
+        return normalizeThor(expr->queryChild(0));
     case no_setworkflow_cond:
     case no_ensureresult:
         return OptionNo;
@@ -5194,6 +5196,13 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         }
 	persistRefresh = getBoolValue(queryAttributeChild(expr, refreshAtom, 0), true);
         break;
+    case no_critical:
+        setOp = no_setresult;
+        storedName.set(expr->queryChild(0));
+        originalLabel.set(storedName);
+        sequence.setown(getLocalSequenceNumber());
+        extraSetAttr.setown(createAttribute(_workflow_Atom));
+        break;
     case no_global:
         throwUnexpected();
     case no_independent:
@@ -5651,6 +5660,11 @@ void WorkflowTransformer::setWorkflowPersist(IWorkflowItem * wf, char const * pe
     wf->setPersistInfo(persistName, persistWfid, numPersistInstances, refresh);
 }
 
+void WorkflowTransformer::setWorkflowCritical(IWorkflowItem * wf, char const * criticalName)
+{
+    wf->setCriticalInfo(criticalName);
+}
+
 WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp)
 {
     WorkflowItem * item = new WorkflowItem(wfid, workflowOp);
@@ -5863,6 +5877,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 // MORE - Add dynamic attribute to ensure the file is not pre-resolved
             }
             //fall through
+        case no_critical:
         case no_checkpoint:
         case no_stored:
             {
@@ -6031,7 +6046,17 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         if ((info.persistOp != no_persist) && expr->isAction())
             setValue.setown(transformSequentialEtc(setValue));
 
-        if(info.persistOp == no_persist)
+         if(info.persistOp == no_critical)
+         {
+            StringBuffer criticalName;
+            info.storedName->queryValue()->getStringValue(criticalName);
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCritical, queryDirectDependencies(setValue), conts, info.queryCluster());
+            setWorkflowCritical(wf, criticalName.str());
+
+            workflowOut->append(*createWorkflowItem(getValue, wfid, no_none));
+            getValue.setown(createNullExpr(expr->queryType()));
+        }
+        else if(info.persistOp == no_persist)
         {
             StringBuffer persistName;
             info.storedName->queryValue()->getStringValue(persistName);

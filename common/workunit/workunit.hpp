@@ -551,7 +551,8 @@ enum WFMode
     WFModeBeginWait = 5,
     WFModeWait = 6,
     WFModeOnce = 7,
-    WFModeSize = 8
+    WFModeSize = 8,
+    WFModeCritical = 9
 };
 
 enum WFState
@@ -603,6 +604,7 @@ interface IConstWorkflowItem : extends IInterface
     virtual unsigned queryPersistWfid() const = 0;
     virtual int queryPersistCopies() const = 0;  // 0 - unmangled name,  < 0 - use default, > 0 - max number
     virtual bool queryPersistRefresh() const = 0;
+    virtual IStringVal &getCriticalName(IStringVal & val) const = 0;
     virtual unsigned queryScheduleCountRemaining() const = 0;
     virtual WFState queryState() const = 0;
     virtual unsigned queryRetriesRemaining() const = 0;
@@ -614,6 +616,8 @@ interface IConstWorkflowItem : extends IInterface
     virtual IStringVal & queryCluster(IStringVal & val) const = 0;
 };
 inline bool isPersist(const IConstWorkflowItem & item) { return item.queryMode() == WFModePersist; }
+inline bool isCritical(const IConstWorkflowItem & item) { return item.queryMode() == WFModeCritical; }
+
 
 interface IRuntimeWorkflowItem : extends IConstWorkflowItem
 {
@@ -635,6 +639,7 @@ interface IWorkflowItem : extends IRuntimeWorkflowItem
     virtual void setScheduleCount(unsigned count) = 0;
     virtual void addDependency(unsigned wfid) = 0;
     virtual void setPersistInfo(const char * name, unsigned wfid, int maxCopies, bool refresh) = 0;
+    virtual void setCriticalInfo(char const * name) = 0;
     virtual void syncRuntimeData(const IConstWorkflowItem & other) = 0;
     virtual void setScheduledWfid(unsigned wfid) = 0;
     virtual void setCluster(const char * cluster) = 0;
