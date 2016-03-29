@@ -49,6 +49,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(DEVEL "Enable the building/inclusion of a Development component." OFF)
   option(CLIENTTOOLS_ONLY "Enable the building of Client Tools only." OFF)
   option(INCLUDE_PLUGINS "Enable the building of platform and all plugins for testing purposes" OFF)
+  option(INCLUDE_CASSANDRA "Include the Cassandra plugin in the base package" ON)
   option(PLUGIN "Enable building of a plugin" OFF)
   option(USE_SHLIBDEPS "Enable the use of dpkg-shlibdeps on ubuntu packaging" OFF)
 
@@ -238,6 +239,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set(CASSANDRAEMBED ON)
         set(KAFKA ON)
     endif()
+
+  if (INCLUDE_CASSANDRA)
+    set(CASSANDRAEMBED ON)
+  endif()
 
   option(PORTALURL "Set url to hpccsystems portal download page")
 

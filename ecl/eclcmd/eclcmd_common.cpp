@@ -22,6 +22,8 @@
 #include "junicode.hpp"
 #include "build-config.h"
 #include "workunit.hpp"
+#include "eclwatch_errorlist.hpp"
+
 
 #include "eclcmd_common.hpp"
 
@@ -36,6 +38,22 @@ void outputMultiExceptions(const IMultiException &me)
         fprintf(stderr, "%d: %s\n", e.errorCode(), e.errorMessage(msg).str());
     }
     fprintf(stderr, "\n");
+}
+
+bool checkMultiExceptionsQueryNotFound(const IMultiException &me)
+{
+    ForEachItemIn(i, me)
+    {
+        switch (me.item(i).errorCode())
+        {
+        case ECLWATCH_QUERYSET_NOT_FOUND:
+        case ECLWATCH_QUERYID_NOT_FOUND:
+            return true;
+        default:
+            break;
+        }
+    }
+    return false;
 }
 
 bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix)
@@ -676,8 +694,8 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
 
     if (optObj.type==eclObjTypeUnknown)
     {
-        fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.str());
-        return false;
+        fprintf(stderr, "\n%s not found\n", optObj.value.str());
+        exit(1); //not really a usage error
     }
 
     if ((optObj.type==eclObjSource || optObj.type==eclObjArchive) && optTargetCluster.isEmpty())

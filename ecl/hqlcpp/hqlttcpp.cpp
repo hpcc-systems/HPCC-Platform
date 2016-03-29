@@ -4492,9 +4492,9 @@ bool CompoundSourceTransformer::createCompoundSource(IHqlExpression * expr)
         return false;
     if (extra->forceCompound)
         return true;
-    if (isSourceActivity(expr))
-        return false;
     if (expr->getOperator() == no_preservemeta)
+        expr = expr->queryChild(0);
+    if (isSourceActivity(expr))
         return false;
     if (extra->isPreloaded)
         return (flags & CSFpreload) != 0;

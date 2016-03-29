@@ -184,6 +184,7 @@ define([
         },
         _ThorLogListSetter: function (ThorLogList) {
             this.set("thorLogInfo", ThorLogList.ThorLogInfo);
+            this.getThorLogStatus(ThorLogList);
             this.refreshHelpersCount();
         },
         _HasArchiveQuerySetter: function (HasArchiveQuery) {
@@ -599,6 +600,9 @@ define([
                 }
             }
             return -1;
+        },
+        getThorLogStatus: function (ThorLogList) {
+            return ThorLogList.ThorLogInfo.length > 0 ? true : false;
         },
         getState: function () {
             return this.State;

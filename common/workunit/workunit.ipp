@@ -313,7 +313,7 @@ public:
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const;
     virtual IPropertyTree * getDiskUsageStats();
     virtual IPropertyTreeIterator & getFileIterator() const;
-    virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned);
+    virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned,bool exportAssociatedFiles);
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const;
     virtual IPropertyTreeIterator & getFilesReadIterator() const;
     virtual void protect(bool protectMode);
@@ -595,7 +595,7 @@ public:
     virtual bool deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual IConstWorkUnit * openWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
-    virtual bool restoreWorkUnit(const char *base, const char *wuid);
+    virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated);
     virtual int setTracingLevel(int newlevel);
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *scope, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr, ISecUser *secuser) = 0;

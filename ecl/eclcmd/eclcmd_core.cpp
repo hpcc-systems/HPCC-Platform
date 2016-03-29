@@ -591,7 +591,7 @@ public:
             req->setQuerySet(optTargetCluster);
             req->setQuery(query.set(optObj.query.get()).str());
             if (optVerbose)
-                fprintf(stdout, "Running query %s/%s\n", optTargetCluster.str(), query.str());
+                fprintf(stdout, "Running %s/%s\n", optTargetCluster.str(), query.str());
         }
         else
         {
@@ -619,6 +619,14 @@ public:
             req->setVariables(variables);
 
         Owned<IClientWURunResponse> resp = client->WURun(req);
+
+        if (checkMultiExceptionsQueryNotFound(resp->getExceptions()))
+        {
+            //checking if it was a query was last resort.  may not have been after all, use generic language
+            fprintf(stderr, "\n%s not found\n", optObj.query.str());
+            return 0;
+        }
+
         if (resp->getExceptions().ordinality())
             outputMultiExceptions(resp->getExceptions());
 

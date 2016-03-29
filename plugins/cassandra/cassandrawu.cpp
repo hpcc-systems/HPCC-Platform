@@ -2976,6 +2976,7 @@ public:
     CCasssandraWorkUnitFactory(const SharedObject *_dll, const IPropertyTree *props) : cluster(cass_cluster_new()), randomizeSuffix(0), randState((unsigned) get_cycles_now()), cacheRetirer(*this)
     {
         StringArray options;
+        options.append("write_bytes_high_water_mark=1000000");  // Set the default HWM - workunits get big. This can be overridden by supplied options
         Owned<IPTreeIterator> it = props->getElements("Option");
         ForEach(*it)
         {

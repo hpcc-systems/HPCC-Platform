@@ -5559,7 +5559,7 @@ void HqlCppTranslator::doBuildAssignCatch(BuildCtx & ctx, const CHqlBoundTarget 
 //---------------------------------------------------------------------------
 //-- no_externalcall --
 
-IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * argType)
+static IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * argType, const char * argName)
 {
     type_t atc = argType->getTypeCode();
 
@@ -5580,7 +5580,7 @@ IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * argType
 
     ITypeInfo * paramType = curParam->queryType();
     type_t ptc = paramType->getTypeCode();
-    if ((atc != ptc) && !(atc == type_row && ptc == type_table))
+    if (atc != ptc)
     {
         switch (atc)
         {
@@ -5593,8 +5593,11 @@ IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * argType
                 ((ptc == type_varstring) && (argType->queryCharset() == paramType->queryCharset())))
                 return LINK(curParam);
             break;
-        case type_dictionary:
         case type_row:
+            if (curParam->isDataset())
+                throwError1(HQLERR_DatasetPassedToRowArg, argName);
+            // fallthrough
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
             {
@@ -6026,7 +6029,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         IHqlExpression * curArg = formals->queryChild(arg);
         ITypeInfo * argType = curArg->queryType();
 
-        OwnedHqlExpr castParam = getCastParameter(curParam, argType);
+        OwnedHqlExpr castParam = getCastParameter(curParam, argType, curArg->queryId()->queryStr());
 
         type_t atc = argType->getTypeCode();
         switch (atc)
@@ -7041,7 +7044,7 @@ void HqlCppTranslator::buildConcatFArgs(HqlExprArray & args, BuildCtx & ctx, con
     ForEachItemIn(idx, values)
     {
         IHqlExpression * cur = &values.item(idx);
-        OwnedHqlExpr value = getCastParameter(cur, argType);
+        OwnedHqlExpr value = getCastParameter(cur, argType, "");
         CHqlBoundExpr bound;
         buildCachedExpr(ctx, value, bound);
 

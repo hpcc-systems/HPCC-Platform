@@ -61,6 +61,7 @@ include_directories (
          ./../../ecl/eclcc
          ./../../dali/base
          ./../../esp/platform
+         ./../../esp/smc/SMCLib
          ./../../system/jlib
          ./../../system/xmllib
     )
