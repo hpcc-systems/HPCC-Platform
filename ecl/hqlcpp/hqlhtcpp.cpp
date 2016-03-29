@@ -1357,7 +1357,7 @@ unsigned HqlCppTranslator::getConsistentUID(IHqlExpression * ptr)
 }
 
 
-unsigned HqlCppTranslator::cppIndexNextActivity(bool isChildActivity)
+unsigned HqlCppTranslator::beginFunctionGetCppIndex(unsigned activityId, bool isChildActivity)
 {
     activitiesThisCpp++;
     if (activitiesThisCpp > options.activitiesPerCpp)
@@ -1368,7 +1368,15 @@ unsigned HqlCppTranslator::cppIndexNextActivity(bool isChildActivity)
         {
             curCppFile++;
             activitiesThisCpp = 1;
+            code->cppInfo.append(* new CppFileInfo(activityId));
         }
+    }
+    CppFileInfo & curCpp = code->cppInfo.tos();
+    if (activityId)
+    {
+        if (curCpp.minActivityId == 0)
+            curCpp.minActivityId = activityId;
+        curCpp.maxActivityId = activityId;
     }
     return curCppFile;
 }
@@ -2142,6 +2150,7 @@ void ActivityInstance::moveDefinitionToHeader()
         //remove this class from the c++ file and include it in the header file instead
         includedInHeader = true;
         classGroupStmt->setIncluded(false);
+        addAttributeBool("helperinheader", true);
 
         BuildCtx headerctx(*translator.code, parentHelpersAtom);
         headerctx.addAlias(classStmt);
@@ -2163,7 +2172,7 @@ void ActivityInstance::buildPrefix()
 {
     StringBuffer s;
 
-    sourceFileSequence.setown(getSizetConstant(translator.cppIndexNextActivity(isChildActivity())));
+    sourceFileSequence.setown(getSizetConstant(translator.beginFunctionGetCppIndex(activityId, isChildActivity())));
     if (containerActivity && colocalMember)
         containerActivity->noteChildActivityLocation(sourceFileSequence);
 

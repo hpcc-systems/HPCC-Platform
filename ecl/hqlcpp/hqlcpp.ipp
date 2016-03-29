@@ -120,6 +120,18 @@ public:
 };
 
 
+class CppFileInfo : public CInterface
+{
+public:
+    explicit CppFileInfo(unsigned activityId) : minActivityId(activityId), maxActivityId(activityId)
+    {
+    }
+
+public:
+    unsigned minActivityId;
+    unsigned maxActivityId;
+};
+
 class HQLCPP_API HqlCppInstance : public CInterface, public IHqlCppInstance
 {
 public:
@@ -138,6 +150,7 @@ public:
     virtual void addManifest(const char *filename){resources.addManifest(filename);}
     virtual void addManifestFromArchive(IPropertyTree *archive){resources.addManifestFromArchive(archive);}
     virtual void addWebServiceInfo(IPropertyTree *wsinfo){resources.addWebServiceInfo(wsinfo);}
+    virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId);
     
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);
@@ -167,6 +180,7 @@ public:
     StringAttr          wupathname;
     Owned<IPropertyTree> plugins;
     Owned<IFileIOStream> hintFile;
+    CIArrayOf<CppFileInfo> cppInfo;
 };
 
 //---------------------------------------------------------------------------
@@ -1122,7 +1136,7 @@ public:
     void useInclude(const char * name)                      { code->useInclude(name); }
     HqlCppInstance * queryCode() const                      { return code; }
     unsigned curSubGraphId(BuildCtx & ctx);
-    unsigned cppIndexNextActivity(bool isChildActivity);
+    unsigned beginFunctionGetCppIndex(unsigned activityId, bool isChildActivity);
 
     void buildAssignToTemp(BuildCtx & ctx, IHqlExpression * variable, IHqlExpression * expr);       // create a bound target for the variable and assign
     void queryAddResultDependancy(ABoundActivity & whoAmIActivity, IHqlExpression * seq, IHqlExpression * name);

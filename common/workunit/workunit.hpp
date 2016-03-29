@@ -366,6 +366,8 @@ interface IConstWUAssociatedFile : extends IInterface
     virtual IStringVal & getName(IStringVal & ret) const = 0;
     virtual IStringVal & getNameTail(IStringVal & ret) const = 0;
     virtual unsigned getCrc() const = 0;
+    virtual unsigned getMinActivityId() const = 0;
+    virtual unsigned getMaxActivityId() const = 0;
 };
 
 
@@ -400,7 +402,7 @@ interface IWUQuery : extends IConstWUQuery
     virtual void setQueryType(WUQueryType qt) = 0;
     virtual void setQueryText(const char * pstr) = 0;
     virtual void setQueryName(const char * pstr) = 0;
-    virtual void addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc) = 0;
+    virtual void addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc, unsigned minActivity, unsigned maxActivity) = 0;
     virtual void removeAssociatedFiles() = 0;
     virtual void setQueryMainDefinition(const char * str) = 0;
     virtual void removeAssociatedFile(WUFileType type, const char * name, const char * desc) = 0;
@@ -1459,7 +1461,8 @@ extern WORKUNIT_API void removeQuerySetAliasesFromNamedQuery(const char *querySe
 extern WORKUNIT_API void setQueryCommentForNamedQuery(const char *querySetName, const char *id, const char *comment);
 extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unresolved, IWorkUnitFactory &workunitFactory, IConstWorkUnit &cw, IPropertyTree *queryset);
 
-extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc);
+//If we add any more parameters we should consider returning an object that can be updated
+extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc, unsigned minActivity=0, unsigned maxActivity=0);
 
 interface ITimeReporter;
 extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value);

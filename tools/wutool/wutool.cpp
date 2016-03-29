@@ -817,7 +817,7 @@ protected:
             query->setQueryName("qname");
             query->setQueryMainDefinition("fred");
             query->setQueryType(QueryTypeEcl);
-            query->addAssociatedFile(FileTypeCpp, "myfile", "1.2.3.4", "Description", 53);
+            query->addAssociatedFile(FileTypeCpp, "myfile", "1.2.3.4", "Description", 53, 3, 4);
             createWu->setState(WUStateCompleted);
             createWu.clear();
         }
@@ -837,6 +837,8 @@ protected:
         ASSERT(streq(file->getName(s).str(), "myfile"));
         ASSERT(file->getCrc()==53);
         ASSERT(file->getType()==FileTypeCpp);
+        ASSERT(file->getMinActivityId()==3);
+        ASSERT(file->getMaxActivityId()==4);
         ASSERT(streq(file->getIp(s).str(), "1.2.3.4"));
         query.clear();
         wu.clear();
