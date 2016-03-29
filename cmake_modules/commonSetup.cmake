@@ -240,6 +240,24 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 
+  if(UNIX AND SIGN_MODULES)
+    #export gpg public key used for signing to new installation
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/pub.key
+      COMMAND gpg --export --output=${CMAKE_BINARY_DIR}/pub.key --batch --no-tty
+      BYPRODUCTS ${CMAKE_BINARY_DIR}/pub.key
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      COMMENT "Exporting public key for eclcc signed modules to ${CMAKE_BINARY_DIR}/pub.key"
+      VERBATIM
+      )
+    add_custom_target(export-stdlib-pubkey ALL
+      DEPENDS ${CMAKE_BINARY_DIR}/pub.key
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      )
+    install(FILES ${CMAKE_BINARY_DIR}/pub.key DESTINATION .${CONFIG_DIR}/rpmnew  COMPONENT Runtime)
+    install(PROGRAMS ${CMAKE_MODULE_PATH}publickey.install DESTINATION etc/init.d/install COMPONENT Runtime)
+  endif()
+
+
   ##########################################################
 
   # common compiler/linker flags
@@ -915,12 +933,14 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   MACRO(SIGN_MODULE module)
     if(SIGN_MODULES)
+      if(DEFINED SIGN_MODULES_PASSPHRASE)
+        set(GPG_PASSPHRASE_OPTION --passphrase)
+      endif()
       add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
-        COMMAND gpg --output ${CMAKE_CURRENT_BINARY_DIR}/${module} --clearsign ${module}
+        COMMAND gpg --output ${CMAKE_CURRENT_BINARY_DIR}/${module} --clearsign ${GPG_PASSPHRASE_OPTION} ${SIGN_MODULES_PASSPHRASE} --batch --no-tty ${module}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Adding signed ${module} to project"
-        VERBATIM
         )
     else()
       add_custom_command(
@@ -937,5 +957,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       ${module_without_extension}-ecl ALL
       DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${module}
       )
+    if(SIGN_MODULES)
+      add_dependencies(${module_without_extension}-ecl export-stdlib-pubkey)
+    endif()
   ENDMACRO()
 endif ("${COMMONSETUP_DONE}" STREQUAL "")
