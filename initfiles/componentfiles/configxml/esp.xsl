@@ -163,6 +163,9 @@
                     <passphrase>
                         <xsl:value-of select="HTTPS/@passphrase"/>
                     </passphrase>
+                    <cipherList>
+                        <xsl:value-of select="HTTPS/@cipherList"/>
+                    </cipherList>
                     <verify enable="{HTTPS/@enableVerification}" address_match="{HTTPS/@requireAddressMatch}" accept_selfsigned="{HTTPS/@acceptSelfSigned}">
                         <ca_certificates path="{HTTPS/@CA_Certificates_Path}"/>
                         <trusted_peers><xsl:value-of select="HTTPS/@trustedPeers"/></trusted_peers>
