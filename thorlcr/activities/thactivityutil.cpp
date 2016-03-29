@@ -649,7 +649,7 @@ void doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFilePr
     }
 }
 
-class CWriteHandler : public CSimpleInterface, implements IFileIO
+class CWriteHandler : public CInterface, implements IFileIO
 {
     Linked<IFileIO> primaryio;
     Linked<IFile> primary;
@@ -663,7 +663,7 @@ class CWriteHandler : public CSimpleInterface, implements IFileIO
     unsigned twFlags;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CInterface);
 
     CWriteHandler(CActivityBase &_activity, IPartDescriptor &_partDesc, IFile *_primary, IFileIO *_primaryio, ICopyFileProgress *_iProgress, unsigned _twFlags, bool *_aborted)
         : activity(_activity), partDesc(_partDesc), primary(_primary), primaryio(_primaryio), iProgress(_iProgress), twFlags(_twFlags), aborted(_aborted), fipScope(primary->queryFilename())
@@ -675,7 +675,7 @@ public:
         if (globals->getPropBool("@replicateAsync", true))
             cancelReplicates(&activity, partDesc);
     }
-    virtual void beforeDispose()
+    virtual void beforeDispose() override
     {
         // Can't throw in destructor...
         // Note that if we do throw the CWriteHandler object is liable to be leaked...
