@@ -49,7 +49,7 @@ void usage()
            "   delete <workunits>  - Delete workunits\n"
            "   results <workunits> - Dump results from specified workunits\n"
            "\n"
-           "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [KEEPFILERESULTS=1] [INCLUDEFILES=1]\n"
+           "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [DELETERESULTS=1] [INCLUDEFILES=1]\n"
            "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
             "\n"
            "   orphans             - Delete orphaned information from store\n"
@@ -107,7 +107,7 @@ void process(IConstWorkUnit &w, IProperties *globals)
         if (to.length()==0)
             to.append('.');
         StringAttr wuid(w.queryWuid());
-        if (QUERYINTERFACE(&w, IExtendedWUInterface)->archiveWorkUnit(to.str(), globals->getPropBool("DEL", false), true, !globals->getPropBool("KEEPFILERESULTS", true), globals->getPropBool("INCLUDEFILES", false)))
+        if (QUERYINTERFACE(&w, IExtendedWUInterface)->archiveWorkUnit(to.str(), globals->getPropBool("DEL", false), true, globals->getPropBool("DELETERESULTS", false), globals->getPropBool("INCLUDEFILES", false)))
             printf("archived %s\n", wuid.str());
         else
             printf("archive of %s failed\n", wuid.str());
