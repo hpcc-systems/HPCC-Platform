@@ -648,7 +648,7 @@ static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, Stri
                         e->Release();
                     }
                 }
-                QUERYINTERFACE(wu.get(), IExtendedWUInterface)->archiveWorkUnit(path.str(),del,true,deleteOwned);
+                QUERYINTERFACE(wu.get(), IExtendedWUInterface)->archiveWorkUnit(path.str(),del,true,deleteOwned,true);
                 res.append("OK");
                 return true;
             }
@@ -674,7 +674,7 @@ static bool doRestoreWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, Stri
         StringBuffer base;
         getLdsPath(ldspath.str(), base);
         try {
-            if (wufactory->restoreWorkUnit(base, wuid)) {
+            if (wufactory->restoreWorkUnit(base, wuid, true)) {
                 res.append("OK");
                 return true;
             }

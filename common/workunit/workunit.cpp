@@ -1389,8 +1389,8 @@ public:
             { return queryExtendedWU(c)->queryPTree(); }
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const
             { return queryExtendedWU(c)->getUnpackedTree(includeProgress); }
-    virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned)
-            { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned); }
+    virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned,bool exportAssociatedFiles)
+            { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned,exportAssociatedFiles); }
     virtual unsigned queryFileUsage(const char *filename) const
             { return c->queryFileUsage(filename); }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const
@@ -2275,7 +2275,7 @@ IPropertyTree * pruneBranch(IPropertyTree * from, char const * xpath)
     return ret.getClear();
 }
 
-bool CWorkUnitFactory::restoreWorkUnit(const char *base, const char *wuid)
+bool CWorkUnitFactory::restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated)
 {
     StringBuffer path(base);
     addPathSepChar(path).append(wuid).append(".xml");
@@ -3199,9 +3199,9 @@ public:
         if (!secUser) secUser = defaultSecUser.get();
         return baseFactory->updateWorkUnit(wuid, secMgr, secUser);
     }
-    virtual bool restoreWorkUnit(const char *base, const char *wuid)
+    virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated)
     {
-        return baseFactory->restoreWorkUnit(base, wuid);
+        return baseFactory->restoreWorkUnit(base, wuid, restoreAssociated);
     }
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secMgr, ISecUser *secUser)
     {
@@ -3517,7 +3517,7 @@ bool modifyAndWriteWorkUnitXML(char const * wuid, StringBuffer & buf, StringBuff
     return (fileio->write(0,buf.length(),buf.str()) == buf.length());
 }
 
-bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned)
+bool CLocalWorkUnit::archiveWorkUnit(const char *base, bool del, bool ignoredllerrors, bool deleteOwned, bool exportAssociatedFiles)
 {
     CriticalBlock block(crit);
     StringBuffer path(base);
@@ -3558,7 +3558,6 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
         }
         return false;
     }
-
     StringArray deleteExclusions; // associated files not to delete, added if failure to copy
     Owned<IConstWUAssociatedFileIterator> iter = &q->getAssociatedFiles();
     Owned<IPropertyTree> generatedDlls = createPTree("GeneratedDlls");
@@ -3587,46 +3586,49 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 Owned<IPropertyTree> generatedDllBranch = createPTree();
                 generatedDllBranch->setProp("@name", entry->queryName());
                 generatedDllBranch->setProp("@kind", entry->queryKind());
-                try
+                if (exportAssociatedFiles)
                 {
-                    loc.setown(entry->getBestLocation()); //throws exception if no readable locations
-                }
-                catch(IException * e)
-                {
-                    exception.setown(e);
-                    loc.setown(entry->getBestLocationCandidate()); //this will be closest of the unreadable locations
-                }
-                RemoteFilename filename;
-                loc->getDllFilename(filename);
-                if (!exception)
-                {
-                    Owned<IFile> srcfile = createIFile(filename);
                     try
                     {
-                        if (dstFile->exists())
-                        {
-                            if (streq(srcfile->queryFilename(), dstFile->queryFilename()))
-                                deleteExclusions.append(name.str()); // restored workunit, referencing archive location for query dll (no longer true post HPCC-11191 fix)
-                            // still want to delete if already archived but there are source file copies
-                        }
-                        else
-                            copyFile(dstFile, srcfile);
+                        loc.setown(entry->getBestLocation()); //throws exception if no readable locations
                     }
                     catch(IException * e)
                     {
                         exception.setown(e);
+                        loc.setown(entry->getBestLocationCandidate()); //this will be closest of the unreadable locations
                     }
-                }
-                if (exception)
-                {
-                    if (ignoredllerrors)
+                    RemoteFilename filename;
+                    loc->getDllFilename(filename);
+                    if (!exception)
                     {
-                        EXCLOG(exception.get(), "archiveWorkUnit (copying associated file)");
-                        //copy failed, so don't delete the registred dll files
-                        deleteExclusions.append(name.str());
+                        Owned<IFile> srcfile = createIFile(filename);
+                        try
+                        {
+                            if (dstFile->exists())
+                            {
+                                if (streq(srcfile->queryFilename(), dstFile->queryFilename()))
+                                    deleteExclusions.append(name.str()); // restored workunit, referencing archive location for query dll (no longer true post HPCC-11191 fix)
+                                // still want to delete if already archived but there are source file copies
+                            }
+                            else
+                                copyFile(dstFile, srcfile);
+                        }
+                        catch(IException * e)
+                        {
+                            exception.setown(e);
+                        }
                     }
-                    else
-                        throw exception.getClear();
+                    if (exception)
+                    {
+                        if (ignoredllerrors)
+                        {
+                            EXCLOG(exception.get(), "archiveWorkUnit (copying associated file)");
+                            //copy failed, so don't delete the registered dll files
+                            deleteExclusions.append(name.str());
+                        }
+                        else
+                            throw exception.getClear();
+                    }
                 }
                 // Record Associated path to restore back to
                 StringBuffer restorePath;
@@ -3634,7 +3636,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 generatedDllBranch->setProp("@location", restorePath.str());
                 generatedDlls->addPropTree("GeneratedDll", generatedDllBranch.getClear());
             }
-            else // no generated dll entry
+            else if (exportAssociatedFiles) // no generated dll entry
             {
                 Owned<IFile> srcFile = createIFile(curRfn);
                 try
