@@ -222,6 +222,7 @@
 #define HQLERR_AggregateDynamicOffset           4202
 #define HQLERR_ServiceDefinitionNotAllowed      4203
 #define HQLERR_BodyNotAllowedWithInline         4204
+#define HQLERR_DatasetPassedToRowArg            4205
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -519,6 +520,7 @@
 #define HQLERR_AggregateDynamicOffset_Text      "Aggregate assignment to '%s' cannot follow variable size aggregate"
 #define HQLERR_ServiceDefinitionNotAllowed_Text "Insufficient access rights to use SERVICE"
 #define HQLERR_BodyNotAllowedWithInline_Text    "#body not supported with INLINE attribute"
+#define HQLERR_DatasetPassedToRowArg_Text       "Cannot pass a dataset to row argument %s"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
