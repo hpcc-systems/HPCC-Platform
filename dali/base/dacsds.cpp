@@ -1730,6 +1730,8 @@ IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, Ses
                 mConnect->getConnectionDetails(c, xpath, mode);
                 Owned<CRemoteConnection> conn = new CRemoteConnection(*this, connId, xpath, id, mode & ~RTM_CREATE_MASK, timeout);
                 assertex(conn.get());
+                if (queryProperties().getPropBool("Client/@LogConnection"))
+                    DBGLOG("SDSManager::connect() - IMultipleConnector: RemoteConnection ID<%" I64F "x>, timeout<%d>", connId, timeout);
 
                 CClientRemoteTree *tree;
                 { CDisableFetchChangeBlock block(*conn);
@@ -1776,6 +1778,8 @@ IRemoteConnection *CClientSDSManager::connect(const char *xpath, SessionId id, u
             mb.read(connId);
             conn = new CRemoteConnection(*this, connId, xpath, id, mode & ~RTM_CREATE_MASK, timeout);
             assertex(conn);
+            if (queryProperties().getPropBool("Client/@LogConnection"))
+                DBGLOG("SDSManager::connect(): xpath<%s>, RemoteConnection ID<%" I64F "x>, mode<%x>, timeout<%d>", xpath, connId, mode, timeout);
 
             CClientRemoteTree *tree;
             { CDisableFetchChangeBlock block(*conn);

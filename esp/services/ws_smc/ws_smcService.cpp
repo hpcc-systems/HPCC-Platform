@@ -141,6 +141,9 @@ void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service
 
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ActivityInfoCacheSeconds", process, service);
     activityInfoCacheSeconds = cfg->getPropInt(xpath.str(), DEFAULTACTIVITYINFOCACHETIMEOUTSECOND);
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/LogDaliConnection", process, service);
+    if (cfg->getPropBool(xpath.str()))
+        querySDS().setConfigOpt("Client/@LogConnection", "true");
 }
 
 struct CActiveWorkunitWrapper: public CActiveWorkunit
