@@ -7240,14 +7240,31 @@ static void ensureHttpParameter(IPropertyTree *pt, const char *path, const char 
     ensureHttpParameter(pt, tag, path, value, fullpath);
 }
 
-IPropertyTree *createPTreeFromHttpParameters(const char *name, IProperties *parameters, bool skipLeadingDotParameters, bool nestedRoot, ipt_flags flags)
+//URL node nameWithAttrs is of the form: "TagName;attr1=abc;attr2;attr3=;"
+IPropertyTree *createPTreeFromHttpParameters(const char *nameWithAttrs, IProperties *parameters, bool skipLeadingDotParameters, bool nestedRoot, ipt_flags flags)
 {
-    Owned<IPropertyTree> pt = createPTree(name, flags);
-
-    Owned<IPropertyIterator> props = parameters->getIterator();
-    ForEach(*props)
+    StringArray nameAttrList;
+    nameAttrList.appendList(nameWithAttrs, ";");
+    if (!nameAttrList.ordinality())
+        return NULL;
+    Owned<IPropertyTree> pt = createPTree(nameAttrList.item(0), flags);
+    for (aindex_t pos=1; nameAttrList.isItem(pos); pos++)
     {
-        StringBuffer key = props->getPropKey();
+        const char *attr = skipWhitespace(nameAttrList.item(pos));
+        if (*attr=='=')
+            continue;
+        StringBuffer xpath("@");
+        const char *eq = strchr(attr, '=');
+        if (eq)
+            pt->setProp(xpath.append(eq-attr, attr).trim(), eq+1);
+        else
+            pt->setPropBool(xpath.append(attr).trim(), true);
+    }
+
+    Owned<IPropertyIterator> iter = parameters->getIterator();
+    ForEach(*iter)
+    {
+        StringBuffer key = iter->getPropKey();
         if (!key.length() || key.charAt(key.length()-1)=='!')
             continue;
         if (skipLeadingDotParameters && key.charAt(0)=='.')
@@ -7260,7 +7277,7 @@ IPropertyTree *createPTreeFromHttpParameters(const char *name, IProperties *para
     if (nestedRoot)
     {
         Owned<IPropertyTree> root = createPTree(flags);
-        root->setPropTree(name, pt.getClear());
+        root->setPropTree(nameAttrList.item(0), pt.getClear());
         return root.getClear();
     }
 
