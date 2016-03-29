@@ -516,6 +516,15 @@ hr.dashedLine {
     padding-right: 0px;
     cursor: pointer;
 }
+
+.bold{
+    font-weight:bold;
+}
+
+.boldRed{
+    font-weight:bold;
+    color: rgb(237, 28, 36);
+}
 /*###############################*/
 #appLayout {
     height: 100%;
