@@ -4558,8 +4558,12 @@ void EclResourceDependencyGatherer::addDependencyUse(IHqlExpression * search, Re
         {
             //Don't give a warning if get/set is within the same activity (e.g., within a local())
             if (&dependencySource.exprs.item(index) != expr)
-                //errors->reportWarning(HQLWRN_RecursiveDependendencies, HQLWRN_RecursiveDependendencies_Text, *codeGeneratorAtom, 0, 0, 0);
-                errors->reportError(HQLWRN_RecursiveDependendencies, HQLWRN_RecursiveDependendencies_Text, str(codeGeneratorId), 0, 0, 0);
+            {
+                StringBuffer ecl;
+                getExprECL(search, ecl);
+                VStringBuffer msg(HQLWRN_RecursiveDependendencies_Text, ecl.str());
+                errors->reportError(HQLWRN_RecursiveDependendencies, msg.str(), str(codeGeneratorId), 0, 0, 0);
+            }
         }
         else
         {
@@ -6209,7 +6213,7 @@ void EclResourcer::createResourced(ResourceGraphInfo * graph, HqlExprArray & tra
 #endif
 //  DBGLOG("Prepare to CreateResourced(%p)", graph);
     if (graph->startedGeneratingResourced)
-        throwError(HQLWRN_RecursiveDependendencies);
+        throwError1(HQLWRN_RecursiveDependendencies, "");
 
     graph->startedGeneratingResourced = true;
     ForEachItemIn(idxD, graph->dependsOn)
