@@ -36,10 +36,11 @@ class THORHELPER_API HttpHelper : public CInterface
 {
 private:
     HttpMethod method;
-    bool useEnvelope;
+    bool useEnvelope = false;
     StringAttr url;
     StringAttr authToken;
     StringAttr contentType;
+    StringAttr queryName;
     StringArray pathNodes;
     StringArray *validTargets;
     Owned<IProperties> parameters;
@@ -59,10 +60,14 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    HttpHelper(StringArray *_validTargets) : validTargets(_validTargets), method(HttpMethod::NONE) {useEnvelope=true; parameters.setown(createProperties(true));}
+    HttpHelper(StringArray *_validTargets) : validTargets(_validTargets), method(HttpMethod::NONE) {parameters.setown(createProperties(true));}
     inline bool isHttp() { return method!=HttpMethod::NONE; }
     inline bool isHttpGet(){ return method==HttpMethod::GET; }
-    inline bool isControlUrl(){return (pathNodes.isItem(1) && strieq(pathNodes.item(1), "control"));}
+    inline bool isControlUrl()
+    {
+        const char *control = queryTarget();
+        return (control && strieq(control, "control"));
+    }
 
     bool getUseEnvelope(){return useEnvelope;}
     void setUseEnvelope(bool _useEnvelope){useEnvelope=_useEnvelope;}
@@ -72,13 +77,17 @@ public:
     const char *queryTarget() { return (pathNodes.length()) ? pathNodes.item(0) : NULL; }
     const char *queryQueryName()
     {
-        unsigned namePos = 1;
-        if (!pathNodes.isItem(namePos))
+        if (!queryName.isEmpty())
+            return queryName.str();
+        if (!pathNodes.isItem(1))
             return nullptr;
-        if (isControlUrl())
-            if (!pathNodes.isItem(++namePos))
-                return nullptr;
-        return pathNodes.item(namePos);
+        const char *name = pathNodes.item(1);
+        const char *at = strchr(name, ';');
+        if (!at)
+            queryName.set(name);
+        else
+            queryName.set(name, at-name-1);
+        return queryName.str();
     }
 
     inline void setAuthToken(const char *v)
@@ -136,7 +145,16 @@ public:
         return getContentTypeMlFormat();
     }
     IProperties *queryUrlParameters(){return parameters;}
-    bool validateTarget(const char *target){return (validTargets) ? validTargets->contains(target) : false;}
+    bool validateTarget(const char *target)
+    {
+        if (!target)
+            return false;
+        if (validTargets && validTargets->contains(target))
+            return true;
+        if (strieq(target, "control") && (isHttpGet() || isFormPost()))
+            return true;
+        return false;
+    }
     inline void checkTarget()
     {
         const char *target = queryTarget();
@@ -153,8 +171,9 @@ public:
     }
     IPropertyTree *createPTreeFromParameters(byte flags)
     {
-        const char *query = queryQueryName();
-        if (!query || !*query)
+        StringBuffer query;
+        appendDecodedURL(query, pathNodes.item(1));
+        if (!query.length())
             throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Query not specified");
         return createPTreeFromHttpParameters(query, form ? form : parameters, true, false, (ipt_flags) flags);
     }

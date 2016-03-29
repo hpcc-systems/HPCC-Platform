@@ -912,7 +912,7 @@ public:
         StringBuffer json;
         if (mlFmt==MarkupFmt_XML)
         {
-            Owned<IPropertyTree> convertPT = createPTreeFromXMLString(content);
+            Owned<IPropertyTree> convertPT = createPTreeFromXMLString(StringBuffer("<Control>").append(content).append("</Control>"));
             toJSON(convertPT, json, 0, 0);
             content = json.str();
         }
@@ -976,23 +976,27 @@ public:
         CriticalBlock b(contentsCrit);
 
         StringBuffer responseHead, responseTail;
-        StringBuffer name(queryName.get());
-        if (isHTTP)
-            name.append("Response");
-        appendJSONName(responseHead, name.str()).append(" {");
-        appendJSONValue(responseHead, "sequence", seqNo);
-        if (contentsMap.length() || results)
-            delimitJSON(responseHead);
-        unsigned len = responseHead.length();
-        client->write(responseHead.detach(), len, true);
-
+        if (!(protocolFlags & HPCC_PROTOCOL_CONTROL))
+        {
+            StringBuffer name(queryName.get());
+            if (isHTTP)
+                name.append("Response");
+            appendJSONName(responseHead, name.str()).append(" {");
+            appendJSONValue(responseHead, "sequence", seqNo);
+            if (contentsMap.length() || results)
+                delimitJSON(responseHead);
+            unsigned len = responseHead.length();
+            client->write(responseHead.detach(), len, true);
+        }
         outputContent();
         if (results)
             results->finalize(seqNo, ",");
-
-        responseTail.append("}");
-        len = responseTail.length();
-        client->write(responseTail.detach(), len, true);
+        if (!(protocolFlags & HPCC_PROTOCOL_CONTROL))
+        {
+            responseTail.append("}");
+            unsigned len = responseTail.length();
+            client->write(responseTail.detach(), len, true);
+        }
     }
 };
 
@@ -1081,22 +1085,28 @@ public:
         CriticalBlock b(contentsCrit);
 
         StringBuffer responseHead, responseTail;
-        responseHead.append("<").append(queryName);
-        responseHead.append("Response").append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append('\"');
-        responseHead.append(" sequence=\"").append(seqNo).append("\">");
-        unsigned len = responseHead.length();
-        client->write(responseHead.detach(), len, true);
+        if (!(protocolFlags & HPCC_PROTOCOL_CONTROL))
+        {
+            responseHead.append("<").append(queryName);
+            responseHead.append("Response").append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append('\"');
+            responseHead.append(" sequence=\"").append(seqNo).append("\">");
+            unsigned len = responseHead.length();
+            client->write(responseHead.detach(), len, true);
+        }
 
         outputContent();
         if (results)
             results->finalize(seqNo, NULL);
 
-        responseTail.append("</").append(queryName);
-        if (isHTTP)
-            responseTail.append("Response");
-        responseTail.append('>');
-        len = responseTail.length();
-        client->write(responseTail.detach(), len, true);
+        if (!(protocolFlags & HPCC_PROTOCOL_CONTROL))
+        {
+            responseTail.append("</").append(queryName);
+            if (isHTTP)
+                responseTail.append("Response");
+            responseTail.append('>');
+            unsigned len = responseTail.length();
+            client->write(responseTail.detach(), len, true);
+        }
     }
 };
 
@@ -1371,8 +1381,6 @@ private:
                         queryPT.setown(queryPT->getPropTree("Body/*"));
                     else if (!strnicmp(httpHelper.queryContentType(), "application/soap", strlen("application/soap")))
                         throw MakeStringException(ROXIE_DATA_ERROR, "Malformed SOAP request");
-                    else
-                        httpHelper.setUseEnvelope(false);
                     if (!queryPT)
                         throw MakeStringException(ROXIE_DATA_ERROR, "Malformed SOAP request (missing Body)");
                     String reqName(queryPT->queryName());
@@ -1513,6 +1521,8 @@ readAnother:
                 queryName.set(extractor.name);
                 queryPrefix.set(extractor.prefix);
                 stripWhitespace = extractor.stripWhitespace;
+                if (httpHelper.isHttp())
+                    httpHelper.setUseEnvelope(extractor.isSoap);
             }
             if (streq(queryPrefix.str(), "control"))
             {
@@ -1531,7 +1541,7 @@ readAnother:
                     VStringBuffer fullname("control:%s", queryName.str()); //just easier to keep for debugging and internal checking
                     queryPT->renameProp("/", fullname);
                 }
-                Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags, global->defaultXmlReadFlags);
+                Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags | HPCC_PROTOCOL_CONTROL, global->defaultXmlReadFlags);
                 sink->onControlMsg(msgctx, queryPT, protocol);
                 protocol->finalize(0);
                 if (streq(queryName, "lock") || streq(queryName, "childlock"))
