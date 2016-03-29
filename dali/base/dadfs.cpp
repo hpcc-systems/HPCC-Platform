@@ -577,7 +577,6 @@ public:
 
 class CFileSuperOwnerLock : protected CFileLockCompound
 {
-    CriticalSection superOwnerLockSect;
 public:
     bool init(const CDfsLogicalFileName &logicalName, IRemoteConnection *conn, unsigned timeout, const char *msg)
     {
@@ -587,7 +586,7 @@ public:
     {
         return CFileLockCompound::detach();
     }
-    bool initWithFileLock(const CDfsLogicalFileName &logicalName, IRemoteConnection *conn, unsigned timeout, const char *msg, CFileLock &fcl, unsigned fclmode)
+    bool initWithFileLock(const CDfsLogicalFileName &logicalName, unsigned timeout, const char *msg, CFileLock &fcl, unsigned fclmode)
     {
         // SuperOwnerLock while holding fcl
         IRemoteConnection *fclConn = fcl.queryConnection();
@@ -595,12 +594,11 @@ public:
             return false; // throw ?
         CTimeMon tm(timeout);
         unsigned remaining = timeout;
-        unsigned interval = 5000;
         loop
         {
             try
             {
-                if (init(logicalName, conn, 0, msg))
+                if (init(logicalName, NULL, 0, msg))
                     return true;
                 else
                     return false; // throw ?
@@ -611,13 +609,9 @@ public:
                     throw;
                 e->Release();
             }
-            unsigned delta = remaining;
-            if (delta < interval)
-                delta = interval;
             // release lock
             {
-                CriticalBlock block(superOwnerLockSect);
-                fclConn->changeMode(RTM_NONE, delta);
+                fclConn->changeMode(RTM_NONE, remaining);
             }
             tm.timedout(&remaining);
             unsigned stime = 1000 * (2+getRandom()%15); // 2-15 sec
@@ -626,13 +620,9 @@ public:
             // let another get excl lock
             Sleep(stime);
             tm.timedout(&remaining);
-            delta = remaining;
-            if (delta < interval)
-                delta = interval;
             // get lock again (waiting for other to release excl)
             {
-                CriticalBlock block(superOwnerLockSect);
-                fclConn->changeMode(fclmode, delta);
+                fclConn->changeMode(fclmode, remaining);
                 fclConn->reload();
             }
         }
@@ -7414,13 +7404,6 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                 CFileLock fcl;
                 unsigned mode = RTM_LOCK_READ | RTM_SUB;
                 if (hold) mode |= RTM_LOCK_HOLD;
-                // initWithFileLock() below will loop (releasing and relocking fcl) if it cannot get SuperOwner lock
-                // MCK - another way to solve this could be to use RTM_LOCK_WRITE for fcl
-                // if (lockSuperOwner)
-                // {
-                //     mode &= ~RTM_LOCK_READ;
-                //     mode |= RTM_LOCK_WRITE;
-                // }
                 CTimeMon tm(timeout);
                 if (!fcl.init(*logicalname, mode, timeout, "CDistributedFileDirectory::lookup"))
                     break;
@@ -7429,7 +7412,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                 {
                     unsigned remaining;
                     tm.timedout(&remaining);
-                    verifyex(superOwnerLock.initWithFileLock(*logicalname, NULL, remaining, "CDistributedFileDirectory::dolookup(SuperOwnerLock)", fcl, mode));
+                    verifyex(superOwnerLock.initWithFileLock(*logicalname, remaining, "CDistributedFileDirectory::dolookup(SuperOwnerLock)", fcl, mode));
                 }
                 if (fcl.getKind() == DXB_File)
                 {
@@ -11471,15 +11454,13 @@ bool CDistributedFileDirectory::getFileSuperOwners(const char *logicalname, Stri
         throw MakeStringException(-1,"CDistributedFileDirectory::getFileSuperOwners: Invalid file name '%s'",logicalname);
     if (lfn.isMulti()||lfn.isExternal()||lfn.isForeign()) 
         return false;
-    // initWithFileLock() below will loop (releasing and relocking lock) if it cannot get SuperOwner lock
-    // MCK - another way to solve this could be to use RTM_LOCK_WRITE mode for lock
     CTimeMon tm(defaultTimeout);
     if (!lock.init(lfn, RTM_LOCK_READ, defaultTimeout, "CDistributedFileDirectory::getFileSuperOwners"))
         return false;
     CFileSuperOwnerLock superOwnerLock;
     unsigned remaining;
     tm.timedout(&remaining);
-    verifyex(superOwnerLock.initWithFileLock(lfn, NULL, remaining, "CDistributedFileDirectory::getFileSuperOwners(SuperOwnerLock)", lock, RTM_LOCK_READ));
+    verifyex(superOwnerLock.initWithFileLock(lfn, remaining, "CDistributedFileDirectory::getFileSuperOwners(SuperOwnerLock)", lock, RTM_LOCK_READ));
     Owned<IPropertyTreeIterator> iter = lock.queryRoot()->getElements("SuperOwner");
     StringBuffer pname;
     ForEach(*iter) {
