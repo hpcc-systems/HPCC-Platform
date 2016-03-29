@@ -77,6 +77,17 @@ kill_slaves()
         if [[ -r $instancedir/uslaves ]]; then
             clusternodes=$(cat $instancedir/uslaves 2> /dev/null | wc -l)
             $deploydir/frunssh $instancedir/slaves "/bin/sh -c '$deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
+            FRUNSSH_RC=$?
+            if [[ ${FRUNSSH_RC} -gt 0 ]]; then
+                log "Error ${FRUNSSH_RC} in frunssh"
+                log "Please check $(dirname ${LOG_DIR})/frunssh for more details"
+                # clean up any slaves it was able to reach
+                log "Stopping ${component}"
+                kill_process ${PID_NAME} thormaster_${component} 30
+                unlock /var/lock/HPCCSystems/$component/${component}.lock
+                rm -f $INIT_PID_NAME $instancedir/slaves > /dev/null 2>&1
+                exit 255
+            fi
         fi
     fi
 
