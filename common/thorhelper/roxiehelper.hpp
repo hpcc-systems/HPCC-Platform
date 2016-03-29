@@ -18,6 +18,7 @@
 #ifndef ROXIEHELPER_HPP
 #define ROXIEHELPER_HPP
 
+#include "thorherror.h"
 #include "thorxmlwrite.hpp"
 #include "roxiehelper.ipp"
 #include "roxiemem.hpp"
@@ -27,10 +28,14 @@
 
 //========================================================================================= 
 
+void parseHttpParameterString(IProperties *p, const char *str);
+
+enum class HttpMethod {NONE, GET, POST};
+
 class THORHELPER_API HttpHelper : public CInterface
 {
 private:
-    bool _isHttp;
+    HttpMethod method;
     bool useEnvelope;
     StringAttr url;
     StringAttr authToken;
@@ -38,6 +43,7 @@ private:
     StringArray pathNodes;
     StringArray *validTargets;
     Owned<IProperties> parameters;
+    Owned<IProperties> form;
 private:
     inline void setHttpHeaderValue(StringAttr &s, const char *v, bool ignoreExt)
     {
@@ -53,15 +59,27 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    HttpHelper(StringArray *_validTargets) : validTargets(_validTargets) { _isHttp = false; useEnvelope=true; parameters.setown(createProperties(true));}
-    bool isHttp() { return _isHttp; }
+    HttpHelper(StringArray *_validTargets) : validTargets(_validTargets), method(HttpMethod::NONE) {useEnvelope=true; parameters.setown(createProperties(true));}
+    inline bool isHttp() { return method!=HttpMethod::NONE; }
+    inline bool isHttpGet(){ return method==HttpMethod::GET; }
+    inline bool isControlUrl(){return (pathNodes.isItem(1) && strieq(pathNodes.item(1), "control"));}
+
     bool getUseEnvelope(){return useEnvelope;}
     void setUseEnvelope(bool _useEnvelope){useEnvelope=_useEnvelope;}
     bool getTrim() {return parameters->getPropBool(".trim", true); /*http currently defaults to true, maintain compatibility */}
-    void setIsHttp(bool __isHttp) { _isHttp = __isHttp; }
+    void setHttpMethod(HttpMethod _method) { method = _method; }
     const char *queryAuthToken() { return authToken.str(); }
     const char *queryTarget() { return (pathNodes.length()) ? pathNodes.item(0) : NULL; }
-    const char *queryQueryName() { return (pathNodes.length()>1) ? pathNodes.item(1) : NULL; }
+    const char *queryQueryName()
+    {
+        unsigned namePos = 1;
+        if (!pathNodes.isItem(namePos))
+            return nullptr;
+        if (isControlUrl())
+            if (!pathNodes.isItem(++namePos))
+                return nullptr;
+        return pathNodes.item(namePos);
+    }
 
     inline void setAuthToken(const char *v)
     {
@@ -81,20 +99,65 @@ public:
             parseURL();
         }
     }
-    TextMarkupFormat queryContentFormat()
+    inline bool isFormPost()
+    {
+        return (strnicmp(queryContentType(), "application/x-www-form-urlencoded", strlen("application/x-www-form-urlencoded"))==0);
+    }
+    TextMarkupFormat getUrlResponseFormat()
+    {
+        if (pathNodes.length()>2 && strieq(pathNodes.item(2), "json"))
+            return MarkupFmt_JSON;
+        return MarkupFmt_XML;
+    }
+    TextMarkupFormat getContentTypeMlFormat()
     {
         if (!contentType.length())
         {
-            if (pathNodes.length()>2 && strieq(pathNodes.item(2), "json"))
+            TextMarkupFormat fmt = getUrlResponseFormat();
+            if (fmt == MarkupFmt_JSON)
                 contentType.set("application/json");
             else
                 contentType.set("text/xml");
+            return fmt;
         }
 
         return (strieq(queryContentType(), "application/json")) ? MarkupFmt_JSON : MarkupFmt_XML;
     }
+    TextMarkupFormat queryResponseMlFormat()
+    {
+        if (isFormPost())
+            return getUrlResponseFormat();
+        return getContentTypeMlFormat();
+    }
+    TextMarkupFormat queryRequestMlFormat()
+    {
+        if (isHttpGet() || isFormPost())
+            return MarkupFmt_URL;
+        return getContentTypeMlFormat();
+    }
     IProperties *queryUrlParameters(){return parameters;}
     bool validateTarget(const char *target){return (validTargets) ? validTargets->contains(target) : false;}
+    inline void checkTarget()
+    {
+        const char *target = queryTarget();
+        if (!target || !*target)
+            throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not specified");
+        else if (!validateTarget(target))
+            throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not found");
+    }
+    inline void setFormContent(const char *content)
+    {
+        if (!form)
+            form.setown(createProperties(false));
+        parseHttpParameterString(form, content);
+    }
+    IPropertyTree *createPTreeFromParameters(byte flags)
+    {
+        const char *query = queryQueryName();
+        if (!query || !*query)
+            throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Query not specified");
+        return createPTreeFromHttpParameters(query, form ? form : parameters, true, false, (ipt_flags) flags);
+    }
 };
 
 //==============================================================================================================
@@ -183,7 +246,7 @@ protected:
     Linked<ISocket> sock;
     bool httpMode;
     bool heartbeat;
-    TextMarkupFormat mlFmt;
+    TextMarkupFormat mlResponseFmt = MarkupFmt_Unknown;
     StringAttr contentHead;
     StringAttr contentTail;
     PointerArray queued;
