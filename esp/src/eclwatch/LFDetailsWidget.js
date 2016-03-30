@@ -220,6 +220,7 @@ define([
             this.desprayTargetPath.init({
                 DropZoneFolders: true
             });
+            this.logicalFile.refresh();
         },
 
         initTab: function() {
