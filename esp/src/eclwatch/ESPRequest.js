@@ -115,7 +115,7 @@ define([
             var handleAs = params.handleAs ? params.handleAs : "json";
             return this._send(service, action, params).then(function (response) {
                 if (handleAs === "json") {
-                    if (lang.exists("Exceptions.Source", response)) {
+                    if (lang.exists("Exceptions.Source", response) && !params.skipExceptions) {
                         var severity = params.suppressExceptionToaster ? "Info" : "Error";
                         var source = service + "." + action;
                         if (lang.exists("Exceptions.Exception", response) && response.Exceptions.Exception.length === 1) {

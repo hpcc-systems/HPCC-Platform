@@ -276,6 +276,7 @@ define([
 
         WUCDebug: function (wuid, command) {
             return ESPRequest.send("WsWorkunits", "WUCDebug", {
+                skipExceptions: true,
                 request: {
                     Wuid: wuid,
                     Command: command

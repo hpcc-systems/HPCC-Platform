@@ -760,13 +760,16 @@ define([
             }
             var context = this;
             if (selectedGlobalIDs.length) {
-                selectedGlobalIDs.filter(function (id) {
+                var edges = selectedGlobalIDs.filter(function (id) {
                     return id && id.indexOf && id.indexOf("_") >= 0;
-                }).forEach(function (id) {
-                    WsWorkunits.WUCDebug(context.params.Wuid, "<debug:print edgeId='" + selectedGlobalIDs[0] + "'/>").then(function (response) {
-                        console.log(JSON.stringify(response));
-                    });
                 });
+                if (edges.length === 1) {
+                    WsWorkunits.WUCDebug(context.params.Wuid, "<debug:print edgeId='" + edges[0] + "'/>").then(function (response) {
+                        if (lang.exists("WUDebugResponse.Result", response)) {
+                            context.global.displayTrace(response.WUDebugResponse.Result, propertiesDom);
+                        }
+                    });
+                }
             }
             this.inSyncSelectionFrom = false;
         }, 500, false),
