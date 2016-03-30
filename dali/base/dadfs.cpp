@@ -586,6 +586,47 @@ public:
     {
         return CFileLockCompound::detach();
     }
+    bool initWithFileLock(const CDfsLogicalFileName &logicalName, unsigned timeout, const char *msg, CFileLock &fcl, unsigned fclmode)
+    {
+        // SuperOwnerLock while holding fcl
+        IRemoteConnection *fclConn = fcl.queryConnection();
+        if (!fclConn)
+            return false; // throw ?
+        CTimeMon tm(timeout);
+        unsigned remaining = timeout;
+        loop
+        {
+            try
+            {
+                if (init(logicalName, NULL, 0, msg))
+                    return true;
+                else
+                    return false; // throw ?
+            }
+            catch (ISDSException *e)
+            {
+                if (SDSExcpt_LockTimeout != e->errorCode() || tm.timedout(&remaining))
+                    throw;
+                e->Release();
+            }
+            // release lock
+            {
+                fclConn->changeMode(RTM_NONE, remaining);
+            }
+            tm.timedout(&remaining);
+            unsigned stime = 1000 * (2+getRandom()%15); // 2-15 sec
+            if (stime > remaining)
+                stime = remaining;
+            // let another get excl lock
+            Sleep(stime);
+            tm.timedout(&remaining);
+            // get lock again (waiting for other to release excl)
+            {
+                fclConn->changeMode(fclmode, remaining);
+                fclConn->reload();
+            }
+        }
+    }
 };
 
 class CScopeConnectLock
@@ -7363,11 +7404,16 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                 CFileLock fcl;
                 unsigned mode = RTM_LOCK_READ | RTM_SUB;
                 if (hold) mode |= RTM_LOCK_HOLD;
+                CTimeMon tm(timeout);
                 if (!fcl.init(*logicalname, mode, timeout, "CDistributedFileDirectory::lookup"))
                     break;
                 CFileSuperOwnerLock superOwnerLock;
                 if (lockSuperOwner)
-                    verifyex(superOwnerLock.init(*logicalname, NULL, defaultTimeout, "CDistributedFileDirectory::dolookup(SuperOwnerLock)"));
+                {
+                    unsigned remaining;
+                    tm.timedout(&remaining);
+                    verifyex(superOwnerLock.initWithFileLock(*logicalname, remaining, "CDistributedFileDirectory::dolookup(SuperOwnerLock)", fcl, mode));
+                }
                 if (fcl.getKind() == DXB_File)
                 {
                     StringBuffer cname;
@@ -11408,10 +11454,13 @@ bool CDistributedFileDirectory::getFileSuperOwners(const char *logicalname, Stri
         throw MakeStringException(-1,"CDistributedFileDirectory::getFileSuperOwners: Invalid file name '%s'",logicalname);
     if (lfn.isMulti()||lfn.isExternal()||lfn.isForeign()) 
         return false;
+    CTimeMon tm(defaultTimeout);
     if (!lock.init(lfn, RTM_LOCK_READ, defaultTimeout, "CDistributedFileDirectory::getFileSuperOwners"))
         return false;
     CFileSuperOwnerLock superOwnerLock;
-    verifyex(superOwnerLock.init(lfn, NULL, defaultTimeout, "CDistributedFileDirectory::getFileSuperOwners(SuperOwnerLock)"));
+    unsigned remaining;
+    tm.timedout(&remaining);
+    verifyex(superOwnerLock.initWithFileLock(lfn, remaining, "CDistributedFileDirectory::getFileSuperOwners(SuperOwnerLock)", lock, RTM_LOCK_READ));
     Owned<IPropertyTreeIterator> iter = lock.queryRoot()->getElements("SuperOwner");
     StringBuffer pname;
     ForEach(*iter) {
