@@ -34,6 +34,8 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
 
+    "dojox/xml/parser",
+
     "hpcc/_Widget",
     "hpcc/ESPUtil",
 
@@ -55,6 +57,7 @@ define([
     "hpcc/TableContainer"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
             registry, BorderContainer, ContentPane,
+            parser,
             _Widget, ESPUtil,
             template) {
 
@@ -790,6 +793,53 @@ define([
                             domConstruct.create("br", null, place);
                         }
                     }
+                }
+            },
+
+            walkTrace: function (domNode, results) {
+                if (!domNode) return;
+                if (domNode.childNodes) {
+                    var context = this;
+                    switch (domNode.tagName) {
+                        case "Row":
+                            var row = {};
+                            arrayUtil.forEach(domNode.childNodes, function (colNode) {
+                                arrayUtil.forEach(colNode.childNodes, function (cellNode) {
+                                    row[colNode.tagName] = cellNode.nodeValue;
+                                });
+                            });
+                            results.push(row)
+                            break;
+                        default:
+                            arrayUtil.forEach(domNode.childNodes, function (childNode) {
+                                context.walkTrace(childNode, results);
+                            });
+                        }
+                }
+            },
+
+            displayTrace: function (xml, place) {
+                if (this.hasPlugin()) {
+                    var domNode = parser.parse(xml);
+                    var results = [];
+                    this.walkTrace(domNode, results);
+
+                    var first = true;
+                    var table = {};
+                    var tr = {};
+                    arrayUtil.forEach(results, function (row, idx) {
+                        if (idx === 0) {
+                            table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, place);
+                            tr = domConstruct.create("tr", null, table);
+                            for (var key in row) {
+                                domConstruct.create("th", { innerHTML: key }, tr);
+                            }
+                        }
+                        tr = domConstruct.create("tr", null, table);
+                        for (var key in row) {
+                            domConstruct.create("td", { innerHTML: row[key] }, tr);
+                        }
+                    });
                 }
             },
 
