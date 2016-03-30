@@ -24,7 +24,7 @@
 
 project(cassandraembed)
 
-if(CASSANDRAEMBED)
+if(USE_CASSANDRA)
     # There is not yet a standard package for cassandra cpp client, and only very modern distros have libuv-dev
     # When there is (and the distros catch up) we may want to add them as dependencies here
     ADD_PLUGIN(cassandraembed)
