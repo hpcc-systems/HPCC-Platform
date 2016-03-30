@@ -77,6 +77,9 @@ define([
             }
         },
         preProcessResponse: function (response, request) {
+            if (response.Total == -1 || response.Total === 9223372036854776000 || response.Total === Number.MAX_VALUE) {
+                response.Total = response.Start + response.Count + 1000;
+            }
             if (lang.exists("Result.Row", response)) {
                 var context = this;
                 arrayUtil.forEach(response.Result.Row, function (item, index) {
