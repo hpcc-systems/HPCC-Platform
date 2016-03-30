@@ -84,21 +84,35 @@ define([
                 return;
 
             var context = this;
-            require(["src/hpcc-viz", "src/hpcc-viz-common", "src/hpcc-viz-api", "src/hpcc-viz-chart", "src/hpcc-viz-c3chart", "src/hpcc-viz-google", "src/hpcc-viz-tree", "src/hpcc-viz-other"], function () {
-                require(["src/other/Comms", "src/chart/MultiChartSurface", "src/common/Surface", "src/tree/SunburstPartition", "src/other/Table", "crossfilter"], function (Comms, MultiChartSurface, Surface, SunburstPartition, Table, crossfilterXXX) {
+            if (dojoConfig.vizDebug) {
+                requireWidget();
+            } else {
+                require(["dist-amd/hpcc-viz"], function () {
+                    require(["dist-amd/hpcc-viz-common"], function () {
+                        require(["dist-amd/hpcc-viz-api"], function () {
+                            require(["dist-amd/hpcc-viz-layout"], function () {
+                                require(["dist-amd/hpcc-viz-chart", "dist-amd/hpcc-viz-google", "dist-amd/hpcc-viz-c3chart", "dist-amd/hpcc-viz-amchart", "dist-amd/hpcc-viz-other", "dist-amd/hpcc-viz-tree", "dist-amd/hpcc-viz-composite"], function () {
+                                    requireWidget();
+                                });
+                            });
+                        });
+                    });
+                });
+            }
+            function requireWidget() {
+                require(["src/other/Comms", "src/composite/MegaChart", "src/layout/Surface", "src/tree/SunburstPartition", "src/other/Table", "crossfilter"], function (Comms, MegaChart, Surface, SunburstPartition, Table, crossfilterXXX) {
                     function CFGroup(crossfilter, dimensionID, targetID) {
                         this.targetID = targetID;
                         this.dimensionID = dimensionID;
                         this.dimension = crossfilter.dimension(function (d) { return d[dimensionID]; });
                         this.group = this.dimension.group().reduceSum(function (d) { return d.RawValue; });
 
-                        this.widget = new MultiChartSurface()
+                        this.widget = new MegaChart()
                             .target(targetID)
                             .title(dimensionID)
+                            .titleFontFamily("Verdana")
                             .columns([dimensionID, "Total"])
-                            .showIcon(false)
-                            .menu(["Pie (Google)", "Pie (C3)", "Table"])
-                            .chartType("GOOGLE_PIE")
+                            .chartType("C3_PIE")
                         ;
 
                         this.filter = null;
@@ -164,9 +178,8 @@ define([
                     context.scopes = new SunburstPartition();
                     context.scopesSurface = new Surface()
                         .target(context.id + "Scope")
-                        .showIcon(false)
                         .title("Scope")
-                        .content(context.scopes)
+                        .widget(context.scopes)
                     ;
 
                     context.prevScope = null;
@@ -186,16 +199,15 @@ define([
                         context.doRender(context.scopes);
                     }, 250);
 
-                    context.bar = new MultiChartSurface()
+                    context.bar = new MegaChart()
                         .target(context.id + "Stats")
-                        .showIcon(false)
-                        .menu(["Bar (Google)", "Bar (C3)", "Column (Google)", "Column (C3)", "Table"])
-                        .chartType("GOOGLE_COLUMN")
+                        .titleFontFamily("Verdana")
+                        .chartType("BAR")
                     ;
 
                     context.doRefreshData();
                 });
-            });
+            }
         },
 
         formatTree: function (data, label) {
@@ -276,8 +288,8 @@ define([
                     .render()
                 ;
             } else {
-                this.scopesSurface._text
-                    .text("Scope" + (this.prevScope ? " (" + this.prevScope + ")" : ""))
+                this.scopesSurface
+                    .title("Scope" + (this.prevScope ? " (" + this.prevScope + ")" : ""))
                     .render()
                 ;
             }
