@@ -126,18 +126,6 @@ define([
             }, this);
         },
 
-        xmlEncode: function (str) {
-            str = "" + str;
-            return str.replace(/&/g, '&amp;')
-                      .replace(/"/g, '&quot;')
-                      .replace(/'/g, '&apos;')
-                      .replace(/</g, '&lt;')
-                      .replace(/>/g, '&gt;')
-                      .replace(/\n/g, '&#10;')
-                      .replace(/\r/g, '&#13;')
-            ;
-        },
-
         buildVertexString: function (vertex, isPoint) {
             var attrStr = "";
             var propsStr = "";
@@ -146,9 +134,9 @@ define([
                 if (isPoint && key.indexOf("_kind") >= 0) {
                     propsStr += "<att name=\"_kind\" value=\"point\"/>";
                 } else if (key === "id" || key === "label") {
-                    attrStr += " " + key + "=\"" + this.xmlEncode(props[key]) + "\"";
+                    attrStr += " " + key + "=\"" + Utility.xmlEncode(props[key]) + "\"";
                 } else {
-                    propsStr += "<att name=\"" + key + "\" value=\"" + this.xmlEncode(props[key]) + "\"/>";
+                    propsStr += "<att name=\"" + key + "\" value=\"" + Utility.xmlEncode(props[key]) + "\"/>";
                 }
             }
             return "<node" + attrStr + ">" + propsStr + "</node>";
@@ -163,9 +151,9 @@ define([
                     key.toLowerCase() === "label" ||
                     key.toLowerCase() === "source" ||
                     key.toLowerCase() === "target") {
-                    attrStr += " " + key + "=\"" + this.xmlEncode(props[key]) + "\"";
+                    attrStr += " " + key + "=\"" + Utility.xmlEncode(props[key]) + "\"";
                 } else {
-                    propsStr += "<att name=\"" + key + "\" value=\"" + this.xmlEncode(props[key]) + "\"/>";
+                    propsStr += "<att name=\"" + key + "\" value=\"" + Utility.xmlEncode(props[key]) + "\"/>";
                 }
             }
             return "<edge" + attrStr + ">" + propsStr + "</edge>";
@@ -259,7 +247,7 @@ define([
 
                 var props = subgraph.getProperties();
                 for (var key in props) {
-                    propsStr += "<att name=\"" + key + "\" value=\"" + this.xmlEncode(props[key]) + "\"/>";
+                    propsStr += "<att name=\"" + key + "\" value=\"" + Utility.xmlEncode(props[key]) + "\"/>";
                 }
                 this.m_xgmml += root ? "" : "</graph></att>" + propsStr + "</node>";
             }

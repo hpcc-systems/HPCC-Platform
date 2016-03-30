@@ -38,6 +38,7 @@ define([
 
     "hpcc/_Widget",
     "hpcc/ESPUtil",
+    "hpcc/Utility",
 
     "dojo/text!../templates/GraphWidget.html",
 
@@ -58,7 +59,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
             registry, BorderContainer, ContentPane,
             parser,
-            _Widget, ESPUtil,
+            _Widget, ESPUtil, Utility,
             template) {
 
     var GraphStore = declare("GraphStore", [Memory], {
@@ -786,8 +787,8 @@ define([
                                 domConstruct.create("th", { innerHTML: this.i18n.Value }, tr);
                             }
                             tr = domConstruct.create("tr", null, table);
-                            domConstruct.create("td", { innerHTML: key }, tr);
-                            domConstruct.create("td", { innerHTML: props[key] }, tr);
+                            domConstruct.create("td", { innerHTML: Utility.xmlEncode(key) }, tr);
+                            domConstruct.create("td", { innerHTML: Utility.xmlEncode(props[key]) }, tr);
                         }
                         if (first == false) {
                             domConstruct.create("br", null, place);

@@ -136,7 +136,7 @@ define([
         },
 
         refreshUserName: function () {
-            dom.byId(this.id + "UserID").innerHTML = this.userName ? this.userName : "";
+            dom.byId(this.id + "UserID").textContent = this.userName ? this.userName : "";
         },
 
         init: function (params) {
