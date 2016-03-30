@@ -1,4 +1,24 @@
-﻿define([], function () {
+﻿define([
+    "dojox/html/entities"
+], function (entities) {
+
+    function xmlEncode(str) {
+        str = "" + str;
+        return entities.encode(str);
+    }
+
+    function xmlEncode2(str) {
+        str = "" + str;
+        return str.replace(/&/g, '&amp;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&apos;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/\n/g, '&#10;')
+                  .replace(/\r/g, '&#13;')
+        ;
+    }
+
     function espTime2Seconds(duration) {
         if (!duration) {
             return 0;
@@ -119,6 +139,8 @@
 
     return {
         espTime2Seconds: espTime2Seconds,
-        espSize2Bytes: espSize2Bytes
+        espSize2Bytes: espSize2Bytes,
+        xmlEncode: xmlEncode,
+        xmlEncode2: xmlEncode2
     }
 });

@@ -250,7 +250,7 @@ define([
             if (params.Wuid) {
                 this.summaryWidget.set("title", params.Wuid);
 
-                dom.byId(this.id + "Wuid").innerHTML = params.Wuid;
+                dom.byId(this.id + "Wuid").textContent = params.Wuid;
                 this.wu = ESPWorkunit.Get(params.Wuid);
                 var data = this.wu.getData();
                 for (var key in data) {
@@ -431,7 +431,7 @@ define([
                     switch (domElem.tagName) {
                         case "SPAN":
                         case "DIV":
-                            domAttr.set(this.id + name, "innerHTML", newValue);
+                            dom.byId(this.id + name).textContent = newValue;
                             break;
                         case "INPUT":
                         case "TEXTAREA":

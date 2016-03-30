@@ -412,7 +412,7 @@ define([
             refreshTopics: function() {
                 this.refreshFilter();
                 if (this.errWarnCount) {
-                    this.errWarnCount.innerHTML = this._counts.errorWarning > 0 ? this._counts.errorWarning : "";
+                    this.errWarnCount.textContent = this._counts.errorWarning > 0 ? this._counts.errorWarning : "";
                 }
                 if (this.errWarnMenuItem) {
                     this.errWarnMenuItem.set("label", this.i18n.ErrorWarnings + (this._counts.errorWarning > 0 ? " (" + this._counts.errorWarning + ")" : ""));

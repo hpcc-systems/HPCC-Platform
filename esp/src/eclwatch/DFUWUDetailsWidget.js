@@ -122,7 +122,7 @@ define([
             if (params.Wuid) {
                 this.summaryWidget.set("title", params.Wuid);
 
-                dom.byId(this.id + "Wuid").innerHTML = params.Wuid;
+                dom.byId(this.id + "Wuid").textContent = params.Wuid;
 
                 this.clearInput();
                 this.wu = ESPDFUWorkunit.Get(params.Wuid);
@@ -190,14 +190,14 @@ define([
             return null;
         },
 
-        setInnerHTML: function (id, value) {
+        setTextContent: function (id, value) {
             var domNode = dom.byId(this.id + id);
             var pNode = this.getAncestor(domNode, "LI");
             if (typeof value != 'undefined') {
                 if (pNode) {
                     domClass.remove(pNode, "hidden");
                 }
-                domNode.innerHTML = value;
+                domNode.textContent = value;
             } else {
                 if (pNode) {
                     domClass.add(pNode, "hidden");
@@ -242,7 +242,7 @@ define([
                     switch (domNode.tagName) {
                         case "SPAN":
                         case "DIV":
-                            this.setInnerHTML(name, newValue);
+                            this.setTextContent(name, newValue);
                             break;
                         case "INPUT":
                         case "TEXTAREA":
@@ -255,7 +255,7 @@ define([
             }
             switch (name) {
                 case "CommandMessage":
-                    this.setInnerHTML("CommandMessage2", newValue);
+                    this.setTextContent("CommandMessage2", newValue);
                     break;
                 case "isProtected":
                     dom.byId(this.id + "ProtectedImage").src = this.wu.getProtectedImage();

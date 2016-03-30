@@ -372,7 +372,7 @@ define([
 
         doInit: function(params) {
             if (this.global.version.major < 5) {
-                dom.byId(this.id + "Warning").innerHTML = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
+                dom.byId(this.id + "Warning").textContent = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
             }
 
             if (params.SafeMode && params.SafeMode != "false") {
@@ -677,7 +677,7 @@ define([
             }
 
             var propertiesDom = dom.byId(this.id + "Properties");
-            propertiesDom.innerHTML = "";
+            propertiesDom.textContent = "";
             for (var i = 0; i < selectedGlobalIDs.length; ++i) {
                 this.global.displayProperties(selectedGlobalIDs[i], propertiesDom);
             }
