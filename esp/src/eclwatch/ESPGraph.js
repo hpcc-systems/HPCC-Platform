@@ -500,6 +500,9 @@ define([
                                 if (name.indexOf("Time") === 0) {
                                     retVal["_" + name] = value;
                                     retVal[name] = "" + Utility.espTime2Seconds(value);
+                                } else if (name.indexOf("Size") === 0) {
+                                    retVal["_" + name] = value;
+                                    retVal[name] = "" + Utility.espSize2Bytes(value);
                                 } else {
                                     retVal[name] = value;
                                 }

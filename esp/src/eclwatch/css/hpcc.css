@@ -1129,3 +1129,9 @@ margin-left:-20px;
 .claro .graph_Graph .graphEdge .graph_Edge.selected .common_Text {
     fill:red !important;
 }
+
+.smallSelect .dijitSelectLabel {
+    text-align: left;
+    overflow: hidden;
+    width: 80px;
+}

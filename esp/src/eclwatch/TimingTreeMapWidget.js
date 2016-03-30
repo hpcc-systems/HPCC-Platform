@@ -166,16 +166,28 @@ define([
                 }
             },
 
-            setActivities: function (activities) {
+            setActivityMetric: function (metric) {
+                this._activityMetric = metric;
+                this.refreshActivities();
+            },
+
+            setActivities: function (activities, skipRefresh) {
+                this._activities = activities;
+                if (!skipRefresh) {
+                    this.refreshActivities();
+                }
+            },
+
+            refreshActivities: function() {
                 var context = this;
                 setTimeout(function () {
-                    context.loadTimers(activities.map(function (activity) {
+                    context.loadTimers(arrayUtil.map(context._activities, function (activity) {
                         return {
                             __hpcc_prefix: "Activites",
                             __hpcc_id: activity._globalID,
                             ActivityID: activity._globalID,
                             Name: activity.label,
-                            Seconds: activity.TimeMaxLocalExecute
+                            Seconds: activity[context._activityMetric || "TimeMaxLocalExecute"]
                         };
                     }));
                 }, 20);
@@ -190,6 +202,9 @@ define([
             },
 
             timerFilter: function (timer) {
+                if (isNaN(timer.Seconds)) {
+                    return false;
+                }
                 if (lang.exists("params.query.graphsOnly", this) && this.params.query.graphsOnly) {
                     return (timer.SubGraphId && (this.params.query.graphName === "*" || this.params.query.graphName === timer.GraphName) && (this.params.query.subGraphId === "*" || this.params.query.subGraphId === timer.SubGraphId));
                 }

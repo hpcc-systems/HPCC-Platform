@@ -49,7 +49,76 @@
         }, this);
     }
 
+    function unitTest(size, unit) {
+        var nsIndex = size.indexOf(unit);
+        if (nsIndex !== -1) {
+            return parseFloat(size.substr(0, nsIndex));
+        }
+        return -1;
+    }
+
+    function espSize2Bytes(size) {
+        if (!size) {
+            return 0;
+        } else if (!isNaN(size)) {
+            return parseFloat(size);
+        }
+        var retVal = unitTest(size, "Kb");
+        if (retVal >= 0) {
+            return retVal * 1024;
+        }
+        var retVal = unitTest(size, "Mb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 2);
+        }
+        var retVal = unitTest(size, "Gb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 3);
+        }
+        var retVal = unitTest(size, "Tb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 4);
+        }
+        var retVal = unitTest(size, "Pb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 5);
+        }
+        var retVal = unitTest(size, "Eb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 6);
+        }
+        var retVal = unitTest(size, "Zb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 7);
+        }
+        var retVal = unitTest(size, "b");
+        if (retVal >= 0) {
+            return retVal;
+        }
+        return 0;
+    }
+
+    function espSize2BytesTests() {
+        var tests = [
+            { str: "1", expected: 1 },
+            { str: "1b", expected: 1 },
+            { str: "1Kb", expected: 1 * 1024 },
+            { str: "1Mb", expected: 1 * 1024 * 1024 },
+            { str: "1Gb", expected: 1 * 1024 * 1024 * 1024 },
+            { str: "1Tb", expected: 1 * 1024 * 1024 * 1024 * 1024 },
+            { str: "1Pb", expected: 1 * 1024 * 1024 * 1024 * 1024 * 1024 },
+            { str: "1Eb", expected: 1 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 },
+            { str: "1Zb", expected: 1 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 }
+        ];
+        tests.forEach(function (test, idx) {
+            if (espSize2Bytes(test.str) !== test.expected) {
+                console.log("espSize2BytesTests failed with " + test.str + "(" +espSize2Bytes(test.str) + ") !== " + test.expected);
+            }
+        }, this);
+    }
+
     return {
-        espTime2Seconds: espTime2Seconds
+        espTime2Seconds: espTime2Seconds,
+        espSize2Bytes: espSize2Bytes
     }
 });

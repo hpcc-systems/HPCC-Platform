@@ -130,7 +130,7 @@ define([
             }, this);
             if (formatTime) {
                 arrayUtil.forEach(target, function (column, idx) {
-                    if (column.label.indexOf("Time") === 0) {
+                    if (column.label.indexOf("Time") === 0 || column.label.indexOf("Size")) {
                         column.formatter = function (_id, row) {
                             return row["_" + column.field] || "";
                         }

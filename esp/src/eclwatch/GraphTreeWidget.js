@@ -22,8 +22,10 @@ define([
     "dojo/_base/Deferred",
     "dojo/dom",
     "dojo/dom-construct",
+    "dojo/dom-style",
     "dojo/on",
     "dojo/html",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/Dialog",
@@ -55,8 +57,9 @@ define([
     "dijit/form/TextBox",
     "dijit/form/SimpleTextarea",
     "dijit/form/NumberSpinner",
-    "dijit/form/DropDownButton"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html,
+    "dijit/form/DropDownButton",
+    "dijit/form/Select"
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, domStyle, on, html, topic,
             registry, Dialog, Menu, MenuItem, MenuSeparator, CheckedMenuItem,
             entities,
             tree,
@@ -100,6 +103,10 @@ define([
             this._initTimings();
             this._initActivitiesMap();
             this._initDialogs();
+            var context = this;
+            topic.subscribe(this.id + "OverviewTabContainer-selectChild", function (topic) {
+                context.refreshActionState();
+            });
         },
 
         startup: function (args) {
@@ -295,6 +302,11 @@ define([
         _onTreeRefresh: function () {
             this.treeGrid.set("treeDepth", this.main.depth.get("value"));
             this.treeGrid.refresh();
+        },
+
+        _onChangeActivityMetric: function () {
+            var metric = this.widget.ActivityMetric.get("value");
+            this.widget.ActivitiesTreeMap.setActivityMetric(metric);
         },
 
         _doFind: function (prev) {
@@ -641,7 +653,19 @@ define([
             this.verticesStore.appendColumns(columns, ["name"], ["ecl", "definition"], null, true);
             this.verticesGrid.set("columns", columns);
             this.verticesGrid.refresh();
-            this.widget.ActivitiesTreeMap.setActivities(vertices);
+            this.widget.ActivityMetric.set("options", arrayUtil.map(arrayUtil.filter(columns, function (col, idx) {
+                return col.label.indexOf("Time") === 0 ||
+                        col.label.indexOf("Size") === 0 ||
+                        col.label.indexOf("Num") === 0;
+            }), function (col, idx) {
+                return {
+                    label: col.label,
+                    value: col.label,
+                    selected: col.label === "TimeMaxLocalExecute"
+                };
+            }));
+            this.widget.ActivitiesTreeMap.setActivities(vertices, true);
+            this.widget.ActivityMetric.set("value", "TimeMaxLocalExecute");
         },
 
         loadEdges: function () {
@@ -760,8 +784,10 @@ define([
         },
 
         refreshActionState: function (selection) {
+            var tab = this.widget.OverviewTabContainer.get("selectedChildWidget");
             this.setDisabled(this.id + "FindPrevious", !(this.foundIndex > 0), "iconLeft", "iconLeftDisabled");
             this.setDisabled(this.id + "FindNext", !(this.foundIndex < this.found.length - 1), "iconRight", "iconRightDisabled");
+            this.setDisabled(this.id + "ActivityMetric", tab.id !== this.id + "ActivitiesTreeMap");
         }
     });
 });
