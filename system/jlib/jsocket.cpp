@@ -329,7 +329,7 @@ struct MCASTREQ
 struct xfd_set { __fd_mask fds_bits[XFD_SETSIZE / __NFDBITS]; }; // define our own
 // linux 64 bit
 #ifdef __linux__
-#ifdef __x86_64__
+#ifdef __64BIT__
 #undef __FDMASK
 #define __FDMASK(d)     (1UL << ((d) % __NFDBITS))
 #undef __FDELT
