@@ -3254,17 +3254,15 @@ void HqlCppTranslator::buildDatasetAssignCombine(BuildCtx & ctx, IHqlCppDatasetB
         return;
 
     // handle right rows < left rows failure
-    BuildCtx failctx(iterctx);
-    StringBuffer s("if (!");
-    generateExprCpp(s, rightRow).append(")");
-    iterctx.addQuoted(s);
-    LinkedHqlExpr fail = createFailMessage("Combine: right dataset smaller than left", NULL, NULL, queryCurrentActivityId(ctx));
-    HqlExprArray args;
-    args.append(*createConstant(0));
-    args.append(*fail);
-    OwnedHqlExpr call = bindFunctionCall(_failId, args);
-    failctx.addBlock();
-    buildStmt(failctx, call);
+    {
+        OwnedHqlExpr test = createValue(no_not, makeBoolType(), LINK(rightRow));
+        OwnedHqlExpr failMsg = createFailMessage("Combine: right dataset smaller than left", NULL, NULL, queryCurrentActivityId(ctx));
+        OwnedHqlExpr fail = createValue(no_fail, makeVoidType(), LINK(failMsg));
+
+        BuildCtx failctx(iterctx);
+        failctx.addFilter(test);
+        buildStmt(failctx, fail);
+    }
 
     bindTableCursor(iterctx, right, rightRow, no_right, querySelSeq(expr));
 
@@ -3279,15 +3277,14 @@ void HqlCppTranslator::buildDatasetAssignCombine(BuildCtx & ctx, IHqlCppDatasetB
     buildIteratorNext(iterctx, rightIter, rightRow);
 
     // handle right rows > left rows failure
-    s.clear().append("if ("); generateExprCpp(s, rightRow).append(")");
-    ctx.addQuoted(s);
-    LinkedHqlExpr fail2 = createFailMessage("Combine: right has more elements left", NULL, NULL, queryCurrentActivityId(ctx));
-    HqlExprArray args2;
-    args2.append(*createConstant(0));
-    args2.append(*fail2);
-    OwnedHqlExpr call2 = bindFunctionCall(_failId, args2);
-    ctx.addBlock();
-    buildStmt(ctx, call2);
+    {
+        OwnedHqlExpr failMsg = createFailMessage("Combine: right dataset larger than left", NULL, NULL, queryCurrentActivityId(ctx));
+        OwnedHqlExpr fail = createValue(no_fail, makeVoidType(), LINK(failMsg));
+
+        BuildCtx failctx(ctx);
+        failctx.addFilter(rightRow);
+        buildStmt(failctx, fail);
+    }
 }
 
 void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
