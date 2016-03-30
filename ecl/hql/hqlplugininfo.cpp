@@ -38,14 +38,11 @@ IEclRepository * loadPlugins(const char * pluginPath)
     return plugins;
 }
 
-IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeModuleText)
+static void expandPluginPropertyTree(IPropertyTree * target, HqlLookupContext & ctx, IHqlScope * scope, bool includeModuleText)
 {
-    HqlParseContext parseCtx(plugins, NULL, NULL);
-    HqlLookupContext ctx(parseCtx, NULL);
     HqlScopeArray scopes;
-    getRootScopes(scopes, plugins, ctx);
+    getRootScopes(scopes, scope, ctx);
 
-    Owned<IPropertyTree> map = createPTree("Plugins", ipt_caseInsensitive);
     ForEachItemIn(idx, scopes)
     {
         IHqlScope * module = &scopes.item(idx);
@@ -81,8 +78,19 @@ IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeM
                 prop->setProp("Text", text);
             }
         }
-        map->addPropTree("Module", prop);
+        target->addPropTree("Module", prop);
+
+        expandPluginPropertyTree(target, ctx, module, includeModuleText);
     }
+}
+
+IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeModuleText)
+{
+    HqlParseContext parseCtx(plugins, NULL, NULL);
+    HqlLookupContext ctx(parseCtx, NULL);
+
+    Owned<IPropertyTree> map = createPTree("Plugins", ipt_caseInsensitive);
+    expandPluginPropertyTree(map, ctx, plugins->queryRootScope(), includeModuleText);
     return map.getClear();
 }
 
