@@ -1254,7 +1254,7 @@ void CThorSpillableRowArray::initCommon()
 {
     commitRows = 0;
     firstRow = 0;
-    atomic_set(&resizing, 0);
+    resizing = resize_nop;
 }
 
 void CThorSpillableRowArray::clearRows()
@@ -1403,7 +1403,7 @@ bool CThorSpillableRowArray::_flush(bool force)
 {
     dbgassertex(numRows >= commitRows);
     // if firstRow over 50% of commitRows, meaning over half of row array is empty, then reduce
-    if (needFlush(force))
+    if (needToMoveRows(force))
     {
         doFlush();
         return true;
@@ -1514,7 +1514,7 @@ bool CThorSpillableRowArray::resize(rowidx_t requiredRows, unsigned maxSpillCost
         shrinkingCrit.enter(); // will block if shrinking
         shrinkingCrit.leave();
     }
-    if (needFlush(false))
+    if (needToMoveRows(false))
     {
         CThorArrayLockBlock block(*this);
         doFlush();

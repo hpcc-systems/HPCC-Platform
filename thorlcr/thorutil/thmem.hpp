@@ -415,26 +415,27 @@ class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray, implem
     mutable CriticalSection cs;
     ICopyArrayOf<IWritePosCallback> writeCallbacks;
     CriticalSection shrinkingCrit;
-    atomic_t resizing;
     enum ResizeState { resize_nop, resize_shrinking, resize_resizing };
+    std::atomic<ResizeState> resizing;
 
     class CToggleResizingState
     {
         ResizeState state;
-        atomic_t &resizing;
+        std::atomic<ResizeState> &resizing;
     public:
-        CToggleResizingState(atomic_t &_resizing) : resizing(_resizing)
+        CToggleResizingState(std::atomic<ResizeState> &_resizing) : resizing(_resizing)
         {
             state = resize_nop;
         }
         ~CToggleResizingState()
         {
             if (state != resize_nop)
-                verify(atomic_cas(&resizing, resize_nop, state));
+                verify(resizing.compare_exchange_strong(state, resize_nop));
         }
         bool tryState(ResizeState newState)
         {
-            if (!atomic_cas(&resizing, newState, resize_nop))
+            ResizeState expected = resize_nop;
+            if (!resizing.compare_exchange_strong(expected, newState))
                 return false;
             state = newState;
             return true;
@@ -443,7 +444,7 @@ class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray, implem
     void initCommon();
     bool _flush(bool force);
     void doFlush();
-    inline bool needFlush(bool force) { return (firstRow != 0 && (force || (firstRow >= commitRows/2))); }
+    inline bool needToMoveRows(bool force) { return (firstRow != 0 && (force || (firstRow >= commitRows/2))); }
 
 public:
 
