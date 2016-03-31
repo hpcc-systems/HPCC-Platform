@@ -401,7 +401,7 @@
 #define HQLERR_ExtendTypeMismatch_Text          "OUTPUTs to NAMED(%s) have incompatible types"
 #define HQLERR_OverwriteMismatch_Text           "OVERWRITE is required on all outputs to NAMED(%s)"
 #define HQLERR_ExtendOverwriteMismatch_Text     "OVERWRITE/EXTEND should be consistent on all outputs to NAMED(%s)"
-#define HQLERR_EmbeddedCppNotAllowed_Text       "Insufficient access rights to use embedded C++"
+#define HQLERR_EmbeddedCppNotAllowed_Text       "Insufficient access rights to use embedded code"
 #define HQLERR_ContentsInSoapCall_Text          "Tag contents syntax <> is not supported by SOAPCALL"
 #define HQLERR_FullKeyedNeedsFile_Text          "RIGHT side of a full keyed join must be a disk file"
 #define HQLERR_ExpectedConstant_Text            "Expression is not constant: %s"
