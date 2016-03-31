@@ -165,7 +165,8 @@ public:
             {
                 StringBuffer esxml;
                 EsdlCmdHelper::convertECMtoESXDL(sourceFileName, filename.str(), esxml, true, true, false, true);
-                esdlDef->addDefinitionFromXML(esxml, serviceName, (int)version);
+                VStringBuffer serviceid("%s.%f", serviceName, version);
+                esdlDef->addDefinitionFromXML(esxml, serviceid.str());
             }
             else
             {
