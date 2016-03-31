@@ -31,6 +31,39 @@
       </xs:appinfo>
     </xs:annotation>  
       <xs:sequence>
+
+        <xs:element name="PluginOptions" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <title>Plugin Options</title>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Options"/>
+          </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" default="name">
+              <xs:annotation>
+                <xs:appinfo>
+                  <colIndex>1</colIndex>
+                  <autogenforwizard>1</autogenforwizard>
+                  <autogendefaultvalue>server</autogendefaultvalue>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="value" type="xs:string" use="required" default="value">
+              <xs:annotation>
+                <xs:appinfo>
+                 <colIndex>2</colIndex>
+                 <autogenforwizard>1</autogenforwizard>
+                 <autogendefaultvalue>localhost</autogendefaultvalue>
+               </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+
+
         <xs:element name="Instance" maxOccurs="unbounded">
           <xs:annotation>
             <xs:appinfo>
@@ -49,7 +82,7 @@
               <xs:annotation>
                 <xs:appinfo>
                   <viewType>readonly</viewType>
-                                    <colIndex>2</colIndex>
+                  <colIndex>2</colIndex>
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
@@ -58,7 +91,7 @@
                 <xs:appinfo>
                   <viewType>hidden</viewType>
                   <required>true</required>
-                                    <colIndex>3</colIndex>
+                  <colIndex>3</colIndex>
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
@@ -66,7 +99,7 @@
               <xs:annotation>
                 <xs:appinfo>
                   <required>true</required>
-                                    <colIndex>4</colIndex>
+                  <colIndex>4</colIndex>
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
@@ -136,6 +169,7 @@
       <xs:attributeGroup ref="Backup"/>
       <xs:attributeGroup ref="LDAP"/>
       <xs:attributeGroup ref="DFS"/>
+      <xs:attributeGroup ref="Plugin"/>
       <xs:attribute name="build" type="buildType" use="required">
         <xs:annotation>
           <xs:appinfo>
@@ -389,4 +423,14 @@
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
+
+    <xs:attributeGroup name="Plugin">
+            <xs:attribute name="plugintype" type="xs:string" default="WorkunitServer"  use="optional">
+            </xs:attribute>
+            <xs:attribute name="pluginname" type="xs:string" default="cassandraembed"  use="optional">
+            </xs:attribute>
+            <xs:attribute name="pluginentrypoint" type="xs:string" default="createWorkUnitFactory"  use="optional">
+            </xs:attribute>
+    </xs:attributeGroup>
+
 </xs:schema>
