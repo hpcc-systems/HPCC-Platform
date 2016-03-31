@@ -196,6 +196,7 @@ public:
     }
     void swap(aindex_t pos1, aindex_t pos2)
     {
+        assertex(SELF::isItem(pos1) && SELF::isItem(pos2));
         if (pos1 != pos2)
         {
             MEMBER * head= (MEMBER *)SELF::_head;
@@ -297,6 +298,7 @@ public:
     }
     void replace(PARAM newValue, aindex_t pos, bool nodestruct = false)
     {
+        assertex(SELF::isItem(pos));
         if (!nodestruct)
             SELF::destruct(pos);
         SELF::construct(newValue, pos);
