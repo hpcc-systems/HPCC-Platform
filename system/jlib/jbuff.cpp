@@ -64,8 +64,15 @@
 #define     CHECKREADPOS(len)  
 #endif
 
-
 //-----------------------------------------------------------------------
+
+static inline size32_t checkMemoryBufferOverflow(size32_t curLen, size32_t inc)
+{
+    size_t newLen = (size_t)curLen + (size_t)inc;
+    if (newLen > MEMBUFFER_MAXLEN)
+        RaiseOutOfMemException(-10, curLen, inc, false, "Exceeded maximum size");
+    return (size32_t)newLen;
+}
 
 jlib_decl void *checked_realloc(void *orig, size_t newlen, size_t origlen,int errcode)
 {
@@ -88,21 +95,26 @@ class jlib_thrown_decl COutOfMemException: public CInterface, implements IOutOfM
     size_t got;
     static int recursion;
     bool expected;
+    StringBuffer errorMsg;
 public:
     IMPLEMENT_IINTERFACE;
-    COutOfMemException(int _errcode,size_t _wanted,size_t _got,bool _expected)
+    COutOfMemException(int _errcode, size_t _wanted, size_t _got, bool _expected, const char *errMsg)
     {
         errcode = _errcode;
         wanted = _wanted;
         expected = _expected;
         got = _got;
+        if (nullptr == errMsg)
+            errorMsg.append("Out of Memory");
+        else
+            errorMsg.append(errMsg);
 //      DebugBreak();
 
         if ((recursion++==0)&&!expected) {
 // Bit risky if *very* out of memory so protect against recursion and catch exceptions
             try { 
                 // try to log
-                PROGLOG("Jbuff: Out of Memory (%d,%" I64F "d,%" I64F "dk)",_errcode,(unsigned __int64)wanted,(unsigned __int64) (got/1024));
+                PROGLOG("Jbuff: %s (%d,%" I64F "d,%" I64F "dk)",errorMsg.str(),_errcode,(unsigned __int64)wanted,(unsigned __int64) (got/1024));
                 PrintStackReport();
                 PrintMemoryReport();
             }
@@ -115,7 +127,7 @@ public:
     int             errorCode() const { return errcode; }
     StringBuffer &  errorMessage(StringBuffer &str) const
     { 
-        str.append("Jbuff: Out of Memory (").append((unsigned __int64)wanted);
+        str.append("Jbuff: ").append(errorMsg.str()).append(" (").append((unsigned __int64)wanted);
         if (got) 
             str.append(',').append((unsigned __int64)got);
         return str.append(")");
@@ -125,14 +137,14 @@ public:
 
 int COutOfMemException::recursion=0;
 
-IOutOfMemException *createOutOfMemException(int errcode,size_t wanted,size_t got,bool expected)
+IOutOfMemException *createOutOfMemException(int errcode, size_t wanted, size_t got, bool expected, const char *errMsg)
 {
-    return new COutOfMemException(errcode,wanted,got,expected);
+    return new COutOfMemException(errcode, wanted, got, expected, errMsg);
 }
 
-void RaiseOutOfMemException(int errcode, size_t wanted, size_t got,bool expected)
+void RaiseOutOfMemException(int errcode, size_t wanted, size_t got, bool expected, const char *errMsg)
 {
-    throw createOutOfMemException(errcode, wanted, got,expected);
+    throw createOutOfMemException(errcode, wanted, got, expected, errMsg);
 }
 
 MemoryAttr::MemoryAttr(size_t _len)
@@ -243,13 +255,17 @@ void MemoryBuffer::_realloc(size32_t newLen)
                 newMax = FIRST_CHUNK_SIZE;
             while (newLen > newMax)
             {
-                newMax += newMax;
+                size32_t newMaxTmp = checkMemoryBufferOverflow(newMax, newMax);
+                newMax = newMaxTmp;
             }
         }
         else
+        {
+            size32_t newMaxTmp = checkMemoryBufferOverflow((newLen & ~(ChunkSize-1)), ChunkSize);
             /*** ((Size + 1) + (ChunkSize - 1)) & ~(ChunkSize-1) ***/
-            newMax = (newLen + ChunkSize) & ~(ChunkSize-1);
-        
+            newMax = newMaxTmp;
+        }
+
         buffer =(char *)checked_realloc(buffer, newMax, maxLen, -7);
         maxLen = newMax;
     }
@@ -279,7 +295,7 @@ void MemoryBuffer::init()
 void *MemoryBuffer::insertDirect(unsigned offset, size32_t insertLen)
 {
     assertex(offset<=curLen);
-    unsigned newLen = insertLen + curLen;
+    unsigned newLen = checkMemoryBufferOverflow(curLen, insertLen);
     _realloc(newLen);
     memmove(buffer + offset + insertLen, buffer + offset, curLen - offset);
     curLen += insertLen;
@@ -290,7 +306,10 @@ void *MemoryBuffer::insertDirect(unsigned offset, size32_t insertLen)
 void * MemoryBuffer::ensureCapacity(unsigned max)
 {
     if (maxLen - curLen < max)
-        _realloc(curLen + max);
+    {
+        unsigned newLen = checkMemoryBufferOverflow(curLen, max);
+        _realloc(newLen);
+    }
     return buffer + curLen;
 }
 
@@ -313,7 +332,8 @@ MemoryBuffer & MemoryBuffer::_remove(unsigned start, unsigned len)
 
 void * MemoryBuffer::reserve(unsigned size)
 {
-    _realloc(curLen + size);
+    unsigned newLen = checkMemoryBufferOverflow(curLen, size);
+    _realloc(newLen);
     void * ret = buffer + curLen;
     curLen += size;
     return ret;
@@ -321,8 +341,9 @@ void * MemoryBuffer::reserve(unsigned size)
 
 void * MemoryBuffer::reserveTruncate(unsigned size)
 {
+    unsigned newLen = checkMemoryBufferOverflow(curLen, size);
     curLen += size;
-    _reallocExact(curLen);
+    _reallocExact(newLen);
     truncate();
     return buffer + curLen - size;
 }
@@ -458,7 +479,8 @@ MemoryBuffer::MemoryBuffer(size_t len, const void * newBuffer)
 
 MemoryBuffer & MemoryBuffer::append(char value)
 {
-    _realloc(curLen + 1);
+    unsigned newLen = checkMemoryBufferOverflow(curLen, 1);
+    _realloc(newLen);
     buffer[curLen] = value;
     ++curLen;
     return *this;
@@ -467,7 +489,8 @@ MemoryBuffer & MemoryBuffer::append(char value)
 
 MemoryBuffer & MemoryBuffer::append(unsigned char value)
 {
-    _realloc(curLen + 1);
+    unsigned newLen = checkMemoryBufferOverflow(curLen, 1);
+    _realloc(newLen);
     buffer[curLen] = value;
     ++curLen;
     return *this;
@@ -475,7 +498,8 @@ MemoryBuffer & MemoryBuffer::append(unsigned char value)
 
 MemoryBuffer & MemoryBuffer::append(bool value)
 {
-    _realloc(curLen + 1);
+    unsigned newLen = checkMemoryBufferOverflow(curLen, 1);
+    _realloc(newLen);
     buffer[curLen] = (value==0)?0:1;
     ++curLen;
     return *this;
@@ -496,7 +520,8 @@ MemoryBuffer & MemoryBuffer::append(const unsigned char * value)
 
 MemoryBuffer & MemoryBuffer::append(unsigned len, const void * value)
 {
-    _realloc(curLen + len);
+    unsigned newLen = checkMemoryBufferOverflow(curLen, len);
+    _realloc(newLen);
     memcpy(buffer + curLen, value, len);
     curLen += len;
     return *this;
@@ -569,8 +594,8 @@ MemoryBuffer & MemoryBuffer::appendPacked(unsigned __int64 value)
 MemoryBuffer & MemoryBuffer::append(const MemoryBuffer & value)
 {
     size32_t SourceLen = value.length();
-    
-    _realloc(curLen + SourceLen);
+    unsigned newLen = checkMemoryBufferOverflow(curLen, SourceLen);
+    _realloc(newLen);
     memcpy(buffer + curLen, value.toByteArray(), SourceLen);
     curLen += SourceLen;
     return *this;
@@ -578,7 +603,8 @@ MemoryBuffer & MemoryBuffer::append(const MemoryBuffer & value)
 
 MemoryBuffer & MemoryBuffer::appendBytes(unsigned char value, unsigned count)
 {
-    _realloc(curLen + count);
+    unsigned newLen = checkMemoryBufferOverflow(curLen, count);
+    _realloc(newLen);
     memset(buffer+curLen, value, count);
     curLen+=count;
     return *this;
@@ -586,7 +612,8 @@ MemoryBuffer & MemoryBuffer::appendBytes(unsigned char value, unsigned count)
 
 MemoryBuffer & MemoryBuffer::appendEndian(size32_t len, const void * value)
 {
-    _realloc(curLen + len);
+    unsigned newLen = checkMemoryBufferOverflow(curLen, len);
+    _realloc(newLen);
     
     if (swapEndian)
         _cpyrevn(buffer + curLen, value, len);
@@ -599,7 +626,8 @@ MemoryBuffer & MemoryBuffer::appendEndian(size32_t len, const void * value)
 
 MemoryBuffer & MemoryBuffer::appendSwap(size32_t len, const void * value)
 {
-    _realloc(curLen + len);
+    unsigned newLen = checkMemoryBufferOverflow(curLen, len);
+    _realloc(newLen);
     _cpyrevn(buffer + curLen, value, len);
     curLen += len;
     return *this;
