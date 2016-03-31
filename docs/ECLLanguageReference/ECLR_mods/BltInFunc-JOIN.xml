@@ -232,8 +232,8 @@
         <primary>LOCAL</primary>
       </indexterm> | HASH<indexterm>
         <primary>HASH</primary>
-      </indexterm> ]</emphasis><emphasis role="bold">[</emphasis>,<emphasis
-    role="bold"> KEEP<indexterm>
+      </indexterm> ]]</emphasis><emphasis role="bold"></emphasis><?linebreak?><emphasis role="bold">[</emphasis>,<emphasis role="bold">
+    KEEP<indexterm>
         <primary>KEEP</primary>
       </indexterm>(</emphasis><emphasis>n</emphasis><emphasis role="bold">) ]
     [</emphasis><emphasis>, </emphasis><emphasis role="bold">ATMOST<indexterm>
@@ -304,8 +304,8 @@
           <row>
             <entry><emphasis role="bold">SMART</emphasis></entry>
 
-            <entry>Specifies to use an in-memory lookup when
-            possible, but use a distributed join if the right dataset is large.</entry>
+            <entry>Specifies to use an in-memory lookup when possible, but use
+            a distributed join if the right dataset is large.</entry>
           </row>
 
           <row>
@@ -585,8 +585,8 @@
     "half-keyed" and "full-keyed" JOINs (see the Keyed Join discussion
     below).</para>
 
-    <para>Use SMART when the right side dataset is likely to be small
-    enough to fit in memory, but is not guaranteed to fit.</para>
+    <para>Use SMART when the right side dataset is likely to be small enough
+    to fit in memory, but is not guaranteed to fit.</para>
   </sect2>
 
   <sect2 id="Keyed_Joins">
