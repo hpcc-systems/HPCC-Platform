@@ -98,7 +98,9 @@ public:
                 ForEachItemIn(g, activeGraphs) // NB: 1 for each slavesPerProcess
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    graph.serializeStats(progressData);
+                    progressData.append((unsigned)graph.queryJobChannel().queryMyRank()-1);
+                    if (!graph.serializeStats(progressData))
+                        progressData.setLength(progressData.length()-sizeof(unsigned));
                 }
             }
             size32_t sz = progressData.length();
