@@ -187,8 +187,8 @@ public:
         progressKinds.append(StNumIndexSeeks);
         progressKinds.append(StNumIndexScans);
         ForEachItemIn(l, progressKinds)
-            progressInfoArr.append(*new ProgressInfo);
-        inputProgress.setown(new ProgressInfo);
+            progressInfoArr.append(*new ProgressInfo(queryJob()));
+        inputProgress.setown(new ProgressInfo(queryJob()));
         reInit = 0 != (indexBaseHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
     virtual void init()
