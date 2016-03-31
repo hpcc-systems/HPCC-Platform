@@ -1,5 +1,5 @@
 /*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -18,26 +18,28 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
+    "dojo/_base/array",
 
     "dijit/registry",
     "dijit/form/CheckBox",
 
-    "dgrid/tree",
     "dgrid/editor",
 
     "hpcc/GridDetailsWidget",
     "hpcc/ws_access",
-    "hpcc/ESPUtil"
+    "hpcc/ESPUtil",
+    "hpcc/ShowInheritedPermissionsWidget"
 
-], function (declare, lang, i18n, nlsHPCC,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil,
                 registry, CheckBox,
-                tree, editor,
-                GridDetailsWidget, WsAccess, ESPUtil) {
-    return declare("PermissionsWidget", [GridDetailsWidget], {
+                editor,
+                GridDetailsWidget, WsAccess, ESPUtil, ShowInheritedPermissionsWidget) {
+    return declare("ShowAccountPermissionsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_Permissions,
         idProperty: "__hpcc_id",
+        accountname: null,
 
         //  Hitched Actions  ---
         _onRefresh: function (args) {
@@ -48,23 +50,31 @@ define([
         init: function (params) {
             if (this.inherited(arguments))
                 return;
-
-            this.store = WsAccess.CreatePermissionsStore(params.groupname, params.username);
+            this.store = WsAccess.CreateAccountPermissionsStore(params.IsGroup, params.IncludeGroup, params.AccountName);
+            this.accountname = params.AccountName;
             this.grid.setStore(this.store);
             this._refreshActionState();
+            this.createInheritedPermissionsTab(params);
         },
 
         createGrid: function (domID) {
             var context = this;
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
+                sort: [{ attribute: "ResourceName" }],
                 columns: {
-                    DisplayName: tree({
+                    ResourceName: {
                         label: this.i18n.Resource,
                         formatter: function (_name, row) {
                             return _name;
                         }
-                    }),
+                    },
+                    PermissionName: {
+                        label: this.i18n.Permissions,
+                        formatter: function (_name, row) {
+                            return _name;
+                        }
+                    },
                     allow_access: editor({
                         width: 54,
                         editor: "checkbox",
@@ -163,7 +173,7 @@ define([
             retVal.on("dgrid-datachange", function (evt) {
                 evt.preventDefault();
                 context.calcPermissionState(evt.cell.column.field, evt.value, evt.cell.row.data);
-                evt.grid.store.putChild(evt.cell.row.data);
+                evt.grid.store.put(evt.cell.row.data);
             });
             return retVal;
         },
@@ -216,6 +226,47 @@ define([
                     break;
             }
             row[field] = value;
+        },
+
+        createInheritedPermissionsTab: function (params) {
+            var context = this;
+            WsAccess.AccountPermissions({
+                request: {
+                    IsGroup: params.IsGroup,
+                    IncludeGroup: params.IncludeGroup,
+                    AccountName: params.AccountName
+                }
+            }).then(function (response) {
+                if (lang.exists("AccountPermissionsResponse.GroupPermissions.GroupPermission", response)) {
+                    arrayUtil.forEach(response.AccountPermissionsResponse.GroupPermissions.GroupPermission, function (item, idx) {
+                        var inheritedTab = context.ensureInheritedPane(item.GroupName, item.GroupName, {
+                            IsGroup: false,
+                            IncludeGroup: true,
+                            AccountName: context.accountname,
+                            TabName: item.GroupName
+                        });
+                    });
+                }
+            });
+        },
+
+        ensureInheritedPane: function (id, tab, params) {
+            id = this.createChildTabID(id);
+            var retVal = registry.byId(id);
+            if (!retVal) {
+                retVal = new ShowInheritedPermissionsWidget({
+                    id: id,
+                    title: this.i18n.InheritedPermissions + " " + tab,
+                    iconClass: 'iconPeople',
+                    closable: false,
+                    delayWidget: "ShowInheritedPermissionsWidget",
+                    hpcc: {
+                        params: params
+                    }
+                });
+                this.addChild(retVal, "last");
+            }
+            return retVal;
         },
 
         refreshActionState: function (selection) {

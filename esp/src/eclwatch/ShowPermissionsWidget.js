@@ -22,18 +22,21 @@ define([
     "dijit/registry",
     "dijit/form/CheckBox",
 
-    "dgrid/tree",
     "dgrid/editor",
 
     "hpcc/GridDetailsWidget",
     "hpcc/ws_access",
-    "hpcc/ESPUtil"
+    "hpcc/ESPUtil",
+
+    "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
+    "dijit/layout/ContentPane"
 
 ], function (declare, lang, i18n, nlsHPCC,
                 registry, CheckBox,
-                tree, editor,
+                editor,
                 GridDetailsWidget, WsAccess, ESPUtil) {
-    return declare("PermissionsWidget", [GridDetailsWidget], {
+    return declare("ShowPermissionsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_Permissions,
@@ -49,7 +52,7 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            this.store = WsAccess.CreatePermissionsStore(params.groupname, params.username);
+            this.store = WsAccess.CreateAccountPermissionsStore(params.isGroup, params.IncludeGroup, params.AccountName);
             this.grid.setStore(this.store);
             this._refreshActionState();
         },
@@ -58,13 +61,20 @@ define([
             var context = this;
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
+                sort: [{ attribute: "ResourceName" }],
                 columns: {
-                    DisplayName: tree({
+                    ResourceName: {
                         label: this.i18n.Resource,
                         formatter: function (_name, row) {
                             return _name;
                         }
-                    }),
+                    },
+                    PermissionName: {
+                        label: this.i18n.Permissions,
+                        formatter: function (_name, row) {
+                            return _name;
+                        }
+                    },
                     allow_access: editor({
                         width: 54,
                         editor: "checkbox",
@@ -163,7 +173,7 @@ define([
             retVal.on("dgrid-datachange", function (evt) {
                 evt.preventDefault();
                 context.calcPermissionState(evt.cell.column.field, evt.value, evt.cell.row.data);
-                evt.grid.store.putChild(evt.cell.row.data);
+                evt.grid.store.put(evt.cell.row.data);
             });
             return retVal;
         },
@@ -216,6 +226,20 @@ define([
                     break;
             }
             row[field] = value;
+        },
+
+        createInheritedPermissionsTab: function (something) {
+            var tab = new dijit.layout.ContentPane({
+                title:formCount,
+                id:''+formCount,
+                content:cont,
+                class:'tab',
+                closable: true,
+                onClose:function(){
+                    return confirm('Relly want to remove?');
+                }
+            });
+            dijit.byId('tabContainer').addChild(tab);
         },
 
         refreshActionState: function (selection) {

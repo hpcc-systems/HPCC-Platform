@@ -109,15 +109,20 @@
                     </div>
                     <div id="${id}DeletePermissions" data-dojo-attach-event="onClick:_onDeletePermission" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div data-dojo-attach-event="onClick:_onClearPermissionsCache" data-dojo-type="dijit.form.Button">${i18n.ClearPermissionsCache}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Advanced}</span>
                         <div data-dojo-type="dijit.DropDownMenu">
-                            <div data-dojo-attach-event="onClick:_onClearPermissionsCache" data-dojo-type="dijit.MenuItem">${i18n.ClearPermissionsCache}</div>
+                            <div data-dojo-attach-event="onClick:_onEnableScopeScans "id="${id}EnableScopeScans" data-dojo-type="dijit.MenuItem">${i18n.EnableScopeScans}</div>
+                            <div data-dojo-attach-event="onClick:_onDisableScopeScans" id="${id}DisableScopeScans" data-dojo-type="dijit.MenuItem">${i18n.DisableScopeScans}</div>
                             <span data-dojo-type="dijit.MenuSeparator"></span>
-                            <div data-dojo-attach-event="onClick:_onEnableScopeScans" data-dojo-type="dijit.MenuItem">${i18n.EnableScopeScans}</div>
-                            <div data-dojo-attach-event="onClick:_onDisableScopeScans" data-dojo-type="dijit.MenuItem">${i18n.DisableScopeScans}</div>
+                            <div data-dojo-attach-event="onClick:_onFileScopeDefaultPermissions" id="${id}FileScopeDefaultPermissions" data-dojo-type="dijit.MenuItem">${i18n.FileScopeDefaultPermissions}</div>
+                            <div data-dojo-attach-event="onClick:_onWorkunitScopeDefaultPermissions" id="${id}WorkUnitScopeDefaultPermissions" data-dojo-type="dijit.MenuItem">${i18n.WorkUnitScopeDefaultPermissions}</div>
+                            <div data-dojo-attach-event="onClick:_onPhysicalFiles" id="${id}PhysicalFiles" data-dojo-type="dijit.MenuItem">${i18n.PhysicalFiles}</div>
+                            <div data-dojo-attach-event="onClick:_onCheckFilePermissions" id="${id}CheckFilePermissions" data-dojo-type="dijit.MenuItem">${i18n.CheckFilePermissions}</div>
                             <span data-dojo-type="dijit.MenuSeparator"></span>
-                            <div data-dojo-attach-event="onClick:_onCodeGenerator" data-dojo-type="dijit.MenuItem">${i18n.CodeGenerator}</div>
+                            <div data-dojo-attach-event="onClick:_onCodeGenerator" id="${id}CodeGenerator" data-dojo-type="dijit.MenuItem">${i18n.CodeGenerator}</div>
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
@@ -127,7 +132,22 @@
                     <div id="${id}PermissionsGrid"></div>
                 </div>
             </div>
-            <div id="${id}_FileScopes" title="${i18n.FileScopes}" style="padding: 0px; border:0px; border-color:none; overflow: hidden" data-dojo-type="dijit.layout.ContentPane">
+        </div>
+    </div>
+    <div id="${id}FilePermissionDialog" data-dojo-type="dijit.Dialog" title="${i18n.CheckFilePermissions}">
+        <div id="${id}FilePermissionForm" style="width:460px" data-dojo-type="dijit.form.Form">
+            <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                <p>${i18n.PleaseSelectAUserOrGroup}</p>
+                <input id="${id}NameSelect" title="${i18n.Name}:" name="FileName" required="true" colspan="2" data-dojo-props="trim: true, required: true"  data-dojo-type="dijit.form.ValidationTextBox" />
+                <input id="${id}UsersSelect" title="${i18n.Users}:" name="UserName" colspan="2" data-dojo-type="TargetSelectWidget" />
+                <input id="${id}GroupsSelect" title="${i18n.Groups}:" name="GroupName" colspan="2" data-dojo-type="TargetSelectWidget" />
+            </div>
+            <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer" style="margin-top:10px;">
+                <div id="PermissionResponse" colspan="1"></div>
+            </div>
+            <div class="dijitDialogPaneActionBar">
+                <button style="float:left" data-dojo-attach-event="onClick:_onCloseFilePermissions" data-dojo-type="dijit.form.Button">${i18n.Close}</button>
+                <button id="${id}CheckFileSubmit" data-dojo-attach-event="onClick:_onCheckFileSubmit" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
             </div>
         </div>
     </div>
