@@ -21,6 +21,7 @@
 #include "jset.hpp"
 #include <new>
 #ifdef _USE_TBB
+#include "tbb/tbb_stddef.h"
 #include "tbb/task.h"
 #include "tbb/task_scheduler_init.h"
 #endif
@@ -30,6 +31,17 @@
 #ifndef _WIN32
 #include <sys/mman.h>
 #endif
+
+#if defined(_USE_TBB)
+ //Only enable for TBB >=3 because code had problems with spawn as a non static function (see HPC-14588)
+ #if defined(TBB_VERSION_MAJOR)
+  #if (TBB_VERSION_MAJOR >= 3)
+//Release blocks of rows in parallel - always likely to improve performance
+   #define PARALLEL_SYNC_RELEASE
+  #endif
+ #endif
+#endif
+
 
 #ifdef _DEBUG
 #define _CLEAR_ALLOCATED_ROW
@@ -1169,12 +1181,12 @@ void ParallelReleaseRoxieRowArray(size_t count, const void * * rows)
             size_t remain = count - i;
             size_t blockRows = (remain > parallelSyncReleaseGranularity) ? parallelSyncReleaseGranularity : remain;
             tbb::task * next = new (completed_task->allocate_child()) sync_releaser_task(blockRows, rows + i);
-            next->spawn(*next); // static member in tbb 3.0
+            tbb::task::spawn(*next);
         }
     }
 
     completed_task->wait_for_all();
-    completed_task->destroy(*completed_task);       // static member in tbb 3.0
+    tbb::task::destroy(*completed_task);
 }
 #endif
 
