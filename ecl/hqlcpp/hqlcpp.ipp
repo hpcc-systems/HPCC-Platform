@@ -1239,6 +1239,7 @@ public:
 
     void buildDatasetAssignAggregate(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignChoose(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
+    void buildDatasetAssignCombine(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignInlineTable(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignDatasetFromTransform(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignJoin(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
@@ -1270,6 +1271,7 @@ public:
     void doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignAggregateClear(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignAggregateNext(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr, bool isSingleExists, IHqlExpression * guard);
+    void doBuildRowAssignCombine(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignNullRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignProject(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignUserTable(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
@@ -1787,6 +1789,8 @@ public:
     void filterExpandAssignments(BuildCtx & ctx, TransformBuilder * builder, HqlExprArray & assigns, IHqlExpression * expr);
 
 protected:
+    void buildIteratorFirst(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row);
+    void buildIteratorNext(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row);
     bool shouldEvaluateSelectAsAlias(BuildCtx & ctx, IHqlExpression * expr);
     IWUResult * createWorkunitResult(int sequence, IHqlExpression * nameExpr);
     void noteFilename(ActivityInstance & instance, const char * name, IHqlExpression * expr, bool isDynamic);
