@@ -2671,7 +2671,7 @@ IHqlExpression * SpillerInfo::createSpilledRead(IHqlExpression * spillReason)
         loseDistribution = false;
     }
 
-    dataset.setown(preserveTableInfo(dataset, original, loseDistribution, NULL));
+    dataset.setown(preserveTableInfo(dataset, original, loseDistribution, false));
     return wrapRowOwn(dataset.getClear());
 }
 
@@ -6699,7 +6699,7 @@ IHqlExpression * SpillActivityTransformer::createTransformed(IHqlExpression * ex
             else
                 ret.setown(createDataset(readOp, args));
             const bool loseDistribution = false;
-            return preserveTableInfo(ret, ds, loseDistribution, NULL);
+            return preserveTableInfo(ret, ds, loseDistribution, false);
         }
     }
     return NewHqlTransformer::createTransformed(expr);

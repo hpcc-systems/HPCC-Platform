@@ -5353,7 +5353,10 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
             OwnedHqlExpr getValue = createDataset(no_table, args);
             //getValue.setown(cloneInheritedAnnotations(value, getValue));
             if (persistOp != no_stored)
-                getValue.setown(preserveTableInfo(getValue, value, false, (persistOp == no_persist) ? filename : NULL));
+            {
+                bool clusterSizeMayChange = (persistOp == no_persist) || (cluster != nullptr);
+                getValue.setown(preserveTableInfo(getValue, value, false, clusterSizeMayChange));
+            }
 
             //Note: getValue->queryType() != valueType because the dataset used for field resolution has changed...
             if (value->isDictionary())
@@ -5455,7 +5458,7 @@ void GlobalAttributeInfo::splitSmallDataset(IHqlExpression * value, SharedHqlExp
         OwnedHqlExpr wuRead = value->isDictionary() ? createDictionary(no_workunit_dataset, args) : createDataset(no_workunit_dataset, args);
         //wuRead.setown(cloneInheritedAnnotations(value, wuRead));
         if (persistOp != no_stored)
-            getOutput->setown(preserveTableInfo(wuRead, value, true, NULL));
+            getOutput->setown(preserveTableInfo(wuRead, value, true, false));
         else
             getOutput->set(wuRead);
     }
