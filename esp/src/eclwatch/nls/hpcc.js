@@ -399,6 +399,7 @@ define({root:
     Quote: "Quote",
     QuotedTerminator: "Quoted Terminator",
     RawTextPage: "Raw Text (Current Page)",
+    ReallyWantToRemove: "Really want to remove?",
     RecordCount: "Record Count",
     RecordLength: "Record Length",
     Records: "Records",

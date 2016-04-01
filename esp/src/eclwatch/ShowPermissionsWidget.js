@@ -21,19 +21,15 @@ define([
 
     "dijit/registry",
     "dijit/form/CheckBox",
+    "dijit/layout/ContentPane",
 
     "dgrid/editor",
 
     "hpcc/GridDetailsWidget",
     "hpcc/ws_access",
-    "hpcc/ESPUtil",
-
-    "dijit/layout/BorderContainer",
-    "dijit/layout/TabContainer",
-    "dijit/layout/ContentPane"
-
+    "hpcc/ESPUtil"
 ], function (declare, lang, i18n, nlsHPCC,
-                registry, CheckBox,
+                registry, CheckBox, ContentPane,
                 editor,
                 GridDetailsWidget, WsAccess, ESPUtil) {
     return declare("ShowPermissionsWidget", [GridDetailsWidget], {
@@ -229,14 +225,14 @@ define([
         },
 
         createInheritedPermissionsTab: function (something) {
-            var tab = new dijit.layout.ContentPane({
+            var tab = new ContentPane({
                 title:formCount,
                 id:''+formCount,
                 content:cont,
-                class:'tab',
+                'class':'tab',
                 closable: true,
                 onClose:function(){
-                    return confirm('Relly want to remove?');
+                    return confirm(this.i18n.ReallyWantToRemove);
                 }
             });
             dijit.byId('tabContainer').addChild(tab);
