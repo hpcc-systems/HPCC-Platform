@@ -729,7 +729,6 @@ void CSlaveGraph::end()
 bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
 {
     unsigned beginPos = mb.length();
-    mb.append((unsigned)queryJobChannel().queryMyRank()-1);
     mb.append(queryGraphId());
     unsigned cPos = mb.length();
     unsigned count = 0;
