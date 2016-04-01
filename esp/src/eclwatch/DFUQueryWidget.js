@@ -310,6 +310,7 @@ define([
 
         //  Implementation  ---
         init: function (params) {
+            var context = this;
             if (this.inherited(arguments))
                 return;
 
@@ -349,6 +350,20 @@ define([
             });
             topic.subscribe("hpcc/dfu_wu_completed", function (topic) {
                 context.refreshGrid();
+            });
+
+            WsDfu.DFUQuery({
+                request: {}
+            }).then(function (response) {
+                if (lang.exists("DFUQueryResponse.Warning", response)) {
+                    if (response.DFUQueryResponse.Warning) {
+                        dojo.publish("hpcc/brToaster", {
+                            Severity: "Error",
+                            Source: "WsDfu.DFUQuery",
+                            Exceptions: [{ Source: context.i18n.TooManyFiles, Message: context.i18n.TheReturnedResults + ": " + response.DFUQueryResponse.NumFiles + ", " + context.i18n.RepresentsASubset }]
+                        });
+                    }
+                }
             });
         },
 
