@@ -6201,6 +6201,7 @@ static void _noteFileRead(IDistributedFile *file, IPropertyTree *filesRead)
         }
         if (super)
         {
+            fileTree->setPropBool("@super", true);
             Owned<IDistributedFileIterator> iter = super->getSubFileIterator(false);
             ForEach (*iter)
             {
