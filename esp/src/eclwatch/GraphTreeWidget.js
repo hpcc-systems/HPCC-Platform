@@ -756,7 +756,7 @@ define([
             var propertiesDom = dom.byId(this.id + "Properties");
             propertiesDom.innerHTML = "";
             for (var i = 0; i < selectedGlobalIDs.length; ++i) {
-                this.global.displayProperties(selectedGlobalIDs[i], propertiesDom);
+                this.global.displayProperties(this.wu, selectedGlobalIDs[i], propertiesDom);
             }
             var context = this;
             if (selectedGlobalIDs.length) {
