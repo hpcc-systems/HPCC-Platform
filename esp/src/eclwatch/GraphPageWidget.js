@@ -122,6 +122,7 @@ define([
             this.overview.showNextPrevious(false);
             this.overview.showDistance(false);
             this.overview.showSyncSelection(false);
+            this.overview.showOptions(false);
 
             this.refreshActionState();
         },
@@ -147,6 +148,7 @@ define([
             this.global = registry.byId(this.id + "GlobalGraphWidget");
 
             this.overview = registry.byId(this.id + "MiniGraphWidget");
+            this.overview._persistID = "overview";
             this.overview.onSelectionChanged = function (items) {
                 context.syncSelectionFrom(context.overview);
             };
@@ -158,6 +160,7 @@ define([
             };
 
             this.main = registry.byId(this.id + "MainGraphWidget");
+            this.main._persistID = "";  //  Share with GraphTreeWidget
             this.main.onSelectionChanged = function (items) {
                 context.syncSelectionFrom(context.main);
             };
@@ -171,6 +174,7 @@ define([
             };
 
             this.local = registry.byId(this.id + "LocalGraphWidget");
+            this.local._persistID = "local";
             this.local.onSelectionChanged = function (items) {
                 context.syncSelectionFrom(context.local);
             };
@@ -689,7 +693,7 @@ define([
         },
 
         setOverviewRootItems: function (globalIDs, selection) {
-            var graphView = this.global.getGraphView(globalIDs, this.overview.depth.get("value"), 3, selection);
+            var graphView = this.global.getGraphView(globalIDs, this.overview.depth.get("value"), 3, this.overview.option("subgraph"), this.overview.option("vhidespills"), selection);
             graphView.navigateTo(this.overview);
         },
 
@@ -699,7 +703,7 @@ define([
         },
 
         setMainRootItems: function (globalIDs) {
-            var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"));
+            var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"), this.main.option("subgraph"), this.main.option("vhidespills"));
             graphView.navigateTo(this.main);
         },
 
@@ -709,7 +713,7 @@ define([
         },
 
         setLocalRootItems: function (globalIDs) {
-            var graphView = this.global.getGraphView(globalIDs, this.local.depth.get("value"), this.local.distance.get("value"));
+            var graphView = this.global.getGraphView(globalIDs, this.local.depth.get("value"), this.local.distance.get("value"), this.local.option("subgraph"), this.local.option("vhidespills"));
             graphView.navigateTo(this.local);
         },
 

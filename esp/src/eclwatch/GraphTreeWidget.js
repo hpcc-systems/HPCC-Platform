@@ -779,7 +779,7 @@ define([
         },
 
         setMainRootItems: function (globalIDs) {
-            var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"));
+            var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"), this.main.option("subgraph"), this.main.option("vhidespills"));
             return graphView.navigateTo(this.main);
         },
 

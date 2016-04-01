@@ -211,7 +211,11 @@ define([
         xgmml: null,
         svg: null,
 
-        constructor: function (sourceGraphWidget, rootGlobalIDs, depth, distance, selectedGlobalIDs) {
+        constructor: function (sourceGraphWidget, rootGlobalIDs, depth, distance, subgraphs, hideSpills, selectedGlobalIDs) {
+            depth = depth || 2;
+            distance = distance || 2;
+            subgraphs = subgraphs || false;
+            hideSpills = hideSpills || false;
             this.sourceGraphWidget = sourceGraphWidget;
 
             rootGlobalIDs.sort();
@@ -225,30 +229,29 @@ define([
                 }
                 id += item;
             }, this);
-            if (depth) {
-                id += ":" + depth;
-            }
-            if (distance) {
-                id += ":" + distance;
-            }
+            id += ":" + depth;
+            id += ":" + distance;
+            id += ":" + subgraphs;
+            id += ":" + hideSpills;
             this.id = id;
 
             this.depth = depth;
             this.distance = distance;
+            this.hideSpills = hideSpills;
         },
 
-        changeRootItems: function (globalIDs, depth, distance) {
-            return this.sourceGraphWidget.getGraphView(globalIDs, depth, distance);
+        changeRootItems: function (globalIDs, depth, distance, subgraphs, hideSpills) {
+            return this.sourceGraphWidget.getGraphView(globalIDs, depth, distance, subgraphs, hideSpills);
         },
 
-        changeScope: function (depth, distance) {
-            return this.sourceGraphWidget.getGraphView(this.rootGlobalIDs, depth, distance, this.selectedGlobalIDs);
+        changeScope: function (depth, distance, subgraphs, hideSpills) {
+            return this.sourceGraphWidget.getGraphView(this.rootGlobalIDs, depth, distance, subgraphs, hideSpills, this.selectedGlobalIDs);
         },
 
         refreshXGMML: function (targetGraphWidget) {
             targetGraphWidget.setMessage(targetGraphWidget.i18n.FetchingData).then(lang.hitch(this, function (response) {
                 var rootItems = this.sourceGraphWidget.getItems(this.rootGlobalIDs);
-                var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance);
+                var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance, targetGraphWidget.option("vhidespills"));
                 if (targetGraphWidget.loadXGMML(xgmml, true)) {
                     this.svg = "";
                 }
@@ -273,7 +276,7 @@ define([
             if (targetGraphWidget.onLayoutFinished == null) {
                 targetGraphWidget.setMessage(targetGraphWidget.i18n.FetchingData).then(lang.hitch(this, function (response) {
                     var rootItems = this.sourceGraphWidget.getItems(this.rootGlobalIDs);
-                    var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance);
+                    var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance, this.hideSpills);
                     targetGraphWidget.setMessage(targetGraphWidget.i18n.LoadingData).then(lang.hitch(this, function (response) {
                         var context = this;
                         if (targetGraphWidget.loadXGMML(xgmml)) {
@@ -476,7 +479,7 @@ define([
                 if (graphView) {
                     var depth = this.depth.get("value");
                     var distance = this.distance.get("value");
-                    graphView = graphView.changeScope(depth, distance);
+                    graphView = graphView.changeScope(depth, distance, this.option("subgraph"), this.option("vhidespills"));
                     graphView.navigateTo(this, true);
                 }
             },
@@ -487,7 +490,7 @@ define([
                     var rootItems = this.getSelectionAsGlobalID();
                     var depth = this.depth.get("value");
                     var distance = this.distance.get("value");
-                    graphView = graphView.changeRootItems(rootItems, depth, distance);
+                    graphView = graphView.changeRootItems(rootItems, depth, distance, this.option("subgraph"), this.option("vhidespills"));
                     graphView.navigateTo(this);
                 }
             },
@@ -596,6 +599,15 @@ define([
                 } else {
                     domStyle.set(this.syncSelectionSplitter.domNode, 'display', 'none');
                     domStyle.set(this.syncSelection.domNode, 'display', 'none');
+                }
+                this.resize();
+            },
+
+            showOptions: function (show) {
+                if (show) {
+                    domStyle.set(this.optionsDropDown.domNode, 'display', 'block');
+                } else {
+                    domStyle.set(this.optionsDropDown.domNode, 'display', 'none');
                 }
                 this.resize();
             },
@@ -925,9 +937,9 @@ define([
                 return deferred.promise;
             },
 
-            getLocalisedXGMML: function (selectedItems, depth, distance) {
+            getLocalisedXGMML: function (selectedItems, depth, distance, hideSpills) {
                 if (this.hasPlugin()) {
-                    return this._plugin.getLocalisedXGMML(selectedItems, depth, distance);
+                    return this._plugin.getLocalisedXGMML(selectedItems, depth, distance, hideSpills);
                 }
                 return null;
             },
@@ -936,8 +948,8 @@ define([
                 return this.graphViewHistory.getCurrent();
             },
 
-            getGraphView: function (rootGlobalIDs, depth, distance, selectedGlobalIDs) {
-                var retVal = new GraphView(this, rootGlobalIDs, depth, distance, selectedGlobalIDs);
+            getGraphView: function (rootGlobalIDs, depth, distance, subgraphs, hideSpills, selectedGlobalIDs) {
+                var retVal = new GraphView(this, rootGlobalIDs, depth, distance, subgraphs, hideSpills, selectedGlobalIDs);
                 if (this.graphViewHistory.has(retVal.id)) {
                     retVal = this.graphViewHistory.get(retVal.id);
                     retVal.selectedGlobalIDs = selectedGlobalIDs ? selectedGlobalIDs : rootGlobalIDs;
