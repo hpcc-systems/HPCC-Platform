@@ -39,7 +39,7 @@ interface IEspSecureContext : extends IInterface
     virtual const char* getProtocol() const = 0;
 
     // Returns the TxSummary object to be used for a request.
-    virtual CTxSummary* getTxSummary() const = 0;
+    virtual CTxSummary* queryTxSummary() const = 0;
 
     // Fetches a data value based on a given type and name. If the requested
     // value exists it is stored in the supplied value buffer and true is
