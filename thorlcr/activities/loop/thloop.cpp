@@ -89,7 +89,7 @@ protected:
 public:
     CLoopActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
     {
-        loopCounterProgress.setown(new CThorStats(StNumIterations));
+        loopCounterProgress.setown(new CThorStats(queryJob(), StNumIterations));
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
         loopGraph = NULL;

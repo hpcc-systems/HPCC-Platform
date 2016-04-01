@@ -29,10 +29,10 @@
 #include "eclhelper.hpp" // tmp for IHThorArg interface
 #include "thdiskbase.ipp"
 
-CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(diskReadRemoteStatistics)
+CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(info->queryJob(), diskReadRemoteStatistics)
 {
     hash = NULL;
-    inputProgress.setown(new ProgressInfo);
+    inputProgress.setown(new ProgressInfo(queryJob()));
 }
 
 void CDiskReadMasterBase::init()
@@ -238,10 +238,10 @@ void CWriteMasterBase::publish()
         queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc, NULL, targetOffset);
 }
 
-CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(diskWriteRemoteStatistics)
+CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(info->queryJob(), diskWriteRemoteStatistics)
 {
     publishReplicatedDone = !globals->getPropBool("@replicateAsync", true);
-    replicateProgress.setown(new ProgressInfo);
+    replicateProgress.setown(new ProgressInfo(queryJob()));
 
     diskHelperBase = (IHThorDiskWriteArg *)queryHelper();
     targetOffset = 0;

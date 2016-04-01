@@ -85,8 +85,8 @@ class HashJoinDistributeActivityMaster : public HashDistributeActivityMaster
 public:
     HashJoinDistributeActivityMaster(DistributeMode mode, CMasterGraphElement *info) : HashDistributeActivityMaster(mode, info)
     {
-        lhsProgress.setown(new ProgressInfo);
-        rhsProgress.setown(new ProgressInfo);
+        lhsProgress.setown(new ProgressInfo(queryJob()));
+        rhsProgress.setown(new ProgressInfo(queryJob()));
     }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {

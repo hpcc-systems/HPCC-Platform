@@ -30,8 +30,8 @@ public:
     virtual void init()
     {
         CMasterActivity::init();
-        statNumGroups.setown(new CThorStats(StNumGroups));
-        statNumGroupMax.setown(new CThorStats(StNumGroupMax));
+        statNumGroups.setown(new CThorStats(queryJob(), StNumGroups));
+        statNumGroupMax.setown(new CThorStats(queryJob(), StNumGroupMax));
     }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {

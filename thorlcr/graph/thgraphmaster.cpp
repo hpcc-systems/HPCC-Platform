@@ -357,19 +357,19 @@ void CSlaveMessageHandler::main()
 
 //////////////////////
 
-CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(_container), threaded("CMasterActivity", this)
+CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(_container), threaded("CMasterActivity", this), timingInfo(_container->queryJob())
 {
     notedWarnings = createThreadSafeBitSet();
     mpTag = TAG_NULL;
     data = new MemoryBuffer[container.queryJob().querySlaves()];
     asyncStart = false;
     if (container.isSink())
-        progressInfo.append(*new ProgressInfo);
+        progressInfo.append(*new ProgressInfo(queryJob()));
     else
     {
         unsigned o=0;
         for (; o<container.getOutputs(); o++)
-            progressInfo.append(*new ProgressInfo);
+            progressInfo.append(*new ProgressInfo(queryJob()));
     }
 }
 
@@ -2798,7 +2798,7 @@ static bool suppressStatisticIfZero(StatisticKind kind)
 
 ///////////////////////////////////////////////////
 
-CThorStats::CThorStats(StatisticKind _kind) : kind(_kind)
+CThorStats::CThorStats(CJobBase &_ctx, StatisticKind _kind) : ctx(_ctx), kind(_kind)
 {
     unsigned c = queryClusterWidth();
     while (c--) counts.append(0);
@@ -2824,7 +2824,7 @@ void CThorStats::reset()
 
 void CThorStats::calculateSkew()
 {
-    if (max)
+    if (max > ctx.querySlaves()) // i.e. if small count, suppress skew stats.
     {
         unsigned count = counts.ordinality();
         double _avg = (double)tot/count;
@@ -2889,13 +2889,13 @@ void CThorStats::getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqu
 
 ///////////////////////////////////////////////////
 
-CTimingInfo::CTimingInfo() : CThorStats(StTimeLocalExecute)
+CTimingInfo::CTimingInfo(CJobBase &ctx) : CThorStats(ctx, StTimeLocalExecute)
 {
 }
 
 ///////////////////////////////////////////////////
 
-ProgressInfo::ProgressInfo() : CThorStats(StNumRowsProcessed)
+ProgressInfo::ProgressInfo(CJobBase &ctx) : CThorStats(ctx, StNumRowsProcessed)
 {
     startcount = stopcount = 0;
 }

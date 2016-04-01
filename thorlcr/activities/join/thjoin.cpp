@@ -78,11 +78,11 @@ class JoinActivityMaster : public CMasterActivity
         }
     } *climitedcmp;
 public:
-    JoinActivityMaster(CMasterGraphElement * info, bool local) : CMasterActivity(info), extraStats(spillStatistics)
+    JoinActivityMaster(CMasterGraphElement * info, bool local) : CMasterActivity(info), extraStats(info->queryJob(), spillStatistics)
     {
         ActPrintLog("JoinActivityMaster");
-        lhsProgress.setown(new ProgressInfo);
-        rhsProgress.setown(new ProgressInfo);
+        lhsProgress.setown(new ProgressInfo(queryJob()));
+        rhsProgress.setown(new ProgressInfo(queryJob()));
         helper = NULL;
         islocal = local;
         imaster = NULL;
