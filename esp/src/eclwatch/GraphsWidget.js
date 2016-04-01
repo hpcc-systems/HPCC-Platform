@@ -62,6 +62,8 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            this.alphanumSort["Name"] = true;
+
             var context = this;
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
