@@ -31,7 +31,6 @@
       </xs:appinfo>
     </xs:annotation>  
       <xs:sequence>
-
         <xs:element name="PluginOptions" maxOccurs="unbounded">
           <xs:annotation>
             <xs:appinfo>
@@ -39,15 +38,13 @@
             </xs:appinfo>
           </xs:annotation>
           <xs:complexType>
-          <xs:sequence>
-            <xs:element name="Options"/>
-          </xs:sequence>
+            <xs:sequence>
+              <xs:element name="Options"/>
+            </xs:sequence>
             <xs:attribute name="name" type="xs:string" use="required" default="name">
               <xs:annotation>
                 <xs:appinfo>
                   <colIndex>1</colIndex>
-                  <autogenforwizard>1</autogenforwizard>
-                  <autogendefaultvalue>server</autogendefaultvalue>
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
@@ -55,15 +52,11 @@
               <xs:annotation>
                 <xs:appinfo>
                  <colIndex>2</colIndex>
-                 <autogenforwizard>1</autogenforwizard>
-                 <autogendefaultvalue>localhost</autogendefaultvalue>
                </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
           </xs:complexType>
         </xs:element>
-
-
         <xs:element name="Instance" maxOccurs="unbounded">
           <xs:annotation>
             <xs:appinfo>
