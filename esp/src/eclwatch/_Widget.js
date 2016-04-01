@@ -159,6 +159,13 @@ define([
             }
         },
 
+        refreshHRef: function (node, href) {
+            var nodeToWrap = dom.byId(this.id + "NewPage");
+            if (nodeToWrap && nodeToWrap.parentNode && nodeToWrap.parentNode.tagName === "A") {
+                nodeToWrap.parentNode.href = this.getURL();
+            }
+        },
+
         //  String functions  ---
         endsWith: function (str, suffix) {
             return str.indexOf(suffix, str.length - suffix.length) !== -1;

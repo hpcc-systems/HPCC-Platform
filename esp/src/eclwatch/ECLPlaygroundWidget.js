@@ -221,7 +221,8 @@ define([
                     context.visualizeWidget.set("disabled", false);
                     context.visualizeWidget.reset();
                     context.visualizeWidget.init({
-                        Wuid: context.wu.Wuid
+                        Wuid: context.wu.Wuid,
+                        Sequence: 0
                     });
                 }
             });
