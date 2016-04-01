@@ -560,7 +560,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     bool localKey, keyHasTlk, onFailTransform;
     Owned<IEngineRowAllocator> joinFieldsAllocator, keyLookupAllocator, fetchInputAllocator, indexInputAllocator;
     Owned<IEngineRowAllocator> fetchInputMetaAllocator;
-    Owned<IRowInterfaces> fetchInputMetaRowIf, fetchOutputRowIf;
+    Owned<IThorRowInterfaces> fetchInputMetaRowIf, fetchOutputRowIf;
     MemoryBuffer rawFetchMb;
 
 #ifdef TRACE_USAGE
@@ -737,7 +737,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                     unsigned endRequestsCount = owner.container.queryJob().querySlaves();
                     Owned<IBitSet> endRequests = createThreadSafeBitSet(); // NB: verification only
 
-                    Owned<IRowInterfaces> fetchDiskRowIf = createRowInterfaces(owner.helper->queryDiskRecordSize(),owner.queryId(),owner.queryCodeContext());
+                    Owned<IThorRowInterfaces> fetchDiskRowIf = createThorRowInterfaces(owner.queryRowManager(), owner.helper->queryDiskRecordSize(),owner.queryId(),owner.queryCodeContext());
                     while (!aborted)
                     {
                         CMessageBuffer replyMb;
@@ -1975,11 +1975,11 @@ public:
                 }
                 else
                     fetchInputMeta.setown(createFixedSizeMetaData(FETCHKEY_HEADER_SIZE));
-                fetchInputMetaRowIf.setown(createRowInterfaces(fetchInputMeta,queryId(),queryCodeContext()));
+                fetchInputMetaRowIf.setown(createThorRowInterfaces(queryRowManager(), fetchInputMeta,queryId(),queryCodeContext()));
                 fetchInputMetaAllocator.set(fetchInputMetaRowIf->queryRowAllocator());
 
                 Owned<IOutputMetaData> fetchOutputMeta = createOutputMetaDataWithChildRow(joinFieldsAllocator, FETCHKEY_HEADER_SIZE);
-                fetchOutputRowIf.setown(createRowInterfaces(fetchOutputMeta,queryId(),queryCodeContext()));
+                fetchOutputRowIf.setown(createThorRowInterfaces(queryRowManager(), fetchOutputMeta,queryId(),queryCodeContext()));
 
                 fetchHandler = new CKeyedFetchHandler(*this);
 

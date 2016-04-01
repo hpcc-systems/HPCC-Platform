@@ -108,7 +108,7 @@ public:
     void initWithActData(MemoryBuffer &in, MemoryBuffer &out);
     void getDone(MemoryBuffer &doneInfoMb);
     void serializeDone(MemoryBuffer &mb);
-    IThorResult *getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, activity_id ownerId, unsigned id);
+    IThorResult *getGlobalResult(CActivityBase &activity, IThorRowInterfaces *rowIf, activity_id ownerId, unsigned id);
 
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
     virtual bool serializeStats(MemoryBuffer &mb);
@@ -142,7 +142,7 @@ class graphslave_decl CJobSlave : public CJobBase
     ISlaveWatchdog *watchdog;
     Owned<IPropertyTree> workUnitInfo;
     size32_t oldNodeCacheMem;
-    unsigned channelMemorySize;
+    unsigned channelMemoryMB;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -160,7 +160,7 @@ public:
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const;
-    virtual IThorAllocator *createThorAllocator();
+    virtual IThorAllocator *getThorAllocator(unsigned channel);
     virtual void debugRequest(CMessageBuffer &msg, const char *request) const;
 
 // IExceptionHandler

@@ -96,7 +96,7 @@ interface IThorDataLink : extends IEngineRowStream
 
 
 // utility redirects
-extern activityslaves_decl IRowInterfaces * queryRowInterfaces(IThorDataLink *link);
+extern activityslaves_decl IThorRowInterfaces * queryRowInterfaces(IThorDataLink *link);
 extern activityslaves_decl IEngineRowAllocator * queryRowAllocator(IThorDataLink *link);
 extern activityslaves_decl IOutputRowSerializer * queryRowSerializer(IThorDataLink *link);
 extern activityslaves_decl IOutputRowDeserializer * queryRowDeserializer(IThorDataLink *link);

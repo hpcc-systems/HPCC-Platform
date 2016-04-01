@@ -190,10 +190,10 @@ public:
                 }
                 if (helper->getJoinFlags()&JFslidingmatch) // JCSMORE shouldn't be necessary
                     primaryKeySerializer = NULL;
-                Owned<IRowInterfaces> primaryRowIf = createRowInterfaces(primaryInput->queryHelper()->queryOutputMeta(), queryId(), queryCodeContext());
-                Owned<IRowInterfaces> secondaryRowIf;
+                Owned<IThorRowInterfaces> primaryRowIf = createThorRowInterfaces(queryRowManager(), primaryInput->queryHelper()->queryOutputMeta(), queryId(), queryCodeContext());
+                Owned<IThorRowInterfaces> secondaryRowIf;
                 if (secondaryInput)
-                    secondaryRowIf.setown(createRowInterfaces(secondaryInput->queryHelper()->queryOutputMeta(), queryId(), queryCodeContext()));
+                    secondaryRowIf.setown(createThorRowInterfaces(queryRowManager(), secondaryInput->queryHelper()->queryOutputMeta(), queryId(), queryCodeContext()));
 
                 bool betweenjoin = (helper->getJoinFlags()&JFslidingmatch)!=0;
                 if (container.getKind() == TAKselfjoin)
@@ -235,7 +235,7 @@ public:
                 }
                 else if (!nosortPrimary()||betweenjoin)
                 {
-                    Owned<IRowInterfaces> secondaryRowIf = createRowInterfaces(secondaryInput->queryHelper()->queryOutputMeta(), queryId(), queryCodeContext());
+                    Owned<IThorRowInterfaces> secondaryRowIf = createThorRowInterfaces(queryRowManager(), secondaryInput->queryHelper()->queryOutputMeta(), queryId(), queryCodeContext());
 
                     imaster->SortSetup(primaryRowIf, primaryCompare, primaryKeySerializer, false, true, NULL, NULL);
                     ActPrintLog("JOIN waiting for barrier.1");

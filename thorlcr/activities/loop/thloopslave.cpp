@@ -146,7 +146,6 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
         Owned<ISmartRowBuffer> smartbuf;
         bool stopped, stopping;
         Owned<IException> exception;
-        IRowInterfaces *rowInterfaces;
 
         void stopThread()
         {
@@ -159,7 +158,7 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CNextRowFeeder(CLoopSlaveActivity *_activity) : threaded("CNextRowFeeder"), activity(_activity), rowInterfaces(_activity)
+        CNextRowFeeder(CLoopSlaveActivity *_activity) : threaded("CNextRowFeeder"), activity(_activity)
         {
             stopped = true;
             stopping = false;

@@ -39,7 +39,7 @@ interface IThorRowSortedLoader: extends IInterface
 {
     virtual IRowStream *load(                       // if returns NULL if no overflay
         IRowStream *in,
-        IRowInterfaces *rowif,
+        IThorRowInterfaces *rowif,
         ICompare *icompare, 
         bool alldisk, 
         bool &abort, 
@@ -59,8 +59,8 @@ interface IThorRowSortedLoader: extends IInterface
 class CThorKeyArray
 {
     CActivityBase &activity;
-    Linked<IRowInterfaces> rowif;
-    Linked<IRowInterfaces> keyif;
+    Linked<IThorRowInterfaces> rowif;
+    Linked<IThorRowInterfaces> keyif;
     CThorExpandingRowArray keys;
     size32_t maxsamplesize;
     offset_t totalserialsize;
@@ -89,7 +89,7 @@ public:
 
     CThorKeyArray(
         CActivityBase &activity,
-        IRowInterfaces *_rowif,
+        IThorRowInterfaces *_rowif,
         ISortKeySerializer *_serializer,
         ICompare *_icompare,
         ICompare *_ikeycompare,

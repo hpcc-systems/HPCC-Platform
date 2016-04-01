@@ -369,7 +369,7 @@ rowcount_t getCount(CActivityBase &activity, unsigned partialResults, rowcount_t
     return totalCount;
 }
 
-const void *getAggregate(CActivityBase &activity, unsigned partialResults, IRowInterfaces &rowIf, IHThorCompoundAggregateExtra &aggHelper, mptag_t mpTag)
+const void *getAggregate(CActivityBase &activity, unsigned partialResults, IThorRowInterfaces &rowIf, IHThorCompoundAggregateExtra &aggHelper, mptag_t mpTag)
 {
     // JCSMORE - pity this isn't common routine with similar one in aggregate, but helper is not common
     CThorExpandingRowArray slaveResults(activity, &activity, true, stableSort_none, true, partialResults);

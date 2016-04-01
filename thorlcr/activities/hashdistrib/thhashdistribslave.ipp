@@ -26,7 +26,7 @@
 
 interface IHashDistributor : extends IInterface
 {
-    virtual IRowStream *connect(IRowInterfaces *rowIf, IRowStream *in, IHash *ihash, ICompare *icompare)=0;
+    virtual IRowStream *connect(IThorRowInterfaces *rowIf, IRowStream *in, IHash *ihash, ICompare *icompare)=0;
     virtual void disconnect(bool stop)=0;
     virtual void join()=0;
     virtual void setBufferSizes(unsigned sendBufferSize, unsigned outputBufferSize, unsigned pullBufferSize) = 0;

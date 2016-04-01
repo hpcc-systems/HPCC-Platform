@@ -180,7 +180,7 @@ class CPipeReadSlaveActivity : public CPipeSlaveBase, public CThorDataLink
 {
 protected:
     IHThorPipeReadArg *helper;
-    Owned<IRowInterfaces> inrowif;
+    Owned<IThorRowInterfaces> inrowif;
     bool needTransform;
 
     bool eof;
@@ -235,10 +235,10 @@ public:
         flags = helper->getPipeFlags();
         needTransform = false;
 
-        IRowInterfaces *_inrowif;
+        IThorRowInterfaces *_inrowif;
         if (needTransform)
         {
-            inrowif.setown(createRowInterfaces(helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
+            inrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
             _inrowif = inrowif;
         }
         else

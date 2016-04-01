@@ -37,7 +37,7 @@ interface ILoadedDllEntry;
 interface IConstWUResult;
 interface IWUResult;
 
-class thcodectx_decl CThorCodeContextBase : public CSimpleInterface, implements ICodeContextExt
+class thcodectx_decl CThorCodeContextBase : public CSimpleInterfaceOf<ICodeContextExt>
 {
 protected:
     Linked<IUserDescriptor> userDesc;
@@ -49,8 +49,6 @@ protected:
     IWUResult *updateResult(const char *name, unsigned sequence);
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CThorCodeContextBase(CJobChannel &jobChannel, ILoadedDllEntry &_querySo, IUserDescriptor &_userDesc);
 
 // ICodeContext

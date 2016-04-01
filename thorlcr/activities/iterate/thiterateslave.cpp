@@ -27,7 +27,7 @@ class IterateSlaveActivityBase : public CSlaveActivity, public CThorDataLink
     OwnedConstThorRow first;
 protected:
     Owned<IThorDataLink> input;
-    Owned<IRowInterfaces> inrowif;
+    Owned<IThorRowInterfaces> inrowif;
     bool global;
     bool eof, nextPut;
     rowcount_t count;

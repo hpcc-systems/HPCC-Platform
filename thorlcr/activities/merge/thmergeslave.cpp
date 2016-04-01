@@ -60,7 +60,7 @@ public:
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-        cRemoteStream(IRowInterfaces *rowif, unsigned i,mptag_t _tag, GlobalMergeSlaveActivity *_parent)
+        cRemoteStream(IThorRowInterfaces *rowif, unsigned i,mptag_t _tag, GlobalMergeSlaveActivity *_parent)
             : allocator(rowif->queryRowAllocator()), deserializer(rowif->queryRowDeserializer())
         {
             rank = (rank_t)(i+1);

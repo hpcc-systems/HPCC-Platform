@@ -125,7 +125,7 @@ class GroupProcessSlaveActivity : public CSlaveActivity, public CThorDataLink
     OwnedConstThorRow firstright;
     OwnedConstThorRow nextright;
     IThorDataLink *input;
-    Owned<IRowInterfaces> rightrowif;
+    Owned<IThorRowInterfaces> rightrowif;
     Owned<IEngineRowAllocator> rightAllocator;
 
 public:
@@ -138,7 +138,7 @@ public:
     {
         appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorProcessArg *> (queryHelper());
-        rightrowif.setown(createRowInterfaces(helper->queryRightRecordSize(),queryId(),queryCodeContext()));
+        rightrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryRightRecordSize(),queryId(),queryCodeContext()));
         rightAllocator.set(rightrowif->queryRowAllocator());
     }
     void start()

@@ -47,7 +47,7 @@
 
 CThorKeyArray::CThorKeyArray(
     CActivityBase &_activity,
-    IRowInterfaces *_rowif,
+    IThorRowInterfaces *_rowif,
     ISortKeySerializer *_serializer,
     ICompare *_icompare,
     ICompare *_ikeycompare,
@@ -60,7 +60,7 @@ CThorKeyArray::CThorKeyArray(
     keyserializer = NULL;
     if (_serializer) {
         keyserializer = _serializer;
-        keyif.setown(createRowInterfaces(keyserializer->queryRecordSize(), rowif->queryActivityId(), rowif->queryCodeContext()));
+        keyif.setown(createThorRowInterfaces(rowif->queryRowManager(), keyserializer->queryRecordSize(), rowif->queryActivityId(), rowif->queryCodeContext()));
     }
     icompare = _icompare;
     ikeycompare = _ikeycompare?_ikeycompare:(_serializer?NULL:_icompare);
