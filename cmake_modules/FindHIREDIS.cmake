@@ -31,6 +31,27 @@ IF (NOT HIREDIS_FOUND)
   FIND_PATH(HIREDIS_INCLUDE_DIR hiredis/hiredis.h PATHS /usr/include /usr/share/include /usr/local/include PATH_SUFFIXES hiredis)
   FIND_LIBRARY(HIREDIS_LIBRARY NAMES ${libhiredis} PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64)
 
+  IF(HIREDIS_INCLUDE_DIR)
+    #MAJOR
+    FILE (STRINGS "${HIREDIS_INCLUDE_DIR}/hiredis/hiredis.h" major REGEX "#define HIREDIS_MAJOR")
+    STRING(REGEX REPLACE "#define HIREDIS_MAJOR " "" major "${major}")
+    STRING(REGEX REPLACE "\"" "" major "${major}")
+    #MINOR
+    FILE (STRINGS "${HIREDIS_INCLUDE_DIR}/hiredis/hiredis.h" minor REGEX "#define HIREDIS_MINOR")
+    STRING(REGEX REPLACE "#define HIREDIS_MINOR " "" minor "${minor}")
+    STRING(REGEX REPLACE "\"" "" minor "${minor}")
+    #PATCH
+    FILE (STRINGS "${HIREDIS_INCLUDE_DIR}/hiredis/hiredis.h" patch REGEX "#define HIREDIS_PATCH")
+    STRING(REGEX REPLACE "#define HIREDIS_PATCH " "" patch "${patch}")
+    STRING(REGEX REPLACE "\"" "" patch "${patch}")
+
+    SET(HIREDIS_VERSION_STRING "${major}.${minor}.${patch}")
+    IF ("${HIREDIS_VERSION_STRING}" VERSION_LESS "${HIREDIS_FIND_VERSION}")
+      MESSAGE("WARNING - connection caching not avaliable with libhiredis version '${HIREDIS_VERSION_STRING}' as incompatible with min version>=${HIREDIS_FIND_VERSION}")
+    ENDIF()
+  ENDIF()
+
+
   include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args(hiredis DEFAULT_MSG
     HIREDIS_LIBRARY

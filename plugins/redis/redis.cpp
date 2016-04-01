@@ -43,8 +43,10 @@ class Connection;
 static const char * REDIS_LOCK_PREFIX = "redis_ecl_lock";
 static __thread Connection * cachedConnection = NULL;
 static __thread Connection * cachedPubConnection = NULL;//database should always = 0
+#if HIREDIS_VERSION_OK
 static __thread ThreadTermFunc threadHookChain = NULL;
 static __thread bool threadHooked = false;
+#endif
 
 static void * allocateAndCopy(const void * src, size_t size)
 {
@@ -146,7 +148,6 @@ protected :
     void parseOptions(ICodeContext * ctx, const char * _options);
     void connect(ICodeContext * ctx, int _database, const char * password);
     void selectDB(ICodeContext * ctx, int _database);
-    void reset(ICodeContext * ctx, const char * password, unsigned _timeout);
     void readReply(Reply * reply);
     void readReplyAndAssert(Reply * reply, const char * msg);
     void readReplyAndAssertWithCmdMsg(Reply * reply, const char * msg, const char * key = NULL);
@@ -158,9 +159,11 @@ protected :
     void assertConnectionWithCmdMsg(const char * cmd, const char * key = NULL);
     void fail(const char * cmd, const char * errmsg, const char * key = NULL);
     void * redisCommand(redisContext * context, const char * format, ...);
+#if HIREDIS_VERSION_OK
     static unsigned hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password);
     bool isSameConnection(ICodeContext * ctx, const char * _options, const char * password) const;
-
+    void reset(ICodeContext * ctx, const char * password, unsigned _timeout);
+#endif
     //-------------------------------LOCKING------------------------------------------------
     void handleLockOnSet(ICodeContext * ctx, const char * key, const char * value, size_t size, unsigned expire);
     void handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAttr * retVal, const char * password, unsigned expire);
@@ -179,6 +182,7 @@ protected :
     int database; //NOTE: redis stores the maximum number of dbs as an 'int'.
 };
 
+#if HIREDIS_VERSION_OK
 static void releaseContext()
 {
     if (cachedConnection)
@@ -206,15 +210,20 @@ public :
     MainThreadCachedConnection() { }
     ~MainThreadCachedConnection() { releaseContext(); }
 } mainThread;
+#endif
+
 Connection::Connection(ICodeContext * ctx, const char * _options, int _database, const char * password, unsigned _timeout)
-  : database(0), timeout(_timeout), port(0), serverIpPortPasswordHash(hashServerIpPortPassword(ctx, _options, password))
+  : context(nullptr), database(0), timeout(_timeout), port(0), serverIpPortPasswordHash(0)
 {
+#if HIREDIS_VERSION_OK
+    serverIpPortPasswordHash = hashServerIpPortPassword(ctx, _options, pass);
+#endif
     options.set(_options, strlen(_options));
     parseOptions(ctx, _options);
     connect(ctx, _database, password);
 }
 Connection::Connection(ICodeContext * ctx, const char * _options, const char * _ip, int _port, unsigned _serverIpPortPasswordHash, int _database, const char * password, unsigned _timeout)
-  : database(0), timeout(_timeout), serverIpPortPasswordHash(_serverIpPortPasswordHash), port(_port)
+  : context(nullptr), database(0), timeout(_timeout), serverIpPortPasswordHash(_serverIpPortPasswordHash), port(_port)
 {
     options.set(_options, strlen(_options));
     ip.set(_ip, strlen(_ip));
@@ -291,6 +300,7 @@ void Connection::redisSetTimeout()
         throwUnexpected();//In case there is a bug in hiredis such that the above err is not reflected in the 'context' (checked in assertConnection) as expected.
     }
 }
+#if HIREDIS_VERSION_OK
 bool Connection::isSameConnection(ICodeContext * ctx, const char * _options, const char * password) const
 {
     return (hashServerIpPortPassword(ctx, _options, password) == serverIpPortPasswordHash);
@@ -299,6 +309,18 @@ unsigned Connection::hashServerIpPortPassword(ICodeContext * ctx, const char * _
 {
     return hashc((const unsigned char*)_options, strlen(_options), hashc((const unsigned char*)password, strlen(password), 0));
 }
+void Connection::reset(ICodeContext * ctx, const char * password, unsigned _timeout)
+{
+    timeout.reset(_timeout);
+    if (context && context->err != REDIS_OK)
+    {
+        redisFree(context);
+        context = NULL;
+        database = 0;
+        connect(ctx, 0, password);
+    }
+}
+#endif
 void Connection::parseOptions(ICodeContext * ctx, const char * _options)
 {
     StringArray optionStrings;
@@ -334,17 +356,6 @@ void Connection::parseOptions(ICodeContext * ctx, const char * _options)
         }
     }
 }
-void Connection::reset(ICodeContext * ctx, const char * password, unsigned _timeout)
-{
-    timeout.reset(_timeout);
-    if (context && context->err != REDIS_OK)
-    {
-        redisFree(context);
-        context = NULL;
-        database = 0;
-        connect(ctx, 0, password);
-    }
-}
 void Connection::readReply(Reply * reply)
 {
     redisReply * nakedReply = NULL;
@@ -364,6 +375,7 @@ void Connection::readReplyAndAssertWithCmdMsg(Reply * reply, const char * msg, c
 }
 Connection * Connection::createConnection(ICodeContext * ctx,  Connection * & _cachedConnection, const char * options, int _database, const char * password, unsigned _timeout)
 {
+#if HIREDIS_VERSION_OK
     if (!_cachedConnection)
     {
         _cachedConnection = new Connection(ctx, options, _database, password, _timeout);
@@ -388,6 +400,8 @@ Connection * Connection::createConnection(ICodeContext * ctx,  Connection * & _c
     _cachedConnection = NULL;
     _cachedConnection = new Connection(ctx, options, _database, password, _timeout);
     return LINK(_cachedConnection);
+#endif
+    return new Connection(ctx, options, _database, password, _timeout);
 }
 void Connection::selectDB(ICodeContext * ctx, int _database)
 {

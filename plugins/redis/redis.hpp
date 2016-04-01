@@ -30,6 +30,12 @@
 #define ECL_REDIS_API
 #endif
 
+//If altered, the MINVERSION in CMakeLists.txt must also be altered
+#define MIN_HIREDIS_MAJOR 0
+#define MIN_HIREDIS_MINOR 13
+#define MIN_HIREDIS_PATCH 0
+#define HIREDIS_VERSION_OK HIREDIS_MAJOR >= MIN_HIREDIS_MAJOR  && HIREDIS_MINOR >= MIN_HIREDIS_MINOR && HIREDIS_PATCH >= MIN_HIREDIS_PATCH
+
 #include "hqlplugins.hpp"
 #include "eclhelper.hpp"
 
