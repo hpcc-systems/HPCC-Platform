@@ -503,8 +503,8 @@ define([
                                 if (edge.inputProgress) {
                                     edge._eclwatchInputProgress = "[" + edge.inputProgress.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "]";
                                 }
-                                if (edge.maxskew && edge.minskew) {
-                                    edge._eclwatchSkew = "+" + edge.maxskew + "%%, -" + edge.minskew + "%%";
+                                if (edge.SkewMaxRowsProcessed && edge.SkewMinRowsProcessed) {
+                                    edge._eclwatchSkew = "+" + edge.SkewMaxRowsProcessed + ", " + edge.SkewMinRowsProcessed;
                                 }
                                 retVal.addEdge(edge);
                                 break;
