@@ -329,6 +329,104 @@ protected:
 
 };
 
+enum class AdaptiveRoot {NamedArray, RootArray, FirstRow};
+
+class AdaptiveRESTJsonWriter : public CommonJsonWriter
+{
+    AdaptiveRoot model;
+    unsigned depth = 0;
+public:
+    AdaptiveRESTJsonWriter(AdaptiveRoot _model, unsigned _flags, unsigned _initialIndent, IXmlStreamFlusher *_flusher) :
+        CommonJsonWriter(_flags, _initialIndent, _flusher), model(_model)
+    {
+    }
+
+    virtual void outputBeginArray(const char *fieldname)
+    {
+        prepareBeginArray(fieldname);
+        if (model == AdaptiveRoot::NamedArray || arrays.length()>1)
+            appendJSONName(out, fieldname).append('[');
+        else if (model == AdaptiveRoot::RootArray)
+            out.append('[');
+    }
+    void outputEndArray(const char *fieldname)
+    {
+        arrays.pop();
+        checkFormat(false, true, -1);
+        if (arrays.length() || model != AdaptiveRoot::FirstRow)
+            out.append(']');
+        const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
+        while (sep)
+        {
+            out.append('}');
+            sep = strchr(sep+1, '/');
+        }
+    }
+    void outputBeginNested(const char *fieldname, bool nestChildren)
+    {
+        CommonJsonWriter::outputBeginNested(fieldname, nestChildren);
+        if (model == AdaptiveRoot::FirstRow)
+            depth++;
+    }
+    void outputEndNested(const char *fieldname)
+    {
+        CommonJsonWriter::outputEndNested(fieldname);
+        if (model == AdaptiveRoot::FirstRow)
+        {
+            depth--;
+            if (fieldname && streq(fieldname, "Row") && depth==0)
+            {
+                flush(true);
+                flusher = nullptr;
+            }
+        }
+    }
+};
+
+class AdaptiveRESTXmlWriter : public CommonXmlWriter
+{
+    StringAttr tag;
+    AdaptiveRoot model = AdaptiveRoot::NamedArray;
+    unsigned depth = 0;
+public:
+    AdaptiveRESTXmlWriter(AdaptiveRoot _model, const char *tagname, unsigned _flags, unsigned _initialIndent, IXmlStreamFlusher *_flusher) :
+        CommonXmlWriter(_flags, _initialIndent, _flusher), tag(tagname), model(_model)
+    {
+    }
+    void outputBeginNested(const char *fieldname, bool nestChildren)
+    {
+        if (model == AdaptiveRoot::FirstRow)
+        {
+            if (!depth && tag.length())
+                fieldname = tag.str();
+            depth++;
+        }
+        CommonXmlWriter::outputBeginNested(fieldname, nestChildren);
+    }
+    void outputEndNested(const char *fieldname)
+    {
+        if (model == AdaptiveRoot::FirstRow)
+        {
+            depth--;
+            if (!depth)
+            {
+                CommonXmlWriter::outputEndNested(tag.length() ? tag.str() : fieldname);
+                flush(true);
+                flusher = nullptr;
+                return;
+            }
+        }
+        CommonXmlWriter::outputEndNested(fieldname);
+    }
+};
+
+IXmlWriterExt * createAdaptiveRESTWriterExt(AdaptiveRoot model, const char *tagname, unsigned _flags, unsigned _initialIndent, IXmlStreamFlusher *_flusher, XMLWriterType xmlType)
+{
+    if (xmlType==WTJSON)
+        return new AdaptiveRESTJsonWriter(model, _flags, _initialIndent, _flusher);
+    return new AdaptiveRESTXmlWriter(model, tagname, _flags, _initialIndent, _flusher);
+}
+
 //================================================================================================================
 
 class CHpccNativeResultsWriter : public CInterface, implements IHpccNativeProtocolResultsWriter
@@ -339,6 +437,9 @@ protected:
     IPointerArrayOf<FlushingStringBuffer> resultMap;
 
     StringAttr queryName;
+    StringAttr tagName;
+    StringAttr resultFilter;
+
     const IContextLogger &logctx;
     Owned<FlushingStringBuffer> probe;
     TextMarkupFormat mlFmt;
@@ -348,6 +449,8 @@ protected:
     bool isHTTP;
     bool trim;
     bool failed;
+    bool adaptiveRoot = false;
+    bool onlyUseFirstRow = false;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -358,6 +461,10 @@ public:
     ~CHpccNativeResultsWriter()
     {
     }
+    inline void setAdaptiveRoot(){adaptiveRoot = true; client->setAdaptiveRoot(true);}
+    inline void setTagName(const char *tag){tagName.set(tag);}
+    inline void setOnlyUseFirstRow(){onlyUseFirstRow = true;}
+    inline void setResultFilter(const char *_resultFilter){resultFilter.set(_resultFilter);}
     virtual FlushingStringBuffer *queryResult(unsigned sequence)
     {
         CriticalBlock procedure(resultsCrit);
@@ -381,18 +488,42 @@ public:
     {
         return new FlushingStringBuffer(client, isBlocked, mlFmt, isRaw, isHTTP, logctx);
     }
+    bool checkAdaptiveResult(const char *name)
+    {
+        if (!adaptiveRoot)
+            return false;
+        if (!resultFilter || !*resultFilter)
+            return true;
+        return (streq(resultFilter, name));
+    }
     virtual IXmlWriter *addDataset(const char *name, unsigned sequence, const char *elementName, bool &appendRawData, unsigned writeFlags, bool _extend, const IProperties *xmlns)
     {
         FlushingStringBuffer *response = queryResult(sequence);
         if (response)
         {
             appendRawData = response->isRaw;
-            response->startDataset(elementName, name, sequence, _extend, xmlns);
+            bool adaptive = checkAdaptiveResult(name);
+            if (adaptive)
+            {
+                elementName = nullptr;
+                if (response->mlFmt!=MarkupFmt_JSON && !onlyUseFirstRow && tagName.length())
+                    elementName = tagName.str();
+            }
+            response->startDataset(elementName, name, sequence, _extend, xmlns, adaptive);
             if (response->mlFmt==MarkupFmt_XML || response->mlFmt==MarkupFmt_JSON)
             {
                 if (response->mlFmt==MarkupFmt_JSON)
                     writeFlags |= XWFnoindent;
-                Owned<IXmlWriter> xmlwriter = createIXmlWriterExt(writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard);
+                AdaptiveRoot rootType = AdaptiveRoot::NamedArray;
+                if (adaptive)
+                {
+                    if (onlyUseFirstRow)
+                        rootType = AdaptiveRoot::FirstRow;
+                    else
+                        rootType = AdaptiveRoot::RootArray;
+                }
+
+                Owned<IXmlWriter> xmlwriter = createAdaptiveRESTWriterExt(rootType, tagName, writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard);
                 xmlwriter->outputBeginArray("Row");
                 return xmlwriter.getClear();
             }
@@ -410,6 +541,15 @@ public:
                 r->flush(false);
             }
         }
+    }
+    inline void startScalar(FlushingStringBuffer *r, const char *name, unsigned sequence)
+    {
+        if (checkAdaptiveResult(name))
+        {
+            r->startScalar(name, sequence, true, tagName.length() ? tagName.str() : name);
+            return;
+        }
+        r->startScalar(name, sequence);
     }
     virtual void appendRaw(unsigned sequence, unsigned len, const char *data)
     {
@@ -439,7 +579,7 @@ public:
         FlushingStringBuffer *r = queryResult(sequence);
         if (r)
         {
-            r->startScalar(name, sequence);
+            startScalar(r, name, sequence);
             if (isRaw)
                 r->append(sizeof(value), (char *)&value);
             else
@@ -451,7 +591,7 @@ public:
         FlushingStringBuffer *r = queryResult(sequence);
         if (r)
         {
-            r->startScalar(name, sequence);
+            startScalar(r, name, sequence);
             r->encodeData(data, len);
         }
     }
@@ -460,7 +600,7 @@ public:
         FlushingStringBuffer *r = queryResult(sequence);
         if (r)
         {
-            r->startScalar(name, sequence);
+            startScalar(r, name, sequence);
             if (isRaw)
                 r->append(len, (const char *) data);
             else
@@ -472,7 +612,7 @@ public:
         FlushingStringBuffer *r = queryResult(sequence);
         if (r)
         {
-            r->startScalar(name, sequence);
+            startScalar(r, name, sequence);
             if (isRaw)
                 r->append(len, (char *)data);
             else if (mlFmt==MarkupFmt_XML)
@@ -510,7 +650,7 @@ public:
         FlushingStringBuffer *r = queryResult(sequence);
         if (r)
         {
-            r->startScalar(name, sequence);
+            startScalar(r, name, sequence);
             if (isRaw)
                 r->append(len, (char *)val);
             else
@@ -531,7 +671,7 @@ public:
         {
             if (isRaw)
             {
-                r->startScalar(name, sequence);
+                startScalar(r, name, sequence);
                 r->append(sizeof(value), (char *)&value);
             }
             else
@@ -546,7 +686,7 @@ public:
         {
             if (isRaw)
             {
-                r->startScalar(name, sequence);
+                startScalar(r, name, sequence);
                 r->append(sizeof(value), (char *)&value);
             }
             else
@@ -559,7 +699,7 @@ public:
         FlushingStringBuffer *r = queryResult(sequence);
         if (r)
         {
-            r->startScalar(name, sequence);
+            startScalar(r, name, sequence);
             r->append(value);
         }
     }
@@ -568,7 +708,7 @@ public:
         FlushingStringBuffer *r = queryResult(sequence);
         if (r)
         {
-            r->startScalar(name, sequence);
+            startScalar(r, name, sequence);
             if (r->isRaw)
             {
                 r->append(len, str);
@@ -584,7 +724,7 @@ public:
         FlushingStringBuffer *r = queryResult(sequence);
         if (r)
         {
-            r->startScalar(name, sequence);
+            startScalar(r, name, sequence);
             if (r->isRaw)
             {
                 r->append(len*2, (const char *) str);
@@ -615,13 +755,13 @@ public:
                 result->flush(true);
         }
     }
-    virtual void finalize(unsigned seqNo, const char *delim)
+    virtual void finalize(unsigned seqNo, const char *delim, const char *filter)
     {
         bool needDelimiter = false;
         ForEachItemIn(seq, resultMap)
         {
             FlushingStringBuffer *result = resultMap.item(seq);
-            if (result)
+            if (result && (!filter || !*filter || streq(filter, result->queryResultName())))
             {
                 result->flush(true);
                 for(;;)
@@ -787,6 +927,8 @@ class CHpccNativeProtocolResponse : public CInterface, implements IHpccNativePro
 protected:
     SafeSocket *client;
     StringAttr queryName;
+    StringArray resultFilter;
+    StringBuffer rootTag;
     const IContextLogger &logctx;
     TextMarkupFormat mlFmt;
     PTreeReaderOptions xmlReadFlags;
@@ -799,9 +941,12 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CHpccNativeProtocolResponse(const char *queryname, SafeSocket *_client, TextMarkupFormat _mlFmt, unsigned flags, bool _isHTTP, const IContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) :
-        client(_client), queryName(queryname), logctx(_logctx), mlFmt(_mlFmt), xmlReadFlags(_xmlReadFlags), protocolFlags(flags), isHTTP(_isHTTP)
+    CHpccNativeProtocolResponse(const char *queryname, SafeSocket *_client, TextMarkupFormat _mlFmt, unsigned flags, bool _isHTTP, const IContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_resultFilterString, const char *_rootTag) :
+        client(_client), queryName(queryname), logctx(_logctx), mlFmt(_mlFmt), xmlReadFlags(_xmlReadFlags), protocolFlags(flags), isHTTP(_isHTTP), rootTag(_rootTag)
     {
+        resultFilter.appendList(_resultFilterString, ".");
+        if (!rootTag.length() && resultFilter.length())
+            rootTag.set(resultFilter.item(0)).replace(' ', '_');
     }
     ~CHpccNativeProtocolResponse()
     {
@@ -842,7 +987,18 @@ public:
     virtual IHpccProtocolResultsWriter *queryHpccResultsSection()
     {
         if (!results)
+        {
             results.setown(new CHpccNativeResultsWriter(queryName, client, getIsBlocked(), mlFmt, getIsRaw(), isHTTP, logctx, xmlReadFlags));
+            if (rootTag.length())
+                results->setTagName(rootTag);
+            if (resultFilter.length())
+            {
+                results->setAdaptiveRoot();
+                results->setResultFilter(resultFilter.item(0));
+            }
+            if (resultFilter.isItem(1) && strieq("row", resultFilter.item(1)))
+                results->setOnlyUseFirstRow();
+        }
         return results;
     }
 
@@ -892,8 +1048,8 @@ public:
 class CHpccJsonResponse : public CHpccNativeProtocolResponse
 {
 public:
-    CHpccJsonResponse(const char *queryname, SafeSocket *_client, unsigned flags, bool _isHttp, const IContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) :
-        CHpccNativeProtocolResponse(queryname, _client, MarkupFmt_JSON, flags, _isHttp, _logctx, _xmlReadFlags)
+    CHpccJsonResponse(const char *queryname, SafeSocket *_client, unsigned flags, bool _isHttp, const IContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_resultFilter, const char *_rootTag) :
+        CHpccNativeProtocolResponse(queryname, _client, MarkupFmt_JSON, flags, _isHttp, _logctx, _xmlReadFlags, _resultFilter, _rootTag)
     {
     }
 
@@ -976,7 +1132,7 @@ public:
         CriticalBlock b(contentsCrit);
 
         StringBuffer responseHead, responseTail;
-        if (!(protocolFlags & HPCC_PROTOCOL_CONTROL))
+        if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
             StringBuffer name(queryName.get());
             if (isHTTP)
@@ -988,10 +1144,11 @@ public:
             unsigned len = responseHead.length();
             client->write(responseHead.detach(), len, true);
         }
-        outputContent();
+        if (!resultFilter.ordinality())
+            outputContent();
         if (results)
-            results->finalize(seqNo, ",");
-        if (!(protocolFlags & HPCC_PROTOCOL_CONTROL))
+            results->finalize(seqNo, ",", resultFilter.ordinality() ? resultFilter.item(0) : NULL);
+        if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
             responseTail.append("}");
             unsigned len = responseTail.length();
@@ -1003,8 +1160,8 @@ public:
 class CHpccXmlResponse : public CHpccNativeProtocolResponse
 {
 public:
-    CHpccXmlResponse(const char *queryname, SafeSocket *_client, unsigned flags, bool _isHTTP, const IContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) :
-        CHpccNativeProtocolResponse(queryname, _client, MarkupFmt_XML, flags, _isHTTP, _logctx, _xmlReadFlags)
+    CHpccXmlResponse(const char *queryname, SafeSocket *_client, unsigned flags, bool _isHTTP, const IContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_resultFilter, const char *_rootTag) :
+        CHpccNativeProtocolResponse(queryname, _client, MarkupFmt_XML, flags, _isHTTP, _logctx, _xmlReadFlags, _resultFilter, _rootTag)
     {
     }
 
@@ -1085,7 +1242,7 @@ public:
         CriticalBlock b(contentsCrit);
 
         StringBuffer responseHead, responseTail;
-        if (!(protocolFlags & HPCC_PROTOCOL_CONTROL))
+        if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
             responseHead.append("<").append(queryName);
             responseHead.append("Response").append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append('\"');
@@ -1094,11 +1251,12 @@ public:
             client->write(responseHead.detach(), len, true);
         }
 
-        outputContent();
+        if (!resultFilter.ordinality())
+            outputContent();
         if (results)
-            results->finalize(seqNo, NULL);
+            results->finalize(seqNo, NULL, resultFilter.ordinality() ? resultFilter.item(0) : NULL);
 
-        if (!(protocolFlags & HPCC_PROTOCOL_CONTROL))
+        if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
             responseTail.append("</").append(queryName);
             if (isHTTP)
@@ -1112,11 +1270,13 @@ public:
 
 IHpccProtocolResponse *createProtocolResponse(const char *queryname, SafeSocket *client, HttpHelper &httpHelper, const IContextLogger &logctx, unsigned protocolFlags, PTreeReaderOptions xmlReadFlags)
 {
+    StringAttr filter, tag;
+    httpHelper.getResultFilterAndTag(filter, tag);
     if (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW || protocolFlags & HPCC_PROTOCOL_NATIVE_ASCII)
-        return new CHpccNativeProtocolResponse(queryname, client, MarkupFmt_Unknown, protocolFlags, false, logctx, xmlReadFlags);
+        return new CHpccNativeProtocolResponse(queryname, client, MarkupFmt_Unknown, protocolFlags, false, logctx, xmlReadFlags, filter, tag);
     else if (httpHelper.queryResponseMlFormat()==MarkupFmt_JSON)
-        return new CHpccJsonResponse(queryname, client, protocolFlags, httpHelper.isHttp(), logctx, xmlReadFlags);
-    return new CHpccXmlResponse(queryname, client, protocolFlags, httpHelper.isHttp(), logctx, xmlReadFlags);
+        return new CHpccJsonResponse(queryname, client, protocolFlags, httpHelper.isHttp(), logctx, xmlReadFlags, filter, tag);
+    return new CHpccXmlResponse(queryname, client, protocolFlags, httpHelper.isHttp(), logctx, xmlReadFlags, filter, tag);
 
 }
 
@@ -1362,18 +1522,16 @@ private:
             {
                 if (httpHelper.queryRequestMlFormat()==MarkupFmt_JSON)
                 {
+                    if (strieq(queryName, "__array__"))
+                        throw MakeStringException(ROXIE_DATA_ERROR, "JSON request array not implemented");
+                    isRequest=true;
                     if (strieq(queryName, "__object__"))
                     {
                         queryPT.setown(queryPT->getPropTree("*[1]"));
                         queryName.set(queryPT->queryName());
-                        isRequest = true;
                         if (!queryPT)
                             throw MakeStringException(ROXIE_DATA_ERROR, "Malformed JSON request (missing Body)");
                     }
-                    else if (strieq(queryName, "__array__"))
-                        throw MakeStringException(ROXIE_DATA_ERROR, "JSON request array not implemented");
-                    else
-                        throw MakeStringException(ROXIE_DATA_ERROR, "Malformed JSON request");
                 }
                 else
                 {
@@ -1428,12 +1586,19 @@ private:
     }
     void createQueryPTree(Owned<IPropertyTree> &queryPT, HttpHelper &httpHelper, const char *text, byte flags, PTreeReaderOptions options)
     {
+        StringBuffer logxml;
         if (httpHelper.queryRequestMlFormat()==MarkupFmt_URL)
+        {
             queryPT.setown(httpHelper.createPTreeFromParameters(flags));
-        else if (httpHelper.queryRequestMlFormat()==MarkupFmt_JSON)
+            toXML(queryPT, logxml);
+            DBGLOG("%s", logxml.str());
+            return;
+        }
+        if (httpHelper.queryRequestMlFormat()==MarkupFmt_JSON)
             queryPT.setown(createPTreeFromJSONString(text, flags, options));
         else
             queryPT.setown(createPTreeFromXMLString(text, flags, options));
+        queryPT.setown(httpHelper.checkAddWrapperForAdaptiveInput(queryPT.getClear(), flags));
     }
 
     void doMain(const char *runQuery)

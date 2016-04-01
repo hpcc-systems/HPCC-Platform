@@ -7240,27 +7240,94 @@ static void ensureHttpParameter(IPropertyTree *pt, const char *path, const char 
     ensureHttpParameter(pt, tag, path, value, fullpath);
 }
 
-//URL node nameWithAttrs is of the form: "TagName;attr1=abc;attr2;attr3=;"
-IPropertyTree *createPTreeFromHttpParameters(const char *nameWithAttrs, IProperties *parameters, bool skipLeadingDotParameters, bool nestedRoot, ipt_flags flags)
+bool checkParseUrlPathNodeValue(const char *s, StringBuffer &name, StringAttr &value)
+{
+    s = skipWhitespace(s);
+    const char *pn = strchr(s, '(');
+    if (pn) //strict format param('value') so we can extend later
+    {
+        const char *vp = pn + 1;
+        if (*vp!='\'')
+            return false;
+        const char *end =strchr(++vp, '\'');
+        if (!end || *(end+1)!=')')
+            return false;
+        if (!validateXMLTag(name.append(pn-s, s).trim()))
+            return false;
+        value.set(vp, end-vp);
+    }
+    else
+    {
+        if (!validateXMLTag(name.append(s).trim()))
+            return false;
+    }
+    return true;
+}
+IPropertyTree *createPTreeFromHttpPath(const char *nameWithAttrs, IPropertyTree *content, bool nestedRoot, ipt_flags flags)
 {
     StringArray nameAttrList;
-    nameAttrList.appendList(nameWithAttrs, ";");
+    nameAttrList.appendList(nameWithAttrs, "/");
     if (!nameAttrList.ordinality())
         return NULL;
     Owned<IPropertyTree> pt = createPTree(nameAttrList.item(0), flags);
     for (aindex_t pos=1; nameAttrList.isItem(pos); pos++)
     {
-        const char *attr = skipWhitespace(nameAttrList.item(pos));
-        if (*attr=='=')
-            continue;
+        StringBuffer name;
+        StringAttr value;
+        if (!checkParseUrlPathNodeValue(nameAttrList.item(pos), name, value))
+            throw MakeStringException(-1, "Invalid URL parameter format %s", nameAttrList.item(pos));
         StringBuffer xpath("@");
-        const char *eq = strchr(attr, '=');
-        if (eq)
-            pt->setProp(xpath.append(eq-attr, attr).trim(), eq+1);
+        xpath.append(name.str());
+        if (!value.get())
+            pt->setPropBool(xpath, true);
         else
-            pt->setPropBool(xpath.append(attr).trim(), true);
+            pt->setProp(xpath, value);
+    }
+    IPropertyTree *parent = pt;
+    const char *input = pt->queryProp("@input");
+    if (input)
+    {
+        StringArray inputNodes;
+        inputNodes.appendList(input, ".");
+        ForEachItemIn(in, inputNodes)
+        {
+            const char *tag = inputNodes.item(in);
+            if (!validateXMLTag(tag))
+                throw MakeStringException(-1, "Invalid REST query input specifier %s", input);
+            parent = parent->addPropTree(tag, createPTree(tag, flags));
+        }
     }
 
+    if (streq("__array__", content->queryName()))
+    {
+        Owned<IAttributeIterator> aiter = content->getAttributes();
+        ForEach (*aiter)
+            parent->addProp(aiter->queryName(), aiter->queryValue());
+        Owned<IPropertyTreeIterator> iter = content->getElements("__item__");
+        ForEach (*iter)
+        {
+            IPropertyTree &e = iter->query();
+            e.renameProp("/", "Row");
+            parent->addPropTree("Row", LINK(&e));
+        }
+    }
+    else
+        mergePTree(parent, content);
+
+    if (nestedRoot)
+    {
+        Owned<IPropertyTree> root = createPTree(flags);
+        root->setPropTree(nameAttrList.item(0), pt.getClear());
+        return root.getClear();
+    }
+
+    return pt.getClear();
+}
+
+//URL node nameWithAttrs is of the form: "TagName/attr1('abc')/attr2/attr3('xyz')"
+IPropertyTree *createPTreeFromHttpParameters(const char *nameWithAttrs, IProperties *parameters, bool skipLeadingDotParameters, bool nestedRoot, ipt_flags flags)
+{
+    Owned<IPropertyTree> content = createPTree("content", flags);
     Owned<IPropertyIterator> iter = parameters->getIterator();
     ForEach(*iter)
     {
@@ -7272,14 +7339,8 @@ IPropertyTree *createPTreeFromHttpParameters(const char *nameWithAttrs, IPropert
         const char *value = parameters->queryProp(key);
         if (!value || !*value)
             continue;
-        ensureHttpParameter(pt, key, value);
-    }
-    if (nestedRoot)
-    {
-        Owned<IPropertyTree> root = createPTree(flags);
-        root->setPropTree(nameAttrList.item(0), pt.getClear());
-        return root.getClear();
+        ensureHttpParameter(content, key, value);
     }
 
-    return pt.getClear();
+    return createPTreeFromHttpPath(nameWithAttrs, content.getClear(), nestedRoot, flags);
 }
