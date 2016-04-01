@@ -433,7 +433,7 @@ public:
         servMethod.set(method);
     }
 
-    virtual CTxSummary* getTxSummary()
+    virtual CTxSummary* queryTxSummary()
     {
         return m_txSummary.get();
     }
@@ -465,6 +465,15 @@ public:
             updateTraceSummaryHeader();
             m_txSummary->append("total", m_processingTime, "ms");
         }
+    }
+    virtual void addTraceSummaryCumulativeTime(const char* name, unsigned __int64 time)
+    {
+        if (m_txSummary)
+            m_txSummary->updateTimer(name, time);
+    }
+    virtual CumulativeTimer* queryTraceSummaryCumulativeTimer(const char* name)
+    {
+        return (m_txSummary ? m_txSummary->queryTimer(name) : NULL);
     }
 
     virtual ESPSerializationFormat getResponseFormat(){return respSerializationFormat;}

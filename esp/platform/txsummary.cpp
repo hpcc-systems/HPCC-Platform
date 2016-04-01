@@ -21,9 +21,15 @@
 #include <algorithm>
 
 using std::find_if;
+using std::for_each;
 
 #define VALIDATE_KEY(k) if (!(k) || !(*k)) return false
 #define MATCH_KEY       [&](const Entry& entry) { return stricmp(entry.key.str(), key) == 0; }
+
+bool operator < (const StringAttr& a, const StringAttr& b)
+{
+    return (stricmp(a.str(), b.str()) < 0);
+}
 
 CTxSummary::CTxSummary(unsigned creationTime)
 : m_creationTime(creationTime ? creationTime : msTick())
@@ -38,12 +44,15 @@ CTxSummary::~CTxSummary()
 
 unsigned __int64 CTxSummary::size() const
 {
-    return m_entries.size();
+    CriticalBlock block(m_sync);
+    return m_entries.size() + m_timers.size();
 }
 
 void CTxSummary::clear()
 {
+    CriticalBlock block(m_sync);
     m_entries.clear();
+    m_timers.clear();
 }
 
 unsigned CTxSummary::getElapsedTime() const
@@ -53,14 +62,17 @@ unsigned CTxSummary::getElapsedTime() const
 
 bool CTxSummary::contains(const char* key) const
 {
-    return find_if(m_entries.begin(), m_entries.end(), MATCH_KEY) != m_entries.end();
+    CriticalBlock block(m_sync);
+    return __contains(key);
 }
 
 bool CTxSummary::append(const char* key, const char* value)
 {
     VALIDATE_KEY(key);
 
-    if (contains(key))
+    CriticalBlock block(m_sync);
+
+    if (__contains(key))
         return false;
 
     m_entries.push_back({key, value});
@@ -71,6 +83,7 @@ bool CTxSummary::set(const char* key, const char* value)
 {
     VALIDATE_KEY(key);
 
+    CriticalBlock block(m_sync);
     Entries::iterator it = find_if(m_entries.begin(), m_entries.end(), MATCH_KEY);
 
     if (it != m_entries.end())
@@ -81,14 +94,50 @@ bool CTxSummary::set(const char* key, const char* value)
     return true;
 }
 
+CumulativeTimer* CTxSummary::queryTimer(const char* name)
+{
+    if (!name || !*name)
+        return NULL;
+
+    CriticalBlock block(m_sync);
+    TimerValue& timer = m_timers[name];
+
+    if (!timer)
+    {
+        timer.setown(new CumulativeTimer());
+    }
+
+    return timer;
+}
+
+bool CTxSummary::updateTimer(const char* name, unsigned long long delta)
+{
+    Owned<CumulativeTimer> timer;
+
+    timer.set(queryTimer(name));
+
+    if (!timer)
+        return false;
+
+    timer->add(delta);
+    return true;
+}
+
 void CTxSummary::serialize(StringBuffer& buffer) const
 {
+    CriticalBlock block(m_sync);
+
     for (const Entry& entry : m_entries)
     {
         if (entry.value.length())
             buffer.appendf("%s=%s;", entry.key.str(), entry.value.str());
         else
             buffer.appendf("%s;", entry.key.str());
+    }
+
+    for (const std::pair<TimerKey, TimerValue>& entry : m_timers)
+    {
+        buffer.appendf("%s=%" I64F "ums;", entry.first.str(), entry.second->getTotalMillis());
     }
 }
 
@@ -100,4 +149,9 @@ void CTxSummary::log()
         serialize(summary);
         DBGLOG("TxSummary[%s]", summary.str());
     }
+}
+
+bool CTxSummary::__contains(const char* key) const
+{
+    return find_if(m_entries.begin(), m_entries.end(), MATCH_KEY) != m_entries.end();
 }
