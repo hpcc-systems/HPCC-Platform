@@ -20,9 +20,10 @@
 #include "slave.ipp"
 #include "thactivityutil.ipp"
 
-class CTraceSlaveActivity : public CSlaveActivity, public CThorDataLink, public CThorSteppable
+class CTraceSlaveActivity : public CSlaveActivity, public CThorSteppable
 {
-    IThorDataLink *input;
+    typedef CSlaveActivity PARENT;
+
     IHThorTraceArg *helper;
     OwnedRoxieString name;
     unsigned keepLimit;
@@ -34,22 +35,20 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CTraceSlaveActivity(CGraphElementBase *_container)
-        : CSlaveActivity(_container), CThorDataLink(this), CThorSteppable(this),
+        : CSlaveActivity(_container), CThorSteppable(this),
           keepLimit(0), skip(0), sample(0), traceEnabled(false)
     {
         helper = (IHThorTraceArg *) queryHelper();
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
         traceEnabled = getOptBool(THOROPT_TRACE_ENABLED, false);
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        dataLinkStart();
-        input = inputs.item(0);
-        startInput(input);
+        PARENT::start();
         if (traceEnabled && helper->canMatchAny() && queryRowMetaData())
         {
             keepLimit = helper->getKeepLimit();
@@ -66,11 +65,10 @@ public:
         else
             keepLimit = 0;
     }
-    void stop()
+    virtual void stop() override
     {
         name.clear();
-        stopInput(input);
-        dataLinkStop();
+        PARENT::stop();
     }
     void onTrace(const void *row)
     {
@@ -95,7 +93,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        OwnedConstThorRow ret = input->nextRow();
+        OwnedConstThorRow ret = inputStream->nextRow();
         if (ret)
         {
             onTrace(ret);
@@ -103,15 +101,15 @@ public:
         }
         return ret.getClear();
     }
-    const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
+    virtual const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
         try { return nextRowGENoCatch(seek, numFields, wasCompleteMatch, stepExtra); }
         CATCH_NEXTROWX_CATCH;
     }
-    const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
+    virtual const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
-        OwnedConstThorRow ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        OwnedConstThorRow ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
         {
             onTrace(ret);
@@ -119,25 +117,25 @@ public:
         }
         return ret.getClear();
     }
-    bool gatherConjunctions(ISteppedConjunctionCollector &collector)
+    virtual bool gatherConjunctions(ISteppedConjunctionCollector &collector)
     { 
         return input->gatherConjunctions(collector);
     }
-    void resetEOF() 
+    virtual void resetEOF()
     { 
-        input->resetEOF(); 
+        inputStream->resetEOF();
     }
-    bool isGrouped() { return input->isGrouped(); }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return input->isGrouped(); }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 // steppable
-    virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx)
+    virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override
     {
-        CSlaveActivity::setInput(index, inputActivity, inputOutIdx);
-        CThorSteppable::setInput(index, inputActivity, inputOutIdx);
+        CSlaveActivity::setInputStream(index, input, consumerOrdered);
+        CThorSteppable::setInputStream(index, input, consumerOrdered);
     }
     virtual IInputSteppingMeta *querySteppingMeta() { return CThorSteppable::inputStepping; }
 };

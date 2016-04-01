@@ -58,7 +58,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
         }
 
 #define CATCH_NEXTROW() \
-    const void *nextRow() \
+    virtual const void *nextRow() override \
     { \
         try \
         { \
@@ -69,121 +69,18 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
     inline const void *nextRowNoCatch() __attribute__((always_inline))
 
 void initMetaInfo(ThorDataLinkMetaInfo &info);
-class CThorDataLink : implements IThorDataLink
+void calcMetaInfoSize(ThorDataLinkMetaInfo &info, IThorDataLink *link);
+void calcMetaInfoSize(ThorDataLinkMetaInfo &info, CThorInputArray &inputs);
+void calcMetaInfoSize(ThorDataLinkMetaInfo &info, ThorDataLinkMetaInfo *infos, unsigned num);
+
+interface ILookAheadStopNotify
 {
-    CActivityBase *owner;
-    rowcount_t count, icount;
-    unsigned outputId;
-    unsigned limit;
-
-protected:
-    inline void dataLinkStart(unsigned _outputId = 0)
-    {
-        outputId = _outputId;
-#ifdef _TESTING
-        ActPrintLog(owner, "ITDL starting for output %d", outputId);
-#endif
-#ifdef _TESTING
-        assertex(!started() || stopped());      // ITDL started twice
-#endif
-        icount = 0;
-//      count = THORDATALINK_STARTED;
-        rowcount_t prevCount = count & THORDATALINK_COUNT_MASK;
-        count = prevCount | THORDATALINK_STARTED;
-    }
-
-    inline void dataLinkStop()
-    {
-#ifdef _TESTING
-        assertex(started());        // ITDL stopped without being started
-#endif
-        count |= THORDATALINK_STOPPED;
-#ifdef _TESTING
-        ActPrintLog(owner, "ITDL output %d stopped, count was %" RCPF "d", outputId, getDataLinkCount());
-#endif
-    }
-
-    inline void dataLinkIncrement()
-    {
-        dataLinkIncrement(1);
-    }
-
-    inline void dataLinkIncrement(rowcount_t v)
-    {
-#ifdef _TESTING
-        assertex(started());
-#ifdef OUTPUT_RECORDSIZE
-        if (count==THORDATALINK_STARTED) {
-            size32_t rsz = queryRowMetaData(this)->getMinRecordSize();
-            ActPrintLog(owner, "Record size %s= %d", queryRowMetaData(this)->isVariableSize()?"(min) ":"",rsz);
-        }   
-#endif
-#endif
-        icount += v;
-        count += v; 
-    }
-
-    inline bool started()
-    {
-        return (count & THORDATALINK_STARTED) ? true : false; 
-    }
-
-    inline bool stopped()
-    {
-        return (count & THORDATALINK_STOPPED) ? true : false;
-    }
-
-
-public:
-    CThorDataLink(CActivityBase *_owner) : owner(_owner)
-    {
-        icount = count = 0;
-    }
-#ifdef _TESTING
-    ~CThorDataLink()
-    { 
-        if(started()&&!stopped())
-        {
-            ActPrintLog(owner, "ERROR: ITDL was not stopped before destruction");
-            dataLinkStop(); // get some info (even though failed)       
-        }
-    }           
-#endif
-
-    void dataLinkSerialize(MemoryBuffer &mb)
-    {
-        mb.append(count);
-    }
-
-    unsigned __int64 queryTotalCycles() const { return ((CSlaveActivity *)owner)->queryTotalCycles(); }
-    unsigned __int64 queryEndCycles() const  { return ((CSlaveActivity *)owner)->queryEndCycles(); }
-
-    inline rowcount_t getDataLinkGlobalCount()
-    {
-        return (count & THORDATALINK_COUNT_MASK); 
-    } 
-    inline rowcount_t getDataLinkCount()
-    {
-        return icount; 
-    } 
-    virtual void debugRequest(MemoryBuffer &msg) { }
-    CActivityBase *queryFromActivity() { return owner; }
-
-    void initMetaInfo(ThorDataLinkMetaInfo &info); // for derived children to call from getMetaInfo
-    static void calcMetaInfoSize(ThorDataLinkMetaInfo &info,IThorDataLink *input); // for derived children to call from getMetaInfo
-    static void calcMetaInfoSize(ThorDataLinkMetaInfo &info,IThorDataLink **link,unsigned ninputs);
-    static void calcMetaInfoSize(ThorDataLinkMetaInfo &info, ThorDataLinkMetaInfo *infos,unsigned num);
+    virtual void onInputFinished(rowcount_t count) = 0;
 };
-
-interface ISmartBufferNotify
-{
-    virtual bool startAsync() =0;                       // return true if need to start asynchronously
-    virtual void onInputStarted(IException *e) =0;      // e==NULL if start suceeded, NB only called with exception if Async
-    virtual void onInputFinished(rowcount_t count) =0;
-};
-
 interface IDiskUsage;
-IThorDataLink *createDataLinkSmartBuffer(CActivityBase *activity,IThorDataLink *in,size32_t bufsize,bool spillenabled,bool preserveGrouping=true,rowcount_t maxcount=RCUNBOUND,ISmartBufferNotify *notify=NULL, bool inputstarted=false, IDiskUsage *_diskUsage=NULL); //maxcount is maximum rows to read set to RCUNBOUND for all
+IStartableEngineRowStream *createRowStreamLookAhead(CSlaveActivity *activity, IEngineRowStream *inputStream, IThorRowInterfaces *rowIf, size32_t bufsize, bool spillenabled, bool preserveGrouping=true, rowcount_t maxcount=RCUNBOUND, ILookAheadStopNotify *notify=NULL, IDiskUsage *_diskUsage=NULL); //maxcount is maximum rows to read set to RCUNBOUND for all
+
+
 
 bool isSmartBufferSpillNeeded(CActivityBase *act);
 
@@ -199,5 +96,25 @@ void cancelReplicates(CActivityBase *activity, IPartDescriptor &partDesc);
 interface IPartDescriptor;
 IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned recordSize, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_locationName=NULL);
 
+class CAsyncCall : implements IThreaded
+{
+    CThreaded threaded;
+    std::function<void()> func;
+public:
+    CAsyncCall(std::function<void()> _func) : threaded("CAsyncCall", this), func(_func) { }
+    void start() { threaded.start(); }
+    void wait() { threaded.join(); }
+// IThreaded
+    virtual void main() { func(); }
+};
+
+class CAsyncCallStart : public CAsyncCall
+{
+public:
+    CAsyncCallStart(std::function<void()> func) : CAsyncCall(func)
+    {
+        start();
+    }
+};
 
 #endif

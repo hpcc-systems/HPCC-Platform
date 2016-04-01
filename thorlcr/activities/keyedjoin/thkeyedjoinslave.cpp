@@ -520,8 +520,10 @@ interface IRowStreamSetInput : extends IRowStream
     virtual void setInput(IRowStream *input) = 0;
 };
 
-class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements IJoinProcessor, implements IJoinGroupNotify
+class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implements IJoinGroupNotify
 {
+    typedef CSlaveActivity PARENT;
+
 #ifdef TRACE_JOINGROUPS
     unsigned groupsPendsNoted, fetchReadBack, groupPendsEnded, doneGroupsDeQueued, wroteToFetchPipe, groupsComplete;
 #endif
@@ -530,7 +532,6 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     IRowStreamSetInput *resultDistStream;
     CPartDescriptorArray indexParts, dataParts;
     Owned<IKeyIndexSet> tlkKeySet, partKeySet;
-    IThorDataLink *input;
     bool preserveGroups, preserveOrder, eos, inputStopped, needsDiskRead, atMostProvided, remoteDataFiles;
     unsigned joinFlags, abortLimit, parallelLookups, freeQSize, filePartTotal;
     size32_t fixedRecordSize;
@@ -1565,12 +1566,11 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CKeyedJoinSlave(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    CKeyedJoinSlave(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
 #ifdef TRACE_JOINGROUPS
         groupsPendsNoted = fetchReadBack = groupPendsEnded = doneGroupsDeQueued = wroteToFetchPipe = groupsComplete = 0;
 #endif
-        input = NULL;
         inputHelper = NULL;
         preserveGroups = preserveOrder = eos = false;
         resultDistStream = NULL;
@@ -1747,8 +1747,7 @@ public:
         if (!inputStopped)
         {
             inputStopped = true;
-            CSlaveActivity::stopInput(input, "(LEFT)");
-            input = NULL;
+            PARENT::stop();
         }
     }
     void doAbortLimit(CJoinGroup *jg)
@@ -2040,10 +2039,9 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         assertex(inputs.ordinality() == 1);
+        PARENT::start();
 
         eos = false;
-        input = inputs.item(0);
-        startInput(input);
         inputHelper = LINK(input->queryFromActivity()->queryContainer().queryHelper());
         inputStopped = false;
         preserveOrder = ((joinFlags & JFreorderable) == 0);
@@ -2051,9 +2049,7 @@ public:
         ActPrintLog("KJ: parallelLookups=%d, freeQSize=%d, preserveGroups=%s, preserveOrder=%s", parallelLookups, freeQSize, preserveGroups?"true":"false", preserveOrder?"true":"false");
 
         pool->setOrdering(preserveGroups, preserveOrder);
-        resultDistStream->setInput(input);
-
-        dataLinkStart();
+        resultDistStream->setInput(inputStream);
     }
     virtual void stop()
     {
@@ -2343,7 +2339,7 @@ public:
         return NULL;
     }
 
-    virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
+    virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
 
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {

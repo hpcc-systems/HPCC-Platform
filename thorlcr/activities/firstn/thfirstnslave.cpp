@@ -25,44 +25,37 @@
 
 #include "thfirstnslave.ipp"
 
-class CFirstNSlaveBase : public CSlaveActivity, public CThorDataLink
+class CFirstNSlaveBase : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
 protected:
     rowcount_t limit, skipCount;
-    Owned<IThorDataLink> input;
     bool stopped;
     IHThorFirstNArg *helper;
 
     virtual void doStop()
     {
-        stopInput(input);
-        dataLinkStop();
+        PARENT::stop();
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    CFirstNSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    CFirstNSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         stopped = true;
         helper = (IHThorFirstNArg *)container.queryHelper();
     }
-    ~CFirstNSlaveBase()
-    {
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
     }
-    void start()
+    virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input.set(inputs.item(0));
-        startInput(input);
+        PARENT::start();
         stopped = false;
-        dataLinkStart();
     }
-    void stop()
+    virtual void stop()
     {
         if (!stopped)
         {
@@ -70,19 +63,20 @@ public:
             stopped = true;
             doStop();
         }
-        input.clear();
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
         info.canReduceNumRows = true;
         info.totalRowsMax = helper->getLimit();
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 };
 
 class CFirstNSlaveLocal : public CFirstNSlaveBase
 {
+    typedef CFirstNSlaveBase PARENT;
+
     bool firstget;
     rowcount_t skipped;
 public:
@@ -91,10 +85,10 @@ public:
     }
 
 // IRowStream overrides
-    virtual bool isGrouped() { return false; }
-    void start()
+    virtual bool isGrouped() const override { return false; }
+    virtual void start()
     {
-        CFirstNSlaveBase::start();
+        PARENT::start();
         skipCount = validRC(helper->numToSkip());
         limit = (rowcount_t)helper->getLimit();
         firstget = true;
@@ -110,7 +104,7 @@ public:
                 firstget = false;
                 while (skipped<skipCount)
                 {
-                    OwnedConstThorRow row = input->ungroupedNextRow();
+                    OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                     {
                         stop();
@@ -121,7 +115,7 @@ public:
             }
             if (getDataLinkCount() < limit)
             {
-                OwnedConstThorRow row = input->ungroupedNextRow();
+                OwnedConstThorRow row = inputStream->ungroupedNextRow();
                 if (row)
                 {
                     dataLinkIncrement();
@@ -136,6 +130,8 @@ public:
 
 class CFirstNSlaveGrouped : public CFirstNSlaveBase
 {
+    typedef CFirstNSlaveBase PARENT;
+
     unsigned countThisGroup;
 public:
     CFirstNSlaveGrouped(CGraphElementBase *container) : CFirstNSlaveBase(container)
@@ -143,10 +139,10 @@ public:
     }
 
 // IRowStream overrides
-    virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
-    void start()
+    virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
+    virtual void start()
     {
-        CFirstNSlaveBase::start();
+        PARENT::start();
         skipCount = validRC(helper->numToSkip());
         limit = (rowcount_t)helper->getLimit();
         countThisGroup = 0;
@@ -163,7 +159,7 @@ public:
                     unsigned skipped = 0;
                     do
                     {
-                        OwnedConstThorRow row = input->nextRow();
+                        OwnedConstThorRow row = inputStream->nextRow();
                         if (row) 
                             skipped++;
                         else
@@ -180,7 +176,7 @@ public:
                 }
                 if (countThisGroup < limit)
                 {
-                    OwnedConstThorRow row = input->nextRow();
+                    OwnedConstThorRow row = inputStream->nextRow();
                     if (row)
                     {
                         countThisGroup++;
@@ -197,7 +193,7 @@ public:
                 { // consume rest of group
                     loop
                     {
-                        OwnedConstThorRow row = input->nextRow();
+                        OwnedConstThorRow row = inputStream->nextRow();
                         if (!row)
                             break;
                     }
@@ -211,52 +207,55 @@ public:
     }
 };
 
-class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ISmartBufferNotify
+class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNotify
 {
+    typedef CFirstNSlaveBase PARENT;
+
     Semaphore limitgot;
     CriticalSection crit;
     rowcount_t maxres, skipped, totallimit;
     bool firstget;
     ThorDataLinkMetaInfo inputMeta;
 
-//  ISmartBufferNotify methods used for global firstn only
-
 protected:
     virtual void doStop()
     {
         limitgot.signal(); // JIC not previously signalled by lookahead
         onInputFinished(getDataLinkCount()+skipped);
-        CFirstNSlaveBase::doStop();
+        PARENT::doStop();
     }
 
 public:
     CFirstNSlaveGlobal(CGraphElementBase *container) : CFirstNSlaveBase(container)
     {
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        CFirstNSlaveBase::init(data, slaveData);
+        PARENT::init(data, slaveData);
         mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
-    void start()
+    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {
-        CFirstNSlaveBase::start(); // adds to totalTime (common to local and global firstn)
-        ActivityTimer s(totalCycles, timeActivities);
+        PARENT::setInputStream(index, _input, consumerOrdered);
         totallimit = (rowcount_t)helper->getLimit();
+        rowcount_t _skipCount = validRC(helper->numToSkip()); // max
+        rowcount_t maxRead = (totallimit>(RCUNBOUND-_skipCount))?RCUNBOUND:totallimit+_skipCount;
+        setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), FIRSTN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false,
+                                          maxRead, this, &container.queryJob().queryIDiskUsage())); // if a very large limit don't bother truncating
+    }
+    virtual void start()
+    {
+        ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start(); // adds to totalTime (common to local and global firstn)
         limit = maxres = RCUNBOUND;
         skipCount = 0;
         skipped = 0;
         firstget = true;
         input->getMetaInfo(inputMeta);
-        rowcount_t _skipCount = validRC(helper->numToSkip()); // max
-        rowcount_t maxRead = (totallimit>(RCUNBOUND-_skipCount))?RCUNBOUND:totallimit+_skipCount;
-        input.setown(createDataLinkSmartBuffer(this, input,FIRSTN_SMART_BUFFER_SIZE,isSmartBufferSpillNeeded(this),false,
-                                          maxRead,this,true,&container.queryJob().queryIDiskUsage())); // if a very large limit don't bother truncating
-        startInput(input);
     }
-    void abort()
+    virtual void abort()
     {
-        CFirstNSlaveBase::abort();
+        PARENT::abort();
         limitgot.signal();
         CriticalBlock b(crit);
         cancelReceiveMsg(RANK_ALL, mpTag);
@@ -334,7 +333,7 @@ public:
                     return NULL;
                 while (skipped<skipCount)
                 {
-                    OwnedConstThorRow row = input->ungroupedNextRow();
+                    OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                     {
                         stop();
@@ -345,7 +344,7 @@ public:
             }
             if (getDataLinkCount() < limit)
             {
-                OwnedConstThorRow row = input->ungroupedNextRow();
+                OwnedConstThorRow row = inputStream->ungroupedNextRow();
                 if (row)
                 {
                     dataLinkIncrement();
@@ -357,15 +356,13 @@ public:
         return NULL;
     }
 
-    bool isGrouped() { return false; } // need to do different if is!
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return false; } // need to do different if is!
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
-        CFirstNSlaveBase::getMetaInfo(info);
+        PARENT::getMetaInfo(info);
         info.canBufferInput = true;
     }
-    //  ISmartBufferNotify methods used for global firstn only
-    virtual void onInputStarted(IException *) { } // not needed
-    virtual bool startAsync() { return false; }
+// ILookAheadStopNotify
     virtual void onInputFinished(rowcount_t count)  // count is the total read from input (including skipped)
     {
         // sneaky short circuit

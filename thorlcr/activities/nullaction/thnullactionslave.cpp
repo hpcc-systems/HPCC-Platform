@@ -24,33 +24,31 @@
 
 #include "thnullactionslave.ipp"
 
-class CNullActionSlaveActivity : public CSlaveActivity, public CThorDataLink
+class CNullActionSlaveActivity : public CSlaveActivity
 {
-public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
+    typedef CSlaveActivity PARENT;
 
-    CNullActionSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this) { }
+public:
+    CNullActionSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container) { }
     ~CNullActionSlaveActivity()
     {
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
     } 
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        dataLinkStart();
+        PARENT::start();
     }
-    void stop() { dataLinkStop(); }
-
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
         return NULL;
     }
-    bool isGrouped() { return false; }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return false; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
         info.totalRowsMin = info.totalRowsMax = 0;

@@ -17,45 +17,32 @@
 
 #include "thgroupaggregateslave.ipp"
 
-class GroupAggregateSlaveActivity : public CSlaveActivity, public CThorDataLink
+class GroupAggregateSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
 
-private:
     bool eof, ungroupedExistsAggregate;
     IHThorAggregateArg * helper;
-    IThorDataLink *input;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     GroupAggregateSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     { 
-        input = NULL;
     }
 
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
         helper = static_cast <IHThorAggregateArg *> (queryHelper());
     }
 
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         eof = false;
-        input=inputs.item(0);
-        startInput(input);
         ungroupedExistsAggregate = (container.getKind() == TAKexistsaggregate) && !input->isGrouped();
-        dataLinkStart();
     }
-
-    void stop()
-    {
-        stopInput(input);
-        dataLinkStop();
-    }
-
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -63,7 +50,7 @@ public:
             return NULL;
         RtlDynamicRowBuilder out(queryRowAllocator());
         size32_t sz = helper->clearAggregate(out);
-        OwnedConstThorRow row = input->nextRow();
+        OwnedConstThorRow row = inputStream->nextRow();
         if (row)
         {
             sz = helper->processFirst(out, row);
@@ -72,7 +59,7 @@ public:
             {
                 while (!abortSoon)
                 {
-                    row.setown(input->nextRow());
+                    row.setown(inputStream->nextRow());
                     if (!row)
                         break;
                     sz = helper->processNext(out, row);
@@ -91,14 +78,12 @@ public:
         return out.finalizeRowClear(sz);
     }
 
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.canReduceNumRows = true;
         info.fastThrough = true;
     }
-
-    virtual bool isGrouped() { return false; }
 };
 
 

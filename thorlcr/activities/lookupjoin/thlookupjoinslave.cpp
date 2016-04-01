@@ -796,9 +796,10 @@ struct HtEntry { rowidx_t index, count; };
  * and base common functionality for all and lookup varieties
  */
 template <class HTHELPER, class HELPER>
-class CInMemJoinBase : public CSlaveActivity, public CThorDataLink, public CAllOrLookupHelper<HELPER>, implements ISmartBufferNotify, implements IBCastReceive
+class CInMemJoinBase : public CSlaveActivity, public CAllOrLookupHelper<HELPER>, implements ILookAheadStopNotify, implements IBCastReceive
 {
-    Semaphore leftstartsem;
+    typedef CSlaveActivity PARENT;
+
     Owned<IException> leftexception;
 
     bool eos, eog, someSinceEog;
@@ -1283,8 +1284,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CInMemJoinBase(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this),
-        HELPERBASE((HELPER *)queryHelper()), rhs(*this)
+    CInMemJoinBase(CGraphElementBase *_container) : CSlaveActivity(_container), HELPERBASE((HELPER *)queryHelper()), rhs(*this)
     {
         gotRHS = false;
         nextRhsRow = 0;
@@ -1347,6 +1347,17 @@ public:
         }
     }
     HTHELPER *queryTable() { return table; }
+    void startLeftInput()
+    {
+        try
+        {
+            startInput(0);
+        }
+        catch(IException *e)
+        {
+            leftexception.setown(e);
+        }
+    }
 
 // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -1373,7 +1384,13 @@ public:
             }
         }
     }
-    virtual void start()
+    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
+    {
+        PARENT::setInputStream(index, _input, consumerOrdered);
+        if (0 == index)
+            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), LOOKUPJOINL_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(input->queryFromActivity()), grouped, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()));
+    }
+    virtual void start() override
     {
         assertex(inputs.ordinality() == 2);
 
@@ -1384,8 +1401,8 @@ public:
         leftMatch = false;
         rhsNext = NULL;
         rhsTableLen = 0;
-        leftITDL = inputs.item(0);
-        rightITDL = inputs.item(1);
+        leftITDL = queryInput(0);
+        rightITDL = queryInput(1);
         rightOutputMeta = rightITDL->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta();
         rightAllocator.setown(rightThorAllocator->getRowAllocator(rightOutputMeta, container.queryId()));
 
@@ -1426,7 +1443,6 @@ public:
         currentHashEntry.index = 0;
         currentHashEntry.count = 0;
 
-        right.set(rightITDL);
         rightSerializer.set(::queryRowSerializer(rightITDL));
         rightDeserializer.set(::queryRowDeserializer(rightITDL));
 
@@ -1438,21 +1454,20 @@ public:
             defaultRight.setown(rr.finalizeRowClear(rrsz));
         }
 
-        leftITDL = createDataLinkSmartBuffer(this,leftITDL,LOOKUPJOINL_SMART_BUFFER_SIZE,isSmartBufferSpillNeeded(leftITDL->queryFromActivity()),grouped,RCUNBOUND,this,false,&container.queryJob().queryIDiskUsage());
-        left.setown(leftITDL);
-        startInput(leftITDL);
-
+        CAsyncCallStart asyncLeftStart(std::bind(&CInMemJoinBase::startLeftInput, this));
         try
         {
-            startInput(rightITDL);
+            startInput(1);
         }
         catch (CATCHALL)
         {
-            leftstartsem.wait();
+            asyncLeftStart.wait();
             left->stop();
             throw;
         }
-        leftstartsem.wait();
+        asyncLeftStart.wait();
+        left.set(inputStream);
+        right.set(queryInputStream(1));
         if (leftexception)
         {
             right->stop();
@@ -1479,12 +1494,12 @@ public:
         clearHT();
         if (right)
         {
-            stopInput(right, "(R)");
+            stopInput(1, "(R)");
             right.clear();
         }
         if (broadcaster)
             broadcaster->reset();
-        stopInput(left, "(L)");
+        stopInput(0, "(L)");
         left.clear();
         dataLinkStop();
     }
@@ -1560,16 +1575,6 @@ public:
     {
         dbgassertex((sendItem==NULL) == stop); // if sendItem==NULL stop must = true, if sendItem != NULL stop must = false;
         rowProcessor->addBlock(sendItem);
-    }
-// ISmartBufferNotify
-    virtual void onInputStarted(IException *except)
-    {
-        leftexception.set(except);
-        leftstartsem.signal();
-    }
-    virtual bool startAsync()
-    {
-        return true;
     }
     virtual void onInputFinished(rowcount_t count)
     {
@@ -1669,6 +1674,7 @@ protected:
     using PARENT::mySlaveNum;
     using PARENT::tableProxy;
     using PARENT::gatheredRHSNodeStreams;
+    using PARENT::queryInput;
 
     IHash *leftHash, *rightHash;
     ICompare *compareRight, *compareLeftRight;
@@ -2245,7 +2251,7 @@ protected:
 
         Owned<IThorRowLoader> rowLoader = createThorRowLoader(*this, queryRowInterfaces(leftITDL), helper->isLeftAlreadyLocallySorted() ? NULL : compareLeft);
         left.setown(rowLoader->load(left, abortSoon, false));
-        leftITDL = inputs.item(0); // reset
+        leftITDL = queryInput(0); // reset
         ActPrintLog("LHS loaded/sorted");
 
         // rightStream is sorted
@@ -2539,7 +2545,7 @@ public:
         return false;
     }
 // IThorSlaveActivity overloaded methods
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         PARENT::init(data, slaveData);
 
@@ -2555,7 +2561,7 @@ public:
             lhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), lhsDistributeTag, false, NULL, "LHS"));
         }
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
@@ -2607,7 +2613,7 @@ public:
         dataLinkIncrement();
         return row.getClear();
     }
-    virtual void abort()
+    virtual void abort() override
     {
         PARENT::abort();
         if (rhsDistributor)
@@ -2617,7 +2623,7 @@ public:
         if (joinHelper)
             joinHelper->stop();
     }
-    virtual void stop()
+    virtual void stop() override
     {
         if (isGlobal())
         {
@@ -2644,9 +2650,9 @@ public:
         joinHelper.clear();
         PARENT::stop();
     }
-    virtual bool isGrouped()
+    virtual bool isGrouped() const override
     {
-        return isSmart() ? false : inputs.item(0)->isGrouped();
+        return isSmart() ? false : queryInput(0)->isGrouped();
     }
     virtual void bCastReceive(CSendItem *sendItem, bool stop) // NB: only called on channel 0
     {
@@ -3148,7 +3154,7 @@ public:
         }
         PARENT::stop();
     }
-    virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
+    virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
 };
 
 

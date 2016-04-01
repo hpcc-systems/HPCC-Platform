@@ -28,9 +28,10 @@
 #include "thactivityutil.ipp"
 #include "thspillslave.ipp"
 
-class SpillSlaveActivity : public CSlaveActivity, public CThorDataLink
+class SpillSlaveActivity : public CSlaveActivity
 {
-    IThorDataLink *input;
+    typedef CSlaveActivity PARENT;
+
     StringBuffer fileName;
     Owned<IPartDescriptor> partDesc;
     Owned<IExtRowWriter> out;
@@ -43,9 +44,7 @@ class SpillSlaveActivity : public CSlaveActivity, public CThorDataLink
     unsigned usageCount;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    SpillSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    SpillSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         compress = false;
         grouped = false;
@@ -156,14 +155,11 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         uncompressedBytesWritten = 0;
         if (!container.queryJob().queryUseCheckpoints())
             container.queryTempHandler()->registerFile(fileName.str(), container.queryOwner().queryGraphId(), usageCount, true);
-        input = inputs.item(0);
-        startInput(input);
         
-        dataLinkStart();
-
         open();
         hadrow = false;
     }
@@ -171,8 +167,7 @@ public:
     {
         readRest();
         close();
-        stopInput(input);
-        dataLinkStop();
+        PARENT::stop();
     }
 
     CATCH_NEXTROW()
@@ -181,7 +176,7 @@ public:
         if (abortSoon) 
             return NULL;
 
-        OwnedConstThorRow row = grouped?input->nextRow():input->ungroupedNextRow();
+        OwnedConstThorRow row = grouped?inputStream->nextRow():inputStream->ungroupedNextRow();
         if (row) {
             hadrow = true;
             dataLinkIncrement();
@@ -194,12 +189,12 @@ public:
         return NULL;
     }
 
-    virtual bool isGrouped() { return grouped; }
+    virtual bool isGrouped() const override { return grouped; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
         info.fastThrough = true; // ish
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 
 };

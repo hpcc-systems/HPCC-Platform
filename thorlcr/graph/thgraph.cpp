@@ -2496,7 +2496,7 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
     Owned<IConstWUGraph> graph = localWU->getGraph(graphName);
     graphXGMML.setown(graph->getXGMMLTree(false));
     if (!graphXGMML)
-    	throwUnexpected();
+        throwUnexpected();
 }
 
 void CJobBase::init()

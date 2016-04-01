@@ -1938,31 +1938,25 @@ IHashDistributor *createPullHashDistributor(CActivityBase *activity, ICommunicat
 #endif
 
 
-class HashDistributeSlaveBase : public CSlaveActivity, public CThorDataLink, implements IStopInput
+class HashDistributeSlaveBase : public CSlaveActivity, implements IStopInput
 {
-    IHashDistributor *distributor;
-    IThorDataLink *input;
-    Owned<IRowStream> out;
-    bool inputstopped;
-    CriticalSection stopsect;
-    mptag_t mptag;
-protected:
-    Owned<IRowStream> instrm;
-    IHash *ihash;
-    ICompare *mergecmp;     // if non-null is merge distribute
-    bool eofin;
-public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
+    typedef CSlaveActivity PARENT;
 
+    IHashDistributor *distributor = nullptr;
+    bool inputstopped = true;
+    CriticalSection stopsect;
+    mptag_t mptag = TAG_NULL;
+protected:
+    Owned<IRowStream> out;
+    Owned<IRowStream> instrm;
+    IHash *ihash = nullptr;
+    ICompare *mergecmp = nullptr;     // if non-null is merge distribute
+    bool eofin = false;
+    bool setupDist = true;
+public:
     HashDistributeSlaveBase(CGraphElementBase *_container)
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     {
-        input = NULL;
-        eofin = false;
-        mptag = TAG_NULL;
-        distributor = NULL;
-        mergecmp = NULL;
-        ihash = NULL;
     }
     ~HashDistributeSlaveBase()
     {
@@ -1974,7 +1968,7 @@ public:
             distributor->Release();
         }
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
         mptag = container.queryJobChannel().deserializeMPTag(data);
@@ -1989,41 +1983,27 @@ public:
     void stopInput()
     {
         CriticalBlock block(stopsect);  // can be called async by distribute
-        if (!inputstopped) {
-            CSlaveActivity::stopInput(input);
+        if (!inputstopped)
+        {
+            PARENT::stop();
             inputstopped = true;
         }
     }
-    void start(bool passthrough)
+    void doDistSetup()
     {
-        // bit messy
-        eofin = false;
-        if (!instrm.get()) // derived class may override
-        {
-            input = inputs.item(0);
-            startInput(input);
-            inputstopped = false;
-            instrm.set(input);
-            if (passthrough)
-                out.set(instrm);
-        }
-        else if (passthrough)
-        {
-            out.set(instrm);
-        }
-        if (!passthrough)
-        {
-            Owned<IThorRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
-            out.setown(distributor->connect(myRowIf, instrm, ihash, mergecmp));
-        }
-        dataLinkStart();
+        Owned<IThorRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
+        out.setown(distributor->connect(myRowIf, instrm, ihash, mergecmp));
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        start(false);
+        PARENT::start();
+        eofin = false;
+        instrm.set(inputStream);
+        if (setupDist)
+            doDistSetup();
     }
-    void stop()
+    virtual void stop() override
     {
         ActPrintLog("HASHDISTRIB: stopping");
         if (out)
@@ -2038,14 +2018,13 @@ public:
         }
         stopInput();
         instrm.clear();
-        dataLinkStop();
     }
-    void kill()
+    virtual void kill() override
     {
         ActPrintLog("HASHDISTRIB: kill");
         CSlaveActivity::kill();
     }
-    void abort()
+    virtual void abort() override
     {
         CSlaveActivity::abort();
         if (distributor)
@@ -2054,20 +2033,22 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities); // careful not to call again in derivatives
-        if (abortSoon||eofin) {
+        if (abortSoon||eofin)
+        {
             eofin = true;
             return NULL;
         }
         OwnedConstThorRow row = out->ungroupedNextRow();
-        if (!row.get()) {
+        if (!row.get())
+        {
             eofin =  true;
             return NULL;
         }
         dataLinkIncrement();
         return row.getClear();
     }
-    virtual bool isGrouped() { return false; }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return false; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.canStall = true; // currently
@@ -2082,7 +2063,7 @@ class HashDistributeSlaveActivity : public HashDistributeSlaveBase
 {
 public:
     HashDistributeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container) { }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         HashDistributeSlaveBase::init(data, slaveData);
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
@@ -2132,8 +2113,6 @@ class CHDRproportional: public CSimpleInterface, implements IHash
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CHDRproportional(CActivityBase *_activity, IHThorHashDistributeArg *_args,mptag_t _mastertag) : activity(_activity)
     {
         args = _args;
@@ -2157,7 +2136,7 @@ public:
         free(sizes);
     }
 
-    IRowStream *calc(CSlaveActivity *activity, IThorDataLink *in,bool &passthrough)
+    IRowStream *calc(CSlaveActivity *activity, IThorDataLink *in, IEngineRowStream *inputStream, bool &passthrough)
     {
         // first - find size
         serializer.set(activity->queryRowSerializer());
@@ -2179,7 +2158,6 @@ public:
             {
                 ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "REDISTRIBUTE size unknown, spilling to disk");
                 MemoryAttr ma;
-                activity->startInput(in);
                 if (activity->getOptBool(THOROPT_COMPRESS_SPILLS, true))
                 {
                     rwFlags |= rw_compress;
@@ -2192,14 +2170,14 @@ public:
                     throw MakeStringException(-1,"Could not created file %s",tempname.str());
                 loop
                 {
-                    const void * row = in->ungroupedNextRow();
+                    const void * row = inputStream->ungroupedNextRow();
                     if (!row)
                         break;
                     out->putRow(row);
                 }
                 out->flush();
                 sz = out->getPosition();
-                activity->stopInput(in);
+                activity->stop();
             }
             ret.setown(createRowStream(tempfile, activity, rwFlags));
         }
@@ -2326,41 +2304,43 @@ public:
             sizes[self] -= rs;
         return self;
     }
-
 };
 
 
 class ReDistributeSlaveActivity : public HashDistributeSlaveBase
 {
+    typedef HashDistributeSlaveBase PARENT;
+
     Owned<CHDRproportional> partitioner;
 public:
     ReDistributeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container) { }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         HashDistributeSlaveBase::init(data, slaveData);
         mptag_t tag = container.queryJobChannel().deserializeMPTag(data);
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
         partitioner.setown(new CHDRproportional(this, distribargs,tag));
         ihash = partitioner;
+        setupDist = false;
     }
-
-    void start()
+    virtual void start() override
     {
+        ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         bool passthrough;
-        {
-            ActivityTimer s(totalCycles, timeActivities);
-            instrm.setown(partitioner->calc(this,inputs.item(0),passthrough));  // may return NULL
-        }
-        HashDistributeSlaveBase::start(passthrough);
+        Owned<IRowStream> calcStream = partitioner->calc(this, input, inputStream, passthrough);  // may return NULL
+        if (calcStream)
+            instrm.setown(calcStream.getClear());
+        if (passthrough)
+            out.set(instrm);
+        else
+            doDistSetup();
     }
-
-    void stop()
+    virtual void stop() override
     {
         HashDistributeSlaveBase::stop();
-        if (instrm) {
-            instrm.clear();
-            // should remove here rather than later?
-        }
+        if (instrm)
+            instrm.clear(); // should remove here rather than later?
     }
 };
 
@@ -2598,7 +2578,7 @@ public:
     }
 };
 
-class CBucket : public CSimpleInterface, implements IInterface
+class CBucket : public CSimpleInterface
 {
     HashDedupSlaveActivityBase &owner;
     IThorRowInterfaces *rowIf, *keyIf;
@@ -2614,8 +2594,6 @@ class CBucket : public CSimpleInterface, implements IInterface
 
     void doSpillHashTable();
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CBucket(HashDedupSlaveActivityBase &_owner, IThorRowInterfaces *_rowIf, IThorRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _bucketN, CHashTableRowTable *_htRows);
     bool addKey(const void *key, unsigned hashValue);
     bool addRow(const void *row, unsigned hashValue);
@@ -2773,11 +2751,13 @@ public:
     }
 };
 
-class HashDedupSlaveActivityBase : public CSlaveActivity, public CThorDataLink
+class HashDedupSlaveActivityBase : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
 protected:
-    IRowStream *input;      // can be changed
-    IRowStream *initialInput;
+    IRowStream *distInput = nullptr;
+    IRowStream *initialInput = nullptr;
     Owned<IRowStream> currentInput;
     bool inputstopped, eos, lastEog, extractKey, local, isVariable, grouped;
     IHThorHashDedupArg *helper;
@@ -2827,9 +2807,8 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     HashDedupSlaveActivityBase(CGraphElementBase *_container, bool _local)
-        : CSlaveActivity(_container), CThorDataLink(this), local(_local)
+        : CSlaveActivity(_container), local(_local)
     {
-        input = initialInput = NULL;
         initialNumBuckets = 0;
         inputstopped = eos = lastEog = extractKey = local = isVariable = grouped = false;
         helper = NULL;
@@ -2887,15 +2866,16 @@ public:
         }
         grouped = container.queryGrouped();
     }
-    void start()
+    virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         inputstopped = false;
         eos = lastEog = false;
-        startInput(inputs.item(0));
         ThorDataLinkMetaInfo info;
-        inputs.item(0)->getMetaInfo(info);
-        initialInput = input = inputs.item(0);
+        queryInput(0)->getMetaInfo(info);
+        distInput = inputStream;
+        initialInput = distInput;
         unsigned div = local ? 1 : queryJob().querySlaves(); // if global, hash values already modulated by # slaves
         bucketHandler.setown(new CBucketHandler(*this, this, keyRowInterfaces, iHash, iKeyHash, rowKeyCompare, extractKey, 0, div));
         initialNumBuckets = container.queryXGMML().getPropInt("hint[@name=\"num_buckets\"]/@value");
@@ -2908,14 +2888,13 @@ public:
         }
         ensureNumHashTables(initialNumBuckets);
         bucketHandler->init(initialNumBuckets);
-        dataLinkStart();
     }
     void stopInput()
     {
         if (!inputstopped)
         {
             SpinBlock b(stopSpin);
-            CSlaveActivity::stopInput(inputs.item(0));
+            PARENT::stop();
             inputstopped = true;
         }
     }
@@ -2938,7 +2917,7 @@ public:
             OwnedConstThorRow row;
             {
                 SpinBlock b(stopSpin);
-                row.setown(grouped?input->nextRow():input->ungroupedNextRow());
+                row.setown(grouped?distInput->nextRow():distInput->ungroupedNextRow());
             }
             if (row)
             {
@@ -2974,7 +2953,7 @@ public:
                                 {
                                     lastEog = true;
                                     // reset for next group
-                                    input = initialInput;
+                                    distInput = initialInput;
                                     bucketHandler.setown(new CBucketHandler(*this, this, keyRowInterfaces, iHash, iKeyHash, rowKeyCompare, extractKey, 0, 1));
                                     ensureNumHashTables(initialNumBuckets); // resets
                                     bucketHandler->init(initialNumBuckets);
@@ -2997,12 +2976,12 @@ public:
                     }
                 }
                 assertex(currentInput);
-                input = currentInput;
+                distInput = currentInput;
             }
         }
     }
 
-    virtual bool isGrouped() { return grouped; }
+    virtual bool isGrouped() const override { return grouped; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
 friend class CBucketHandler;
 friend class CHashTableRowTable;
@@ -3454,7 +3433,6 @@ public:
     {
         ActPrintLog("stopping");
         stopInput();
-        dataLinkStop();
     }
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
@@ -3494,21 +3472,21 @@ public:
         CriticalBlock block(stopsect);  // can be called async by distribute
         HashDedupSlaveActivityBase::stopInput();
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         HashDedupSlaveActivityBase::init(data, slaveData);
         mptag = container.queryJobChannel().deserializeMPTag(data);
         distributor = createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, true, this);
     }
-    void start()
+    virtual void start()
     {
         HashDedupSlaveActivityBase::start();
         ActivityTimer s(totalCycles, timeActivities);
         Owned<IThorRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
-        instrm.setown(distributor->connect(myRowIf, input, iHash, iCompare));
-        input = instrm.get();
+        instrm.setown(distributor->connect(myRowIf, distInput, iHash, iCompare));
+        distInput = instrm.get();
     }
-    void stop()
+    virtual void stop()
     {
         ActPrintLog("stopping");
         if (instrm)
@@ -3519,15 +3497,14 @@ public:
         distributor->disconnect(true);
         distributor->join();
         stopInput();
-        dataLinkStop();
     }
-    void abort()
+    virtual void abort()
     {
         HashDedupSlaveActivityBase::abort();
         if (distributor)
             distributor->abort();
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
         info.canStall = true;
@@ -3538,10 +3515,14 @@ public:
 //===========================================================================
 
 
-class HashJoinSlaveActivity : public CSlaveActivity, public CThorDataLink, implements IStopInput
+class HashJoinSlaveActivity : public CSlaveActivity, implements IStopInput
 {
-    IThorDataLink *inL;
-    IThorDataLink *inR;
+    typedef CSlaveActivity PARENT;
+
+    IThorDataLink *inL = nullptr;
+    IThorDataLink *inR = nullptr;
+    IEngineRowStream *leftInputStream = nullptr;
+    IEngineRowStream *rightInputStream = nullptr;
     MemoryBuffer ptrbuf;
     IHThorHashJoinArg *joinargs;
     Owned<IJoinHelper> joinhelper;
@@ -3564,7 +3545,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     HashJoinSlaveActivity(CGraphElementBase *_container)
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     {
         lhsProgressCount = rhsProgressCount = 0;
         mptag = TAG_NULL;
@@ -3576,7 +3557,7 @@ public:
         strmR.clear();
         joinhelper.clear();
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         joinargs = (IHThorHashJoinArg *)queryHelper();
         appendOutputLinked(this);
@@ -3584,19 +3565,18 @@ public:
         mptag2 = container.queryJobChannel().deserializeMPTag(data);
         ActPrintLog("HASHJOIN: init tags %d,%d",(int)mptag,(int)mptag2);
     }
-    void start()
+    virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
+        startAllInputs();
         inputLstopped = true;
         inputRstopped = true;
         leftdone = false;
         eof = false;
         ActPrintLog("HASHJOIN: starting");
-        inL = inputs.item(0);
-        startInput(inL);
+        inL = queryInput(0);
         inputLstopped = false;
-        inR = inputs.item(1);
-        startInput(inR);
+        inR = queryInput(1);
         inputRstopped = false;
         IHash *ihashL = joinargs->queryHashLeft();
         IHash *ihashR = joinargs->queryHashRight();
@@ -3604,7 +3584,7 @@ public:
         ICompare *icompareR = joinargs->queryCompareRight();
         if (!lhsDistributor)
             lhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, this, "LHS"));
-        Owned<IRowStream> reader = lhsDistributor->connect(queryRowInterfaces(inL), inL, ihashL, icompareL);
+        Owned<IRowStream> reader = lhsDistributor->connect(queryRowInterfaces(inL), leftInputStream, ihashL, icompareL);
         Owned<IThorRowLoader> loaderL = createThorRowLoader(*this, ::queryRowInterfaces(inL), icompareL, stableSort_earlyAlloc, rc_allDisk, SPILL_PRIORITY_HASHJOIN);
         strmL.setown(loaderL->load(reader, abortSoon));
         loaderL.clear();
@@ -3615,7 +3595,7 @@ public:
         leftdone = true;
         if (!rhsDistributor)
             rhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), mptag2, false, this, "RHS"));
-        reader.setown(rhsDistributor->connect(queryRowInterfaces(inR), inR, ihashR, icompareR));
+        reader.setown(rhsDistributor->connect(queryRowInterfaces(inR), rightInputStream, ihashR, icompareR));
         Owned<IThorRowLoader> loaderR = createThorRowLoader(*this, ::queryRowInterfaces(inR), icompareR, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_HASHJOIN);;
         strmR.setown(loaderR->load(reader, abortSoon));
         loaderR.clear();
@@ -3654,20 +3634,22 @@ public:
     void stopInputL()
     {
         CriticalBlock block(stopsect);  // can be called async by distribute
-        if (!inputLstopped) {
-            CSlaveActivity::stopInput(inL);
+        if (!inputLstopped)
+        {
+            PARENT::stopInput(0);
             inputLstopped = true;
         }
     }
     void stopInputR()
     {
         CriticalBlock block(stopsect);  // can be called async by distribute
-        if (!inputRstopped) {
-            CSlaveActivity::stopInput(inR);
+        if (!inputRstopped)
+        {
+            PARENT::stopInput(1);
             inputRstopped = true;
         }
     }
-    void stop()
+    virtual void stop()
     {
         ActPrintLog("HASHJOIN: stopping");
         stopInputL();
@@ -3710,7 +3692,7 @@ public:
         }
         return NULL;
     }
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() const override { return false; }
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
@@ -3859,10 +3841,11 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
 #pragma warning(push)
 #pragma warning( disable : 4355 ) // 'this' : used in base member initializer list
 #endif
-class CHashAggregateSlave : public CSlaveActivity, public CThorDataLink, implements IHThorRowAggregator
+class CHashAggregateSlave : public CSlaveActivity, implements IHThorRowAggregator
 {
+    typedef CSlaveActivity PARENT;
+
     IHThorHashAggregateArg *helper;
-    IThorDataLink *input;
     mptag_t mptag;
     Owned<RowAggregator> localAggTable;
     bool eos;
@@ -3875,12 +3858,12 @@ class CHashAggregateSlave : public CSlaveActivity, public CThorDataLink, impleme
             localAggTable->start(queryRowAllocator());
             while (!abortSoon)
             {
-                OwnedConstThorRow row = input->nextRow();
+                OwnedConstThorRow row = inputStream->nextRow();
                 if (!row)
                 {
                     if (container.queryGrouped())
                         break;
-                    row.setown(input->nextRow());
+                    row.setown(inputStream->nextRow());
                     if (!row)
                         break;
                 }
@@ -3901,12 +3884,12 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CHashAggregateSlave(CGraphElementBase *_container)
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     {
         mptag = TAG_NULL;
         eos = true;
     }
-    void init(MemoryBuffer & data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {
         helper = static_cast <IHThorHashAggregateArg *> (queryHelper());
         appendOutputLinked(this);
@@ -3918,11 +3901,10 @@ public:
         }
         localAggTable.setown(new RowAggregator(*helper, *helper));
     }
-    void start()
+    virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input = inputs.item(0);
-        startInput(input);
+        PARENT::start();
         doNextGroup(); // or local set if !grouped
         if (!container.queryGrouped())
             ActPrintLog("Table before distribution contains %d entries", localAggTable->elementCount());
@@ -3933,16 +3915,14 @@ public:
             ActPrintLog("Table after distribution contains %d entries", localAggTable->elementCount());
         }
         eos = false;
-        dataLinkStart();
     }
-    void stop()
+    virtual void stop()
     {
         ActPrintLog("HASHAGGREGATE: stopping");
         localAggTable->reset();
-        stopInput(input);
-        dataLinkStop();
+        PARENT::stop();
     }
-    void abort()
+    virtual void abort()
     {
         CSlaveActivity::abort();
         if (distributor)
@@ -3968,8 +3948,8 @@ public:
             eos = true;
         return NULL;
     }
-    bool isGrouped() { return false; }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return false; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
         info.canStall = true;
@@ -3986,44 +3966,36 @@ public:
 #endif
 
 
-class CHashDistributeSlavedActivity : public CSlaveActivity, public CThorDataLink
+class CHashDistributeSlavedActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     IHash *ihash;
-    IThorDataLink *input;
     unsigned myNode, nodes;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CHashDistributeSlavedActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    CHashDistributeSlavedActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
         ihash = distribargs->queryHash();
-        input = NULL;
         myNode = queryJobChannel().queryMyRank()-1;
         nodes = container.queryJob().querySlaves();
     }
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input = inputs.item(0);
-        input->start();
-        dataLinkStart();
-    }
-    virtual void stop()
-    {
-        if (input)
-            input->stop();
-        dataLinkStop();
+        PARENT::start();
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        OwnedConstThorRow row = input->ungroupedNextRow();
+        OwnedConstThorRow row = inputStream->ungroupedNextRow();
         if (!row)
             return NULL;
         if (myNode != (ihash->hash(row.get()) % nodes))
@@ -4041,8 +4013,8 @@ public:
         dataLinkIncrement();
         return row.getClear();
     }
-    virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         if (input)

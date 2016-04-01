@@ -25,10 +25,11 @@
 #include "thexception.hpp"
 
 
-class NormalizeSlaveActivity : public CSlaveActivity, public CThorDataLink
+class NormalizeSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     IHThorNormalizeArg * helper;
-    IThorDataLink *input;
     OwnedConstThorRow row;
     unsigned curRow;
     unsigned numThisRow;
@@ -38,32 +39,23 @@ class NormalizeSlaveActivity : public CSlaveActivity, public CThorDataLink
 
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     NormalizeSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     {
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
         helper = static_cast <IHThorNormalizeArg *> (queryHelper());
         allocator.set(queryRowAllocator());
     }
-    void start()
+    virtual void start() override
     { 
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         numThisRow = 0;
         curRow = 0;
         anyThisGroup = false;
-        input = inputs.item(0);
-        startInput(input);
-        dataLinkStart();
-    }
-    void stop()
-    { 
-        stopInput(input);
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {
@@ -74,9 +66,9 @@ public:
             {
                 if (abortSoon) 
                     return NULL;
-                row.setown(input->nextRow());
+                row.setown(inputStream->nextRow());
                 if (!row&&!anyThisGroup)
-                    row.setown(input->nextRow());
+                    row.setown(inputStream->nextRow());
                 if(!row) {
                     anyThisGroup = false;
                     return NULL;
@@ -95,8 +87,8 @@ public:
             }
         }
     }
-    virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;
@@ -108,11 +100,12 @@ public:
 ////////////////////
 
 
-class CNormalizeChildSlaveActivity : public CSlaveActivity, public CThorDataLink
+class CNormalizeChildSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     IHThorNormalizeChildArg *helper;
     INormalizeChildIterator *cursor;
-    IThorDataLink *input;
     OwnedConstThorRow childBuf;
     void * curChildRow;
     unsigned curRow;
@@ -120,14 +113,12 @@ class CNormalizeChildSlaveActivity : public CSlaveActivity, public CThorDataLink
     Owned<IEngineRowAllocator> allocator;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CNormalizeChildSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     { 
     }
-    virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
         helper = static_cast <IHThorNormalizeChildArg *> (queryHelper());
@@ -135,19 +126,12 @@ public:
         cursor = helper->queryIterator();
         allocator.set(queryRowAllocator());
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input = inputs.item(0);
-        startInput(input);
+        PARENT::start();
         anyThisGroup = false;
-        dataLinkStart();
         curChildRow = NULL;
-    }
-    void stop()
-    {
-        stopInput(input);
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {
@@ -155,14 +139,14 @@ public:
         loop {
             while(!curChildRow) {
                 curRow = 0;
-                childBuf.setown(input->nextRow());
+                childBuf.setown(inputStream->nextRow());
                 if (!childBuf) {
                     if (anyThisGroup) 
                     {
                         anyThisGroup = false;
                         return NULL;
                     }
-                    childBuf.setown(input->nextRow());
+                    childBuf.setown(inputStream->nextRow());
                     if (!childBuf) // eos
                         return NULL;
                 }
@@ -180,7 +164,7 @@ public:
             }
         }
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;
@@ -188,10 +172,11 @@ public:
     }
 };
 
-class CNormalizeLinkedChildSlaveActivity : public CSlaveActivity, public CThorDataLink
+class CNormalizeLinkedChildSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     IHThorNormalizeLinkedChildArg *helper;
-    IThorDataLink *input;
     bool anyThisGroup;
 
     OwnedConstThorRow curParent;
@@ -201,7 +186,7 @@ class CNormalizeLinkedChildSlaveActivity : public CSlaveActivity, public CThorDa
     {
         loop
         {
-            curParent.setown(input->nextRow());
+            curParent.setown(inputStream->nextRow());
             if (!curParent)
             {
                 if (anyThisGroup)
@@ -209,7 +194,7 @@ class CNormalizeLinkedChildSlaveActivity : public CSlaveActivity, public CThorDa
                     anyThisGroup = false;
                     return false;
                 }
-                curParent.setown(input->nextRow());
+                curParent.setown(inputStream->nextRow());
                 if (!curParent)
                     return false;
             }
@@ -221,30 +206,21 @@ class CNormalizeLinkedChildSlaveActivity : public CSlaveActivity, public CThorDa
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CNormalizeLinkedChildSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     { 
     }
-    virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
         helper = static_cast <IHThorNormalizeLinkedChildArg *> (queryHelper());
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input = inputs.item(0);
-        startInput(input);
+        PARENT::start();
         anyThisGroup = false;
-        dataLinkStart();
-    }
-    void stop()
-    {
-        stopInput(input);
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {
@@ -268,7 +244,7 @@ public:
             }
         }
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;

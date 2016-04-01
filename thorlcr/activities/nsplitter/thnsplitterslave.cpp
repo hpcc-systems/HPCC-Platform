@@ -25,16 +25,11 @@
 interface ISharedSmartBuffer;
 class NSplitterSlaveActivity;
 
-class CSplitterOutputBase : public CSimpleInterface, implements IRowStream
+class CSplitterOutputBase : public CSimpleInterfaceOf<IStartableEngineRowStream>, public COutputTiming
 {
-protected:
-    ActivityTimeAccumulator totalCycles;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-    virtual void start() = 0;
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
-    virtual unsigned __int64 queryTotalCycles() const { return totalCycles.totalCycles; }
+// IEngineRowStream
+    virtual void resetEOF() { throwUnexpected(); }
 };
 
 class CSplitterOutput : public CSplitterOutputBase
@@ -46,15 +41,11 @@ class CSplitterOutput : public CSplitterOutputBase
     rowcount_t rec, max;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned output);
 
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info);
-
-    virtual void start();
-    virtual void stop();
-    virtual const void *nextRow();
+    virtual void start() override;
+    virtual void stop() override;
+    virtual const void *nextRow() override;
 };
 
 
@@ -64,6 +55,8 @@ public:
 
 class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBufferCallback
 {
+    typedef CSlaveActivity PARENT;
+
     bool spill;
     bool eofHit;
     bool inputsConfigured;
@@ -72,10 +65,12 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     PointerArrayOf<Semaphore> stalledWriters;
     unsigned nstopped;
     rowcount_t recsReady;
-    IThorDataLink *input;
-    bool grouped;
     Owned<IException> startException, writeAheadException;
     Owned<ISharedSmartBuffer> smartBuf;
+    bool inputPrepared = false;
+    bool inputConnected = false;
+    IPointerArrayOf<IThorDataLinkExt> delayInputsList;
+
 
     // NB: CWriter only used by 'balanced' splitter, which blocks write when too far ahead
     class CWriter : public CSimpleInterface, IThreaded
@@ -115,103 +110,118 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     class CNullInput : public CSplitterOutputBase
     {
     public:
-        virtual const void *nextRow() { throwUnexpected(); return NULL; }
-        virtual void stop() { throwUnexpected(); }
-        virtual void start() { throwUnexpected(); }
-        virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
-        {
-            ::initMetaInfo(info);
-        }
+        virtual void start() override { throwUnexpected(); }
+        virtual const void *nextRow() override { throwUnexpected(); return NULL; }
+        virtual void stop() override { throwUnexpected(); }
     };
     class CInputWrapper : public CSplitterOutputBase
     {
-        IThorDataLink *input;
+        IRowStream *inputStream = nullptr;
         NSplitterSlaveActivity &activity;
 
     public:
-        CInputWrapper(NSplitterSlaveActivity &_activity, IThorDataLink *_input) : activity(_activity), input(_input) { }
-        virtual const void *nextRow()
+        CInputWrapper(NSplitterSlaveActivity &_activity) : activity(_activity) { }
+        virtual void start() override
+        {
+            activity.start();
+            inputStream = activity.inputStream;
+        }
+        virtual const void *nextRow() override
         {
             ActivityTimer t(totalCycles, activity.queryTimeActivities());
-            return input->nextRow();
+            return inputStream->nextRow();
         }
-        virtual void stop() { input->stop(); }
-        virtual void start()
-        {
-            ActivityTimer s(totalCycles, activity.queryTimeActivities());
-            input->start();
-        }
-        virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
-        {
-            input->getMetaInfo(info);
-        }
+        virtual void stop() override { activity.stop(); }
     };
-
-    class CDelayedInput : public CSimpleInterface, public CThorDataLink
+    class CDelayedInput : public CSimpleInterfaceOf<IThorDataLinkExt>, public CEdgeProgress, implements IEngineRowStream
     {
-        Owned<CSplitterOutputBase> input;
+        Owned<CSplitterOutputBase> inputStream;
         Linked<NSplitterSlaveActivity> activity;
         mutable SpinLock processActiveLock;
-
-        unsigned id;
+        unsigned outputIdx = 0;
 
     public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IThorDataLinkExt>);
 
-        CDelayedInput(NSplitterSlaveActivity &_activity) : CThorDataLink(&_activity), activity(&_activity), id(0) { }
-        void setInput(CSplitterOutputBase *_input, unsigned _id=0)
+        CDelayedInput(NSplitterSlaveActivity &_activity) : CEdgeProgress(&_activity), activity(&_activity) { }
+        void setInput(CSplitterOutputBase *_inputStream)
         {
             SpinBlock b(processActiveLock);
-            input.setown(_input);
-            id = _id;
+            inputStream.setown(_inputStream);
         }
-        virtual const void *nextRow()
+        const void *nextRow()
         {
-            OwnedConstThorRow row = input->nextRow();
+            OwnedConstThorRow row = inputStream->nextRow();
             if (row)
                 dataLinkIncrement();
             return row.getClear();
         }
-        virtual void stop()
+        void stop()
         {
-            input->stop();
+            inputStream->stop();
             dataLinkStop();
+        }
+        void resetEOF()
+        {
+            inputStream->resetEOF();
         }
     // IThorDataLink impl.
         virtual void start()
         {
             activity->ensureInputsConfigured();
-            input->start();
-            dataLinkStart(id);
+            inputStream->start();
+            dataLinkStart();
         }
-        virtual bool isGrouped() { return activity->inputs.item(0)->isGrouped(); }
-        virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+        virtual CSlaveActivity *queryFromActivity() override { return activity; }
+        virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override { activity->getMetaInfo(info); }
+        virtual void dataLinkSerialize(MemoryBuffer &mb) const { CEdgeProgress::dataLinkSerialize(mb); }
+        virtual bool isGrouped() const { return activity->isGrouped(); }
+        virtual IOutputMetaData * queryOutputMeta() const { return activity->queryOutputMeta(); }
+        virtual unsigned queryOutputIdx() const { return outputIdx; }
+        virtual bool isInputOrdered(bool consumerOrdered) const { return activity->isInputOrdered(consumerOrdered); }
+        virtual void setOutputStream(unsigned index, IEngineRowStream *stream) { activity->setOutputStream(index, stream); }
+        virtual IStrandJunction *getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
         {
-            initMetaInfo(info);
-            if (input)
-                input->getMetaInfo(info);
-            else
-                activity->inputs.item(0)->getMetaInfo(info);
-            info.canStall = !activity->spill;
+            activity->connectInput(consumerOrdered);
+            streams.append(this);
+            return NULL;
         }
-        virtual unsigned __int64 queryTotalCycles() const
+        virtual unsigned __int64 queryTotalCycles() const override
         {
             SpinBlock b(processActiveLock);
-            if (!input)
+            if (!inputStream)
                 return 0;
-            return input->queryTotalCycles();
+            return inputStream->queryTotalCycles();
         }
+        virtual unsigned __int64 queryEndCycles() const
+        {
+            SpinBlock b(processActiveLock);
+            return inputStream->queryEndCycles();
+        }
+        virtual void debugRequest(MemoryBuffer &mb) { activity->debugRequest(mb); }
+    // Stepping methods
+        virtual IInputSteppingMeta *querySteppingMeta() { return NULL; }
+        virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
+    // IThorDataLinkExt
+        virtual void setOutputIdx(unsigned idx) override { outputIdx = idx; }
     };
 
-    IPointerArrayOf<CDelayedInput> delayInputsList;
-
+    void connectInput(bool consumerOrdered)
+    {
+        CriticalBlock block(startLock);
+        bool inputOrdered = isInputOrdered(consumerOrdered);
+        if (!inputConnected)
+        {
+            inputConnected = true;
+            connectInputStreams(inputOrdered);
+        }
+    }
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     NSplitterSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), writer(*this)
     {
         spill = false;
-        input = NULL;
         nstopped = 0;
         eofHit = inputsConfigured = writeBlocked = pagedOut = false;
         recsReady = 0;
@@ -240,9 +250,9 @@ public:
             assertex(io);
             ForEachItemIn(o2, delayInputsList)
             {
-                CDelayedInput *delayedInput = delayInputsList.item(o2);
+                CDelayedInput *delayedInput = (CDelayedInput *)delayInputsList.item(o2);
                 if (o2 == o)
-                    delayedInput->setInput(new CInputWrapper(*this, inputs.item(0)));
+                    delayedInput->setInput(new CInputWrapper(*this));
                 else
                     delayedInput->setInput(new CNullInput());
             }
@@ -251,9 +261,9 @@ public:
         {
             ForEachItemIn(o, delayInputsList)
             {
-                CDelayedInput *delayedInput = delayInputsList.item(o);
+                CDelayedInput *delayedInput = (CDelayedInput *)delayInputsList.item(o);
                 if (NULL != container.connectedOutputs.queryItem(o))
-                    delayedInput->setInput(new CSplitterOutput(*this, o), o);
+                    delayedInput->setInput(new CSplitterOutput(*this, o));
                 else
                     delayedInput->setInput(new CNullInput());
             }
@@ -263,8 +273,9 @@ public:
     {
         CSlaveActivity::reset();
         nstopped = 0;
-        grouped = false;
         eofHit = false;
+        inputPrepared = false;
+        inputConnected = false;
         recsReady = 0;
         writeBlocked = false;
         stalledWriters.kill();
@@ -273,7 +284,7 @@ public:
             // ensure old inputs cleared, to avoid being reused before re-setup on subsequent executions
             ForEachItemIn(o, delayInputsList)
             {
-                CDelayedInput *delayedInput = delayInputsList.item(o);
+                CDelayedInput *delayedInput = (CDelayedInput *)delayInputsList.item(o);
                 delayedInput->setInput(NULL);
             }
             inputsConfigured = false;
@@ -297,13 +308,12 @@ public:
     void prepareInput(unsigned output)
     {
         CriticalBlock block(startLock);
-        if (!input)
+        if (!inputPrepared)
         {
-            input = inputs.item(0);
+            inputPrepared = true;
             try
             {
-                startInput(input);
-                grouped = input->isGrouped();
+                PARENT::start();
                 nstopped = container.connectedOutputs.getCount();
                 if (smartBuf)
                     smartBuf->reset();
@@ -374,10 +384,10 @@ public:
                 break;
             try
             {
-                row.setown(input->nextRow());
+                row.setown(inputStream->nextRow());
                 if (!row)
                 {
-                    row.setown(input->nextRow());
+                    row.setown(inputStream->nextRow());
                     if (row)
                     {
                         smartBuf->putRow(NULL, this); // may call blocked() (see ISharedSmartBufferCallback impl. below)
@@ -403,8 +413,8 @@ public:
         if (nstopped && --nstopped==0) 
         {
             writer.stop();
-            stopInput(input);
-            input = NULL;
+            PARENT::stop();
+            inputPrepared = false;
         }
     }
     void abort()
@@ -412,16 +422,6 @@ public:
         CSlaveActivity::abort();
         if (smartBuf)
             smartBuf->cancel();
-    }
-    unsigned __int64 queryTotalCycles() const
-    {
-        unsigned __int64 _totalCycles = totalCycles.totalCycles; // more() time
-        ForEachItemIn(o, outputs)
-        {
-            IThorDataLink *delayedInput = outputs.item(o);
-            _totalCycles += delayedInput->queryTotalCycles();
-        }
-        return _totalCycles;
     }
 // ISharedSmartBufferCallback impl.
     virtual void paged() { pagedOut = true; }
@@ -440,6 +440,23 @@ public:
                 stalledWriters.popGet()->signal();
         }
     }
+
+// IThorDataLink (for output 0)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    {
+        calcMetaInfoSize(info, queryInput(0));
+    }
+    virtual unsigned __int64 queryTotalCycles() const override
+    {
+        unsigned __int64 _totalCycles = PARENT::queryTotalCycles(); // more() time
+        ForEachItemIn(o, outputs)
+        {
+            IThorDataLink *delayedInput = outputs.item(o);
+            _totalCycles += delayedInput->queryTotalCycles();
+        }
+        return _totalCycles;
+    }
+
 friend class CInputWrapper;
 friend class CSplitterOutput;
 friend class CWriter;
@@ -454,7 +471,7 @@ CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned _ou
     rec = max = 0;
 }
 
-// IThorDataLink
+// IStartableEngineRowStream
 void CSplitterOutput::start()
 {
     ActivityTimer s(totalCycles, activity.queryTimeActivities());
@@ -464,6 +481,7 @@ void CSplitterOutput::start()
         throw LINK(activity.startException);
 }
 
+// IEngineRowStream
 void CSplitterOutput::stop()
 { 
     CriticalBlock block(activity.startLock);
@@ -479,12 +497,6 @@ const void *CSplitterOutput::nextRow()
     const void *row = activity.nextRow(output); // pass ptr to max if need more
     ++rec;
     return row;
-}
-
-
-void CSplitterOutput::getMetaInfo(ThorDataLinkMetaInfo &info)
-{
-    CThorDataLink::calcMetaInfoSize(info, activity.inputs.item(0));
 }
 
 CActivityBase *createNSplitterSlave(CGraphElementBase *container)
