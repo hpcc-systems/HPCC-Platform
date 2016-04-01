@@ -201,6 +201,7 @@ define({root:
     Groups: "Groups",
     GZip: "GZip",
     help: "This area displays the treemap for the graph(s) in this workunit. The size and hue indicate the duration of each graph (Larger and darker indicates a greater percentage of the time taken.)",
+    Helper: "Helper",
     Helpers: "Helpers",
     Hex: "Hex",
     HideSpills: "Hide Spills",

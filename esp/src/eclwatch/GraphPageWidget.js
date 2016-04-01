@@ -683,7 +683,7 @@ define([
             var propertiesDom = dom.byId(this.id + "Properties");
             propertiesDom.textContent = "";
             for (var i = 0; i < selectedGlobalIDs.length; ++i) {
-                this.global.displayProperties(selectedGlobalIDs[i], propertiesDom);
+                this.global.displayProperties(this.wu, selectedGlobalIDs[i], propertiesDom);
             }
             this.inSyncSelectionFrom = false;
         }, 500, false),
