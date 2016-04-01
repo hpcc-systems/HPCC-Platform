@@ -22,7 +22,6 @@ define([
     "dijit/registry",
     "dijit/form/CheckBox",
 
-    "dgrid/tree",
     "dgrid/editor",
 
     "hpcc/GridDetailsWidget",
@@ -31,9 +30,9 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC,
                 registry, CheckBox,
-                tree, editor,
+                editor,
                 GridDetailsWidget, WsAccess, ESPUtil) {
-    return declare("PermissionsWidget", [GridDetailsWidget], {
+    return declare("ShowIndividualPermissionsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_Permissions,
@@ -48,8 +47,7 @@ define([
         init: function (params) {
             if (this.inherited(arguments))
                 return;
-
-            this.store = WsAccess.CreatePermissionsStore(params.groupname, params.username);
+            this.store = WsAccess.CreateIndividualPermissionsStore(params.Basedn, params.Rtype, params.Rtitle, params.Name);
             this.grid.setStore(this.store);
             this._refreshActionState();
         },
@@ -58,13 +56,14 @@ define([
             var context = this;
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
+                sort: [{ attribute: "account_name" }],
                 columns: {
-                    DisplayName: tree({
-                        label: this.i18n.Resource,
+                    account_name: {
+                        label: this.i18n.Account,
                         formatter: function (_name, row) {
                             return _name;
                         }
-                    }),
+                    },
                     allow_access: editor({
                         width: 54,
                         editor: "checkbox",
@@ -163,7 +162,7 @@ define([
             retVal.on("dgrid-datachange", function (evt) {
                 evt.preventDefault();
                 context.calcPermissionState(evt.cell.column.field, evt.value, evt.cell.row.data);
-                evt.grid.store.putChild(evt.cell.row.data);
+                evt.grid.store.put(evt.cell.row.data);
             });
             return retVal;
         },

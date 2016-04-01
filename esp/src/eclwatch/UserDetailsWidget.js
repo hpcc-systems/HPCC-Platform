@@ -61,6 +61,7 @@ define([
         summaryWidget: null,
         memberOfWidget: null,
         permissionsWidget: null,
+        activePermissionsWidget: null,
         user: null,
 
         getTitle: function () {
@@ -70,8 +71,10 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.summaryWidget = registry.byId(this.id + "_Summary");
+            this.testWidget = registry.byId(this.id + "_Test");
             this.memberOfWidget = registry.byId(this.id + "_MemberOf");
             this.permissionsWidget = registry.byId(this.id + "_UserPermissions");
+            this.activePermissionsWidget = registry.byId(this.id + "_ActivePermissions");
             this.userForm = registry.byId(this.id + "UserForm");
         },
 
@@ -138,6 +141,12 @@ define([
             } else if (currSel.id == this.permissionsWidget.id) {
                 this.permissionsWidget.init({
                     username: this.user
+                });
+            } else if (currSel.id == this.activePermissionsWidget.id) {
+                this.activePermissionsWidget.init({
+                    IsGroup: false,
+                    IncludeGroup: true,
+                    AccountName: this.user
                 });
             }
         }
