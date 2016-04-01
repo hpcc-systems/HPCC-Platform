@@ -63,6 +63,9 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            this.alphanumSort["Name"] = true;
+            this.alphanumSort["Value"] = true;
+
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
                 var monitorCount = 4;
