@@ -17,124 +17,124 @@
 
 
 EXPORT redis := SERVICE : plugin('redis'), namespace('RedisPlugin')
-  SetUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='SyncRSetUChar';
-  SetString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='SyncRSetStr';
-  SetUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='SyncRSetUtf8';
-  SetBoolean( CONST VARSTRING key, BOOLEAN value,       CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='SyncRSetBool';
-  SetReal(    CONST VARSTRING key, REAL value,          CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='SyncRSetReal';
-  SetInteger( CONST VARSTRING key, INTEGER value,       CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='SyncRSetInt';
-  SetUnsigned(CONST VARSTRING key, UNSIGNED value,      CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='SyncRSetUInt';
-  SetData(    CONST VARSTRING key, CONST DATA value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='SyncRSetData';
+  SetUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetUChar';
+  SetString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetStr';
+  SetUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetUtf8';
+  SetBoolean( CONST VARSTRING key, BOOLEAN value,       CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetBool';
+  SetReal(    CONST VARSTRING key, REAL value,          CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetReal';
+  SetInteger( CONST VARSTRING key, INTEGER value,       CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetInt';
+  SetUnsigned(CONST VARSTRING key, UNSIGNED value,      CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetUInt';
+  SetData(    CONST VARSTRING key, CONST DATA value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetData';
 
-  INTEGER8   GetInteger(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncRGetInt8';
-  UNSIGNED8 GetUnsigned(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncRGetUint8';
-  STRING      GetString(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncRGetStr';
-  UNICODE    GetUnicode(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncRGetUChar';
-  UTF8          GetUtf8(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncRGetUtf8';
-  BOOLEAN    GetBoolean(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncRGetBool';
-  REAL          GetReal(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncRGetDouble';
-  DATA          GetData(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncRGetData';
+  INTEGER8   GetInteger(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRGetInt8';
+  UNSIGNED8 GetUnsigned(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRGetUint8';
+  STRING      GetString(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRGetStr';
+  UNICODE    GetUnicode(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRGetUChar';
+  UTF8          GetUtf8(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRGetUtf8';
+  BOOLEAN    GetBoolean(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRGetBool';
+  REAL          GetReal(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRGetDouble';
+  DATA          GetData(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRGetData';
 
-  BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='RExist';
-  FlushDB(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='RClear';
-  Delete(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='RDel';
-  Del(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='RDel';
-  Persist(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='RPersist';
-  Expire(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='RExpire';
-  UNSIGNED DBSize(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='RDBSize';
+  BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='RExist';
+  FlushDB(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='RClear';
+  Delete(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='RDel';
+  Del(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='RDel';
+  Persist(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='RPersist';
+  Expire(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='RExpire';
+  UNSIGNED DBSize(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='RDBSize';
 
-  UNSIGNED Publish(CONST VARSTRING keyOrChannel, CONST STRING message, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE) : cpp,once,context,entrypoint='SyncRPub';
-  STRING Subscribe(CONST VARSTRING keyOrChannel, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE) : cpp,once,context,entrypoint='SyncRSub';
+  UNSIGNED Publish(CONST VARSTRING keyOrChannel, CONST STRING message, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRPub';
+  STRING Subscribe(CONST VARSTRING keyOrChannel, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRSub';
 
-  STRING   SetAndPublishString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncLockRSetStr';
-  UNICODE  SetAndPublishUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncLockRSetUChar';
-  UTF8     SetAndPublishUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,once,context,entrypoint='SyncLockRSetUtf8';
+  STRING   SetAndPublishString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncLockRSetStr';
+  UNICODE  SetAndPublishUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncLockRSetUChar';
+  UTF8     SetAndPublishUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncLockRSetUtf8';
 
-  STRING      GetOrLockString(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, UNSIGNED4 expire = 1000) : cpp,once,context,entrypoint='SyncLockRGetStr';
-  UNICODE    GetOrLockUnicode(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, UNSIGNED4 expire = 1000) : cpp,once,context,entrypoint='SyncLockRGetUChar';
-  UTF8          GetOrLockUtf8(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, UNSIGNED4 expire = 1000) : cpp,once,context,entrypoint='SyncLockRGetUtf8';
+  STRING      GetOrLockString(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, UNSIGNED4 expire = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncLockRGetStr';
+  UNICODE    GetOrLockUnicode(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, UNSIGNED4 expire = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncLockRGetUChar';
+  UTF8          GetOrLockUtf8(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, UNSIGNED4 expire = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncLockRGetUtf8';
 
-  Unlock(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000) : cpp,action,context,entrypoint='SyncLockRUnlock';
+  Unlock(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncLockRUnlock';
 END;
 
-EXPORT RedisServer(VARSTRING options, VARSTRING password = '', UNSIGNED4 timeout = 1000) := MODULE
-  EXPORT  SetUnicode(VARSTRING key, UNICODE value,  INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetUnicode (key, value, options, database, expire, password, timeout);
-  EXPORT   SetString(VARSTRING key, STRING value,   INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetString  (key, value, options, database, expire, password, timeout);
-  EXPORT     SetUtf8(VARSTRING key, UTF8 value,     INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetUtf8    (key, value, options, database, expire, password, timeout);
-  EXPORT  SetBoolean(VARSTRING key, BOOLEAN value,  INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetBoolean (key, value, options, database, expire, password, timeout);
-  EXPORT     SetReal(VARSTRING key, REAL value,     INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetReal    (key, value, options, database, expire, password, timeout);
-  EXPORT  SetInteger(VARSTRING key, INTEGER value,  INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetInteger (key, value, options, database, expire, password, timeout);
-  EXPORT SetUnsigned(VARSTRING key, UNSIGNED value, INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetUnsigned(key, value, options, database, expire, password, timeout);
-  EXPORT     SetData(VARSTRING key, DATA value,     INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetData    (key, value, options, database, expire, password, timeout);
+EXPORT RedisServer(VARSTRING options, VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) := MODULE
+  EXPORT  SetUnicode(VARSTRING key, UNICODE value,  INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetUnicode (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT   SetString(VARSTRING key, STRING value,   INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetString  (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT     SetUtf8(VARSTRING key, UTF8 value,     INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetUtf8    (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT  SetBoolean(VARSTRING key, BOOLEAN value,  INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetBoolean (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT     SetReal(VARSTRING key, REAL value,     INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetReal    (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT  SetInteger(VARSTRING key, INTEGER value,  INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetInteger (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT SetUnsigned(VARSTRING key, UNSIGNED value, INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetUnsigned(key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT     SetData(VARSTRING key, DATA value,     INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetData    (key, value, options, database, expire, password, timeout, cacheConnections);
 
-  EXPORT  GetUnicode(VARSTRING key, INTEGER4 database = 0) :=  redis.GetUnicode(key, options, database, password, timeout);
-  EXPORT   GetString(VARSTRING key, INTEGER4 database = 0) :=   redis.GetString(key, options, database, password, timeout);
-  EXPORT     GetUtf8(VARSTRING key, INTEGER4 database = 0) :=     redis.GetUtf8(key, options, database, password, timeout);
-  EXPORT  GetBoolean(VARSTRING key, INTEGER4 database = 0) :=  redis.GetBoolean(key, options, database, password, timeout);
-  EXPORT     GetReal(VARSTRING key, INTEGER4 database = 0) :=     redis.GetReal(key, options, database, password, timeout);
-  EXPORT  GetInteger(VARSTRING key, INTEGER4 database = 0) :=  redis.GetInteger(key, options, database, password, timeout);
-  EXPORT GetUnsigned(VARSTRING key, INTEGER4 database = 0) := redis.GetUnsigned(key, options, database, password, timeout);
-  EXPORT     GetData(VARSTRING key, INTEGER4 database = 0) :=     redis.GetData(key, options, database, password, timeout);
+  EXPORT  GetUnicode(VARSTRING key, INTEGER4 database = 0) :=  redis.GetUnicode(key, options, database, password, timeout, cacheConnections);
+  EXPORT   GetString(VARSTRING key, INTEGER4 database = 0) :=   redis.GetString(key, options, database, password, timeout, cacheConnections);
+  EXPORT     GetUtf8(VARSTRING key, INTEGER4 database = 0) :=     redis.GetUtf8(key, options, database, password, timeout, cacheConnections);
+  EXPORT  GetBoolean(VARSTRING key, INTEGER4 database = 0) :=  redis.GetBoolean(key, options, database, password, timeout, cacheConnections);
+  EXPORT     GetReal(VARSTRING key, INTEGER4 database = 0) :=     redis.GetReal(key, options, database, password, timeout, cacheConnections);
+  EXPORT  GetInteger(VARSTRING key, INTEGER4 database = 0) :=  redis.GetInteger(key, options, database, password, timeout, cacheConnections);
+  EXPORT GetUnsigned(VARSTRING key, INTEGER4 database = 0) := redis.GetUnsigned(key, options, database, password, timeout, cacheConnections);
+  EXPORT     GetData(VARSTRING key, INTEGER4 database = 0) :=     redis.GetData(key, options, database, password, timeout, cacheConnections);
 
-  EXPORT Exists(VARSTRING key, INTEGER4 database = 0) := redis.Exists(key, options, database, password, timeout);
-  EXPORT FlushDB(INTEGER4 database = 0) := redis.FlushDB(options, database, password, timeout);
-  EXPORT Delete(VARSTRING key, INTEGER4 database = 0) := redis.Delete(key, options, database, password, timeout);
-  EXPORT Del(VARSTRING key, INTEGER4 database = 0) := redis.Del(key, options, database, password, timeout);
-  EXPORT Persist(VARSTRING key, INTEGER4 database = 0) := redis.Persist(key, options, database, password, timeout);
-  EXPORT Expire(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire)  := redis.Expire(key, options, database, expire, password, timeout);
-  EXPORT DBSize(INTEGER4 database = 0) := redis.DBSize(options, database, password, timeout);
+  EXPORT Exists(VARSTRING key, INTEGER4 database = 0) := redis.Exists(key, options, database, password, timeout, cacheConnections);
+  EXPORT FlushDB(INTEGER4 database = 0) := redis.FlushDB(options, database, password, timeout, cacheConnections);
+  EXPORT Delete(VARSTRING key, INTEGER4 database = 0) := redis.Delete(key, options, database, password, timeout, cacheConnections);
+  EXPORT Del(VARSTRING key, INTEGER4 database = 0) := redis.Del(key, options, database, password, timeout, cacheConnections);
+  EXPORT Persist(VARSTRING key, INTEGER4 database = 0) := redis.Persist(key, options, database, password, timeout, cacheConnections);
+  EXPORT Expire(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire)  := redis.Expire(key, options, database, expire, password, timeout, cacheConnections);
+  EXPORT DBSize(INTEGER4 database = 0) := redis.DBSize(options, database, password, timeout, cacheConnections);
 
-  EXPORT Publish(VARSTRING keyOrChannel, STRING message, INTEGER4 database = 0, BOOLEAN lockedKey = FALSE) := redis.Publish(keyOrChannel, message, options, database, password, timeout, lockedKey);
-  EXPORT Subscribe(VARSTRING keyOrChannel, INTEGER4 database = 0, BOOLEAN lockedKey = FALSE) := redis.Subscribe(keyOrChannel, options, database, password, timeout, lockedKey);
+  EXPORT Publish(VARSTRING keyOrChannel, STRING message, INTEGER4 database = 0, BOOLEAN lockedKey = FALSE) := redis.Publish(keyOrChannel, message, options, database, password, timeout, lockedKey, cacheConnections);
+  EXPORT Subscribe(VARSTRING keyOrChannel, INTEGER4 database = 0, BOOLEAN lockedKey = FALSE) := redis.Subscribe(keyOrChannel, options, database, password, timeout, lockedKey, cacheConnections);
 
-  EXPORT  SetAndPublishUnicode(VARSTRING key, UNICODE value,  INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishUnicode (key, value, options, database, expire, password, timeout);
-  EXPORT   SetAndPublishString(VARSTRING key, STRING value,   INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishString  (key, value, options, database, expire, password, timeout);
-  EXPORT     SetAndPublishUtf8(VARSTRING key, UTF8 value,     INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishUtf8    (key, value, options, database, expire, password, timeout);
+  EXPORT  SetAndPublishUnicode(VARSTRING key, UNICODE value,  INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishUnicode (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT   SetAndPublishString(VARSTRING key, STRING value,   INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishString  (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT     SetAndPublishUtf8(VARSTRING key, UTF8 value,     INTEGER4 database = 0, UNSIGNED4 expire = 0) := redis.SetAndPublishUtf8    (key, value, options, database, expire, password, timeout, cacheConnections);
 
-  EXPORT  GetOrLockUnicode(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000) :=  redis.GetOrLockUnicode(key, options, database, password, timeout, expire);
-  EXPORT   GetOrLockString(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000) :=   redis.GetOrLockString(key, options, database, password, timeout, expire);
-  EXPORT     GetOrLockUtf8(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000) :=     redis.GetOrLockUtf8(key, options, database, password, timeout, expire);
+  EXPORT  GetOrLockUnicode(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000) :=  redis.GetOrLockUnicode(key, options, database, password, timeout, expire, cacheConnections);
+  EXPORT   GetOrLockString(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000) :=   redis.GetOrLockString(key, options, database, password, timeout, expire, cacheConnections);
+  EXPORT     GetOrLockUtf8(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000) :=     redis.GetOrLockUtf8(key, options, database, password, timeout, expire, cacheConnections);
 
-  EXPORT Unlock(VARSTRING key, INTEGER4 database = 0) := redis.Unlock(key, options, database, password, timeout);
+  EXPORT Unlock(VARSTRING key, INTEGER4 database = 0) := redis.Unlock(key, options, database, password, timeout, cacheConnections);
 END;
 
-EXPORT RedisServerWithoutTimeout(VARSTRING options, VARSTRING password = '') := MODULE
-  EXPORT  SetUnicode(VARSTRING key, UNICODE value,  INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetUnicode (key, value, options, database, expire, password, timeout);
-  EXPORT   SetString(VARSTRING key, STRING value,   INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetString  (key, value, options, database, expire, password, timeout);
-  EXPORT     SetUtf8(VARSTRING key, UTF8 value,     INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetUtf8    (key, value, options, database, expire, password, timeout);
-  EXPORT  SetBoolean(VARSTRING key, BOOLEAN value,  INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetBoolean (key, value, options, database, expire, password, timeout);
-  EXPORT     SetReal(VARSTRING key, REAL value,     INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetReal    (key, value, options, database, expire, password, timeout);
-  EXPORT  SetInteger(VARSTRING key, INTEGER value,  INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetInteger (key, value, options, database, expire, password, timeout);
-  EXPORT SetUnsigned(VARSTRING key, UNSIGNED value, INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetUnsigned(key, value, options, database, expire, password, timeout);
-  EXPORT     SetData(VARSTRING key, DATA value,     INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetData    (key, value, options, database, expire, password, timeout);
+EXPORT RedisServerWithoutTimeout(VARSTRING options, VARSTRING password = '', BOOLEAN cacheConnections = TRUE) := MODULE
+  EXPORT  SetUnicode(VARSTRING key, UNICODE value,  INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetUnicode (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT   SetString(VARSTRING key, STRING value,   INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetString  (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT     SetUtf8(VARSTRING key, UTF8 value,     INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetUtf8    (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT  SetBoolean(VARSTRING key, BOOLEAN value,  INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetBoolean (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT     SetReal(VARSTRING key, REAL value,     INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetReal    (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT  SetInteger(VARSTRING key, INTEGER value,  INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetInteger (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT SetUnsigned(VARSTRING key, UNSIGNED value, INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetUnsigned(key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT     SetData(VARSTRING key, DATA value,     INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetData    (key, value, options, database, expire, password, timeout, cacheConnections);
 
-  EXPORT  GetUnicode(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=  redis.GetUnicode(key, options, database, password, timeout);
-  EXPORT   GetString(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=   redis.GetString(key, options, database, password, timeout);
-  EXPORT     GetUtf8(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=     redis.GetUtf8(key, options, database, password, timeout);
-  EXPORT  GetBoolean(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=  redis.GetBoolean(key, options, database, password, timeout);
-  EXPORT     GetReal(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=     redis.GetReal(key, options, database, password, timeout);
-  EXPORT  GetInteger(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=  redis.GetInteger(key, options, database, password, timeout);
-  EXPORT GetUnsigned(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.GetUnsigned(key, options, database, password, timeout);
-  EXPORT     GetData(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=     redis.GetData(key, options, database, password, timeout);
+  EXPORT  GetUnicode(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=  redis.GetUnicode(key, options, database, password, timeout, cacheConnections);
+  EXPORT   GetString(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=   redis.GetString(key, options, database, password, timeout, cacheConnections);
+  EXPORT     GetUtf8(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=     redis.GetUtf8(key, options, database, password, timeout, cacheConnections);
+  EXPORT  GetBoolean(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=  redis.GetBoolean(key, options, database, password, timeout, cacheConnections);
+  EXPORT     GetReal(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=     redis.GetReal(key, options, database, password, timeout, cacheConnections);
+  EXPORT  GetInteger(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=  redis.GetInteger(key, options, database, password, timeout, cacheConnections);
+  EXPORT GetUnsigned(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.GetUnsigned(key, options, database, password, timeout, cacheConnections);
+  EXPORT     GetData(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=     redis.GetData(key, options, database, password, timeout, cacheConnections);
 
-  EXPORT Exists(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Exists(key, options, database, password, timeout);
-  EXPORT FlushDB(INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.FlushDB(options, database, password, timeout);
-  EXPORT Delete(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Delete(key, options, database, password, timeout);
-  EXPORT Del(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Del(key, options, database, password, timeout);
-  EXPORT Persist(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Persist(key, options, database, password, timeout);
-  EXPORT Expire(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire, UNSIGNED4 timeout = 1000)  := redis.Expire(key, options, database, expire, password, timeout);
-  EXPORT DBSize(INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.DBSize(options, database, password, timeout);
+  EXPORT Exists(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Exists(key, options, database, password, timeout, cacheConnections);
+  EXPORT FlushDB(INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.FlushDB(options, database, password, timeout, cacheConnections);
+  EXPORT Delete(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Delete(key, options, database, password, timeout, cacheConnections);
+  EXPORT Del(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Del(key, options, database, password, timeout, cacheConnections);
+  EXPORT Persist(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Persist(key, options, database, password, timeout, cacheConnections);
+  EXPORT Expire(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire, UNSIGNED4 timeout = 1000)  := redis.Expire(key, options, database, expire, password, timeout, cacheConnections);
+  EXPORT DBSize(INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.DBSize(options, database, password, timeout, cacheConnections);
 
-  EXPORT Publish(VARSTRING keyOrChannel, STRING message, INTEGER4 database = 0, UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE) := redis.Publish(keyOrChannel, message, options, database, password, timeout, lockedKey);
-  EXPORT Subscribe(VARSTRING keyOrChannel, INTEGER4 database = 0, UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE) := redis.Subscribe(keyOrChannel, options, database, password, timeout, lockedKey);
+  EXPORT Publish(VARSTRING keyOrChannel, STRING message, INTEGER4 database = 0, UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE) := redis.Publish(keyOrChannel, message, options, database, password, timeout, lockedKey, cacheConnections);
+  EXPORT Subscribe(VARSTRING keyOrChannel, INTEGER4 database = 0, UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE) := redis.Subscribe(keyOrChannel, options, database, password, timeout, lockedKey, cacheConnections);
 
-  EXPORT  SetAndPublishUnicode(VARSTRING key, UNICODE value,  INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetAndPublishUnicode (key, value, options, database, expire, password, timeout);
-  EXPORT   SetAndPublishString(VARSTRING key, STRING value,   INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetAndPublishString  (key, value, options, database, expire, password, timeout);
-  EXPORT     SetAndPublishUtf8(VARSTRING key, UTF8 value,     INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetAndPublishUtf8    (key, value, options, database, expire, password, timeout);
+  EXPORT  SetAndPublishUnicode(VARSTRING key, UNICODE value,  INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetAndPublishUnicode (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT   SetAndPublishString(VARSTRING key, STRING value,   INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetAndPublishString  (key, value, options, database, expire, password, timeout, cacheConnections);
+  EXPORT     SetAndPublishUtf8(VARSTRING key, UTF8 value,     INTEGER4 database = 0, UNSIGNED4 expire = 0, UNSIGNED4 timeout = 1000) := redis.SetAndPublishUtf8    (key, value, options, database, expire, password, timeout, cacheConnections);
 
-  EXPORT  GetOrLockUnicode(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000, UNSIGNED4 timeout = 1000) :=  redis.GetOrLockUnicode(key, options, database, password, timeout, expire);
-  EXPORT   GetOrLockString(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000, UNSIGNED4 timeout = 1000) :=   redis.GetOrLockString(key, options, database, password, timeout, expire);
-  EXPORT     GetOrLockUtf8(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000, UNSIGNED4 timeout = 1000) :=     redis.GetOrLockUtf8(key, options, database, password, timeout, expire);
+  EXPORT  GetOrLockUnicode(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000, UNSIGNED4 timeout = 1000) :=  redis.GetOrLockUnicode(key, options, database, password, timeout, expire, cacheConnections);
+  EXPORT   GetOrLockString(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000, UNSIGNED4 timeout = 1000) :=   redis.GetOrLockString(key, options, database, password, timeout, expire, cacheConnections);
+  EXPORT     GetOrLockUtf8(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 expire = 1000, UNSIGNED4 timeout = 1000) :=     redis.GetOrLockUtf8(key, options, database, password, timeout, expire, cacheConnections);
 
-  EXPORT Unlock(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Unlock(key, options, database, password, timeout);
+  EXPORT Unlock(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Unlock(key, options, database, password, timeout, cacheConnections);
 END;
