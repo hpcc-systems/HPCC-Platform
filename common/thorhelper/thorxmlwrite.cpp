@@ -551,10 +551,10 @@ void CommonJsonWriter::outputUtf8(unsigned len, const char *field, const char *f
     appendJSONStringValue(out, checkItemName(fieldname), rtlUtf8Size(len, field), field, true);
 }
 
-void CommonJsonWriter::outputBeginArray(const char *fieldname)
+void CommonJsonWriter::prepareBeginArray(const char *fieldname)
 {
     arrays.append(*new CJsonWriterItem(fieldname));
-    const char * sep = strchr(fieldname, '/');
+    const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
     while (sep)
     {
         StringAttr leading(fieldname, sep-fieldname);
@@ -563,6 +563,11 @@ void CommonJsonWriter::outputBeginArray(const char *fieldname)
         sep = strchr(fieldname, '/');
     }
     checkFormat(false, false, 1);
+}
+
+void CommonJsonWriter::outputBeginArray(const char *fieldname)
+{
+    prepareBeginArray(fieldname);
     appendJSONName(out, fieldname).append('[');
 }
 
