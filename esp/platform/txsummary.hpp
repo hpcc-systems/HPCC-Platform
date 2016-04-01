@@ -19,9 +19,12 @@
 #define TXSUMMARY_HPP
 
 #include "jiface.hpp"
+#include "jmutex.hpp"
+#include "cumulativetimer.hpp"
 #include "tokenserialization.hpp"
 #include "esphttp.hpp"
 #include <list>
+#include <map>
 
 class CTxSummary : extends CInterface
 {
@@ -64,12 +67,23 @@ public:
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
     bool set(const char* key, const TValue& value, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
 
+    // Fetches an existing or new instance of a named CumulativeTime. The name
+    // must not be NULL or empty, but it may be a duplicate of an existing
+    // key-value pair. Duplication, while permitted, should be avoided due to
+    // the potential for confusion.
+    virtual CumulativeTimer* queryTimer(const char* name);
+
+    // Adds the given milliseconds to an existing or new named CumulativeTimer.
+    // The same conditions as for getTimer apply.
+    virtual bool updateTimer(const char* name, unsigned long long delta);
+
 protected:
     // Log the summary contents on destruction.
     ~CTxSummary();
 
 private:
     void log();
+    bool __contains(const char* key) const;
 
     struct Entry
     {
@@ -78,9 +92,14 @@ private:
     };
 
     using Entries = std::list<Entry>;
+    using TimerKey = StringAttr;
+    using TimerValue = Linked<CumulativeTimer>;
+    using Timers = std::map<TimerKey, TimerValue>;
 
-    Entries   m_entries;
-    unsigned  m_creationTime;
+    mutable CriticalSection m_sync;
+    Entries         m_entries;
+    Timers          m_timers;
+    unsigned        m_creationTime;
 };
 
 

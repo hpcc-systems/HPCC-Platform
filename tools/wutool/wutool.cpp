@@ -57,7 +57,12 @@ void usage()
            "   validate [fix=1]    - Check contents of workunit repository for errors\n"
            "   clear               - Delete entire workunit repository (requires entire=1 repository=1)\n"
            "   initialize          - Initialize new workunit repository\n"
-            "\n"
+           "\n"
+           "If CASSANDRASERVER is specified, you can specify some connection options including:\n"
+           "   CASSANDRA_KEYSPACE  - default is hpcc\n"
+           "   CASSANDRA_USER\n"
+           "   CASSANDRA_PASSWORD\n"
+           "   TRACELEVEL\n"
            "<workunits> can be specified on commandline, or can be specified using a filter owner=XXXX. If ommitted,\n"
            "all workunits will be selected.\n"
             );
@@ -164,12 +169,22 @@ int main(int argc, const char *argv[])
                     "<Option name='randomWuidSuffix' value='4'/>"
                     "<Option name='traceLevel' value='0'/>"
                     "<Option name='keyspace' value='hpcc'/>"
+                    "<Option name='user' value=''/>"
+                    "<Option name='password' value=''/>"
                   "</WorkUnitsServer>");
             pluginInfo->setProp("Option[@name='server']/@value", cassandraServer.str());
             pluginInfo->setPropInt("Option[@name='traceLevel']/@value", globals->getPropInt("tracelevel", 0));
-            StringBuffer keySpace;
+            StringBuffer keySpace,user,password;
             if (globals->getProp("CASSANDRA_KEYSPACE", keySpace))
                 pluginInfo->setProp("Option[@name='keyspace']/@value", keySpace.str());
+            if (globals->getProp("CASSANDRA_USER", user))
+                pluginInfo->setProp("Option[@name='user']/@value", user.str());
+            else
+                pluginInfo->removeProp("Option[@name='user']");
+            if (globals->getProp("CASSANDRA_PASSWORD", password))
+                pluginInfo->setProp("Option[@name='password']/@value", password.str());
+            else
+                pluginInfo->removeProp("Option[@name='password']");
             setWorkUnitFactory((IWorkUnitFactory *) loadPlugin(pluginInfo));
             serverSpecified = true;
         }
@@ -817,7 +832,7 @@ protected:
             query->setQueryName("qname");
             query->setQueryMainDefinition("fred");
             query->setQueryType(QueryTypeEcl);
-            query->addAssociatedFile(FileTypeCpp, "myfile", "1.2.3.4", "Description", 53);
+            query->addAssociatedFile(FileTypeCpp, "myfile", "1.2.3.4", "Description", 53, 3, 4);
             createWu->setState(WUStateCompleted);
             createWu.clear();
         }
@@ -837,6 +852,8 @@ protected:
         ASSERT(streq(file->getName(s).str(), "myfile"));
         ASSERT(file->getCrc()==53);
         ASSERT(file->getType()==FileTypeCpp);
+        ASSERT(file->getMinActivityId()==3);
+        ASSERT(file->getMaxActivityId()==4);
         ASSERT(streq(file->getIp(s).str(), "1.2.3.4"));
         query.clear();
         wu.clear();

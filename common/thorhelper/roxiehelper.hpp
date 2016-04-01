@@ -36,10 +36,11 @@ class THORHELPER_API HttpHelper : public CInterface
 {
 private:
     HttpMethod method;
-    bool useEnvelope;
+    bool useEnvelope = false;
     StringAttr url;
     StringAttr authToken;
     StringAttr contentType;
+    StringAttr queryName;
     StringArray pathNodes;
     StringArray *validTargets;
     Owned<IProperties> parameters;
@@ -59,10 +60,14 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    HttpHelper(StringArray *_validTargets) : validTargets(_validTargets), method(HttpMethod::NONE) {useEnvelope=true; parameters.setown(createProperties(true));}
+    HttpHelper(StringArray *_validTargets) : validTargets(_validTargets), method(HttpMethod::NONE) {parameters.setown(createProperties(true));}
     inline bool isHttp() { return method!=HttpMethod::NONE; }
     inline bool isHttpGet(){ return method==HttpMethod::GET; }
-    inline bool isControlUrl(){return (pathNodes.isItem(1) && strieq(pathNodes.item(1), "control"));}
+    inline bool isControlUrl()
+    {
+        const char *control = queryTarget();
+        return (control && strieq(control, "control"));
+    }
 
     bool getUseEnvelope(){return useEnvelope;}
     void setUseEnvelope(bool _useEnvelope){useEnvelope=_useEnvelope;}
@@ -72,13 +77,17 @@ public:
     const char *queryTarget() { return (pathNodes.length()) ? pathNodes.item(0) : NULL; }
     const char *queryQueryName()
     {
-        unsigned namePos = 1;
-        if (!pathNodes.isItem(namePos))
+        if (!queryName.isEmpty())
+            return queryName.str();
+        if (!pathNodes.isItem(1))
             return nullptr;
-        if (isControlUrl())
-            if (!pathNodes.isItem(++namePos))
-                return nullptr;
-        return pathNodes.item(namePos);
+        const char *name = pathNodes.item(1);
+        const char *at = strchr(name, ';');
+        if (!at)
+            queryName.set(name);
+        else
+            queryName.set(name, at-name-1);
+        return queryName.str();
     }
 
     inline void setAuthToken(const char *v)
@@ -136,7 +145,16 @@ public:
         return getContentTypeMlFormat();
     }
     IProperties *queryUrlParameters(){return parameters;}
-    bool validateTarget(const char *target){return (validTargets) ? validTargets->contains(target) : false;}
+    bool validateTarget(const char *target)
+    {
+        if (!target)
+            return false;
+        if (validTargets && validTargets->contains(target))
+            return true;
+        if (strieq(target, "control") && (isHttpGet() || isFormPost()))
+            return true;
+        return false;
+    }
     inline void checkTarget()
     {
         const char *target = queryTarget();
@@ -153,10 +171,57 @@ public:
     }
     IPropertyTree *createPTreeFromParameters(byte flags)
     {
-        const char *query = queryQueryName();
-        if (!query || !*query)
+        if (!pathNodes.isItem(1))
             throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Query not specified");
+        StringBuffer query;
+        appendDecodedURL(query, pathNodes.item(1));
+        aindex_t count = pathNodes.ordinality();
+        if (count>2)
+            for (aindex_t x = 2; x<count; ++x)
+                appendDecodedURL(query.append('/'), pathNodes.item(x));
         return createPTreeFromHttpParameters(query, form ? form : parameters, true, false, (ipt_flags) flags);
+    }
+    bool isMappedToInputParameter()
+    {
+        if (isHttp())
+        {
+            aindex_t count = pathNodes.ordinality();
+            if (count>2)
+                for (aindex_t x = 2; x<count; ++x)
+                    if (strncmp(pathNodes.item(x), "input(", 6)==0)
+                        return true;
+        }
+        return false;
+    }
+    IPropertyTree *checkAddWrapperForAdaptiveInput(IPropertyTree *content, byte flags)
+    {
+        if (!isMappedToInputParameter())
+            return content;
+        if (!pathNodes.isItem(1))
+            throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Query not specified");
+        StringBuffer query;
+        appendDecodedURL(query, pathNodes.item(1));
+        aindex_t count = pathNodes.ordinality();
+        if (count>2)
+            for (aindex_t x = 2; x<count; ++x)
+                appendDecodedURL(query.append('/'), pathNodes.item(x));
+        return createPTreeFromHttpPath(query, content, false, (ipt_flags) flags);
+    }
+    void getResultFilterAndTag(StringAttr &filter, StringAttr &tag)
+    {
+        if (!isHttp())
+            return;
+        aindex_t count = pathNodes.ordinality();
+        if (count<=2)
+            return;
+        StringBuffer temp;
+        for (aindex_t x = 2; x<count; ++x)
+        {
+            if (strncmp(pathNodes.item(x), "result(", 6)==0)
+                checkParseUrlPathNodeValue(pathNodes.item(x), temp, filter);
+            else if (strncmp(pathNodes.item(x), "tag(", 4)==0)
+                checkParseUrlPathNodeValue(pathNodes.item(x), temp, tag);
+        }
     }
 };
 
@@ -238,6 +303,9 @@ interface SafeSocket : extends IInterface
     // TO be removed and replaced with better mechanism when SafeSocket merged with tht new output sequencer...
     // until then you may need to lock using this if you are making multiple calls and they need to stay together in the output
     virtual CriticalSection &queryCrit() = 0;
+
+    virtual void setAdaptiveRoot(bool adaptive)=0;
+    virtual bool getAdaptiveRoot()=0;
 };
 
 class THORHELPER_API CSafeSocket : public CInterface, implements SafeSocket
@@ -246,6 +314,7 @@ protected:
     Linked<ISocket> sock;
     bool httpMode;
     bool heartbeat;
+    bool adaptiveRoot = false;
     TextMarkupFormat mlResponseFmt = MarkupFmt_Unknown;
     StringAttr contentHead;
     StringAttr contentTail;
@@ -265,6 +334,8 @@ public:
     bool readBlock(MemoryBuffer &ret, unsigned maxBlockSize, unsigned timeout = (unsigned) WAIT_FOREVER);
     bool readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize);
     void setHttpMode(const char *queryName, bool arrayMode, HttpHelper &httphelper);
+    void setAdaptiveRoot(bool adaptive){adaptiveRoot=adaptive;}
+    bool getAdaptiveRoot(){return adaptiveRoot;}
     void checkSendHttpException(HttpHelper &httphelper, IException *E, const char *queryName);
     void sendSoapException(IException *E, const char *queryName);
     void sendJsonException(IException *E, const char *queryName);
@@ -323,12 +394,13 @@ public:
     virtual void addPayload(StringBuffer &s, unsigned int reserve=0);
     virtual void *getPayload(size32_t &length);
     virtual void startBlock();
-    virtual void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL);
-    virtual void startScalar(const char *resultName, unsigned sequence);
+    virtual void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL, bool adaptive=false);
+    virtual void startScalar(const char *resultName, unsigned sequence, bool simpleTag=false, const char *simplename=nullptr);
     virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size);
     virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size);
     virtual void incrementRowCount();
     void setTail(const char *value){tail.set(value);}
+    const char *queryResultName(){return name;}
 };
 
 class THORHELPER_API FlushingJsonBuffer : public FlushingStringBuffer
@@ -342,10 +414,10 @@ public:
     void append(double data);
     void encodeString(const char *x, unsigned len, bool utf8=false);
     void encodeData(const void *data, unsigned len);
-    void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL);
-    void startScalar(const char *resultName, unsigned sequence);
-    virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size);
-    virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size);
+    void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL, bool adaptive=false);
+    void startScalar(const char *resultName, unsigned sequence, bool simpleTag, const char *simplename=nullptr);
+    virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size, bool simpleTag = false, const char *simplename=nullptr);
+    virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size, bool simpleTag = false, const char *simplename=nullptr);
 };
 
 inline const char *getFormatName(TextMarkupFormat fmt)

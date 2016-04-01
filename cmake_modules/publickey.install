@@ -1,0 +1,6 @@
+if [[ -e "${INSTALL_DIR}/${configPath}/rpmnew/pub.key" ]]; then
+  cp ${INSTALL_DIR}/${configPath}/rpmnew/pub.key ${homePath}/pub.key
+  chown ${user}:${user} ${homePath}/pub.key
+  sudo -H -u ${user} bash -c "gpg --import ${homePath}/pub.key" > /dev/null 2>&1
+  rm -f ${homePath}/pub.key
+fi

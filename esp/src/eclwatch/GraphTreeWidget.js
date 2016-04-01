@@ -22,8 +22,10 @@ define([
     "dojo/_base/Deferred",
     "dojo/dom",
     "dojo/dom-construct",
+    "dojo/dom-style",
     "dojo/on",
     "dojo/html",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/Dialog",
@@ -55,8 +57,9 @@ define([
     "dijit/form/TextBox",
     "dijit/form/SimpleTextarea",
     "dijit/form/NumberSpinner",
-    "dijit/form/DropDownButton"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html,
+    "dijit/form/DropDownButton",
+    "dijit/form/Select"
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, domStyle, on, html, topic,
             registry, Dialog, Menu, MenuItem, MenuSeparator, CheckedMenuItem,
             entities,
             tree,
@@ -100,6 +103,10 @@ define([
             this._initTimings();
             this._initActivitiesMap();
             this._initDialogs();
+            var context = this;
+            topic.subscribe(this.id + "OverviewTabContainer-selectChild", function (topic) {
+                context.refreshActionState();
+            });
         },
 
         startup: function (args) {
@@ -297,6 +304,11 @@ define([
             this.treeGrid.refresh();
         },
 
+        _onChangeActivityMetric: function () {
+            var metric = this.widget.ActivityMetric.get("value");
+            this.widget.ActivitiesTreeMap.setActivityMetric(metric);
+        },
+
         _doFind: function (prev) {
             if (this.findText != this.widget.FindField.value) {
                 this.findText = this.widget.FindField.value;
@@ -392,6 +404,12 @@ define([
             }
         },
 
+        refresh: function (params) {
+            if (params.SubGraphId) {
+                this.syncSelectionFrom([params.SubGraphId]);
+            }
+        },
+
         doInit: function (params) {
             if (this.global.version.major < 5) {
                 dom.byId(this.id + "Warning").innerHTML = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
@@ -407,8 +425,28 @@ define([
                 dotAttrs = dotAttrs.replace("\ngraph[splines=\"line\"];", "\n//graph[splines=\"line\"];");
                 this.global.setDotMetaAttributes(dotAttrs);
             }
+
+            this.graphName = params.GraphName;
+            this.widget.TimingsTreeMap.init(lang.mixin({
+                query: {
+                    graphsOnly: true,
+                    graphName: this.graphName,
+                    subGraphId: "*"
+                },
+                hideHelp: true
+            }, params));
+
+            this.widget.ActivitiesTreeMap.init(lang.mixin({
+                query: {
+                    activitiesOnly: true,
+                    graphName: this.graphName,
+                    subGraphId: "*"
+                },
+                hideHelp: true
+            }, params));
+
+
             if (this.isWorkunit()) {
-                this.graphName = params.GraphName;
                 this.wu = ESPWorkunit.Get(params.Wuid);
 
                 var firstLoad = true;
@@ -433,28 +471,9 @@ define([
             } else if (this.isQuery()) {
                 this.targetQuery = params.Target;
                 this.queryId = params.QueryId;
-                this.graphName = params.GraphName;
 
                 this.loadGraphFromQuery(this.targetQuery, this.queryId, this.graphName);
             }
-
-            this.widget.TimingsTreeMap.init(lang.mixin({
-                query: {
-                    graphsOnly: true,
-                    graphName: this.graphName,
-                    subGraphId: "*"
-                },
-                hideHelp: true
-            }, params));
-
-            this.widget.ActivitiesTreeMap.init(lang.mixin({
-                query: {
-                    activitiesOnly: true,
-                    graphName: this.graphName,
-                    subGraphId: "*"
-                },
-                hideHelp: true
-            }, params));
         },
 
         refreshData: function () {
@@ -468,19 +487,20 @@ define([
         loadGraphFromXGMML: function (xgmml) {
             if (this.global.loadXGMML(xgmml, false, this.graphTimers, true)) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
-                var initialSelection = [];
                 var mainRoot = [0];
                 var complexityInfo = this.global.getComplexityInfo();
-                if (complexityInfo.isComplex()) {
+                if (this.params.SubGraphId) {
+                    mainRoot = [this.params.SubGraphId];
+                } else if (complexityInfo.isComplex()) {
                     if (confirm(lang.replace(this.i18n.ComplexityWarning, complexityInfo) + "\n" + this.i18n.ManualTreeSelection)) {
                         mainRoot = [];
                     }
                 }
-                this.setMainRootItems(mainRoot, initialSelection);
                 this.loadTree();
                 this.loadSubgraphs();
                 this.loadVertices();
                 this.loadEdges();
+                this.syncSelectionFrom(mainRoot);
             }
         },
 
@@ -641,7 +661,19 @@ define([
             this.verticesStore.appendColumns(columns, ["name"], ["ecl", "definition"], null, true);
             this.verticesGrid.set("columns", columns);
             this.verticesGrid.refresh();
-            this.widget.ActivitiesTreeMap.setActivities(vertices);
+            this.widget.ActivityMetric.set("options", arrayUtil.map(arrayUtil.filter(columns, function (col, idx) {
+                return col.label.indexOf("Time") === 0 ||
+                        col.label.indexOf("Size") === 0 ||
+                        col.label.indexOf("Num") === 0;
+            }), function (col, idx) {
+                return {
+                    label: col.label,
+                    value: col.label,
+                    selected: col.label === "TimeMaxLocalExecute"
+                };
+            }));
+            this.widget.ActivitiesTreeMap.setActivities(vertices, true);
+            this.widget.ActivityMetric.set("value", "TimeMaxLocalExecute");
         },
 
         loadEdges: function () {
@@ -662,36 +694,38 @@ define([
             }
         },
 
-        _syncSelectionFrom: dojoConfig.debounce(function (sourceControl) {
+        _syncSelectionFrom: dojoConfig.debounce(function (sourceControlOrGlobalIDs) {
             this.inSyncSelectionFrom = true;
-            var selectedGlobalIDs = [];
-
-            //  Get Selected Items  ---
-            if (sourceControl == this.widget.TimingsTreeMap) {
-                var items = sourceControl.getSelected();
-                for (var i = 0; i < items.length; ++i) {
-                    if (items[i].SubGraphId) {
-                        selectedGlobalIDs.push(items[i].SubGraphId);
+            var sourceControl = sourceControlOrGlobalIDs instanceof Array ? null : sourceControlOrGlobalIDs;
+            var selectedGlobalIDs = sourceControlOrGlobalIDs instanceof Array ? sourceControlOrGlobalIDs : [];
+            if (sourceControl) {
+                //  Get Selected Items  ---
+                if (sourceControl == this.widget.TimingsTreeMap) {
+                    var items = sourceControl.getSelected();
+                    for (var i = 0; i < items.length; ++i) {
+                        if (items[i].SubGraphId) {
+                            selectedGlobalIDs.push(items[i].SubGraphId);
+                        }
                     }
-                }
-            } else if (sourceControl == this.widget.ActivitiesTreeMap) {
+                } else if (sourceControl == this.widget.ActivitiesTreeMap) {
                     var items = sourceControl.getSelected();
                     for (var i = 0; i < items.length; ++i) {
                         if (items[i].ActivityID) {
                             selectedGlobalIDs.push(items[i].ActivityID);
                         }
                     }
-            } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid || sourceControl == this.subgraphsGrid || sourceControl == this.treeGrid) {
-                var items = sourceControl.getSelected();
-                for (var i = 0; i < items.length; ++i) {
-                    if (lang.exists("_globalID", items[i])) {
-                        selectedGlobalIDs.push(items[i]._globalID);
+                } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid || sourceControl == this.subgraphsGrid || sourceControl == this.treeGrid) {
+                    var items = sourceControl.getSelected();
+                    for (var i = 0; i < items.length; ++i) {
+                        if (lang.exists("_globalID", items[i])) {
+                            selectedGlobalIDs.push(items[i]._globalID);
+                        }
                     }
+                } else if (sourceControl === this.found) {
+                    selectedGlobalIDs = this.found;
+                } else {
+                    selectedGlobalIDs = sourceControl.getSelectionAsGlobalID();
                 }
-            } else if (sourceControl === this.found ) {
-                selectedGlobalIDs = this.found;
-            } else {
-                selectedGlobalIDs = sourceControl.getSelectionAsGlobalID();
             }
 
             //  Set Selected Items  ---
@@ -722,17 +756,20 @@ define([
             var propertiesDom = dom.byId(this.id + "Properties");
             propertiesDom.innerHTML = "";
             for (var i = 0; i < selectedGlobalIDs.length; ++i) {
-                this.global.displayProperties(selectedGlobalIDs[i], propertiesDom);
+                this.global.displayProperties(this.wu, selectedGlobalIDs[i], propertiesDom);
             }
             var context = this;
             if (selectedGlobalIDs.length) {
-                selectedGlobalIDs.filter(function (id) {
+                var edges = selectedGlobalIDs.filter(function (id) {
                     return id && id.indexOf && id.indexOf("_") >= 0;
-                }).forEach(function (id) {
-                    WsWorkunits.WUCDebug(context.params.Wuid, "<debug:print edgeId='" + selectedGlobalIDs[0] + "'/>").then(function (response) {
-                        console.log(JSON.stringify(response));
-                    });
                 });
+                if (edges.length === 1) {
+                    WsWorkunits.WUCDebug(context.params.Wuid, "<debug:print edgeId='" + edges[0] + "'/>").then(function (response) {
+                        if (lang.exists("WUDebugResponse.Result", response)) {
+                            context.global.displayTrace(response.WUDebugResponse.Result, propertiesDom);
+                        }
+                    });
+                }
             }
             this.inSyncSelectionFrom = false;
         }, 500, false),
@@ -742,8 +779,8 @@ define([
         },
 
         setMainRootItems: function (globalIDs) {
-            var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"));
-            graphView.navigateTo(this.main);
+            var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"), this.main.option("subgraph"), this.main.option("vhidespills"));
+            return graphView.navigateTo(this.main);
         },
 
         refreshMainXGMML: function () {
@@ -760,8 +797,10 @@ define([
         },
 
         refreshActionState: function (selection) {
+            var tab = this.widget.OverviewTabContainer.get("selectedChildWidget");
             this.setDisabled(this.id + "FindPrevious", !(this.foundIndex > 0), "iconLeft", "iconLeftDisabled");
             this.setDisabled(this.id + "FindNext", !(this.foundIndex < this.found.length - 1), "iconRight", "iconRightDisabled");
+            this.setDisabled(this.id + "ActivityMetric", tab.id !== this.id + "ActivitiesTreeMap");
         }
     });
 });

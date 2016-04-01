@@ -36,9 +36,10 @@
 //
 
 
-class MSortSlaveActivity : public CSlaveActivity, public CThorDataLink
+class MSortSlaveActivity : public CSlaveActivity
 {
-    IThorDataLink *input;
+    typedef CSlaveActivity PARENT;
+
     Owned<IRowStream> output;
     IHThorSortArg *helper;
     Owned<IThorSorter> sorter;
@@ -57,11 +58,8 @@ class MSortSlaveActivity : public CSlaveActivity, public CThorDataLink
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    MSortSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this), spillStats(spillStatistics)
+    MSortSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), spillStats(spillStatistics)
     {
-        input = NULL;
         portbase = 0;
         totalrows = RCUNSET;
     }
@@ -70,7 +68,7 @@ public:
         if (portbase) 
             freePort(portbase,NUMSLAVEPORTS);
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
         mptag_t barrierTag = container.queryJobChannel().deserializeMPTag(data);
@@ -83,14 +81,14 @@ public:
         appendOutputLinked(this);
         server.serialize(slaveData);
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input = inputs.item(0);
         try
         {
-            try { 
-                startInput(input); 
+            try
+            {
+                PARENT::start();
             }
             catch (IException *e)
             {
@@ -105,13 +103,12 @@ public:
                 barrier->cancel();
                 throw;
             }
-            dataLinkStart();
             
-            Linked<IRowInterfaces> rowif = queryRowInterfaces(input);
-            Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryId(),queryCodeContext());
+            Linked<IThorRowInterfaces> rowif = queryRowInterfaces(input);
+            Owned<IThorRowInterfaces> auxrowif = createThorRowInterfaces(queryRowManager(), helper->querySortedRecordSize(),queryId(),queryCodeContext());
             sorter->Gather(
                 rowif,
-                input,
+                inputStream,
                 helper->queryCompare(),
                 helper->queryCompareLeftRight(),
                 NULL,helper->querySerialize(),
@@ -120,8 +117,8 @@ public:
                 isUnstable(),
                 abortSoon,
                 auxrowif);
-            stopInput(input);
-            input = NULL;
+
+            PARENT::stop();
             if (abortSoon)
             {
                 ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "MSortSlaveActivity::start aborting");
@@ -150,22 +147,22 @@ public:
         ActPrintLog("SORT barrier.1 raised");
         output.setown(sorter->startMerge(totalrows));
     }
-    void stop()
+    virtual void stop() override
     {
-        if (output) {
+        if (output)
+        {
             output->stop();
             output.clear();
         }
         ActPrintLog("SORT waiting barrier.2");
         barrier->wait(false);
         ActPrintLog("SORT barrier.2 raised");
-        if (input)
-            stopInput(input);
+        PARENT::stop();
         sorter->stopMerge();
         ActPrintLog("SORT waiting for merge");
         dataLinkStop();
     }
-    void reset()
+    virtual void reset()
     {
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
         sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
@@ -203,8 +200,8 @@ public:
         return row.getClear();
     }
 
-    virtual bool isGrouped() { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return false; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.buffersInput = true;

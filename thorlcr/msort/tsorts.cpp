@@ -68,7 +68,7 @@ class CWriteIntercept : public CSimpleInterface
 
     CActivityBase &activity;
     CriticalSection crit;
-    IRowInterfaces *rowIf;
+    IThorRowInterfaces *rowIf;
     Owned<IFile> dataFile, idxFile;
     Owned<IFileIO> dataFileIO, idxFileIO;
     Owned<ISerialStream> dataFileStream;
@@ -166,7 +166,7 @@ class CWriteIntercept : public CSimpleInterface
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CWriteIntercept(CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _interval)
+    CWriteIntercept(CActivityBase &_activity, IThorRowInterfaces *_rowIf, unsigned _interval)
         : activity(_activity), rowIf(_rowIf), interval(_interval), sampleRows(activity, rowIf, true)
     {
         interval = _interval;
@@ -280,7 +280,7 @@ public:
 class CMiniSort
 {
     CActivityBase &activity;
-    IRowInterfaces &rowIf;
+    IThorRowInterfaces &rowIf;
     IOutputRowDeserializer *deserializer;
     IOutputRowSerializer *serializer;
     IEngineRowAllocator *allocator;
@@ -427,7 +427,7 @@ class CMiniSort
     }
 
 public:
-    CMiniSort(CActivityBase &_activity, IRowInterfaces &_rowIf, ICommunicator &_clusterComm, unsigned _partNo, unsigned _numNodes, mptag_t _mpTag)
+    CMiniSort(CActivityBase &_activity, IThorRowInterfaces &_rowIf, ICommunicator &_clusterComm, unsigned _partNo, unsigned _numNodes, mptag_t _mpTag)
         : activity(_activity), rowIf(_rowIf), clusterComm(_clusterComm), partNo(_partNo), numNodes(_numNodes), mpTag(_mpTag)
     {
         collector.setown(createThorRowCollector(activity, &rowIf));
@@ -583,7 +583,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     Owned<IException> exc, closeexc;
     OwnedConstThorRow partitionrow;
 
-    Linked<IRowInterfaces> rowif, auxrowif;
+    Linked<IThorRowInterfaces> rowif, auxrowif;
 
     unsigned multibinchopnum;
     unsigned overflowinterval; // aka overflowscale
@@ -596,7 +596,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     ICompare *primarySecondaryCompare; // used for co-sort
     ICompare *primarySecondaryUpperCompare; // used in between join
     ISortKeySerializer *keyserializer;      // used on partition calculation
-    Owned<IRowInterfaces> keyIf;
+    Owned<IThorRowInterfaces> keyIf;
     Owned<IOutputRowSerializer> rowToKeySerializer;
     void *midkeybuf;
     Semaphore startgathersem, finishedmergesem, closedownsem;
@@ -607,9 +607,9 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     class CRowToKeySerializer : public CSimpleInterfaceOf<IOutputRowSerializer>
     {
         ISortKeySerializer *keyConverter;
-        IRowInterfaces *rowIf, *keyIf;
+        IThorRowInterfaces *rowIf, *keyIf;
     public:
-        CRowToKeySerializer(IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, ISortKeySerializer *_keyConverter)
+        CRowToKeySerializer(IThorRowInterfaces *_rowIf, IThorRowInterfaces *_keyIf, ISortKeySerializer *_keyConverter)
             : rowIf(_rowIf), keyIf(_keyIf), keyConverter(_keyConverter)
         {
         }
@@ -1171,7 +1171,7 @@ public:
 
 // IThorSorter
     virtual void Gather(
-        IRowInterfaces *_rowif,
+        IThorRowInterfaces *_rowif,
         IRowStream *in,
         ICompare *_rowCompare,
         ICompare *_primarySecondaryCompare,
@@ -1181,7 +1181,7 @@ public:
         bool _nosort,
         bool _unstable,
         bool &abort,
-        IRowInterfaces *_auxrowif
+        IThorRowInterfaces *_auxrowif
         )
     {
         ActPrintLog(activity, "Gather in");
@@ -1210,7 +1210,7 @@ public:
         rowCompare = _rowCompare;
         if (keyserializer)
         {
-            keyIf.setown(createRowInterfaces(keyserializer->queryRecordSize(), activity->queryContainer().queryId(), activity->queryCodeContext()));
+            keyIf.setown(createThorRowInterfaces(rowif->queryRowManager(), keyserializer->queryRecordSize(), activity->queryContainer().queryId(), activity->queryCodeContext()));
             rowToKeySerializer.setown(new CRowToKeySerializer(auxrowif, keyIf, keyserializer));
             keyRowCompare = keyserializer->queryCompareKeyRow();
         }

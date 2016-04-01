@@ -187,8 +187,8 @@ public:
         progressKinds.append(StNumIndexSeeks);
         progressKinds.append(StNumIndexScans);
         ForEachItemIn(l, progressKinds)
-            progressInfoArr.append(*new ProgressInfo);
-        inputProgress.setown(new ProgressInfo);
+            progressInfoArr.append(*new ProgressInfo(queryJob()));
+        inputProgress.setown(new ProgressInfo(queryJob()));
         reInit = 0 != (indexBaseHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
     virtual void init()
@@ -445,7 +445,7 @@ public:
     {
         if (container.queryLocalOrGrouped())
             return;
-        Owned<IRowInterfaces> rowIf = createRowInterfaces(helper->queryOutputMeta(), queryId(), queryCodeContext());                
+        Owned<IThorRowInterfaces> rowIf = createThorRowInterfaces(queryRowManager(), helper->queryOutputMeta(), queryId(), queryCodeContext());
         OwnedConstThorRow result = getAggregate(*this, container.queryJob().querySlaves(), *rowIf, *helper, mpTag);
         if (!result)
             return;

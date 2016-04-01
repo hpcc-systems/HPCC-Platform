@@ -25,8 +25,10 @@
 
 #include "thwuidreadslave.ipp"
 
-class CWuidReadSlaveActivity : public CSlaveActivity, public CThorDataLink
+class CWuidReadSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     Owned<ISerialStream> replyStream;
     CThorStreamDeserializerSource rowSource;
     IHThorWorkunitReadArg *helper;
@@ -36,25 +38,23 @@ class CWuidReadSlaveActivity : public CSlaveActivity, public CThorDataLink
     CMessageBuffer masterReplyMsg;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CWuidReadSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     {
         replyTag = queryMPServer().createReplyTag();
         replyStream.setown(createMemoryBufferSerialStream(masterReplyMsg));
         rowSource.setStream(replyStream);
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
         helper = (IHThorWorkunitReadArg *)queryHelper();
         grouped = helper->queryOutputMeta()->isGrouped();
     } 
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        dataLinkStart();
+        PARENT::start();
 
         eogPending = false;
         if (container.queryLocal() || firstNode())
@@ -71,8 +71,6 @@ public:
             masterReplyMsg.swapWith(reqMsg);
         }
     }
-    void stop() { dataLinkStop(); }
-
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -92,8 +90,8 @@ public:
         dataLinkIncrement();
         return rowBuilder.finalizeRowClear(sz);
     }
-    bool isGrouped() { return grouped; }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return grouped; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.isSource = true;

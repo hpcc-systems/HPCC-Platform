@@ -345,6 +345,7 @@ IAtom * refreshAtom;
 IAtom * _remote_Atom;
 IAtom * renameAtom;
 IAtom * repeatAtom;
+IAtom * resizeAtom;
 IAtom * _resourced_Atom;
 IAtom * responseAtom;
 IAtom * restartAtom;
@@ -787,6 +788,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKESYSATOM(remote);
     MAKEATOM(rename);
     MAKEATOM(repeat);
+    MAKEATOM(resize);
     MAKESYSATOM(resourced);
     MAKEATOM(response);
     MAKEATOM(restart);

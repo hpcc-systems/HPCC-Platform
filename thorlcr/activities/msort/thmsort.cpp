@@ -36,7 +36,7 @@ class CSortBaseActivityMaster : public CMasterActivity
 {
     CThorStatsCollection extraStats;
 public:
-    CSortBaseActivityMaster(CMasterGraphElement * info) : CMasterActivity(info), extraStats(spillStatistics) { }
+    CSortBaseActivityMaster(CMasterGraphElement * info) : CMasterActivity(info), extraStats(info->queryJob(), spillStatistics) { }
 
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {
@@ -174,8 +174,8 @@ protected:
                 skewThreshold = container.queryJob().getWorkUnitValueInt("defaultSkewThreshold", 0);
         }
 
-        Owned<IRowInterfaces> rowif = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryId(),queryCodeContext());
-        Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryId(),queryCodeContext());
+        Owned<IThorRowInterfaces> rowif = createThorRowInterfaces(queryRowManager(), container.queryInput(0)->queryHelper()->queryOutputMeta(),queryId(),queryCodeContext());
+        Owned<IThorRowInterfaces> auxrowif = createThorRowInterfaces(queryRowManager(), helper->querySortedRecordSize(),queryId(),queryCodeContext());
         try
         {
             imaster->SortSetup(rowif,helper->queryCompare(),helper->querySerialize(),cosortfilenames.length()!=0,true,cosortfilenames.str(),auxrowif);

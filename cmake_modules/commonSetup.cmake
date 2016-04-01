@@ -49,10 +49,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(DEVEL "Enable the building/inclusion of a Development component." OFF)
   option(CLIENTTOOLS_ONLY "Enable the building of Client Tools only." OFF)
   option(INCLUDE_PLUGINS "Enable the building of platform and all plugins for testing purposes" OFF)
-  option(INCLUDE_CASSANDRA "Include the Cassandra plugin in the base package" ON)
+  option(USE_CASSANDRA "Include the Cassandra plugin in the base package" ON)
   option(PLUGIN "Enable building of a plugin" OFF)
   option(USE_SHLIBDEPS "Enable the use of dpkg-shlibdeps on ubuntu packaging" OFF)
 
+  option(SIGN_MODULES "Enable signing of ecl standard library modules" OFF)
   option(USE_CPPUNIT "Enable unit tests (requires cppunit)" OFF)
   option(USE_OPENLDAP "Enable OpenLDAP support (requires OpenLDAP)" ON)
   option(USE_ICU "Enable unicode support (requires ICU)" ON)
@@ -107,7 +108,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(MYSQLEMBED "Create a package with ONLY the mysql plugin" OFF)
   option(JAVAEMBED "Create a package with ONLY the javaembed plugin" OFF)
   option(SQLITE3EMBED "Create a package with ONLY the sqlite3embed plugin" OFF)
-  option(CASSANDRAEMBED "Create a package with ONLY the cassandraembed plugin" OFF)
   option(KAFKA "Create a package with ONLY the kafkaembed plugin" OFF)
 
   if (APPLE OR WIN32)
@@ -122,7 +122,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
 
     if(REMBED OR V8EMBED OR MEMCACHED OR PYEMBED OR REDIS OR JAVAEMBED OR MYSQLEMBED
-        OR SQLITE3EMBED OR CASSANDRAEMBED OR KAFKA)
+        OR SQLITE3EMBED OR KAFKA)
         set(PLUGIN ON)
         set(CLIENTTOOLS OFF)
         set(PLATFORM OFF)
@@ -186,13 +186,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
             set(pluginname "sqlite3embed")
         endif()
     endif()
-    if(CASSANDRAEMBED)
-	    if(DEFINED pluginname)
-	        message(FATAL_ERROR "Cannot enable cassandraembed, already declared ${pluginname}")
-        else()
-            set(pluginname "cassandraembed")
-        endif()
-    endif()
     if(KAFKA)
 	    if(DEFINED pluginname)
 	        message(FATAL_ERROR "Cannot enable kafka, already declared ${pluginname}")
@@ -236,13 +229,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set(MYSQLEMBED ON)
         set(JAVAEMBED ON)
         set(SQLITE3EMBED ON)
-        set(CASSANDRAEMBED ON)
         set(KAFKA ON)
     endif()
-
-  if (INCLUDE_CASSANDRA)
-    set(CASSANDRAEMBED ON)
-  endif()
 
   option(PORTALURL "Set url to hpccsystems portal download page")
 
@@ -251,6 +239,23 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
   set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
+
+  if(UNIX AND SIGN_MODULES)
+    #export gpg public key used for signing to new installation
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/pub.key
+      COMMAND gpg --output=${CMAKE_BINARY_DIR}/pub.key --batch --no-tty --export ${SIGN_MODULES_KEYID}
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      COMMENT "Exporting public key for eclcc signed modules to ${CMAKE_BINARY_DIR}/pub.key"
+      VERBATIM
+      )
+    add_custom_target(export-stdlib-pubkey ALL
+      DEPENDS ${CMAKE_BINARY_DIR}/pub.key
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      )
+    install(FILES ${CMAKE_BINARY_DIR}/pub.key DESTINATION .${CONFIG_DIR}/rpmnew  COMPONENT Runtime)
+    install(PROGRAMS ${CMAKE_MODULE_PATH}publickey.install DESTINATION etc/init.d/install COMPONENT Runtime)
+  endif()
+
 
   ##########################################################
 
@@ -396,7 +401,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror=bitwise-op-parentheses -Werror=tautological-compare")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-switch-enum -Wno-format-zero-length -Wno-switch")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Qunused-arguments")  # Silence messages about pthread not being used when linking...
-      
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-inconsistent-missing-override")   # Until we fix them all, whcih would be a huge task...      
       if (CLANG_VERSION VERSION_GREATER 3.6 OR CLANG_VERSION VERSION_EQUAL 3.6 OR APPLE_CLANG_VERSION VERSION_GREATER 6.0)
         SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pointer-bool-conversion")
       endif()
@@ -925,4 +930,37 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     message(STATUS "Updated ${cpackvar} to ${${cpackvar}}")
   endfunction()
 
+  MACRO(SIGN_MODULE module)
+    if(SIGN_MODULES)
+      if(DEFINED SIGN_MODULES_PASSPHRASE)
+        set(GPG_PASSPHRASE_OPTION --passphrase)
+      endif()
+      if(DEFINED SIGN_MODULES_KEYID)
+        set(GPG_DEFAULT_KEY_OPTION --default-key)
+      endif()
+      add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
+        COMMAND gpg --output ${CMAKE_CURRENT_BINARY_DIR}/${module} ${GPG_DEFAULT_KEY_OPTION} ${SIGN_MODULES_KEYID}  --clearsign ${GPG_PASSPHRASE_OPTION} ${SIGN_MODULES_PASSPHRASE} --batch --no-tty ${module}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Adding signed ${module} to project"
+        )
+    else()
+      add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
+        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/${module} ${CMAKE_CURRENT_BINARY_DIR}/${module}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Adding unsigned ${module} to project"
+        VERBATIM
+        )
+    endif()
+    # Use custom target to cause build to fail if dependency file isn't generated by gpg or cp commands
+    get_filename_component(module_without_extension ${module} NAME_WE)
+    add_custom_target(
+      ${module_without_extension}-ecl ALL
+      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${module}
+      )
+    if(SIGN_MODULES)
+      add_dependencies(${module_without_extension}-ecl export-stdlib-pubkey)
+    endif()
+  ENDMACRO()
 endif ("${COMMONSETUP_DONE}" STREQUAL "")

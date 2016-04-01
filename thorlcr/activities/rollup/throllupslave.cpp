@@ -27,14 +27,15 @@ class CDedupAllHelper : public CSimpleInterface, implements IRowStream
 {
     CActivityBase *activity;
 
-    unsigned dedupCount;
-    const void ** dedupArray;
-    unsigned dedupIdx;
-    IThorDataLink * in;
-    IHThorDedupArg * helper;
-    bool keepLeft;
-    bool * abort;
-    IStopInput *iStopInput;
+    unsigned dedupCount = 0;
+    const void ** dedupArray = nullptr;
+    unsigned dedupIdx = 0;
+    IThorDataLink * in = nullptr;
+    IEngineRowStream *inputStream = nullptr;
+    IHThorDedupArg * helper = nullptr;
+    bool keepLeft = true;
+    bool * abort = nullptr;
+    IStopInput *iStopInput = nullptr;
 
     Owned<IThorRowLoader> rowLoader;
     CThorExpandingRowArray rows;
@@ -84,25 +85,18 @@ public:
 
     CDedupAllHelper(CActivityBase *_activity) : activity(_activity), rows(*_activity, _activity)
     {
-        in = NULL;
-        helper = NULL;
-        abort = NULL;
-        dedupIdx = dedupCount = 0;
-        dedupArray = NULL;
-        iStopInput = NULL;
-        keepLeft = true;
         rowLoader.setown(createThorRowLoader(*activity, NULL, stableSort_none, rc_allMem));
     }
 
-    void init(IThorDataLink * _in, IHThorDedupArg * _helper, bool _keepLeft, bool * _abort, IStopInput *_iStopInput)
+    void init(IThorDataLink * _in, IEngineRowStream *_inputStream, IHThorDedupArg * _helper, bool _keepLeft, bool * _abort, IStopInput *_iStopInput)
     {
-        in = _in;
+        assertex(_in);
+        inputStream = _inputStream;
         helper = _helper;
         keepLeft = _keepLeft;
         abort = _abort;
         iStopInput = _iStopInput;
 
-        assertex(in);
         assertex(helper);
         assertex(abort);
 
@@ -119,7 +113,7 @@ public:
         // JCSMORE - could do in chunks and merge if > mem
         try
         {
-            groupOp ? rowLoader->loadGroup(in, activity->queryAbortSoon(), &rows) : rowLoader->load(in, activity->queryAbortSoon(), false, &rows);
+            groupOp ? rowLoader->loadGroup(inputStream, activity->queryAbortSoon(), &rows) : rowLoader->load(inputStream, activity->queryAbortSoon(), false, &rows);
         }
         catch (IException *e)
         {
@@ -159,9 +153,11 @@ public:
 
 class CDedupRollupBaseActivity : public CSlaveActivity, implements IStopInput
 {
+    typedef CSlaveActivity PARENT;
+
     bool rollup;
     CriticalSection stopsect;
-    Linked<IRowInterfaces> rowif;
+    Linked<IThorRowInterfaces> rowif;
 
 protected:
     bool eogNext, eos;
@@ -169,7 +165,6 @@ protected:
     bool groupOp;
     OwnedConstThorRow kept;
     OwnedConstThorRow keptTransformed; // only used by rollup
-    Owned<IThorDataLink> input;
     bool needFirstRow;
 
     unsigned numKept; // not used by rollup
@@ -184,28 +179,27 @@ public:
     virtual void stopInput()
     {
         CriticalBlock block(stopsect);  // can be called async by distribute
-        if (input)
-        {
-            CSlaveActivity::stopInput(input);
-            input.clear();
-        }
+        PARENT::stop();
     }
-    void start()
+    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {
+        PARENT::setInputStream(index, _input, consumerOrdered);
+        if (global)
+            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), rollup?ROLLUP_SMART_BUFFER_SIZE:DEDUP_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage())); // only allow spill if input can stall
+    }
+    virtual void start()
+    {
+        PARENT::start();
         needFirstRow = true;
-        input.set(inputs.item(0));
         rowif.set(queryRowInterfaces(input));
         eogNext = eos = false;
         numKept = 0;
-        if (global)
-            input.setown(createDataLinkSmartBuffer(this, input,rollup?ROLLUP_SMART_BUFFER_SIZE:DEDUP_SMART_BUFFER_SIZE,isSmartBufferSpillNeeded(this),false,RCUNBOUND,NULL,false,&container.queryJob().queryIDiskUsage())); // only allow spill if input can stall
-        startInput(input); 
-    }   
-    void stop()
+    }
+    virtual void stop()
     {
         stopInput();
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         if (global) {
             info.canBufferInput = true;
@@ -214,7 +208,7 @@ public:
         info.canReduceNumRows = true;
     }
 
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         if (global)
             mpTag = container.queryJobChannel().deserializeMPTag(data); // only used for global acts
@@ -245,7 +239,7 @@ public:
                 if (kept)
                     return;
             }
-            kept.setown(input->nextRow());
+            kept.setown(inputStream->nextRow());
             if (!kept && global)
                 putNextKept(); // pass on now
             if (rollup)
@@ -288,7 +282,7 @@ public:
     }
 };
 
-class CDedupBaseSlaveActivity : public CDedupRollupBaseActivity, public CThorDataLink
+class CDedupBaseSlaveActivity : public CDedupRollupBaseActivity
 {
 protected:
     IHThorDedupArg *ddhelper;
@@ -296,13 +290,11 @@ protected:
     unsigned numToKeep;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CDedupBaseSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp)
-        : CDedupRollupBaseActivity(_container, false, global, groupOp), CThorDataLink(this)
+        : CDedupRollupBaseActivity(_container, false, global, groupOp)
     {
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         CDedupRollupBaseActivity::init(data, slaveData);
         appendOutputLinked(this);   // adding 'me' to outputs array
@@ -311,23 +303,17 @@ public:
         numToKeep = ddhelper->numToKeep();
         assertex(keepLeft || numToKeep == 1);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDedupRollupBaseActivity::start();
-        dataLinkStart();
     }
-    virtual void stop()
-    {
-        CDedupRollupBaseActivity::stop();
-        dataLinkStop();
-    }
-    virtual bool isGrouped() { return groupOp; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return groupOp; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         CDedupRollupBaseActivity::getMetaInfo(info);
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 };
 
@@ -369,11 +355,11 @@ public:
         OwnedConstThorRow next;
         loop
         {
-            next.setown(input->nextRow());
+            next.setown(inputStream->nextRow());
             if (!next)
             {
                 if (!groupOp)
-                    next.setown(input->nextRow());
+                    next.setown(inputStream->nextRow());
                 if (!next)
                 {
                     if (global&&putNextKept()) // send kept to next node
@@ -416,8 +402,6 @@ class CDedupAllSlaveActivity : public CDedupBaseSlaveActivity
     Owned<CDedupAllHelper> dedupHelper;
     bool lastEog;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CDedupAllSlaveActivity(CGraphElementBase *_container, bool groupOp)
         : CDedupBaseSlaveActivity(_container, false, groupOp)
     {
@@ -436,7 +420,7 @@ public:
         lastEog = false;
         assertex(!global);      // dedup(),local,all only supported
         dedupHelper.setown(new CDedupAllHelper(this));
-        dedupHelper->init(input, ddhelper, keepLeft, &abortSoon, groupOp?NULL:this);
+        dedupHelper->init(input, inputStream, ddhelper, keepLeft, &abortSoon, groupOp?NULL:this);
         dedupHelper->calcNextDedupAll(groupOp);
     }
     CATCH_NEXTROW()
@@ -464,19 +448,17 @@ public:
     }
 };
 
-class CRollupSlaveActivity : public CDedupRollupBaseActivity, public CThorDataLink
+class CRollupSlaveActivity : public CDedupRollupBaseActivity
 {
 private:
     IHThorRollupArg * ruhelper;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CRollupSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp) 
-        : CDedupRollupBaseActivity(_container, true, global, groupOp), CThorDataLink(this)
+        : CDedupRollupBaseActivity(_container, true, global, groupOp)
     {
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         CDedupRollupBaseActivity::init(data, slaveData);
         appendOutputLinked(this);   // adding 'me' to outputs array
@@ -498,13 +480,12 @@ public:
             return true;
         return false;
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDedupRollupBaseActivity::start();
-        dataLinkStart();
     }
-    virtual void stop()
+    virtual void stop() override
     {
         if (global && !eos) // if stopped early, ensure next informed
         {
@@ -513,7 +494,6 @@ public:
             putNextKept();
         }
         CDedupRollupBaseActivity::stop();
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {
@@ -525,11 +505,11 @@ public:
         OwnedConstThorRow next;
         loop
         {
-            next.setown(input->nextRow());
+            next.setown(inputStream->nextRow());
             if (!next)
             {
                 if (!groupOp)
-                    next.setown(input->nextRow());
+                    next.setown(inputStream->nextRow());
                 if (!next)
                 {
                     if (global&&putNextKept()) // send kept to next node
@@ -561,30 +541,28 @@ public:
         }
         return NULL;
     }
-    virtual bool isGrouped() { return groupOp; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return groupOp; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         CDedupRollupBaseActivity::getMetaInfo(info);
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 };
 
-class CRollupGroupSlaveActivity : public CSlaveActivity, public CThorDataLink
+class CRollupGroupSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     IHThorRollupGroupArg *helper;
     Owned<IThorRowLoader> groupLoader;
     bool eoi;
-    IThorDataLink *input;
     CThorExpandingRowArray rows;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    CRollupGroupSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this), rows(*this, NULL)
+    CRollupGroupSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), rows(*this, NULL)
     {
         eoi = false;
-        input = NULL;
         helper = NULL;
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -596,15 +574,8 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input = inputs.item(0);
+        PARENT::start();
         eoi = false;
-        startInput(input);
-        dataLinkStart();
-    }
-    virtual void stop()
-    {
-        stopInput(input);
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {
@@ -616,7 +587,7 @@ public:
         {
             loop
             {
-                groupLoader->loadGroup(input, abortSoon, &rows);
+                groupLoader->loadGroup(inputStream, abortSoon, &rows);
                 unsigned count = rows.ordinality();
                 if (0 == count)
                 {
@@ -642,11 +613,11 @@ public:
             throw checkAndCreateOOMContextException(this, e, "loading group for rollup group", groupLoader->numRows(), inputOutputMeta, groupLoader->probeRow(0));
         }
     }
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() const override { return false; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
         info.canReduceNumRows = true;
     }
 };

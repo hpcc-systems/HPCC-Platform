@@ -1,4 +1,24 @@
-﻿define([], function () {
+﻿define([
+    "dojox/html/entities"
+], function (entities) {
+
+    function xmlEncode(str) {
+        str = "" + str;
+        return entities.encode(str);
+    }
+
+    function xmlEncode2(str) {
+        str = "" + str;
+        return str.replace(/&/g, '&amp;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&apos;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/\n/g, '&#10;')
+                  .replace(/\r/g, '&#13;')
+        ;
+    }
+
     function espTime2Seconds(duration) {
         if (!duration) {
             return 0;
@@ -49,7 +69,184 @@
         }, this);
     }
 
+    function unitTest(size, unit) {
+        var nsIndex = size.indexOf(unit);
+        if (nsIndex !== -1) {
+            return parseFloat(size.substr(0, nsIndex));
+        }
+        return -1;
+    }
+
+    function espSize2Bytes(size) {
+        if (!size) {
+            return 0;
+        } else if (!isNaN(size)) {
+            return parseFloat(size);
+        }
+        var retVal = unitTest(size, "Kb");
+        if (retVal >= 0) {
+            return retVal * 1024;
+        }
+        var retVal = unitTest(size, "Mb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 2);
+        }
+        var retVal = unitTest(size, "Gb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 3);
+        }
+        var retVal = unitTest(size, "Tb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 4);
+        }
+        var retVal = unitTest(size, "Pb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 5);
+        }
+        var retVal = unitTest(size, "Eb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 6);
+        }
+        var retVal = unitTest(size, "Zb");
+        if (retVal >= 0) {
+            return retVal * Math.pow(1024, 7);
+        }
+        var retVal = unitTest(size, "b");
+        if (retVal >= 0) {
+            return retVal;
+        }
+        return 0;
+    }
+
+    function espSize2BytesTests() {
+        var tests = [
+            { str: "1", expected: 1 },
+            { str: "1b", expected: 1 },
+            { str: "1Kb", expected: 1 * 1024 },
+            { str: "1Mb", expected: 1 * 1024 * 1024 },
+            { str: "1Gb", expected: 1 * 1024 * 1024 * 1024 },
+            { str: "1Tb", expected: 1 * 1024 * 1024 * 1024 * 1024 },
+            { str: "1Pb", expected: 1 * 1024 * 1024 * 1024 * 1024 * 1024 },
+            { str: "1Eb", expected: 1 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 },
+            { str: "1Zb", expected: 1 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 }
+        ];
+        tests.forEach(function (test, idx) {
+            if (espSize2Bytes(test.str) !== test.expected) {
+                console.log("espSize2BytesTests failed with " + test.str + "(" +espSize2Bytes(test.str) + ") !== " + test.expected);
+            }
+        }, this);
+    }
+
+    /* alphanum.js (C) Brian Huisman
+     * Based on the Alphanum Algorithm by David Koelle
+     * The Alphanum Algorithm is discussed at http://www.DaveKoelle.com
+     *
+     * Distributed under same license as original
+     * 
+     * This library is free software; you can redistribute it and/or
+     * modify it under the terms of the GNU Lesser General Public
+     * License as published by the Free Software Foundation; either
+     * version 2.1 of the License, or any later version.
+     * 
+     * This library is distributed in the hope that it will be useful,
+     * but WITHOUT ANY WARRANTY; without even the implied warranty of
+     * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+     * Lesser General Public License for more details.
+     * 
+     * You should have received a copy of the GNU Lesser General Public
+     * License along with this library; if not, write to the Free Software
+     * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+     */
+
+    /* ********************************************************************
+     * Alphanum sort() function version - case sensitive
+     *  - Slower, but easier to modify for arrays of objects which contain
+     *    string properties
+     *
+     */
+    function alphanum(a, b) {
+        function chunkify(t) {
+            var tz = new Array();
+            var x = 0, y = -1, n = 0, i, j;
+
+            while (i = (j = t.charAt(x++)).charCodeAt(0)) {
+                var m = (i == 46 || (i >= 48 && i <= 57));
+                if (m !== n) {
+                    tz[++y] = "";
+                    n = m;
+                }
+                tz[y] += j;
+            }
+            return tz;
+        }
+
+        var aa = chunkify(a);
+        var bb = chunkify(b);
+
+        for (x = 0; aa[x] && bb[x]; x++) {
+            if (aa[x] !== bb[x]) {
+                var c = Number(aa[x]), d = Number(bb[x]);
+                if (c == aa[x] && d == bb[x]) {
+                    return c - d;
+                } else return (aa[x] > bb[x]) ? 1 : -1;
+            }
+        }
+        return aa.length - bb.length;
+    }
+
+
+    /* ********************************************************************
+     * Alphanum sort() function version - case insensitive
+     *  - Slower, but easier to modify for arrays of objects which contain
+     *    string properties
+     *
+     */
+    function alphanumCase(a, b) {
+        function chunkify(t) {
+            var tz = new Array();
+            var x = 0, y = -1, n = 0, i, j;
+
+            while (i = (j = t.charAt(x++)).charCodeAt(0)) {
+                var m = (i == 46 || (i >= 48 && i <= 57));
+                if (m !== n) {
+                    tz[++y] = "";
+                    n = m;
+                }
+                tz[y] += j;
+            }
+            return tz;
+        }
+
+        var aa = chunkify(a.toLowerCase());
+        var bb = chunkify(b.toLowerCase());
+
+        for (x = 0; aa[x] && bb[x]; x++) {
+            if (aa[x] !== bb[x]) {
+                var c = Number(aa[x]), d = Number(bb[x]);
+                if (c == aa[x] && d == bb[x]) {
+                    return c - d;
+                } else return (aa[x] > bb[x]) ? 1 : -1;
+            }
+        }
+        return aa.length - bb.length;
+    }
+
+    function alphanumSort(arr, col, caseInsensitive, reverse) {
+        if (arr && arr instanceof Array) {
+            arr.sort(function (l, r) {
+                if (caseInsensitive) {
+                    return alphanumCase(r[col], l[col]) * (reverse ? -1 : 1);
+                }
+                return alphanum(l[col], r[col]) * (reverse ? -1 : 1);
+            });
+        }
+    }
+
     return {
-        espTime2Seconds: espTime2Seconds
+        espTime2Seconds: espTime2Seconds,
+        espSize2Bytes: espSize2Bytes,
+        xmlEncode: xmlEncode,
+        xmlEncode2: xmlEncode2,
+        alphanumSort: alphanumSort
     }
 });

@@ -357,19 +357,19 @@ void CSlaveMessageHandler::main()
 
 //////////////////////
 
-CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(_container), threaded("CMasterActivity", this)
+CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(_container), threaded("CMasterActivity", this), timingInfo(_container->queryJob())
 {
     notedWarnings = createThreadSafeBitSet();
     mpTag = TAG_NULL;
     data = new MemoryBuffer[container.queryJob().querySlaves()];
     asyncStart = false;
     if (container.isSink())
-        progressInfo.append(*new ProgressInfo);
+        progressInfo.append(*new ProgressInfo(queryJob()));
     else
     {
         unsigned o=0;
         for (; o<container.getOutputs(); o++)
-            progressInfo.append(*new ProgressInfo);
+            progressInfo.append(*new ProgressInfo(queryJob()));
     }
 }
 
@@ -1259,6 +1259,21 @@ public:
     }
 };
 
+class CThorCodeContextMasterSharedMem : public CThorCodeContextMaster
+{
+    IThorAllocator *sharedAllocator;
+public:
+    CThorCodeContextMasterSharedMem(CJobChannel &jobChannel, IThorAllocator *_sharedAllocator, IConstWorkUnit &_workunit, ILoadedDllEntry &querySo, IUserDescriptor &userDesc)
+        : CThorCodeContextMaster(jobChannel, _workunit, querySo, userDesc)
+    {
+        sharedAllocator = _sharedAllocator;
+    }
+    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
+    {
+        return sharedAllocator->getRowAllocator(meta, activityId);
+    }
+};
+
 
 /////////////
 
@@ -1284,7 +1299,8 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     user.set(workunit->queryUser());
     token.append(_token.str());
     scope.append(_scope.str());
-    globalMemorySize = globals->getPropInt("@masterMemorySize", globals->getPropInt("@globalMemorySize")); // in MB
+    globalMemoryMB = globals->getPropInt("@masterMemorySize", globals->getPropInt("@globalMemorySize")); // in MB
+    numChannels = 1;
     init();
 
     resumed = WUActionResume == workunit->getAction();
@@ -1304,6 +1320,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
         plugin.getPluginName(name);
         loadPlugin(pluginMap, pluginsDir.str(), name.str());
     }
+    sharedAllocator.setown(::createThorAllocator(globalMemoryMB, 0, 1, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
     Owned<IMPServer> mpServer = getMPServer();
     addChannel(mpServer);
     mpJobTag = allocateMPTag();
@@ -1904,7 +1921,8 @@ bool CJobMaster::fireException(IException *e)
 
 CJobMasterChannel::CJobMasterChannel(CJobBase &job, IMPServer *mpServer, unsigned channel) : CJobChannel(job, mpServer, channel)
 {
-    codeCtx = new CThorCodeContextMaster(*this, job.queryWorkUnit(), job.queryDllEntry(), *job.queryUserDescriptor());
+    codeCtx.setown(new CThorCodeContextMaster(*this, job.queryWorkUnit(), job.queryDllEntry(), *job.queryUserDescriptor()));
+    sharedMemCodeCtx.setown(new CThorCodeContextMasterSharedMem(*this, job.querySharedAllocator(), job.queryWorkUnit(), job.queryDllEntry(), *job.queryUserDescriptor()));
 }
 
 CGraphBase *CJobMasterChannel::createGraph()
@@ -1924,7 +1942,7 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
 {
     CMasterGraph &graph;
     CActivityBase &activity;
-    IRowInterfaces *rowIf;
+    IThorRowInterfaces *rowIf;
     unsigned id;
     CriticalSection crit;
     PointerArrayOf<CThorExpandingRowArray> results;
@@ -2013,7 +2031,7 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _id, activity_id _ownerId, unsigned _spillPriority)
+    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IThorRowInterfaces *_rowIf, unsigned _id, activity_id _ownerId, unsigned _spillPriority)
         : graph(_graph), activity(_activity), rowIf(_rowIf), id(_id), ownerId(_ownerId), spillPriority(_spillPriority)
     {
         for (unsigned n=0; n<graph.queryJob().querySlaves(); n++)
@@ -2043,7 +2061,7 @@ public:
         ensure();
         return result->getRowStream();
     }
-    virtual IRowInterfaces *queryRowInterfaces()
+    virtual IThorRowInterfaces *queryRowInterfaces()
     {
         return rowIf;
     }
@@ -2758,21 +2776,21 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     return true;
 }
 
-IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
     Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, results->queryOwnerId(), spillPriority);
     results->setResult(id, result);
     return result;
 }
 
-IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
     Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, localResults->queryOwnerId(), spillPriority);
     localResults->setResult(id, result);
     return result;
 }
 
-IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
     Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, 0, localResults->queryOwnerId(), spillPriority);
     unsigned id = graphLoopResults->addResult(result);
@@ -2798,7 +2816,7 @@ static bool suppressStatisticIfZero(StatisticKind kind)
 
 ///////////////////////////////////////////////////
 
-CThorStats::CThorStats(StatisticKind _kind) : kind(_kind)
+CThorStats::CThorStats(CJobBase &_ctx, StatisticKind _kind) : ctx(_ctx), kind(_kind)
 {
     unsigned c = queryClusterWidth();
     while (c--) counts.append(0);
@@ -2824,7 +2842,7 @@ void CThorStats::reset()
 
 void CThorStats::calculateSkew()
 {
-    if (max)
+    if (max > ctx.querySlaves()) // i.e. if small count, suppress skew stats.
     {
         unsigned count = counts.ordinality();
         double _avg = (double)tot/count;
@@ -2889,13 +2907,13 @@ void CThorStats::getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqu
 
 ///////////////////////////////////////////////////
 
-CTimingInfo::CTimingInfo() : CThorStats(StTimeLocalExecute)
+CTimingInfo::CTimingInfo(CJobBase &ctx) : CThorStats(ctx, StTimeLocalExecute)
 {
 }
 
 ///////////////////////////////////////////////////
 
-ProgressInfo::ProgressInfo() : CThorStats(StNumRowsProcessed)
+ProgressInfo::ProgressInfo(CJobBase &ctx) : CThorStats(ctx, StNumRowsProcessed)
 {
     startcount = stopcount = 0;
 }

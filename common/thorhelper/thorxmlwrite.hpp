@@ -122,6 +122,7 @@ public:
 
     void checkDelimit(int inc=0);
     void checkFormat(bool doDelimit, bool needDelimiter=true, int inc=0);
+    void prepareBeginArray(const char *fieldname);
 
     virtual void outputInlineXml(const char *text) //for appending raw xml content
     {

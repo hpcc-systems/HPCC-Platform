@@ -298,7 +298,7 @@ public:
         unlockAll();
         logctx.Release();
     }
-
+    inline bool checkEntered(){return entered;}
     void doLockChild(IPropertyTree *xml, const char *logText, StringBuffer &reply)
     {
         if (traceLevel > 5)
@@ -1666,6 +1666,17 @@ public:
         }
         else
         {
+            bool lock = msg->getPropBool("@lock", false);
+            bool lockAll = msg->getPropBool("@lockAll", false);
+            if (!roxieMsgCtx->ensureCascadeManager().checkEntered() && (lock || lockAll)) //only if not already locked
+            {
+                if (logctx.queryTraceLevel() > 8)
+                    logctx.CTXLOG("controll msg lock%s attribute", lockAll ? "All" : "");
+                roxieMsgCtx->ensureCascadeManager().doLockGlobal(reply, false);
+                if (logctx.queryTraceLevel() > 8)
+                    logctx.CTXLOG("lock%s attribute reply %s", lockAll ? "All" : "", reply.str());
+            }
+
             bool doControlQuery = true;
             if (strieq(name, "control:aclupdate"))
             {

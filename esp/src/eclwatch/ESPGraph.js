@@ -57,7 +57,8 @@ define([
             this.m_visibleEdges = {};
         },
 
-        calcVisibility: function (items, localisationDepth, localisationDistance) {
+        calcVisibility: function (items, localisationDepth, localisationDistance, noSpills) {
+            this.noSpills = noSpills;
             arrayUtil.forEach(items, function (item) {
                 switch (this.graph.getGlobalType(item)) {
                     case GRAPH_TYPE.VERTEX:
@@ -78,6 +79,9 @@ define([
         },
 
         calcInVertexVisibility: function (vertex, localisationDistance) {
+            if (this.noSpills && vertex.isSpill()) {
+                localisationDistance++;
+            }
             this.m_visibleVertices[vertex.__hpcc_id] = vertex;
             if (localisationDistance > 0) {
                 arrayUtil.forEach(vertex.getInEdges(), function (edge, idx) {
@@ -87,6 +91,9 @@ define([
         },
 
         calcOutVertexVisibility: function (vertex, localisationDistance) {
+            if (this.noSpills && vertex.isSpill()) {
+                localisationDistance++;
+            }
             this.m_visibleVertices[vertex.__hpcc_id] = vertex;
             if (localisationDistance > 0) {
                 arrayUtil.forEach(vertex.getOutEdges(), function (edge, idx) {
@@ -126,18 +133,6 @@ define([
             }, this);
         },
 
-        xmlEncode: function (str) {
-            str = "" + str;
-            return str.replace(/&/g, '&amp;')
-                      .replace(/"/g, '&quot;')
-                      .replace(/'/g, '&apos;')
-                      .replace(/</g, '&lt;')
-                      .replace(/>/g, '&gt;')
-                      .replace(/\n/g, '&#10;')
-                      .replace(/\r/g, '&#13;')
-            ;
-        },
-
         buildVertexString: function (vertex, isPoint) {
             var attrStr = "";
             var propsStr = "";
@@ -146,9 +141,9 @@ define([
                 if (isPoint && key.indexOf("_kind") >= 0) {
                     propsStr += "<att name=\"_kind\" value=\"point\"/>";
                 } else if (key === "id" || key === "label") {
-                    attrStr += " " + key + "=\"" + this.xmlEncode(props[key]) + "\"";
+                    attrStr += " " + key + "=\"" + Utility.xmlEncode(props[key]) + "\"";
                 } else {
-                    propsStr += "<att name=\"" + key + "\" value=\"" + this.xmlEncode(props[key]) + "\"/>";
+                    propsStr += "<att name=\"" + key + "\" value=\"" + Utility.xmlEncode(props[key]) + "\"/>";
                 }
             }
             return "<node" + attrStr + ">" + propsStr + "</node>";
@@ -163,9 +158,9 @@ define([
                     key.toLowerCase() === "label" ||
                     key.toLowerCase() === "source" ||
                     key.toLowerCase() === "target") {
-                    attrStr += " " + key + "=\"" + this.xmlEncode(props[key]) + "\"";
+                    attrStr += " " + key + "=\"" + Utility.xmlEncode(props[key]) + "\"";
                 } else {
-                    propsStr += "<att name=\"" + key + "\" value=\"" + this.xmlEncode(props[key]) + "\"/>";
+                    propsStr += "<att name=\"" + key + "\" value=\"" + Utility.xmlEncode(props[key]) + "\"/>";
                 }
             }
             return "<edge" + attrStr + ">" + propsStr + "</edge>";
@@ -221,16 +216,37 @@ define([
             this.calcSemiVisibleVertices();
         },
 
+        addSemiVisibleEdge: function (edge) {
+            if (!this.m_visibleEdges[edge.__hpcc_id]) {
+                this.m_visibleEdges[edge.__hpcc_id] = edge;
+            }
+        },
+
+        addSemiVisibleVertex: function (vertex) {
+            if (!this.m_visibleVertices[vertex.__hpcc_id]) {
+                this.m_semiVisibleVertices[vertex.__hpcc_id] = vertex;
+                this.calcAncestorVisibility(vertex);
+            }
+        },
+
         calcSemiVisibleVertices: function () {
             for (var key in this.m_visibleEdges) {
                 var edge = this.m_visibleEdges[key];
-                if (!this.m_visibleVertices[edge.getSource().__hpcc_id]) {
-                    this.m_semiVisibleVertices[edge.getSource().__hpcc_id] = edge.getSource();
-                    this.calcAncestorVisibility(edge.getSource());
+                var source = edge.getSource();
+                this.addSemiVisibleVertex(source);
+                while (this.noSpills && source.isSpill()) {
+                    var inEdges = source.getInEdges();
+                    this.addSemiVisibleEdge(inEdges[0]);
+                    source = inEdges[0].getSource();
+                    this.addSemiVisibleVertex(source);
                 }
-                if (!this.m_visibleVertices[edge.getTarget().__hpcc_id]) {
-                    this.m_semiVisibleVertices[edge.getTarget().__hpcc_id] = edge.getSource();
-                    this.calcAncestorVisibility(edge.getTarget());
+                var target = edge.getTarget();
+                this.addSemiVisibleVertex(target);
+                while (this.noSpills && target.isSpill()) {
+                    var outEdges = target.getOutEdges();
+                    this.addSemiVisibleEdge(outEdges[0]);
+                    target = outEdges[0].getTarget();
+                    this.addSemiVisibleVertex(target);
                 }
             }
         },
@@ -259,7 +275,7 @@ define([
 
                 var props = subgraph.getProperties();
                 for (var key in props) {
-                    propsStr += "<att name=\"" + key + "\" value=\"" + this.xmlEncode(props[key]) + "\"/>";
+                    propsStr += "<att name=\"" + key + "\" value=\"" + Utility.xmlEncode(props[key]) + "\"/>";
                 }
                 this.m_xgmml += root ? "" : "</graph></att>" + propsStr + "</node>";
             }
@@ -318,11 +334,35 @@ define([
             this.__hpcc_vertices.push(vertex);
         },
 
+        removeVertex: function (vertex) {
+            this.__hpcc_vertices = arrayUtil.filter(this.__hpcc_vertices, function (vertex2) {
+                return vertex !== vertex2;
+            }, this);
+        },
+
         addEdge: function (edge) {
             edge.__hpcc_parent = this;
             this.__hpcc_edges.push(edge);
-            edge.getSource().__hpcc_outEdges[edge.__hpcc_id] = edge;
-            edge.getTarget().__hpcc_inEdges[edge.__hpcc_id] = edge;
+        },
+
+        removeEdge: function (edge) {
+            this.__hpcc_edges = arrayUtil.filter(this.__hpcc_edges, function (edge2) {
+                return edge !== edge2;
+            }, this);
+        },
+
+        remove: function () {
+            arrayUtil.forEach(this.__hpcc_subgraphs, function (subgraph) {
+                subgraph.__hpcc_parent = this.__hpcc_parent;
+            }, this);
+            arrayUtil.forEach(this.__hpcc_vertices, function (vertex) {
+                vertex.__hpcc_parent = this.__hpcc_parent;
+            }, this);
+            arrayUtil.forEach(this.__hpcc_edges, function (edge) {
+                edge.__hpcc_parent = this.__hpcc_parent;
+            }, this);
+            delete this.__hpcc_parent;
+            this.__hpcc_graph.removeItem(this);
         },
 
         walkSubgraphs: function (visitor) {
@@ -343,24 +383,51 @@ define([
     var Vertex = declare([GraphItem], {
         constructor: function () {
             this._globalType = "Vertex";
-            this.__hpcc_inEdges = {};
-            this.__hpcc_outEdges = {};
+        },
+
+        isSpill: function () {
+            return this._isSpill;
+        },
+
+        remove: function () {
+            var inVertices = this.getInVertices();
+            if (inVertices.length <= 1) {
+                console.log(this.__hpcc_id + ":  remove only supports single or zero inputs activities...");
+            }
+            arrayUtil.forEach(this.getInEdges(), function (edge) {
+                edge.remove();
+            }, this);
+            arrayUtil.forEach(this.getOutEdges(), function (edge) {
+                edge.setSource(inVertices[0]);
+            }, this);
+            arrayUtil.forEach(this.subgraphs, function (subgraph) {
+                subgraph.removeVertex(item);
+            }, this);
+            this.__hpcc_graph.removeItem(this);
+        },
+
+        getInVertices: function () {
+            return arrayUtil.map(this.getInEdges(), function (edge) {
+                return edge.getSource();
+            }, this);
         },
 
         getInEdges: function () {
-            var retVal = [];
-            for (var key in this.__hpcc_inEdges) {
-                retVal.push(this.__hpcc_inEdges[key]);
-            }
-            return retVal;
+            return arrayUtil.filter(this.__hpcc_graph.edges, function (edge) {
+                return edge.getTarget() === this;
+            }, this);
+        },
+
+        getOutVertices: function () {
+            return arrayUtil.map(this.getOutEdges(), function (edge) {
+                return edge.getTarget();
+            }, this);
         },
 
         getOutEdges: function () {
-            var retVal = [];
-            for (var key in this.__hpcc_outEdges) {
-                retVal.push(this.__hpcc_outEdges[key]);
-            }
-            return retVal;
+            return arrayUtil.filter(this.__hpcc_graph.edges, function (edge) {
+                return edge.getSource() === this;
+            }, this);
         }
     });
 
@@ -369,8 +436,26 @@ define([
             this._globalType = "Edge";
         },
 
+        remove: function () {
+            arrayUtil.forEach(this.__hpcc_graph.subgraphs, function (subgraph) {
+                subgraph.removeEdge(this);
+            }, this);
+            this.__hpcc_graph.removeItem(this);
+        },
+
         getSource: function () {
             return this.__hpcc_graph.idx[this._sourceActivity || this.source];
+        },
+
+        setSource: function (source) {
+            if (this._sourceActivity) {
+                this._sourceActivity = source.__hpcc_id;
+            } else if (this.source) {
+                this.source = source.__hpcc_id;
+            }
+            if (this.__widget) {
+                this.__widget.setSource(this.getSource().__widget);
+            }
         },
 
         getTarget: function () {
@@ -459,6 +544,23 @@ define([
             return retVal;
         },
 
+        removeItem: function (item) {
+            delete this.idx[item.__hpcc_id];
+            if (item instanceof Subgraph) {
+                this.subgraphs = arrayUtil.filter(this.subgraphs, function (subgraph) {
+                    return item !== subgraph;
+                }, this);
+            } else if (item instanceof Vertex) {
+                this.vertices = arrayUtil.filter(this.vertices, function (vertex) {
+                    return item !== vertex;
+                }, this);
+            } else if (item instanceof Edge) {
+                this.edges = arrayUtil.filter(this.edges, function(edge) {
+                    return item !== edge;
+                }, this);
+            }
+        },
+
         getChildByTagName: function (docNode, tagName) {
             var retVal = null;
             arrayUtil.some(docNode.childNodes, function (childNode, idx) {
@@ -500,6 +602,9 @@ define([
                                 if (name.indexOf("Time") === 0) {
                                     retVal["_" + name] = value;
                                     retVal[name] = "" + Utility.espTime2Seconds(value);
+                                } else if (name.indexOf("Size") === 0) {
+                                    retVal["_" + name] = value;
+                                    retVal[name] = "" + Utility.espSize2Bytes(value);
                                 } else {
                                     retVal[name] = value;
                                 }
@@ -512,8 +617,17 @@ define([
                                 if (edge.inputProgress) {
                                     edge._eclwatchInputProgress = "[" + edge.inputProgress.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "]";
                                 }
-                                if (edge.maxskew && edge.minskew) {
-                                    edge._eclwatchSkew = "+" + edge.maxskew + "%%, -" + edge.minskew + "%%";
+                                if (edge.SkewMaxRowsProcessed && edge.SkewMinRowsProcessed) {
+                                    edge._eclwatchSkew = "+" + edge.SkewMaxRowsProcessed + ", " + edge.SkewMinRowsProcessed;
+                                }
+                                if (edge._dependsOn) {
+                                } else if (edge._childGraph) {
+                                } else if (edge._sourceActivity || edge._targetActivity) {
+                                    edge._isSpill = true;
+                                    var source = edge.getSource();
+                                    source._isSpill = true;
+                                    var target = edge.getTarget();
+                                    target._isSpill = true;
                                 }
                                 retVal.addEdge(edge);
                                 break;
@@ -539,9 +653,27 @@ define([
             return retVal;
         },
 
-        getLocalisedXGMML: function (items, localisationDepth, localisationDistance) {
+        removeSubgraphs: function () {
+            var subgraphs = arrayUtil.map(this.subgraphs, function (subgraph) { return subgraph; });
+            arrayUtil.forEach(subgraphs, function (subgraph) {
+                if (subgraph.__hpcc_parent instanceof Subgraph) {
+                    subgraph.remove();
+                }
+            }, this);
+        },
+
+        removeSpillVertices: function () {
+            var vertices = arrayUtil.map(this.vertices, function (vertex) { return vertex; });
+            arrayUtil.forEach(vertices, function (vertex) {
+                if (vertex.isSpill()) {
+                    vertex.remove();
+                }
+            }, this);
+        },
+
+        getLocalisedXGMML: function (items, localisationDepth, localisationDistance, noSpills) {
             var xgmmlWriter = new LocalisedXGMMLWriter(this);
-            xgmmlWriter.calcVisibility(items, localisationDepth, localisationDistance);
+            xgmmlWriter.calcVisibility(items, localisationDepth, localisationDistance, noSpills);
             xgmmlWriter.writeXgmml();
             return "<graph>" + xgmmlWriter.m_xgmml + "</graph>";
         }

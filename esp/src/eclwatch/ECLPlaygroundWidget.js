@@ -221,7 +221,8 @@ define([
                     context.visualizeWidget.set("disabled", false);
                     context.visualizeWidget.reset();
                     context.visualizeWidget.init({
-                        Wuid: context.wu.Wuid
+                        Wuid: context.wu.Wuid,
+                        Sequence: 0
                     });
                 }
             });
@@ -240,7 +241,7 @@ define([
             } else {
                 var a = query("a[id=" + this.id + name + "]", this.summaryForm)[0];
                 if (a) {
-                    a.innerHTML = newValue;
+                    a.textContent = newValue;
                     if (newValue === "...") {
                         a.style.visibility = "hidden"
                     } else if (this.wu && this.wu.Wuid) {

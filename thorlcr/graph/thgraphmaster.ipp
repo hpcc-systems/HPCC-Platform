@@ -78,9 +78,9 @@ public:
     virtual void done();
     virtual void reset();
     virtual void abort(IException *e);
-    IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    IThorResult *createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 // IExceptionHandler
     virtual bool fireException(IException *e);
@@ -189,6 +189,7 @@ public:
 class graphmaster_decl CThorStats : public CInterface, implements IInterface
 {
 protected:
+    CJobBase &ctx;
     unsigned __int64 max, min, tot, avg;
     unsigned maxSkew, minSkew, minNode, maxNode;
     UInt64Array counts;
@@ -197,7 +198,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CThorStats(StatisticKind _kind);
+    CThorStats(CJobBase &ctx, StatisticKind _kind);
     void reset();
     virtual void processInfo();
 
@@ -222,12 +223,12 @@ protected:
 class graphmaster_decl CThorStatsCollection : public CInterface
 {
 public:
-    CThorStatsCollection(const StatisticsMapping & _mapping) : mapping(_mapping)
+    CThorStatsCollection(CJobBase &ctx, const StatisticsMapping & _mapping) : mapping(_mapping)
     {
         unsigned num = mapping.numStatistics();
         stats = new Owned<CThorStats>[num];
         for (unsigned i=0; i < num; i++)
-            stats[i].setown(new CThorStats(mapping.getKind(i)));
+            stats[i].setown(new CThorStats(ctx, mapping.getKind(i)));
     }
     ~CThorStatsCollection()
     {
@@ -263,7 +264,7 @@ private:
 class graphmaster_decl CTimingInfo : public CThorStats
 {
 public:
-    CTimingInfo();
+    CTimingInfo(CJobBase &ctx);
     void getStats(IStatisticGatherer & stats) { CThorStats::getStats(stats, false); }
 };
 
@@ -271,7 +272,7 @@ class graphmaster_decl ProgressInfo : public CThorStats
 {
     unsigned startcount, stopcount;
 public:
-    ProgressInfo();
+    ProgressInfo(CJobBase &ctx);
 
     virtual void processInfo();
     void getStats(IStatisticGatherer & stats);

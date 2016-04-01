@@ -24,11 +24,6 @@
 #include "jstats.h"
 #include "errorlist.h"
 
-#if defined(_USE_TBB)
-//Release blocks of rows in parallel - always likely to improve performance
-#define PARALLEL_SYNC_RELEASE
-#endif
-
 #ifdef _WIN32
  #ifdef ROXIEMEM_EXPORTS
   #define roxiemem_decl __declspec(dllexport)

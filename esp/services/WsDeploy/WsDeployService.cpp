@@ -4197,7 +4197,7 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
 {
     bool bWrite = false;
     StringBuffer filePath;
-    IPropertyTree* dupTree;
+    IPropertyTree* dupTree = NULL;
 
     Owned<IPropertyTreeIterator> iterComp = pComponents->getElements("*");
 
@@ -4249,7 +4249,7 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
     }
     else
     {
-        VStringBuffer err("Copy failed. Element %s may already exist in the target configuration.", dupTree->queryProp(XML_ATTR_NAME));
+        VStringBuffer err("Copy failed. Element %s may already exist in the target configuration.", dupTree ? dupTree->queryProp(XML_ATTR_NAME) : "");
         throw MakeStringException(-1, "%s", err.str());
     }
     return true;

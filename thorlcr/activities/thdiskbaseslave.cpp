@@ -39,7 +39,7 @@
 
 #include "thdiskbaseslave.ipp"
 
-void getPartsMetaInfo(ThorDataLinkMetaInfo &metaInfo, CThorDataLink &link, unsigned nparts, IPartDescriptor **partDescs, CDiskPartHandlerBase *partHandler)
+void getPartsMetaInfo(ThorDataLinkMetaInfo &metaInfo, unsigned nparts, IPartDescriptor **partDescs, CDiskPartHandlerBase *partHandler)
 {
     ThorDataLinkMetaInfo *metaInfos = new ThorDataLinkMetaInfo[nparts];
     struct ownedMetaInfos
@@ -52,11 +52,11 @@ void getPartsMetaInfo(ThorDataLinkMetaInfo &metaInfo, CThorDataLink &link, unsig
     unsigned p=0;
     for (; p<nparts; p++)
     {
-        link.initMetaInfo(metaInfos[p]);
+        initMetaInfo(metaInfos[p]);
         partHandler->getMetaInfo(metaInfos[p], partDescs[p]);
         sizeTotal += partDescs[p]->queryProperties().getPropInt64("@size");
     }
-    link.calcMetaInfoSize(metaInfo, metaInfos, nparts);
+    calcMetaInfoSize(metaInfo, metaInfos, nparts);
     if (!metaInfo.unknownRowsOutput && !metaInfo.canReduceNumRows && !metaInfo.canIncreaseNumRows)
         metaInfo.byteTotal = sizeTotal;
 }
@@ -251,6 +251,7 @@ const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)
 
 void CDiskReadSlaveActivityBase::start()
 {
+    PARENT::start();
     markStart = true;
     diskProgress = 0;
 }
@@ -273,10 +274,10 @@ void CDiskReadSlaveActivityBase::kill()
     CSlaveActivity::kill();
 }
 
-IRowInterfaces * CDiskReadSlaveActivityBase::queryDiskRowInterfaces()
+IThorRowInterfaces * CDiskReadSlaveActivityBase::queryDiskRowInterfaces()
 {
     if (!diskRowIf) 
-        diskRowIf.setown(createRowInterfaces(helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
+        diskRowIf.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
     return diskRowIf;
 }
 
@@ -294,12 +295,18 @@ void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 
 /////////////////
 
+void CDiskWriteSlaveActivityBase::setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered)
+{
+    PARENT::setInputStream(index, _input, consumerOrdered);
+    if (dlfn.isExternal() && !firstNode())
+        setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), PROCESS_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), grouped, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()));
+}
+
 void CDiskWriteSlaveActivityBase::open()
 {
+    start();
     if (dlfn.isExternal() && !firstNode())
     {
-        input.setown(createDataLinkSmartBuffer(this, inputs.item(0), PROCESS_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), grouped, RCUNBOUND, NULL, false, &container.queryJob().queryIDiskUsage()));
-        startInput(input);
         if (!rfsQueryParallel)
         {
             ActPrintLog("Blocked, waiting for previous part to complete write");
@@ -311,11 +318,6 @@ void CDiskWriteSlaveActivityBase::open()
             msg.read(tempExternalName); // reuse temp filename, last node will rename
             ActPrintLog("Previous write row count = %" RCPF "d", prevRows);
         }
-    }
-    else
-    {
-        input.set(inputs.item(0));
-        startInput(input);
     }
     processed = THORDATALINK_STARTED;
 
@@ -590,7 +592,7 @@ void CDiskWriteSlaveActivityBase::endProcess()
 {
     if (processed & THORDATALINK_STARTED)
     {
-        stopInput(input);
+        stop();
         processed |= THORDATALINK_STOPPED;
     }
 }

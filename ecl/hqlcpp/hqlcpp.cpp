@@ -1206,6 +1206,20 @@ void HqlCppInstance::addPluginsAsResource()
 }
 
 
+void HqlCppInstance::getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId)
+{
+    if (cppInfo.isItem(cppIndex))
+    {
+        minActivityId = cppInfo.item(cppIndex).minActivityId;
+        maxActivityId = cppInfo.item(cppIndex).maxActivityId;
+    }
+    else
+    {
+        minActivityId = 0;
+        maxActivityId = 0;
+    }
+}
+
 bool HqlCppInstance::useFunction(IHqlExpression * func)
 {
     assertex(func);
@@ -1804,10 +1818,12 @@ void HqlCppTranslator::cacheOptions()
     //Or where one debug options sets more than one option
     if (options.spanMultipleCpp)
     {
+        code->cppInfo.append(* new CppFileInfo(0)); // Add an entry for the main file which contains no activities
         options.activitiesPerCpp = wu()->getDebugValueInt("activitiesPerCpp", DEFAULT_ACTIVITIES_PER_CPP);
         curCppFile = 1;
     }
 
+    code->cppInfo.append(* new CppFileInfo(0));
     options.targetCompiler = DEFAULT_COMPILER;
     if (wu()->hasDebugValue("targetGcc"))
         options.targetCompiler = wu()->getDebugValueBool("targetGcc", false) ? GccCppCompiler : Vs6CppCompiler;
@@ -7956,25 +7972,25 @@ void HqlCppTranslator::doBuildAssignUnicodeOrder(BuildCtx & ctx, const CHqlBound
 //---------------------------------------------------------------------------
 //-- no_order --
 
-static void buildIteratorFirst(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
-{
-    StringBuffer s;
-    translator.generateExprCpp(s, row).append(" = (byte*)");
-    translator.generateExprCpp(s, iter).append(".first();");
-    ctx.addQuoted(s);
-}
-
-static void buildIteratorNext(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
-{
-    StringBuffer s;
-    translator.generateExprCpp(s, row).append(" = (byte*)");
-    translator.generateExprCpp(s, iter).append(".next();");
-    ctx.addQuoted(s);
-}
-
 static void buildIteratorIsValid(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row, CHqlBoundExpr & bound)
 {
     bound.expr.set(row);
+}
+
+void HqlCppTranslator::buildIteratorFirst(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
+{
+    StringBuffer s;
+    generateExprCpp(s, row).append(" = (byte*)");
+    generateExprCpp(s, iter).append(".first();");
+    ctx.addQuoted(s);
+}
+
+void HqlCppTranslator::buildIteratorNext(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
+{
+    StringBuffer s;
+    generateExprCpp(s, row).append(" = (byte*)");
+    generateExprCpp(s, iter).append(".next();");
+    ctx.addQuoted(s);
 }
 
 void HqlCppTranslator::doBuildAssignCompareRow(BuildCtx & ctx, EvaluateCompareInfo & info, IHqlExpression * left, IHqlExpression * right)
@@ -8005,7 +8021,7 @@ void HqlCppTranslator::doBuildAssignCompareTable(BuildCtx & ctx, EvaluateCompare
     HqlExprAttr leftIter, leftRow;
     Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(subctx, left);
     cursor->buildIterateClass(subctx, leftIter, leftRow);
-    buildIteratorFirst(*this, subctx, leftIter, leftRow);
+    buildIteratorFirst(subctx, leftIter, leftRow);
 
     // i2; forEachIn(i2); {
     CHqlBoundExpr isValid;
@@ -8054,7 +8070,7 @@ void HqlCppTranslator::doBuildAssignCompareTable(BuildCtx & ctx, EvaluateCompare
         }
 
         //     i1.next();
-        buildIteratorNext(*this, loopctx, leftIter, leftRow);
+        buildIteratorNext(loopctx, leftIter, leftRow);
     }
 
     buildIteratorIsValid(subctx, leftIter, leftRow, isValid);
@@ -11934,7 +11950,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
     if (options.spanMultipleCpp)
     {
         const bool inChildActivity = true;  // assume the worst
-        OwnedHqlExpr pass = getSizetConstant(cppIndexNextActivity(inChildActivity));
+        OwnedHqlExpr pass = getSizetConstant(beginFunctionGetCppIndex(0, inChildActivity));
         funcctx.addGroupPass(pass);
     }
     expandFunctionPrototype(proto, funcdef);

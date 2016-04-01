@@ -220,6 +220,7 @@ define([
             this.desprayTargetPath.init({
                 DropZoneFolders: true
             });
+            this.logicalFile.refresh();
         },
 
         initTab: function() {
@@ -294,7 +295,7 @@ define([
                     switch (domElem.tagName) {
                         case "SPAN":
                         case "DIV":
-                            domAttr.set(this.id + name, "innerHTML", newValue);
+                            dom.byId(this.id + name).textContent = newValue;
                             break;
                         case "INPUT":
                         case "TEXTAREA":

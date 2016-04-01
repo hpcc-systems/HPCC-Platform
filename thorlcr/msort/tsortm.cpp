@@ -188,8 +188,8 @@ inline byte *dupb(byte *b,size32_t l)
 struct PartitionInfo
 {
     size32_t guard;
-    Linked<IRowInterfaces> prowif;
-    PartitionInfo(CActivityBase *_activity, IRowInterfaces *rowif)
+    Linked<IThorRowInterfaces> prowif;
+    PartitionInfo(CActivityBase *_activity, IThorRowInterfaces *rowif)
         : splitkeys(*_activity, rowif, true), prowif(rowif)
     {
         nodes = NULL;
@@ -289,9 +289,9 @@ public:
     char *cosortfilenames;
     size32_t estrecsize;            // serialized
     size32_t maxdeviance;
-    Linked<IRowInterfaces> rowif;
-    Linked<IRowInterfaces> auxrowif;
-    Linked<IRowInterfaces> keyIf;
+    Linked<IThorRowInterfaces> rowif;
+    Linked<IThorRowInterfaces> auxrowif;
+    Linked<IThorRowInterfaces> keyIf;
 
     int AddSlave(ICommunicator *comm,rank_t rank,SocketEndpoint &endpoint,mptag_t mpTagRPC)
     {
@@ -381,7 +381,7 @@ public:
     }
 
 
-    void SortSetup(IRowInterfaces *_rowif,ICompare *_icompare,ISortKeySerializer *_keyserializer,bool cosort,bool needconnect,const char *_cosortfilenames,IRowInterfaces *_auxrowif)
+    void SortSetup(IThorRowInterfaces *_rowif,ICompare *_icompare,ISortKeySerializer *_keyserializer,bool cosort,bool needconnect,const char *_cosortfilenames,IThorRowInterfaces *_auxrowif)
     {
         ActPrintLog(activity, "Sort setup cosort=%s, needconnect=%s %s",cosort?"true":"false",needconnect?"true":"false",_keyserializer?"has key serializer":"");
         assertex(_icompare);
@@ -394,7 +394,7 @@ public:
         keyserializer = _keyserializer;
         if (keyserializer)
         {
-            keyIf.setown(createRowInterfaces(keyserializer->queryRecordSize(), activity->queryContainer().queryId(), activity->queryCodeContext()));
+            keyIf.setown(createThorRowInterfaces(rowif->queryRowManager(), keyserializer->queryRecordSize(), activity->queryContainer().queryId(), activity->queryCodeContext()));
             icompare = keyserializer->queryCompareKey();
         }
         else
@@ -812,9 +812,9 @@ public:
                     CThorExpandingRowArray &totmid;
                     Semaphore *nextsem;
                     unsigned numsplits;
-                    IRowInterfaces *keyIf;
+                    IThorRowInterfaces *keyIf;
                 public:
-                    casyncfor2(NodeArray &_slaves, CThorExpandingRowArray &_totmid, unsigned _numsplits, Semaphore *_nextsem, IRowInterfaces *_keyIf)
+                    casyncfor2(NodeArray &_slaves, CThorExpandingRowArray &_totmid, unsigned _numsplits, Semaphore *_nextsem, IThorRowInterfaces *_keyIf)
                         : slaves(_slaves), totmid(_totmid), keyIf(_keyIf)
                     { 
                         nextsem = _nextsem;

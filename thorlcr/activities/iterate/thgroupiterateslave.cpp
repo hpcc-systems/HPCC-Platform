@@ -21,48 +21,35 @@
 #include "thgroupiterateslave.ipp"
 #include "thactivityutil.ipp"
 
-class GroupIterateSlaveActivity : public CSlaveActivity, public CThorDataLink
+class GroupIterateSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
 
-private:
     OwnedConstThorRow prev;
     OwnedConstThorRow defaultLeft;
     IHThorGroupIterateArg * helper;
     rowcount_t count;
     bool eogNext;
     bool anyThisGroup;
-    IThorDataLink *input;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    GroupIterateSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    GroupIterateSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorGroupIterateArg *> (queryHelper());
     }
-    ~GroupIterateSlaveActivity()
-    {
-    }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         anyThisGroup = false;
         eogNext = false;    
         count = 0;
-        input = inputs.item(0);
-        startInput(input);
-        dataLinkStart();
         RtlDynamicRowBuilder r(queryRowAllocator());
         size32_t sz = helper->createDefault(r);
         defaultLeft.setown(r.finalizeRowClear(sz));
-    }
-    void stop()
-    {
-        stopInput(input);
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {
@@ -79,14 +66,14 @@ public:
                 }
             }
             
-            OwnedConstThorRow row = input->nextRow();
+            OwnedConstThorRow row = inputStream->nextRow();
             if (!row)   {
                 count = 0;
                 if (anyThisGroup) {
                     anyThisGroup = false;
                     break;
                 }
-                row.setown(input->nextRow());
+                row.setown(inputStream->nextRow());
                 if (!row)
                     break;
             }
@@ -102,62 +89,54 @@ public:
         }
         return NULL;
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         if (helper->canFilter())
             info.canReduceNumRows = true;
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
-    bool isGrouped() 
+    virtual bool isGrouped() const override
     { 
         return true; 
     }
 };
 
 
-class GroupProcessSlaveActivity : public CSlaveActivity, public CThorDataLink
+class GroupProcessSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     IHThorProcessArg * helper;
     rowcount_t count;
     bool eogNext;
     bool anyThisGroup;
     OwnedConstThorRow firstright;
     OwnedConstThorRow nextright;
-    IThorDataLink *input;
-    Owned<IRowInterfaces> rightrowif;
+    Owned<IThorRowInterfaces> rightrowif;
     Owned<IEngineRowAllocator> rightAllocator;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    GroupProcessSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    GroupProcessSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorProcessArg *> (queryHelper());
-        rightrowif.setown(createRowInterfaces(helper->queryRightRecordSize(),queryId(),queryCodeContext()));
+        rightrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryRightRecordSize(),queryId(),queryCodeContext()));
         rightAllocator.set(rightrowif->queryRowAllocator());
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         RtlDynamicRowBuilder r(rightAllocator);
         size32_t sz = helper->createInitialRight(r);  
         firstright.setown(r.finalizeRowClear(sz));
         anyThisGroup = false;
         count = 0;
         eogNext = false;    
-        input = inputs.item(0);
-        startInput(input);
-        dataLinkStart();
-    }
-    void stop()
-    {
-        stopInput(input);
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {
@@ -173,14 +152,14 @@ public:
                     break;
                 }
             }
-            OwnedConstThorRow row = input->nextRow();
+            OwnedConstThorRow row = inputStream->nextRow();
             if (!row) {
                 count = 0;
                 if (anyThisGroup) {
                     anyThisGroup = false;
                     break;
                 }
-                row.setown(input->nextRow());
+                row.setown(inputStream->nextRow());
                 if (!row)
                     break;
             }
@@ -197,14 +176,14 @@ public:
         }
         return NULL;
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         if (helper->canFilter())
             info.canReduceNumRows = true;
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
-    bool isGrouped() 
+    virtual bool isGrouped() const override
     { 
         return true; 
     }

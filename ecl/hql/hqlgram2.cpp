@@ -9377,6 +9377,10 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     // type specific handling
     IHqlExpression * base = queryNonDelayedBaseAttribute(expr); 
     node_operator op = base->getOperator();
+
+    if (isCritical(failure) && !base->isAction())
+        reportError(ERR_CRITICAL_NON_ACTION, nameattr, "Critical may only be used for actions");
+
     switch(op)
     {
     case no_service:  // service
@@ -9391,7 +9395,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
             activeScope.resetParameters();
         }
         break;
-    
+
     case no_macro:
         if (!activeScope.isParametered)
         {
@@ -10524,6 +10528,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case CPPBODY: msg.append("BEGINC++"); break;
     case TOK_CPP: msg.append("C++"); break;
     case CRC: msg.append("HASHCRC"); break;
+    case CRITICAL: msg.append("CRITICAL"); break;
     case CRON: msg.append("CRON"); break;
     case CSV: msg.append("CSV"); break;
     case DATASET: msg.append("DATASET"); break;
@@ -11203,7 +11208,8 @@ void HqlGram::checkWorkflowMultiples(IHqlExpression * previousWorkflow, IHqlExpr
         case no_stored:
         case no_checkpoint:
         case no_once:
-            if((oldOp==no_persist)||(oldOp==no_stored)||(oldOp==no_once)||(oldOp==no_checkpoint))
+        case no_critical:
+            if((oldOp==no_persist)||(oldOp==no_stored)||(oldOp==no_once)||(oldOp==no_checkpoint)||(oldOp==no_critical))
                 reportError(ERR_MULTIPLE_WORKFLOW, errpos, "Multiple scoping controls are not allowed on an action or expression");
             break;
         case no_attr:
@@ -11246,6 +11252,19 @@ bool HqlGram::isSaved(IHqlExpression * failure)
         case no_once:
             return true;
         }
+    }
+    return false;
+}
+
+bool HqlGram::isCritical(IHqlExpression * failure)
+{
+    if (!failure) return false;
+    HqlExprArray args;
+    failure->unwindList(args, no_comma);
+    ForEachItemIn(idx, args)
+    {
+        if (args.item(idx).getOperator()==no_critical)
+            return true;
     }
     return false;
 }

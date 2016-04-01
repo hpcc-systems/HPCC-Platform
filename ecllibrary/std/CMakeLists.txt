@@ -1,4 +1,3 @@
-#!/bin/bash
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
@@ -14,16 +13,23 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-#
-# Usage: create-env-xml.sh <output>
-#
-# This script is used to generate default environment.xml.
-#
-#
-###<REPLACE>###
 
+add_subdirectory(system)
 
-OUTPUT=${INSTALL_DIR}/etc/HPCCSystems/rpmnew/environment.xml
-[ -n "$1" ] && OUTPUT=$1
+set(
+    SRCS
+    Audit.ecl
+    BundleBase.ecl
+    Date.ecl
+    File.ecl
+    Metaphone3.ecl
+    Metaphone.ecl
+    Str.ecl
+    Uni.ecl
+    )
 
-${INSTALL_DIR}/sbin/envgen -env ${OUTPUT} -ip . -roxienodes 1 -thornodes 1 -slavesPerNode 1 -o data4=/var/lib/[NAME]/hpcc-data4/[COMPONENT] -set_xpath_attrib_value Software/Topology/Cluster[@name=\"thor_roxie\"] @prefix thor  -set_xpath_attrib_value Software/EclCCServerProcess/Option @name maxCompileThreads -set_xpath_attrib_value Software/EclCCServerProcess/Option @value 2 -override roxie,@allFilesDynamic,true -override roxie,@lazyOpen,smart -override roxie,@localSlave,true -override roxie,@slaveConfig,simple
+foreach(module ${SRCS})
+    SIGN_MODULE(${module})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${module} DESTINATION share/ecllibrary/std COMPONENT Runtime)
+endforeach()
+  

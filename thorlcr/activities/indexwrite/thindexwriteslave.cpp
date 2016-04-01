@@ -33,39 +33,14 @@
 #define FEWWARNCAP 10
 
 
-class CITDL : public CSimpleInterface, public CThorDataLink
+class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadStopNotify, implements ICopyFileProgress, implements IBlobCreator
 {
-    IThorDataLink *base;
-    Owned<IRowStream> in;
-public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-    CITDL(IThorDataLink *_base, IRowStream *_in) : CThorDataLink(_base->queryFromActivity()), in(_in), base(_base)
-    {
-    }
-    virtual const void *nextRow() { return in->nextRow(); }
-    virtual void stop() { in->stop(); }
-// IThorDataLink impl.
-    virtual void start() { }
-    virtual bool isGrouped() { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
-    {
-        // JCSMORE - TBD
-        base->getMetaInfo(info);
-    }
-};
-IThorDataLink *createRowStreamToDataLinkAdapter(IThorDataLink *base, IRowStream *in)
-{
-    return new CITDL(base, in);
-}
-
-class IndexWriteSlaveActivity  : public ProcessSlaveActivity, public ISmartBufferNotify, implements ICopyFileProgress, implements IBlobCreator
-{
+    typedef ProcessSlaveActivity PARENT;
     StringAttr logicalFilename;
     Owned<IPartDescriptor> partDesc, tlkDesc;
     IHThorIndexWriteArg *helper;
     Owned <IKeyBuilder> builder;
-    Owned<IThorDataLink> input;
+    Owned<IRowStream> myInputStream;
     Owned<IPropertyTree> metadata;
     Linked<IEngineRowAllocator> outRowAllocator;
 
@@ -90,7 +65,7 @@ class IndexWriteSlaveActivity  : public ProcessSlaveActivity, public ISmartBuffe
         if (!inputStopped)
         {
             inputStopped = true;
-            stopInput(input);
+            stop();
         }
     }
     void init()
@@ -120,8 +95,7 @@ public:
         enableTlkPart0 = (0 != container.queryJob().getWorkUnitValueInt("enableTlkPart0", globals->getPropBool("@enableTlkPart0", true)));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
     }
-
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         isLocal = 0 != (TIWlocal & helper->getFlags());
 
@@ -182,7 +156,11 @@ public:
             maxDiskRecordSize = diskSize->getFixedSize();
         reportOverflow = false;
     }
-
+    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
+    {
+        PARENT::setInputStream(index, _input, consumerOrdered);
+        setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), INDEXWRITE_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()));
+    }
     void open(IPartDescriptor &partDesc, bool isTopLevel, bool isVariable)
     {
         StringBuffer partFname;
@@ -299,20 +277,19 @@ public:
     {
         return builder->createBlob(size, (const char *) ptr);
     }
-    void process()
+    virtual void process() override
     {
         ActPrintLog("INDEXWRITE: Start");
         init();
 
+        IRowStream *stream = inputStream;
         ThorDataLinkMetaInfo info;
-        inputs.item(0)->getMetaInfo(info);
+        input->getMetaInfo(info);
         outRowAllocator.setown(getRowAllocator(helper->queryDiskRecordSize()));
+        start();
         if (refactor)
         {
             assertex(isLocal);
-            input.setown(createDataLinkSmartBuffer(this, inputs.item(0), INDEXWRITE_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, false, &container.queryJob().queryIDiskUsage())); 
-            startInput(input);
-
             if (active)
             {
                 unsigned targetWidth = partDesc->queryOwner().numParts()-(buildTlk?1:0);
@@ -321,7 +298,7 @@ public:
                 unsigned myPart = queryJobChannel().queryMyRank();
 
                 IArrayOf<IRowStream> streams;
-                streams.append(*LINK(input));
+                streams.append(*LINK(stream));
                 --partsPerNode;
 
  // Should this be merging 1,11,21,31 etc.
@@ -334,19 +311,11 @@ public:
                 ICompare *icompare = helper->queryCompare();
                 assertex(icompare);
                 Owned<IRowLinkCounter> linkCounter = new CThorRowLinkCounter;
-                input.setown(createRowStreamToDataLinkAdapter(inputs.item(0), createRowStreamMerger(streams.ordinality(), streams.getArray(), icompare, false, linkCounter)));
+                myInputStream.setown(createRowStreamMerger(streams.ordinality(), streams.getArray(), icompare, false, linkCounter));
+                stream = myInputStream;
             }
             else // serve nodes, creating merged parts
-                rowServer.setown(createRowServer(this, input, queryJobChannel().queryJobComm(), mpTag));
-        }
-        else if (singlePartKey)
-        {
-            input.setown(createDataLinkSmartBuffer(this, inputs.item(0), INDEXWRITE_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, false, &container.queryJob().queryIDiskUsage())); 
-            startInput(input);
-        }
-        else {
-            input.set(inputs.item(0));
-            startInput(input);
+                rowServer.setown(createRowServer(this, stream, queryJobChannel().queryJobComm(), mpTag));
         }
         processed = THORDATALINK_STARTED;
 
@@ -363,7 +332,7 @@ public:
                     open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize());
                     loop
                     {
-                        OwnedConstThorRow row = input->ungroupedNextRow();
+                        OwnedConstThorRow row = inputStream->ungroupedNextRow();
                         if (!row)
                             break;
                         if (abortSoon) return;
@@ -425,7 +394,7 @@ public:
                         mb.clear();
                         do
                         {
-                            OwnedConstThorRow row = input->ungroupedNextRow();
+                            OwnedConstThorRow row = inputStream->ungroupedNextRow();
                             if (!row) break;
                             serializer->serialize(mbs, (const byte *)row.get());
                         } while (mb.length() < SINGLEPART_KEY_TRANSFER_SIZE); // NB: at least one row
@@ -454,7 +423,7 @@ public:
                         receiving = false;
                     do
                     {
-                        OwnedConstThorRow row = input->ungroupedNextRow();
+                        OwnedConstThorRow row = inputStream->ungroupedNextRow();
                         if (!row)
                             break;
                         processRow(row);
@@ -566,30 +535,27 @@ public:
             ActPrintLog("INDEXWRITE: All done");
         }
     }
-
-    void endProcess()
+    virtual void endProcess() override
     {
         if (processed & THORDATALINK_STARTED)
         {
             doStopInput();
             processed |= THORDATALINK_STOPPED;
         }
-        input.clear();
+        inputStream = NULL;
     }
-
-    virtual void abort()
+    virtual void abort() override
     {
-        ProcessSlaveActivity::abort();
+        PARENT::abort();
         cancelReceiveMsg(RANK_ALL, mpTag);
         if (receivingTag2)
             queryJobChannel().queryJobComm().cancel(RANK_ALL, mpTag2);
         if (rowServer)
             rowServer->stop();
     }
-
-    void kill()
+    virtual void kill() override
     {
-        ProcessSlaveActivity::kill();
+        PARENT::kill();
         if (abortSoon)
         {
             if (partDesc)
@@ -598,8 +564,7 @@ public:
                 removeFiles(*tlkDesc);
         }
     }
-
-    void processDone(MemoryBuffer &mb)
+    virtual void processDone(MemoryBuffer &mb) override
     {
         builder.clear();
         if (refactor && !active)
@@ -665,7 +630,6 @@ public:
             fireException(e);
         }
     }
-
     virtual void onInputFinished(rowcount_t finalcount)
     {
         if (!sizeSignalled)
@@ -674,20 +638,9 @@ public:
             ActPrintLog("finished input %" RCPF "d", finalcount);
         }
     }
-
-    virtual bool startAsync()
-    {
-        return false;
-    }
-
-    virtual void onInputStarted(IException *)
-    {
-        // not needed
-    }
-
     virtual void serializeStats(MemoryBuffer &mb)
     {
-        ProcessSlaveActivity::serializeStats(mb);
+        PARENT::serializeStats(mb);
         mb.append(replicateDone);
     }
 

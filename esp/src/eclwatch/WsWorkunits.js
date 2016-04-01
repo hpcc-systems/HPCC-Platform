@@ -276,6 +276,7 @@ define([
 
         WUCDebug: function (wuid, command) {
             return ESPRequest.send("WsWorkunits", "WUCDebug", {
+                skipExceptions: true,
                 request: {
                     Wuid: wuid,
                     Command: command
@@ -288,20 +289,18 @@ define([
 
         //  Stub waiting for HPCC-10308
         visualisations: [
-            { value: "DojoD3ScatterChart", label: "Scatter Chart" },
-            { value: "DojoD32DChart C3_SCATTER", label: "Scatter C3 Chart" },
-            { value: "DojoD32DChart C3_PIE", label: "Pie Chart" },
-            { value: "DojoD32DChart C3_DONUT", label: "Donut Chart" },
-            { value: "DojoD32DChart C3_COLUMN", label: "Column Chart" },
-            { value: "DojoD32DChart C3_BAR", label: "Bar Chart" },
-            { value: "DojoD32DChart C3_LINE", label: "Line Chart" },
-            { value: "DojoD32DChart C3_STEP", label: "Step Chart" },
-            { value: "DojoD32DChart C3_AREA", label: "Area Chart" },
-            { value: "DojoD3Choropleth", label: "Choropleth" },
-            { value: "DojoD3CooccurrenceGraph", label: "Co-Occurrence Graph" },
-            { value: "DojoD3ForceDirectedGraph", label: "Force Directed Graph" },
-            { value: "DojoD3Histogram", label: "Histogram" },
-            { value: "DojoD3WordCloud", label: "Word Cloud" }
+            { value: "DojoD3NDChart COLUMN", label: "Column Chart" },
+            { value: "DojoD3NDChart BAR", label: "Bar Chart" },
+            { value: "DojoD3NDChart LINE", label: "Line Chart" },
+            { value: "DojoD3NDChart AREA", label: "Area Chart" },
+            { value: "DojoD3NDChart STEP", label: "Step Chart" },
+            { value: "DojoD3NDChart SCATTER", label: "Scatter Chart" },
+            { value: "DojoD32DChart BUBBLE", label: "Bubble Chart" },
+            { value: "DojoD32DChart PIE", label: "Pie Chart" },
+            { value: "DojoD32DChart WORD_CLOUD", label: "Word Cloud" },
+            { value: "DojoD3Choropleth COUNTRY", label: "Country Choropleth" },
+            { value: "DojoD3Choropleth STATE", label: "US State Choropleth" },
+            { value: "DojoD3Choropleth COUNTY", label: "US County Choropleth" }
         ],
         GetVisualisations:  function() {
             var deferred = new Deferred();

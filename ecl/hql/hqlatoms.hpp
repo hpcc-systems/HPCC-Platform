@@ -350,6 +350,7 @@ extern HQL_API IAtom * refreshAtom;
 extern HQL_API IAtom * _remote_Atom;
 extern HQL_API IAtom * renameAtom;
 extern HQL_API IAtom * repeatAtom;
+extern HQL_API IAtom * resizeAtom;
 extern HQL_API IAtom * _resourced_Atom;
 extern HQL_API IAtom * responseAtom;
 extern HQL_API IAtom * restartAtom;

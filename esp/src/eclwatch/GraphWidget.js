@@ -34,8 +34,11 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
 
+    "dojox/xml/parser",
+
     "hpcc/_Widget",
     "hpcc/ESPUtil",
+    "hpcc/Utility",
 
     "dojo/text!../templates/GraphWidget.html",
 
@@ -55,7 +58,8 @@ define([
     "hpcc/TableContainer"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
             registry, BorderContainer, ContentPane,
-            _Widget, ESPUtil,
+            parser,
+            _Widget, ESPUtil, Utility,
             template) {
 
     var GraphStore = declare("GraphStore", [Memory], {
@@ -130,7 +134,7 @@ define([
             }, this);
             if (formatTime) {
                 arrayUtil.forEach(target, function (column, idx) {
-                    if (column.label.indexOf("Time") === 0) {
+                    if (column.label.indexOf("Time") === 0 || column.label.indexOf("Size")) {
                         column.formatter = function (_id, row) {
                             return row["_" + column.field] || "";
                         }
@@ -207,7 +211,11 @@ define([
         xgmml: null,
         svg: null,
 
-        constructor: function (sourceGraphWidget, rootGlobalIDs, depth, distance, selectedGlobalIDs) {
+        constructor: function (sourceGraphWidget, rootGlobalIDs, depth, distance, subgraphs, hideSpills, selectedGlobalIDs) {
+            depth = depth || 2;
+            distance = distance || 2;
+            subgraphs = subgraphs || false;
+            hideSpills = hideSpills || false;
             this.sourceGraphWidget = sourceGraphWidget;
 
             rootGlobalIDs.sort();
@@ -221,30 +229,29 @@ define([
                 }
                 id += item;
             }, this);
-            if (depth) {
-                id += ":" + depth;
-            }
-            if (distance) {
-                id += ":" + distance;
-            }
+            id += ":" + depth;
+            id += ":" + distance;
+            id += ":" + subgraphs;
+            id += ":" + hideSpills;
             this.id = id;
 
             this.depth = depth;
             this.distance = distance;
+            this.hideSpills = hideSpills;
         },
 
-        changeRootItems: function (globalIDs, depth, distance) {
-            return this.sourceGraphWidget.getGraphView(globalIDs, depth, distance);
+        changeRootItems: function (globalIDs, depth, distance, subgraphs, hideSpills) {
+            return this.sourceGraphWidget.getGraphView(globalIDs, depth, distance, subgraphs, hideSpills);
         },
 
-        changeScope: function (depth, distance) {
-            return this.sourceGraphWidget.getGraphView(this.rootGlobalIDs, depth, distance, this.selectedGlobalIDs);
+        changeScope: function (depth, distance, subgraphs, hideSpills) {
+            return this.sourceGraphWidget.getGraphView(this.rootGlobalIDs, depth, distance, subgraphs, hideSpills, this.selectedGlobalIDs);
         },
 
         refreshXGMML: function (targetGraphWidget) {
             targetGraphWidget.setMessage(targetGraphWidget.i18n.FetchingData).then(lang.hitch(this, function (response) {
                 var rootItems = this.sourceGraphWidget.getItems(this.rootGlobalIDs);
-                var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance);
+                var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance, targetGraphWidget.option("vhidespills"));
                 if (targetGraphWidget.loadXGMML(xgmml, true)) {
                     this.svg = "";
                 }
@@ -269,7 +276,7 @@ define([
             if (targetGraphWidget.onLayoutFinished == null) {
                 targetGraphWidget.setMessage(targetGraphWidget.i18n.FetchingData).then(lang.hitch(this, function (response) {
                     var rootItems = this.sourceGraphWidget.getItems(this.rootGlobalIDs);
-                    var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance);
+                    var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance, this.hideSpills);
                     targetGraphWidget.setMessage(targetGraphWidget.i18n.LoadingData).then(lang.hitch(this, function (response) {
                         var context = this;
                         if (targetGraphWidget.loadXGMML(xgmml)) {
@@ -472,7 +479,7 @@ define([
                 if (graphView) {
                     var depth = this.depth.get("value");
                     var distance = this.distance.get("value");
-                    graphView = graphView.changeScope(depth, distance);
+                    graphView = graphView.changeScope(depth, distance, this.option("subgraph"), this.option("vhidespills"));
                     graphView.navigateTo(this, true);
                 }
             },
@@ -483,7 +490,7 @@ define([
                     var rootItems = this.getSelectionAsGlobalID();
                     var depth = this.depth.get("value");
                     var distance = this.distance.get("value");
-                    graphView = graphView.changeRootItems(rootItems, depth, distance);
+                    graphView = graphView.changeRootItems(rootItems, depth, distance, this.option("subgraph"), this.option("vhidespills"));
                     graphView.navigateTo(this);
                 }
             },
@@ -592,6 +599,15 @@ define([
                 } else {
                     domStyle.set(this.syncSelectionSplitter.domNode, 'display', 'none');
                     domStyle.set(this.syncSelection.domNode, 'display', 'none');
+                }
+                this.resize();
+            },
+
+            showOptions: function (show) {
+                if (show) {
+                    domStyle.set(this.optionsDropDown.domNode, 'display', 'block');
+                } else {
+                    domStyle.set(this.optionsDropDown.domNode, 'display', 'none');
                 }
                 this.resize();
             },
@@ -705,7 +721,7 @@ define([
                 );
             },
 
-            displayProperties: function (globalID, place) {
+            displayProperties: function (wu, globalID, place) {
                 if (this.hasPlugin()) {
                     var item = this.getItem(globalID);
                     if (item) {
@@ -783,13 +799,67 @@ define([
                                 domConstruct.create("th", { innerHTML: this.i18n.Value }, tr);
                             }
                             tr = domConstruct.create("tr", null, table);
-                            domConstruct.create("td", { innerHTML: key }, tr);
-                            domConstruct.create("td", { innerHTML: props[key] }, tr);
+                            domConstruct.create("td", { innerHTML: Utility.xmlEncode(key) }, tr);
+                            domConstruct.create("td", { innerHTML: Utility.xmlEncode(props[key]) }, tr);
                         }
+                        arrayUtil.filter(wu.helpers, function (d) {
+                            return globalID && d.minActivityId <= globalID && globalID <= d.maxActivityId;
+                        }).forEach(function (d) {
+                            tr = domConstruct.create("tr", null, table);
+                            domConstruct.create("td", { innerHTML: this.i18n.Helper }, tr);
+                            domConstruct.create("td", { innerHTML: "<a href='" + "/WsWorkunits/WUFile?Wuid=" + wu.Wuid + "&Name=" + d.Name + "&IPAddress=" + d.IPAddress + "&Description=" + d.Description + "&Type=" + d.Type + "' target='_blank'>" + d.Description + "</a>" }, tr);
+                        }, this);
                         if (first == false) {
                             domConstruct.create("br", null, place);
                         }
                     }
+                }
+            },
+
+            walkTrace: function (domNode, results) {
+                if (!domNode) return;
+                if (domNode.childNodes) {
+                    var context = this;
+                    switch (domNode.tagName) {
+                        case "Row":
+                            var row = {};
+                            arrayUtil.forEach(domNode.childNodes, function (colNode) {
+                                arrayUtil.forEach(colNode.childNodes, function (cellNode) {
+                                    row[colNode.tagName] = cellNode.nodeValue;
+                                });
+                            });
+                            results.push(row)
+                            break;
+                        default:
+                            arrayUtil.forEach(domNode.childNodes, function (childNode) {
+                                context.walkTrace(childNode, results);
+                            });
+                        }
+                }
+            },
+
+            displayTrace: function (xml, place) {
+                if (this.hasPlugin()) {
+                    var domNode = parser.parse(xml);
+                    var results = [];
+                    this.walkTrace(domNode, results);
+
+                    var first = true;
+                    var table = {};
+                    var tr = {};
+                    arrayUtil.forEach(results, function (row, idx) {
+                        if (idx === 0) {
+                            table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, place);
+                            tr = domConstruct.create("tr", null, table);
+                            for (var key in row) {
+                                domConstruct.create("th", { innerHTML: key }, tr);
+                            }
+                        }
+                        tr = domConstruct.create("tr", null, table);
+                        for (var key in row) {
+                            domConstruct.create("td", { innerHTML: row[key] }, tr);
+                        }
+                    });
                 }
             },
 
@@ -874,9 +944,9 @@ define([
                 return deferred.promise;
             },
 
-            getLocalisedXGMML: function (selectedItems, depth, distance) {
+            getLocalisedXGMML: function (selectedItems, depth, distance, hideSpills) {
                 if (this.hasPlugin()) {
-                    return this._plugin.getLocalisedXGMML(selectedItems, depth, distance);
+                    return this._plugin.getLocalisedXGMML(selectedItems, depth, distance, hideSpills);
                 }
                 return null;
             },
@@ -885,8 +955,8 @@ define([
                 return this.graphViewHistory.getCurrent();
             },
 
-            getGraphView: function (rootGlobalIDs, depth, distance, selectedGlobalIDs) {
-                var retVal = new GraphView(this, rootGlobalIDs, depth, distance, selectedGlobalIDs);
+            getGraphView: function (rootGlobalIDs, depth, distance, subgraphs, hideSpills, selectedGlobalIDs) {
+                var retVal = new GraphView(this, rootGlobalIDs, depth, distance, subgraphs, hideSpills, selectedGlobalIDs);
                 if (this.graphViewHistory.has(retVal.id)) {
                     retVal = this.graphViewHistory.get(retVal.id);
                     retVal.selectedGlobalIDs = selectedGlobalIDs ? selectedGlobalIDs : rootGlobalIDs;

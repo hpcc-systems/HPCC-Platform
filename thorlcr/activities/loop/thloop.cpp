@@ -89,7 +89,7 @@ protected:
 public:
     CLoopActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
     {
-        loopCounterProgress.setown(new CThorStats(StNumIterations));
+        loopCounterProgress.setown(new CThorStats(queryJob(), StNumIterations));
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
         loopGraph = NULL;
@@ -321,7 +321,7 @@ CActivityBase *createGraphLoopActivityMaster(CMasterGraphElement *container)
 class CLocalResultActivityMasterBase : public CMasterActivity
 {
 protected:
-    Owned<IRowInterfaces> inputRowIf;
+    Owned<IThorRowInterfaces> inputRowIf;
 
 public:
     CLocalResultActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
@@ -338,7 +338,7 @@ public:
         assertex(container.queryResultsGraph());
         Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
-        inputRowIf.setown(createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryId(),queryCodeContext()));
+        inputRowIf.setown(createThorRowInterfaces(queryRowManager(), container.queryInput(0)->queryHelper()->queryOutputMeta(),queryId(),queryCodeContext()));
         createResult();
     }
 };

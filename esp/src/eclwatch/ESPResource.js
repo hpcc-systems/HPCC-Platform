@@ -22,16 +22,17 @@ define([
 
     "hpcc/ESPWorkunit",
     "hpcc/ESPQuery",
-    "hpcc/WsEcl"
+    "hpcc/WsEcl",
+    "hpcc/Utility"
 
 ], function (declare, arrayUtil, Deferred, dom, domConstruct,
-    ESPWorkunit, ESPQuery, WsEcl) {
+    ESPWorkunit, ESPQuery, WsEcl, Utility) {
 
     var DebugBase = declare(null, {
         showDebugRow: function (node, key, value) {
             var domNode = dom.byId(node);
             var lineNode = domConstruct.create("li", {
-                innerHTML: "<b>" + key + "</b>:  " + value
+                innerHTML: "<b>" + Utility.xmlEncode(key) + "</b>:  " + Utility.xmlEncode(value)
             }, domNode);
         },
 

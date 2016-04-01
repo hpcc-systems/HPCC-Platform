@@ -20,10 +20,11 @@
 
 #include "hpccprotocol.hpp"
 
-#define HPCC_PROTOCOL_NATIVE           0x10000
-#define HPCC_PROTOCOL_NATIVE_RAW       0x20000
-#define HPCC_PROTOCOL_NATIVE_XML       0x40000
-#define HPCC_PROTOCOL_NATIVE_ASCII     0x80000
+#define HPCC_PROTOCOL_NATIVE           0x010000
+#define HPCC_PROTOCOL_NATIVE_RAW       0x020000
+#define HPCC_PROTOCOL_NATIVE_XML       0x040000
+#define HPCC_PROTOCOL_NATIVE_ASCII     0x080000
+#define HPCC_PROTOCOL_CONTROL          0x100000
 
 interface IHpccNativeProtocolMsgSink : extends IHpccProtocolMsgSink
 {

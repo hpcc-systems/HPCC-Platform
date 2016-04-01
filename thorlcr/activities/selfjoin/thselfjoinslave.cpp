@@ -31,8 +31,10 @@
 
 #define NUMSLAVEPORTS 2     // actually should be num MP tags
 
-class SelfJoinSlaveActivity : public CSlaveActivity, public CThorDataLink
+class SelfJoinSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
 private:
     Owned<IThorSorter> sorter;
     IHThorJoinArg * helper;
@@ -40,7 +42,6 @@ private:
     bool isLocal;
     bool isLightweight;
     bool inputStopped;
-    IThorDataLink * input;
     Owned<IRowStream> strm;     
     ICompare * compare;
     ISortKeySerializer * keyserializer;
@@ -65,10 +66,9 @@ private:
         ActPrintLog("SELFJOIN: Performing local self-join");
 #endif
         Owned<IThorRowLoader> iLoader = createThorRowLoader(*this, ::queryRowInterfaces(input), compare, isUnstable() ? stableSort_none : stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_SELFJOIN);
-        Owned<IRowStream> rs = iLoader->load(input, abortSoon);
+        Owned<IRowStream> rs = iLoader->load(inputStream, abortSoon);
         mergeStats(spillStats, iLoader);  // Not sure of the best policy if rs spills later on.
-        stopInput(input);
-        input = NULL;
+        PARENT::stop();
         return rs.getClear();
     }
 
@@ -77,9 +77,8 @@ private:
 #if THOR_TRACE_LEVEL > 5
         ActPrintLog("SELFJOIN: Performing global self-join");
 #endif
-        sorter->Gather(::queryRowInterfaces(input), input, compare, NULL, NULL, keyserializer, NULL, false, isUnstable(), abortSoon, NULL);
-        stopInput(input);
-        input = NULL;
+        sorter->Gather(::queryRowInterfaces(input), inputStream, compare, NULL, NULL, keyserializer, NULL, false, isUnstable(), abortSoon, NULL);
+        PARENT::stop();
         if(abortSoon)
         {
             barrier->cancel();
@@ -95,20 +94,16 @@ private:
 
     IRowStream * doLightweightSelfJoin()
     {
-        IRowStream *ret = LINK(input);
-        input = NULL;
+        IRowStream *ret = LINK(inputStream);
         return ret;
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     SelfJoinSlaveActivity(CGraphElementBase *_container, bool _isLocal, bool _isLightweight)
-        : CSlaveActivity(_container), CThorDataLink(this), spillStats(spillStatistics)
+        : CSlaveActivity(_container), spillStats(spillStatistics)
     {
         isLocal = _isLocal||_isLightweight;
         isLightweight = _isLightweight;
-        input = NULL;
         portbase = 0;
         compare = NULL;
         keyserializer = NULL;
@@ -123,7 +118,7 @@ public:
     }
 
 // IThorSlaveActivity
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {       
         appendOutputLinked(this);
         if(!isLocal)
@@ -160,16 +155,15 @@ public:
     }
 
 // IThorDataLink
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input = inputs.item(0);
-        startInput(input);
-        dataLinkStart();
+        PARENT::start();
         bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & helper->getJoinFlags()) != 0);
         bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
 
-        if (helper->getJoinFlags()&JFlimitedprefixjoin) {
+        if (helper->getJoinFlags()&JFlimitedprefixjoin)
+        {
             CriticalBlock b(joinHelperCrit);
             // use std join helper (less efficient but implements limited prefix)
             joinhelper.setown(createJoinHelper(*this, helper, this, hintparallelmatch, hintunsortedoutput));
@@ -182,7 +176,7 @@ public:
         strm.setown(isLightweight? doLightweightSelfJoin() : (isLocal ? doLocalSelfJoin() : doGlobalSelfJoin()));
         assertex(strm);
 
-        joinhelper->init(strm, NULL, ::queryRowAllocator(inputs.item(0)), ::queryRowAllocator(inputs.item(0)), ::queryRowMetaData(inputs.item(0)));
+        joinhelper->init(strm, NULL, ::queryRowAllocator(queryInput(0)), ::queryRowAllocator(queryInput(0)), ::queryRowMetaData(queryInput(0)));
     }
 
     virtual void abort()
@@ -191,13 +185,8 @@ public:
         if (joinhelper)
             joinhelper->stop();
     }
-    virtual void stop()
+    virtual void stop() override
     {
-        if (input)
-        {
-            stopInput(input);
-            input = NULL;
-        }
         if(!isLocal)
         {
             barrier->wait(false);
@@ -209,7 +198,7 @@ public:
         }
         strm->stop();
         strm.clear();
-        dataLinkStop();
+        PARENT::stop();
     }
     
     CATCH_NEXTROW()
@@ -225,8 +214,8 @@ public:
         return NULL;
     }
 
-    virtual bool isGrouped() { return false; }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return false; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.buffersInput = true; 

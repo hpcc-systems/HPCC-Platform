@@ -303,7 +303,7 @@ public:
     {
         assertex(complete);
         ActPrintLog("dictionary result");
-        Owned<IRowInterfaces> rowIf = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryId(),queryCodeContext());
+        Owned<IThorRowInterfaces> rowIf = createThorRowInterfaces(queryRowManager(), container.queryInput(0)->queryHelper()->queryOutputMeta(),queryId(),queryCodeContext());
         IOutputRowDeserializer *deserializer = rowIf->queryRowDeserializer();
         CMessageBuffer mb;
         Owned<ISerialStream> stream = createMemoryBufferSerialStream(resultData);

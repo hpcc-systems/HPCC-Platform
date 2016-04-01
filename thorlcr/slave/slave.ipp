@@ -64,22 +64,18 @@ protected:
     IRangeCompare *stepCompare;
 public:
     IInputSteppingMeta *inputStepping;
-    
+
     CThorSteppable(CSlaveActivity *_activity) { stepCompare = NULL; inputStepping = NULL; }
-    virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx)
+    virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered)
     {
-        if (0 == index)
+        if (0 == index && input.itdl)
         {
-            IThorDataLink *input = inputActivity ? ((CSlaveActivity *)inputActivity)->queryInput(inputOutIdx) : NULL;
-            if (input)
-            {
-                inputStepping = input->querySteppingMeta();
-                if (inputStepping)
-                    stepCompare = inputStepping->queryCompare();
-            }
+            inputStepping = input.itdl->querySteppingMeta();
+            if (inputStepping)
+                stepCompare = inputStepping->queryCompare();
         }
     }
-    virtual IInputSteppingMeta *querySteppingMeta() { return inputStepping; }    
+    virtual IInputSteppingMeta *querySteppingMeta() { return inputStepping; }
 };
 
 
@@ -94,25 +90,32 @@ interface IThorNWayInput
 
 class CThorNarySlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+    
 protected:
     PointerArrayOf<IThorDataLink> expandedInputs;
+    Owned<IStrandJunction> *expandedJunctions = nullptr;
+    IPointerArrayOf<IEngineRowStream> expandedStreams;
 
 public:
     CThorNarySlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
     {
     }
-    void start()
+    ~CThorNarySlaveActivity()
+    {
+        delete [] expandedJunctions;
+    }
+    virtual void start() override
     {
         ForEachItemIn(i, inputs)
         {
-            IThorDataLink *cur = inputs.item(i);
+            IThorDataLink *cur = queryInput(i);
             CActivityBase *activity = cur->queryFromActivity();
             IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(cur);
             if (nWayInput)
             {
                 unsigned numRealInputs = nWayInput->numConcreteOutputs();
-                unsigned i = 0;
-                for (; i < numRealInputs; i++)
+                for (unsigned i=0; i < numRealInputs; i++)
                 {
                     IThorDataLink *curReal = nWayInput->queryConcreteInput(i);
                     expandedInputs.append(curReal);
@@ -123,29 +126,42 @@ public:
         }
         ForEachItemIn(ei, expandedInputs)
             expandedInputs.item(ei)->start();
+        expandedJunctions = new Owned<IStrandJunction> [expandedInputs.length()];
+        ForEachItemIn(idx, expandedInputs)
+        {
+            expandedStreams.append(connectSingleStream(*this, expandedInputs.item(idx), 0, expandedJunctions[idx], true));  // MORE - is the index 0 right?
+            startJunction(expandedJunctions[idx]);
+        }
+        dataLinkStart();
     }
     void stop()
     {
-        ForEachItemIn(ei, expandedInputs)
-            expandedInputs.item(ei)->stop();
+        ForEachItemIn(ei, expandedStreams)
+            expandedStreams.item(ei)->stop();
+        ForEachItemIn(idx, expandedInputs)
+            resetJunction(expandedJunctions[idx]);
         expandedInputs.kill();
+        expandedStreams.kill();
+        delete [] expandedJunctions;
+        expandedJunctions = nullptr;
     }
 };
 
 
-class CThorSteppedInput : public CSimpleInterface, implements ISteppedInput
+class CThorSteppedInput : public CSimpleInterfaceOf<ISteppedInput>
 {
 protected:
+    IEngineRowStream *inputStream;
     IThorDataLink *input;
 
     virtual const void *nextInputRow()
     {
-        return input->ungroupedNextRow();
+        return inputStream->ungroupedNextRow();
     }
     virtual const void *nextInputRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
         assertex(wasCompleteMatch);
-        return input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        return inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return input->gatherConjunctions(collector); }
     virtual IInputSteppingMeta *queryInputSteppingMeta()
@@ -154,12 +170,12 @@ protected:
     }
     virtual void resetEOF()
     {
-        input->resetEOF(); 
+        inputStream->resetEOF();
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface)
-
-    CThorSteppedInput(IThorDataLink *_input) : input(_input) { }
+    CThorSteppedInput(IThorDataLink *_input, IEngineRowStream *_inputStream) : input(_input), inputStream(_inputStream)
+    {
+    }
 };
 
 

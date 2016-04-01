@@ -2,24 +2,15 @@ define([
   "dojo/_base/declare",
   "dojo/_base/lang",
   "dojo/_base/array",
+  "dojo/_base/Deferred",
 
   "./DojoD3",
-  "./Mapping",
-
-  "src/chart/MultiChart",
-
-  "d3",
-
-  "dojo/text!./templates/DojoD3BarChart.css"
-
-], function (declare, lang, arrayUtil,
-    DojoD3, Mapping,
-    MultiChart,
-    d3,
-    css) {
+  "./Mapping"
+], function (declare, lang, arrayUtil, Deferred,
+    DojoD3, Mapping) {
     return declare([Mapping, DojoD3], {
         mapping: {
-            barChart: {
+            _2DChart: {
                 display: "2D Chart Data",
                 fields: {
                     label: "Label",
@@ -37,13 +28,16 @@ define([
         },
 
         renderTo: function (_target) {
-            this.chart = new MultiChart()
-                .chartType(this._chartType)
-                .target(_target.domNodeID)
-            ;
-            if (this.chart.show_title) {
-                this.chart.show_title(false);
-            }
+            var deferred = new Deferred();
+            var context = this;
+            require(["src/chart/MultiChart"], function (MultiChart) {
+                context.chart = new MultiChart()
+                    .chartType(context._chartType)
+                    .target(_target.domNodeID)
+                ;
+                deferred.resolve(context.chart);
+            });
+            return deferred.promise;
         },
 
         display: function (data) {

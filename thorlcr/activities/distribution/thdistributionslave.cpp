@@ -23,12 +23,10 @@ class CDistributionSlaveActivity : public ProcessSlaveActivity
     IHThorDistributionArg * helper;
     MemoryAttr ma;
     IDistributionTable * * aggy;                // should this be row?
-    IThorDataLink *input;
 
 public:
     CDistributionSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {
-        input = NULL;
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -45,16 +43,15 @@ public:
     }
     void process()
     {
+        start();
         helper->clearAggregate(aggy);
-        input = inputs.item(0);
-        startInput(input);
         processed = THORDATALINK_STARTED;
 
         try
         {
             while (!abortSoon)
             {
-                OwnedConstThorRow row(input->ungroupedNextRow());
+                OwnedConstThorRow row(inputStream->ungroupedNextRow());
                 if (!row)
                     break;
                 helper->process(aggy, row);     
@@ -75,7 +72,7 @@ public:
     {
         if (processed & THORDATALINK_STARTED)
         {
-            stopInput(input);
+            stop();
             processed |= THORDATALINK_STOPPED;
         }
     }   

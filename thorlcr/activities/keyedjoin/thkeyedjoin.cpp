@@ -54,7 +54,7 @@ public:
             progressKinds.append(StNumDiskRejected);
         }
         ForEachItemIn(l, progressKinds)
-            progressInfoArr.append(*new ProgressInfo);
+            progressInfoArr.append(*new ProgressInfo(queryJob()));
         localKey = false;
         numTags = 0;
         tags[0] = tags[1] = tags[2] = tags[3] = TAG_NULL;

@@ -139,6 +139,18 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             //Always effectively requires a temporary
             return RETassign;
         }
+    case no_combine:
+        {
+            //can't do a skip inside an inline combine - since the generated code doesn't allow "continue" to be used.
+            if (transformContainsSkip(expr->queryChild(2)))
+                return 0;
+            unsigned lhsChildFlags = getInlineFlags(ctx, expr->queryChild(0));
+            unsigned rhsChildFlags = getInlineFlags(ctx, expr->queryChild(1));
+
+            if ((lhsChildFlags != 0) && (rhsChildFlags != 0))
+                return RETiterate;
+            return 0;
+        }
     case no_hqlproject:
         //can't do a skip inside an inline project - since the generated code doesn't allow "continue" to be used.
         if (transformContainsSkip(expr->queryChild(1)))

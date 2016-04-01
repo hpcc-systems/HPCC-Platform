@@ -23,50 +23,47 @@
 #include "thormisc.hpp"
 
 
-class CLimitSlaveActivityBase : public CSlaveActivity, public CThorDataLink
+class CLimitSlaveActivityBase : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
 protected:
     rowcount_t rowLimit;
     bool eos, eogNext, stopped, resultSent, anyThisGroup;
-    IThorDataLink *input;
     IHThorLimitArg *helper;
 
     void stopInput(rowcount_t c)
     {
-        if (!stopped) {
+        if (!stopped)
+        {
             stopped = true;
             sendResult(c);
-            CSlaveActivity::stopInput(input);
+            PARENT::stop();
         }
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    CLimitSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    CLimitSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorLimitArg *)queryHelper();
-        input = NULL;       
         resultSent = container.queryLocal(); // i.e. local, so don't send result to master
         eos = stopped = anyThisGroup = eogNext = false;
         rowLimit = RCMAX;
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
 
         if (!container.queryLocal())
             mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         resultSent = container.queryLocal(); // i.e. local, so don't send result to master
         eos = stopped = anyThisGroup = eogNext = false;
-        input = inputs.item(0);
-        startInput(input);
         rowLimit = (rowcount_t)helper->getRowLimit();
-        dataLinkStart();
     }
     void sendResult(rowcount_t r)
     {
@@ -76,19 +73,18 @@ public:
         mb.append(r);
         queryJobChannel().queryJobComm().send(mb, 0, mpTag);
     }
-    void stop()
+    virtual void stop() override
     {
         stopInput(getDataLinkCount());
-        dataLinkStop();
     }
-    bool isGrouped() { return inputs.item(0)->isGrouped(); }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.canReduceNumRows = true;
         info.canBufferInput = false;
         info.totalRowsMax = rowLimit;
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 };
 
@@ -105,7 +101,7 @@ public:
             return NULL;
         while (!abortSoon && !eogNext)
         {
-            OwnedConstThorRow row = input->nextRow();
+            OwnedConstThorRow row = inputStream->nextRow();
             if (!row)
             {
                 if(anyThisGroup)
@@ -113,7 +109,7 @@ public:
                     anyThisGroup = false;
                     break;
                 }
-                row.setown(input->nextRow());
+                row.setown(inputStream->nextRow());
                 if (!row)
                 {
                     eos = true;
@@ -143,7 +139,7 @@ public:
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
-        OwnedConstThorRow ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        OwnedConstThorRow ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
         {
             if (wasCompleteMatch)
@@ -160,13 +156,13 @@ public:
     void resetEOF() 
     { 
         //Do not reset the rowLimit
-        input->resetEOF(); 
+        inputStream->resetEOF();
     }
 // steppable
-    virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx)
+    virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override
     {
-        CLimitSlaveActivityBase::setInput(index, inputActivity, inputOutIdx);
-        CThorSteppable::setInput(index, inputActivity, inputOutIdx);
+        CLimitSlaveActivityBase::setInputStream(index, input, consumerOrdered);
+        CThorSteppable::setInputStream(index, input, consumerOrdered);
     }
     virtual IInputSteppingMeta *querySteppingMeta() { return CThorSteppable::inputStepping; }
 };
@@ -196,10 +192,10 @@ class CSkipLimitSlaveActivity : public CLimitSlaveActivityBase
         rowcount_t count = 0;
         while (!abortSoon)
         {
-            OwnedConstThorRow row = input->nextRow();
+            OwnedConstThorRow row = inputStream->nextRow();
             if (!row)
             {
-                row.setown(input->nextRow());
+                row.setown(inputStream->nextRow());
                 if (!row)
                     break;
                 else
@@ -237,24 +233,19 @@ public:
         rowTransform = _rowTransform;
         helperex = NULL;
     }
-    void stop()
-    {
-        stopInput(0);
-        dataLinkStop();
-    }
     void abort()
     {
         if (!container.queryLocal())
             cancelReceiveMsg(0, mpTag);
         CLimitSlaveActivityBase::abort();
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         CLimitSlaveActivityBase::init(data,slaveData);
         if (rowTransform)
             helperex = static_cast<IHThorLimitTransformExtra *>(queryHelper()->selectInterface(TAIlimittransformextra_1));
     }
-    void start()
+    virtual void start() override
     {
         CLimitSlaveActivityBase::start();
         buf.setown(createOverflowableBuffer(*this, this, true));

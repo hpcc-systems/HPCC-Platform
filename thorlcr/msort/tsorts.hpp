@@ -28,7 +28,7 @@
 #include "mpbase.hpp"
 
 interface ISortKeySerializer;
-interface IRowInterfaces;
+interface IThorRowInterfaces;
 interface IThorDataLink;
 
 
@@ -36,7 +36,7 @@ class IThorSorter: public IInterface
 {
 public:
     virtual void Gather(
-        IRowInterfaces *_rowif,
+        IThorRowInterfaces *_rowif,
         IRowStream *in,
         ICompare *icompare,
         ICompare *icollate,
@@ -46,7 +46,7 @@ public:
         bool nosort, 
         bool unstable, 
         bool &abort,
-        IRowInterfaces *_auxrowif
+        IThorRowInterfaces *_auxrowif
         )=0;
     virtual IRowStream * startMerge(rowcount_t &totalrows)=0;
     virtual void stopMerge()=0;
@@ -65,8 +65,8 @@ interface ISocketRowWriter: extends IRowWriter
 
 class CActivityBase;
 IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep,IDiskUsage *iDiskUsage,ICommunicator *clusterComm, mptag_t _mpTagRPC);
-IRowStream *ConnectMergeRead(unsigned id,IRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs);
-ISocketRowWriter *ConnectMergeWrite(IRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs);
+IRowStream *ConnectMergeRead(unsigned id,IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs);
+ISocketRowWriter *ConnectMergeWrite(IThorRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs);
 #define SOCKETSERVERINC                    1
 #define NUMSLAVESOCKETS                    2
 
@@ -97,7 +97,7 @@ interface IMergeTransferServer: extends IInterface
                             unsigned num,SocketEndpoint* endpoints,
                             unsigned partno
                            ) = 0;
-    virtual void setRowIF(IRowInterfaces *rowif)=0;
+    virtual void setRowIF(IThorRowInterfaces *rowif)=0;
     virtual void stop() = 0;
     virtual void subjoin() = 0;
 };

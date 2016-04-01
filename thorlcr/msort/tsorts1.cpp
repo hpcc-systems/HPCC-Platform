@@ -57,7 +57,7 @@ protected:
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CMergeReadStream(IRowInterfaces *rowif, unsigned streamno,SocketEndpoint &targetep, rowcount_t startrec, rowcount_t numrecs)
+    CMergeReadStream(IThorRowInterfaces *rowif, unsigned streamno,SocketEndpoint &targetep, rowcount_t startrec, rowcount_t numrecs)
     {
         endpoint = targetep;
 #ifdef _TRACE
@@ -279,7 +279,7 @@ protected: friend class CSortMerge;
     CriticalSection childsect;
     CSortMergeArray children;
     Owned<ISocketSelectHandler> selecthandler;
-    Linked<IRowInterfaces> rowif;
+    Linked<IThorRowInterfaces> rowif;
     CriticalSection rowifsect;
     Semaphore rowifsem;
 public:
@@ -298,7 +298,7 @@ public:
         term = false;
     }
 
-    void setRowIF(IRowInterfaces *_rowif)
+    void setRowIF(IThorRowInterfaces *_rowif)
     {
         // bit of a kludge
         CriticalBlock block(rowifsect);

@@ -33,7 +33,7 @@ public:
 
     virtual const char* getProtocol() const override { UNIMPLEMENTED; }
 
-    virtual CTxSummary* getTxSummary() const override { return (queryContext() ? queryContext()->getTxSummary() : NULL); }
+    virtual CTxSummary* queryTxSummary() const override { return (queryContext() ? queryContext()->queryTxSummary() : NULL); }
 
     virtual bool getProp(int type, const char* name, StringBuffer& value) override { UNIMPLEMENTED; }
 

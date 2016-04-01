@@ -286,8 +286,10 @@ interface IRowStreamStepping : extends IRowStream
     virtual const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) = 0;
 };
 
-class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
+class CIndexReadSlaveActivity : public CIndexReadSlaveBase
 {
+    typedef CIndexReadSlaveBase PARENT;
+
     IHThorIndexReadArg *helper;
     rowcount_t rowLimit, stopAfter;
     bool keyedLimitSkips, first, eoi, needTransform, optimizeSteppedPostFilter, steppingEnabled;
@@ -549,9 +551,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    CIndexReadSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), CThorDataLink(this)
+    CIndexReadSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
         keyedLimitSkips = false;
         first = true;
@@ -626,6 +626,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         first = true;
         eoi = false;
         keyedLimit = helperKeyedLimit;
@@ -646,7 +647,6 @@ public:
             keyedLimitCount = 0;            
         else
             eoi = true; // otherwise delayed until calc. in nextRow()
-        dataLinkStart();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
@@ -654,7 +654,7 @@ public:
         info.isSource = true;
         // MORE TBD
     }
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() const override { return false; }
 
 // IRowStream
     virtual void stop()
@@ -671,7 +671,7 @@ public:
             out->stop();
             out.clear();
         }
-        dataLinkStop();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {
@@ -759,8 +759,10 @@ CActivityBase *createIndexReadSlave(CGraphElementBase *container)
 
 /////////////////////////////////////////////////////////////
 
-class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink, implements IHThorGroupAggregateCallback
+class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, implements IHThorGroupAggregateCallback
 {
+    typedef CIndexReadSlaveBase PARENT;
+
     IHThorIndexGroupAggregateArg *helper;
     bool gathered, eoi, merging;
     Owned<RowAggregator> localAggTable;
@@ -770,7 +772,7 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, public CTh
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CIndexGroupAggregateSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), CThorDataLink(this)
+    CIndexGroupAggregateSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
         helper = (IHThorIndexGroupAggregateArg *)container.queryHelper();
         merging = false;
@@ -781,32 +783,28 @@ public:
         localAggTable->addRow(next);
     }
 // IThorSlaveActivity
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         CIndexReadSlaveBase::init(data, slaveData);
         appendOutputLinked(this);
     }
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.isSource = true;
         // MORE TBD
     }
-    virtual bool isGrouped() { return false; }
-    virtual void start()
+    virtual bool isGrouped() const override { return false; }
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         localAggTable.setown(new RowAggregator(*helper, *helper));
         localAggTable->start(queryRowAllocator());
         gathered = eoi = false;
-        dataLinkStart();
     }
 // IRowStream
-    virtual void stop()
-    {
-        dataLinkStop();
-    }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -870,8 +868,10 @@ CActivityBase *createIndexGroupAggregateSlave(CGraphElementBase *container) { re
 /////////////////////////////////////////////////////////////
 
 
-class CIndexCountSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
+class CIndexCountSlaveActivity : public CIndexReadSlaveBase
 {
+    typedef CIndexReadSlaveBase PARENT;
+
     bool eoi;
     IHThorIndexCountArg *helper;
     rowcount_t choosenLimit;
@@ -879,9 +879,7 @@ class CIndexCountSlaveActivity : public CIndexReadSlaveBase, public CThorDataLin
     bool totalCountKnown;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    CIndexCountSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), CThorDataLink(this)
+    CIndexCountSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
         helper = static_cast <IHThorIndexCountArg *> (container.queryHelper());
         preknownTotalCount = 0;
@@ -890,7 +888,7 @@ public:
     }
 
 // IThorSlaveActivity
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         CIndexReadSlaveBase::init(data, slaveData);
         choosenLimit = (rowcount_t)helper->getChooseNLimit();
@@ -898,30 +896,26 @@ public:
     }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.isSource = true;
         // MORE TBD
     }
-    virtual bool isGrouped() { return false; }
-    virtual void start()
+    virtual bool isGrouped() const override { return false; }
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         eoi = false;
         if (!helper->canMatchAny())
         {
             totalCountKnown = true;
             preknownTotalCount = 0;
         }
-        dataLinkStart();
     }
 
 // IRowStream
-    virtual void stop()
-    {
-        dataLinkStop();
-    }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -1008,8 +1002,10 @@ CActivityBase *createIndexCountSlave(CGraphElementBase *container)
 }
 
 
-class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
+class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase
 {
+    typedef CIndexReadSlaveBase PARENT;
+
     bool eoi, expanding;
     IHThorIndexNormalizeArg *helper;
     rowcount_t keyedLimit, rowLimit, stopAfter, keyedProcessed, keyedLimitCount;
@@ -1032,9 +1028,7 @@ class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase, public CThorDat
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    CIndexNormalizeSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), CThorDataLink(this), partHelper(*this)
+    CIndexNormalizeSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), partHelper(*this)
     {
         helper = (IHThorIndexNormalizeArg *)container.queryHelper();
     }
@@ -1067,10 +1061,11 @@ public:
         info.isSource = true;
         // MORE TBD
     }
-    virtual bool isGrouped() { return false; }
-    virtual void start()
+    virtual bool isGrouped() const override { return false; }
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         keyedLimit = (rowcount_t)helper->getKeyedLimit();
         rowLimit = (rowcount_t)helper->getRowLimit();
         if (helper->getFlags() & TIRlimitskips)
@@ -1097,11 +1092,10 @@ public:
         }
         else
             eoi = true;
-        dataLinkStart();
     }
 
 // IRowStream
-    virtual void stop()
+    virtual void stop() override
     {
         if (RCMAX != keyedLimit)
         {
@@ -1109,7 +1103,7 @@ public:
             if (keyedLimitCount > keyedLimit)
                 helper->onKeyedLimitExceeded(); // should throw exception
         }
-        dataLinkStop();
+        PARENT::stop();
     }
 
     CATCH_NEXTROW()
@@ -1201,8 +1195,10 @@ public:
 
 CActivityBase *createIndexNormalizeSlave(CGraphElementBase *container) { return new CIndexNormalizeSlaveActivity(container); }
 
-class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
+class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase
 {
+    typedef CIndexReadSlaveBase PARENT;
+
     bool eoi, hadElement;
     IHThorIndexAggregateArg *helper;
     CIndexPartHandlerHelper partHelper;
@@ -1229,23 +1225,21 @@ class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase, public CThorDat
         }
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CIndexAggregateSlaveActivity(CGraphElementBase *_container) 
-        : CIndexReadSlaveBase(_container), CThorDataLink(this), partHelper(*this), aggregator(*this)
+        : CIndexReadSlaveBase(_container), partHelper(*this), aggregator(*this)
     {
         helper = (IHThorIndexAggregateArg *)container.queryHelper();
     }
 
 // IThorSlaveActivity
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         CIndexReadSlaveBase::init(data, slaveData);
         appendOutputLinked(this);
     }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.isSource = true;
@@ -1253,21 +1247,16 @@ public:
         info.totalRowsMax = 1;
         // MORE TBD
     }
-    virtual bool isGrouped() { return false; }
-    virtual void start()
+    virtual bool isGrouped() const override { return false; }
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         eoi = hadElement = false;
         partn = 0;
-        dataLinkStart();
     }
 
 // IRowStream
-    virtual void stop()
-    {
-        dataLinkStop();
-    }
-
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);

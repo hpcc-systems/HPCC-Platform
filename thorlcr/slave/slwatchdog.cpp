@@ -98,7 +98,9 @@ public:
                 ForEachItemIn(g, activeGraphs) // NB: 1 for each slavesPerProcess
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    graph.serializeStats(progressData);
+                    progressData.append((unsigned)graph.queryJobChannel().queryMyRank()-1);
+                    if (!graph.serializeStats(progressData))
+                        progressData.setLength(progressData.length()-sizeof(unsigned));
                 }
             }
             size32_t sz = progressData.length();
@@ -135,7 +137,7 @@ public:
             activeGraphs.zap(graph);
         }
     }
-    virtual void debugRequest(CMessageBuffer &msg, const char *request) const
+    virtual void debugRequest(MemoryBuffer &msg, const char *request) const
     {
         Owned<IPTree> req = createPTreeFromXMLString(request);
 
@@ -159,7 +161,7 @@ public:
             if (element)
             {
                 CSlaveActivity *activity = (CSlaveActivity*) element->queryActivity();
-                if (activity) activity->debugRequest(edgeIdx,msg);
+                if (activity) activity->debugRequest(edgeIdx, msg);
             }
         }
     }

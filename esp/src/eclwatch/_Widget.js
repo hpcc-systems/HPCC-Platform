@@ -17,6 +17,26 @@ define([
 ], function (declare, arrayUtil, i18n, nlsHPCC, ioQuery, dom, domConstruct, domAttr, domStyle,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry) {
 
+    //  IE8 textContent polyfill  ---
+    if (Object.defineProperty
+      && Object.getOwnPropertyDescriptor
+      && Object.getOwnPropertyDescriptor(Element.prototype, "textContent")
+      && !Object.getOwnPropertyDescriptor(Element.prototype, "textContent").get) {
+        (function () {
+            var innerText = Object.getOwnPropertyDescriptor(Element.prototype, "innerText");
+            Object.defineProperty(Element.prototype, "textContent",
+             {
+                 get: function () {
+                     return innerText.get.call(this);
+                 },
+                 set: function (s) {
+                     return innerText.set.call(this, s);
+                 }
+             }
+           );
+        })();
+    }
+
     return declare("_Widget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         baseClass: "_Widget",
         i18n: nlsHPCC,
@@ -136,6 +156,13 @@ define([
                     }
                 }, nodeToWrap, "after");
                 domConstruct.place(nodeToWrap, hrefNode, "first");
+            }
+        },
+
+        refreshHRef: function (node, href) {
+            var nodeToWrap = dom.byId(this.id + "NewPage");
+            if (nodeToWrap && nodeToWrap.parentNode && nodeToWrap.parentNode.tagName === "A") {
+                nodeToWrap.parentNode.href = this.getURL();
             }
         },
 

@@ -164,7 +164,7 @@ public:
 class CSocketRowWriter: public CSimpleInterface, implements ISocketRowWriter
 {
     IOutputRowSerializer* serializer;
-    Linked<IRowInterfaces> rowif;
+    Linked<IThorRowInterfaces> rowif;
     Linked<ISocket> socket;
     MemoryBuffer outbuf;
     CMemoryRowSerializer rsz;
@@ -176,7 +176,7 @@ class CSocketRowWriter: public CSimpleInterface, implements ISocketRowWriter
     unsigned id;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CSocketRowWriter(unsigned _id,IRowInterfaces *_rowif,ISocket *_socket,size32_t _bufsize)
+    CSocketRowWriter(unsigned _id, IThorRowInterfaces *_rowif,ISocket *_socket,size32_t _bufsize)
         : rowif(_rowif), socket(_socket), rsz(outbuf)
     {
         id = _id;
@@ -277,7 +277,7 @@ public:
 };
 
 
-IRowStream *ConnectMergeRead(unsigned id,IRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs)
+IRowStream *ConnectMergeRead(unsigned id, IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs)
 {
     Owned<ISocket> socket = DoConnect(nodeaddr);
     TransferStreamHeader hdr(startrec,numrecs,0,id);
@@ -292,7 +292,7 @@ IRowStream *ConnectMergeRead(unsigned id,IRowInterfaces *rowif,SocketEndpoint &n
 }
 
 
-ISocketRowWriter *ConnectMergeWrite(IRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs)
+ISocketRowWriter *ConnectMergeWrite(IThorRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs)
 {
     TransferStreamHeader hdr;
     socket->read(&hdr,sizeof(hdr));

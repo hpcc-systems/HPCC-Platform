@@ -17,46 +17,33 @@
 
 #include "thdegroupslave.ipp"
 
-class CDegroupSlaveActivity : public CSlaveActivity, public CThorDataLink, public CThorSteppable
+class CDegroupSlaveActivity : public CSlaveActivity, public CThorSteppable
 {
-    IThorDataLink *input;
+    typedef CSlaveActivity PARENT;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CDegroupSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container) , CThorDataLink(this), CThorSteppable(this)
+        : CSlaveActivity(_container), CThorSteppable(this)
     { 
-        input = NULL; 
     }
-    bool isGrouped() 
-    { 
-        return false; 
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input = inputs.item(0);
-
-        startInput(input);
+        PARENT::start();
         if(!input->isGrouped()) ActPrintLog("DEGROUP: Degrouping non-grouped input!");
-        dataLinkStart();
-    }
-    void stop()
-    {
-        stopInput(input);
-        dataLinkStop();
     }
     CATCH_NEXTROW()
-    {   
+    {
         ActivityTimer t(totalCycles, timeActivities);
         if (!abortSoon)
         {
-            OwnedConstThorRow row = input->ungroupedNextRow();
+            OwnedConstThorRow row = inputStream->ungroupedNextRow();
             if (row)
             {
                 dataLinkIncrement();
@@ -66,17 +53,17 @@ public:
         }
         return NULL;
     }
-    const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
+    virtual const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) override
     {
         try { return nextRowGENoCatch(seek, numFields, wasCompleteMatch, stepExtra); }
         CATCH_NEXTROWX_CATCH;
     }
-    const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
+    virtual const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (!abortSoon)
         {
-            OwnedConstThorRow row = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+            OwnedConstThorRow row = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
             if (row)
             {
                 dataLinkIncrement();
@@ -86,26 +73,30 @@ public:
         }
         return NULL;
     }
-    bool gatherConjunctions(ISteppedConjunctionCollector &collector)
+    virtual bool gatherConjunctions(ISteppedConjunctionCollector &collector) override
     { 
         return input->gatherConjunctions(collector);
     }
-    void resetEOF() 
+    virtual void resetEOF() override
     { 
         abortSoon = false;
-        input->resetEOF(); 
+        inputStream->resetEOF();
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override
+    { 
+        return false; 
+    }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.fastThrough = true;
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 // steppable
-    virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx)
+    virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override
     {
-        CSlaveActivity::setInput(index, inputActivity, inputOutIdx);
-        CThorSteppable::setInput(index, inputActivity, inputOutIdx);
+        CSlaveActivity::setInputStream(index, input, consumerOrdered);
+        CThorSteppable::setInputStream(index, input, consumerOrdered);
     }
     virtual IInputSteppingMeta *querySteppingMeta() { return CThorSteppable::inputStepping; }
 };

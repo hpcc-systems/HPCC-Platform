@@ -244,17 +244,10 @@ public:
                     return false;
 
             const char *minstr = props->queryProp("min_ver");
-            if (minstr){
-                float minFloat = (float)atof(minstr);
-                // I need to assign the value of the atof() call to a float variable
-                // because otherwise the if statement will return true when the float
-                // and double are equal (eg 1.3f < 1.3)
-                // I haven't been able to figure out the precise reason for this behavior
-                // but I've been able to confirm it and reproduce it on Windows even in a
-                // simple default 'windows console' project.
-
-                //minFloat least significant value is rounded up, this comparison fails if ver = minfloat
-                if (ver < minFloat)
+            if (minstr)
+            {
+                double minDouble = (double)atof(minstr);
+                if (ver < minDouble)
                     return false;
             }
         }
@@ -1304,7 +1297,7 @@ public:
         }
     }
 
-    void addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefName, int ver);
+    void addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefName, double ver);
     void addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefId);
     void addDefinitionsFromFile(const char *filename);
     bool hasFileLoaded(const char *filename);
@@ -1975,7 +1968,7 @@ void EsdlDefinition::addDefinitionFromXML(const StringBuffer & xmlDef, const cha
         DBGLOG("XML ESDL definition: %s has already been loaded!", esdlDefId);
 }
 
-void EsdlDefinition::addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefName, int ver)
+void EsdlDefinition::addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefName, double ver)
 {
     if (!esdlDefName || !*esdlDefName)
     {
@@ -1989,8 +1982,8 @@ void EsdlDefinition::addDefinitionFromXML(const StringBuffer & xmlDef, const cha
         return;
     }
 
-    VStringBuffer esdlDefId("%s.%d", esdlDefName, ver);
-    addDefinitionFromXML(xmlDef, esdlDefName);
+    VStringBuffer esdlDefId("%s.%f", esdlDefName, ver);
+    addDefinitionFromXML(xmlDef, esdlDefId);
 }
 
 EsdlDefObject::EsdlDefObject(StartTag &tag, EsdlDefinition *esdl)

@@ -50,34 +50,29 @@
 #define JOIN_TIMEOUT (10*60*1000)
 
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning( disable : 4355 )
-#endif
-class ThorLookaheadCache: public IThorDataLink, public CSimpleInterface
+
+class CRowStreamLookAhead : public CSimpleInterfaceOf<IStartableEngineRowStream>
 {
     rowcount_t count;
-    Linked<IThorDataLink> in;
+    Linked<IEngineRowStream> inputStream;
+    IThorRowInterfaces *rowIf;
     Owned<ISmartRowBuffer> smartbuf;
     size32_t bufsize;
-    CActivityBase &activity;
+    CSlaveActivity &activity;
     bool allowspill, preserveGrouping;
-    ISmartBufferNotify *notify;
+    ILookAheadStopNotify *notify;
     bool running;
     bool stopped;
     rowcount_t required;
-    Semaphore startsem;
-    bool started;
-    Owned<IException> startexception;
+    Semaphore startSem;
     Owned<IException> getexception;
-    bool asyncstart;
 
-    class Cthread: public Thread
+    class CThread: public Thread
     {
-        ThorLookaheadCache &parent;
+        CRowStreamLookAhead &parent;
     public:
-        Cthread(ThorLookaheadCache &_parent)
-            : Thread("ThorLookaheadCache"), parent(_parent)
+        CThread(CRowStreamLookAhead &_parent)
+            : Thread("CRowStreamLookAhead"), parent(_parent)
         {
         }
         int run()
@@ -87,8 +82,6 @@ class ThorLookaheadCache: public IThorDataLink, public CSimpleInterface
     } thread;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     void doNotify()
     {
         if (notify)
@@ -99,44 +92,26 @@ public:
 
     int run()
     {
-        if (!started) {
-            try {
-                in->start();
-                started = true;
-            }
-            catch(IException * e)
-            {
-                ActPrintLog(&activity, e, "ThorLookaheadCache starting input");
-                startexception.setown(e);
-                if (asyncstart) 
-                    notify->onInputStarted(startexception);
-                running = false;
-                stopped = true;
-                startsem.signal();
-                return 0;
-            }
-        }
-        try {
+        try
+        {
             StringBuffer temp;
             if (allowspill)
                 GetTempName(temp,"lookahd",true);
             assertex(bufsize);
             if (allowspill)
-                smartbuf.setown(createSmartBuffer(&activity, temp.str(), bufsize, queryRowInterfaces(in)));
+                smartbuf.setown(createSmartBuffer(&activity, temp.str(), bufsize, rowIf));
             else
-                smartbuf.setown(createSmartInMemoryBuffer(&activity, queryRowInterfaces(in), bufsize));
-            if (notify) 
-                notify->onInputStarted(NULL);
-            startsem.signal();
+                smartbuf.setown(createSmartInMemoryBuffer(&activity, rowIf, bufsize));
+            startSem.signal();
             IRowWriter *writer = smartbuf->queryWriter();
             if (preserveGrouping)
             {
                 while (required&&running)
                 {
-                    OwnedConstThorRow row = in->nextRow();
+                    OwnedConstThorRow row = inputStream->nextRow();
                     if (!row)
                     {
-                        row.setown(in->nextRow());
+                        row.setown(inputStream->nextRow());
                         if (!row)
                             break;
                         else
@@ -152,7 +127,7 @@ public:
             {
                 while (required&&running)
                 {
-                    OwnedConstThorRow row = in->ungroupedNextRow();
+                    OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                         break;
                     ++count;
@@ -164,7 +139,8 @@ public:
         }
         catch(IException * e)
         {
-            ActPrintLog(&activity, e, "ThorLookaheadCache get exception");
+            startSem.signal();
+            ActPrintLog(&activity, e, "CRowStreamLookAhead get exception");
             getexception.setown(e);
         }
 
@@ -177,9 +153,9 @@ public:
         class CNotifyThread : implements IThreaded
         {
             CThreaded threaded;
-            ThorLookaheadCache &owner;
+            CRowStreamLookAhead &owner;
         public:
-            CNotifyThread(ThorLookaheadCache &_owner) : threaded("Lookahead-CNotifyThread"), owner(_owner)
+            CNotifyThread(CRowStreamLookAhead &_owner) : threaded("Lookahead-CNotifyThread"), owner(_owner)
             {
                 threaded.init(this);
             }
@@ -202,27 +178,25 @@ public:
         running = false;
         try
         {
-            if (in)
-                in->stop();
+            if (inputStream)
+                inputStream->stop();
         }
         catch(IException * e)
         {
-            ActPrintLog(&activity, e, "ThorLookaheadCache stop exception");
+            ActPrintLog(&activity, e, "CRowStreamLookAhead stop exception");
             if (!getexception.get())
                 getexception.setown(e);
         }
         // NB: Will wait on CNotifyThread to finish before returning
         return 0;
     }
-        
 
-    ThorLookaheadCache(CActivityBase &_activity, IThorDataLink *_in,size32_t _bufsize,bool _allowspill,bool _preserveGrouping, rowcount_t _required,ISmartBufferNotify *_notify, bool _instarted, IDiskUsage *_iDiskUsage)
-        : thread(*this), activity(_activity), in(_in)
+    CRowStreamLookAhead(CSlaveActivity &_activity, IEngineRowStream *_inputStream, IThorRowInterfaces *_rowIf, size32_t _bufsize, bool _allowspill, bool _preserveGrouping, rowcount_t _required, ILookAheadStopNotify *_notify, IDiskUsage *_iDiskUsage)
+        : thread(*this), activity(_activity), inputStream(_inputStream), rowIf(_rowIf)
     {
 #ifdef _FULL_TRACE
-        ActPrintLog(&activity, "ThorLookaheadCache create %x",(unsigned)(memsize_t)this);
+        ActPrintLog(&activity, "CRowStreamLookAhead create %x",(unsigned)(memsize_t)this);
 #endif
-        asyncstart = false;
         allowspill = _allowspill;
         preserveGrouping = _preserveGrouping;
         assertex((unsigned)-1 != _bufsize); // no longer supported
@@ -232,90 +206,66 @@ public:
         required = _required;
         count = 0;
         stopped = true;
-        started = _instarted;
     }
-
-    ~ThorLookaheadCache()
+    ~CRowStreamLookAhead()
     {
         if (!thread.join(1000*60))
-            ActPrintLogEx(&activity.queryContainer(), thorlog_all, MCuserWarning, "ThorLookaheadCache join timedout");
+            ActPrintLogEx(&activity.queryContainer(), thorlog_all, MCuserWarning, "CRowStreamLookAhead join timedout");
     }
-
-    void start()
-    {
-#ifdef _FULL_TRACE
-        ActPrintLog(&activity, "ThorLookaheadCache start %x",(unsigned)(memsize_t)this);
-#endif
-        stopped = false;
-        asyncstart = notify&&notify->startAsync();
-        thread.start();
-        if (!asyncstart) {
-            startsem.wait();
-            if (startexception) 
-                throw startexception.getClear();
-        }
-    }
-
-    void stop()
-    {
-#ifdef _FULL_TRACE
-        ActPrintLog(&activity, "ThorLookaheadCache stop %x",(unsigned)(memsize_t)this);
-#endif
-        if (!stopped) {
-            running = false;
-            if (smartbuf)
-                smartbuf->stop(); // just in case blocked
-            thread.join();
-            stopped = true;
-            if (getexception) 
-                throw getexception.getClear();
-        }
-    }
-
-    const void *nextRow()
+// IEngineRowStream
+    virtual const void *nextRow() override
     {
         OwnedConstThorRow row = smartbuf->nextRow();
-        if (getexception) 
+        if (getexception)
             throw getexception.getClear();
-        if (!row) {
+        if (!row)
+        {
 #ifdef _FULL_TRACE
-            ActPrintLog(&activity, "ThorLookaheadCache eos %x",(unsigned)(memsize_t)this);
+            ActPrintLog(&activity, "CRowStreamLookAhead eos %x",(unsigned)(memsize_t)this);
 #endif
         }
         return row.getClear();
     }
 
-    bool isGrouped() { return preserveGrouping; }
-            
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+// IStartableEngineRowStream
+    virtual void start() override
     {
-        memset(&info,0,sizeof(info));
-        in->getMetaInfo(info);
-        // more TBD
+#ifdef _FULL_TRACE
+        ActPrintLog(&activity, "CRowStreamLookAhead start %x",(unsigned)(memsize_t)this);
+#endif
+        stopped = false;
+        thread.start();
+        startSem.wait();
     }
-
-    CActivityBase *queryFromActivity()
+// IEngineRowStream
+    virtual void resetEOF() override { throwUnexpected(); }
+// IRowStream
+    virtual void stop() override
     {
-        return in->queryFromActivity();
+#ifdef _FULL_TRACE
+        ActPrintLog(&activity, "CRowStreamLookAhead stop %x",(unsigned)(memsize_t)this);
+#endif
+        if (!stopped)
+        {
+            running = false;
+            if (smartbuf)
+                smartbuf->stop(); // just in case blocked
+            thread.join();
+            stopped = true;
+            if (getexception)
+                throw getexception.getClear();
+        }
     }
-    void dataLinkSerialize(MemoryBuffer &mb)
-    {
-        // no serialization information (yet)
-    }
-    unsigned __int64 queryTotalCycles() const { return in->queryTotalCycles(); }
-    unsigned __int64 queryEndCycles() const { return in->queryEndCycles(); }
-    virtual void debugRequest(MemoryBuffer &msg) { return in->debugRequest(msg); }
 };
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 
 
-IThorDataLink *createDataLinkSmartBuffer(CActivityBase *activity, IThorDataLink *in, size32_t bufsize, bool allowspill, bool preserveGrouping, rowcount_t maxcount, ISmartBufferNotify *notify, bool instarted, IDiskUsage *iDiskUsage)
+IStartableEngineRowStream *createRowStreamLookAhead(CSlaveActivity *activity, IEngineRowStream *inputStream, IThorRowInterfaces *rowIf, size32_t bufsize, bool allowspill, bool preserveGrouping, rowcount_t maxcount, ILookAheadStopNotify *notify, IDiskUsage *iDiskUsage)
 {
-    return new ThorLookaheadCache(*activity, in,bufsize,allowspill,preserveGrouping,maxcount,notify,instarted,iDiskUsage);
+    return new CRowStreamLookAhead(*activity, inputStream, rowIf, bufsize, allowspill, preserveGrouping, maxcount, notify, iDiskUsage);
 }
-
 
 void initMetaInfo(ThorDataLinkMetaInfo &info)
 {
@@ -325,32 +275,25 @@ void initMetaInfo(ThorDataLinkMetaInfo &info)
     info.totalRowsMax = -1; // rely on inputs to set
     info.spilled = (offset_t)-1;
     info.byteTotal = (offset_t)-1;
-    info.rowsOutput = 0;
 }
 
-
-
-
-void CThorDataLink::initMetaInfo(ThorDataLinkMetaInfo &info)
+void calcMetaInfoSize(ThorDataLinkMetaInfo &info, IThorDataLink *link)
 {
-    ::initMetaInfo(info);
-    info.rowsOutput = getDataLinkCount();
-    // more
-}
-
-void CThorDataLink::calcMetaInfoSize(ThorDataLinkMetaInfo &info,IThorDataLink *link)
-{
-    if (!info.unknownRowsOutput&&link&&((info.totalRowsMin<=0)||(info.totalRowsMax<0))) {
+    if (!info.unknownRowsOutput&&link&&((info.totalRowsMin<=0)||(info.totalRowsMax<0)))
+    {
         ThorDataLinkMetaInfo prev;
         link->getMetaInfo(prev);
-        if (info.totalRowsMin<=0) {
+        if (info.totalRowsMin<=0)
+        {
             if (!info.canReduceNumRows)
                 info.totalRowsMin = prev.totalRowsMin;
             else
                 info.totalRowsMin = 0;
         }
-        if (info.totalRowsMax<0) {
-            if (!info.canIncreaseNumRows) {
+        if (info.totalRowsMax<0)
+        {
+            if (!info.canIncreaseNumRows)
+            {
                 info.totalRowsMax = prev.totalRowsMax;
                 if (info.totalRowsMin>info.totalRowsMax)
                     info.totalRowsMax = -1;
@@ -364,26 +307,40 @@ void CThorDataLink::calcMetaInfoSize(ThorDataLinkMetaInfo &info,IThorDataLink *l
 
 }
 
-void CThorDataLink::calcMetaInfoSize(ThorDataLinkMetaInfo &info,IThorDataLink **link,unsigned ninputs)
+void calcMetaInfoSize(ThorDataLinkMetaInfo &info, CThorInputArray &inputs)
 {
-    if (!link||(ninputs<=1)) {
-        calcMetaInfoSize(info,link&&(ninputs==1)?link[0]:NULL);
-        return ;
+    //IThorDataLink **link,unsigned ninputs;
+
+    if (0 == inputs.ordinality())
+    {
+        calcMetaInfoSize(info, nullptr);
+        return;
     }
-    if (!info.unknownRowsOutput) {
+    else if (1 == inputs.ordinality())
+    {
+        calcMetaInfoSize(info, inputs.item(0).itdl);
+        return;
+    }
+    if (!info.unknownRowsOutput)
+    {
         __int64 min=0;
         __int64 max=0;
-        for (unsigned i=0;i<ninputs;i++ ) {
-            if (link[i]) {
+        for (unsigned i=0;i<inputs.ordinality();i++ )
+        {
+            CThorInput &input = inputs.item(i);
+            if (input.itdl)
+            {
                 ThorDataLinkMetaInfo prev;
-                link[i]->getMetaInfo(prev);
-                if (min>=0) {
+                input.itdl->getMetaInfo(prev);
+                if (min>=0)
+                {
                     if (prev.totalRowsMin>=0)
                         min += prev.totalRowsMin;
                     else
                         min = -1;
                 }
-                if (max>=0) {
+                if (max>=0)
+                {
                     if (prev.totalRowsMax>=0)
                         max += prev.totalRowsMax;
                     else
@@ -391,14 +348,17 @@ void CThorDataLink::calcMetaInfoSize(ThorDataLinkMetaInfo &info,IThorDataLink **
                 }
             }
         }
-        if (info.totalRowsMin<=0) {
+        if (info.totalRowsMin<=0)
+        {
             if (!info.canReduceNumRows)
                 info.totalRowsMin = min;
             else
                 info.totalRowsMin = 0;
         }
-        if (info.totalRowsMax<0) {
-            if (!info.canIncreaseNumRows) {
+        if (info.totalRowsMax<0)
+        {
+            if (!info.canIncreaseNumRows)
+            {
                 info.totalRowsMax = max;
                 if (info.totalRowsMin>info.totalRowsMax)
                     info.totalRowsMax = -1;
@@ -409,39 +369,47 @@ void CThorDataLink::calcMetaInfoSize(ThorDataLinkMetaInfo &info,IThorDataLink **
         info.totalRowsMin = 0; // a good bet
 }
 
-void CThorDataLink::calcMetaInfoSize(ThorDataLinkMetaInfo &info, ThorDataLinkMetaInfo *infos,unsigned num)
+void calcMetaInfoSize(ThorDataLinkMetaInfo &info, ThorDataLinkMetaInfo *infos, unsigned num)
 {
-    if (!infos||(num<=1)) {
+    if (!infos||(num<=1))
+    {
         if (1 == num)
             info = infos[0];
         return;
     }
-    if (!info.unknownRowsOutput) {
+    if (!info.unknownRowsOutput)
+    {
         __int64 min=0;
         __int64 max=0;
-        for (unsigned i=0;i<num;i++ ) {
+        for (unsigned i=0;i<num;i++ )
+        {
             ThorDataLinkMetaInfo &prev = infos[i];
-            if (min>=0) {
+            if (min>=0)
+            {
                 if (prev.totalRowsMin>=0)
                     min += prev.totalRowsMin;
                 else
                     min = -1;
             }
-            if (max>=0) {
+            if (max>=0)
+            {
                 if (prev.totalRowsMax>=0)
                     max += prev.totalRowsMax;
                 else
                     max = -1;
             }
         }
-        if (info.totalRowsMin<=0) {
+        if (info.totalRowsMin<=0)
+        {
             if (!info.canReduceNumRows)
                 info.totalRowsMin = min;
             else
                 info.totalRowsMin = 0;
         }
-        if (info.totalRowsMax<0) {
-            if (!info.canIncreaseNumRows) {
+        if (info.totalRowsMax<0)
+        {
+            if (!info.canIncreaseNumRows)
+            {
                 info.totalRowsMax = max;
                 if (info.totalRowsMin>info.totalRowsMax)
                     info.totalRowsMax = -1;
@@ -649,7 +617,7 @@ void doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFilePr
     }
 }
 
-class CWriteHandler : public CSimpleInterface, implements IFileIO
+class CWriteHandler : public CInterface, implements IFileIO
 {
     Linked<IFileIO> primaryio;
     Linked<IFile> primary;
@@ -663,7 +631,7 @@ class CWriteHandler : public CSimpleInterface, implements IFileIO
     unsigned twFlags;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CInterface);
 
     CWriteHandler(CActivityBase &_activity, IPartDescriptor &_partDesc, IFile *_primary, IFileIO *_primaryio, ICopyFileProgress *_iProgress, unsigned _twFlags, bool *_aborted)
         : activity(_activity), partDesc(_partDesc), primary(_primary), primaryio(_primaryio), iProgress(_iProgress), twFlags(_twFlags), aborted(_aborted), fipScope(primary->queryFilename())
@@ -675,7 +643,7 @@ public:
         if (globals->getPropBool("@replicateAsync", true))
             cancelReplicates(&activity, partDesc);
     }
-    virtual void beforeDispose()
+    virtual void beforeDispose() override
     {
         // Can't throw in destructor...
         // Note that if we do throw the CWriteHandler object is liable to be leaked...

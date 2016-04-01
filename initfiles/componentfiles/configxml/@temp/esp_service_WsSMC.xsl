@@ -145,6 +145,9 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:if test="string(@ActivityInfoCacheSeconds) != ''">
                 <ActivityInfoCacheSeconds><xsl:value-of select="@ActivityInfoCacheSeconds"/></ActivityInfoCacheSeconds>
             </xsl:if>
+            <xsl:if test="string(@enableLogDaliConnection) != ''">
+                <LogDaliConnection><xsl:value-of select="@enableLogDaliConnection"/></LogDaliConnection>
+            </xsl:if>
         </EspService>
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" 
              plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}" defaultBinding="true">

@@ -22,19 +22,18 @@
 
 #include "thiterateslave.ipp"
 
-class IterateSlaveActivityBase : public CSlaveActivity, public CThorDataLink
+class IterateSlaveActivityBase : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     OwnedConstThorRow first;
 protected:
-    Owned<IThorDataLink> input;
-    Owned<IRowInterfaces> inrowif;
+    Owned<IThorRowInterfaces> inrowif;
     bool global;
     bool eof, nextPut;
     rowcount_t count;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    IterateSlaveActivityBase(CGraphElementBase *_container, bool _global) : CSlaveActivity(_container), CThorDataLink(this)
+    IterateSlaveActivityBase(CGraphElementBase *_container, bool _global) : CSlaveActivity(_container)
     {
         global = _global;
     }
@@ -43,6 +42,12 @@ public:
         appendOutputLinked(this);   // adding 'me' to outputs array
         if (global)
             mpTag = container.queryJobChannel().deserializeMPTag(data);
+    }
+    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
+    {
+        PARENT::setInputStream(index, _input, consumerOrdered);
+        if (global) // only want lookahead if global (hence serial)
+            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()));
     }
     const void *getFirst() // for global, not called on 1st slave
     {
@@ -73,36 +78,21 @@ public:
                 return;
         }
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         count = 0;
         eof = nextPut = false;
-        inrowif.set(::queryRowInterfaces(inputs.item(0)));
-        if (global) // only want lookahead if global (hence serial)
-            input.setown(createDataLinkSmartBuffer(this, inputs.item(0),ITERATE_SMART_BUFFER_SIZE,isSmartBufferSpillNeeded(this),false,RCUNBOUND,NULL,false,&container.queryJob().queryIDiskUsage())); // only allow spill if input can stall
-        else
-            input.set(inputs.item(0));
-        try
-        { 
-            startInput(input); 
-        }
-        catch (IException *e)
-        {
-            ActPrintLog(e,"ITERATE");
-            throw;
-        }
-        dataLinkStart();
+        inrowif.set(::queryRowInterfaces(queryInput(0)));
     }
-    void stop()
+    virtual void stop() override
     {
         if (global)
             putNext(NULL);
-        stopInput(input);
-        input.clear();
-        dataLinkStop();
+        PARENT::stop();
     }
-    bool isGrouped() { return false; }
+    virtual bool isGrouped() const override { return false; }
 };
 
 class IterateSlaveActivity : public IterateSlaveActivityBase
@@ -116,12 +106,12 @@ public:
         : IterateSlaveActivityBase(_container,_global)
     {
     }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         helper = static_cast <IHThorIterateArg *> (queryHelper());
         IterateSlaveActivityBase::init(data,slaveData);
     }
-    virtual void start()
+    virtual void start() override
     {
         IterateSlaveActivityBase::start();
         prev.clear();
@@ -149,7 +139,7 @@ public:
                     }
                 }
             }
-            OwnedConstThorRow next = input->ungroupedNextRow();
+            OwnedConstThorRow next = inputStream->ungroupedNextRow();
             if (!next) {
                 putNext(prev); // send to next node if applicable
                 eof = true;
@@ -172,7 +162,7 @@ public:
         info.canBufferInput = true;
         if (helper->canFilter())
             info.canReduceNumRows = true;
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 };
 
@@ -234,7 +224,7 @@ public:
                     }
                 }
             }
-            left.setown(input->ungroupedNextRow());
+            left.setown(inputStream->ungroupedNextRow());
             if (!left) {
                 putNext(right); // send to next node 
                 eof = true;
@@ -262,7 +252,7 @@ public:
         info.canBufferInput = true;
         if (helper->canFilter())
             info.canReduceNumRows = true;
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 };
 
@@ -279,34 +269,30 @@ CActivityBase *createLocalProcessSlave(CGraphElementBase *container)
 }
 
 
-class CChildIteratorSlaveActivity : public CSlaveActivity, public CThorDataLink
+class CChildIteratorSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     // only for toplevel activity 
     IHThorChildIteratorArg * helper;
     bool eof;
     rowcount_t count;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    CChildIteratorSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    CChildIteratorSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorChildIteratorArg *> (queryHelper());
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         eof = !container.queryLocalOrGrouped() && !firstNode();
         count = 0;
-        dataLinkStart();
-    }
-    void stop()
-    {
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {
@@ -329,57 +315,55 @@ public:
         return NULL;
     }
 
-    bool isGrouped() { return false; }
+    virtual bool isGrouped() const override { return false; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
     }
 };
 
-class CLinkedRawIteratorSlaveActivity : public CSlaveActivity, public CThorDataLink
+class CLinkedRawIteratorSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     // only for toplevel activity 
     IHThorLinkedRawIteratorArg * helper;
     bool dohere, grouped;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CLinkedRawIteratorSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     {
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorLinkedRawIteratorArg *> (queryHelper());
         grouped = helper->queryOutputMeta()->isGrouped();
     }
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        dataLinkStart();
+        PARENT::start();
         dohere = container.queryLocalOrGrouped() || firstNode();
-    }
-    void stop()
-    {
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (dohere) {
+        if (dohere)
+        {
             OwnedConstThorRow row;
             row.set(helper->next()); // needs linking allegedly
-            if (row.get()) {
+            if (row.get())
+            {
                 dataLinkIncrement();
                 return row.getClear();
             }
         }
         return NULL;
     }
-    bool isGrouped() { return grouped; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return grouped; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
     }
@@ -397,17 +381,17 @@ CActivityBase *createChildIteratorSlave(CGraphElementBase *container)
 }
 
 
-class CStreamedIteratorSlaveActivity : public CSlaveActivity, public CThorDataLink
+class CStreamedIteratorSlaveActivity : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
+
     IHThorStreamedIteratorArg *helper;
     Owned<IRowStream> rows;
     bool eof;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CStreamedIteratorSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container)
     {
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -415,22 +399,22 @@ public:
         appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorStreamedIteratorArg *> (queryHelper());
     }
-    virtual void start()
+    virtual void start() override
     {
+        PARENT::start();
         bool isLocal = container.queryLocalData() || container.queryOwner().isLocalChild();
         eof = isLocal ? false : !firstNode();
         if (!eof)
             rows.setown(helper->createInput());
-        dataLinkStart();
     }
-    void stop()
+    virtual void stop() override
     {
         if (rows)
         {
             rows->stop();
             rows.clear();
         }
-        dataLinkStop();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {
@@ -443,8 +427,8 @@ public:
             dataLinkIncrement();
         return next;
     }
-    bool isGrouped() { return false; }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return false; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.isSource = true;

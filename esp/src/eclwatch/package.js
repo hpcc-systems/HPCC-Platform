@@ -4,22 +4,10 @@ var profile = (function(){
             "hpcc/eclwatch.profile": true,
             "hpcc/eclwatch.json": true,
             "hpcc/dojoConfig": true,
-            "hpcc/viz/DojoD3WordCloud": true,
-            "hpcc/viz/d3-cloud/d3.layout.cloud": true,
-            "hpcc/viz/map/us.json": true,
-            "hpcc/viz/map/us_counties.json": true,
             "hpcc/viz/DojoD3": true,
             "hpcc/viz/DojoD32DChart": true,
-            "hpcc/viz/DojoD3BarChart": true,
-            "hpcc/viz/DojoD3Choropleth": true,
-            "hpcc/viz/DojoD3Choropleth": true,
-            "hpcc/viz/DojoD3CooccurrenceGraph": true,
-            "hpcc/viz/DojoD3Histogram": true,
-            "hpcc/viz/DojoD3PieChart": true,
-            "hpcc/viz/DojoD3ScatterChart": true,
-            "hpcc/viz/DojoD3DonutChart": true,
-            "hpcc/viz/DojoD3ForceDirectedGraph": true,
-            "hpcc/viz/DojoSlider": true
+            "hpcc/viz/DojoD3NDChart": true,
+            "hpcc/viz/DojoD3Choropleth": true
         };
         return (mid in list) ||
             (/^hpcc\/resources\//.test(mid) && !/\.css$/.test(filename)) ||

@@ -721,7 +721,7 @@ bool isSortedDistribution(IHqlExpression * distribution)
 
 bool isPersistDistribution(IHqlExpression * distribution)
 {
-    return isKnownDistribution(distribution) && (distribution->getOperator() == no_bxor);
+    return isKnownDistribution(distribution) && (distribution->queryName() == resizeAtom);
 }
 
 void extractMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
@@ -1292,8 +1292,13 @@ static bool includesFieldsOutsideGrouping(IHqlExpression * distribution, const H
             return false;
         return includesFieldsOutsideGrouping(distribution->queryChild(0), groups);
     case no_attr:
-        //may be flags on hash32,trim etc.
-        return (distribution->queryName() == unknownAtom);
+    case no_attr_expr:
+        {
+            if (distribution->queryName() == unknownAtom)
+                return true;
+            //may be flags on hash32,trim or resize() etc. check children are ok
+            break;
+        }
     default:
         return true;
     }
@@ -1738,7 +1743,7 @@ IHqlExpression * createMatchingDistribution(IHqlExpression * expr, const HqlExpr
                         return NULL;
                 }
             }
-            else if (expr == cacheAnyAttribute)
+            else if ((expr == cacheAnyAttribute) || (name == resizeAtom))
                 return NULL;
             break;
         }
@@ -1828,7 +1833,7 @@ ITypeInfo * createDatasetType(ITypeInfo * recordType, bool isGrouped)
     return type.getClear();
 }
 
-static IHqlExpression * createPreserveTableInfo(IHqlExpression * newTable, IHqlExpression * original, bool loseDistribution, IHqlExpression * persistName)
+static IHqlExpression * createPreserveTableInfo(IHqlExpression * newTable, IHqlExpression * original, bool loseDistribution, bool clusterSizeMayChange)
 {
     CHqlMetaInfo meta;
     if (original->isDataset())
@@ -1838,16 +1843,16 @@ static IHqlExpression * createPreserveTableInfo(IHqlExpression * newTable, IHqlE
     IHqlExpression * localSort = meta.localUngroupedSortOrder;
     IHqlExpression * grouping = meta.grouping;
     IHqlExpression * groupSort = meta.groupSortOrder;
-    if (persistName && isKnownDistribution(distribution))
+    if (clusterSizeMayChange && isKnownDistribution(distribution))
     {
-        if (!distribution->isAttribute())
+        if (!distribution->isAttribute() || (distribution->queryName() == resizeAtom))
         {
-            //Cluster size may not match so generate a unique modifier.  Needs to modify enough distribute no longer a nop,
-            //but not too much to not get hoisted, or introduce extra dependencies.
-            //At the moment bxor with a sequence number since I can't see anyone ever doing that.
-            __int64 seq = getExpressionCRC(persistName);
-            OwnedHqlExpr uid = createConstant(distribution->queryType()->castFrom(true, seq));
-            distribution.setown(createValue(no_bxor, distribution->getType(), LINK(distribution), LINK(uid)));
+            //Cluster size may not match => the distribution should be modified so that it no longer matches the
+            //distribution of a DISTRIBUTE executed within the cluster, but still contains enough information to
+            //deduce that a self-join can be made local.
+            unsigned seq = getExpressionCRC(original);
+            OwnedHqlExpr uid = getSizetConstant(seq);
+            distribution.setown(createExprAttribute(resizeAtom, LINK(distribution), LINK(uid)));
         }
         else if (isSortDistribution(distribution))
         {
@@ -1896,9 +1901,9 @@ static IHqlExpression * optimizePreserveMeta(IHqlExpression * expr)
 }
 
 
-IHqlExpression * preserveTableInfo(IHqlExpression * newTable, IHqlExpression * original, bool loseDistribution, IHqlExpression * persistName)
+IHqlExpression * preserveTableInfo(IHqlExpression * newTable, IHqlExpression * original, bool loseDistribution, bool clusterSizeMayChange)
 {
-    OwnedHqlExpr preserved = createPreserveTableInfo(newTable, original, loseDistribution, persistName);
+    OwnedHqlExpr preserved = createPreserveTableInfo(newTable, original, loseDistribution, clusterSizeMayChange);
     return optimizePreserveMeta(preserved);
 }
 

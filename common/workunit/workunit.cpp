@@ -1621,6 +1621,8 @@ public:
     virtual IStringVal & getName(IStringVal & ret) const;
     virtual IStringVal & getNameTail(IStringVal & ret) const;
     virtual unsigned getCrc() const;
+    virtual unsigned getMinActivityId() const;
+    virtual unsigned getMaxActivityId() const;
 };
 
 class CLocalWUQuery : public CInterface, implements IWUQuery
@@ -1655,7 +1657,7 @@ public:
     virtual void        setQueryText(const char *pstr);
     virtual void        setQueryName(const char *);
     virtual void        setQueryMainDefinition(const char * str);
-    virtual void        addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc);
+    virtual void        addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc, unsigned minActivity, unsigned maxActivity);
     virtual void        removeAssociatedFiles();
     virtual void        removeAssociatedFile(WUFileType type, const char * name, const char * desc);
 };
@@ -6199,6 +6201,7 @@ static void _noteFileRead(IDistributedFile *file, IPropertyTree *filesRead)
         }
         if (super)
         {
+            fileTree->setPropBool("@super", true);
             Owned<IDistributedFileIterator> iter = super->getSubFileIterator(false);
             ForEach (*iter)
             {
@@ -6967,6 +6970,15 @@ unsigned CLocalWUAssociated::getCrc() const
     return p->getPropInt("@crc", 0);
 }
 
+unsigned CLocalWUAssociated::getMinActivityId() const
+{
+    return p->getPropInt("@minActivity", 0);
+}
+
+unsigned CLocalWUAssociated::getMaxActivityId() const
+{
+    return p->getPropInt("@maxActivity", 0);
+}
 
 
 //=================================================================================================
@@ -7110,7 +7122,7 @@ void CLocalWUQuery::setQueryMainDefinition(const char * str)
     p->setProp("@main", str);
 }
 
-void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc)
+void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc, unsigned minActivity, unsigned maxActivity)
 {
     CriticalBlock block(crit);
     loadAssociated();
@@ -7125,6 +7137,10 @@ void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const 
 
     if (crc)
         s->setPropInt("@crc", crc);
+    if (minActivity)
+        s->setPropInt("@minActivity", minActivity);
+    if (maxActivity)
+        s->setPropInt("@maxActivity", maxActivity);
     IConstWUAssociatedFile * q = new CLocalWUAssociated(LINK(s)); 
     associated.append(*q);
 }
@@ -10236,14 +10252,14 @@ IPropertyTree * resolveDefinitionInArchive(IPropertyTree * archive, const char *
     return module->queryPropTree(xpath);
 }
 
-extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc)
+extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc, unsigned minActivity, unsigned maxActivity)
 {
     StringBuffer hostname;
     queryHostIP().getIpText(hostname);
 
     StringBuffer fullPathname;
     makeAbsolutePath(name, fullPathname);
-    query->addAssociatedFile(type, fullPathname, hostname, description, crc);
+    query->addAssociatedFile(type, fullPathname, hostname, description, crc, minActivity, maxActivity);
 }
 
 extern WORKUNIT_API void descheduleWorkunit(char const * wuid)

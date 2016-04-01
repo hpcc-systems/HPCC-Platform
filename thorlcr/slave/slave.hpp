@@ -39,20 +39,10 @@
 #include "roxiestream.hpp"
 
 
-/* ---- To implement IThorDataLink you need ----
-    virtual const void *nextRow() = 0;
-    virtual void stop();
-    virtual void start();
-    virtual bool isGrouped();
-    virtual bool getMetaInfo(ThorDataLinkMetaInfo &info);
-*/
-
-
 struct ThorDataLinkMetaInfo
 {
     __int64     totalRowsMin;           // set to 0 if not known
     __int64     totalRowsMax;           // set to -1 if not known
-    rowcount_t  rowsOutput;             // rows already output (supported by all data links)
     offset_t    spilled;                // amount "spilled" to disk (approx) (offset_t)-1 for not known
 
     bool        isSource;
@@ -72,23 +62,67 @@ struct ThorDataLinkMetaInfo
 #pragma warning (push)
 #pragma warning( disable : 4275 )
 #endif
-class CActivityBase;
 
-interface IThorDataLink : extends IEngineRowStream
+#define MAX_SENSIBLE_STRANDS 1024 // Architecture dependent...
+class CThorStrandOptions
 {
-    virtual void start() = 0;
-    virtual bool isGrouped() = 0;
+    // Typically set from hints, common to many stranded activities
+public:
+    explicit CThorStrandOptions(CGraphElementBase &container)
+    {
+        //PARALLEL(1) can be used to explicitly disable parallel processing.
+        numStrands = container.queryXGMML().getPropInt("att[@name='parallel']/@value", 0);
+        if ((numStrands == NotFound) || (numStrands > MAX_SENSIBLE_STRANDS))
+            numStrands = getAffinityCpus();
+        if (0 == numStrands)
+            numStrands = container.queryJob().getOptInt("forceNumStrands");
+        blockSize = container.queryJob().getOptInt("strandBlockSize");
+    }
+public:
+    unsigned numStrands = 0; // if 1 it forces single-stranded operations.  (Useful for testing.)
+    unsigned blockSize = 0;
+};
+
+
+interface IStrandJunction;
+interface IOrderedCallbackCollection;
+class CSlaveActivity;
+interface IThorDataLink : extends IInterface
+{
+    virtual void start() = 0; // prepares input
+    virtual CSlaveActivity *queryFromActivity() = 0; // activity that has this as an output
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
+    virtual bool isGrouped() const { return false; }
+    virtual IOutputMetaData * queryOutputMeta() const = 0;
+    virtual unsigned queryOutputIdx() const = 0;
+    virtual bool isInputOrdered(bool consumerOrdered) const = 0;
+    virtual IStrandJunction *getOutputStreams(CActivityBase &_ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) = 0;
+    virtual void setOutputStream(unsigned index, IEngineRowStream *stream) = 0;
+// progress methods
+    virtual void dataLinkSerialize(MemoryBuffer &mb) const = 0;
+// timing methods
+    virtual unsigned __int64 queryTotalCycles() const = 0;
+    virtual unsigned __int64 queryEndCycles() const = 0;
+// debugging methods
+    virtual void debugRequest(MemoryBuffer &mb) = 0;
+// Stepping methods
     virtual IInputSteppingMeta *querySteppingMeta() { return NULL; }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
-    virtual void resetEOF() { }
+};
 
-// information routines 
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
-    virtual CActivityBase *queryFromActivity() = 0; // activity that has this as an output
-    virtual void dataLinkSerialize(MemoryBuffer &mb)=0;
-    virtual unsigned __int64 queryTotalCycles() const=0;
-    virtual unsigned __int64 queryEndCycles() const=0;
-    virtual void debugRequest(MemoryBuffer &mb) = 0;
+// helper interface. Used by maintainer of output links
+interface IThorDataLinkExt : extends IThorDataLink
+{
+    virtual void setOutputIdx(unsigned idx) = 0;
+};
+
+class CThorInput;
+interface IThorSlaveActivity
+{
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) = 0;
+    virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) = 0;
+    virtual void processDone(MemoryBuffer &mb) = 0;
+    virtual void reset() = 0;
 };
 #ifdef _MSC_VER
 #pragma warning (pop)
@@ -96,7 +130,7 @@ interface IThorDataLink : extends IEngineRowStream
 
 
 // utility redirects
-extern activityslaves_decl IRowInterfaces * queryRowInterfaces(IThorDataLink *link);
+extern activityslaves_decl IThorRowInterfaces * queryRowInterfaces(IThorDataLink *link);
 extern activityslaves_decl IEngineRowAllocator * queryRowAllocator(IThorDataLink *link);
 extern activityslaves_decl IOutputRowSerializer * queryRowSerializer(IThorDataLink *link);
 extern activityslaves_decl IOutputRowDeserializer * queryRowDeserializer(IThorDataLink *link);

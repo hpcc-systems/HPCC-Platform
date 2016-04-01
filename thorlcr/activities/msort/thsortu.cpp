@@ -148,9 +148,6 @@ class CDualCache: public CSimpleInterface
     unsigned pos2;
     QueueOf<CRollingCacheElem,true> cache;
 public:
-
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CDualCache()
     {
         strm1 = NULL;
@@ -282,7 +279,7 @@ void swapRows(RtlDynamicRowBuilder &row1, RtlDynamicRowBuilder &row2)
 class CJoinHelper : public CSimpleInterface, implements IJoinHelper
 {
     CActivityBase &activity;
-    IRowInterfaces *rowIf;
+    IThorRowInterfaces *rowIf;
     ICompare *compareLR;
     ICompare *compareL; 
     ICompare *compareR; 
@@ -357,7 +354,7 @@ class CJoinHelper : public CSimpleInterface, implements IJoinHelper
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
+    CJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IThorRowInterfaces *_rowIf)
         : activity(_activity), rowIf(_rowIf), denormTmp(NULL), rightgroup(_activity, NULL), denormRows(_activity, NULL)
     {
         allocator.set(rowIf->queryRowAllocator());
@@ -972,7 +969,7 @@ public:
 class SelfJoinHelper: public CSimpleInterface, implements IJoinHelper
 {
     CActivityBase &activity;
-    IRowInterfaces *rowIf;
+    IThorRowInterfaces *rowIf;
     ICompare *compare;
     CThorExpandingRowArray curgroup;
     unsigned leftidx;
@@ -1009,7 +1006,7 @@ class SelfJoinHelper: public CSimpleInterface, implements IJoinHelper
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    SelfJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
+    SelfJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IThorRowInterfaces *_rowIf)
         : activity(_activity), rowIf(_rowIf), curgroup(_activity, &_activity)
     {
         allocator.set(rowIf->queryRowAllocator());
@@ -1307,7 +1304,7 @@ retry:
     virtual rowcount_t getRhsProgress() const { return progressCount; }
 };
 
-IJoinHelper *createDenormalizeHelper(CActivityBase &activity, IHThorDenormalizeArg *helper, IRowInterfaces *rowIf)
+IJoinHelper *createDenormalizeHelper(CActivityBase &activity, IHThorDenormalizeArg *helper, IThorRowInterfaces *rowIf)
 {
     return new CJoinHelper(activity, helper, rowIf);
 }
@@ -1457,7 +1454,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CActivityBase &activity;
-    IRowInterfaces *rowIf;
+    IThorRowInterfaces *rowIf;
     IJoinHelper *jhelper;
     bool leftouter;  
     bool rightouter;  
@@ -1570,7 +1567,7 @@ public:
         }
     }
 
-    CMultiCoreJoinHelperBase(CActivityBase &_activity, unsigned numthreads, bool _selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
+    CMultiCoreJoinHelperBase(CActivityBase &_activity, unsigned numthreads, bool _selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IThorRowInterfaces *_rowIf)
         : activity(_activity), rowIf(_rowIf)
     {
         allocator.set(rowIf->queryRowAllocator());
@@ -1682,7 +1679,7 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
         {
             PROGLOG("CMultiCoreJoinHelper::cWorker started");
 
-            Owned<IRowInterfaces> rowIf = parent->activity.getRowInterfaces();
+            Owned<IThorRowInterfaces> rowIf = parent->activity.getRowInterfaces();
             Owned<IEngineRowAllocator> allocator = parent->activity.getRowAllocator(rowIf->queryRowMetaData(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
 
             IRowWriter *rowWriter = rowStream->queryWriter();
@@ -1720,7 +1717,7 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
     } **workers;
 
 public:
-    CMultiCoreJoinHelper(CActivityBase &activity, unsigned numthreads, bool selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
+    CMultiCoreJoinHelper(CActivityBase &activity, unsigned numthreads, bool selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IThorRowInterfaces *_rowIf)
         : CMultiCoreJoinHelperBase(activity, numthreads, selfJoin, _jhelper, _helper, _rowIf)
     {
         reader.parent = this;
@@ -1881,7 +1878,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
         }
         int run()
         {
-            Owned<IRowInterfaces> rowIf = parent->activity.getRowInterfaces();
+            Owned<IThorRowInterfaces> rowIf = parent->activity.getRowInterfaces();
             Owned<IEngineRowAllocator> allocator = parent->activity.getRowAllocator(rowIf->queryRowMetaData(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
 
             Owned<IRowWriter> rowWriter = parent->multiWriter->getWriter();
@@ -1912,7 +1909,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
     } **workers;
 
 public:
-    CMultiCoreUnorderedJoinHelper(CActivityBase &activity, unsigned numthreads, bool selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
+    CMultiCoreUnorderedJoinHelper(CActivityBase &activity, unsigned numthreads, bool selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IThorRowInterfaces *_rowIf)
         : CMultiCoreJoinHelperBase(activity, numthreads, selfJoin, _jhelper, _helper, _rowIf)
     {
         reader.parent = this;
@@ -2007,7 +2004,7 @@ public:
 };
 
 
-IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IRowInterfaces *rowIf, bool parallelmatch, bool unsortedoutput)
+IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IThorRowInterfaces *rowIf, bool parallelmatch, bool unsortedoutput)
 {
     // 
 #ifdef TEST_PARALLEL_MATCH
@@ -2027,7 +2024,7 @@ IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IR
 }
 
 
-IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IRowInterfaces *rowIf, bool parallelmatch, bool unsortedoutput)
+IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IThorRowInterfaces *rowIf, bool parallelmatch, bool unsortedoutput)
 {
 #ifdef TEST_PARALLEL_MATCH
     parallelmatch = true;

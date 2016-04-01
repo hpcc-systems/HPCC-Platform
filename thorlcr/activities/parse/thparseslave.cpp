@@ -28,10 +28,11 @@
 
 #include "thparseslave.ipp"
 
-class CParseSlaveActivity : public CSlaveActivity, public CThorDataLink, implements IMatchedAction
+class CParseSlaveActivity : public CSlaveActivity, implements IMatchedAction
 {
+    typedef CSlaveActivity PARENT;
+
     IHThorParseArg *helper;
-    IThorDataLink *input;
     OwnedConstThorRow curRow;
     Owned<INlpParseAlgorithm> algorithm;
     Owned<INlpParser> parser;
@@ -44,7 +45,7 @@ class CParseSlaveActivity : public CSlaveActivity, public CThorDataLink, impleme
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CParseSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    CParseSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         anyThisGroup = false;
         curSearchTextLen = 0;
@@ -56,7 +57,7 @@ public:
         if (helper->searchTextNeedsFree())
             rtlFree(curSearchText);
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
         helper = (IHThorParseArg *)queryHelper();
@@ -66,17 +67,10 @@ public:
         rowIter->first();
         allocator.set(queryRowAllocator());
     } 
-    void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input = inputs.item(0);
-        startInput(input);
-        dataLinkStart();
-    }
-    void stop()
-    { 
-        stopInput(input);
-        dataLinkStop();
+        PARENT::start();
     }
     void processRecord(const void * in)
     {
@@ -101,14 +95,14 @@ public:
                 rowIter->next();
                 return r.getClear();
             }
-            curRow.setown(input->nextRow());
+            curRow.setown(inputStream->nextRow());
 
             if (!curRow) {
                 if (anyThisGroup) {
                     anyThisGroup = false;
                     break;
                 }
-                curRow.setown(input->nextRow());
+                curRow.setown(inputStream->nextRow());
                 if (!curRow)
                     break;
             }
@@ -119,11 +113,11 @@ public:
         
         return NULL;
     }
-    bool isGrouped()
+    virtual bool isGrouped() const override
     { 
-        return inputs.item(0)->isGrouped();
+        return queryInput(0)->isGrouped();
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;
