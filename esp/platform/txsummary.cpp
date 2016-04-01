@@ -113,7 +113,6 @@ CumulativeTimer* CTxSummary::queryTimer(const char* name)
 bool CTxSummary::updateTimer(const char* name, unsigned long long delta)
 {
     Owned<CumulativeTimer> timer;
-    CriticalBlock block(m_sync);
 
     timer.set(queryTimer(name));
 
