@@ -152,7 +152,7 @@ public:
             return 1;
         }
 
-        fprintf(stdout, "\n %s. Service Name: %s, Version: %d\n", resp->getStatus().getDescription(),resp->getServiceName(),resp->getEsdlVersion());
+        fprintf(stdout, "\nESDL Service: %s(%f): %s", optESDLService.get() ,optVersion, resp->getStatus().getDescription());
 
         return 0;
     }

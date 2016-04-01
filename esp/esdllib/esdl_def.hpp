@@ -183,7 +183,7 @@ interface IEsdlDefFileIterator : extends IIteratorOf<IEsdlDefFile>
 interface IEsdlDefinition : extends IInterface
 {
     virtual void addDefinitionsFromFile(const char *filename)=0;
-    virtual void addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefName, int ver)=0;
+    virtual void addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefName, double ver)=0;
     virtual void addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefId)=0;
 
     virtual IEsdlDefStruct *queryStruct(const char *name)=0;
