@@ -282,9 +282,7 @@ depending on where they wind up.-->
                   </listitem>
                 </itemizedlist>
 
-                <para>The Filter also also supports wild cards. To limit or
-                filter your search results you can use keywords as displayed
-                in the empty search box.</para>
+                <para>The Filter also also supports wild cards. </para>
               </listitem>
             </varlistentry>
 
