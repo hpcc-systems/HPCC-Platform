@@ -761,7 +761,7 @@
   </EclSchedulerProcess>
  </Software>
  <EnvSettings>
-  <pid>${PID_DIR}</pid>
+  <pid>${PID_PATH}</pid>
   <sourcedir>${CONFIG_SOURCE_PATH}</sourcedir>
   <mpTraceLevel>0</mpTraceLevel>
   <mpStart>7101</mpStart>

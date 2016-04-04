@@ -565,6 +565,16 @@ public:
         workdir.set(workdirname);
         exec();
     }
+
+    const StringArray &getReplyText() const
+    {
+      return replytext;
+    }
+
+    const UnsignedArray &getReply() const
+    {
+      return reply;
+    }
 };
 
 IFRunSSH *createFRunSSH()
