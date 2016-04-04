@@ -80,8 +80,9 @@ define([
             } else if (params.UserGroups === true) {
                 this.loadUserGroups();
             } else if (params.DropZoneFolders === true) {
-                this.defaultValue = ".";
-                this.set("value", ".");
+                this.defaultValue = "";
+                this.set("value", "");
+                this.set("placeholder", "/");
                 this.loadDropZoneFolders();
             } else if (params.WUState === true) {
                 this.loadWUState();
@@ -239,7 +240,7 @@ define([
         loadDropZoneFolders: function () {
             var context = this;
             this.getDropZoneFolder = function () {
-                var baseFolder = this._dropZoneTarget.machine.Directory + (this.endsWith(this._dropZoneTarget.machine.Directory, "/") ? "" : "/");
+                var baseFolder = this._dropZoneTarget.machine.Directory;
                 var selectedFolder = this.get("value");
                 return baseFolder + selectedFolder;
             }
@@ -250,7 +251,7 @@ define([
                         data: arrayUtil.map(results, function (_path) {
                             var path = _path.substring(context._dropZoneTarget.machine.Directory.length);
                             return {
-                                name: "." + path,
+                                name: path,
                                 id: _path
                             };
                         })
