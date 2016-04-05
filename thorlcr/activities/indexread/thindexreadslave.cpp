@@ -560,8 +560,8 @@ public:
         keyedLimitCount = RCMAX;
         keyedProcessed = 0;
         helper = (IHThorIndexReadArg *)queryContainer().queryHelper();
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
-        needTransform = helper->needTransform();
+        stopAfter = 0;
+        needTransform = false;
         rawMeta = helper->queryRawSteppingMeta();
         projectedMeta = helper->queryProjectedSteppingMeta();
         steppedExtra = static_cast<IHThorSteppedSourceExtra *>(helper->selectInterface(TAIsteppedsourceextra_1));
@@ -578,11 +578,6 @@ public:
             seekSizes.append(fields[0].size);
             for (unsigned i=1; i < maxFields; i++)
                 seekSizes.append(seekSizes.item(i-1) + fields[i].size);
-            bool hasPostFilter = helper->transformMayFilter() && optimizeSteppedPostFilter;
-            if (projectedMeta)
-                steppingMeta.init(projectedMeta, hasPostFilter);
-            else
-                steppingMeta.init(rawMeta, hasPostFilter);
         }
     }
     ~CIndexReadSlaveActivity()
@@ -608,6 +603,25 @@ public:
     {
         CIndexReadSlaveBase::init(data, slaveData);
 
+        if (rawMeta)
+        {
+            bool hasPostFilter = helper->transformMayFilter() && optimizeSteppedPostFilter;
+            if (projectedMeta)
+                steppingMeta.init(projectedMeta, hasPostFilter);
+            else
+                steppingMeta.init(rawMeta, hasPostFilter);
+        }
+        appendOutputLinked(this);
+    }
+
+// IThorDataLink
+    virtual void start()
+    {
+        ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
+
+        stopAfter = (rowcount_t)helper->getChooseNLimit();
+        needTransform = helper->needTransform();
         helperKeyedLimit = (rowcount_t)helper->getKeyedLimit();
         rowLimit = (rowcount_t)helper->getRowLimit(); // MORE - if no filtering going on could keyspan to get count
         if (0 != (TIRlimitskips & helper->getFlags()))
@@ -619,14 +633,7 @@ public:
             if (TIRkeyedlimitskips & helper->getFlags())
                 keyedLimitSkips = true;
         }
-        appendOutputLinked(this);
-    }
 
-// IThorDataLink
-    virtual void start()
-    {
-        ActivityTimer s(totalCycles, timeActivities);
-        PARENT::start();
         first = true;
         eoi = false;
         keyedLimit = helperKeyedLimit;
@@ -770,7 +777,7 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, implements
     Owned<IHashDistributor> distributor;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
+    IMPLEMENT_IINTERFACE_USING(PARENT);
 
     CIndexGroupAggregateSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
@@ -874,24 +881,20 @@ class CIndexCountSlaveActivity : public CIndexReadSlaveBase
 
     bool eoi;
     IHThorIndexCountArg *helper;
-    rowcount_t choosenLimit;
-    rowcount_t preknownTotalCount;
-    bool totalCountKnown;
+    rowcount_t choosenLimit = 0;
+    rowcount_t preknownTotalCount = 0;
+    bool totalCountKnown = false;
 
 public:
     CIndexCountSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
         helper = static_cast <IHThorIndexCountArg *> (container.queryHelper());
-        preknownTotalCount = 0;
-        totalCountKnown = false;
-        preknownTotalCount = 0;
     }
 
 // IThorSlaveActivity
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         CIndexReadSlaveBase::init(data, slaveData);
-        choosenLimit = (rowcount_t)helper->getChooseNLimit();
         appendOutputLinked(this);
     }
 
@@ -907,6 +910,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        choosenLimit = (rowcount_t)helper->getChooseNLimit();
         eoi = false;
         if (!helper->canMatchAny())
         {

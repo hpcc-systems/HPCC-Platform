@@ -389,19 +389,18 @@ public:
                         if (!job)
                             throw MakeStringException(0, "Job not found: %s", jobKey.get());
 
-                        graph_id subGraphId = 0;
-                        msg.read(subGraphId);
-
-                        VStringBuffer xpath("node[@id='%" GIDPF "u']", subGraphId);
-                        Owned<IPropertyTree> graphNode = job->queryGraphXGMML()->getPropTree(xpath.str());
                         mptag_t executeReplyTag = job->deserializeMPTag(msg);
                         size32_t len;
                         msg.read(len);
                         MemoryBuffer createInitData;
                         createInitData.append(len, msg.readDirect(len));
-                        graph_id gid;
-                        msg.read(gid);
+
+                        graph_id subGraphId;
+                        msg.read(subGraphId);
                         unsigned graphInitDataPos = msg.getPos();
+
+                        VStringBuffer xpath("node[@id='%" GIDPF "u']", subGraphId);
+                        Owned<IPropertyTree> graphNode = job->queryGraphXGMML()->getPropTree(xpath.str());
                         job->addSubGraph(*graphNode);
 
                         /* JCSMORE - should improve, create 1st graph with create context/init data and clone
@@ -409,9 +408,9 @@ public:
                          */
                         for (unsigned c=0; c<job->queryJobChannels(); c++)
                         {
-                            PROGLOG("GraphInit: %s, graphId=%" GIDPF "d, slaveChannel=%d", jobKey.get(), gid, c);
+                            PROGLOG("GraphInit: %s, graphId=%" GIDPF "d, slaveChannel=%d", jobKey.get(), subGraphId, c);
                             CJobChannel &jobChannel = job->queryJobChannel(c);
-                            Owned<CSlaveGraph> subGraph = (CSlaveGraph *)jobChannel.getGraph(gid);
+                            Owned<CSlaveGraph> subGraph = (CSlaveGraph *)jobChannel.getGraph(subGraphId);
                             subGraph->setExecuteReplyTag(executeReplyTag);
 
                             createInitData.reset(0);
@@ -421,11 +420,18 @@ public:
                             subGraph->init(msg);
 
                             jobChannel.addDependencies(job->queryXGMML(), false);
-
-                            subGraph->execute(0, NULL, true, true);
                         }
                         msg.clear();
                         msg.append(false);
+                        queryNodeComm().reply(msg); // reply to sendGraph()
+
+                        for (unsigned c=0; c<job->queryJobChannels(); c++)
+                        {
+                            CJobChannel &jobChannel = job->queryJobChannel(c);
+                            Owned<CSlaveGraph> subGraph = (CSlaveGraph *)jobChannel.getGraph(subGraphId);
+
+                            jobChannel.startGraph(*subGraph, true, 0, NULL);
+                        }
 
                         break;
                     }

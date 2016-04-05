@@ -203,8 +203,11 @@ public:
             keyOutStream->stop();
             keyOutStream.clear();
         }
-        distributor->disconnect(true);  
-        distributor->join();
+        if (distributor)
+        {
+            distributor->disconnect(true);
+            distributor->join();
+        }
         stopInput();
     }
     const void *nextRow()
@@ -268,34 +271,31 @@ class CFetchSlaveBase : public CSlaveActivity, implements IFetchHandler
 {
     typedef CSlaveActivity PARENT;
 
-    IRowStream *fetchStreamOut;
-    unsigned maxKeyRecSize;
-    rowcount_t limit;
-    unsigned offsetCount;
-    unsigned offsetMapSz;
+    IRowStream *fetchStreamOut = nullptr;
+    unsigned maxKeyRecSize = 0;
+    rowcount_t limit = 0;
+    unsigned offsetCount = 0;
+    unsigned offsetMapSz = 0;
     MemoryBuffer offsetMapBytes;
     Owned<IExpander> eexp;
     Owned<IEngineRowAllocator> keyRowAllocator;
 
 protected:
     Owned<IThorRowInterfaces> fetchDiskRowIf;
-    IFetchStream *fetchStream;
+    IFetchStream *fetchStream = nullptr;
     IHThorFetchBaseArg *fetchBaseHelper;
     IHThorFetchContext *fetchContext;
-    unsigned files;
+    unsigned files = 0;
     CPartDescriptorArray parts;
-    IRowStream *keyIn;
-    bool indexRowExtractNeeded;
-    mptag_t mptag;
+    IRowStream *keyIn = nullptr;
+    bool indexRowExtractNeeded = false;
+    mptag_t mptag = TAG_NULL;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CFetchSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        fetchStream = NULL;
-        keyIn = NULL;
-        fetchStreamOut = NULL;
         fetchBaseHelper = (IHThorFetchBaseArg *)queryHelper();
         fetchContext = static_cast<IHThorFetchContext *>(fetchBaseHelper->selectInterface(TAIfetchcontext_1));
         reInit = 0 != (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
@@ -326,11 +326,7 @@ public:
         if (!container.queryLocalOrGrouped())
             mptag = container.queryJobChannel().deserializeMPTag(data);
 
-        indexRowExtractNeeded = fetchBaseHelper->transformNeedsRhs();
-
         files = parts.ordinality();
-
-        limit = (rowcount_t)fetchBaseHelper->getRowLimit(); // MORE - if no filtering going on could keyspan to get count
 
         unsigned encryptedKeyLen;
         void *encryptedKey;
@@ -343,13 +339,7 @@ public:
             memset(encryptedKey, 0, encryptedKeyLen);
             free(encryptedKey);
         }
-        fetchDiskRowIf.setown(createThorRowInterfaces(queryRowManager(), fetchContext->queryDiskRecordSize(),queryId(),queryCodeContext()));
-        if (fetchBaseHelper->extractAllJoinFields())
-        {
-            IOutputMetaData *keyRowMeta = QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData);
-            assertex(keyRowMeta);
-            keyRowAllocator.setown(getRowAllocator(keyRowMeta));
-        }
+        fetchDiskRowIf.setown(createThorRowInterfaces(queryRowManager(), fetchContext->queryDiskRecordSize(), queryId(), queryCodeContext()));
         appendOutputLinked(this);
     }
 
@@ -362,6 +352,18 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+
+        if (!keyRowAllocator && fetchBaseHelper->extractAllJoinFields())
+        {
+            IOutputMetaData *keyRowMeta = QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData);
+            assertex(keyRowMeta);
+            keyRowAllocator.setown(getRowAllocator(keyRowMeta));
+        }
+
+        limit = (rowcount_t)fetchBaseHelper->getRowLimit(); // MORE - if no filtering going on could keyspan to get count
+
+        // NB: indexRowExtractNeeded is a member variable, because referenced by callback IFetchHandler::extractFpos()
+        indexRowExtractNeeded = fetchBaseHelper->transformNeedsRhs();
 
         class CKeyFieldExtractBase : public CSimpleInterface, implements IRowStream
         {
@@ -461,7 +463,8 @@ public:
     }
     virtual void stop() override
     {
-        fetchStreamOut->stop();
+        if (queryInputStarted(0))
+            fetchStreamOut->stop();
         dataLinkStop();
     }
     virtual void abort()

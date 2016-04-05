@@ -2385,7 +2385,7 @@ public:
         if (lookup)
             delete lookup;
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         HashDistributeSlaveBase::init(data, slaveData);
 
@@ -2396,9 +2396,8 @@ public:
         Owned<IFileIO> iFileIO = createIFileI((size32_t)tlkSz, data.readDirect((size32_t)tlkSz));
 
         // NB: this TLK is an in-memory TLK serialized from the master - the name is for tracing by the key code only
-        OwnedRoxieString indexFileName(helper->getIndexFileName());
-        StringBuffer name(indexFileName);
-        name.append("_tlk");
+        VStringBuffer name("index");
+        name.append(queryId()).append("_tlk");
         lookup = new CKeyLookup(*this, helper, createKeyIndex(name.str(), 0, *iFileIO, true, false)); // MORE - crc is not 0...
         ihash = lookup;
     }
@@ -3423,8 +3422,6 @@ bool CBucketHandler::addRow(const void *row)
 class LocalHashDedupSlaveActivity : public HashDedupSlaveActivityBase
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     LocalHashDedupSlaveActivity(CGraphElementBase *container)
         : HashDedupSlaveActivityBase(container, true)
     {
@@ -3449,8 +3446,6 @@ class GlobalHashDedupSlaveActivity : public HashDedupSlaveActivityBase, implemen
     Owned<IRowStream> instrm;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     GlobalHashDedupSlaveActivity(CGraphElementBase *container)
         : HashDedupSlaveActivityBase(container, false)
     {
@@ -3478,7 +3473,7 @@ public:
         mptag = container.queryJobChannel().deserializeMPTag(data);
         distributor = createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, true, this);
     }
-    virtual void start()
+    virtual void start() override
     {
         HashDedupSlaveActivityBase::start();
         ActivityTimer s(totalCycles, timeActivities);
@@ -3486,7 +3481,7 @@ public:
         instrm.setown(distributor->connect(myRowIf, distInput, iHash, iCompare));
         distInput = instrm.get();
     }
-    virtual void stop()
+    virtual void stop() override
     {
         ActPrintLog("stopping");
         if (instrm)
@@ -3494,8 +3489,11 @@ public:
             instrm->stop();
             instrm.clear();
         }
-        distributor->disconnect(true);
-        distributor->join();
+        if (distributor)
+        {
+            distributor->disconnect(true);
+            distributor->join();
+        }
         stopInput();
     }
     virtual void abort()
@@ -3541,9 +3539,6 @@ class HashJoinSlaveActivity : public CSlaveActivity, implements IStopInput
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
 
 public:
-
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     HashJoinSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
@@ -3654,8 +3649,11 @@ public:
         ActPrintLog("HASHJOIN: stopping");
         stopInputL();
         stopInputR();
-        lhsProgressCount = joinhelper->getLhsProgress();
-        rhsProgressCount = joinhelper->getRhsProgress();
+        if (joinhelper)
+        {
+            lhsProgressCount = joinhelper->getLhsProgress();
+            rhsProgressCount = joinhelper->getRhsProgress();
+        }
         strmL.clear();
         strmR.clear();
         {
@@ -3881,8 +3879,6 @@ class CHashAggregateSlave : public CSlaveActivity, implements IHThorRowAggregato
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CHashAggregateSlave(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
@@ -3919,7 +3915,8 @@ public:
     virtual void stop()
     {
         ActPrintLog("HASHAGGREGATE: stopping");
-        localAggTable->reset();
+        if (localAggTable)
+            localAggTable->reset();
         PARENT::stop();
     }
     virtual void abort()
@@ -3974,8 +3971,6 @@ class CHashDistributeSlavedActivity : public CSlaveActivity
     unsigned myNode, nodes;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CHashDistributeSlavedActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();

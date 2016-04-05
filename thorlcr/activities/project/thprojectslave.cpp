@@ -118,7 +118,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
     rowcount_t numProcessedLastGroup;
     bool eof;
     Owned<IEngineRowAllocator> allocator;
-    IThorChildGraph *child;
+    IThorChildGraph *child = nullptr;
     bool parallel;
     unsigned preload;
 
@@ -255,7 +255,6 @@ public:
         preload = helper->getLookahead();
         if (!preload)
             preload = 10; // default
-        child = helper->queryChild();
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -266,7 +265,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
-
+        child = helper->queryChild();
         numProcessedLastGroup = getDataLinkGlobalCount();
         eof = !helper->canMatchAny();
         if (parallel)

@@ -154,16 +154,23 @@ public:
             output->stop();
             output.clear();
         }
-        ActPrintLog("SORT waiting barrier.2");
-        barrier->wait(false);
-        ActPrintLog("SORT barrier.2 raised");
+        if (queryInputStarted(0))
+        {
+            ActPrintLog("SORT waiting barrier.2");
+            barrier->wait(false);
+            ActPrintLog("SORT barrier.2 raised");
+        }
         PARENT::stop();
-        sorter->stopMerge();
-        ActPrintLog("SORT waiting for merge");
+        if (queryInputStarted(0))
+        {
+            ActPrintLog("SORT waiting for merge");
+            sorter->stopMerge();
+        }
         dataLinkStop();
     }
-    virtual void reset()
+    virtual void reset() override
     {
+        PARENT::reset();
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
         sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
     }

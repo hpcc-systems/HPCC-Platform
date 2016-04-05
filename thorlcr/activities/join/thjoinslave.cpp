@@ -140,8 +140,6 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
     } compareReverse, compareReverseUpper;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     JoinSlaveActivity(CGraphElementBase *_container, bool local)
         : CSlaveActivity(_container), spillStats(spillStatistics)
     {
@@ -163,7 +161,7 @@ public:
             freePort(portbase,NUMSLAVEPORTS);
     }
 
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         if (!islocal)
         {
@@ -223,7 +221,7 @@ public:
         if (1 == index)
             rightInputStream = queryInputStream(1);
     }
-    virtual void onInputFinished(rowcount_t count)
+    virtual void onInputFinished(rowcount_t count) override
     {
         ActPrintLog("JOIN: %s input finished, %" RCPF "d rows read", rightpartition?"LHS":"RHS", count);
     }
@@ -249,7 +247,6 @@ public:
             }
         }
     }
-
     void startSecondaryInput()
     {
         try
@@ -262,7 +259,7 @@ public:
         }
 
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
 
@@ -371,38 +368,48 @@ public:
         else
             stopRightInput();
     }
-    virtual void abort()
+    virtual void abort() override
     {
         CSlaveActivity::abort();
         if (joinhelper)
             joinhelper->stop();
     }
-    virtual void stop()
+    virtual void stop() override
     {
         stopLeftInput();
         stopRightInput();
-        lhsProgressCount = joinhelper->getLhsProgress();
-        rhsProgressCount = joinhelper->getRhsProgress();
+        /* need to if input started, because activity might never have been started, if conditional
+         * activities downstream stopped their inactive inputs.
+         * stop()'s are chained like this, so that upstream splitters can be stopped as quickly as possible
+         * in order to reduce buffering.
+         */
+        if (queryInputStarted(0))
         {
-            CriticalBlock b(joinHelperCrit);
-            joinhelper.clear();
+            lhsProgressCount = joinhelper->getLhsProgress();
+            rhsProgressCount = joinhelper->getRhsProgress();
+            {
+                CriticalBlock b(joinHelperCrit);
+                joinhelper.clear();
+            }
+            ActPrintLog("SortJoinSlaveActivity::stop");
+            rightStream.clear();
+            if (!islocal)
+            {
+                unsigned bn=noSortPartitionSide()?2:4;
+                ActPrintLog("JOIN waiting barrier.%d",bn);
+                barrier->wait(false);
+                ActPrintLog("JOIN barrier.%d raised",bn);
+                sorter->stopMerge();
+            }
+            leftStream.clear();
+            dataLinkStop();
+            leftInput.clear();
+            rightInput.clear();
         }
-        ActPrintLog("SortJoinSlaveActivity::stop");
-        rightStream.clear();
-        if (!islocal) {
-            unsigned bn=noSortPartitionSide()?2:4;
-            ActPrintLog("JOIN waiting barrier.%d",bn);
-            barrier->wait(false);
-            ActPrintLog("JOIN barrier.%d raised",bn);
-            sorter->stopMerge();
-        }
-        leftStream.clear();
-        dataLinkStop();
-        leftInput.clear();
-        rightInput.clear();
     }
-    virtual void reset()
+    virtual void reset() override
     {
+        PARENT::reset();
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
         if (!islocal && TAG_NULL != mpTagRPC)
             sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
@@ -429,7 +436,7 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;
@@ -603,7 +610,7 @@ public:
         }
         return true;
     }
-    virtual void serializeStats(MemoryBuffer &mb)
+    virtual void serializeStats(MemoryBuffer &mb) override
     {
         CSlaveActivity::serializeStats(mb);
         CriticalBlock b(joinHelperCrit);
@@ -627,6 +634,8 @@ public:
 
 class CMergeJoinSlaveBaseActivity : public CThorNarySlaveActivity, public CThorSteppable
 {
+    typedef CThorNarySlaveActivity PARENT;
+
     IHThorNWayMergeJoinArg *helper;
     Owned<IEngineRowAllocator> inputAllocator, outputAllocator;
 
@@ -637,7 +646,7 @@ protected:
     void beforeProcessing();
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
+    IMPLEMENT_IINTERFACE_USING(PARENT);
 
     CMergeJoinSlaveBaseActivity(CGraphElementBase *container, CMergeJoinProcessor &_processor) : CThorNarySlaveActivity(container), CThorSteppable(this), processor(_processor)
     {

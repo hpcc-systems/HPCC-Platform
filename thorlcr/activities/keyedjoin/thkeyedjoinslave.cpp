@@ -1797,29 +1797,17 @@ public:
         parallelLookups = (unsigned)container.queryJob().getWorkUnitValueInt("parallelKJLookups", DEFAULTMAXRESULTPULLPOOL);
         freeQSize = (unsigned)container.queryJob().getWorkUnitValueInt("freeQSize", DEFAULTFREEQSIZE);
         joinFlags = helper->getJoinFlags();
-        keepLimit = helper->getKeepLimit();
-        atMost = helper->getJoinLimit();
-        if (atMost == 0)
-        {
-            if (JFleftonly == (joinFlags & JFleftonly))
-                keepLimit = 1; // don't waste time and memory collating and returning record which will be discarded.
-            atMostProvided = false;
-            atMost = (unsigned)-1;
-        }
-        else
-            atMostProvided = true;
-        abortLimit = helper->getMatchAbortLimit();
-        if (abortLimit == 0) abortLimit = (unsigned)-1;
-        if (keepLimit == 0) keepLimit = (unsigned)-1;
-        if (abortLimit < atMost)
-            atMost = abortLimit;
-        rowLimit = (rowcount_t)helper->getRowLimit();
         additionalStats = 5; // (seeks, scans, accepted, prefiltered, postfiltered)
         needsDiskRead = helper->diskAccessRequired();
         globalFPosToNodeMap = NULL;
         localFPosToNodeMap = NULL;
         fetchHandler = NULL;
         filePartTotal = 0;
+        keepLimit = 0;
+        atMost = 0;
+        atMostProvided = false;
+        abortLimit = 0;
+        rowLimit = 0;
 
         if (needsDiskRead)
             additionalStats += 3; // (diskSeeks, diskAccepted, diskRejected)
@@ -2035,11 +2023,29 @@ public:
             resultDistStream->stop();
         pendingGroupSem.signal();
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         assertex(inputs.ordinality() == 1);
         PARENT::start();
+
+        keepLimit = helper->getKeepLimit();
+        atMost = helper->getJoinLimit();
+        if (atMost == 0)
+        {
+            if (JFleftonly == (joinFlags & JFleftonly))
+                keepLimit = 1; // don't waste time and memory collating and returning record which will be discarded.
+            atMostProvided = false;
+            atMost = (unsigned)-1;
+        }
+        else
+            atMostProvided = true;
+        abortLimit = helper->getMatchAbortLimit();
+        if (abortLimit == 0) abortLimit = (unsigned)-1;
+        if (keepLimit == 0) keepLimit = (unsigned)-1;
+        if (abortLimit < atMost)
+            atMost = abortLimit;
+        rowLimit = (rowcount_t)helper->getRowLimit();
 
         eos = false;
         inputHelper = LINK(input->queryFromActivity()->queryContainer().queryHelper());

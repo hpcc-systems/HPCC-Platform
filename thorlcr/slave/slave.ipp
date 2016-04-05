@@ -42,8 +42,6 @@ protected:
     virtual void process() { }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     ProcessSlaveActivity(CGraphElementBase *container);
     virtual void beforeDispose();
 
@@ -95,7 +93,7 @@ class CThorNarySlaveActivity : public CSlaveActivity
 protected:
     PointerArrayOf<IThorDataLink> expandedInputs;
     Owned<IStrandJunction> *expandedJunctions = nullptr;
-    IPointerArrayOf<IEngineRowStream> expandedStreams;
+    PointerArrayOf<IEngineRowStream> expandedStreams;
 
 public:
     CThorNarySlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
@@ -126,7 +124,7 @@ public:
         }
         ForEachItemIn(ei, expandedInputs)
             expandedInputs.item(ei)->start();
-        expandedJunctions = new Owned<IStrandJunction> [expandedInputs.length()];
+        expandedJunctions = new Owned<IStrandJunction> [expandedInputs.ordinality()];
         ForEachItemIn(idx, expandedInputs)
         {
             expandedStreams.append(connectSingleStream(*this, expandedInputs.item(idx), 0, expandedJunctions[idx], true));  // MORE - is the index 0 right?

@@ -268,6 +268,7 @@ CActivityBase *createWhenSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryWorkunitWriteSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryResultWriteSlave(CGraphElementBase *container);
 CActivityBase *createTraceSlave(CGraphElementBase *container);
+CActivityBase *createIfActionSlave(CGraphElementBase *container);
 
 
 class CGenericSlaveGraphElement : public CSlaveGraphElement
@@ -299,18 +300,6 @@ public:
                 mb.read(wuidreadFilename);
         }
         haveCreateCtx = true;
-    }
-    virtual CActivityBase *queryActivity(bool checkNull)
-    {
-        if (checkNull && hasNullInput)
-        {
-            CriticalBlock b(nullActivityCs);
-            if (!nullActivity)
-                nullActivity.setown(createNullSlave(this));
-            return nullActivity;
-        }
-        else
-            return activity;
     }
     virtual CActivityBase *factory(ThorActivityKind kind)
     {
@@ -516,6 +505,9 @@ public:
             case TAKapply:
                 ret = createApplySlave(this);
                 break;
+            case TAKifaction:
+                ret = createIfActionSlave(this);
+                break;
             case TAKinlinetable:
                 ret = createInlineTableSlave(this);
                 break;
@@ -647,11 +639,6 @@ public:
             case TAKthroughaggregate:
                 ret = createThroughAggregateSlave(this);
                 break;
-            case TAKcase:
-            case TAKif:
-            case TAKifaction:
-                throwUnexpected();
-                break;
             case TAKwhen_dataset:
                 ret = createWhenSlave(this);
                 break;
@@ -743,9 +730,11 @@ public:
             case TAKlocalresultspill:
                 ret = createLocalResultSpillSlave(this);
                 break;
+            case TAKif:
             case TAKchildif:
                 ret = createIfSlave(this);
                 break;
+            case TAKcase:
             case TAKchildcase:
                 ret = createCaseSlave(this);
                 break;

@@ -288,7 +288,7 @@ public:
     {
         if (eog) delete [] eog;
     }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         IHThorFunnelArg *helper = (IHThorFunnelArg *)queryHelper();
         parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
@@ -296,7 +296,7 @@ public:
         appendOutputLinked(this);
         ActPrintLog("FUNNEL mode = %s, grouped=%s", parallel?"PARALLEL":"ORDERED", grouped?"GROUPED":"UNGROUPED");
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         if (!grouped && parallel)
@@ -333,7 +333,7 @@ public:
         }
         dataLinkStart();
     }
-    virtual void stop()
+    virtual void stop() override
     {
         if (parallelOutput)
         {
