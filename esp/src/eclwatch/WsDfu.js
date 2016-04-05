@@ -181,7 +181,7 @@ define([
                                     FileDetail: {
                                         Name: params.request.Name,
                                         StateID: 999,
-                                        State: "deleted"
+                                        State: "not found"
                                     }
                                 }
                             });
