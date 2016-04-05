@@ -26,13 +26,21 @@
                         <span data-dojo-type="dijit.MenuSeparator"></span>
                         <div data-dojo-attach-event="onClick:_onOpenReleaseNotes" data-dojo-type="dijit.MenuItem">${i18n.ReleaseNotes}</div>
                         <div data-dojo-attach-event="onClick:_onOpenTransitionGuide" data-dojo-type="dijit.MenuItem">${i18n.TransitionGuide}</div>
-                        <div data-dojo-attach-event="onClick:_onOpenResources" data-dojo-type="dijit.MenuItem">${i18n.AdditionalResources}</div>
+                        <div data-dojo-type="dijit.PopupMenuItem">
+                            <span>${i18n.AdditionalResources}</span>
+                            <div data-dojo-type="dijit.Menu">
+                                <div data-dojo-attach-event="onClick:_onOpenResources" data-dojo-type="dijit.MenuItem">${i18n.Downloads}</div>
+                                <div data-dojo-attach-event="onClick:_onOpenJira" data-dojo-type="dijit.MenuItem">${i18n.IssueReporting}</div>
+                                <div data-dojo-attach-event="onClick:_onOpenForums" data-dojo-type="dijit.MenuItem">${i18n.Forums}</div>
+                                <div data-dojo-attach-event="onClick:_onOpenRedBook" data-dojo-type="dijit.MenuItem">${i18n.RedBook}</div>
+                            </div>
+                        </div>
                         <span data-dojo-type="dijit.MenuSeparator"></span>
                         <div id="${id}Configuration" data-dojo-attach-event="onClick:_onOpenConfiguration" data-dojo-type="dijit.MenuItem">${i18n.Configuration}</div>
                         <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">${i18n.About}</div>
                         <div data-dojo-props="hidden:true" data-dojo-type="dijit.PopupMenuItem">
                             <span>${i18n.Debug}</span>
-                            <div data-dojo-type="dijit.DropDownMenu">
+                            <div data-dojo-type="dijit.Menu">
                                 <div data-dojo-attach-event="onClick:_ondebugLanguageFiles" data-dojo-type="dijit.MenuItem">${i18n.LanguageFiles}</div>
                             </div>
                         </div>
