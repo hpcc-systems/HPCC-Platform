@@ -187,6 +187,9 @@ define([
                             });
                         }
                     });
+                } else if (lang.exists("DFUInfoResponse.FileDetail", response)) {
+                    response.DFUInfoResponse.FileDetail.StateID = 0;
+                    response.DFUInfoResponse.FileDetail.State = "";
                 }
                 return response;
             });
