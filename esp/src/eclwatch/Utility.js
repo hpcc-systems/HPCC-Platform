@@ -137,6 +137,27 @@
         }, this);
     }
 
+    function espSkew2Number(skew) {
+        if (!skew) {
+            return 0;
+        }
+        return parseFloat(skew);
+    }
+
+    function espSkew2NumberTests() {
+        var tests = [
+            { str: "", expected: 0 },
+            { str: "1", expected: 1 },
+            { str: "10%", expected: 10 },
+            { str: "-10%", expected: -10 }
+        ];
+        tests.forEach(function (test, idx) {
+            if (espSkew2Number(test.str) !== test.expected) {
+                console.log("espSkew2NumberTests failed with " + test.str + "(" + espSkew2Number(test.str) + ") !== " + test.expected);
+            }
+        }, this);
+    }
+
     /* alphanum.js (C) Brian Huisman
      * Based on the Alphanum Algorithm by David Koelle
      * The Alphanum Algorithm is discussed at http://www.DaveKoelle.com
@@ -245,6 +266,7 @@
     return {
         espTime2Seconds: espTime2Seconds,
         espSize2Bytes: espSize2Bytes,
+        espSkew2Number: espSkew2Number,
         xmlEncode: xmlEncode,
         xmlEncode2: xmlEncode2,
         alphanumSort: alphanumSort
