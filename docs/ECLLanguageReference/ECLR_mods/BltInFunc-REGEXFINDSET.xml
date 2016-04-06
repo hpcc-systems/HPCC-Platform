@@ -9,8 +9,7 @@
     </indexterm><indexterm>
       <primary>REGEXFINDSET function</primary>
     </indexterm>(</emphasis><emphasis>regex, text </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>, flag </emphasis><emphasis role="bold">]
-  [, NOCASE<indexterm>
+  role="bold"> [, NOCASE<indexterm>
       <primary>NOCASE</primary>
     </indexterm>])</emphasis></para>
 
