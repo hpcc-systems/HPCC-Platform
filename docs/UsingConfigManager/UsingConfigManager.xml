@@ -1363,6 +1363,75 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
       </sect2>
 
+      <sect2 id="ESP_Services" role="brk">
+        <title>ESP Services</title>
+
+        <para>ESP Services provide a means to add functionality to an ESP
+        Server.</para>
+
+        <sect3 id="CfgMgrEclWatch">
+          <title>ECL Watch Service</title>
+
+          <para>Ecl Watch allows you to configure options for the ECL Watch
+          utility.</para>
+
+          <para><graphic fileref="images/CM-009.jpg"
+          vendor="configmgrSS" /></para>
+
+          <para>ECL Watch Attribute definitions.</para>
+
+          <!--ECLWa-Include-TBLZ-1-->
+
+          <para><xi:include href="XMLGeneration/xml/espsmcservice.xsd.mod.xml"
+          xpointer="SMC-T01"
+          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+
+          <para>ECL Watch Monitoring attributes.</para>
+
+          <!--ECLWa-Include-TBLZ-2-->
+
+          <para><xi:include href="XMLGeneration/xml/espsmcservice.xsd.mod.xml"
+          xpointer="SMC-T02"
+          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+        </sect3>
+
+        <sect3 id="cfgmgr_WsECL" role="brk">
+          <title>WsECL Service</title>
+
+          <para>The WsECL service allows you to configure options for the
+          WsECL utility.</para>
+
+          <para><graphic fileref="images/CM-010.jpg"
+          vendor="configmgrSS" /></para>
+
+          <para>The Ws ECL configuration attributes. </para>
+
+          <!--WsECL-Include-ZXX-1-->
+	  <para><xi:include href="XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
+	            xpointer="MyWS2-T01"
+          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+
+          <para>Ws ECL VIPS option attributes.</para>
+
+          <!--WsECL-Include-ZXX-2-->
+
+          <para><xi:include
+          href="XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
+          xpointer="MyWS2-T02"
+          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+
+          <para>Ws ECL Target Restrictions table. </para>
+
+          <!--WsECL-Include-ZXX-3-->
+	  <para><xi:include href="XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
+	            xpointer="MyWS2-T03"
+          xmlns:xi="http://www.w3.org/2001/XInclude" /></para>
+          
+         
+          
+        </sect3>
+      </sect2>
+
       <sect2 id="FTSlave-Process" role="brk">
         <title>FTSlave Process</title>
 
