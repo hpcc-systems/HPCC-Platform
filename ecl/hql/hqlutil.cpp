@@ -5672,7 +5672,7 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
             // allow whitespace in front of #option
             break;
         case '#':
-            if (prev == '\n')
+            if (prev == '\n' || prev == ' ' || prev == '\t')
             {
                 if ((i + 1 + 6 < lenBuffer) && memicmp(buffer+i+1, "option", 6) == 0)
                 {
@@ -5729,9 +5729,10 @@ unsigned cleanupEmbeddedCpp(unsigned len, char * buffer)
             prev = next;
             break;
         case ' ': case '\t':
+            // allow whitespace in front of #option
             break;
         case '#':
-            if (prev == '\n')
+            if (prev == '\n' || prev == ' ' || prev == '\t')
             {
                 if ((i + 1 + 6 < len) && memicmp(buffer+i+1, "option", 6) == 0)
                 {
