@@ -1587,8 +1587,8 @@ lock=/var/lock/HPCCSystems</programlisting>
           </listitem>
 
           <listitem>
-            <para>Communication between slaves uses message passing and
-            loopback device.</para>
+            <para>Slaves use message passing via the loopback network
+            interface for communication.</para>
           </listitem>
         </itemizedlist>
 
