@@ -95,7 +95,7 @@ interface IConstMachineInfo : extends IConstEnvBase
 
 interface  IConstMachineInfoIterator : extends IIteratorOf<IConstMachineInfo>
 {
-    virtual unsigned count() const = 0 ;
+    virtual unsigned count() const = 0;
 };
 
 
