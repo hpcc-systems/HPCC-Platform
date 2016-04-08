@@ -21,6 +21,8 @@
 #include "base64.ipp"
 
 #include "zip.h"
+#include "jexcept.hpp"
+#include <math.h>
 
 #ifdef WIN32
 #define USEWIN32IOAPI
@@ -998,3 +1000,167 @@ ZCRYPT_API void releaseIZ(IZInterface* iz)
 
 }
 
+static void throwGZipException(const char* operation, int errorCode)
+{
+    const char* errorMsg;
+    switch (errorCode)
+    {
+        case Z_ERRNO:
+            errorMsg = "Error occured while reading file";
+            break;
+        case Z_STREAM_ERROR:
+            errorMsg = "The stream state was inconsistent";
+            break;
+        case Z_DATA_ERROR:
+            errorMsg = "The deflate data was invalid or incomplete";
+            break;
+        case Z_MEM_ERROR:
+            errorMsg = "Memory could not be allocated for processing";
+            break;
+        case Z_BUF_ERROR:
+            errorMsg = "Insufficient output buffer";
+            break;
+        case Z_VERSION_ERROR:
+            errorMsg = "The version mismatch between zlib.h and the library linked";
+            break;
+        default:
+            errorMsg = "Unknown exception";
+            break;
+    }
+    throw MakeStringException(500, "Exception in gzip %s: %s.", operation, errorMsg);
+}
+
+// Compress a character buffer using zlib in gzip format with given compression level
+//
+char* gzip( const char* inputBuffer, unsigned int inputSize, unsigned int* outlen, int compressionLevel)
+{
+    if (inputBuffer == NULL || inputSize == 0)
+        throw MakeStringException(500, "gzip failed: input buffer is empty!");
+
+    /* Before we can begin compressing (aka "deflating") data using the zlib
+     functions, we must initialize zlib. Normally this is done by calling the
+     deflateInit() function; in this case, however, we'll use deflateInit2() so
+     that the compressed data will have gzip headers. This will make it easy to
+     decompress the data later using a tool like gunzip, WinZip, etc.
+     deflateInit2() accepts many parameters, the first of which is a C struct of
+     type "z_stream" defined in zlib.h. The properties of this struct are used to
+     control how the compression algorithms work. z_stream is also used to
+     maintain pointers to the "input" and "output" byte buffers (next_in/out) as
+     well as information about how many bytes have been processed, how many are
+     left to process, etc. */
+    z_stream zs;        // z_stream is zlib's control structure
+    zs.zalloc = Z_NULL; // Set zalloc, zfree, and opaque to Z_NULL so
+    zs.zfree  = Z_NULL; // that when we call deflateInit2 they will be
+    zs.opaque = Z_NULL; // updated to use default allocation functions.
+    zs.total_out = 0;   // Total number of output bytes produced so far
+
+    /* Initialize the zlib deflation (i.e. compression) internals with deflateInit2().
+     The parameters are as follows:
+     z_streamp strm - Pointer to a zstream struct
+     int level      - Compression level. Must be Z_DEFAULT_COMPRESSION, or between
+                      0 and 9: 1 gives best speed, 9 gives best compression, 0 gives
+                      no compression.
+     int method     - Compression method. Only method supported is "Z_DEFLATED".
+     int windowBits - Base two logarithm of the maximum window size (the size of
+                      the history buffer). It should be in the range 8..15. Add
+                      16 to windowBits to write a simple gzip header and trailer
+                      around the compressed data instead of a zlib wrapper. The
+                      gzip header will have no file name, no extra data, no comment,
+                      no modification time (set to zero), no header crc, and the
+                      operating system will be set to 255 (unknown).
+     int memLevel   - Amount of memory allocated for internal compression state.
+                      1 uses minimum memory but is slow and reduces compression
+                      ratio; 9 uses maximum memory for optimal speed. Default value
+                      is 8.
+     int strategy   - Used to tune the compression algorithm. Use the value
+                      Z_DEFAULT_STRATEGY for normal data, Z_FILTERED for data
+                      produced by a filter (or predictor), or Z_HUFFMAN_ONLY to
+                      force Huffman encoding only (no string match) */
+    int ret = deflateInit2(&zs, compressionLevel, Z_DEFLATED, (15+16), 8, Z_DEFAULT_STRATEGY);
+    if (ret != Z_OK)
+        throwGZipException("initialization", ret);
+
+    // set the z_stream's input
+    zs.next_in = (Bytef*)inputBuffer;
+    zs.avail_in = inputSize;
+
+    // Create output memory buffer for compressed data. The zlib documentation states that
+    // destination buffer size must be at least 0.1% larger than avail_in plus 12 bytes.
+    const unsigned long outsize = (unsigned long)floorf((float)inputSize * 1.01f) + 12;
+    Bytef* outbuf = new Bytef[outsize];
+
+    do
+    {
+        // Store location where next byte should be put in next_out
+        zs.next_out = outbuf + zs.total_out;
+
+        // Calculate the amount of remaining free space in the output buffer
+        // by subtracting the number of bytes that have been written so far
+        // from the buffer's total capacity
+        zs.avail_out = outsize - zs.total_out;
+
+        /* deflate() compresses as much data as possible, and stops/returns when
+        the input buffer becomes empty or the output buffer becomes full. If
+        deflate() returns Z_OK, it means that there are more bytes left to
+        compress in the input buffer but the output buffer is full; the output
+        buffer should be expanded and deflate should be called again (i.e., the
+        loop should continue to rune). If deflate() returns Z_STREAM_END, the
+        end of the input stream was reached (i.e.g, all of the data has been
+        compressed) and the loop should stop. */
+        ret = deflate(&zs, Z_FINISH);
+    } while (ret == Z_OK);
+
+    if (ret != Z_STREAM_END)          // an error occurred that was not EOS
+    {
+        // Free data structures that were dynamically created for the stream.
+        deflateEnd(&zs);
+        delete[] outbuf;
+        *outlen = 0;
+        throwGZipException("compression", ret);
+    }
+
+    // Free data structures that were dynamically created for the stream.
+    deflateEnd(&zs);
+    *outlen = zs.total_out;
+    return (char*) outbuf;
+}
+
+void gunzip(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput)
+{
+    if (comprLen == 0)
+        return;
+
+    const int CHUNK_OUT = 16384;
+    z_stream d_stream; // decompression stream
+    memset( &d_stream, 0, sizeof(z_stream));
+    d_stream.next_in = (byte*) compressed;
+    d_stream.avail_in = comprLen;
+
+    int ret = inflateInit2(&d_stream, (15+16));
+    if (ret != Z_OK)
+        throwGZipException("initialization", ret);
+
+    unsigned int outLen = 0;
+
+    do
+    {
+        sOutput.ensureCapacity( outLen + CHUNK_OUT );
+        d_stream.avail_out = CHUNK_OUT; //free space in the output buffer
+        d_stream.next_out = (byte*)sOutput.str() + outLen;
+
+        ret = inflate(&d_stream, Z_NO_FLUSH);
+        if (ret < Z_OK)
+            break;
+
+        outLen += CHUNK_OUT - d_stream.avail_out;
+        sOutput.setLength( outLen );
+
+    } while (d_stream.avail_out == 0 || ret != Z_STREAM_END);
+
+    inflateEnd(&d_stream);
+    if (ret != Z_STREAM_END)
+    {
+        sOutput.clear();
+        throwGZipException("decompression", ret);
+    }
+}
