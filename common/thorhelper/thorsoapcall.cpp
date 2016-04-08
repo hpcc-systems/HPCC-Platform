@@ -27,6 +27,9 @@
 #include "securesocket.hpp"
 #include "eclrtl.hpp"
 #include "roxiemem.hpp"
+#ifdef _USE_ZLIB
+#include "zcrypt.hpp"
+#endif
 
 using roxiemem::OwnedRoxieString;
 
@@ -37,6 +40,8 @@ using roxiemem::OwnedRoxieString;
 #include <new>
 
 #define CONTENT_LENGTH "Content-Length: "
+#define CONTENT_ENCODING "Content-Encoding"
+#define ACCEPT_ENCODING "Accept-Encoding"
 
 unsigned soapTraceLevel = 1;
 
@@ -1291,6 +1296,32 @@ bool httpHeaderBlockContainsHeader(const char *httpheaders, const char *header)
         return true;
     return false;
 }
+
+bool getHTTPHeader(const char *httpheaders, const char *header, StringBuffer& value)
+{
+    if (!httpheaders || !*httpheaders || !header || !*header)
+        return false;
+
+    StringArray headerList;
+    headerList.appendListUniq(httpheaders, "\n");
+    ForEachItemIn(i, headerList)
+    {
+        StringArray headerParts;
+        headerParts.appendListUniq(headerList.item(i), ":");
+        if (headerParts.length() && strieq(headerParts.item(0), header))
+        {
+            if (headerParts.length() > 1)
+            {
+                value.set(headerParts.item(1));
+                value.trim();
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
 class CWSCAsyncFor : implements IWSCAsyncFor, public CInterface, public CAsyncFor
 {
     class CSocketDataProvider : public CInterface
@@ -1371,6 +1402,86 @@ private:
         }
     }
 
+    bool checkContentEncodingType(const char* encoding)
+    {
+        if (strieq(encoding, "gzip"))
+            return true;
+        return false;
+    }
+
+    bool checkContentDecoding(const StringBuffer& headers, StringBuffer& content, StringBuffer& contentEncoding)
+    {
+        if ((headers.length() == 0) || (content.length() == 0))
+            return false;
+
+        getHTTPHeader(headers.str(), CONTENT_ENCODING, contentEncoding);
+        if (contentEncoding.isEmpty())
+            return false;
+
+        if (!checkContentEncodingType(contentEncoding.str()))
+            throw MakeStringException(-1, "Content-Encoding:%s not supported", contentEncoding.str());
+        return true;
+    }
+
+    void decodeContent(const char* contentEncodingType, StringBuffer& content)
+    {
+        StringBuffer contentDecoded;
+        unsigned contentLength = content.length();
+        if (strieq(contentEncodingType, "gzip"))
+        {
+#ifdef _USE_ZLIB
+            gunzip((const byte*)content.str(), contentLength, contentDecoded);
+            PROGLOG("Content decoded from %d bytes to %d bytes", contentLength, contentDecoded.length());
+#else
+            throw MakeStringException(-1, "_USE_ZLIB is required for Content-Encoding:%s", contentEncodingType);
+#endif
+        }
+
+        content = contentDecoded;
+        if (soapTraceLevel > 6 || master->logXML)
+            master->logctx.CTXLOG("Content decoded. Original %s %d", CONTENT_LENGTH, contentLength);
+    }
+
+    bool checkContentEncoding(const char* httpheaders, StringBuffer& contentEncodingType)
+    {
+        if (xmlWriter.length() == 0)
+            return false;
+
+        getHTTPHeader(httpheaders, CONTENT_ENCODING, contentEncodingType);
+        if (contentEncodingType.isEmpty())
+            return false;
+
+        if (!checkContentEncodingType(contentEncodingType.str()))
+            throw MakeStringException(-1, "Content-Encoding:%s not supported", contentEncodingType.str());
+        return true;
+    }
+
+    void encodeContent(const char* contentEncodingType, StringBuffer& content)
+    {
+        if (strieq(contentEncodingType, "gzip"))
+        {
+#ifdef _USE_ZLIB
+            unsigned outlen;
+            char* outbuf = gzip( xmlWriter.str(), xmlWriter.length(), &outlen, GZ_BEST_SPEED);
+            content.setBuffer(outlen+1, outbuf, outlen);
+            PROGLOG("Content encoded from %d bytes to %d bytes", xmlWriter.length(), outlen);
+#else
+            throw MakeStringException(-1, "_USE_ZLIB is required for Content-Encoding:%s", contentEncodingType);
+#endif
+        }
+    }
+
+    void logRequest(bool contentEncoded, StringBuffer& request)
+    {
+        if (soapTraceLevel > 6 || master->logXML)
+        {
+            if (!contentEncoded)
+                master->logctx.CTXLOG("%s: request(%s)", master->wscCallTypeText(), request.str());
+            else
+                master->logctx.CTXLOG("%s: request(%s), content encoded.", master->wscCallTypeText(), request.str());
+        }
+    }
+
     void createHttpRequest(Url &url, StringBuffer &request)
     {
         // Create the HTTP POST request
@@ -1401,6 +1512,11 @@ private:
             }
         }
 
+#ifdef _USE_ZLIB
+        if (!httpHeaderBlockContainsHeader(httpheaders, ACCEPT_ENCODING))
+            request.appendf("%s: gzip, deflate\r\n", ACCEPT_ENCODING);
+#endif
+
         if (master->wscType == STsoap)
         {
             if (master->soapaction.get())
@@ -1425,8 +1541,21 @@ private:
         if (master->wscType == STsoap)
         {
             request.append("Host: ").append(url.host).append(":").append(url.port).append("\r\n");//http 1.1
-            request.append(CONTENT_LENGTH).append(xmlWriter.length()).append("\r\n\r\n");
-            request.append(xmlWriter.str());//add SOAP xml content
+
+            StringBuffer contentEncodingType, encodedContentBuf;
+            if (!checkContentEncoding(httpheaders, contentEncodingType))
+            {
+                request.append(CONTENT_LENGTH).append(xmlWriter.length()).append("\r\n\r\n");
+                request.append(xmlWriter.str());//add SOAP xml content
+                logRequest(false, request);
+            }
+            else
+            {
+                logRequest(true, request);
+                encodeContent(contentEncodingType.str(), encodedContentBuf);
+                request.append(CONTENT_LENGTH).append(encodedContentBuf.length()).append("\r\n\r\n");
+                request.append(encodedContentBuf.length(), encodedContentBuf.str());//add SOAP xml content
+            }
         }
         else
         {
@@ -1435,10 +1564,8 @@ private:
                 request.append(":").append(url.port);
             request.append("\r\n");//http 1.1
             request.append("\r\n");//httpcall
+            logRequest(false, request);
         }
-
-        if (soapTraceLevel > 6 || master->logXML)
-            master->logctx.CTXLOG("%s: request(%s)", master->wscCallTypeText(), request.str());
 
         if (master->logMin)
             master->logctx.CTXLOG("%s: request(%s:%u)", master->wscCallTypeText(), url.host.str(), url.port);
@@ -1457,7 +1584,7 @@ private:
         // first read header
         size32_t payloadofs = 0;
         size32_t payloadsize = 0;
-        StringBuffer dbgheader;
+        StringBuffer dbgheader, contentEncoding;
         bool chunked = false;
         size32_t read = 0;
         do {
@@ -1473,8 +1600,7 @@ private:
                 const char *s = strstr(buffer,"\r\n\r\n");
                 if (s) {
                     payloadofs = (size32_t)(s-buffer+4);
-                    if (soapTraceLevel > 6 || master->logXML)
-                        dbgheader.append(payloadofs,buffer);  // needed for tracing below
+                    dbgheader.append(payloadofs,buffer);
                     s = strstr(buffer, " ");
                     if (s)
                         rval = atoi(s+1);
@@ -1599,6 +1725,8 @@ private:
                 }
             }
         }
+        if (checkContentDecoding(dbgheader, response, contentEncoding))
+            decodeContent(contentEncoding.str(), response);
         if (soapTraceLevel > 6 || master->logXML)
             master->logctx.CTXLOG("%sCALL: LEN=%d %sresponse(%s%s)", master->wscType == STsoap ? "SOAP" : "HTTP",response.length(),chunked?"CHUNKED ":"", dbgheader.str(), response.str());
         else if (soapTraceLevel > 8)

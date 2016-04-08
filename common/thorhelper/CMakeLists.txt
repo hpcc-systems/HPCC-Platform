@@ -83,7 +83,8 @@ include_directories (
          ./../../rtl/nbcd 
          ./../../system/include 
          ./../../system/mp
-         ./../../system/jlib 
+         ./../../system/jlib
+         ./../../system/security/zcrypt
          ./../../dali/base
          ./../deftype 
          ./../workunit
@@ -118,5 +119,12 @@ endif()
 IF (USE_OPENSSL)
     target_link_libraries ( thorhelper 
     	securesocket
+    )
+ENDIF()
+
+IF (USE_ZLIB)
+    target_link_libraries ( thorhelper
+        ${ZLIB_LIBRARIES}
+        zcrypt
     )
 ENDIF()
