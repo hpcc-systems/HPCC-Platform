@@ -1547,6 +1547,175 @@ lock=/var/lock/HPCCSystems</programlisting>
         than number of cores. One good rule is to use a formula where the
         number of cores divided by two is the maximum number of Thor clusters
         to use.</para>
+
+        <para></para>
+      </sect2>
+
+      <sect2 id="virtual-thor-slaves">
+        <title><emphasis role="strong">Virtual Thor slaves</emphasis></title>
+
+        <para><indexterm>
+            <primary>Virtual Thor slaves</primary>
+          </indexterm>Beginning in version 6.0.0, Thor clusters can be
+        configured to take full advantage of the resources available per node
+        using Virtual Thor slaves.</para>
+
+        <para>In HPCC versions prior to 6.0.0, cluster configurations were
+        typically set to N number of <emphasis
+        role="bold">slavesPerNode</emphasis><indexterm>
+            <primary>slavesPerNode</primary>
+          </indexterm> <emphasis></emphasis> , where N equalled or approached
+        the number of cores per machine.</para>
+
+        <para>This resulted in N independent slave processes per node, as seen
+        below:</para>
+
+        <para></para>
+
+        <para><graphic fileref="images//SA009.jpg" /></para>
+
+        <para>This had several significant disadvantages:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Each slave process in this configuration has an equal fixed
+            split of the physical memory available to the node.</para>
+          </listitem>
+
+          <listitem>
+            <para>Slaves do not share RAM or any other resources.</para>
+          </listitem>
+
+          <listitem>
+            <para>Slaves use message passing via the loopback network
+            interface for communication.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Now a new approach is used, allowing virtual slaves to be
+        created with a single slave process, as depicted below:.</para>
+
+        <para><graphic fileref="images//SA010.jpg" /></para>
+
+        <itemizedlist>
+          <listitem>
+            <para>In this configuration, each physical node has a single Thor
+            slave process.</para>
+          </listitem>
+
+          <listitem>
+            <para>Each slave process has N virtual slaves. This is set using a
+            Thor configuration option called <emphasis
+            role="bold">channelsPerSlave</emphasis><indexterm>
+                <primary>channelsPerSlave</primary>
+              </indexterm> <emphasis><emphasis
+            role="strong"></emphasis></emphasis>. Under this architecture,
+            slaves within the same process can communicate directly with one
+            another and share resources.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Note: The <emphasis><emphasis
+        role="bold">slavesPerNode</emphasis></emphasis> setting still exists
+        and both may be used in combination if required.</para>
+
+        <para><emphasis role="strong">Key advantages:</emphasis></para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Each virtual slave shares cached resources, such as key
+            index pages, etc.</para>
+          </listitem>
+
+          <listitem>
+            <para>Slaves can request and share all available RAM.</para>
+          </listitem>
+
+          <listitem>
+            <para>Startup and management of the cluster is faster and
+            simpler.</para>
+          </listitem>
+
+          <listitem>
+            <para>Allows for future enhancements to bring better
+            management/coordination of CPU cores.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>The significance of having access to all available memory
+        becomes very significant for some activities. The clearest example is
+        a SMART or LOOKUP JOIN.</para>
+
+        <sect3 id="smartlookup-join-example">
+          <title>SMART/LOOKUP JOIN example</title>
+
+          <para>A LOOKUP JOIN works approximately as follows:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Streams local slave RHS dataset to all other
+              slaves.</para>
+            </listitem>
+
+            <listitem>
+              <para>All slaves gather global RHS into one table.</para>
+            </listitem>
+
+            <listitem>
+              <para>A hash table based on the hard key match fields is
+              built.</para>
+            </listitem>
+
+            <listitem>
+              <para>Once all slaves are done, the LHS is streamed and matched
+              against the hash table to produce the joined results.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>Note: The complete RHS table and hash table must fit into
+          memory; otherwise the join fails with an out of memory error.</para>
+
+          <para>SMART JOIN is an evolution of LOOKUP JOIN. If it cannot fit
+          the global RHS into memory, it will HASH PARTITION the RHS and HASH
+          DISTRIBUTE the LHS and perform a LOCAL LOOKUP JOIN.</para>
+
+          <para>If it cannot fit the local RHS set into memory on any given
+          node, then it will gather and sort both local datasets and perform a
+          standard JOIN.</para>
+
+          <para>The key advantage of LOOKUP JOIN is speed. If the RHS fits
+          into memory, it can perform a very quick gather and streamed JOIN of
+          a large LHS set, without the need of gathering and sorting
+          anything.</para>
+
+          <para>The advantages of a virtual slave Thor configuration for ECL
+          code using LOOKUP/SMART JOIN is that in effect it will have N times
+          as much memory before it fails or fails over in the SMART JOIN
+          case.</para>
+
+          <para>It is also much quicker; instead of broadcasting the local RHS
+          to N slave process per node; it only has to communicate it to one.
+          That one slave can share the same table and same HT with the other
+          virtual slaves directly.</para>
+
+          <para><emphasis role="strong"><emphasis>Key advantages of
+          LOOKUP/SMART JOIN in a Virtual Slave Thor
+          Setup:</emphasis></emphasis></para>
+
+          <itemizedlist>
+            <listitem>
+              <para>N times as much memory available for RHS. In other words,
+              the RHS can be N times bigger before failing or failing over in
+              SMART JOIN case. (In the illustrated example, the JOIN would
+              have 4 times as much memory available)</para>
+            </listitem>
+
+            <listitem>
+              <para>Significantly less communication of row data – equals
+              significantly faster processing for larger RHS sets.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_HugePages">
