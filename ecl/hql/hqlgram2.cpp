@@ -10682,6 +10682,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case NOBOUNDCHECK: msg.append("NOBOUNDCHECK"); break;
     case NOCASE: msg.append("NOCASE"); break;
     case NOCOMBINE: msg.append("NOCOMBINE"); break;
+    case NOCONST: msg.append("NOCONST"); break;
     case NOFOLD: msg.append("NOFOLD"); break;
     case NOHOIST: msg.append("NOHOIST"); break;
     case NOLOCAL: msg.append("NOLOCAL"); break;

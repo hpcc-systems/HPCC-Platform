@@ -804,7 +804,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     paramNameText.append(paramName).toLowerCase();
 
     bool isOut = false;
-    bool isConst = false;
+    bool isConst = true;
     unsigned maxAttr = param->numChildren();
     unsigned attrIdx;
     for (attrIdx = 0; attrIdx < maxAttr; attrIdx++)
@@ -812,8 +812,8 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
         IHqlExpression * attr = param->queryChild(attrIdx);
         if (attr->isAttribute())
         {
-            if (attr->queryName() == constAtom)
-                isConst = true;
+            if (attr->queryName() == noConstAtom)
+                isConst = false;
             else if (attr->queryName() == outAtom)
                 isOut = true;
         }
@@ -950,10 +950,13 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
         }
         // Other set types just fall through and will be treated like other types.
     case type_qstring: case type_string: case type_varstring: case type_data:
+    case type_utf8: case type_unicode: case type_varunicode:
+    case type_row:
+        if (isConst)
+            out.append("const ");
+        /* no break */
     default:
         {
-            if (isConst)
-                out.append("const ");
             Owned<ITypeInfo> argType = LINK(paramType);
             if (argType->getTypeCode() == type_function)
                 argType.setown(makePointerType(LINK(argType)));

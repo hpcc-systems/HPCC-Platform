@@ -6190,12 +6190,8 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
         funcname.append("_").append(newFuncDef->queryName()).toLowerCase();
     OwnedHqlExpr funcNameExpr = createConstant(funcname);
 
-    IHqlExpression * formals = newFuncDef->queryChild(1);
-    OwnedHqlExpr newFormals = mapInternalFunctionParameters(formals);
-
     HqlExprArray bodyArgs;
-    bodyArgs.append(*replaceParameters(ecl, formals, newFormals));
-    unwindChildren(bodyArgs, body, 1);
+    unwindChildren(bodyArgs, body, 0);
     bodyArgs.append(*createLocalAttribute());
     bodyArgs.append(*createExprAttribute(entrypointAtom, LINK(funcNameExpr)));
     OwnedHqlExpr newBody = body->clone(bodyArgs);
@@ -6204,8 +6200,7 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
 
     HqlExprArray funcdefArgs;
     funcdefArgs.append(*LINK(newBody));
-    funcdefArgs.append(*LINK(newFormals));
-    unwindChildren(funcdefArgs, newFuncDef, 2);
+    unwindChildren(funcdefArgs, newFuncDef, 1);
     OwnedHqlExpr namedFuncDef = newFuncDef->clone(funcdefArgs);
     inheritDependencies(namedFuncDef);
 
