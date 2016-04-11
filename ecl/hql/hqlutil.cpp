@@ -5650,7 +5650,9 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
     unsigned prev = '\n';
     for (unsigned i=0; i < lenBuffer; i++)
     {
-        switch (buffer[i])
+        unsigned next = buffer[i];
+        bool ignore = false;
+        switch (next)
         {
         case '*':
             if ('/' == prev) // Ignore directives in multi-line comments
@@ -5669,7 +5671,7 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
             }
             break;
         case ' ': case '\t':
-            // allow whitespace in front of #option
+            ignore = true; // allow whitespace in front of #option
             break;
         case '#':
             if (prev == '\n')
@@ -5709,7 +5711,8 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                 }
             }
         }
-        prev = buffer[i];
+        if (!ignore)
+            prev = next;
     }
     return attrs.getClear();
 }
