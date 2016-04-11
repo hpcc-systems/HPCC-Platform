@@ -19,21 +19,20 @@
 
 integer4 mkRandom1 :=
 BEGINC++
+//default as 'action'
 return rtlRandom();
 ENDC++;
 
 integer4 mkRandom2 :=
 BEGINC++
-#option pure
-return rtlRandom();
+return rtlRandom(); #option pure
 ENDC++;
 
 integer4 mkRandom3 :=
-BEGINC++
-#option action
+BEGINC++ #option action
 return rtlRandom();
 ENDC++;
 
-output(mkRandom1 * mkRandom1);
-output(mkRandom2 * mkRandom2);
-output(mkRandom3 * mkRandom3);
+output(NOFOLD(mkRandom1 = mkRandom1));
+output(NOFOLD(mkRandom2 = mkRandom2));
+output(NOFOLD(mkRandom3 = mkRandom3));
