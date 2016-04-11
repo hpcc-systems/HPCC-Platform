@@ -314,7 +314,7 @@ define([
                     id: id,
                     title: params.Name,
                     closable: true,
-                    delayWidget: "LFDetailsWidget",
+                    delayWidget: params.isSuperfile ? "SFDetailsWidget" : "LFDetailsWidget",
                     _hpccParams: {
                         NodeGroup: params.NodeGroup,
                         Name: params.Name
