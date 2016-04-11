@@ -86,6 +86,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/loggingmanager.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esploggingagent.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/wslogging.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/daliplugin.xsd
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/configxml COMPONENT Runtime)
 ENDFOREACH ( iFILES )

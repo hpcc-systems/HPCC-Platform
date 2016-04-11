@@ -5338,7 +5338,10 @@ bool CWsDeployFileInfo::handleRows(IEspContext &context, IEspHandleRowsRequest &
       }
 
       if (pComponent)
+      {
+        xpath.append("[1]");
         pComponent->removeTree(pComponent->queryPropTree(xpath.str()));
+      }
     }
     
     resp.setCompName("");
