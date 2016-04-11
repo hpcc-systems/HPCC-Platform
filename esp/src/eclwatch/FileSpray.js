@@ -196,7 +196,7 @@ define([
             6: "finished",
             7: "monitoring",
             8: "aborting",
-            999: "deleted"
+            999: "not found"
         },
 
         isComplete: function (state) {
@@ -333,7 +333,7 @@ define([
                                     result: {
                                         Wuid: params.request.Wuid,
                                         State: 999,
-                                        StateMessage: "deleted"
+                                        StateMessage: "not found"
                                     }
                                 }
                             });
