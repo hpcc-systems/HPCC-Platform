@@ -123,7 +123,7 @@
             <xsl:with-param name="val" select="@recoverFromIncErrors"/>
           </xsl:call-template>
         </xsl:attribute>
-        <xsl:copy-of select="@snmpErrorMsgLevel | @msgLevel | @lightweightCoalesce | @keepStores"/>
+        <xsl:copy-of select="@snmpErrorMsgLevel | @msgLevel | @lightweightCoalesce | @keepStores | @backupLargeWarningThreshold | @backupSoftQueueLimit | @backupSoftQueueLimitDelay"/>
         <xsl:attribute name="lCIdlePeriod">
           <xsl:value-of select="@IdlePeriod"/>
         </xsl:attribute>
