@@ -2671,7 +2671,7 @@ IHqlExpression * SpillerInfo::createSpilledRead(IHqlExpression * spillReason)
         loseDistribution = false;
     }
 
-    dataset.setown(preserveTableInfo(dataset, original, loseDistribution, NULL));
+    dataset.setown(preserveTableInfo(dataset, original, loseDistribution, false));
     return wrapRowOwn(dataset.getClear());
 }
 
@@ -3149,6 +3149,7 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
         case no_grouped:
         case no_distributed:
         case no_preservemeta:
+        case no_unordered:
         case no_nofold:
         case no_nohoist:
         case no_nocombine:
@@ -3262,6 +3263,7 @@ bool ResourcerInfo::expandRatherThanSplit()
         case no_grouped:
         case no_distributed:
         case no_preservemeta:
+        case no_unordered:
         case no_compound_diskread:
         case no_compound_disknormalize:
         case no_compound_diskaggregate:
@@ -3585,6 +3587,7 @@ static bool isPotentialCompoundSteppedIndexRead(IHqlExpression * expr)
         case no_sorted:
         case no_preservemeta:
         case no_distributed:
+        case no_unordered:
         case no_grouped:
         case no_stepped:
         case no_section:
@@ -4555,8 +4558,12 @@ void EclResourceDependencyGatherer::addDependencyUse(IHqlExpression * search, Re
         {
             //Don't give a warning if get/set is within the same activity (e.g., within a local())
             if (&dependencySource.exprs.item(index) != expr)
-                //errors->reportWarning(HQLWRN_RecursiveDependendencies, HQLWRN_RecursiveDependendencies_Text, *codeGeneratorAtom, 0, 0, 0);
-                errors->reportError(HQLWRN_RecursiveDependendencies, HQLWRN_RecursiveDependendencies_Text, str(codeGeneratorId), 0, 0, 0);
+            {
+                StringBuffer ecl;
+                getExprECL(search, ecl);
+                VStringBuffer msg(HQLWRN_RecursiveDependendencies_Text, ecl.str());
+                errors->reportError(HQLWRN_RecursiveDependendencies, msg.str(), str(codeGeneratorId), 0, 0, 0);
+            }
         }
         else
         {
@@ -4800,7 +4807,7 @@ void EclResourcer::oldSpotUnbalancedSplitters(IHqlExpression * expr, unsigned wh
             switch (expr->getOperator())
             {
             case no_addfiles:
-                if (expr->hasAttribute(_ordered_Atom) || expr->hasAttribute(_orderedPull_Atom) || isGrouped(expr))
+                if (isOrdered(expr) || isGrouped(expr))
                     modify = true;
                 break;
             default:
@@ -5056,21 +5063,6 @@ void CSplitterLink::mergeSinkLink(CSplitterLink & sinkLink)
     sinkInfo->balancedLinks.replace(OLINK(*this), sinkPos);
 }
 
-bool CSplitterInfo::allInputsPulledIndependently(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_addfiles:
-        if (expr->hasAttribute(_ordered_Atom) || expr->hasAttribute(_orderedPull_Atom) || isGrouped(expr))
-            return false;
-        return true;
-    case no_parallel:
-        //MORE; This can probably return true - and generate fewer unbalanced splitters.
-        break;
-    }
-    return false;
-}
-
 bool CSplitterInfo::isSplitOrBranch(IHqlExpression * expr) const
 {
     unsigned num = getNumActivityArguments(expr);
@@ -5110,6 +5102,10 @@ void CSplitterInfo::gatherPotentialSplitters(IHqlExpression * expr, IHqlExpressi
     case no_null:
     case no_fail:
         //Any sources that never generate any rows are always fine as a splitter
+        return;
+    case no_attr:
+    case no_attr_expr:
+        //Anything that doesn't correspond to an activity should do nothing
         return;
     //MORE: A source that generates a single row, and subsequent rows are never read, is always fine.
     //      but if read as a dataset it could deadlock unless there was a 1 row read-ahead.
@@ -5317,6 +5313,24 @@ bool EclResourcer::removePassThrough(CSplitterInfo & connections, ResourcerInfo 
     return true;
 }
 
+bool EclResourcer::allInputsPulledIndependently(IHqlExpression * expr) const
+{
+    switch (expr->getOperator())
+    {
+    case no_addfiles:
+        if (isOrdered(expr) || isGrouped(expr))
+            return false;
+        if (!expr->hasAttribute(orderedAtom) && options.isChildQuery)
+            return false;
+        return true;
+    case no_parallel:
+        //MORE; This can probably return true - and generate fewer unbalanced splitters.
+        break;
+    }
+    return false;
+}
+
+
 void EclResourcer::removeDuplicateIndependentLinks(CSplitterInfo & connections, ResourcerInfo & info)
 {
     IHqlExpression * expr = info.original;
@@ -5331,7 +5345,7 @@ void EclResourcer::removeDuplicateIndependentLinks(CSplitterInfo & connections, 
                 IHqlExpression * sink = cur.queryOther(expr);
                 assertex(sink);
                 ResourcerInfo & sinkInfo = *queryResourceInfo(sink);
-                if (CSplitterInfo::allInputsPulledIndependently(sink))
+                if (allInputsPulledIndependently(sink))
                 {
                     unsigned numRemoved = 0;
                     for (unsigned j=info.balancedLinks.ordinality()-1; j > i; j--)
@@ -6200,7 +6214,7 @@ void EclResourcer::createResourced(ResourceGraphInfo * graph, HqlExprArray & tra
 #endif
 //  DBGLOG("Prepare to CreateResourced(%p)", graph);
     if (graph->startedGeneratingResourced)
-        throwError(HQLWRN_RecursiveDependendencies);
+        throwError1(HQLWRN_RecursiveDependendencies, "");
 
     graph->startedGeneratingResourced = true;
     ForEachItemIn(idxD, graph->dependsOn)
@@ -6685,7 +6699,7 @@ IHqlExpression * SpillActivityTransformer::createTransformed(IHqlExpression * ex
             else
                 ret.setown(createDataset(readOp, args));
             const bool loseDistribution = false;
-            return preserveTableInfo(ret, ds, loseDistribution, NULL);
+            return preserveTableInfo(ret, ds, loseDistribution, false);
         }
     }
     return NewHqlTransformer::createTransformed(expr);

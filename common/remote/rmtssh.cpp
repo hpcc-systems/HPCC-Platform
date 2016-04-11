@@ -520,7 +520,7 @@ public:
                 StringBuffer res(replytext.item(n));
                 while (res.length()&&(res.charAt(res.length()-1)<=' '))
                     res.setLength(res.length()-1);
-                if (res.length()==0)
+                if (res.length()==0 && !reply.item(n))
                     PROGLOG("%d: %s(%d): [OK]",n+1,slaves.item(n),reply.item(n));
                 else if (strchr(res.str(),'\n')==NULL) {
                     PROGLOG("%d: %s(%d): %s",n+1,slaves.item(n),reply.item(n),res.str());
@@ -545,12 +545,8 @@ public:
             while (res.length()&&(res.charAt(res.length()-1)<=' '))
                 res.setLength(res.length()-1);
             PROGLOG("%s result(%d):\n%s",useplink?"plink":"ssh",reply.item(0),res.str());
-            if (res.length()) {
-                int code = reply.item(0);
-                if (code == 0)
-                    code = -1;
-                throw MakeStringExceptionDirect(code, res.str());
-            }
+            if (reply.item(0))
+                throw MakeStringExceptionDirect(reply.item(0), res.str());
         }
     }
     void exec(

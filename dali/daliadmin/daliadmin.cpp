@@ -669,15 +669,26 @@ static void dfsGroup(const char *name, const char *outputFilename)
     writeGroup(group, name, outputFilename);
 }
 
-static void clusterGroup(const char *name, const char *outputFilename)
+static int clusterGroup(const char *name, const char *outputFilename)
 {
-    Owned<IGroup> group = getClusterNodeGroup(name, "ThorCluster");
-    if (!group)
+    StringBuffer errStr;
+    try
     {
-        ERRLOG("cannot find group %s",name);
-        return;
+        Owned<IGroup> group = getClusterNodeGroup(name, "ThorCluster");
+        if (group)
+        {
+            writeGroup(group, name, outputFilename);
+            return 0; // success
+        }
+        errStr.appendf("cannot find group %s", name);
     }
-    writeGroup(group, name, outputFilename);
+    catch (IException *e)
+    {
+        e->errorMessage(errStr);
+        e->Release();
+    }
+    ERRLOG("%s", errStr.str());
+    return 1;
 }
 
 //=============================================================================
@@ -768,7 +779,7 @@ class CIpTable: public SuperHashTableOf<CIpItem,IpAddress>
 public:
     ~CIpTable()
     {
-        releaseAll();
+        _releaseAll();
     }
 
     void onAdd(void *)
@@ -2384,16 +2395,12 @@ static const char * checkDash(const char * s)
         return "*";
     return s;
 }
-static void dumpStats(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText)
-{
-    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
-    if (!workunit)
-        return;
 
+static void dumpStats(IConstWorkUnit * workunit, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText)
+{
     StatisticsFilter filter(checkDash(creatorTypeText), checkDash(creator), checkDash(scopeTypeText), checkDash(scope), NULL, checkDash(kindText));
     Owned<IConstWUStatisticIterator> stats = &workunit->getStatistics(&filter);
-    printf("<Statistics>\n");
+    printf("<Statistics wuid=\"%s\">\n", workunit->queryWuid());
     ForEach(*stats)
     {
         IConstWUStatistic & cur = stats->query();
@@ -2445,6 +2452,35 @@ static void dumpStats(const char *wuid, const char * creatorTypeText, const char
         printf("<stat>%s</stat>\n", xml.str());
     }
     printf("</Statistics>\n");
+}
+
+static void dumpStats(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    const char * star = strchr(wuid, '*');
+    if (star)
+    {
+        WUSortField filters[2];
+        MemoryBuffer filterbuf;
+        filters[0] = WUSFwildwuid;
+        filterbuf.append(wuid);
+        filters[1] = WUSFterm;
+        Owned<IConstWorkUnitIterator> iter = factory->getWorkUnitsSorted((WUSortField) (WUSFwuid), filters, filterbuf.bufferBase(), 0, INT_MAX, NULL, NULL);
+
+        ForEach(*iter)
+        {
+            Owned<IConstWorkUnit> workunit = factory->openWorkUnit(iter->query().queryWuid());
+            if (workunit)
+                dumpStats(workunit, creatorTypeText, creator, scopeTypeText, scope, kindText);
+        }
+    }
+    else
+    {
+        Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
+        if (!workunit)
+            return;
+        dumpStats(workunit, creatorTypeText, creator, scopeTypeText, scope, kindText);
+    }
 }
 
 static void wuidCompress(const char *match, const char *type, bool compress)
@@ -2811,7 +2847,7 @@ int main(int argc, char* argv[])
                     }
                     else if (stricmp(cmd,"clusternodes")==0) {
                         CHECKPARAMS(1,2);
-                        clusterGroup(params.item(1),(np>1)?params.item(2):NULL);
+                        ret = clusterGroup(params.item(1),(np>1)?params.item(2):NULL);
                     }
                     else if (stricmp(cmd,"dfsmap")==0) {
                         CHECKPARAMS(1,1);

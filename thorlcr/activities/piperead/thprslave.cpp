@@ -156,8 +156,6 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CPipeSlaveBase(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
@@ -176,20 +174,20 @@ public:
 
 //---------------------------------------------------------------------------
 
-class CPipeReadSlaveActivity : public CPipeSlaveBase, public CThorDataLink
+class CPipeReadSlaveActivity : public CPipeSlaveBase
 {
+    typedef CPipeSlaveBase PARENT;
+
 protected:
     IHThorPipeReadArg *helper;
-    Owned<IRowInterfaces> inrowif;
+    Owned<IThorRowInterfaces> inrowif;
     bool needTransform;
 
     bool eof;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CPipeSlaveBase);
-
     CPipeReadSlaveActivity(CGraphElementBase *_container) 
-        : CPipeSlaveBase(_container), CThorDataLink(this)
+        : CPipeSlaveBase(_container)
     {
     }
     CATCH_NEXTROW()
@@ -235,10 +233,10 @@ public:
         flags = helper->getPipeFlags();
         needTransform = false;
 
-        IRowInterfaces *_inrowif;
+        IThorRowInterfaces *_inrowif;
         if (needTransform)
         {
-            inrowif.setown(createRowInterfaces(helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
+            inrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
             _inrowif = inrowif;
         }
         else
@@ -247,27 +245,27 @@ public:
         readTransformer.setown(createReadRowStream(_inrowif->queryRowAllocator(), _inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIteratorPath, flags));
         appendOutputLinked(this);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         eof = false;
         OwnedRoxieString pipeProgram(helper->getPipeProgram());
         openPipe(pipeProgram, "PIPEREAD");
-        dataLinkStart();
     }
-    virtual void stop()
+    virtual void stop() override
     {
         readTrailing();
         verifyPipe();
-        dataLinkStop();
+        PARENT::stop();
     }
     virtual void abort()
     {
         CPipeSlaveBase::abort();
         abortPipe();
     }
-    virtual bool isGrouped() { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return false; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.isSource = true;
@@ -305,16 +303,18 @@ public:
     }
 
 protected:
-    CPipeThroughSlaveActivity &     activity;
-    IThorDataLink *                 input;
-    Owned<IException>               exc;
+    CPipeThroughSlaveActivity &activity;
+    IEngineRowStream *inputStream;
+    Owned<IException> exc;
 };
 
 
 //---------------------------------------------------------------------------
 
-class CPipeThroughSlaveActivity : public CPipeSlaveBase, public CThorDataLink
+class CPipeThroughSlaveActivity : public CPipeSlaveBase
 {
+    typedef CPipeSlaveBase PARENT;
+
     friend class PipeWriterThread;
 
     IHThorPipeThroughArg *helper;
@@ -339,10 +339,8 @@ class CPipeThroughSlaveActivity : public CPipeSlaveBase, public CThorDataLink
         writeTransformer->writeTranslatedText(row, pipe);
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CPipeSlaveBase);
-
     CPipeThroughSlaveActivity(CGraphElementBase *_container)
-        : CPipeSlaveBase(_container), CThorDataLink(this)
+        : CPipeSlaveBase(_container)
     {
         pipeWriter = NULL;
         grouped = false;
@@ -351,7 +349,7 @@ public:
     {
         ::Release(pipeWriter);
     }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         helper = static_cast <IHThorPipeThroughArg *> (queryHelper());
         flags = helper->getPipeFlags();
@@ -364,15 +362,16 @@ public:
 
         appendOutputLinked(this);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         eof = anyThisGroup = inputExhausted = false;
         firstRead = true;
 
         if (!writeTransformer)
         {
-            writeTransformer.setown(createPipeWriteXformHelper(flags, helper->queryXmlOutput(), helper->queryCsvOutput(), ::queryRowInterfaces(inputs.item(0))->queryRowSerializer()));
+            writeTransformer.setown(createPipeWriteXformHelper(flags, helper->queryXmlOutput(), helper->queryCsvOutput(), ::queryRowInterfaces(queryInput(0))->queryRowSerializer()));
             writeTransformer->ready();
         }
         if (!recreate)
@@ -380,8 +379,6 @@ public:
             OwnedRoxieString pipeProgram(helper->getPipeProgram());
             openPipe(pipeProgram, "PIPETHROUGH");
         }
-        startInput(inputs.item(0));
-        dataLinkStart();
         pipeWriter = new PipeWriterThread(*this);
         pipeWriter->start();
     }
@@ -451,20 +448,20 @@ public:
         }
         return NULL;
     }
-    virtual void stop()
+    virtual void stop() override
     {
         abortSoon = true;
         readTrailing();
         if (recreate)
             pipeVerified.signal();
         Owned<IException> wrexc = pipeWriter->joinExc();
-        stopInput(inputs.item(0));
+        PARENT::stop();
         verifyPipe();
-        dataLinkStop();
         if (wrexc)
             throw wrexc.getClear();
         if (retcode!=0 && !(flags & TPFnofail))
             throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d", retcode);
+        PARENT::stop();
     }
     virtual void kill()
     {
@@ -488,8 +485,8 @@ public:
         pipeOpened.signal();
         abortPipe();
     }
-    virtual bool isGrouped() { return grouped; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return grouped; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.isSource = false;
@@ -502,7 +499,7 @@ public:
 PipeWriterThread::PipeWriterThread(CPipeThroughSlaveActivity & _activity)
    : Thread("PipeWriterThread"), activity(_activity)
 {
-    input = activity.inputs.item(0);
+    inputStream = activity.inputStream;
 }
 
 int PipeWriterThread::run()
@@ -518,7 +515,7 @@ int PipeWriterThread::run()
         {
             if (eos||activity.abortSoon)
                 break;
-            OwnedConstThorRow row = input->ungroupedNextRow();
+            OwnedConstThorRow row = inputStream->ungroupedNextRow();
             if (!row.get())
                 break;
             if (activity.recreate)

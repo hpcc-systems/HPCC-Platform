@@ -24,10 +24,10 @@
 
 project(cassandraembed)
 
-if(CASSANDRAEMBED)
+if(USE_CASSANDRA)
     # There is not yet a standard package for cassandra cpp client, and only very modern distros have libuv-dev
     # When there is (and the distros catch up) we may want to add them as dependencies here
-    ADD_PLUGIN(cassandraembed PACKAGES OPTION MAKE_CASSANDRAEMBED)
+    ADD_PLUGIN(cassandraembed)
     if(MAKE_CASSANDRAEMBED)
 
         # until then, we build the required libraries from source
@@ -105,10 +105,20 @@ if(CASSANDRAEMBED)
             endif()
         endif()
 
+        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/cassandra\")")
+
+        # Note we install to both plugins dir and libs dir - the latter is to make life easier when using it as a dali workunit plugin.
+
         install(
             TARGETS cassandraembed
             DESTINATION plugins
             COMPONENT Runtime )
+
+        install(
+            TARGETS cassandraembed
+            DESTINATION ${LIB_DIR}
+            COMPONENT Runtime )
+
         # until such time as the cassandra cpp driver and libuv are available as standard in all distros we want to support,
         # include them in our rpm
         # Note that the cassandra driver CMake file already includes the relevant install commands

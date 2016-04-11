@@ -3144,8 +3144,11 @@ void FileSprayer::updateTargetProperties()
 
             // and simple (top level) elements
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");
-            ForEach(*iter) {
-                curProps.addPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
+            ForEach(*iter)
+            {
+                const char *aname = iter->query().queryName();
+                if (stricmp(aname, "Protect") != 0)
+                    curProps.addPropTree(aname, createPTreeFromIPT(&iter->query()));
             }
         }
     }

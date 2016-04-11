@@ -26,7 +26,7 @@
 project(javaembed)
 
 if(JAVAEMBED)
-    ADD_PLUGIN(javaembed PACKAGES JNI OPTION MAKE_JAVAEMBED)
+    ADD_PLUGIN(javaembed PACKAGES JNI)
     if(MAKE_JAVAEMBED)
         set(
             SRCS

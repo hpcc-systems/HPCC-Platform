@@ -1357,7 +1357,7 @@ unsigned HqlCppTranslator::getConsistentUID(IHqlExpression * ptr)
 }
 
 
-unsigned HqlCppTranslator::cppIndexNextActivity(bool isChildActivity)
+unsigned HqlCppTranslator::beginFunctionGetCppIndex(unsigned activityId, bool isChildActivity)
 {
     activitiesThisCpp++;
     if (activitiesThisCpp > options.activitiesPerCpp)
@@ -1368,7 +1368,15 @@ unsigned HqlCppTranslator::cppIndexNextActivity(bool isChildActivity)
         {
             curCppFile++;
             activitiesThisCpp = 1;
+            code->cppInfo.append(* new CppFileInfo(activityId));
         }
+    }
+    CppFileInfo & curCpp = code->cppInfo.tos();
+    if (activityId)
+    {
+        if (curCpp.minActivityId == 0)
+            curCpp.minActivityId = activityId;
+        curCpp.maxActivityId = activityId;
     }
     return curCppFile;
 }
@@ -1822,9 +1830,9 @@ void ActivityInstance::addAttributeInt(const char * name, __int64 value)
     addGraphAttributeInt(graphNode, name, value);
 }
 
-void ActivityInstance::addAttributeBool(const char * name, bool value)
+void ActivityInstance::addAttributeBool(const char * name, bool value, bool alwaysAdd)
 {
-    addGraphAttributeBool(graphNode, name, value);
+    addGraphAttributeBool(graphNode, name, value, alwaysAdd);
 }
 
 void ActivityInstance::addAttribute(const char * name, IHqlExpression * expr)
@@ -2041,6 +2049,12 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
         addAttributeBool("coLocal", true);
     if (isNoAccess)
         addAttributeBool("noAccess", true);
+    if (dataset->hasAttribute(parallelAtom))
+        addAttributeInt("parallel", getIntValue(queryAttributeChild(dataset, parallelAtom, 0), -1));
+    if (hasOrderedAttribute(dataset))
+        addAttributeBool("ordered", isOrdered(dataset), true);
+    if (dataset->hasAttribute(algorithmAtom))
+        addAttribute("algorithm", queryAttributeChild(dataset, algorithmAtom, 0));
 
     if (!options.obfuscateOutput)
     {
@@ -2136,6 +2150,7 @@ void ActivityInstance::moveDefinitionToHeader()
         //remove this class from the c++ file and include it in the header file instead
         includedInHeader = true;
         classGroupStmt->setIncluded(false);
+        addAttributeBool("helperinheader", true);
 
         BuildCtx headerctx(*translator.code, parentHelpersAtom);
         headerctx.addAlias(classStmt);
@@ -2157,7 +2172,7 @@ void ActivityInstance::buildPrefix()
 {
     StringBuffer s;
 
-    sourceFileSequence.setown(getSizetConstant(translator.cppIndexNextActivity(isChildActivity())));
+    sourceFileSequence.setown(getSizetConstant(translator.beginFunctionGetCppIndex(activityId, isChildActivity())));
     if (containerActivity && colocalMember)
         containerActivity->noteChildActivityLocation(sourceFileSequence);
 
@@ -6594,6 +6609,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             }
             case no_sorted:
             case no_preservemeta:
+            case no_unordered:
             case no_grouped:
             case no_nofold:
             case no_nohoist:
@@ -8181,12 +8197,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCloned(BuildCtx & ctx, IHqlExp
 //---------------------------------------------------------------------------
 // no_addfiles
 
-static void unwindAddFiles(HqlExprArray & args, IHqlExpression * expr, bool isOrdered, bool isOrderedPull)
+static void unwindAddFiles(HqlExprArray & args, IHqlExpression * expr, bool reqIsOrdered, bool isOrderedPull)
 {
-    if ((expr->getOperator() == no_addfiles) && (expr->hasAttribute(_ordered_Atom) == isOrdered) && (expr->hasAttribute(_orderedPull_Atom) == isOrderedPull))
+    if ((expr->getOperator() == no_addfiles) && (isOrdered(expr) == reqIsOrdered) && (expr->hasAttribute(pullAtom) == isOrderedPull))
     {
-        unwindAddFiles(args, expr->queryChild(0), isOrdered, isOrderedPull);
-        unwindAddFiles(args, expr->queryChild(1), isOrdered, isOrderedPull);
+        unwindAddFiles(args, expr->queryChild(0), reqIsOrdered, isOrderedPull);
+        unwindAddFiles(args, expr->queryChild(1), reqIsOrdered, isOrderedPull);
     }
     else
         args.append(*LINK(expr));
@@ -8216,8 +8232,8 @@ static IHqlExpression * queryRootConcatActivity(IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityConcat(BuildCtx & ctx, IHqlExpression * expr)
 {
     HqlExprArray inExprs;
-    bool ordered = expr->hasAttribute(_ordered_Atom);
-    bool orderedPull = expr->hasAttribute(_orderedPull_Atom);
+    bool ordered = isOrdered(expr);
+    bool orderedPull = expr->hasAttribute(pullAtom);
     unwindAddFiles(inExprs, expr, ordered, orderedPull);
 
     //If all coming from disk, probably better to pull them in order.
@@ -8263,6 +8279,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityConcat(BuildCtx & ctx, IHqlExp
     }
 
     if (orderedPull || (allFromDisk && !targetRoxie()))
+        ordered = true;
+    if (!expr->hasAttribute(orderedAtom) && insideChildQuery(ctx))
         ordered = true;
 
     bool useImplementationClass = options.minimizeActivityClasses && targetRoxie();
@@ -8596,34 +8614,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
 
     if (parallel)
     {
-        IHqlExpression * arg0 = parallel->queryChild(0);
-        IHqlExpression * arg1 = parallel->queryChild(1);
-
-        LinkedHqlExpr parallelList;
-        LinkedHqlExpr numThreads;
-        if (arg0)
-        {
-            if (arg1)
-            {
-                parallelList.set(arg0);
-                numThreads.set(arg1);
-            }
-            else if (arg0->isList())
-                parallelList.set(arg0);
-            else
-                numThreads.set(arg0);
-        }
+        IHqlExpression * numThreads = parallel->queryChild(0);
         if (numThreads)
             doBuildUnsignedFunction(instance->startctx, "defaultParallelIterations", numThreads);
-
-        if (parallelList)
-        {
-            Owned<ITypeInfo> setType = makeSetType(LINK(unsignedType));
-            BuildCtx funcctx(instance->startctx);
-            funcctx.addQuotedCompoundLiteral("virtual void numParallelIterations(size32_t & __lenResult, void * & __result)");
-            funcctx.addQuotedLiteral("bool __isAllResult;");
-            doBuildFunctionReturn(funcctx, setType, parallelList);
-        }
     }
 
     StringBuffer flags;
@@ -11307,8 +11300,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDictionaryWorkunitWrite(BuildC
     IHqlExpression * name = queryResultName(expr);
     int sequence = (int)getIntValue(seq, ResultSequenceInternal);
 
-    assertex(dictionary->getOperator() == no_createdictionary);
-    IHqlExpression * dataset = dictionary->queryChild(0);
+    OwnedHqlExpr dataset;
+    switch (dictionary->getOperator())
+    {
+    case no_null:
+        dataset.setown(createNullDataset(dictionary));
+        break;
+    case no_createdictionary:
+        dataset.set(dictionary->queryChild(0));
+        break;
+    default:
+        throwUnexpectedOp(dictionary->getOperator());
+    }
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
 
@@ -12198,7 +12201,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (isLookupJoin && isManyLookup) flags.append("|JFmanylookup");
     if (expr->hasAttribute(onFailAtom))
         flags.append("|JFonfail");
-    if (expr->hasAttribute(unorderedAtom))
+    if (!isOrdered(expr))
         flags.append("|JFreorderable");
     if (transformReturnsSide(expr, no_left, 0))
         flags.append("|JFtransformmatchesleft");
@@ -13646,9 +13649,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
         {
             doBuildAggregateFirstFunc(instance->startctx, expr);
             doBuildAggregateNextFunc(instance->startctx, expr);
-
-            if (targetThor() && !isGroupedActivity(expr) && !expr->hasAttribute(localAtom))
-                doBuildAggregateMergeFunc(instance->startctx, expr, requiresOrderedMerge);
+            doBuildAggregateMergeFunc(instance->startctx, expr, requiresOrderedMerge);
         }
     }
 
@@ -16585,6 +16586,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
             flags.append("|TAFunstable");
         }
     }
+    if (!method)
+        method = queryAttributeChild(expr, algorithmAtom, 0);
 
     if (spill)
         flags.append("|TAFspill");
@@ -18905,6 +18908,7 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_thor:
     case no_apply:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_limit:

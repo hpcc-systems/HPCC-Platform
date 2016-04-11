@@ -2,26 +2,18 @@ define([
   "dojo/_base/declare",
   "dojo/_base/lang",
   "dojo/_base/array",
+  "dojo/_base/Deferred",
 
   "./DojoD3",
-  "./Mapping",
-  "./map/us-counties",
-
-  "d3",
-  "topojson",
-
-  "dojo/text!./templates/DojoD3Choropleth.css"
-
-], function (declare, lang, arrayUtil,
-    DojoD3, Mapping, usCounties,
-    d3, topojson,
-    css) {
+  "./Mapping"
+], function (declare, lang, arrayUtil, Deferred,
+    DojoD3, Mapping) {
     return declare([Mapping, DojoD3], {
         mapping: {
-            choropeth: {
+            choropleth: {
                 display: "Choropleth Data",
                 fields: {
-                    county: "County ID",
+                    label: "County ID",
                     value: "Value"
                 }
             }
@@ -37,80 +29,96 @@ define([
                 this.renderTo(target);
         },
 
-        resize: function (args) {
-            //  No resize (yet - its too slow)
-            this.calcGeom();
-            d3.select(this.target.domDivID).select("svg")
-                .attr("width", this.target.width)
-                .attr("height", this.target.height)
-            ;
+        constructor: function (mappings, target) {
+            if (mappings)
+                this.setFieldMappings(mappings);
+
+            if (target)
+                this.renderTo(target);
         },
 
         renderTo: function (_target) {
-            _target = lang.mixin({
-                css: css
-            }, _target);
-            this.inherited(arguments);
-
-            this.SvgG
-                .style("fill", "none")
-            ;
-            var path = d3.geo.path();
-            var p = this.SvgG.selectAll("path").data(topojson.feature(usCounties.topology, usCounties.topology.objects.counties).features);
+            var deferred = new Deferred();
             var context = this;
-            p.enter().append("path")
-                .attr("class", "counties")
-                .attr("d", path)
-                .on("click", lang.hitch(this, function (d) {
-                    var evt = {};
-                    evt[this.getFieldMapping("county")] = d.id;
-                    this.emit("click", evt);
-                }))
-                .append("title").text(lang.hitch(this, function (d) { return usCounties.countyNames[d.id]; }))
-            ;
-            p.exit().remove();
-            this.Svg.append("path").datum(topojson.mesh(usCounties.topology, usCounties.topology.objects.states, function (a, b) { return a !== b; }))
-                .attr("class", "states")
-                .attr("d", path)
-            ;
-            this.Svg.append("path").datum(topojson.feature(usCounties.topology, usCounties.topology.objects.land))
-                .attr("class", "usa")
-                .attr("d", path)
-            ;
+            switch (this._chartType) {
+                case "COUNTRY":
+                    require(["src/map/ChoroplethCountries"], function (ChoroplethCountries) {
+                        context.chart = new ChoroplethCountries()
+                            .target(_target.domNodeID)
+                        ;
+                        deferred.resolve(context.chart);
+                    });
+                    break;
+                case "STATE":
+                    require(["src/map/ChoroplethStates"], function (ChoroplethStates) {
+                        context.chart = new ChoroplethStates()
+                            .target(_target.domNodeID)
+                        ;
+                        deferred.resolve(context.chart);
+                    });
+                    break;
+                case "COUNTY":
+                    require(["src/map/ChoroplethCounties"], function (ChoroplethCounties) {
+                        context.chart = new ChoroplethCounties()
+                            .target(_target.domNodeID)
+                        ;
+                        deferred.resolve(context.chart);
+                    });
+                    break;
+                default:
+                    console.log("Invalid visualization:  " + this._chartType)
+                    deferred.resolve(null);
+            }
+            return deferred.promise;
         },
 
         display: function (data) {
             if (data)
                 this.setData(data);
 
-            var maxVal = this._prepData();
-            var quantize = d3.scale.quantize()
-                            .domain([0, maxVal])
-                            .range(d3.range(255).map(lang.hitch(this, function (i) {
-                                var negRed = 255 - i;
-                                return "rgb(255, " + negRed + ", " + negRed + ")";
-                            })))
+            var data = this.getMappedData();
+
+            var chartColumns = [];
+            var chartData = arrayUtil.map(data, function (d, idx) {
+                var retVal = [];
+                for (var key in d) {
+                    if (idx === 0) {
+                        chartColumns.push(key);
+                    }
+                    retVal.push(d[key]);
+                }
+                return retVal;
+            });
+            this.chart
+                .columns(chartColumns)
+                .data(chartData)
+                .render()
             ;
-            this.SvgG.selectAll("path")
-                .style("fill", lang.hitch(this, function (d) { return this.mappedData.get(d.id) == null ? "lightgrey" : quantize(this.mappedData.get(d.id)); }))
-                .select("title")
-                .text(lang.hitch(this, function (d) {
-                    return usCounties.countyNames[d.id] + " (" + this.mappedData.get(d.id) + ")";
-                }))
-            ;
+            return;
         },
 
-        _prepData: function () {
-            this.data = this.getMappedData();
-            var maxVal = 0;
-            this.mappedData = d3.map();
-            arrayUtil.forEach(this.data, lang.hitch(this, function (item, idx) {
-                if (+item.value > maxVal) {
-                    maxVal = +item.value;
+        resize: function () {
+            var _debounce = function (fn, timeout) {
+                var timeoutID = -1;
+                return function () {
+                    if (timeoutID > -1) {
+                        window.clearTimeout(timeoutID);
+                    }
+                    timeoutID = window.setTimeout(fn, timeout);
                 }
-                this.mappedData.set(item.county, +item.value);
-            }));
-            return maxVal;
+            };
+
+            var _debounced_draw = _debounce(lang.hitch(this, function () {
+                this.chart
+                    .resize()
+                    .render()
+                ;
+            }), 125);
+
+            _debounced_draw();
+        },
+
+        update: function (data) {
         }
     });
 });

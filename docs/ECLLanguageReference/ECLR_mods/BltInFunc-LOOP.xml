@@ -13,16 +13,12 @@
   role="bold"> [, PARALLEL<indexterm>
       <primary>PARALLEL</primary>
     </indexterm>( </emphasis><emphasis>iterations </emphasis><emphasis
-  role="bold">| </emphasis><emphasis>iterationlist</emphasis><emphasis
-  role="bold"> [</emphasis><emphasis>, default </emphasis><emphasis
-  role="bold">] ) ] )</emphasis></para>
+  role="bold"> ) ] )</emphasis></para>
 
   <para><emphasis role="bold">LOOP(</emphasis><emphasis>
   dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopcount,
   loopfilter, loopbody </emphasis><emphasis role="bold"> [, PARALLEL(
-  </emphasis><emphasis>iterations </emphasis><emphasis role="bold">|
-  </emphasis><emphasis>iterationlist</emphasis><emphasis role="bold">
-  [</emphasis><emphasis>, default </emphasis><emphasis role="bold">] ) ]
+  </emphasis><emphasis>iterations </emphasis><emphasis role="bold">] ) ]
   )</emphasis></para>
 
   <para><emphasis role="bold">LOOP(</emphasis><emphasis>
@@ -86,24 +82,6 @@
         </row>
 
         <row>
-          <entry><emphasis>iterationlist</emphasis></entry>
-
-          <entry>A set of integers (contained in square brackets<indexterm>
-              <primary>square brackets</primary>
-            </indexterm>) specifying the number of parallel iterations for
-          each loop. The first set element specifies the parallel iterations
-          for the first loop, the second for the second, ...</entry>
-        </row>
-
-        <row>
-          <entry><emphasis>default</emphasis></entry>
-
-          <entry>Optional. The number of parallel iterations to execute once
-          all elements in the <emphasis>iterationlist</emphasis> have been
-          used.</entry>
-        </row>
-
-        <row>
           <entry><emphasis>loopfilter<indexterm>
               <primary>loopfilter</primary>
             </indexterm></emphasis></entry>
@@ -152,29 +130,8 @@
   <sect2 id="The_PARALLEL_Option">
     <title>The PARALLEL Option</title>
 
-    <para>The PARALLEL option is offered to solve the following type of
-    problem: When implementing a text search (A and B and C) or (D and E),
-    where each element in the search is evaluated on an iteration of a LOOP(),
-    you want to ensure that the execution is broken in the correct places. If
-    it were split every 2 iterations, the iterations would produce:</para>
-
-    <para>(A and B)</para>
-
-    <para>(A and B and C), (D)</para>
-
-    <para>(A and B and C) or (D and E)</para>
-
-    <para>The second iteration would potentially generate a very large number
-    of temporary records. To prevent this, the number of iterations at each
-    step can be controlled. For this specific case you would probably use
-    PARALLEL([3,3]). For more complicated search criteria the numbers would be
-    different.</para>
-
-    <para>If a very large number is provided as the
-    <emphasis>iterations</emphasis> or <emphasis>default </emphasis>value,
-    then the all the iterations will execute in parallel. Doing this will
-    likely significantly reduce the number of temporary rows stored in the
-    system, but may potentially use a large amount of resources.</para>
+    <para>The PARALLEL option allows multiple loop iterations to be executed in
+    parallel.</para>
 
     <para>There is a restriction: ROWS(LEFT) cannot be directly used in a
     sub-query of the <emphasis>loopbody</emphasis>.</para>

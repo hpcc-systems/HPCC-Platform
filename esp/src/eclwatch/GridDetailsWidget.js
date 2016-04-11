@@ -28,6 +28,7 @@ define([
     "dijit/PopupMenuItem",
 
     "hpcc/_TabContainerWidget",
+    "hpcc/Utility",
 
     "dojo/text!../templates/GridDetailsWidget.html",
 
@@ -40,7 +41,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, Memory, Observable,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
-                _TabContainerWidget,
+                _TabContainerWidget, Utility,
                 template) {
     return declare("GridDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -55,6 +56,10 @@ define([
         gridTab: null,
         grid: null,
         contextMenu: null,
+
+        constructor: function (args) {
+            this.alphanumSort = {};
+        },
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -112,6 +117,13 @@ define([
                 setData: function (data) {
                     var retVal = this.inherited(arguments);
                     context.setGridNoDataMessage(context.i18n.noDataMessage);
+                    return retVal;
+                },
+                query: function (query, options) {
+                    var retVal = this.inherited(arguments);
+                    if (lang.exists("sort", options) && options.sort.length && context.alphanumSort[options.sort[0].attribute]) {
+                        Utility.alphanumSort(retVal, options.sort[0].attribute, options.sort[0].descending)
+                    }
                     return retVal;
                 }
             });

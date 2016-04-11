@@ -30,10 +30,11 @@ define([
 
     "hpcc/WsTopology",
     "hpcc/WsWorkunits",
-    "hpcc/FileSpray"
+    "hpcc/FileSpray",
+    "hpcc/ws_access"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory, on,
     registry,
-    WsTopology, WsWorkunits, FileSpray) {
+    WsTopology, WsWorkunits, FileSpray, WsAccess) {
 
     return {
         i18n: nlsHPCC,
@@ -74,6 +75,10 @@ define([
                 this.loadSprayTargets();
             } else if (params.DropZones === true) {
                 this.loadDropZones();
+            } else if (params.Users === true) {
+                this.loadUsers();
+            } else if (params.UserGroups === true) {
+                this.loadUserGroups();
             } else if (params.DropZoneFolders === true) {
                 this.defaultValue = ".";
                 this.set("value", ".");
@@ -131,6 +136,42 @@ define([
             }
             this.set("value", this.defaultValue);
             this.loading = false;
+        },
+
+        loadUserGroups: function () {
+            var context = this;
+            WsAccess.FilePermission({
+                load: function (response) {
+                    if (lang.exists("FilePermissionResponse.Groups.Group", response)) {
+                        var targetData = response.FilePermissionResponse.Groups.Group;
+                        for (var i = 0; i < targetData.length; ++i) {
+                            context.options.push({
+                                label: targetData[i].name,
+                                value: targetData[i].name
+                            });
+                        }
+                        context._postLoad();
+                    }
+                }
+            });
+        },
+
+        loadUsers: function () {
+            var context = this;
+            WsAccess.FilePermission({
+                load: function (response) {
+                    if (lang.exists("FilePermissionResponse.Users.User", response)) {
+                        var targetData = response.FilePermissionResponse.Users.User;
+                        for (var i = 0; i < targetData.length; ++i) {
+                            context.options.push({
+                                label: targetData[i].username,
+                                value: targetData[i].username
+                            });
+                        }
+                        context._postLoad();
+                    }
+                }
+            });
         },
 
         loadDropZones: function () {

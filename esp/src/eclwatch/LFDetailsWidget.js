@@ -220,6 +220,7 @@ define([
             this.desprayTargetPath.init({
                 DropZoneFolders: true
             });
+            this.logicalFile.refresh();
         },
 
         initTab: function() {
@@ -294,7 +295,7 @@ define([
                     switch (domElem.tagName) {
                         case "SPAN":
                         case "DIV":
-                            domAttr.set(this.id + name, "innerHTML", newValue);
+                            dom.byId(this.id + name).textContent = newValue;
                             break;
                         case "INPUT":
                         case "TEXTAREA":
@@ -324,6 +325,8 @@ define([
                 this.updateInput("DespraySourceName", oldValue, newValue);
                 this.updateInput("CopySourceName", oldValue, newValue);
                 this.updateInput("CopyTargetName", oldValue, newValue);
+            } else if (name === "IsProtected") {
+                dom.byId(this.id + "ProtectedImage").src = this.logicalFile.getProtectedImage();
             } else if (name === "Ecl" && newValue) {
             } else if (name === "StateID") {
                 this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());

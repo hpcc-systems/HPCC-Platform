@@ -131,8 +131,6 @@ int CSoapService::processHeader(CHeader* header, IEspContext* ctx)
 
 int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
 {
-    ESP_TIME_SECTION("CSoapService::processRequest()");
-
     CSoapRequest& request = *(dynamic_cast<CSoapRequest*>(&req));
     CSoapResponse& response = *(dynamic_cast<CSoapResponse*>(&resp));
 
@@ -228,6 +226,8 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
 
     DBGLOG("SOAP method <%s> from %s@%s.", rpc_call->get_name(),  (userId&&*userId)?userId:"unknown",
         (peerStr.length()>0)?peerStr.str():"unknown");
+    ctx->setHTTPMethod("SOAP");
+    ctx->setServiceMethod(rpc_call->get_name());
 
     // call the rpc and set the response
     if(m_soapbinding != NULL)

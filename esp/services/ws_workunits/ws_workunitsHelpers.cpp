@@ -1673,6 +1673,11 @@ void WsWuInfo::getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEsp
                 if (getFileSize(name.str(), Ip.str(), fileSize))
                     h->setFileSize(fileSize);
             }
+            if (version >= 1.58)
+            {
+                h->setMinActivityId(cur.getMinActivityId());
+                h->setMaxActivityId(cur.getMaxActivityId());
+            }
         }
         helpers.append(*h.getLink());
     }
@@ -2867,6 +2872,7 @@ int WUSchedule::run()
 {
     try
     {
+        PROGLOG("ECLWorkunit WUSchedule Thread started.");
         while(!stopping)
         {
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();

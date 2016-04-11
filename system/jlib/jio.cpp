@@ -1140,13 +1140,27 @@ public:
 
     ~CBufferedIIOStream()
     {
-        try { flush(); }
-        catch (IException *)
-        {
-            delete [] buffer;
-            throw;
-        }
         delete [] buffer;
+    }
+
+    virtual void beforeDispose()
+    {
+        try
+        {
+            // NOTE - flush may throw an exception and thus cannot be done in the destructor.
+            flush();
+        }
+        catch (IException *E)
+        {
+            EXCLOG(E, "ERROR - Exception in CBufferedIIOStream::flush ignored");
+            E->Release();
+            assert(!"ERROR - Exception in CBufferedIIOStream::flush ignored");
+        }
+        catch (...)
+        {
+            DBGLOG("ERROR - Unknown exception in CBufferedIIOStream::flush ignored");
+            assert(!"ERROR - Unknown exception in CBufferedIIOStream::flush ignored");
+        }
     }
 
     virtual bool fillBuffer()
@@ -1319,7 +1333,15 @@ extern jlib_decl IReadSeq *createChainedReadSeq(IReadSeqAllocator *irsa)
 
 IRowStream *createConcatRowStream(unsigned numstreams,IRowStream** streams,bool grouped)
 {
-    return new CConcatRowStream(numstreams,streams,grouped);
+    switch(numstreams)
+    {
+        case 0:
+            return createNullRowStream();
+        case 1:
+            return LINK(streams[0]);
+        default:
+            return new CConcatRowStream(numstreams,streams,grouped);
+    }
 }
 
 

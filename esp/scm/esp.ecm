@@ -60,6 +60,10 @@ typedef enum ESPSerializationFormat_
 #define ESPCTX_NO_ANNOTATION    0x00001000
 #define ESPCTX_ALL_ANNOTATION   0x00010000
 
+class CTxSummary;
+interface IEspSecureContext;
+class CumulativeTimer;
+
 interface IEspContext : extends IInterface
 {
     virtual void setUserID(const char * userid) = 0;
@@ -109,7 +113,6 @@ interface IEspContext : extends IInterface
 
     virtual void setServiceName(const char *name)=0;
     virtual const char * queryServiceName(const char *name)=0;
-    virtual void setCreationTime()=0;
     virtual const unsigned queryCreationTime()=0;
     virtual void setProcessingTime()=0;
     virtual const unsigned queryProcessingTime()=0;
@@ -144,16 +147,22 @@ interface IEspContext : extends IInterface
     virtual StringArray& queryCustomHeaders() = 0;
     virtual void addCustomerHeader(const char* name, const char* val) = 0;
 
+    virtual CTxSummary* queryTxSummary()=0;
     virtual void addTraceSummaryValue(const char *name, const char *value)=0;
     virtual void addTraceSummaryValue(const char *name, __int64 value)=0;
     virtual void addTraceSummaryTimeStamp(const char *name)=0;
-    virtual void flushTraceSummary()=0;
+    virtual void addTraceSummaryCumulativeTime(const char* name, unsigned __int64 time)=0;
+    virtual CumulativeTimer* queryTraceSummaryCumulativeTimer(const char* name)=0;
 
     virtual ESPSerializationFormat getResponseFormat()=0;
     virtual void setResponseFormat(ESPSerializationFormat fmt)=0;
 
     virtual void setAcceptLanguage(const char * acceptLanguage) = 0;
     virtual StringBuffer& getAcceptLanguage(StringBuffer& acceptLanguage) = 0;
+
+    virtual IEspSecureContext* querySecureContext() = 0;
+    virtual void setHTTPMethod(const char *method) = 0;
+    virtual void setServiceMethod(const char *method) = 0;
 };
 
 

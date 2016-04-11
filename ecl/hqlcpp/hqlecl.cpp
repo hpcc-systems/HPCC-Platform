@@ -87,13 +87,13 @@ public:
     virtual void setSaveGeneratedFiles(bool value) { deleteGenerated = !value; }
 
 protected:
-    void addCppName(const char * filename);
+    void addCppName(const char * filename, unsigned minActivity, unsigned maxActivity);
     void addLibrariesToCompiler();
     void addWorkUnitAsResource();
     void calculateHash(IHqlExpression * expr);
     bool doCompile(ICppCompiler * compiler);
     void doExpand(HqlCppTranslator & translator);
-    void expandCode(const char * templateName, const char * ext, IHqlCppInstance * code, bool multiFile, unsigned pass, CompilerType compiler);
+    void expandCode(StringBuffer & filename, const char * templateName, bool isHeader, IHqlCppInstance * code, bool multiFile, unsigned pass, CompilerType compiler);
     void flushResources();
     bool generateCode(HqlQueryContext & query);
     bool generateFullFieldUsageStatistics(HqlCppTranslator & translator, IHqlExpression * query);
@@ -129,12 +129,12 @@ protected:
 
 static void processMetaCommands(HqlCppTranslator & translator, IWorkUnit * wu, HqlQueryContext & query, ICodegenContextCallback *ctxCallback);
 
-void HqlDllGenerator::addCppName(const char * filename)
+void HqlDllGenerator::addCppName(const char * filename, unsigned minActivity, unsigned maxActivity)
 {
     if (wu)
     {
         Owned<IWUQuery> query = wu->updateQuery();
-        associateLocalFile(query, FileTypeCpp, filename, pathTail(filename), 0);
+        associateLocalFile(query, FileTypeCpp, filename, pathTail(filename), 0, minActivity, maxActivity);
     }
 }
 
@@ -179,10 +179,16 @@ void HqlDllGenerator::addLibrariesToCompiler()
 }
 
 
-void HqlDllGenerator::expandCode(const char * templateName, const char * ext, IHqlCppInstance * code, bool multiFile, unsigned pass, CompilerType compiler)
+void HqlDllGenerator::expandCode(StringBuffer & filename, const char * templateName, bool isHeader, IHqlCppInstance * code, bool multiFile, unsigned pass, CompilerType compiler)
 {
+    filename.clear().append(wuname);
+    if (pass != 0)
+        filename.append("_").append(pass);
+    const char * ext = isHeader ? ".hpp" : ".cpp";
+    filename.append(ext);
+
     StringBuffer fullname;
-    addDirectoryPrefix(fullname, targetDir).append(wuname).append(ext);
+    addDirectoryPrefix(fullname, targetDir).append(filename);
 
     Owned<IFile> out = createIFile(fullname.str());
     Owned<ITemplateExpander> expander = createTemplateExpander(out, templateName, template_dir);
@@ -206,7 +212,11 @@ void HqlDllGenerator::expandCode(const char * templateName, const char * ext, IH
     totalGeneratedSize += out->size();
 
     if (!deleteGenerated)
-        addCppName(fullname);
+    {
+        unsigned minActivity, maxActivity;
+        code->getActivityRange(pass, minActivity, maxActivity);
+        addCppName(fullname, minActivity, maxActivity);
+    }
 }
 
 
@@ -499,21 +509,17 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
     cycle_t startCycles = get_cycles_now();
     unsigned numExtraFiles = translator.getNumExtraCppFiles();
     bool isMultiFile = translator.spanMultipleCppFiles() && (numExtraFiles != 0);
-    expandCode(MAIN_MODULE_TEMPLATE, ".cpp", code, isMultiFile, 0, translator.queryOptions().targetCompiler);
+    CompilerType targetCompiler = translator.queryOptions().targetCompiler;
+
     StringBuffer fullname;
-    fullname.append(wuname).append(".cpp");
+    expandCode(fullname, MAIN_MODULE_TEMPLATE, false, code, isMultiFile, 0, targetCompiler);
     sourceFiles.append(fullname);
     if (isMultiFile)
     {
-        expandCode(HEADER_TEMPLATE, ".hpp", code, true, 0, translator.queryOptions().targetCompiler);
+        expandCode(fullname, HEADER_TEMPLATE, true, code, true, 0, targetCompiler);
         for (unsigned i= 0; i < translator.getNumExtraCppFiles(); i++)
         {
-            StringBuffer fullext;
-            fullext.append("_").append(i+1).append(".cpp");
-            expandCode(CHILD_MODULE_TEMPLATE, fullext, code, true, i+1, translator.queryOptions().targetCompiler);
-
-            StringBuffer fullname;
-            fullname.append(wuname).append("_").append(i+1).append(".cpp");
+            expandCode(fullname, CHILD_MODULE_TEMPLATE, false, code, true, i+1, targetCompiler);
             sourceFiles.append(fullname);
         }
     }

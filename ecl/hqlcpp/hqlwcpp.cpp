@@ -593,7 +593,8 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     if (body->hasAttribute(_disallowed_Atom))
         throwError(HQLERR_ServiceDefinitionNotAllowed);
 
-    if (body->hasAttribute(includeAtom) || body->hasAttribute(ctxmethodAtom) || body->hasAttribute(gctxmethodAtom) || body->hasAttribute(methodAtom) || body->hasAttribute(sysAtom) || body->hasAttribute(omethodAtom))
+    if (body->hasAttribute(includeAtom) || body->hasAttribute(ctxmethodAtom) || body->hasAttribute(gctxmethodAtom) || body->hasAttribute(methodAtom)
+        || body->hasAttribute(sysAtom) || body->hasAttribute(omethodAtom) || body->hasAttribute(inlineAtom) )
         return false;
 
     IHqlExpression *proto = body->queryAttribute(prototypeAtom);
@@ -607,6 +608,10 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     enum { ServiceApi, RtlApi, FastApi, CApi, CppApi, LocalApi } api = ServiceApi;
     bool isVirtual = funcdef->hasAttribute(virtualAtom);
     bool isLocal = body->hasAttribute(localAtom);
+
+    IHqlExpression *child = body->queryChild(0);
+    bool isInline = child?child->hasAttribute(inlineAtom):false;
+
     if (body->hasAttribute(eclrtlAtom))
         api = RtlApi;
     else if (body->hasAttribute(fastAtom))
@@ -618,7 +623,9 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     else if (isLocal || isVirtual)
         api = LocalApi;
 
-    if (isVirtual)
+    if (isInline)
+        out.append("inline");
+    else if (isVirtual)
         out.append("virtual");
     else
         out.append("extern");

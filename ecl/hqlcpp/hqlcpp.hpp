@@ -117,6 +117,7 @@ public:
     virtual void addWebServiceInfo(IPropertyTree *wsinfo) = 0;
     virtual void flushHints() = 0;
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback) = 0;
+    virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId) = 0;
 };
 
 // A class used to hold the context about the expression being processed at this point in time.

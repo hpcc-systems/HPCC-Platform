@@ -88,7 +88,7 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
     {
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuXRefEx::onDFUXRefArrayAction User=%s",username.str());
+
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
@@ -123,13 +123,8 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
        
         StringBuffer returnStr,UserName;
         const char* ActionType = req.getAction();
-
-        DBGLOG("Running Xref Command %s for user %s",ActionType,context.getUserID(UserName).str());
-
         for(unsigned i = 0; i < req.getXRefFiles().length();i++)
         {
-            DBGLOG("CWsDfuXRefEx::onDFUXRefArrayAction %s file %s for User=%s", ActionType, req.getXRefFiles().item(i), username.str());
-
             StringBuffer errstr;
             if (strcmp("Delete" ,ActionType) == 0)
             {
@@ -188,7 +183,7 @@ bool CWsDfuXRefEx::onDFUXRefLostFiles(IEspContext &context, IEspDFUXRefLostFiles
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuXRefEx::onDFUXRefLostFiles User=%s",username.str());
+
         if (!req.getCluster() || !*req.getCluster())
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Cluster not defined.");
 
@@ -217,7 +212,6 @@ bool CWsDfuXRefEx::onDFUXRefFoundFiles(IEspContext &context, IEspDFUXRefFoundFil
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuXRefEx::onDFUXRefFoundFiles User=%s",username.str());
 
         if (!req.getCluster() || !*req.getCluster())
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Cluster not defined.");
@@ -245,7 +239,7 @@ bool CWsDfuXRefEx::onDFUXRefOrphanFiles(IEspContext &context, IEspDFUXRefOrphanF
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuXRefEx::onDFUXRefOrphanFiles User=%s",username.str());
+
         if (!req.getCluster() || !*req.getCluster())
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Cluster not defined.");
 
@@ -274,7 +268,7 @@ bool CWsDfuXRefEx::onDFUXRefMessages(IEspContext &context, IEspDFUXRefMessagesQu
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuXRefEx::onDFUXRefMessages User=%s",username.str());
+
         if (!req.getCluster() || !*req.getCluster())
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Cluster not defined.");
 
@@ -302,7 +296,7 @@ bool CWsDfuXRefEx::onDFUXRefCleanDirectories(IEspContext &context, IEspDFUXRefCl
         
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuXRefEx::onDFUXRefDirectories User=%s",username.str());
+
         if (!req.getCluster() || !*req.getCluster())
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Cluster not defined.");
 
@@ -312,7 +306,6 @@ bool CWsDfuXRefEx::onDFUXRefCleanDirectories(IEspContext &context, IEspDFUXRefCl
 
         StringBuffer buf;
         xRefNode->removeEmptyDirectories(buf);
-        DBGLOG("xRefNode->removeEmptyDirectories result=%s",buf.str());
         resp.setRedirectUrl(StringBuffer("/WsDFUXRef/DFUXRefDirectories?Cluster=").append(req.getCluster()));
     }
     catch(IException* e)
@@ -331,7 +324,7 @@ bool CWsDfuXRefEx::onDFUXRefDirectories(IEspContext &context, IEspDFUXRefDirecto
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuXRefEx::onDFUXRefDirectories User=%s",username.str());
+
         if (!req.getCluster() || !*req.getCluster())
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Cluster not defined.");
 
@@ -402,7 +395,7 @@ bool CWsDfuXRefEx::onDFUXRefBuild(IEspContext &context, IEspDFUXRefBuildRequest 
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuXRefEx::onDFUXRefBuild User=%s",username.str());
+
         if (!req.getCluster() || !*req.getCluster())
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Cluster not defined.");
 
@@ -440,7 +433,6 @@ bool CWsDfuXRefEx::onDFUXRefBuildCancel(IEspContext &context, IEspDFUXRefBuildCa
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuXRefEx::onDFUXRefBuildCancel User=%s",username.str());
 
         m_XRefbuilder->Cancel();
         StringBuffer returnStr;
@@ -481,8 +473,6 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
 
         StringBuffer username;
         context.getUserID(username);
-        DBGLOG("CWsDfuXRefEx::onDFUXRefList User=%s",username.str());
-
 
         CConstWUClusterInfoArray clusters;
         getEnvironmentClusterInfo(clusters);
@@ -532,7 +522,7 @@ inline void addLfnToUsedFileMap(MapStringTo<bool> &usedFileMap, const char *lfn)
         usedFileMap.setValue(lfn, true);
 }
 
-void addUsedFilesFromActivePackageMaps(MapStringTo<bool> &usedFileMap, const char *process)
+void addUsedFilesFromPackageMaps(MapStringTo<bool> &usedFileMap, const char *process)
 {
     Owned<IPropertyTree> packageSet = resolvePackageSetRegistry(process, true);
     if (!packageSet)
@@ -542,7 +532,7 @@ void addUsedFilesFromActivePackageMaps(MapStringTo<bool> &usedFileMap, const cha
     ForEach(*targets)
     {
         SCMStringBuffer target;
-        VStringBuffer xpath("PackageMap[@querySet='%s'][@active='1']", targets->str(target).str());
+        VStringBuffer xpath("PackageMap[@querySet='%s']", targets->str(target).str());
         Owned<IPropertyTreeIterator> activeMaps = packageSet->getElements(xpath);
         //Add files referenced in all active maps, for all targets configured for this process cluster
         ForEach(*activeMaps)
@@ -595,7 +585,7 @@ bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedF
     ForEach(*roxieFiles)
         addLfnToUsedFileMap(usedFileMap, roxieFiles->query().queryProp("@name"));
     if (req.getCheckPackageMaps())
-        addUsedFilesFromActivePackageMaps(usedFileMap, process);
+        addUsedFilesFromPackageMaps(usedFileMap, process);
     StringArray unusedFiles;
     findUnusedFilesInDFS(unusedFiles, process, usedFileMap);
     resp.setUnusedFileCount(unusedFiles.length());

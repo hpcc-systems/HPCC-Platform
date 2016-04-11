@@ -65,6 +65,8 @@ EXPORT TestFormat := MODULE
 
     ASSERT(Date.ConvertDateFormatMultiple('1/31/2011',DateFormats,'%Y-%m-%d') = '2011-01-31');
 
+    ASSERT(Date.ConvertDateFormatMultiple('',DateFormats,'%Y-%m-%d') = '');
+
     ASSERT(Date.ConvertTimeFormatMultiple('123456',TimeFormats,'%H:%M:%S') = '12:34:56');
 
     ASSERT(TRUE)

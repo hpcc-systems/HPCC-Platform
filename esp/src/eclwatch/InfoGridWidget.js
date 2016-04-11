@@ -88,6 +88,29 @@ define([
                 this.widget.ErrWarnDialogTextArea = registry.byId(this.id + "ErrWarnDialogTextArea");
             },
 
+            extractGraphInfo: function (msg) {
+                var retVal = {};
+                var parts = msg.split("Graph graph");
+                if (parts.length > 1) {
+                    var parts1 = parts[1].split("[")
+                    if (parts1.length > 1) {
+                        retVal.graphID = "graph" + parts1[0];
+                        parts1.shift();
+                        var parts2 = parts1.join("[").split("], ");
+                        retVal.subgraphID = parts2[0];
+                        if (parts2.length > 1) {
+                            var parts3 = parts2[1].split("[");
+                            retVal.activityName = parts3[0];
+                            if (parts3.length > 1) {
+                                var parts4 = parts3[1].split("]");
+                                retVal.activityID = parts4[0];
+                            }
+                        }
+                    }
+                }
+                return retVal;
+            },
+
             startup: function (args) {
                 this.inherited(arguments);
                 if (this.showToolbar) {
@@ -124,7 +147,21 @@ define([
                         }, 
                         Source: { label: this.i18n.Source, field: "", width: 144, sortable: false },
                         Code: { label: this.i18n.Code, field: "", width: 45, sortable: false },
-                        Message: { label: this.i18n.Message, field: "", sortable: false },
+                        Message: {
+                            label: this.i18n.Message, field: "",
+                            sortable: false,
+                            formatter: function (Message, idx) {
+                                var info = context.extractGraphInfo(Message);
+                                if (info.graphID && info.subgraphID && info.activityID) {
+                                    var txt = "Graph " + info.graphID + "[" + info.subgraphID + "], " + info.activityName + "[" + info.activityID + "]";
+                                    Message = Message.replace(txt, "<a href='#' class='dgrid-row-url'>" + txt + "</a>")
+                                } else if (info.graphID && info.subgraphID) {
+                                    var txt = "Graph " + info.graphID + "[" + info.subgraphID + "]";
+                                    Message = Message.replace(txt, "<a href='#' class='dgrid-row-url'>" + txt + "</a>")
+                                }
+                                return Message;
+                            }
+                        },
                         Column: { label: this.i18n.Col, field: "", width: 36, sortable: false },
                         LineNo: { label: this.i18n.Line, field: "", width: 36, sortable: false },
                         FileName: { label: this.i18n.FileName, field: "", width: 360, sortable: false }
@@ -137,6 +174,11 @@ define([
                     var line = parseInt(item.LineNo, 10);
                     var col = parseInt(item.Column, 10);
                     context.onErrorClick(line, col);
+                });
+                this.infoGrid.on(".dgrid-row-url:click", function (evt) {
+                    var item = context.infoGrid.row(evt).data;
+                    var info = context.extractGraphInfo(item.Message);
+                    window.open("/?Widget=GraphTreeWidget&Wuid=" + context.wu.Wuid + "&GraphName=" + info.graphID + "&SubGraphId=" + info.subgraphID + "&ActivityId=" + info.activityID, "_blank");
                 });
                 this.infoGrid.startup();
 
@@ -412,7 +454,7 @@ define([
             refreshTopics: function() {
                 this.refreshFilter();
                 if (this.errWarnCount) {
-                    this.errWarnCount.innerHTML = this._counts.errorWarning > 0 ? this._counts.errorWarning : "";
+                    this.errWarnCount.textContent = this._counts.errorWarning > 0 ? this._counts.errorWarning : "";
                 }
                 if (this.errWarnMenuItem) {
                     this.errWarnMenuItem.set("label", this.i18n.ErrorWarnings + (this._counts.errorWarning > 0 ? " (" + this._counts.errorWarning + ")" : ""));

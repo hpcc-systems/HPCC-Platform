@@ -129,7 +129,6 @@ extern UDPLIB_API unsigned multicastTTL;
 extern UDPLIB_API void setLinuxThreadPriority(int level);
 #endif
 
-extern UDPLIB_API bool enableSocketMaxSetting;
 extern UDPLIB_API unsigned udpFlowSocketsSize;
 extern UDPLIB_API unsigned udpLocalWriteSocketSize;
 extern UDPLIB_API unsigned udpMaxRetryTimedoutReqs;

@@ -44,7 +44,7 @@ public:
     IndexWriteActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
         helper = (IHThorIndexWriteArg *)queryHelper();
-        replicateProgress.setown(new ProgressInfo);
+        replicateProgress.setown(new ProgressInfo(queryJob()));
         publishReplicatedDone = !globals->getPropBool("@replicateAsync", true);
         recordsProcessed = 0;
         refactor = singlePartKey = isLocal = false;

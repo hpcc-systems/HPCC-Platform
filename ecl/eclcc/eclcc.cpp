@@ -276,7 +276,7 @@ public:
     }
 
     bool printKeywordsToXml();
-    bool parseCommandLineOptions(int argc, const char* argv[]);
+    int parseCommandLineOptions(int argc, const char* argv[]);
     void loadOptions();
     void loadManifestOptions();
     bool processFiles();
@@ -435,8 +435,9 @@ static int doMain(int argc, const char *argv[])
         return doSelfTest(argc, argv);
 
     EclCC processor(argc, argv);
-    if (!processor.parseCommandLineOptions(argc, argv))
-        return 1;
+    int ret = processor.parseCommandLineOptions(argc, argv);
+    if (ret != 0)
+        return ret;
 
     try
     {
@@ -1893,12 +1894,12 @@ bool EclCC::allowAccess(const char * category, bool isSigned)
 }
 
 //=========================================================================================
-bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
+int EclCC::parseCommandLineOptions(int argc, const char* argv[])
 {
     if (argc < 2)
     {
         usage();
-        return false;
+        return 1;
     }
 
     ArgvIterator iter(argc, argv);
@@ -1976,7 +1977,15 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (strcmp(arg, "-internal")==0)
         {
             outputSizeStmts();
-            testHqlInternals();
+            int error = testHqlInternals() + testReservedWords();  //NOTE: testReservedWords() depends on testHqlInternals() so must be be called after.
+            // report test result
+            if (error)
+            {
+                printf("%d error%s found!\n", error, error<=1?"":"s");
+                return 300;
+            }
+            else
+                printf("No errors\n");
         }
         else if (iter.matchFlag(tempBool, "-save-cpps"))
         {
@@ -2076,7 +2085,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
             if (!checkFileExists(optIniFilename))
             {
                 ERRLOG("Error: INI file '%s' does not exist",optIniFilename.get());
-                return false;
+                return 1;
             }
         }
         else if (iter.matchFlag(optShowPaths, "-showpaths"))
@@ -2085,7 +2094,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(optManifestFilename, "-manifest"))
         {
             if (!isManifestFileValid(optManifestFilename))
-                return false;
+                return 1;
         }
         else if (iter.matchOption(tempArg, "-split"))
         {
@@ -2094,7 +2103,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
             if (!split)
             {
                 ERRLOG("Error: syntax is -split=part:splits\n");
-                return false;
+                return 1;
             }
             batchSplit = atoi(split+1);
             if (batchSplit == 0)
@@ -2108,7 +2117,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(tempArg, "-platform") || /*deprecated*/ iter.matchOption(tempArg, "-target"))
         {
             if (!setTargetPlatformOption(tempArg.get(), optTargetClusterType))
-                return false;
+                return 1;
         }
         else if (iter.matchFlag(logVerbose, "-v") || iter.matchFlag(logVerbose, "--verbose"))
         {
@@ -2118,7 +2127,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (strcmp(arg, "--version")==0)
         {
             fprintf(stdout,"%s %s\n", LANGUAGE_VERSION, BUILD_TAG);
-            return false;
+            return 1;
         }
         else if (startsWith(arg, "-Wc,"))
         {
@@ -2150,7 +2159,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             ERRLOG("Error: unrecognised option %s",arg);
             usage();
-            return false;
+            return 1;
         }
         else
             inputFileNames.append(arg);
@@ -2158,7 +2167,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
     if (showHelp)
     {
         usage();
-        return false;
+        return 1;
     }
 
     if (optComponentName.length())
@@ -2175,9 +2184,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
     if (inputFileNames.ordinality() == 0 && !optKeywords)
     {
         if (optGenerateHeader || optShowPaths || (!optBatchMode && optQueryRepositoryReference))
-            return true;
+            return 0;
         ERRLOG("No input filenames supplied");
-        return false;
+        return 1;
     }
 
     if (optDebugMemLeak)
@@ -2187,7 +2196,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         initLeakCheck(title);
     }
 
-    return true;
+    return 0;
 }
 
 //=========================================================================================

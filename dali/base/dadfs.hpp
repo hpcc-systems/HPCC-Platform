@@ -269,7 +269,8 @@ enum DFUQResultField
     DFUQRFpartmask = 19,
     DFUQRFsuperowners = 20,
     DFUQRFpersistent = 21,
-    DFUQRFterm = 22,
+    DFUQRFprotect = 22,
+    DFUQRFterm = 23,
     DFUQRFreverse = 256,
     DFUQRFnocase = 512,
     DFUQRFnumeric = 1024

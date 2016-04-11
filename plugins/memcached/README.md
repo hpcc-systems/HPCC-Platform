@@ -17,7 +17,7 @@ The memcached daemon can be obtained via - [source](http://memcached.org/downloa
 sudo apt-get install memcached
 ```
 
-*Note:* **libmemcached** 0.53 or greater is required to use this plugin as intended. It is advised to use the newest version of **memcached** possible to you.
+*Note:* **libmemcached** 1.0.10 or greater is required to use this plugin as intended. It is advised to use the newest version of **memcached** possible to you.
 
 
 Getting started

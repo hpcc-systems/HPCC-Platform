@@ -26,6 +26,7 @@
 
 #include "hql.hpp"
 #include "hqlattr.hpp"
+#include "hqlmeta.hpp"
 #include "hqlthql.hpp"
 #include "hqlhtcpp.ipp"
 #include "hqlttcpp.ipp"
@@ -179,6 +180,7 @@ bool isSimpleSource(IHqlExpression * expr)
         case no_stepped:
         case no_distributed:
         case no_preservemeta:
+        case no_unordered:
         case no_grouped:
         case no_compound_diskread:
         case no_compound_disknormalize:
@@ -742,7 +744,7 @@ protected:
     void buildSteppedHelpers();
     void doBuildAggregateSelectIterator(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * expr, bool isChildIterator);
-    void buildAggregateHelpers(IHqlExpression * expr, bool needMerge);
+    void buildAggregateHelpers(IHqlExpression * expr);
     void buildCountHelpers(IHqlExpression * expr, bool allowMultiple);
     virtual void buildFlagsMember(IHqlExpression * expr) {}
     void buildGlobalGroupAggregateHelpers(IHqlExpression * expr);
@@ -965,6 +967,7 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     case no_sorted:
     case no_distributed:
     case no_preservemeta:
+    case no_unordered:
     case no_grouped:
     case no_alias_scope:
     case no_section:
@@ -1350,6 +1353,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
     case no_stepped:
     case no_distributed:
     case no_preservemeta:
+    case no_unordered:
     case no_grouped:
     case no_preload:
     case no_limit:
@@ -2351,7 +2355,7 @@ void SourceBuilder::buildGroupingMonitors(IHqlExpression * expr, MonitorExtracto
 
 
 
-void SourceBuilder::buildAggregateHelpers(IHqlExpression * expr, bool needMerge)
+void SourceBuilder::buildAggregateHelpers(IHqlExpression * expr)
 {
     IHqlExpression * aggregate = expr->queryChild(0);
     node_operator op = aggregate->getOperator();
@@ -2368,8 +2372,7 @@ void SourceBuilder::buildAggregateHelpers(IHqlExpression * expr, bool needMerge)
     translator.doBuildAggregateClearFunc(instance->startctx, aggregate);
 
     //virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) = 0;      //only call if transform called at least once on src.
-    if (needMerge)
-        translator.doBuildAggregateMergeFunc(instance->startctx, aggregate, requiresOrderedMerge);
+    translator.doBuildAggregateMergeFunc(instance->startctx, aggregate, requiresOrderedMerge);
 }
 
 
@@ -3031,7 +3034,7 @@ void DiskAggregateBuilder::buildMembers(IHqlExpression * expr)
 
     buildFilenameMember();
     DiskReadBuilderBase::buildMembers(expr);
-    buildAggregateHelpers(expr, true);
+    buildAggregateHelpers(expr);
 
     //virtual void processRow(void * self, const void * src) = 0;
     BuildCtx rowctx(instance->startctx);
@@ -3336,7 +3339,7 @@ protected:
 void ChildAggregateBuilder::buildMembers(IHqlExpression * expr)
 {
     ChildBuilderBase::buildMembers(expr);
-    buildAggregateHelpers(expr, false);
+    buildAggregateHelpers(expr);
 }
 
 
@@ -5993,6 +5996,7 @@ void MonitorExtractor::extractAllFilters(IHqlExpression * dataset)
         case no_hqlproject:
         case no_distributed:
         case no_preservemeta:
+        case no_unordered:
         case no_sorted:
         case no_stepped:
         case no_grouped:
@@ -6249,7 +6253,7 @@ void IndexReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     StringBuffer flags;
     if (tableExpr->hasAttribute(sortedAtom))
         flags.append("|TIRsorted");
-    else if (tableExpr->hasAttribute(unorderedAtom))
+    else if (!isOrdered(tableExpr))
         flags.append("|TIRunordered");
     if (!monitors.isFiltered())
         flags.append("|TIRnofilter");
@@ -6532,7 +6536,7 @@ void IndexAggregateBuilder::buildMembers(IHqlExpression * expr)
 
     buildFilenameMember();
     IndexReadBuilderBase::buildMembers(expr);
-    buildAggregateHelpers(expr, true);
+    buildAggregateHelpers(expr);
 
     //virtual void processRow(void * self, const void * src) = 0;
     BuildCtx rowctx(instance->startctx);

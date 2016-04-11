@@ -77,6 +77,9 @@ define([
             }
         },
         preProcessResponse: function (response, request) {
+            if (response.Total == -1 || response.Total === 9223372036854776000 || response.Total === Number.MAX_VALUE) {
+                response.Total = response.Start + response.Count + 1000;
+            }
             if (lang.exists("Result.Row", response)) {
                 var context = this;
                 arrayUtil.forEach(response.Result.Row, function (item, index) {
@@ -515,6 +518,17 @@ define([
             return this.store;
         },
 
+        fetchNRows: function (start, count) {
+            var deferred = new Deferred()
+            this.store.query({
+                Start: start,
+                Count: count
+            }).then(function (results) {
+                deferred.resolve(results);
+            });
+            return deferred.promise;
+        },
+
         fetchContent: function () {
             var deferred = new Deferred()
             var context = this;
@@ -522,10 +536,7 @@ define([
                 Start: 0,
                 Count: 1
             }).total.then(function(total) {
-                context.store.query({
-                    Start: 0,
-                    Count: total
-                }).then(function(results) {
+                context.fetchNRows(0, total).then(function(results) {
                     deferred.resolve(results);
                 });
             });

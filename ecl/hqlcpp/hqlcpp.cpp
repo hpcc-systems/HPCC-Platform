@@ -1206,6 +1206,20 @@ void HqlCppInstance::addPluginsAsResource()
 }
 
 
+void HqlCppInstance::getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId)
+{
+    if (cppInfo.isItem(cppIndex))
+    {
+        minActivityId = cppInfo.item(cppIndex).minActivityId;
+        maxActivityId = cppInfo.item(cppIndex).maxActivityId;
+    }
+    else
+    {
+        minActivityId = 0;
+        maxActivityId = 0;
+    }
+}
+
 bool HqlCppInstance::useFunction(IHqlExpression * func)
 {
     assertex(func);
@@ -1804,10 +1818,12 @@ void HqlCppTranslator::cacheOptions()
     //Or where one debug options sets more than one option
     if (options.spanMultipleCpp)
     {
+        code->cppInfo.append(* new CppFileInfo(0)); // Add an entry for the main file which contains no activities
         options.activitiesPerCpp = wu()->getDebugValueInt("activitiesPerCpp", DEFAULT_ACTIVITIES_PER_CPP);
         curCppFile = 1;
     }
 
+    code->cppInfo.append(* new CppFileInfo(0));
     options.targetCompiler = DEFAULT_COMPILER;
     if (wu()->hasDebugValue("targetGcc"))
         options.targetCompiler = wu()->getDebugValueBool("targetGcc", false) ? GccCppCompiler : Vs6CppCompiler;
@@ -5559,7 +5575,7 @@ void HqlCppTranslator::doBuildAssignCatch(BuildCtx & ctx, const CHqlBoundTarget 
 //---------------------------------------------------------------------------
 //-- no_externalcall --
 
-IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * argType)
+static IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * argType, const char * argName)
 {
     type_t atc = argType->getTypeCode();
 
@@ -5580,7 +5596,7 @@ IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * argType
 
     ITypeInfo * paramType = curParam->queryType();
     type_t ptc = paramType->getTypeCode();
-    if ((atc != ptc) && !(atc == type_row && ptc == type_table))
+    if (atc != ptc)
     {
         switch (atc)
         {
@@ -5593,8 +5609,11 @@ IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * argType
                 ((ptc == type_varstring) && (argType->queryCharset() == paramType->queryCharset())))
                 return LINK(curParam);
             break;
-        case type_dictionary:
         case type_row:
+            if (curParam->isDataset())
+                throwError1(HQLERR_DatasetPassedToRowArg, argName);
+            // fallthrough
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
             {
@@ -6026,7 +6045,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         IHqlExpression * curArg = formals->queryChild(arg);
         ITypeInfo * argType = curArg->queryType();
 
-        OwnedHqlExpr castParam = getCastParameter(curParam, argType);
+        OwnedHqlExpr castParam = getCastParameter(curParam, argType, curArg->queryId()->queryStr());
 
         type_t atc = argType->getTypeCode();
         switch (atc)
@@ -7041,7 +7060,7 @@ void HqlCppTranslator::buildConcatFArgs(HqlExprArray & args, BuildCtx & ctx, con
     ForEachItemIn(idx, values)
     {
         IHqlExpression * cur = &values.item(idx);
-        OwnedHqlExpr value = getCastParameter(cur, argType);
+        OwnedHqlExpr value = getCastParameter(cur, argType, "");
         CHqlBoundExpr bound;
         buildCachedExpr(ctx, value, bound);
 
@@ -7953,25 +7972,25 @@ void HqlCppTranslator::doBuildAssignUnicodeOrder(BuildCtx & ctx, const CHqlBound
 //---------------------------------------------------------------------------
 //-- no_order --
 
-static void buildIteratorFirst(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
-{
-    StringBuffer s;
-    translator.generateExprCpp(s, row).append(" = (byte*)");
-    translator.generateExprCpp(s, iter).append(".first();");
-    ctx.addQuoted(s);
-}
-
-static void buildIteratorNext(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
-{
-    StringBuffer s;
-    translator.generateExprCpp(s, row).append(" = (byte*)");
-    translator.generateExprCpp(s, iter).append(".next();");
-    ctx.addQuoted(s);
-}
-
 static void buildIteratorIsValid(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row, CHqlBoundExpr & bound)
 {
     bound.expr.set(row);
+}
+
+void HqlCppTranslator::buildIteratorFirst(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
+{
+    StringBuffer s;
+    generateExprCpp(s, row).append(" = (byte*)");
+    generateExprCpp(s, iter).append(".first();");
+    ctx.addQuoted(s);
+}
+
+void HqlCppTranslator::buildIteratorNext(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row)
+{
+    StringBuffer s;
+    generateExprCpp(s, row).append(" = (byte*)");
+    generateExprCpp(s, iter).append(".next();");
+    ctx.addQuoted(s);
 }
 
 void HqlCppTranslator::doBuildAssignCompareRow(BuildCtx & ctx, EvaluateCompareInfo & info, IHqlExpression * left, IHqlExpression * right)
@@ -8002,7 +8021,7 @@ void HqlCppTranslator::doBuildAssignCompareTable(BuildCtx & ctx, EvaluateCompare
     HqlExprAttr leftIter, leftRow;
     Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(subctx, left);
     cursor->buildIterateClass(subctx, leftIter, leftRow);
-    buildIteratorFirst(*this, subctx, leftIter, leftRow);
+    buildIteratorFirst(subctx, leftIter, leftRow);
 
     // i2; forEachIn(i2); {
     CHqlBoundExpr isValid;
@@ -8051,7 +8070,7 @@ void HqlCppTranslator::doBuildAssignCompareTable(BuildCtx & ctx, EvaluateCompare
         }
 
         //     i1.next();
-        buildIteratorNext(*this, loopctx, leftIter, leftRow);
+        buildIteratorNext(loopctx, leftIter, leftRow);
     }
 
     buildIteratorIsValid(subctx, leftIter, leftRow, isValid);
@@ -11679,6 +11698,8 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
     const char * separator = strstr(body, cppSeparatorText);
     if (separator)
     {
+        if (bodyCode->hasAttribute(inlineAtom))
+            throwError(HQLERR_BodyNotAllowedWithInline);
         text.setCharAt(separator-text.str(), 0);
         if (location)
             funcctx.addLine(locationFilename, startLine);
@@ -11929,7 +11950,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
     if (options.spanMultipleCpp)
     {
         const bool inChildActivity = true;  // assume the worst
-        OwnedHqlExpr pass = getSizetConstant(cppIndexNextActivity(inChildActivity));
+        OwnedHqlExpr pass = getSizetConstant(beginFunctionGetCppIndex(0, inChildActivity));
         funcctx.addGroupPass(pass);
     }
     expandFunctionPrototype(proto, funcdef);
@@ -11943,7 +11964,16 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         if (languageAttr)
             buildScriptFunctionDefinition(funcctx, funcdef, proto);
         else
-            buildCppFunctionDefinition(funcctx, bodyCode, proto);
+        {
+            bool isInline = bodyCode->hasAttribute(inlineAtom);
+            if (isInline && options.spanMultipleCpp)
+            {
+                BuildCtx funcctx2(*code, parentHelpersAtom);
+                buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+            }
+            else
+                buildCppFunctionDefinition(funcctx, bodyCode, proto);
+        }
     }
     else
     {

@@ -18,14 +18,6 @@
 #ifndef HQLEXPR_INCL
 #define HQLEXPR_INCL
 
-#ifdef _DEBUG
-   #define ENABLE_ENUM_TYPE
-#endif
-
-#ifndef _DEBUG
-//  #define USE_TBB
-#endif
-
 #define USE_SELSEQ_UID
 //It is impossible to ensure that LEFT/RIGHT are unique, and cannot be nested.  For instance
 //x := PROJECT(ds, t(LEFT));
@@ -197,7 +189,7 @@ enum
 };
 
 //Removed spaces so it is easier to translate from a number to a node when debugging.
-enum _node_operator {
+enum node_operator : unsigned short {
         no_none,
         no_scope,
         no_list,
@@ -364,8 +356,8 @@ enum _node_operator {
         no_existsdict,
         no_quantile,
         no_nocombine,
-    no_unused28,  
-    no_unused29,
+        no_unordered,
+        no_critical,
     no_unused30,
     no_unused31,
     no_unused32,
@@ -802,12 +794,6 @@ enum ExprPropKind
     EPmax
 };
 
-
-#ifdef ENABLE_ENUM_TYPE
-    typedef enum _node_operator node_operator;
-#else
-    typedef unsigned short node_operator;
-#endif
 
 interface IHqlSimpleScope : public IInterface
 {
@@ -1853,6 +1839,8 @@ void addForwardDefinition(IHqlScope * scope, IIdAtom * symbolName, IIdAtom * mod
 extern HQL_API IPropertyTree * createAttributeArchive();
 extern HQL_API void ensureSymbolsDefined(IHqlExpression * scope, HqlLookupContext & ctx);
 extern HQL_API void ensureSymbolsDefined(IHqlScope * scope, HqlLookupContext & ctx);
+extern HQL_API IHqlExpression * queryBoolExpr(bool value);
+extern HQL_API IHqlExpression * queryBoolAttribute(IHqlExpression * expr, IAtom * name);    // true expr, false expr or NULL
 extern HQL_API bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft=false);
 extern HQL_API bool getBoolAttributeInList(IHqlExpression * expr, IAtom * name, bool dft);
 

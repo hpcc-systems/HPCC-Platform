@@ -13,8 +13,13 @@
 
     <para>The most common use of value types is to explicitly cast from one
     type to another in expressions. To do this, you simply place the value
-    type in parentheses in the expression immediately preceding the element to
-    cast. This converts the data from its original form to the new form (to
+    type to cast to within parentheses. That creates a casting
+    operator.<indexterm>
+        <primary>casting operator</primary>
+      </indexterm> Then place that casting operator immediately to the left of
+    the expression to cast.</para>
+
+    <para>This converts the data from its original form to the new form (to
     keep the same bit-pattern, see the <emphasis
     role="bold">TRANSFER</emphasis> built-in function).</para>
 

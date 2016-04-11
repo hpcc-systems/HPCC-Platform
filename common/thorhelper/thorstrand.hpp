@@ -36,6 +36,20 @@ public:
 inline void startJunction(IStrandJunction * junction) { if (junction) junction->start(); }
 inline void resetJunction(IStrandJunction * junction) { if (junction) junction->reset(); }
 
+interface IStrandThreaded : extends IThreaded
+{
+    virtual void stopStream() = 0;
+};
+
+interface IStrandBarrier : extends IInterface
+{
+public:
+    virtual void startStrand(IStrandThreaded & strand) = 0;
+    virtual void waitForStrands() = 0;
+    virtual void noteStrandFinished(IRowStream * stream) = 0;
+};
+
+
 interface IManyToOneRowStream : extends IRowStream
 {
 public:
@@ -49,11 +63,25 @@ interface IStrandBranch : extends IInterface
     virtual IStrandJunction * queryOutputJunction() = 0;
 };
 
+interface IOrderedOutputCallback
+{
+    virtual bool noteEndOfInputChunk() = 0;
+    virtual void noteEndOfInput() = 0;
+};
+
+interface IOrderedCallbackCollection
+{
+    virtual IOrderedOutputCallback * queryCallback(unsigned i) = 0;
+};
+
+
 extern THORHELPER_API IStrandJunction * createStrandJunction(roxiemem::IRowManager & _rowManager, unsigned numInputs, unsigned numOutputs, unsigned blockSize, bool isOrdered);
-extern THORHELPER_API IStrandBranch * createStrandBranch(roxiemem::IRowManager & _rowManager, unsigned numStrands, unsigned blockSize, bool isOrdered, bool isGrouped);
+extern THORHELPER_API IStrandBranch * createStrandBranch(roxiemem::IRowManager & _rowManager, unsigned numStrands, unsigned blockSize, bool isOrdered, bool isGrouped, bool inputIsStreamed, IOrderedCallbackCollection * orderedCallbacks);
 extern THORHELPER_API void clearRowQueue(IRowQueue * queue);
+extern THORHELPER_API IStrandBarrier * createStrandBarrier();
 
 extern THORHELPER_API IManyToOneRowStream * createManyToOneRowStream(roxiemem::IRowManager & _rowManager, unsigned numInputs, unsigned blockSize, bool isOrdered);
+extern THORHELPER_API const void * queryEndOfSectionMarker();
 
 //---------------------------------------------------------------------------------------------------------------------
 

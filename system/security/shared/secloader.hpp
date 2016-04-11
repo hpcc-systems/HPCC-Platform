@@ -35,8 +35,8 @@ public:
     /// for the given ESP service
     ///
     /// @param  bindingName     Binding name ie 'WsTopology_smc_myesp'
-    /// @param  secMgrCfg       'SecurityManager' IPropertyTree from component config file
     /// @param  authCfg         'Authenticate' IPropertyTree from EspService component binding
+    /// @param  secMgrCfg       'SecurityManager' IPropertyTree from component config file
     ///
     /// @return an ISecManager Security Manager instance
     ///
@@ -66,6 +66,7 @@ public:
             throw MakeStringException(-1, "%s cannot locate procedure %s of '%s'", lsm, instFactory.str(), libName.str());
 
         //Call ISecManager instance factory and return the new instance
+        DBGLOG("Calling '%s' in pluggable security manager '%s'", instFactory.str(), libName.str());
         return xproc(bindingName, *secMgrCfg, *authCfg);
     }
 
@@ -90,51 +91,6 @@ public:
                 return xproc(servicename, *cfg);
             else
                 throw MakeStringException(-1, "procedure newLdapSecManager of %s can't be loaded", realName.str());
-        }
-        else if(stricmp(model_name, "Local") == 0)
-        {
-            realName.append(SharedObjectPrefix).append(LDAPSECLIB).append(SharedObjectExtension);
-            HINSTANCE ldapseclib = LoadSharedObject(realName.str(), true, false);
-            if(ldapseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", realName.str());
-
-            newSecManager_t_ xproc = NULL;
-            xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newLocalSecManager");
-
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newLocalSecManager of %s can't be loaded", realName.str());
-        }
-        else if(stricmp(model_name, "Default") == 0)
-        {
-            realName.append(SharedObjectPrefix).append(LDAPSECLIB).append(SharedObjectExtension);
-            HINSTANCE ldapseclib = LoadSharedObject(realName.str(), true, false);
-            if(ldapseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", realName.str());
-
-            newSecManager_t_ xproc = NULL;
-            xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newDefaultSecManager");
-
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newDefaultSecManager of %s can't be loaded", realName.str());
-        }
-        else if(stricmp(model_name, "htpasswd") == 0)
-        {
-            realName.append(SharedObjectPrefix).append(HTPASSWDSECLIB).append(SharedObjectExtension);
-            HINSTANCE htpasswdseclib = LoadSharedObject(realName.str(), true, false);
-            if(htpasswdseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", realName.str());
-
-            newSecManager_t_ xproc = NULL;
-            xproc = (newSecManager_t_)GetSharedProcedure(htpasswdseclib, "newHtpasswdSecManager");
-
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newHtpasswdSecManager of %s can't be loaded", realName.str());
         }
         else
             throw MakeStringException(-1, "Security model %s not supported", model_name);

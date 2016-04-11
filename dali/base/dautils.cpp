@@ -3188,8 +3188,8 @@ public:
                     }
                     case 1: // daliadmin
                     {
-                        out.appendf("Server IP           |Session         |Mode    |Time                |Duration    |Lock").newline();
-                        out.appendf("====================|================|========|====================|============|======").newline();
+                        out.appendf("Server IP           |Session         |Connection    |Mode    |Time                |Duration    |Lock").newline();
+                        out.appendf("====================|================|==============|========|====================|============|======").newline();
                         break;
                     }
                     default:
@@ -3214,7 +3214,7 @@ public:
                         out.appendf("%-20s|%-16" I64F "x|%-16" I64F "x|%-8x|%s(%d ms)", lD.queryEp(), lD.sessId, lD.connectionId, lD.mode, timeStr.str(), lockedFor);
                         break;
                     case 1: // daliadmin
-                        out.appendf("%-20s|%-16" I64F "x|%-8x|%-20s|%-12d|%s", lD.queryEp(), lD.sessId, lD.mode, timeStr.str(), lockedFor, altText ? altText : xpath.get());
+                        out.appendf("%-20s|%-16" I64F "x|%-16" I64F "x|%-8x|%-20s|%-12d|%s", lD.queryEp(), lD.sessId, lD.connectionId, lD.mode, timeStr.str(), lockedFor, altText ? altText : xpath.get());
                         break;
                     default:
                         throwUnexpected();

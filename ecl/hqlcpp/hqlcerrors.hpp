@@ -221,6 +221,8 @@
 #define HQLERR_ConditionalAggregateVarOffset    4201
 #define HQLERR_AggregateDynamicOffset           4202
 #define HQLERR_ServiceDefinitionNotAllowed      4203
+#define HQLERR_BodyNotAllowedWithInline         4204
+#define HQLERR_DatasetPassedToRowArg            4205
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -399,7 +401,7 @@
 #define HQLERR_ExtendTypeMismatch_Text          "OUTPUTs to NAMED(%s) have incompatible types"
 #define HQLERR_OverwriteMismatch_Text           "OVERWRITE is required on all outputs to NAMED(%s)"
 #define HQLERR_ExtendOverwriteMismatch_Text     "OVERWRITE/EXTEND should be consistent on all outputs to NAMED(%s)"
-#define HQLERR_EmbeddedCppNotAllowed_Text       "Insufficient access rights to use embedded C++"
+#define HQLERR_EmbeddedCppNotAllowed_Text       "Insufficient access rights to use embedded code"
 #define HQLERR_ContentsInSoapCall_Text          "Tag contents syntax <> is not supported by SOAPCALL"
 #define HQLERR_FullKeyedNeedsFile_Text          "RIGHT side of a full keyed join must be a disk file"
 #define HQLERR_ExpectedConstant_Text            "Expression is not constant: %s"
@@ -517,10 +519,12 @@
 #define HQLERR_ConditionalAggregateVarOffset_Text "Conditional aggregate '%s' cannot follow a variable length field"
 #define HQLERR_AggregateDynamicOffset_Text      "Aggregate assignment to '%s' cannot follow variable size aggregate"
 #define HQLERR_ServiceDefinitionNotAllowed_Text "Insufficient access rights to use SERVICE"
+#define HQLERR_BodyNotAllowedWithInline_Text    "#body not supported with INLINE attribute"
+#define HQLERR_DatasetPassedToRowArg_Text       "Cannot pass a dataset to row argument %s"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
-#define HQLWRN_RecursiveDependendencies_Text    "Recursive filename dependency"
+#define HQLWRN_RecursiveDependendencies_Text    "Recursive filename dependency %s"
 #define HQLWRN_MaxSizeExceedsSafeLimit_Text     "Maximum row size of %u exceeds the recommended maximum (%u)"
 #define HQLWRN_TomitaMatchPattern_Text          "MATCHED(%s) will not work on a pattern"
 #define HQLWRN_KeyedFollowsGap_Text             "keyed filter on %s follows unkeyed component %s in the key%s"

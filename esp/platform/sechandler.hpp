@@ -23,7 +23,7 @@
 #include "seclib.hpp"
 #include "esp.hpp"
 #include "sechandler.hpp"
-
+#include "espsecurecontext.hpp"
 
 class SecHandler : public CInterface
 {
@@ -31,6 +31,7 @@ class SecHandler : public CInterface
     Owned<ISecResourceList> m_resources;
     Owned<ISecUser> m_user;
     Owned<IAuthMap> m_feature_authmap;
+    Owned<IEspSecureContext> m_secureContext;
 private:
     bool authorizeTrial(ISecUser& user,const char* pszFeatureUrl, SecAccessFlags & required_access);
     void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms, ...) __attribute__((format(printf, 5, 6)));
@@ -52,6 +53,7 @@ public:
     void setResources(ISecResourceList* rlist);
     void setUser(ISecUser* user);
     void setFeatureAuthMap(IAuthMap * map);
+    void setSecureContext(IEspSecureContext* secureContext);
 };
 
 

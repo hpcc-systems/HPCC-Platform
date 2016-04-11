@@ -136,7 +136,7 @@ define([
         },
 
         refreshUserName: function () {
-            dom.byId(this.id + "UserID").innerHTML = this.userName ? this.userName : "";
+            dom.byId(this.id + "UserID").textContent = this.userName ? this.userName : "";
         },
 
         init: function (params) {
@@ -200,7 +200,7 @@ define([
             this.activity.watch("Build", function (name, oldValue, newValue) {
                 context.build = WsSMC.parseBuildString(newValue);
             });
-            this.activity.watch("changedCount", function (name, oldValue, newValue) {
+            this.activity.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 context.refreshBanner(context.activity);
             });
 

@@ -48,6 +48,7 @@
 
 /// Thor options, that can be hints, workunit options, or global settings
 #define THOROPT_COMPRESS_SPILLS       "compressInternalSpills"  // Compress internal spills, e.g. spills created by lookahead or sort gathering  (default = true)
+#define THOROPT_COMPRESS_SPILL_TYPE   "spillCompressorType"     // Compress spill type, e.g. FLZ, LZ4 (or other to get previous)                 (default = LZ4)
 #define THOROPT_HDIST_SPILL           "hdistSpill"              // Allow distribute receiver to spill to disk, rather than blocking              (default = true)
 #define THOROPT_HDIST_WRITE_POOL_SIZE "hdistSendPoolSize"       // Distribute send thread pool size                                              (default = 16)
 #define THOROPT_HDIST_BUCKET_SIZE     "hdOutBufferSize"         // Distribute target bucket send size                                            (default = 1MB)
@@ -70,6 +71,8 @@
 #define THOROPT_LKJOIN_HASHJOINFAILOVER "lkjoin_hashjoinfailover" // Force SMART to failover to hash join (for testing only)                     (default = false)
 #define THOROPT_MAX_KERNLOG           "max_kern_level"          // Max kernel logging level, to push to workunit, -1 to disable                  (default = 3)
 #define THOROPT_COMP_FORCELZW         "forceLZW"                // Forces file compression to use LZW                                            (default = false)
+#define THOROPT_COMP_FORCEFLZ         "forceFLZ"                // Forces file compression to use FLZ                                            (default = false)
+#define THOROPT_COMP_FORCELZ4         "forceLZ4"                // Forces file compression to use LZ4                                            (default = false)
 #define THOROPT_TRACE_ENABLED         "traceEnabled"            // Output from TRACE activity enabled                                            (default = false)
 #define THOROPT_TRACE_LIMIT           "traceLimit"              // Number of rows from TRACE activity                                            (default = 10)
 #define THOROPT_READ_CRC              "crcReadEnabled"          // Enabled CRC validation on disk reads if file CRC are available                (default = true)
@@ -310,6 +313,7 @@ interface IThorException : extends IException
     virtual ThorExceptionAction queryAction() const = 0;
     virtual ThorActivityKind queryActivityKind() const = 0;
     virtual activity_id queryActivityId() const = 0;
+    virtual const char *queryGraphName() const = 0;
     virtual graph_id queryGraphId() const = 0;
     virtual const char *queryJobId() const = 0;
     virtual unsigned querySlave() const = 0;
@@ -322,7 +326,7 @@ interface IThorException : extends IException
     virtual void setAction(ThorExceptionAction _action) = 0;
     virtual void setActivityKind(ThorActivityKind _kind) = 0;
     virtual void setActivityId(activity_id id) = 0;
-    virtual void setGraphId(graph_id id) = 0;
+    virtual void setGraphInfo(const char *graphName, graph_id id) = 0;
     virtual void setJobId(const char *jobId) = 0;
     virtual void setAudience(MessageAudience audience) = 0;
     virtual void setSlave(unsigned slave) = 0;
@@ -415,6 +419,7 @@ extern graph_decl IThorException *MakeActivityException(CGraphElementBase *activ
 extern graph_decl IThorException *MakeActivityWarning(CGraphElementBase *activity, int code, const char *_format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeActivityWarning(CGraphElementBase *activity, IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeGraphException(CGraphBase *graph, int code, const char *format, ...) __attribute__((format(printf, 3, 4)));
+extern graph_decl IThorException *MakeGraphException(CGraphBase *graph, IException *e);
 extern graph_decl IThorException *MakeThorException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 extern graph_decl IThorException *MakeThorException(IException *e);
 extern graph_decl IThorException *MakeThorAudienceException(LogMsgAudience audience, int code, const char *format, ...) __attribute__((format(printf, 3, 4)));
@@ -477,8 +482,8 @@ extern graph_decl IRowServer *createRowServer(CActivityBase *activity, IRowStrea
 
 extern graph_decl IRowStream *createUngroupStream(IRowStream *input);
 
-interface IRowInterfaces;
-extern graph_decl void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IRowInterfaces *rowIf);
+interface IThorRowInterfaces;
+extern graph_decl void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IThorRowInterfaces *rowIf);
 
 extern graph_decl void logDiskSpace();
 

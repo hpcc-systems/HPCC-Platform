@@ -30,6 +30,15 @@ CHECK_LIBRARY_EXISTS(dl dlopen "" HAVE_LIBDL)
 CHECK_LIBRARY_EXISTS(crypt crypt "" HAVE_LIBCRYPT) 
 endif ()
 
+if(NOT TARGET lzma)
+  add_subdirectory(../lzma ${CMAKE_BINARY_DIR}/system/lzma)
+endif(NOT TARGET lzma)
+
+if(NOT TARGET lz4)
+  add_subdirectory(../lz4_sm ${CMAKE_BINARY_DIR}/system/lz4_sm)
+endif(NOT TARGET lz4)
+
+
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
   SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror")
 endif()
@@ -55,6 +64,7 @@ set (    SRCS
          jkeyboard.cpp 
          jlib.cpp 
          jlog.cpp 
+         jlz4.cpp
          jlzma.cpp 
          jlzw.cpp 
          jmalloc.cpp 
@@ -99,6 +109,7 @@ set (    INCLUDES
         jencrypt.hpp
         jerror.hpp
         jexcept.hpp
+        jfcmp.hpp
         jfile.hpp
         jfile.ipp
         jflz.hpp
@@ -118,6 +129,7 @@ set (    INCLUDES
         jliball.hpp
         jlog.hpp
         jlog.ipp
+        jlz4.hpp
         jlzma.hpp
         jlzw.hpp
         jlzw.ipp
@@ -172,10 +184,10 @@ include_directories (
          ../../system/win32 
          ../../system/include 
          ../../system/lzma
+         ../../system/lz4_sm/lz4/lib
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ${TBB_INCLUDE_DIR}
     )
 
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=1 -D_USRDLL -DJLIB_EXPORTS )
@@ -183,11 +195,8 @@ HPCC_ADD_LIBRARY( jlib SHARED ${SRCS} ${INCLUDES} )
 
 target_link_libraries ( jlib
         lzma
+        lz4
        )
-
-if ( ${USE_TBB} )
-   target_link_libraries ( jlib ${TBB_LIBRARIES})
-endif()
 
 if ( ${HAVE_LIBDL} )
 target_link_libraries ( jlib dl)
@@ -201,7 +210,7 @@ if (WIN32)
  target_link_libraries ( jlib ws2_32 mpr.lib Winmm.lib psapi.lib )
 elseif (("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" ))
 else ()
- target_link_libraries ( jlib rt numa)
+ target_link_libraries ( jlib rt )
 endif ()
 
 if (NOT PLUGIN)

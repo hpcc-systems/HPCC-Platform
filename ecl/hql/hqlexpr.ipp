@@ -40,9 +40,6 @@
 #include "defvalue.hpp"
 #include "hqlexpr.hpp"
 
-#ifdef USE_TBB
-#include "tbb/scalable_allocator.h"
-#endif
 
 typedef byte transformdepth_t;
 #define TRANSFORM_DEPTH_MASK    0x7f
@@ -106,7 +103,7 @@ class HQL_API UsedExpressionHashTable : public SuperHashTableOf<IHqlExpression, 
 {
 public:
     UsedExpressionHashTable() : SuperHashTableOf<IHqlExpression,IHqlExpression>(false) {}
-    ~UsedExpressionHashTable() { releaseAll(); }
+    ~UsedExpressionHashTable() { _releaseAll(); }
 
     inline void zap(IHqlExpression & expr) { remove(&expr); }
 
@@ -162,11 +159,6 @@ class HQL_API CHqlExpression : public LinkedBaseIHqlExpression
 public:
     friend class CHqlExprMeta;
     typedef LinkedBaseIHqlExpression Parent;
-
-#ifdef USE_TBB
-    void *operator new(size32_t size) { return scalable_malloc(size); }
-    void operator delete(void *ptr) { return scalable_free(ptr); }
-#endif
 
 protected:
     unsigned hashcode;          // CInterface is 4 byte aligned in 64bits, so use this to pad

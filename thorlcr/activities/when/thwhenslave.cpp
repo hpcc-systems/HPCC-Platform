@@ -32,8 +32,6 @@ protected:
     CSlaveActivity *activity;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CDependencyExecutorSlaveActivity(CSlaveActivity *_activity) : activity(_activity)
     {
         global = !activity->queryContainer().queryOwner().queryOwner() || activity->queryContainer().queryOwner().isGlobal();
@@ -68,18 +66,17 @@ public:
 };
 
 
-class CWhenSlaveActivity : public CSlaveActivity, public CDependencyExecutorSlaveActivity, public CThorDataLink
+class CWhenSlaveActivity : public CSlaveActivity, public CDependencyExecutorSlaveActivity
 {
-protected:
-    Owned<IThorDataLink> input;
+    typedef CSlaveActivity PARENT;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CDependencyExecutorSlaveActivity);
 
-    CWhenSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CDependencyExecutorSlaveActivity(this), CThorDataLink(this)
+    CWhenSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CDependencyExecutorSlaveActivity(this)
     {
     }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         CDependencyExecutorSlaveActivity::init(data, slaveData);
         appendOutputLinked(this);
@@ -88,25 +85,22 @@ public:
     {
         CDependencyExecutorSlaveActivity::preStart(parentExtractSz, parentExtract);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        input.set(inputs.item(0));
-        startInput(input);
-        dataLinkStart();
+        PARENT::start();
     }
-    virtual void stop()
+    virtual void stop() override
     {
-        stopInput(input);
+        PARENT::stop();
         if (!executeDependencies(abortSoon ? WhenFailureId : WhenSuccessId))
             abortSoon = true;
-        dataLinkStop();
     }
-    virtual bool isGrouped() { return input->isGrouped(); }
+    virtual bool isGrouped() const override { return input->isGrouped(); }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        OwnedConstThorRow row(input->nextRow());
+        OwnedConstThorRow row(inputStream->nextRow());
         if (!row)
             return NULL;
         dataLinkIncrement();
@@ -118,11 +112,11 @@ public:
         if (global)
             barrier->cancel();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.fastThrough = false;
-        calcMetaInfoSize(info,inputs.item(0));
+        calcMetaInfoSize(info, queryInput(0));
     }
 };
 

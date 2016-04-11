@@ -21,14 +21,27 @@
 #include "jset.hpp"
 #include <new>
 #ifdef _USE_TBB
+#include "tbb/tbb_stddef.h"
 #include "tbb/task.h"
 #include "tbb/task_scheduler_init.h"
 #endif
+#include <atomic>
 #include <utility>
 
 #ifndef _WIN32
 #include <sys/mman.h>
 #endif
+
+#if defined(_USE_TBB)
+ //Only enable for TBB >=3 because code had problems with spawn as a non static function (see HPC-14588)
+ #if defined(TBB_VERSION_MAJOR)
+  #if (TBB_VERSION_MAJOR >= 3)
+//Release blocks of rows in parallel - always likely to improve performance
+   #define PARALLEL_SYNC_RELEASE
+  #endif
+ #endif
+#endif
+
 
 #ifdef _DEBUG
 #define _CLEAR_ALLOCATED_ROW
@@ -1168,12 +1181,12 @@ void ParallelReleaseRoxieRowArray(size_t count, const void * * rows)
             size_t remain = count - i;
             size_t blockRows = (remain > parallelSyncReleaseGranularity) ? parallelSyncReleaseGranularity : remain;
             tbb::task * next = new (completed_task->allocate_child()) sync_releaser_task(blockRows, rows + i);
-            next->spawn(*next); // static member in tbb 3.0
+            tbb::task::spawn(*next);
         }
     }
 
     completed_task->wait_for_all();
-    completed_task->destroy(*completed_task);       // static member in tbb 3.0
+    tbb::task::destroy(*completed_task);
 }
 #endif
 
@@ -1688,7 +1701,7 @@ private:
 #endif
         if ((header->allocatorId & ~ACTIVITY_MASK) != ACTIVITY_MAGIC)
         {
-            DBGLOG("%s: Invalid pointer %p %x", reason, ptr, *(unsigned *) baseptr);
+            DBGLOG("%s: Invalid pointer %p id(%x) cnt(%x)", reason, ptr, header->allocatorId, atomic_read(&header->count));
             PrintStackReport();
             PrintMemoryReport();
             HEAPERROR("Invalid pointer");
@@ -3444,7 +3457,7 @@ void initAllocSizeMappings(const unsigned * sizes)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-
+static std::atomic<unsigned> activeRowManagers;
 class CChunkingRowManager : public CRowManager
 {
     friend class CRoxieFixedRowHeap;
@@ -3525,7 +3538,8 @@ public:
         trackMemoryByActivity = false;
 #endif
         if (memTraceLevel >= 2)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%" I64F "u pageLimit=%u rowMgr=%p", (unsigned __int64)_memLimit, maxPageLimit, this);
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%" I64F "u pageLimit=%u rowMgr=%p num=%u",
+                          (unsigned __int64)_memLimit, maxPageLimit, this, activeRowManagers.load());
         if (timeLimit)
         {
             cyclesChecked = get_cycles_now();
@@ -3536,13 +3550,15 @@ public:
             cyclesChecked = 0;
             cyclesCheckInterval = 0;
         }
+        activeRowManagers++;
     }
 
     ~CChunkingRowManager()
     {
+        activeRowManagers--;
         if (memTraceLevel >= 2)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p", 
-                    maxPageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this);
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p num=%u",
+                    maxPageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this, activeRowManagers.load());
 
         if (!ignoreLeaks)
             reportLeaks(2);
@@ -4249,8 +4265,8 @@ protected:
         }
         else
         {
-            logctx.CTXLOG("RoxieMemMgr: pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p",
-                          maxPageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this);
+            logctx.CTXLOG("RoxieMemMgr: pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p cnt(%u)",
+                          maxPageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this, activeRowManagers.load());
             Owned<IActivityMemoryUsageMap> map = getActivityUsage();
             map->report(logctx, allocatorCache);
         }
@@ -4672,38 +4688,31 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
                     removeHeaplet(oldhead);
                 }
 
-                //Copying data within the block => must lock for the duration
-                if (!release)
-                    callback.lock();
+                //Copying data must lock for the duration (otherwise another thread modifying the data may leave it out of sync)
+                callback.lock();
 
                 // MORE - If we were really clever, we could manipulate the page table to avoid moving ANY data here...
                 memmove(realloced, oldbase, copysize + HugeHeaplet::dataOffset());  // NOTE - assumes no trailing data (e.g. end markers)
 
-                NonReentrantSpinBlock b(heapletLock);
-                insertHeaplet(head);
-            }
-            void * ret = (char *) realloced + HugeHeaplet::dataOffset();
-            memsize_t newCapacity = head->setCapacity(newsize);
-            if (release)
-            {
-                //Update the pointer before the old one becomes invalid
-                callback.atomicUpdate(newCapacity, ret);
+                void * ret = (char *) realloced + HugeHeaplet::dataOffset();
+                memsize_t newCapacity = head->setCapacity(newsize);
 
-                subfree_aligned(oldbase, oldPages);
+                //previously locked => update the pointer and then unlock
+                callback.update(newCapacity, ret);
+                callback.unlock();
+
+                {
+                    NonReentrantSpinBlock b(heapletLock);
+                    insertHeaplet(head);
+                }
+
+                if (release)
+                    subfree_aligned(oldbase, oldPages);
             }
             else
             {
-                if (realloced != oldbase)
-                {
-                    //previously locked => update the pointer and then unlock
-                    callback.update(newCapacity, ret);
-                    callback.unlock();
-                }
-                else
-                {
-                    //Extended at the end - update the max capacity
-                    callback.atomicUpdate(newCapacity, ret);
-                }
+                memsize_t newCapacity = head->setCapacity(newsize);
+                callback.atomicUpdate(newCapacity, original);
             }
 
             return;
@@ -6715,7 +6724,82 @@ protected:
         ASSERT(numPagesAfter == expectedPages);
         delete [] rows;
     }
+    void testRepeatCompacting(IRowManager * rowManager, IFixedRowHeap * rowHeap, unsigned maxRows, unsigned milliFraction, unsigned numLocked)
+    {
+        unsigned numRows = maxRows;
+        const void * * rows = new const void * [numRows];
+        for (unsigned i1 = 0; i1 < numRows; i1++)
+            rows[i1] = rowHeap->allocate();
 
+        //shuffle
+        unsigned i=numRows;
+        while (i>1) {
+            unsigned j = getRandom()%i;  // NB i is correct here
+            i--;
+            const void * t = rows[j];
+            rows[j] = rows[i];
+            rows[i] = t;
+        }
+
+        const void * * locked = new const void * [numLocked];
+        for (unsigned i=0; i < numLocked; i++)
+        {
+            LinkRoxieRow(rows[i]);
+            locked[i] = rows[i];
+        }
+
+        for (unsigned pass=0; pass < 8; pass++)
+        {
+            unsigned numPagesFull = rowManager->numPagesAfterCleanup(true);
+            unsigned numRowsLeft = 0;
+            unsigned target=0;
+            for (unsigned i2 = 0; i2 < numRows; i2++)
+            {
+                const void * row = rows[i2];
+                rows[i2] = nullptr;
+                if ((i2 >= numLocked) && (i2 * 7) % 1000 >= milliFraction)
+                {
+                    ReleaseRoxieRow(row);
+                }
+                else
+                {
+                    rows[target++] = row;
+                    numRowsLeft++;
+                }
+            }
+
+            //NOTE: The efficiency of the packing does depend on the row order, so ideally this would test multiple orderings
+            //of the array
+            unsigned rowsPerPage = (HEAP_ALIGNMENT_SIZE - FixedSizeHeaplet::dataOffset()) / compactingAllocSize;
+            unsigned numPagesBefore = rowManager->numPagesAfterCleanup(false);
+            unsigned expectedPages = (numRowsLeft + rowsPerPage-1)/rowsPerPage;
+            //CPPUNIT_ASSERT_EQUAL(numPagesFull, numPagesBefore);
+            unsigned startTime = msTick();
+            memsize_t compacted = rowManager->compactRows(numRowsLeft, rows);
+            unsigned endTime = msTick();
+            unsigned numPagesAfter = rowManager->numPagesAfterCleanup(false);
+            if ((compacted>0) != (numPagesBefore != numPagesAfter))
+                DBGLOG("Compacted not returned correctly");
+            CPPUNIT_ASSERT_EQUAL(compacted != 0, (numPagesBefore != numPagesAfter));
+            DBGLOG("Compacting %d[%d] (%d->%d [%d] cf %d) Before: Time taken %u", numRows, milliFraction, numPagesBefore, numPagesAfter, (unsigned)compacted, expectedPages, endTime-startTime);
+
+            if (numLocked == 0)
+                CPPUNIT_ASSERT_EQUAL(expectedPages, numPagesAfter);
+
+            //Now fill the rest up with new rows
+            for (unsigned i=numRowsLeft; i < numRows; i++)
+                rows[i] = rowHeap->allocate();
+        }
+
+        for (unsigned i=0; i < numLocked; i++)
+            ReleaseRoxieRow(locked[i]);
+
+        for (unsigned i3 = 0; i3 < numRows; i3++)
+        {
+            ReleaseClearRoxieRow(rows[i3]);
+        }
+        delete [] rows;
+    }
     void testCompacting()
     {
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
@@ -6737,6 +6821,9 @@ protected:
         {
             testCompacting(rowManager, rowHeap1, rowCount, percent*10);
             testCompacting(rowManager, rowHeap2, rowCount, percent*10);
+            testRepeatCompacting(rowManager, rowHeap1, maxRows, percent*10, 0);
+            testRepeatCompacting(rowManager, rowHeap2, maxRows, percent*10, 0);
+            testRepeatCompacting(rowManager, rowHeap2, maxRows, percent*10, 50);
         }
 
         //Where the rows occupy a small fraction of the memory the time is approximately O(n)

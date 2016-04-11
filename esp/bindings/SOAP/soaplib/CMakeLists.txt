@@ -30,12 +30,14 @@ set (    SRCS
          ../../../platform/espprotocol.cpp 
          ../../../platform/espthread.cpp 
          ../../../platform/sechandler.cpp 
+         ../../../platform/txsummary.cpp
          ../../../protocols/http/mapinfo.cpp 
          ../../bindutil.cpp 
          ../../http/client/httpclient.cpp 
          ../../http/platform/htmlpage.cpp 
          ../../http/platform/httpbinding.cpp 
          ../../http/platform/httpprot.cpp 
+         ../../http/platform/httpsecurecontext.cpp
          ../../http/platform/httpservice.cpp 
          ../../http/platform/httptransport.cpp 
          ../../http/platform/mime.cpp 

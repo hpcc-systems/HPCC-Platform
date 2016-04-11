@@ -21,6 +21,7 @@
 
 #include "hqltrans.ipp"
 #include "hqlutil.hpp"
+#include "hqlmeta.hpp"
 #include "workunit.hpp"
 
 //The following constants can be uncommented to increase the level of detail which is added to the processed graphs
@@ -1280,16 +1281,24 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             const char * opText = getEclOpString(no);
             if ((no == no_div) && expr->queryType()->isInteger())
                 opText = "DIV";
-            if ((no == no_addfiles) && expr->hasAttribute(_ordered_Atom))
-                opText = "&";
-            if ((no == no_addfiles) && expr->hasAttribute(_orderedPull_Atom))
-                opText = "&&";
+            if (no == no_addfiles)
+            {
+                if (isOrdered(expr))
+                    opText = "&";
+                if (expr->hasAttribute(pullAtom))
+                    opText = "&&";
+            }
             unsigned num = expr->numChildren();
             for (unsigned i=1; i < num; i++)
             {
                 IHqlExpression * child = queryChild(expr, i);
                 if (child)
                 {
+                    if ((no == no_addfiles) && child->isAttribute())
+                    {
+                        if (child->queryName() == orderedAtom)
+                            continue;
+                    }
                     if (xgmmlGraphText && endsWithDotDotDot(s))
                         break;
                     s.append(' ').append(opText).append(' ');

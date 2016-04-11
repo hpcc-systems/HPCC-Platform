@@ -871,18 +871,16 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         sendSo = globals->getPropBool("Debug/@dllsToSlaves", true);
     }
 
+    Owned<ILoadedDllEntry> querySo = createDllEntry(compoundPath.str(), false, NULL);
+
     SCMStringBuffer eclstr;
     StringAttr user(workunit.queryUser());
 
     PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.str(), user.str(), graphName);
 
     PROGLOG("Query %s loaded", compoundPath.str());
-    Owned<IConstWUGraph> graph = workunit.getGraph(graphName);
-    Owned<IPropertyTree> graphXGMML = graph->getXGMMLTree(false);
-    Owned<CJobMaster> job = createThorGraph(graphName, graphXGMML, workunit, compoundPath.str(), sendSo, agentEp);
+    Owned<CJobMaster> job = createThorGraph(graphName, workunit, querySo, sendSo, agentEp);
     PROGLOG("Graph %s created", graphName);
-    graphXGMML.clear();
-    graph.clear();
     PROGLOG("Running graph=%s", job->queryGraphName());
     addJob(*job);
     bool allDone = false;

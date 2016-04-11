@@ -30,6 +30,7 @@
 #include "esphttp.hpp"
 
 //ESP Bindings
+#include "http/platform/httpsecurecontext.hpp"
 #include "http/platform/httpservice.hpp"
 #include "http/platform/httptransport.hpp"
 
@@ -40,8 +41,8 @@
  ***************************************************************************/
 CEspHttpServer::CEspHttpServer(ISocket& sock, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
 {
-    IEspContext* ctx = createEspContext();
     m_request.setown(new CHttpRequest(sock));
+    IEspContext* ctx = createEspContext(createHttpSecureContext(m_request.get()));
     m_request->setMaxRequestEntityLength(maxRequestEntityLength);
     m_response.setown(new CHttpResponse(sock));
     m_request->setOwnContext(ctx);
@@ -51,8 +52,8 @@ CEspHttpServer::CEspHttpServer(ISocket& sock, bool viewConfig, int maxRequestEnt
 
 CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort* apport, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
 {
-    IEspContext* ctx = createEspContext();
     m_request.setown(new CHttpRequest(sock));
+    IEspContext* ctx = createEspContext(createHttpSecureContext(m_request.get()));
     m_request->setMaxRequestEntityLength(maxRequestEntityLength);
     m_response.setown(new CHttpResponse(sock));
     m_request->setOwnContext(ctx);
@@ -260,6 +261,8 @@ int CEspHttpServer::processRequest()
         m_request->updateContext();
         IEspContext* ctx = m_request->queryContext();
         ctx->setServiceName(serviceName.str());
+        ctx->setHTTPMethod(method.str());
+        ctx->setServiceMethod(methodName.str());
 
         bool isSoapPost=(stricmp(method.str(), POST_METHOD) == 0 && m_request->isSoapMessage());
         if (!isSoapPost)

@@ -54,11 +54,17 @@ define([
         baseClass: "GroupDetailsWidget",
         i18n: nlsHPCC,
 
+        summaryWidget: null,
+        membersWidget: null,
+        activePermissionsWidget: null,
+        groupPermissionsWidget: null,
+
         postCreate: function (args) {
             this.inherited(arguments);
             this.summaryWidget = registry.byId(this.id + "_Summary");
             this.membersWidget = registry.byId(this.id + "_Members");
-            this.permissionsWidget = registry.byId(this.id + "_Permissions");
+            this.activePermissionsWidget = registry.byId(this.id + "_ActivePermissions");
+            this.groupPermissionsWidget = registry.byId(this.id + "_GroupPermissions");
         },
 
         getTitle: function () {
@@ -89,8 +95,16 @@ define([
                 this.membersWidget.init({
                     groupname: this.group
                 });
-            } else if (currSel.id == this.permissionsWidget.id) {
-                this.permissionsWidget.init({
+            } else if (currSel.id == this.activePermissionsWidget.id) {
+                this.activePermissionsWidget.init({
+                    IsGroup: true,
+                    IncludeGroup: false,
+                    AccountName: this.group
+                });
+            } else if (currSel.id == this.groupPermissionsWidget.id) {
+                this.groupPermissionsWidget.init({
+                    IsGroup: true,
+                    IncludeGroup: false,
                     groupname: this.group
                 });
             }

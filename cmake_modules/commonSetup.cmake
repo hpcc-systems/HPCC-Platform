@@ -40,25 +40,27 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   cmake_policy ( SET CMP0011 NEW )
   if (NOT (CMAKE_MAJOR_VERSION LESS 3))
     cmake_policy ( SET CMP0026 OLD )
-    cmake_policy ( SET CMP0054 NEW )
+    if (NOT (CMAKE_MINOR_VERSION LESS 1))
+      cmake_policy ( SET CMP0054 NEW )
+    endif()
   endif()
   option(CLIENTTOOLS "Enable the building/inclusion of a Client Tools component." ON)
   option(PLATFORM "Enable the building/inclusion of a Platform component." ON)
   option(DEVEL "Enable the building/inclusion of a Development component." OFF)
   option(CLIENTTOOLS_ONLY "Enable the building of Client Tools only." OFF)
-  option(TEST_PLUGINS "Enable the building of platform and all plugins for testing purposes" OFF)
+  option(INCLUDE_PLUGINS "Enable the building of platform and all plugins for testing purposes" OFF)
+  option(USE_CASSANDRA "Include the Cassandra plugin in the base package" ON)
   option(PLUGIN "Enable building of a plugin" OFF)
-  option(USE_SHLIBDEPS "Enable the use of dpkg-shlibdeps on ubuntu packagin" OFF)
+  option(USE_SHLIBDEPS "Enable the use of dpkg-shlibdeps on ubuntu packaging" OFF)
 
-  if (APPLE OR WIN32)
-    option(USE_BINUTILS "Enable use of binutils to embed workunit info into shared objects" OFF)
-  else()
-    option(USE_BINUTILS "Enable use of binutils to embed workunit info into shared objects" ON)
-  endif()
+  option(SIGN_MODULES "Enable signing of ecl standard library modules" OFF)
   option(USE_CPPUNIT "Enable unit tests (requires cppunit)" OFF)
   option(USE_OPENLDAP "Enable OpenLDAP support (requires OpenLDAP)" ON)
   option(USE_ICU "Enable unicode support (requires ICU)" ON)
   option(USE_BOOST_REGEX "Configure use of boost regex" ON)
+  # USE_C11_REGEX is only checked if USE_BOOST_REGEX is OFF
+  # to disable REGEX altogether turn both off
+  option(USE_C11_REGEX "Configure use of c++11 std::regex" ON)
   option(Boost_USE_STATIC_LIBS "Use boost_regex static library for RPM BUILD" OFF)
   option(USE_OPENSSL "Configure use of OpenSSL" ON)
   option(USE_ZLIB "Configure use of zlib" ON)
@@ -69,6 +71,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
   option(USE_LIBARCHIVE "Configure use of libarchive" ON)
   option(USE_URIPARSER "Configure use of uriparser" OFF)
+  if (APPLE OR WIN32)
+    option(USE_NUMA "Configure use of numa" OFF)
+  else()
+    option(USE_NUMA "Configure use of numa" ON)
+  endif()
   option(USE_NATIVE_LIBRARIES "Search standard OS locations for thirdparty libraries" ON)
   option(USE_GIT_DESCRIBE "Use git describe to generate build tag" ON)
   option(CHECK_GIT_TAG "Require git tag to match the generated build tag" OFF)
@@ -101,7 +108,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(MYSQLEMBED "Create a package with ONLY the mysql plugin" OFF)
   option(JAVAEMBED "Create a package with ONLY the javaembed plugin" OFF)
   option(SQLITE3EMBED "Create a package with ONLY the sqlite3embed plugin" OFF)
-  option(CASSANDRAEMBED "Create a package with ONLY the cassandraembed plugin" OFF)
   option(KAFKA "Create a package with ONLY the kafkaembed plugin" OFF)
 
   if (APPLE OR WIN32)
@@ -116,11 +122,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
 
     if(REMBED OR V8EMBED OR MEMCACHED OR PYEMBED OR REDIS OR JAVAEMBED OR MYSQLEMBED
-        OR SQLITE3EMBED OR CASSANDRAEMBED OR KAFKA)
+        OR SQLITE3EMBED OR KAFKA)
         set(PLUGIN ON)
         set(CLIENTTOOLS OFF)
         set(PLATFORM OFF)
-        set(TEST_PLUGINS OFF)
+        set(INCLUDE_PLUGINS OFF)
         set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
     endif()
 
@@ -180,13 +186,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
             set(pluginname "sqlite3embed")
         endif()
     endif()
-    if(CASSANDRAEMBED)
-	    if(DEFINED pluginname)
-	        message(FATAL_ERROR "Cannot enable cassandraembed, already declared ${pluginname}")
-        else()
-            set(pluginname "cassandraembed")
-        endif()
-    endif()
     if(KAFKA)
 	    if(DEFINED pluginname)
 	        message(FATAL_ERROR "Cannot enable kafka, already declared ${pluginname}")
@@ -221,8 +220,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       set(DEVEL OFF)
   endif()
 
-    # Leave REMBED OFF for compliance with licensing
-    if(TEST_PLUGINS)
+    if(INCLUDE_PLUGINS)
+        set(REMBED ON)
         set(V8EMBED ON)
         set(MEMCACHED ON)
         set(PYEMBED ON)
@@ -230,7 +229,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set(MYSQLEMBED ON)
         set(JAVAEMBED ON)
         set(SQLITE3EMBED ON)
-        set(CASSANDRAEMBED ON)
         set(KAFKA ON)
     endif()
 
@@ -241,6 +239,23 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
   set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
+
+  if(UNIX AND SIGN_MODULES)
+    #export gpg public key used for signing to new installation
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/pub.key
+      COMMAND gpg --output=${CMAKE_BINARY_DIR}/pub.key --batch --no-tty --export ${SIGN_MODULES_KEYID}
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      COMMENT "Exporting public key for eclcc signed modules to ${CMAKE_BINARY_DIR}/pub.key"
+      VERBATIM
+      )
+    add_custom_target(export-stdlib-pubkey ALL
+      DEPENDS ${CMAKE_BINARY_DIR}/pub.key
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      )
+    install(FILES ${CMAKE_BINARY_DIR}/pub.key DESTINATION .${CONFIG_DIR}/rpmnew  COMPONENT Runtime)
+    install(PROGRAMS ${CMAKE_MODULE_PATH}publickey.install DESTINATION etc/init.d/install COMPONENT Runtime)
+  endif()
+
 
   ##########################################################
 
@@ -272,24 +287,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     message(FATAL_ERROR "No threading support found")
   ENDIF()
 
-  if (NOT APPLE AND NOT WIN32)
-    find_package(NUMA)
-    if (NOT NUMA_FOUND)
-      message(FATAL_ERROR "Support for numa not found")
-    endif()
-  endif()
-
   if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
    set (CMAKE_COMPILER_IS_CLANGXX 1)
   endif()
   if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
    set (CMAKE_COMPILER_IS_CLANG 1)
   endif()
-  if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE CMAKE_C_COMPILER_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if ((CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG) AND (NOT ${CMAKE_C_COMPILER_VERSION} MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+"))
+      execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE CMAKE_C_COMPILER_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif ()
-  if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CMAKE_CXX_COMPILER_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if ((CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX) AND (NOT ${CMAKE_CXX_COMPILER_VERSION} MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+"))
+      execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CMAKE_CXX_COMPILER_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif()
   if (CMAKE_COMPILER_IS_CLANGXX)
     execute_process( COMMAND ${CMAKE_CXX_COMPILER} --version OUTPUT_VARIABLE clang_full_version_string )
@@ -368,6 +376,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif ()
       endif ()
       SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE}")
+      SET (CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE}")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
       if (GENERATE_COVERAGE_INFO)
         message ("Build system with coverage.")
@@ -392,7 +401,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror=bitwise-op-parentheses -Werror=tautological-compare")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-switch-enum -Wno-format-zero-length -Wno-switch")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Qunused-arguments")  # Silence messages about pthread not being used when linking...
-      
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-inconsistent-missing-override")   # Until we fix them all, whcih would be a huge task...      
       if (CLANG_VERSION VERSION_GREATER 3.6 OR CLANG_VERSION VERSION_EQUAL 3.6 OR APPLE_CLANG_VERSION VERSION_GREATER 6.0)
         SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pointer-bool-conversion")
       endif()
@@ -474,70 +483,68 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   set ( SCM_GENERATED_DIR ${CMAKE_BINARY_DIR}/generated )
 
-  ###############################################################
-  # Macro for Logging Plugin build in CMake
+    ###############################################################
+    # Macro for Logging Plugin build in CMake
 
-  macro(LOG_PLUGIN)
-    PARSE_ARGUMENTS(pLOG
-      "OPTION;MDEPS"
-      ""
-      ${ARGN}
-    )
-    LIST(GET pLOG_DEFAULT_ARGS 0 PLUGIN_NAME)
-    if ( ${pLOG_OPTION} )
-        message(STATUS "Building Plugin: ${PLUGIN_NAME}" )
-    else()
-      message("---- WARNING -- Not Building Plugin: ${PLUGIN_NAME}")
-      foreach (dep ${pLOG_MDEPS})
-        MESSAGE("---- WARNING -- Missing dependency: ${dep}")
-      endforeach()
-      if (NOT USE_OPTIONAL)
-        message(FATAL_ERROR "Optional dependencies missing and USE_OPTIONAL not set")
-      endif()
-    endif()
-  endmacro()
-
-  ###############################################################
-  # Macro for adding an optional plugin to the CMake build.
-
-  macro(ADD_PLUGIN)
-    PARSE_ARGUMENTS(PLUGIN
-        "PACKAGES;OPTION;MINVERSION;MAXVERSION"
+    macro(LOG_PLUGIN)
+        PARSE_ARGUMENTS(pLOG
+        "OPTION;MDEPS"
         ""
-        ${ARGN}
-    )
-    LIST(GET PLUGIN_DEFAULT_ARGS 0 PLUGIN_NAME)
-    string(TOUPPER ${PLUGIN_NAME} name)
-    set(ALL_PLUGINS_FOUND 1)
-    set(PLUGIN_MDEPS ${PLUGIN_NAME}_mdeps)
-    set(${PLUGIN_MDEPS} "")
-
-    FOREACH(package ${PLUGIN_PACKAGES})
-      set(findvar ${package}_FOUND)
-      string(TOUPPER ${findvar} PACKAGE_FOUND)
-      if ("${PLUGIN_MINVERSION}" STREQUAL "")
-        find_package(${package})
-      else()
-        set(findvar ${package}_VERSION_STRING)
-        string(TOUPPER ${findvar} PACKAGE_VERSION_STRING)
-        find_package(${package} ${PLUGIN_MINVERSION} )
-        if ("${${PACKAGE_VERSION_STRING}}" VERSION_GREATER "${PLUGIN_MAXVERSION}")
-          set(${ALL_PLUGINS_FOUND} 0)
+        ${ARGN})
+        LIST(GET pLOG_DEFAULT_ARGS 0 PLUGIN_NAME)
+        if(${pLOG_OPTION})
+            message(STATUS "Building Plugin: ${PLUGIN_NAME}" )
+        else()
+            message(WARNING "Not Building Plugin: ${PLUGIN_NAME}")
+            foreach (dep ${pLOG_MDEPS})
+                message(WARNING "Missing dependency: ${dep}")
+            endforeach()
+            if(NOT USE_OPTIONAL)
+                message(FATAL_ERROR "Optional dependencies missing and USE_OPTIONAL OFF")
+            endif()
         endif()
-      endif()
-      if (NOT ${PACKAGE_FOUND})
-        set(ALL_PLUGINS_FOUND 0)
-        set(${PLUGIN_MDEPS} ${${PLUGIN_MDEPS}} ${package})
-      endif()
-    ENDFOREACH()
-    option(${PLUGIN_OPTION} "Turn on optional plugin based on availability of dependencies" ${ALL_PLUGINS_FOUND})
-    LOG_PLUGIN(${PLUGIN_NAME} OPTION ${PLUGIN_OPTION} MDEPS ${${PLUGIN_MDEPS}})
-    if(${ALL_PLUGINS_FOUND})
-      set(bPLUGINS ${bPLUGINS} ${PLUGIN_NAME})
-    else()
-      set(nbPLUGINS ${nbPLUGINS} ${PLUGIN_NAME})
-    endif()
-  endmacro()
+    endmacro()
+
+    ###############################################################
+    # Macro for adding an optional plugin to the CMake build.
+
+    macro(ADD_PLUGIN)
+        PARSE_ARGUMENTS(PLUGIN
+            "PACKAGES;MINVERSION;MAXVERSION"
+            ""
+            ${ARGN})
+        LIST(GET PLUGIN_DEFAULT_ARGS 0 PLUGIN_NAME)
+        string(TOUPPER ${PLUGIN_NAME} name)
+        set(ALL_PLUGINS_FOUND 1)
+        set(PLUGIN_MDEPS ${PLUGIN_NAME}_mdeps)
+        set(${PLUGIN_MDEPS} "")
+
+        foreach(package ${PLUGIN_PACKAGES})
+            set(findvar ${package}_FOUND)
+            string(TOUPPER ${findvar} PACKAGE_FOUND)
+            if("${PLUGIN_MINVERSION}" STREQUAL "")
+                find_package(${package})
+            else()
+                set(findvar ${package}_VERSION_STRING)
+                string(TOUPPER ${findvar} PACKAGE_VERSION_STRING)
+                find_package(${package} ${PLUGIN_MINVERSION} )
+                if ("${${PACKAGE_VERSION_STRING}}" VERSION_GREATER "${PLUGIN_MAXVERSION}")
+                    set(${ALL_PLUGINS_FOUND} 0)
+                endif()
+            endif()
+            if(NOT ${PACKAGE_FOUND})
+                set(ALL_PLUGINS_FOUND 0)
+                set(${PLUGIN_MDEPS} ${${PLUGIN_MDEPS}} ${package})
+            endif()
+        endforeach()
+        set(MAKE_${name} ${ALL_PLUGINS_FOUND})
+        LOG_PLUGIN(${PLUGIN_NAME} OPTION ${ALL_PLUGINS_FOUND} MDEPS ${${PLUGIN_MDEPS}})
+        if(${ALL_PLUGINS_FOUND})
+            set(bPLUGINS ${bPLUGINS} ${PLUGIN_NAME})
+        else()
+            set(nbPLUGINS ${nbPLUGINS} ${PLUGIN_NAME})
+        endif()
+    endmacro()
 
   ##################################################################
 
@@ -560,13 +567,13 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   ###########################################################################
 
-  if (USE_OPTIONAL)
-    message ("-- USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
-  endif()
+    if(USE_OPTIONAL)
+        message(WARNING "USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
+    endif()
 
-  if (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
-    message ("-- Using externals directory at ${EXTERNALS_DIRECTORY}")
-  endif()
+    if(NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
+        message(STATUS "Using externals directory at ${EXTERNALS_DIRECTORY}")
+    endif()
 
   IF ( NOT MAKE_DOCS_ONLY )
       IF ("${EXTERNALS_DIRECTORY}" STREQUAL "")
@@ -654,15 +661,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   ENDIF(MAKE_DOCS)
 
   IF ( NOT MAKE_DOCS_ONLY )
-      IF (USE_BINUTILS AND NOT WIN32 AND NOT APPLE)
-        find_package(BINUTILS)
-        IF (BINUTILS_FOUND)
-          add_definitions (-D_USE_BINUTILS)
-        ELSE()
-          message(FATAL_ERROR "BINUTILS requested but package not found")
-        ENDIF()
-      ENDIF()
-
       IF (USE_OPENLDAP)
         find_package(OPENLDAP)
         IF (OPENLDAP_FOUND)
@@ -774,10 +772,22 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       if(USE_BOOST_REGEX)
         find_package(BOOST_REGEX)
         if (BOOST_REGEX_FOUND)
+          message(STATUS "BOOST_REGEX enabled")
           add_definitions (-D_USE_BOOST_REGEX)
         else()
           message(FATAL_ERROR "BOOST_REGEX requested but package not found")
         endif()
+      else(USE_BOOST_REGEX)
+        if (USE_C11_REGEX)
+          if ((NOT CMAKE_COMPILER_IS_GNUCC) OR (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9.0))
+            message(STATUS "C11_REGEX enabled")
+            add_definitions (-D_USE_C11_REGEX)
+          else()
+            message(STATUS "C11_REGEX requested but not supported on this platform")
+          endif()
+        else(USE_C11_REGEX)
+          message(STATUS "NO REGEX requested")
+        endif(USE_C11_REGEX)
       endif(USE_BOOST_REGEX)
 
       if(USE_OPENSSL)
@@ -820,6 +830,14 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       else()
         add_definitions (-D_NO_APR)
       endif(USE_APR)
+
+      if (USE_NUMA)
+        find_package(NUMA)
+        add_definitions (-D_USE_NUMA)
+        if (NOT NUMA_FOUND)
+          message(FATAL_ERROR "NUMA requested but package not found")
+        endif()
+      endif()
 
       if(USE_TBB)
         find_package(TBB)
@@ -912,4 +930,37 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     message(STATUS "Updated ${cpackvar} to ${${cpackvar}}")
   endfunction()
 
+  MACRO(SIGN_MODULE module)
+    if(SIGN_MODULES)
+      if(DEFINED SIGN_MODULES_PASSPHRASE)
+        set(GPG_PASSPHRASE_OPTION --passphrase)
+      endif()
+      if(DEFINED SIGN_MODULES_KEYID)
+        set(GPG_DEFAULT_KEY_OPTION --default-key)
+      endif()
+      add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
+        COMMAND gpg --output ${CMAKE_CURRENT_BINARY_DIR}/${module} ${GPG_DEFAULT_KEY_OPTION} ${SIGN_MODULES_KEYID}  --clearsign ${GPG_PASSPHRASE_OPTION} ${SIGN_MODULES_PASSPHRASE} --batch --no-tty ${module}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Adding signed ${module} to project"
+        )
+    else()
+      add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
+        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/${module} ${CMAKE_CURRENT_BINARY_DIR}/${module}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Adding unsigned ${module} to project"
+        VERBATIM
+        )
+    endif()
+    # Use custom target to cause build to fail if dependency file isn't generated by gpg or cp commands
+    get_filename_component(module_without_extension ${module} NAME_WE)
+    add_custom_target(
+      ${module_without_extension}-ecl ALL
+      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${module}
+      )
+    if(SIGN_MODULES)
+      add_dependencies(${module_without_extension}-ecl export-stdlib-pubkey)
+    endif()
+  ENDMACRO()
 endif ("${COMMONSETUP_DONE}" STREQUAL "")

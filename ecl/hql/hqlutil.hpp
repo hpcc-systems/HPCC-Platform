@@ -416,7 +416,7 @@ public:
     IHqlExpression * find(IHqlExpression * e) const { return (IHqlExpression *)SuperHashTable::find(e); }
     void remove(IHqlExpression * e) { SuperHashTable::removeExact(e); }
 
-    ~HqlExprHashTable() { releaseAll(); }
+    ~HqlExprHashTable() { _releaseAll(); }
 
 private:
     virtual void     onAdd(void *et);

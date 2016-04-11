@@ -72,7 +72,7 @@ public:
         writer->outputBeginArray(rowTag); //need this to format rows, even if not outputting it below
         while(!abortSoon)
         {
-            OwnedConstThorRow row = input->ungroupedNextRow();
+            OwnedConstThorRow row = inputStream->ungroupedNextRow();
             if (!row)
                 break;
             writer->clear().outputBeginNested(rowTag, false);

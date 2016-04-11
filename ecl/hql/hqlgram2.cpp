@@ -48,6 +48,7 @@
 #include "hqlvalid.hpp"
 #include "hqlrepository.hpp"
 #include "hqlir.hpp"
+#include "reservedwords.hpp"
 
 #define ADD_IMPLICIT_FILEPOS_FIELD_TO_INDEX         TRUE
 #define FAST_FIND_FIELD
@@ -3754,7 +3755,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 checkSvcAttrNoValue(attr, errpos);
             }
             else if ((name == userMatchFunctionAtom) || (name == costAtom) || (name == allocatorAtom) || (name == extendAtom) || (name == passParameterMetaAtom) ||
-                     (name == namespaceAtom) || (name==prototypeAtom))
+                     (name == namespaceAtom) || (name==prototypeAtom) || (name == foldAtom) || (name == nofoldAtom))
             {
             }
             else if (name == holeAtom)
@@ -5688,7 +5689,9 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
             bool ok = false;
             if (attributes)
             {
-                if (attr == hintAtom) ok = true;
+                if ((attr == hintAtom) || (attr == parallelAtom) || (attr == orderedAtom) || (attr == algorithmAtom) ||
+                    (attr == stableAtom) || (attr == unstableAtom))
+                    ok = true;
 
                 switch (op)
                 {
@@ -5707,7 +5710,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     if (attr == prefetchAtom) ok = true;
                     if (attr == mergeAtom) ok = true;
                     if (attr == groupedAtom) ok = true;
-                    //fall through
+                    /* no break */
                 case no_group:
                     if (attr == allAtom) ok = true;
                     if (attr == localAtom) ok = true;
@@ -5720,7 +5723,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     break;
                 case no_topn:
                     if (attr == bestAtom) ok = true;
-                    //fall through
+                    /* no break */
                 case no_sort:
                     if (attr == localAtom) ok = true;
                     if (attr == skewAtom) ok = true;
@@ -5728,9 +5731,6 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     if (attr == manyAtom) ok = true;
                     if (attr == fewAtom) ok = true;
                     if (attr == assertAtom) ok = true;
-                    if (attr == stableAtom) ok = true;
-                    if (attr == unstableAtom) ok = true;
-                    if (attr == parallelAtom) ok = true;
                     break;
                 case no_nwaymerge:
                     if (attr == localAtom) ok = true;
@@ -5739,7 +5739,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                 case no_mergejoin:
                     if (attr == dedupAtom) ok = true;
                     if (attr == assertAtom) ok = true;
-                    //fall through
+                    /* no break */
                 case no_nwayjoin:
                     if (attr == localAtom) ok = true;
                     if (attr == mofnAtom) ok = true;
@@ -8878,14 +8878,42 @@ void HqlGram::createAppendFiles(attribute & targetAttr, attribute & leftAttr, at
 {
     OwnedHqlExpr left = leftAttr.getExpr();
     OwnedHqlExpr right = rightAttr.getExpr();
-    if (left->isDatarow()) 
+    if (left->isDatarow())
         left.setown(createDatasetFromRow(LINK(left)));
     right.setown(checkEnsureRecordsMatch(left, right, rightAttr.pos, right->isDatarow()));
     if (right->isDatarow())
         right.setown(createDatasetFromRow(LINK(right)));
-    IHqlExpression * attr = kind ? createAttribute(kind) : NULL;
+    IHqlExpression * attr = NULL;
+    if (!kind)
+        attr = getOrderedAttribute(false);
+    else if (kind == pullAtom)
+        attr = createComma(createAttribute(_ordered_Atom), createAttribute(pullAtom));
+    else
+        attr = createAttribute(kind);
+
     targetAttr.setExpr(createDataset(no_addfiles, LINK(left), createComma(LINK(right), attr)));
     targetAttr.setPosition(leftAttr);
+}
+
+static IHqlExpression * createAppendFiles(IHqlExpression * expr, IHqlExpression * attrs)
+{
+    if (expr->getOperator() != no_comma)
+    {
+        if (expr->isDatarow())
+            return createDatasetFromRow(LINK(expr));
+        return LINK(expr);
+    }
+
+    IHqlExpression * lhs = createAppendFiles(expr->queryChild(0), attrs);
+    IHqlExpression * rhs = createAppendFiles(expr->queryChild(1), attrs);
+    return createDataset(no_addfiles, lhs, createComma(rhs, LINK(attrs)));
+}
+
+IHqlExpression * HqlGram::createAppendFiles(attribute & filesAttr, IHqlExpression * _attrs)
+{
+    OwnedHqlExpr files = filesAttr.getExpr();
+    OwnedHqlExpr attrs = _attrs;
+    return ::createAppendFiles(files, attrs);
 }
 
 void HqlGram::createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind)
@@ -9349,6 +9377,10 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     // type specific handling
     IHqlExpression * base = queryNonDelayedBaseAttribute(expr); 
     node_operator op = base->getOperator();
+
+    if (isCritical(failure) && !base->isAction())
+        reportError(ERR_CRITICAL_NON_ACTION, nameattr, "Critical may only be used for actions");
+
     switch(op)
     {
     case no_service:  // service
@@ -9363,7 +9395,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
             activeScope.resetParameters();
         }
         break;
-    
+
     case no_macro:
         if (!activeScope.isParametered)
         {
@@ -10443,6 +10475,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ACOS: msg.append("ACOS"); break;
     case AFTER: msg.append("AFTER"); break;
     case AGGREGATE: msg.append("AGGREGATE"); break;
+    case ALGORITHM: msg.append("ALGORITHM"); break;
     case ALIAS: msg.append("__ALIAS__"); break;
     case ALL: msg.append("ALL"); break;
     case ALLNODES: msg.append("ALLNODES"); break;
@@ -10495,6 +10528,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case CPPBODY: msg.append("BEGINC++"); break;
     case TOK_CPP: msg.append("C++"); break;
     case CRC: msg.append("HASHCRC"); break;
+    case CRITICAL: msg.append("CRITICAL"); break;
     case CRON: msg.append("CRON"); break;
     case CSV: msg.append("CSV"); break;
     case DATASET: msg.append("DATASET"); break;
@@ -10523,7 +10557,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ENCRYPT: msg.append("ENCRYPT"); break;
     case ENCRYPTED: msg.append("ENCRYPTED"); break;
     case END: msg.append("END"); break;
-    case ENDCPP: msg.append("ENDCPP"); break;
+    case ENDCPP: msg.append("ENDC++"); break;
     case ENDEMBED: msg.append("ENDEMBED"); break;
     case ENTH: msg.append("ENTH"); break;
     case ENUM: msg.append("ENUM"); break;
@@ -10578,7 +10612,6 @@ static void getTokenText(StringBuffer & msg, int token)
     case HAVING: msg.append("HAVING"); break;
     case HEADING: msg.append("HEADING"); break;
     case HINT: msg.append("HINT"); break;
-    case HOLE: msg.append("HOLE"); break;
     case IF: msg.append("IF"); break;
     case IFF: msg.append("IFF"); break;
     case IFBLOCK: msg.append("IFBLOCK"); break;
@@ -10671,7 +10704,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ONLY: msg.append("ONLY"); break;
     case ONWARNING: msg.append("ONWARNING"); break;
     case OPT: msg.append("OPT"); break;
-    case OR : msg.append("OR "); break;
+    case OR : msg.append("OR"); break;
     case ORDER: msg.append("ORDER"); break;
     case ORDERED: msg.append("ORDERED"); break;
     case OUTER: msg.append("OUTER"); break;
@@ -10958,7 +10991,7 @@ void HqlGram::simplifyExpected(int *expected)
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
                        HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOCOMBINE, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, 0);
+                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, UNORDERED, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
                        COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
                        TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,
@@ -11175,7 +11208,8 @@ void HqlGram::checkWorkflowMultiples(IHqlExpression * previousWorkflow, IHqlExpr
         case no_stored:
         case no_checkpoint:
         case no_once:
-            if((oldOp==no_persist)||(oldOp==no_stored)||(oldOp==no_once)||(oldOp==no_checkpoint))
+        case no_critical:
+            if((oldOp==no_persist)||(oldOp==no_stored)||(oldOp==no_once)||(oldOp==no_checkpoint)||(oldOp==no_critical))
                 reportError(ERR_MULTIPLE_WORKFLOW, errpos, "Multiple scoping controls are not allowed on an action or expression");
             break;
         case no_attr:
@@ -11218,6 +11252,19 @@ bool HqlGram::isSaved(IHqlExpression * failure)
         case no_once:
             return true;
         }
+    }
+    return false;
+}
+
+bool HqlGram::isCritical(IHqlExpression * failure)
+{
+    if (!failure) return false;
+    HqlExprArray args;
+    failure->unwindList(args, no_comma);
+    ForEachItemIn(idx, args)
+    {
+        if (args.item(idx).getOperator()==no_critical)
+            return true;
     }
     return false;
 }
@@ -11781,7 +11828,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     attrCtx.noteEndAttribute();
 }
 
-void testHqlInternals()
+int testHqlInternals()
 {
     printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u) prop(%u)\n",
             (unsigned)sizeof(CHqlConstant),
@@ -11838,12 +11885,33 @@ void testHqlInternals()
         }
     }
 
-    // 
-    // report test result
-    if (error)
-        printf("%d error%s found!\n", error, error<=1?"":"s");
-    else
-        printf("No errors\n");
+    return error;
+}
+
+int testReservedWords()
+{
+    printf("Testing --keywords is complete...\n");
+    int error = 0;
+
+    for (int token = 258; token < YY_LAST_TOKEN; token++)
+    {
+        try
+        {
+            StringBuffer tokenText;
+            getTokenText(tokenText, token);
+            tokenText.toLowerCase();
+            if (!searchReservedWords(tokenText.str()))
+            {
+                error++;
+                printf("   Error: '%s' is missing from reservedWords.cpp\n", tokenText.str());
+            }
+        }
+        catch (...)
+        {
+            printf("   Error: complete test not possible - getTokenText() does not handle expected: %d\n", token);
+        }
+    }
+    return error;
 }
 
 IHqlExpression *HqlGram::yyParse(bool _parsingTemplateAttribute, bool catchAbort)

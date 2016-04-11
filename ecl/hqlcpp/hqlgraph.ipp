@@ -107,7 +107,7 @@ protected:
 IPropertyTree * addGraphAttribute(IPropertyTree * node, const char * name);
 void addGraphAttribute(IPropertyTree * node, const char * name, const char * value);
 void addGraphAttributeInt(IPropertyTree * node, const char * name, __int64 value);
-void addGraphAttributeBool(IPropertyTree * node, const char * name, bool value);
+void addGraphAttributeBool(IPropertyTree * node, const char * name, bool value, bool alwaysAdd=false);
 IPropertyTree * addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex, unsigned inputIndex, IAtom * kind, const char * label, bool nWay);
 IPropertyTree * addComplexGraphEdge(IPropertyTree * graph, unsigned __int64 sourceGraph, unsigned __int64 targetGraph, unsigned __int64 sourceActivity, unsigned __int64 targetActivity, unsigned outputIndex, IAtom * kind, const char * label);
 void removeGraphAttribute(IPropertyTree * node, const char * name);

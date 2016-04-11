@@ -514,6 +514,7 @@ public:
     bool isDiskFile(IHqlExpression * expr);
     bool isFilteredDiskFile(IHqlExpression * expr);
     bool isSaved(IHqlExpression * failure);
+    bool isCritical(IHqlExpression * failure);
     bool okToAddSideEffects(IHqlExpression * expr);
     void processUpdateAttr(attribute & attr);
     IHqlExpression * createArithmeticOp(node_operator op, attribute &a1, attribute &a2);
@@ -686,6 +687,7 @@ public:
 
     void createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind);
     void createAppendFiles(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind);
+    IHqlExpression * createAppendFiles(attribute & filesAttr, IHqlExpression * _attrs);
     IHqlExpression * processIfProduction(attribute & condAttr, attribute & trueAttr, attribute * falseAttr);
 
     IHqlExpression * createSymbolFromValue(IHqlExpression * primaryExpr, IHqlExpression * value);
@@ -1233,6 +1235,7 @@ private:
 
 IHqlExpression *reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *scope, HqlLookupContext & ctx, bool hasFieldMap);
 extern HQL_API void resetLexerUniqueNames();        // to make regression suite consistent
-extern HQL_API void testHqlInternals();
+extern HQL_API int testHqlInternals();
+extern HQL_API int testReservedWords();
 
 #endif

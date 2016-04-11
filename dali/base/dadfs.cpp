@@ -586,6 +586,47 @@ public:
     {
         return CFileLockCompound::detach();
     }
+    bool initWithFileLock(const CDfsLogicalFileName &logicalName, unsigned timeout, const char *msg, CFileLock &fcl, unsigned fclmode)
+    {
+        // SuperOwnerLock while holding fcl
+        IRemoteConnection *fclConn = fcl.queryConnection();
+        if (!fclConn)
+            return false; // throw ?
+        CTimeMon tm(timeout);
+        unsigned remaining = timeout;
+        loop
+        {
+            try
+            {
+                if (init(logicalName, NULL, 0, msg))
+                    return true;
+                else
+                    return false; // throw ?
+            }
+            catch (ISDSException *e)
+            {
+                if (SDSExcpt_LockTimeout != e->errorCode() || tm.timedout(&remaining))
+                    throw;
+                e->Release();
+            }
+            // release lock
+            {
+                fclConn->changeMode(RTM_NONE, remaining);
+            }
+            tm.timedout(&remaining);
+            unsigned stime = 1000 * (2+getRandom()%15); // 2-15 sec
+            if (stime > remaining)
+                stime = remaining;
+            // let another get excl lock
+            Sleep(stime);
+            tm.timedout(&remaining);
+            // get lock again (waiting for other to release excl)
+            {
+                fclConn->changeMode(fclmode, remaining);
+                fclConn->reload();
+            }
+        }
+    }
 };
 
 class CScopeConnectLock
@@ -7363,11 +7404,16 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                 CFileLock fcl;
                 unsigned mode = RTM_LOCK_READ | RTM_SUB;
                 if (hold) mode |= RTM_LOCK_HOLD;
+                CTimeMon tm(timeout);
                 if (!fcl.init(*logicalname, mode, timeout, "CDistributedFileDirectory::lookup"))
                     break;
                 CFileSuperOwnerLock superOwnerLock;
                 if (lockSuperOwner)
-                    verifyex(superOwnerLock.init(*logicalname, NULL, defaultTimeout, "CDistributedFileDirectory::dolookup(SuperOwnerLock)"));
+                {
+                    unsigned remaining;
+                    tm.timedout(&remaining);
+                    verifyex(superOwnerLock.initWithFileLock(*logicalname, remaining, "CDistributedFileDirectory::dolookup(SuperOwnerLock)", fcl, mode));
+                }
                 if (fcl.getKind() == DXB_File)
                 {
                     StringBuffer cname;
@@ -7648,7 +7694,6 @@ class CRemoveSuperFileAction: public CDFAction
         IDistributedFileTransactionExt *transaction;
         CIArrayOf<CDFAction> actions;
     public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
         CNestedTransaction(IDistributedFileTransactionExt *_transaction, IUserDescriptor *user)
             : CDistributedFileTransaction(user), transaction(_transaction)
         {
@@ -8789,9 +8834,20 @@ public:
         ForEachItemIn(i,filters)
         {
             CDFUSFFilter &filter = filters.item(i);
-            bool match = filter.checkFilter(file);
-            if (!match)
-                return match;
+            const char* attrPath = filter.getAttrPath();
+            try
+            {
+                if (!filter.checkFilter(file))
+                    return false;
+            }
+            catch (IException *e)
+            {
+                VStringBuffer msg("Failed to check filter %s for %s: ", attrPath, name);
+                int code = e->errorCode();
+                e->errorMessage(msg);
+                e->Release();
+                throw MakeStringException(code, "%s", msg.str());
+            }
         }
         return true;
     }
@@ -9639,8 +9695,8 @@ IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned 
     Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(nodeGroupName);
     CInitGroups init(timems);
     Owned<IGroup> expandedClusterGroup = init.getGroupFromCluster(type, cluster, true);
-    if (nodeGroup->ordinality() != expandedClusterGroup->ordinality()) // sanity check
-        throwUnexpected();
+    if (!expandedClusterGroup->equals(nodeGroup))
+        throwStringExceptionV(0, "DFS cluster topology for '%s', does not match existing DFS group layout for group '%s'", clusterName, nodeGroupName.str());
     Owned<IGroup> clusterGroup = init.getGroupFromCluster(type, cluster, false);
     ICopyArrayOf<INode> nodes;
     for (unsigned n=0; n<clusterGroup->ordinality(); n++)
@@ -11398,10 +11454,13 @@ bool CDistributedFileDirectory::getFileSuperOwners(const char *logicalname, Stri
         throw MakeStringException(-1,"CDistributedFileDirectory::getFileSuperOwners: Invalid file name '%s'",logicalname);
     if (lfn.isMulti()||lfn.isExternal()||lfn.isForeign()) 
         return false;
+    CTimeMon tm(defaultTimeout);
     if (!lock.init(lfn, RTM_LOCK_READ, defaultTimeout, "CDistributedFileDirectory::getFileSuperOwners"))
         return false;
     CFileSuperOwnerLock superOwnerLock;
-    verifyex(superOwnerLock.init(lfn, NULL, defaultTimeout, "CDistributedFileDirectory::getFileSuperOwners(SuperOwnerLock)"));
+    unsigned remaining;
+    tm.timedout(&remaining);
+    verifyex(superOwnerLock.initWithFileLock(lfn, remaining, "CDistributedFileDirectory::getFileSuperOwners(SuperOwnerLock)", lock, RTM_LOCK_READ));
     Owned<IPropertyTreeIterator> iter = lock.queryRoot()->getElements("SuperOwner");
     StringBuffer pname;
     ForEach(*iter) {
@@ -12006,7 +12065,7 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
 
 const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
     "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
-    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent" };
+    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect" };
 
 extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild)
 {

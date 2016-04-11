@@ -2172,6 +2172,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -2479,6 +2480,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -3234,6 +3236,57 @@ public:
     }
 };
 
+void HqlCppTranslator::buildDatasetAssignCombine(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
+{
+    BuildCtx iterctx(ctx);
+    IHqlExpression *left = expr->queryChild(0);
+    IHqlExpression *right = expr->queryChild(1);
+
+    iterctx.addGroup();  // stop bound cursors leaking outside the block.
+
+    // right iter1; right.first();
+    HqlExprAttr rightIter, rightRow;
+    Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(iterctx, right);
+    cursor->buildIterateClass(iterctx, rightIter, rightRow);
+    buildIteratorFirst(iterctx, rightIter, rightRow);
+    BoundRow * sourceCursor = buildDatasetIterate(iterctx, left, false);
+    if (!sourceCursor)
+        return;
+
+    // handle right rows < left rows failure
+    {
+        OwnedHqlExpr test = createValue(no_not, makeBoolType(), LINK(rightRow));
+        OwnedHqlExpr failMsg = createFailMessage("Combine: right dataset smaller than left", NULL, NULL, queryCurrentActivityId(ctx));
+        OwnedHqlExpr fail = createValue(no_fail, makeVoidType(), LINK(failMsg));
+
+        BuildCtx failctx(iterctx);
+        failctx.addFilter(test);
+        buildStmt(failctx, fail);
+    }
+
+    bindTableCursor(iterctx, right, rightRow, no_right, querySelSeq(expr));
+
+    BoundRow * targetRow = target->buildCreateRow(iterctx);
+
+    Owned<IReferenceSelector> targetRef = buildActiveRow(iterctx, targetRow->querySelector());
+    doBuildRowAssignProject(iterctx, targetRef, expr);
+
+    target->finishRow(iterctx, targetRow);
+
+    // right.next();
+    buildIteratorNext(iterctx, rightIter, rightRow);
+
+    // handle right rows > left rows failure
+    {
+        OwnedHqlExpr failMsg = createFailMessage("Combine: right dataset larger than left", NULL, NULL, queryCurrentActivityId(ctx));
+        OwnedHqlExpr fail = createValue(no_fail, makeVoidType(), LINK(failMsg));
+
+        BuildCtx failctx(ctx);
+        failctx.addFilter(rightRow);
+        buildStmt(failctx, fail);
+    }
+}
+
 void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
 {
     BuildCtx iterctx(ctx);
@@ -3267,7 +3320,7 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
         if (containsSkip)
         {
             OwnedHqlExpr callback = createUnknown(no_unknown, makeVoidType(), NULL, new InlineDatasetSkipCallback);
-            skipAssociation = ctx.associateExpr(skipActionMarker, callback);
+            skipAssociation = iterctx.associateExpr(skipActionMarker, callback);
         }
 
         Owned<IReferenceSelector> targetRef = buildActiveRow(iterctx, targetRow->querySelector());
@@ -3281,11 +3334,9 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
             break;
         }
 
-        ctx.removeAssociation(skipAssociation);
         target->finishRow(iterctx, targetRow);
     }
 }
-
 
 void HqlCppTranslator::buildDatasetAssignJoin(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
 {
@@ -3479,12 +3530,16 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
     case no_newusertable:
         buildDatasetAssignProject(subctx, target, expr);
         return;
+    case no_combine:
+        buildDatasetAssignCombine(subctx, target, expr);
+        return;
     case no_compound_childread:
     case no_compound_childnormalize:
     case no_compound_childaggregate:
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -3947,6 +4002,7 @@ BoundRow * HqlCppTranslator::buildDatasetIterate(BuildCtx & ctx, IHqlExpression 
     case no_compound_selectnew:
     case no_compound_inline:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_sorted:
     case no_nofold:
@@ -4309,7 +4365,9 @@ void HqlCppTranslator::doBuildRowAssignProject(BuildCtx & ctx, IReferenceSelecto
     IHqlExpression * selSeq = querySelSeq(expr);
     OwnedHqlExpr leftSelect = createSelector(no_left, dataset, selSeq);
     OwnedHqlExpr activeDataset = ensureActiveRow(dataset->queryNormalizedSelector());
-    OwnedHqlExpr transform = queryNewReplaceSelector(expr->queryChild(1), leftSelect, activeDataset);
+
+    // queryChild(1) should be changed to queryTransformExpr()...
+    OwnedHqlExpr transform = queryNewReplaceSelector(queryNewColumnProvider(expr), leftSelect, activeDataset);
     Owned<BoundRow> selfCursor;
     if (!transform)
     {
@@ -4485,8 +4543,15 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
                 buildRowAssign(ctx, target, deserialized->queryChild(0));
             else if (!typeRequiresDeserialization(deserialized->queryType(), serializeForm))
                 buildRowAssign(ctx, target, deserialized);
-            else
+            else if (target->queryRootRow()->queryBuilder())
                 doBuildRowAssignSerializeRow(ctx, target, expr);
+            else
+            {
+                CHqlBoundExpr bound;
+                buildTempExpr(ctx, expr, bound);
+                OwnedHqlExpr translated = bound.getTranslatedExpr();
+                buildRowAssign(ctx, target, translated);
+            }
             return;
         }
     case no_if:
@@ -4742,6 +4807,7 @@ IHqlExpression * HqlCppTranslator::ensureIteratedRowIsLive(BuildCtx & initctx, B
         case no_stepped:
         case no_sorted:
         case no_distributed:
+        case no_unordered:
         case no_preservemeta:
         case no_choosen:
         case no_selectnth:                      // can occur as the lhs of no_select
@@ -5135,14 +5201,16 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
         }
     }
 
-    OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
     switch (expr->queryType()->getTypeCode())
     {
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-        buildTempExpr(ctx, call, tgt);
-        break;
+        {
+            OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
+            buildTempExpr(ctx, call, tgt);
+            break;
+        }
     case type_row:
         {
             OwnedHqlExpr translated = translateGetGraphResult(ctx, expr);
@@ -5150,8 +5218,11 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
             break;
         }
     default:
-        buildExpr(ctx, call, tgt);
-        break;
+        {
+            OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
+            buildExpr(ctx, call, tgt);
+            break;
+        }
     }
 }
 

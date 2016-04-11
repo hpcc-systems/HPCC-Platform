@@ -77,7 +77,7 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 
 #define ESDLOPT_WSDL_ADDRESS            "--wsdl-address"
 
-#define ESDLBINDING_URN_BASE            "urn:hpccsystems:ws"
+#define DEFAULT_NAMESPACE_BASE          "urn:hpccsystems:ws"
 #define ESDLOPTLIST_DELIMITER           ";"
 
 #define ESDL_OPT_SERVICE_SERVER         "-s"
@@ -165,7 +165,8 @@ public:
             {
                 StringBuffer esxml;
                 EsdlCmdHelper::convertECMtoESXDL(sourceFileName, filename.str(), esxml, true, true, false, true);
-                esdlDef->addDefinitionFromXML(esxml, serviceName, (int)version);
+                VStringBuffer serviceid("%s.%f", serviceName, version);
+                esdlDef->addDefinitionFromXML(esxml, serviceid.str());
             }
             else
             {

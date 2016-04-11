@@ -29,25 +29,24 @@
 #include "thactivityutil.ipp"
 #include "thaggregateslave.ipp"
 
-class AggregateSlaveBase : public CSlaveActivity, public CThorDataLink
+class AggregateSlaveBase : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
 protected:
     bool hadElement, inputStopped;
-    IThorDataLink *input;
 
     void doStopInput()
     {
         if (inputStopped)
             return;
         inputStopped = true;
-        stopInput(input);
+        PARENT::stop();
     }
-    void doStart()
+    virtual void start() override
     {
+        PARENT::start();
         hadElement = false;
         inputStopped = false;
-        input = inputs.item(0);
-        startInput(input);
         if (input->isGrouped())
             ActPrintLog("Grouped mismatch");
     }
@@ -116,10 +115,8 @@ protected:
         queryJobChannel().queryJobComm().send(mb, dst, mpTag);
     }
 public:
-    AggregateSlaveBase(CGraphElementBase *_container)
-        : CSlaveActivity(_container), CThorDataLink(this)
+    AggregateSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        input = NULL;
         hadElement = inputStopped = false;
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -128,19 +125,18 @@ public:
             mpTag = container.queryJobChannel().deserializeMPTag(data);
         appendOutputLinked(this);
     }
-    virtual bool isGrouped() { return false; }
 };
 
 //
 
 class AggregateSlaveActivity : public AggregateSlaveBase
 {
+    typedef AggregateSlaveBase PARENT;
+
     bool eof;
     IHThorAggregateArg * helper;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     AggregateSlaveActivity(CGraphElementBase *container) : AggregateSlaveBase(container)
     {
         helper = (IHThorAggregateArg *)queryHelper();
@@ -152,17 +148,15 @@ public:
         if (firstNode())
             cancelReceiveMsg(1, mpTag);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        doStart();
+        PARENT::start();
         eof = false;
-        dataLinkStart();
     }
-    virtual void stop()
+    virtual void stop() override
     {
         doStopInput();
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {
@@ -171,7 +165,7 @@ public:
             return NULL;
         eof = true;
 
-        OwnedConstThorRow next = input->ungroupedNextRow();
+        OwnedConstThorRow next = inputStream->ungroupedNextRow();
         RtlDynamicRowBuilder resultcr(queryRowAllocator());
         size32_t sz = helper->clearAggregate(resultcr);         
         if (next)
@@ -182,7 +176,7 @@ public:
             {
                 while (!abortSoon)
                 {
-                    next.setown(input->ungroupedNextRow());
+                    next.setown(inputStream->ungroupedNextRow());
                     if (!next)
                         break;
                     sz = helper->processNext(resultcr, next);
@@ -218,10 +212,12 @@ public:
 
 class ThroughAggregateSlaveActivity : public AggregateSlaveBase
 {
+    typedef AggregateSlaveBase PARENT;
+
     IHThorThroughAggregateArg *helper;
     RtlDynamicRowBuilder partResult;
     size32_t partResultSize;
-    Owned<IRowInterfaces> aggrowif;
+    Owned<IThorRowInterfaces> aggrowif;
 
     void doStopInput()
     {
@@ -233,8 +229,7 @@ class ThroughAggregateSlaveActivity : public AggregateSlaveBase
             OwnedConstThorRow ret = getResult(partrow.getClear());
             sendResult(ret, aggrowif->queryRowSerializer(), 0); // send to master
         }
-        AggregateSlaveBase::doStopInput();
-        dataLinkStop();
+        PARENT::doStopInput();
     }
     void readRest()
     {
@@ -256,8 +251,6 @@ class ThroughAggregateSlaveActivity : public AggregateSlaveBase
         }
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     ThroughAggregateSlaveActivity(CGraphElementBase *container) : AggregateSlaveBase(container), partResult(NULL)
     {
         helper = (IHThorThroughAggregateArg *)queryHelper();
@@ -266,13 +259,12 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
-        doStart();
-        aggrowif.setown(createRowInterfaces(helper->queryAggregateRecordSize(),queryId(),queryCodeContext()));
+        PARENT::start();
+        aggrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryAggregateRecordSize(),queryId(),queryCodeContext()));
         partResult.setAllocator(aggrowif->queryRowAllocator()).ensureRow();
         helper->clearAggregate(partResult);
-        dataLinkStart();
     }
-    virtual void stop()
+    virtual void stop() override
     {
         if (inputStopped) 
             return;
@@ -286,7 +278,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (inputStopped)
             return NULL;
-        OwnedConstThorRow row = input->ungroupedNextRow();
+        OwnedConstThorRow row = inputStream->ungroupedNextRow();
         if (!row)
             return NULL;
         process(row);
@@ -295,7 +287,7 @@ public:
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
-        inputs.item(0)->getMetaInfo(info);
+        queryInput(0)->getMetaInfo(info);
     }
 };
 

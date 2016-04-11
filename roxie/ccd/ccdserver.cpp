@@ -28,6 +28,7 @@
 #include "thorxmlwrite.hpp"
 #include "thorsoapcall.hpp"
 #include "thorcommon.ipp"
+#include "thorsort.hpp"
 #include "jlzw.hpp"
 #include "javahash.hpp"
 #include "javahash.tpp"
@@ -39,6 +40,8 @@
 #include "rtlfield_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
+
+#include <algorithm>
 
 #include "dafdesc.hpp"
 #include "dautils.hpp"
@@ -101,7 +104,9 @@ using roxiemem::ReleaseRoxieRows;
 #endif
 
 #define TRACE_STARTSTOP  // This determines if it is available - it is enabled/disabled by a configuration option
- 
+#define TRACE_STRANDS
+#define MAX_SENSIBLE_STRANDS 1024 // Architecture dependent...
+
 static const SmartStepExtra dummySmartStepExtra(SSEFreadAhead, NULL);
 
 //=================================================================================
@@ -366,6 +371,7 @@ static const StatisticsMapping sortStatistics(&actStatistics, StTimeSortElapsed,
 
 //=================================================================================
 
+const static unsigned minus1U = (0U-1U);
 class CRoxieServerActivityFactoryBase : public CActivityFactory, implements IRoxieServerActivityFactory
 {
 protected:
@@ -374,6 +380,10 @@ protected:
     IntArray dependencyControlIds; // things I am dependent on
     StringArray dependencyEdgeIds; // How to describe them to the debugger
     unsigned dependentCount; // things dependent on me
+    unsigned optParallel = 0; // -1=enable,0=not specified,1=single-threaded,n=<num threads>
+    bool optStableInput = true; // is the input forced to ordered?
+    bool optUnstableInput = false;  // is the input forced to unordered?
+    bool optUnordered = false; // is the output specified as unordered?
 
     mutable CriticalSection statsCrit;
     mutable __int64 processed;
@@ -384,7 +394,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerActivityFactoryBase(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+    CRoxieServerActivityFactoryBase(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
         processed = 0;
@@ -392,6 +402,8 @@ public:
         totalCycles = 0;
         localCycles = 0;
         dependentCount = 0;
+        optParallel = _graphNode.getPropInt("att[@name='parallel']/@value", 0);
+        optUnordered = !_graphNode.getPropBool("att[@name='ordered']/@value", true);
     }
     
     ~CRoxieServerActivityFactoryBase()
@@ -409,6 +421,16 @@ public:
         dependencyIndexes.append(_sourceIdx); 
         dependencyControlIds.append(controlId);
         dependencyEdgeIds.append(edgeId);
+    }
+    virtual bool isInputOrdered(bool consumerOrdered, unsigned idx) const
+    {
+        if (optStableInput)
+            return true;
+        if (optUnstableInput)
+            return false;
+        if (optUnordered)
+            return false;
+        return consumerOrdered;
     }
 
     virtual void noteDependent(unsigned target)
@@ -460,7 +482,7 @@ public:
         if (_processed)
         {
             CriticalBlock b(statsCrit);
-            processed += processed;
+            processed += _processed;
         }
     }
 
@@ -549,18 +571,11 @@ public:
         CActivityFactory::addChildQuery(id, childQuery);
     }
 
-    virtual void createChildQueries(IRoxieSlaveContext * ctx, IArrayOf<IActivityGraph> &childGraphs, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx) const
+    virtual void onCreateChildQueries(IRoxieSlaveContext *ctx, IHThorArg *colocalArg, IArrayOf<IActivityGraph> &childGraphs, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx, unsigned numParallel) const
     {
         ForEachItemIn(idx, childQueries)
         {
-            childGraphs.append(*createActivityGraph(ctx, NULL, childQueryIndexes.item(idx), childQueries.item(idx), parentActivity, _probeManager, _logctx));
-        }
-    }
-
-    virtual void onCreateChildQueries(IRoxieSlaveContext *ctx, IHThorArg *colocalArg, IArrayOf<IActivityGraph> &childGraphs) const
-    {
-        ForEachItemIn(idx, childGraphs)
-        {
+            childGraphs.append(*createActivityGraph(ctx, NULL, childQueryIndexes.item(idx), childQueries.item(idx), parentActivity, _probeManager, _logctx, numParallel));
             ctx->noteChildGraph(childQueryIndexes.item(idx), &childGraphs.item(idx));
             childGraphs.item(idx).onCreate(colocalArg);
         }
@@ -570,7 +585,7 @@ public:
     {
         unsigned match = childQueryIndexes.find(childId);
         assertex(match != NotFound);
-        Owned<IActivityGraph> graph = createActivityGraph(ctx, NULL, childQueryIndexes.item(match), childQueries.item(match), parentActivity, _probeManager, _logctx);
+        Owned<IActivityGraph> graph = createActivityGraph(ctx, NULL, childQueryIndexes.item(match), childQueries.item(match), parentActivity, _probeManager, _logctx, 1);
         graph->onCreate(colocalArg);
         return graph.getClear();
     }
@@ -649,8 +664,8 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerMultiInputFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactoryBase(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerMultiInputFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactoryBase(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -693,8 +708,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactoryBase(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactoryBase(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         input = (unsigned) -1;
         inputidx = 0;
@@ -730,8 +745,8 @@ protected:
     unsigned __int64 *processedArray;
     bool *startedArray;
 
-    CRoxieServerMultiOutputFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerMultiOutputFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         numOutputs = 0;
         processedArray = NULL;
@@ -800,8 +815,8 @@ protected:
     unsigned usageCount;
 public:
 
-    CRoxieServerInternalSinkFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerInternalSinkFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         usageCount = _usageCount;
         isRoot = _isRoot;
@@ -854,42 +869,41 @@ private:
     IRoxieServerActivityCopyArray & activities;
 };
 
-extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, unsigned flags)
+extern IEngineRowStream * ensureSingleStream(IRoxieSlaveContext *ctx, PointerArrayOf<IEngineRowStream> & instreams, Owned<IStrandJunction> &junction)
+{
+    if (instreams.length() != 1)
+    {
+        assertex(instreams.length());
+        if (!junction)
+            junction.setown(createStrandJunction(ctx->queryRowManager(), instreams.length(), 1, ctx->queryOptions().strandBlockSize, false));
+        ForEachItemIn(stream, instreams)
+        {
+            junction->setInput(stream, instreams.item(stream));
+        }
+        return junction->queryOutput(0);
+    }
+    else
+        return instreams.item(0);
+}
+
+extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, bool consumerOrdered)
 {
     if (input)
     {
         PointerArrayOf<IEngineRowStream> instreams;
-        junction.setown(input->getOutputStreams(ctx, idx, instreams, false, flags));
-        if (instreams.length() != 1)
-        {
-            assertex(instreams.length());
-            if (!junction)
-                junction.setown(createStrandJunction(ctx->queryRowManager(), instreams.length(), 1, ctx->queryOptions().strandBlockSize, false));
-            ForEachItemIn(stream, instreams)
-            {
-                junction->setInput(stream, instreams.item(stream));
-            }
-            return junction->queryOutput(0);
-        }
-        else
-            return instreams.item(0);
+        junction.setown(input->getOutputStreams(ctx, idx, instreams, NULL, consumerOrdered, nullptr));
+        return ensureSingleStream(ctx, instreams, junction);
     }
     else
         return NULL;
 }
 
-extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, unsigned flags)
+extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, bool consumerOrdered)
 {
-    if (input)
-    {
-        PointerArrayOf<IEngineRowStream> instreams;
-        Owned<IStrandJunction> junction = input->getOutputStreams(ctx, idx, instreams, false, flags);
-        assertex(!junction);
-        assertex(instreams.length() == 1);
-        return instreams.item(0);
-    }
-    else
-        return NULL;
+    Owned<IStrandJunction> junction;
+    IEngineRowStream * result = connectSingleStream(ctx, input, idx, junction, consumerOrdered);
+    assertex(!junction);
+    return result;
 }
 
 class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IFinalRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
@@ -925,7 +939,7 @@ protected:
     bool timeActivities;
     bool aborted;
     bool connected = false;
-
+    IProbeManager *probeManager = NULL;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -935,7 +949,8 @@ public:
           factory(_factory),
           basehelper(_factory->getHelper()),
           activityId(_factory->queryId()),
-          stats(_factory ? _factory->queryStatsMapping() : actStatistics)
+          stats(_factory ? _factory->queryStatsMapping() : actStatistics),
+          probeManager(_probeManager)
     {
         input = NULL;
         sourceIdx = 0;
@@ -943,8 +958,6 @@ public:
         meta.set(basehelper.queryOutputMeta());
         processed = 0;
         localCycles = 0;
-        if (factory)
-            factory->createChildQueries(ctx, childGraphs, this, _probeManager, *this);
         state=STATEreset;
         rowAllocator = NULL;
         debugging = _probeManager != NULL; // Don't want to collect timing stats from debug sessions
@@ -1147,7 +1160,7 @@ public:
 
     virtual bool needsAllocator() const { return false; }
 
-    virtual void onCreate(IHThorArg *_colocalParent)
+    void _onCreate(IHThorArg *_colocalParent, unsigned _numParallel)
     {
         colocalParent = _colocalParent;
         createPending = true;
@@ -1155,9 +1168,14 @@ public:
             createRowAllocator();
         processed = 0;
         if (factory)
-            factory->onCreateChildQueries(ctx, &basehelper, childGraphs);
+            factory->onCreateChildQueries(ctx, &basehelper, childGraphs, this, probeManager, *this, _numParallel);
         if (ctx)
             timeActivities = ctx->queryOptions().timeActivities;
+    }
+
+    virtual void onCreate(IHThorArg *_colocalParent)
+    {
+        _onCreate(_colocalParent, 1);
     }
 
     virtual void serializeCreateStartContext(MemoryBuffer &out)
@@ -1352,21 +1370,21 @@ public:
     {
         throw MakeStringException(ROXIE_SINK, "Internal error: stopSink() requires a suitable sink");
     }
-    virtual void connectOutputStreams(unsigned flags)
+    virtual void connectInputStreams(bool consumerOrdered)
     {
         if (input && !inputStream)
-            inputStream = connectSingleStream(ctx, input, sourceIdx, junction, flags);
+            inputStream = connectSingleStream(ctx, input, sourceIdx, junction, isInputOrdered(consumerOrdered, 0));
         if (!connected)
         {
-            connectDependencies(flags);
+            connectDependencies();
             connected = true;
         }
     }
 
-    void connectDependencies(unsigned flags)
+    void connectDependencies()
     {
         ForEachItemIn(i, dependencies)
-            dependencies.item(i).connectOutputStreams(flags);
+            dependencies.item(i).connectInputStreams(true);
     }
 
     virtual __int64 evaluate() 
@@ -1392,11 +1410,24 @@ public:
         inputStream = NULL;
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    bool isInputOrdered(bool consumerOrdered, unsigned idx) const
+    {
+        if (!factory)
+            return true;
+        //Grouping implies the stream processing must be ordered - I think this always applies
+        IFinalRoxieInput * curInput = queryInput(idx);
+        if (curInput && curInput->queryOutputMeta()->isGrouped())
+            return true;
+        return factory->isInputOrdered(consumerOrdered, idx);
+    }
+
+
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         assertex(!idx);
         // By default, activities are assumed NOT to support streams
-        connectOutputStreams(flags);
+        bool inputOrdered = isInputOrdered(consumerOrdered, 0);
+        connectInputStreams(inputOrdered);
         // Return a single stream
         streams.append(this);
         return NULL;
@@ -1489,7 +1520,10 @@ protected:
         prefiltered = !any;
         eof = prefiltered;
         if (!prefiltered)
+        {
             input->start(parentExtractSize, parentExtract, false);
+            startJunction(junction);
+        }
         else
         {
             if (traceStartStop)
@@ -1508,10 +1542,12 @@ public:
     }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        IFinalRoxieInput *save = input;
+        IFinalRoxieInput *saveInput = input;
+        Owned<IStrandJunction> saveJunction = junction.getClear();
         input = NULL;   // Make sure parent does not start the chain yet
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        input = save;
+        input = saveInput;
+        junction.setown(saveJunction.getClear());
     }
     virtual void stop()
     {
@@ -1542,25 +1578,25 @@ class StrandOptions
 public:
     explicit StrandOptions(IPropertyTree &_graphNode)
     {
-        numStrands = _graphNode.getPropInt("hint[@name='numstrands']/@value", 0);
+        //PARALLEL(1) can be used to explicitly disable parallel processing.
+        numStrands = _graphNode.getPropInt("att[@name='parallel']/@value", 0);
+        if ((numStrands == minus1U) || (numStrands > MAX_SENSIBLE_STRANDS))
+            numStrands = getAffinityCpus();
         blockSize = _graphNode.getPropInt("hint[@name='strandblocksize']/@value", 0);
-        forcePreserveOrder = _graphNode.getPropBool("hint[@name='strandordered']/@value", true);
     }
     StrandOptions(const StrandOptions &from, IRoxieSlaveContext *ctx)
     {
         numStrands = from.numStrands;
         blockSize = from.blockSize;
-        forcePreserveOrder = from.forcePreserveOrder;
 
         if (!blockSize)
             blockSize = ctx->queryOptions().strandBlockSize;
-        if (!numStrands)
+        if (numStrands == 0)
             numStrands = ctx->queryOptions().forceNumStrands;
     }
 public:
-    unsigned numStrands = 0;
+    unsigned numStrands = 0; // if 1 it forces single-stranded operations.  (Useful for testing.)
     unsigned blockSize = 0;
-    bool forcePreserveOrder = false;
 };
 
 class StrandProcessor : public CInterfaceOf<IEngineRowStream>
@@ -1575,10 +1611,11 @@ protected:
     unsigned numProcessedLastGroup = 0;
     const bool timeActivities;
     bool stopped = false;
+    std::atomic<bool> abortRequested;
 
 public:
     explicit StrandProcessor(CRoxieServerActivity &_parent, IEngineRowStream *_inputStream, bool needsAllocator)
-      : parent(_parent), inputStream(_inputStream), stats(parent.queryStatsMapping()), timeActivities(_parent.timeActivities)
+      : parent(_parent), inputStream(_inputStream), stats(parent.queryStatsMapping()), timeActivities(_parent.timeActivities), abortRequested(false)
     {
         if (needsAllocator)
             rowAllocator = parent.queryContext()->getRowAllocatorEx(parent.queryOutputMeta(), parent.queryId(), roxiemem::RHFunique);
@@ -1600,7 +1637,8 @@ public:
     {
         if (!stopped)
         {
-            inputStream->stop();
+            if (inputStream)
+                inputStream->stop();
             parent.stop();
             parent.mergeStrandStats(processed, totalCycles, stats);
         }
@@ -1609,11 +1647,14 @@ public:
     virtual void reset()
     {
         stopped = false;
+        abortRequested.store(false, std::memory_order_relaxed);
     }
     virtual void resetEOF()
     {
         inputStream->resetEOF();
     }
+    inline void requestAbort() { abortRequested.store(true, std::memory_order_relaxed); }
+    inline bool isAborting() { return abortRequested.load(std::memory_order_relaxed); }
 };
 
 class CRoxieServerStrandedActivity : public CRoxieServerActivity
@@ -1623,6 +1664,7 @@ protected:
     IArrayOf<StrandProcessor> strands;
     Owned<IStrandBranch> branch;
     Owned<IStrandJunction> splitter;
+    Owned<IStrandJunction> sourceJunction; // A junction applied to the output of a source activity
     std::atomic<unsigned> active;
 public:
     CRoxieServerStrandedActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const StrandOptions &_strandOptions)
@@ -1632,16 +1674,15 @@ public:
         active = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void onCreate(IHThorArg *_colocalArg)
     {
-        ForEachItemIn(idx, strands)
-        {
-            strands.item(idx).start();
-            active++;
-        }
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        startJunction(splitter);
+        CRoxieServerActivity::_onCreate(_colocalArg, strands.ordinality());
     }
+
+    //This function is pure (But also implemented out of line) to force the derived classes to implement it.
+    //After calling the base class start method, and initialising any values from the helper they must call onStartStrands(),
+    //this must also happen before any rows are read from the strands (e.g., by a source junction)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
 
     virtual void reset()
     {
@@ -1650,6 +1691,7 @@ public:
             strands.item(idx).reset();
         resetJunction(splitter);
         CRoxieServerActivity::reset();
+        resetJunction(sourceJunction);
     }
 
     virtual void stop()
@@ -1662,61 +1704,148 @@ public:
             CRoxieServerActivity::stop();
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    void requestAbort()
+    {
+        ForEachItemIn(idx, strands)
+            strands.item(idx).requestAbort();
+    }
+
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
         assertex(idx == 0);
         assertex(strands.empty());
-        CRoxieServerActivity::connectDependencies(flags);
-        Owned <IStrandJunction> recombiner;
-        if (strandOptions.numStrands == 1)
+        CRoxieServerActivity::connectDependencies();
+
+        bool inputOrdered = isInputOrdered(consumerOrdered, idx);
+        //Note, numStrands == 1 is an explicit request to disable threading
+        if (consumerOptions && (consumerOptions->numStrands != 1) && (strandOptions.numStrands != 1))
         {
-            // 1 means explicitly requested single-strand.
-            IEngineRowStream *instream = connectSingleStream(ctx, input, sourceIdx, junction, flags);
-            strands.append(*createStrandProcessor(instream));
-        }
-        else
-        {
-            if (strandOptions.forcePreserveOrder)
-                flags |= SFpreserveOrder;
-            PointerArrayOf<IEngineRowStream> instreams;
-            recombiner.setown(input->getOutputStreams(ctx, sourceIdx, instreams, strandOptions.numStrands != 1, flags));
-            if (instreams.length() == 1 && strandOptions.numStrands > 1)             // 0 means did not specify - we should use the strands that our upstream provides
+            //Check to see if the consumer's settings should override
+            if (strandOptions.numStrands == 0)
             {
-                assertex(recombiner == NULL);
-                // Create a splitter to split the input into n... and a recombiner if need to preserve sorting
-                if (flags & SFpreserveOrder)
-                {
-                    branch.setown(createStrandBranch(ctx->queryRowManager(), strandOptions.numStrands, strandOptions.blockSize, true, input->queryOutputMeta()->isGrouped()));
-                    splitter.set(branch->queryInputJunction());
-                    recombiner.set(branch->queryOutputJunction());
-                }
-                else
-                {
-                    splitter.setown(createStrandJunction(ctx->queryRowManager(), 1, strandOptions.numStrands, strandOptions.blockSize, false));
-                }
-                splitter->setInput(0, instreams.item(0));
-                for (unsigned strandNo = 0; strandNo < strandOptions.numStrands; strandNo++)
-                    strands.append(*createStrandProcessor(splitter->queryOutput(strandNo)));
+                strandOptions.numStrands = consumerOptions->numStrands;
+                strandOptions.blockSize = consumerOptions->blockSize;
+            }
+            else if (consumerOptions->numStrands > strandOptions.numStrands)
+            {
+                strandOptions.numStrands = consumerOptions->numStrands;
+            }
+        }
+
+        Owned <IStrandJunction> recombiner;
+        if (input)
+        {
+            if (strandOptions.numStrands == 1)
+            {
+                // 1 means explicitly requested single-strand.
+                IEngineRowStream *instream = connectSingleStream(ctx, input, sourceIdx, junction, inputOrdered);
+                strands.append(*createStrandProcessor(instream));
             }
             else
             {
-                // Ignore my hint and just use the width already split into...
-                ForEachItemIn(strandNo, instreams)
-                    strands.append(*createStrandProcessor(instreams.item(strandNo)));
+                PointerArrayOf<IEngineRowStream> instreams;
+                recombiner.setown(input->getOutputStreams(ctx, sourceIdx, instreams, &strandOptions, inputOrdered, orderedCallbacks));
+                if ((instreams.length() == 1) && (strandOptions.numStrands != 0))  // 0 means did not specify - we should use the strands that our upstream provides
+                {
+                    assertex(recombiner == NULL);
+                    // Create a splitter to split the input into n... and a recombiner if need to preserve sorting
+                    if (inputOrdered)
+                    {
+                        branch.setown(createStrandBranch(ctx->queryRowManager(), strandOptions.numStrands, strandOptions.blockSize, true, input->queryOutputMeta()->isGrouped(), false, orderedCallbacks));
+                        splitter.set(branch->queryInputJunction());
+                        recombiner.set(branch->queryOutputJunction());
+                    }
+                    else
+                    {
+                        splitter.setown(createStrandJunction(ctx->queryRowManager(), 1, strandOptions.numStrands, strandOptions.blockSize, false));
+                    }
+                    splitter->setInput(0, instreams.item(0));
+                    for (unsigned strandNo = 0; strandNo < strandOptions.numStrands; strandNo++)
+                        strands.append(*createStrandProcessor(splitter->queryOutput(strandNo)));
+                }
+                else
+                {
+                    // Ignore my hint and just use the width already split into...
+                    ForEachItemIn(strandNo, instreams)
+                        strands.append(*createStrandProcessor(instreams.item(strandNo)));
+                }
+            }
+        }
+        else
+        {
+            unsigned numStrands = strandOptions.numStrands ? strandOptions.numStrands : 1;
+            for (unsigned i=0; i < numStrands; i++)
+                strands.append(*createStrandSourceProcessor(inputOrdered));
+
+            if (inputOrdered && (numStrands > 1))
+            {
+                if (consumerOptions)
+                {
+                    //If the output activities are also stranded then need to create a version of the branch
+                    bool isGrouped = queryOutputMeta()->isGrouped();
+                    branch.setown(createStrandBranch(ctx->queryRowManager(), strandOptions.numStrands, strandOptions.blockSize, true, isGrouped, true, orderedCallbacks));
+                    sourceJunction.set(branch->queryInputJunction());
+                    recombiner.set(branch->queryOutputJunction());
+                    assertex((orderedCallbacks && !recombiner) || (!orderedCallbacks && recombiner));
+
+                    //This is different from the branch above.  The first "junction" has the source activity as the input, and the outputs as the result of the activity
+                    for (unsigned strandNo = 0; strandNo < strandOptions.numStrands; strandNo++)
+                    {
+                        sourceJunction->setInput(strandNo, &strands.item(strandNo));
+                        streams.append(sourceJunction->queryOutput(strandNo));
+                    }
+#ifdef TRACE_STRANDS
+                    if (traceLevel > 2)
+                        DBGLOG("Executing activity %u with %u strands", activityId, strands.ordinality());
+#endif
+                    return recombiner.getClear();
+                }
+                else
+                {
+                    //Feeding into a non threaded activity, so create a M:1 junction to combine the source strands
+                    recombiner.setown(createStrandJunction(ctx->queryRowManager(), numStrands, 1, strandOptions.blockSize, inputOrdered));
+                }
             }
         }
         ForEachItemIn(i, strands)
             streams.append(&strands.item(i));
+#ifdef TRACE_STRANDS
+        if (traceLevel > 2)
+            DBGLOG("Executing activity %u with %u strands", activityId, strands.ordinality());
+#endif
+
         return recombiner.getClear();
     }
 
     virtual StrandProcessor *createStrandProcessor(IEngineRowStream *instream) = 0;
 
+    //MORE: Possibly this class should be split into two for sinks and non sinks...
+    virtual StrandProcessor *createStrandSourceProcessor(bool inputOrdered) = 0;
+
     virtual const void * nextRow()
     {
         throwUnexpected();
     }
+
+    inline unsigned numStrands() const { return strands.ordinality(); }
+
+protected:
+
+    void onStartStrands()
+    {
+        ForEachItemIn(idx, strands)
+            strands.item(idx).start();
+    }
 };
+
+
+//For some reason gcc doesn't let you specify a function as pure virtual and define it at the same time.
+void CRoxieServerStrandedActivity::start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+{
+    CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+    startJunction(splitter);
+}
+
 
 class CRoxieServerStrandedLateStartActivity : public CRoxieServerStrandedActivity
 {
@@ -1730,10 +1859,11 @@ protected:
         eof = prefiltered;
         if (!prefiltered)
         {
-            ForEachItemIn(idx, strands)
-                strands.item(idx).start();
+            //At this point
             input->start(parentExtractSize, parentExtract, false);
             startJunction(splitter);
+            onStartStrands();  // Initialise the strands - the helper will have been correctly initialized by this point.
+            startJunction(sourceJunction);
         }
         else
         {
@@ -1861,9 +1991,9 @@ public:
         return input;
     }
 
-    virtual void connectOutputStreams(IRoxieSlaveContext *ctx, unsigned flags)
+    virtual void connectInputStreams(IRoxieSlaveContext *ctx, bool consumerOrdered)
     {
-        inputStream = connectSingleStream(ctx, input, sourceIdx, junction, flags);
+        inputStream = connectSingleStream(ctx, input, sourceIdx, junction, consumerOrdered);
     }
 
     IEngineRowStream *queryStream() const
@@ -2066,10 +2196,10 @@ public:
         return puller.queryInput()->queryActivity();
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
         assertex(!idx);
-        puller.connectOutputStreams(ctx, flags);
+        puller.connectInputStreams(ctx, consumerOrdered);
         streams.append(this);
         return NULL;
     }
@@ -2309,10 +2439,11 @@ public:
         }   
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
-        inputStream1 = connectSingleStream(ctx, input1, sourceIdx1, junction1, flags);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
+        inputStream1 = connectSingleStream(ctx, input1, sourceIdx1, junction1, isInputOrdered(consumerOrdered, 1));
+        //Assumes input1 will be stranded if any.
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 };
 
@@ -2390,11 +2521,12 @@ public:
         sourceIdxArray[idx] = _sourceIdx;
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
+        //There could be situations (e.g., NONEMPTY), where you might want to strand the activity.
         for (unsigned i = 0; i < numInputs; i++)
-            streamArray[i] = connectSingleStream(ctx, inputArray[i], sourceIdxArray[i], junctionArray[i], flags);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
+            streamArray[i] = connectSingleStream(ctx, inputArray[i], sourceIdxArray[i], junctionArray[i], consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, NULL, consumerOrdered, nullptr); // The input basesclass does not have an input
     }
 
 };
@@ -4141,11 +4273,11 @@ public:
         onReset();
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         // Make sure parent activity calls up the tree
         PointerArrayOf<IEngineRowStream> instreams;
-        IStrandJunction *junction = activity.getOutputStreams(ctx, idx, instreams, false, 0);
+        IStrandJunction *junction = activity.getOutputStreams(ctx, idx, instreams, consumerOptions, consumerOrdered, orderedCallbacks);
         assertex (junction == NULL);
         // I return a single strand (we could change that sometime I guess...)
         streams.append(this);
@@ -4828,8 +4960,8 @@ class CRoxieServerApplyActivityFactory : public CRoxieServerActivityFactory
 {
     bool isRoot;
 public:
-    CRoxieServerApplyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerApplyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 
@@ -4844,9 +4976,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerApplyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerApplyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerApplyActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerApplyActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -4874,8 +5006,8 @@ IRoxieServerActivity * createRoxieServerNullActivity(IRoxieSlaveContext *_ctx, c
 class CRoxieServerNullActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerNullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerNullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -4889,9 +5021,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerNullActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerNullActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -4978,8 +5110,8 @@ public:
 class CRoxieServerChildBaseActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerChildBaseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerChildBaseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -5045,8 +5177,8 @@ public:
 class CRoxieServerChildIteratorActivityFactory : public CRoxieServerChildBaseActivityFactory
 {
 public:
-    CRoxieServerChildIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerChildBaseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerChildIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerChildBaseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -5056,9 +5188,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerChildIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerChildIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerChildIteratorActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerChildIteratorActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -5121,8 +5253,8 @@ public:
 class CRoxieServerChildNormalizeActivityFactory : public CRoxieServerChildBaseActivityFactory
 {
 public:
-    CRoxieServerChildNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerChildBaseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerChildNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerChildBaseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -5132,9 +5264,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNewChildNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNewChildNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerChildNormalizeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerChildNormalizeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -5171,8 +5303,8 @@ public:
 class CRoxieServerChildAggregateActivityFactory : public CRoxieServerChildBaseActivityFactory
 {
 public:
-    CRoxieServerChildAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerChildBaseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerChildAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerChildBaseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -5182,9 +5314,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNewChildAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNewChildAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerChildAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerChildAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -5247,8 +5379,8 @@ public:
 class CRoxieServerChildGroupAggregateActivityFactory : public CRoxieServerChildBaseActivityFactory
 {
 public:
-    CRoxieServerChildGroupAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerChildBaseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerChildGroupAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerChildBaseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -5258,9 +5390,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNewChildGroupAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNewChildGroupAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerChildGroupAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerChildGroupAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -5349,8 +5481,8 @@ public:
 class CRoxieServerChildThroughNormalizeActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerChildThroughNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerChildThroughNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -5360,9 +5492,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNewChildThroughNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNewChildThroughNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerChildThroughNormalizeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerChildThroughNormalizeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -5408,8 +5540,8 @@ class CRoxieServerDistributionActivityFactory : public CRoxieServerActivityFacto
 {
     bool isRoot;
 public:
-    CRoxieServerDistributionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerDistributionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 
@@ -5424,9 +5556,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerDistributionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerDistributionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerDistributionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerDistributionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 
@@ -5460,8 +5592,8 @@ public:
 class CRoxieServerLinkedRawIteratorActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerLinkedRawIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerLinkedRawIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -5476,9 +5608,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerLinkedRawIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerLinkedRawIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerLinkedRawIteratorActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerLinkedRawIteratorActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -5543,8 +5675,8 @@ class CRoxieServerDatasetResultActivityFactory : public CRoxieServerActivityFact
 {
     bool isRoot;
 public:
-    CRoxieServerDatasetResultActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerDatasetResultActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 
@@ -5560,9 +5692,9 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerDatasetResultActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerDatasetResultActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerDatasetResultActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerDatasetResultActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -5612,18 +5744,158 @@ public:
     }
 };
 
-class CRoxieServerInlineTableActivityFactory : public CRoxieServerActivityFactory
+class CRoxieServerStrandedInlineTableActivity : public CRoxieServerStrandedActivity
 {
+    IHThorInlineTableArg &helper;
+    __uint64 numRows;
+
+    //An inline table that isn't stranded
+    class InlineTableSimpleProcessor : public StrandProcessor
+    {
+    protected:
+        IHThorInlineTableArg &helper;
+        __uint64 curRow;
+        __uint64 maxRows;
+
+    public:
+        InlineTableSimpleProcessor(CRoxieServerActivity &_parent, IHThorInlineTableArg &_helper)
+            : StrandProcessor(_parent, NULL, true), helper(_helper), curRow(0), maxRows(0)
+        {
+        }
+        virtual void start() override
+        {
+            StrandProcessor::start();
+            curRow = 0;
+            maxRows = queryParent().numRows;
+        }
+        virtual const void * nextRow()
+        {
+            ActivityTimer t(totalCycles, timeActivities);
+            //Return rows while the current section is active
+            while (curRow < maxRows)
+            {
+                RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                unsigned outSize = helper.getRow(rowBuilder, curRow++);
+                if (outSize)
+                {
+                    processed++;
+                    return rowBuilder.finalizeRowClear(outSize);
+                }
+            }
+
+            return NULL;
+        }
+        CRoxieServerStrandedInlineTableActivity & queryParent() { return static_cast<CRoxieServerStrandedInlineTableActivity&>(parent); }
+    };
+
+    class InlineTableStrandProcessor : public StrandProcessor
+    {
+    protected:
+        IHThorInlineTableArg &helper;
+        unsigned whichStrand;
+        unsigned numStrands;
+        __uint64 sectionSize;
+        __uint64 curRow;
+        __uint64 sectionMaxRows;
+        __uint64 maxRows;
+        bool isOrdered;
+        bool eosPending;
+
+    public:
+        InlineTableStrandProcessor(CRoxieServerActivity &_parent, IHThorInlineTableArg &_helper, unsigned _whichStrand, bool _isOrdered)
+            : StrandProcessor(_parent, NULL, true), helper(_helper), whichStrand(_whichStrand), isOrdered(_isOrdered)
+        {
+            sectionSize = queryParent().strandOptions.blockSize;
+            eosPending = false;
+        }
+        virtual void start() override
+        {
+            StrandProcessor::start();
+            numStrands = queryParent().numStrands();
+            maxRows = queryParent().numRows;
+            curRow = std::min(whichStrand * sectionSize, maxRows);
+            sectionMaxRows = std::min(curRow + sectionSize, maxRows);
+            eosPending = isOrdered && (curRow != maxRows);
+        }
+        virtual const void * nextRow()
+        {
+            ActivityTimer t(totalCycles, timeActivities);
+            loop
+            {
+                //Return rows while the current section is active
+                while (curRow < sectionMaxRows)
+                {
+                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                    unsigned outSize = helper.getRow(rowBuilder, curRow++);
+                    if (outSize)
+                    {
+                        processed++;
+                        return rowBuilder.finalizeRowClear(outSize);
+                    }
+                }
+
+                if (curRow == maxRows)
+                    return NULL;
+
+                //Update current position to the next section
+                curRow += (numStrands - 1) * sectionSize;
+                if (curRow > maxRows)
+                    curRow = maxRows;
+                sectionMaxRows = std::min(curRow + sectionSize, maxRows);
+
+                //If we have output a block of rows, then send the block as a unit - results now come from the next strand
+                if (eosPending)
+                {
+                    //If there is another block, then second an end of section marker after it, otherwise make sure NULL is returned next.
+                    eosPending = isOrdered && (curRow != maxRows);
+                    return queryEndOfSectionMarker();
+                }
+            }
+        }
+        CRoxieServerStrandedInlineTableActivity & queryParent() { return static_cast<CRoxieServerStrandedInlineTableActivity&>(parent); }
+    };
 
 public:
-    CRoxieServerInlineTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerStrandedInlineTableActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const StrandOptions &_strandOptions)
+        : CRoxieServerStrandedActivity(_ctx, _factory, _probeManager, _strandOptions), helper((IHThorInlineTableArg &) basehelper)
     {
+        numRows = 0;
+    }
+
+    virtual StrandProcessor *createStrandProcessor(IEngineRowStream *instream)  { throwUnexpected(); }
+    virtual StrandProcessor *createStrandSourceProcessor(bool inputOrdered)
+    {
+        if (strandOptions.numStrands <= 1)
+            return new InlineTableSimpleProcessor(*this, helper);
+        return new InlineTableStrandProcessor(*this, helper, strands.ordinality(), inputOrdered);
+    }
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerStrandedActivity::start(parentExtractSize, parentExtract, paused);
+        numRows = helper.numRows();
+        onStartStrands();
+        startJunction(sourceJunction); // This must be started *after* all the strands have been initialised
+    }
+    virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
+    {
+        throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
+    }
+};
+
+class CRoxieServerInlineTableActivityFactory : public CRoxieServerActivityFactory
+{
+    StrandOptions strandOptions;
+
+public:
+    CRoxieServerInlineTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), strandOptions(_graphNode)
+    {
+        optStableInput = false; // do not force the output to be ordered
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerInlineTableActivity(_ctx, this, _probeManager);
+        return new CRoxieServerStrandedInlineTableActivity(_ctx, this, _probeManager, strandOptions);
     }
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
     {
@@ -5631,9 +5903,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerInlineTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerInlineTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerInlineTableActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerInlineTableActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -5704,8 +5976,8 @@ class CRoxieServerWorkUnitReadActivityFactory : public CRoxieServerActivityFacto
 {
 
 public:
-    CRoxieServerWorkUnitReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerWorkUnitReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -5719,9 +5991,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerWorkUnitReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerWorkUnitReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerWorkUnitReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerWorkUnitReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -5742,15 +6014,15 @@ public:
     CSafeRoxieInput(unsigned _sourceIdx, IFinalRoxieInput * _input) : input(_input), inputStream(NULL), sourceIdx(_sourceIdx) {}
     IMPLEMENT_IINTERFACE
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
-        connectOutputStreams(ctx, flags);
+        connectInputStreams(ctx, consumerOrdered);
         streams.append(this);
         return NULL;
     }
-    void connectOutputStreams(IRoxieSlaveContext *ctx, unsigned flags)
+    void connectInputStreams(IRoxieSlaveContext *ctx, bool consumerOrdered)
     {
-        inputStream.set(connectSingleStream(ctx, input, sourceIdx, junction, flags));
+        inputStream.set(connectSingleStream(ctx, input, sourceIdx, junction, consumerOrdered));
     }
     virtual IOutputMetaData * queryOutputMeta() const
     {
@@ -5835,7 +6107,7 @@ public:
         throwUnexpected();
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
         assertex(!idx);
         streams.append(this);
@@ -5924,14 +6196,14 @@ public:
         input = _input;
         sourceIdx = _sourceIdx;
     }
-    inline void connectOutputStreams(IRoxieSlaveContext *ctx, unsigned flags)
+    inline void connectInputStreams(IRoxieSlaveContext *ctx, bool consumerOrdered)
     {
-        stream = connectSingleStream(ctx, input, sourceIdx, junction, flags);
+        stream = connectSingleStream(ctx, input, sourceIdx, junction, consumerOrdered);
     }
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
     {
         assertex(idx == 0);
-        connectOutputStreams(ctx, flags);
+        connectInputStreams(ctx, consumerOrdered);
         streams.append(this);
         return NULL;
     }
@@ -6143,8 +6415,8 @@ class CRoxieServerLocalResultReadActivityFactory : public CRoxieServerActivityFa
      unsigned graphId;
 
 public:
-    CRoxieServerLocalResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _graphId)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), graphId(_graphId)
+    CRoxieServerLocalResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _graphId)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), graphId(_graphId)
     {
     }
 
@@ -6158,9 +6430,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerLocalResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned graphId)
+IRoxieServerActivityFactory *createRoxieServerLocalResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned graphId)
 {
-    return new CRoxieServerLocalResultReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, graphId);
+    return new CRoxieServerLocalResultReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, graphId);
 }
 
 //=================================================================================
@@ -6200,7 +6472,7 @@ public:
         if (id == sequence)
         {
             CRoxieServerActivity::setInput(0, _sourceIdx, _input);
-            connectOutputStreams(0);
+            connectInputStreams(true);
             return true;
         }
         return false;
@@ -6215,8 +6487,8 @@ public:
 class CRoxieServerLocalResultStreamReadActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerLocalResultStreamReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerLocalResultStreamReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -6230,9 +6502,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerLocalResultStreamReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerLocalResultStreamReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerLocalResultStreamReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerLocalResultStreamReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
@@ -6286,8 +6558,8 @@ class CRoxieServerLocalResultWriteActivityFactory : public CRoxieServerInternalS
 {
     unsigned graphId;
 public:
-    CRoxieServerLocalResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, unsigned _graphId, bool _isRoot)
-        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot), graphId(_graphId)
+    CRoxieServerLocalResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, unsigned _graphId, bool _isRoot)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot), graphId(_graphId)
     {
         isInternal = true;
         Owned<IHThorLocalResultWriteArg> helper = (IHThorLocalResultWriteArg *) helperFactory();
@@ -6300,9 +6572,9 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerLocalResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, unsigned _graphId, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerLocalResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, unsigned _graphId, bool _isRoot)
 {
-    return new CRoxieServerLocalResultWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _graphId, _isRoot);
+    return new CRoxieServerLocalResultWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _graphId, _isRoot);
 }
 
 //=====================================================================================================
@@ -6365,8 +6637,8 @@ class CRoxieServerDictionaryResultWriteActivityFactory : public CRoxieServerInte
 {
     unsigned graphId;
 public:
-    CRoxieServerDictionaryResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, unsigned _graphId, bool _isRoot)
-        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot), graphId(_graphId)
+    CRoxieServerDictionaryResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, unsigned _graphId, bool _isRoot)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot), graphId(_graphId)
     {
         isInternal = true;
     }
@@ -6377,9 +6649,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerDictionaryResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, unsigned _graphId, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerDictionaryResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, unsigned _graphId, bool _isRoot)
 {
-    return new CRoxieServerDictionaryResultWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _graphId, _isRoot);
+    return new CRoxieServerDictionaryResultWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _graphId, _isRoot);
 }
 
 //=================================================================================
@@ -6489,9 +6761,9 @@ public:
     virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor, unsigned parentExtractSize, const byte * parentExtract, IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes)
     {
         //helper already initialised from the gatherIterationUsage() call.
-        CRoxieServerActivity::connectOutputStreams(0);
+        CRoxieServerActivity::connectInputStreams(true);
         iterInput.set(processor.connectIterationOutput(helper.querySequence(), probeManager, probes, this, 0));
-        iterStream.set(connectSingleStream(ctx, iterInput, 0, iterJunction, 0));
+        iterStream.set(connectSingleStream(ctx, iterInput, 0, iterJunction, true));
     }
 
     virtual IInputSteppingMeta * querySteppingMeta()
@@ -6542,8 +6814,8 @@ class CRoxieServerGraphLoopResultReadActivityFactory : public CRoxieServerActivi
      unsigned graphId;
 
 public:
-    CRoxieServerGraphLoopResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _graphId)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), graphId(_graphId)
+    CRoxieServerGraphLoopResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _graphId)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), graphId(_graphId)
     {
     }
 
@@ -6557,9 +6829,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerGraphLoopResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned graphId)
+IRoxieServerActivityFactory *createRoxieServerGraphLoopResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned graphId)
 {
-    return new CRoxieServerGraphLoopResultReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, graphId);
+    return new CRoxieServerGraphLoopResultReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, graphId);
 }
 
 //=====================================================================================================
@@ -6648,8 +6920,8 @@ class CRoxieServerGraphLoopResultWriteActivityFactory : public CRoxieServerInter
 {
     unsigned graphId;
 public:
-    CRoxieServerGraphLoopResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, unsigned _graphId)
-        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, true), graphId(_graphId)
+    CRoxieServerGraphLoopResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, unsigned _graphId)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, true), graphId(_graphId)
     {
         isInternal = true;
         Owned<IHThorGraphLoopResultWriteArg> helper = (IHThorGraphLoopResultWriteArg *) helperFactory();
@@ -6662,9 +6934,9 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerGraphLoopResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, unsigned _graphId)
+IRoxieServerActivityFactory *createRoxieServerGraphLoopResultWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, unsigned _graphId)
 {
-    return new CRoxieServerGraphLoopResultWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _graphId);
+    return new CRoxieServerGraphLoopResultWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _graphId);
 }
 
 //=================================================================================
@@ -7076,8 +7348,8 @@ class CRoxieServerDedupActivityFactory : public CRoxieServerActivityFactory
     bool keepLeft;
 
 public:
-    CRoxieServerDedupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerDedupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         Owned<IHThorDedupArg> helper = (IHThorDedupArg *) helperFactory();
         compareAll = helper->compareAll();
@@ -7095,9 +7367,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerDedupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerDedupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerDedupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerDedupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -7140,7 +7412,7 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
               keySize(helper.queryKeySize())
         {
         }
-        virtual ~HashDedupTable() { releaseAll(); }
+        virtual ~HashDedupTable() { _releaseAll(); }
 
         virtual unsigned getHashFromElement(const void *et) const       
         {
@@ -7246,8 +7518,8 @@ public:
 class CRoxieServerHashDedupActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerHashDedupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerHashDedupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -7257,9 +7529,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerHashDedupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerHashDedupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerHashDedupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerHashDedupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -7344,8 +7616,8 @@ public:
 class CRoxieServerRollupActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerRollupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerRollupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -7355,9 +7627,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerRollupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerRollupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerRollupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerRollupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -7440,8 +7712,8 @@ public:
 class CRoxieServerNormalizeActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -7451,9 +7723,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerNormalizeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerNormalizeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -7562,8 +7834,8 @@ public:
 class CRoxieServerNormalizeChildActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerNormalizeChildActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerNormalizeChildActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -7573,9 +7845,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNormalizeChildActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNormalizeChildActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerNormalizeChildActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerNormalizeChildActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -7662,8 +7934,8 @@ public:
 class CRoxieServerNormalizeLinkedChildActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerNormalizeLinkedChildActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerNormalizeLinkedChildActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -7673,9 +7945,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNormalizeLinkedChildActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNormalizeLinkedChildActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerNormalizeLinkedChildActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerNormalizeLinkedChildActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -7806,7 +8078,7 @@ class CRoxieServerSortActivityFactory : public CRoxieServerActivityFactory
     unsigned sortFlags;
 public:
     CRoxieServerSortActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         Owned<IHThorSortArg> sortHelper = (IHThorSortArg *) helperFactory();
         const char *algorithmName = NULL;
@@ -8090,8 +8362,8 @@ class CRoxieServerQuantileActivityFactory : public CRoxieServerActivityFactory
     unsigned flags;
 
 public:
-    CRoxieServerQuantileActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerQuantileActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         Owned<IHThorQuantileArg> quantileHelper = (IHThorQuantileArg *) helperFactory();
         flags = quantileHelper->getFlags();
@@ -8103,9 +8375,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerQuantileActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerQuantileActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerQuantileActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerQuantileActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
@@ -8199,8 +8471,8 @@ public:
 class CRoxieServerSortedActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerSortedActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerSortedActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -8210,9 +8482,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSortedActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerSortedActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerSortedActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerSortedActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
@@ -8350,9 +8622,9 @@ public:
             parent->start(oid, parentExtractSize, parentExtract, paused);
         }
 
-        virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+        virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
         {
-            parent->connectOutputStreams(flags);
+            parent->connectInputStreams(consumerOrdered);
             streams.append(this);
             return NULL;
         }
@@ -8632,10 +8904,10 @@ public:
             CRoxieServerActivity::reset();
     };
 
-    void connectOutputStreams(unsigned flags)
+    void connectInputStreams(bool consumerOrdered)
     {
         if (!inputStream)
-            CRoxieServerActivity::connectOutputStreams(flags);
+            CRoxieServerActivity::connectInputStreams(consumerOrdered);
     }
 
 
@@ -8686,15 +8958,15 @@ public:
 class CRoxieServerThroughSpillActivityFactory : public CRoxieServerMultiOutputFactory
 {
 public:
-    CRoxieServerThroughSpillActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerThroughSpillActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         Owned<IHThorSpillArg> helper = (IHThorSpillArg *) helperFactory();
         setNumOutputs(helper->getTempUsageCount() + 1);
     }
 
-    CRoxieServerThroughSpillActivityFactory(IQueryFactory &_queryFactory, HelperFactory *_helperFactory, unsigned _numOutputs)
-        : CRoxieServerMultiOutputFactory(0, 0, _queryFactory, _helperFactory, TAKsplit)
+    CRoxieServerThroughSpillActivityFactory(IQueryFactory &_queryFactory, HelperFactory *_helperFactory, unsigned _numOutputs, IPropertyTree &_graphNode)
+        : CRoxieServerMultiOutputFactory(0, 0, _queryFactory, _helperFactory, TAKsplit, _graphNode)
     {
         setNumOutputs(_numOutputs);
     }
@@ -8706,14 +8978,14 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerThroughSpillActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerThroughSpillActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerThroughSpillActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerThroughSpillActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
-IRoxieServerActivityFactory *createRoxieServerThroughSpillActivityFactory(IQueryFactory &_queryFactory, HelperFactory *_factory, unsigned _numOutputs)
+IRoxieServerActivityFactory *createRoxieServerThroughSpillActivityFactory(IQueryFactory &_queryFactory, HelperFactory *_factory, unsigned _numOutputs, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerThroughSpillActivityFactory(_queryFactory, _factory, _numOutputs);
+    return new CRoxieServerThroughSpillActivityFactory(_queryFactory, _factory, _numOutputs, _graphNode);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -8721,8 +8993,8 @@ IRoxieServerActivityFactory *createRoxieServerThroughSpillActivityFactory(IQuery
 class CRoxieServerSplitActivityFactory : public CRoxieServerMultiOutputFactory
 {
 public:
-    CRoxieServerSplitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerSplitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         Owned<IHThorSplitArg> helper = (IHThorSplitArg *) helperFactory();
         setNumOutputs(helper->numBranches());
@@ -8735,9 +9007,9 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerSplitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerSplitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerSplitActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerSplitActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 
@@ -8936,10 +9208,10 @@ public:
         inputMeta.set(_in->queryOutputMeta());
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
-        puller.connectOutputStreams(ctx, flags);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
+        puller.connectInputStreams(ctx, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -9193,8 +9465,8 @@ private:
 class CRoxieServerPipeReadActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerPipeReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerPipeReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -9207,8 +9479,8 @@ public:
 class CRoxieServerPipeThroughActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerPipeThroughActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerPipeThroughActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -9221,8 +9493,8 @@ public:
 class CRoxieServerPipeWriteActivityFactory : public CRoxieServerInternalSinkFactory
 {
 public:
-    CRoxieServerPipeWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
-     : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot)
+    CRoxieServerPipeWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
+     : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot)
     {
     }
 
@@ -9232,19 +9504,19 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerPipeReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerPipeReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerPipeReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerPipeReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
-IRoxieServerActivityFactory *createRoxieServerPipeThroughActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerPipeThroughActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerPipeThroughActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerPipeThroughActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
-IRoxieServerActivityFactory *createRoxieServerPipeWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerPipeWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
 {
-    return new CRoxieServerPipeWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot);
+    return new CRoxieServerPipeWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot);
 }
 //=====================================================================================================
 
@@ -9294,8 +9566,8 @@ public:
 class CRoxieServerStreamedIteratorActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerStreamedIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerStreamedIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -9305,9 +9577,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerStreamedIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerStreamedIteratorActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerStreamedIteratorActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerStreamedIteratorActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
@@ -9447,9 +9719,10 @@ public:
 class CRoxieServerFilterActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerFilterActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerFilterActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
+        optStableInput = false;
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
@@ -9458,9 +9731,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerFilterActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerFilterActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerFilterActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerFilterActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
@@ -9632,8 +9905,8 @@ public:
 class CRoxieServerFilterGroupActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerFilterGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerFilterGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -9643,9 +9916,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerFilterGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerFilterGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerFilterGroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerFilterGroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -9723,8 +9996,8 @@ class CRoxieServerSideEffectActivityFactory : public CRoxieServerActivityFactory
 {
     bool isRoot;
 public:
-    CRoxieServerSideEffectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerSideEffectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 
@@ -9739,9 +10012,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSideEffectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerSideEffectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerSideEffectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerSideEffectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -9765,8 +10038,8 @@ public:
 class CRoxieServerActionActivityFactory : public CRoxieServerInternalSinkFactory
 {
 public:
-    CRoxieServerActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
-        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot)
+    CRoxieServerActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot)
     {
     }
 
@@ -9776,9 +10049,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
 {
-    return new CRoxieServerActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot);
+    return new CRoxieServerActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot);
 }
 
 //=================================================================================
@@ -9856,8 +10129,8 @@ public:
 class CRoxieServerSampleActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerSampleActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerSampleActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -9867,9 +10140,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSampleActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerSampleActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerSampleActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerSampleActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -9940,8 +10213,8 @@ public:
 class CRoxieServerChooseSetsActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerChooseSetsActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerChooseSetsActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -9951,9 +10224,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerChooseSetsActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerChooseSetsActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerChooseSetsActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerChooseSetsActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -10140,8 +10413,8 @@ protected:
 class CRoxieServerChooseSetsEnthActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerChooseSetsEnthActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerChooseSetsEnthActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -10151,16 +10424,16 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerChooseSetsEnthActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerChooseSetsEnthActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerChooseSetsEnthActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerChooseSetsEnthActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 class CRoxieServerChooseSetsLastActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerChooseSetsLastActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerChooseSetsLastActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -10170,9 +10443,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerChooseSetsLastActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerChooseSetsLastActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerChooseSetsLastActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerChooseSetsLastActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -10241,8 +10514,8 @@ public:
 class CRoxieServerEnthActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerEnthActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerEnthActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -10252,9 +10525,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerEnthActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerEnthActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerEnthActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerEnthActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -10328,23 +10601,284 @@ public:
     }
 };
 
+class CRoxieServerStrandedAggregateActivity : public CRoxieServerStrandedActivity, implements IOrderedCallbackCollection
+{
+    class AggregateProcessor : public StrandProcessor, implements IStrandThreaded, implements IOrderedOutputCallback
+    {
+    protected:
+        IHThorAggregateArg &helper;
+        OwnedConstRoxieRow result;
+        bool eof = false;
+        bool isInputGrouped = false;
+        bool abortEarly = false;
+
+    public:
+        AggregateProcessor(CRoxieServerActivity &_parent, IEngineRowStream *_inputStream, IHThorAggregateArg &_helper, bool _isInputGrouped, bool _abortEarly)
+        : StrandProcessor(_parent, _inputStream, true), helper(_helper), isInputGrouped(_isInputGrouped), abortEarly(_abortEarly)
+        {
+        }
+        virtual const void * nextRow() override
+        {
+            ActivityTimer t(totalCycles, timeActivities);
+            if (eof || isAborting())
+                return NULL;
+
+            const void * next = inputStream->nextRow();
+            if (!next && isInputGrouped)
+            {
+                eof = true;
+                return NULL;
+            }
+
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            size32_t finalSize = helper.clearAggregate(rowBuilder);
+
+            if (next)
+            {
+                finalSize = helper.processFirst(rowBuilder, next);
+                ReleaseRoxieRow(next);
+
+                if (!abortEarly)
+                {
+                    loop
+                    {
+                        next = inputStream->nextRow();
+                        if (!next)
+                            break;
+
+                        finalSize = helper.processNext(rowBuilder, next);
+                        ReleaseRoxieRow(next);
+                        if (isAborting())
+                            break;
+                    }
+                }
+            }
+
+            if (!isInputGrouped)        // either read all, or aborted early
+                eof = true;
+
+            processed++;
+            return rowBuilder.finalizeRowClear(finalSize);
+        }
+        virtual void main() override
+        {
+            isInputGrouped = true; // gather no row if there are no input rows.
+            result.setown(nextRow());
+            queryActivity().noteStrandFinished(inputStream);
+        }
+        virtual void reset() override
+        {
+            StrandProcessor::reset();
+            result.clear();
+            eof = false;
+        }
+ //interface IOutputOutputCallback
+        virtual bool noteEndOfInputChunk() { return true; }
+        virtual void noteEndOfInput() {}
+
+        virtual void stopStream()
+        {
+            inputStream->stop();
+        }
+        const void * queryResult() const { return result; }
+        CRoxieServerStrandedAggregateActivity & queryActivity() { return static_cast<CRoxieServerStrandedAggregateActivity &>(parent); }
+    };
+
+    //This class is only used when a single aggregate is being calculated.
+    class AggregateCombiner : public CInterfaceOf<IEngineRowStream>
+    {
+    public:
+        explicit AggregateCombiner(CRoxieServerStrandedAggregateActivity & _parent) : parent(_parent)
+        {
+        }
+        virtual const void *nextRow()
+        {
+            return parent.getCombinedAggregate();
+        }
+        virtual void stop()
+        {
+            parent.outputStopped();
+        }
+        virtual void resetEOF()
+        {
+            throwUnexpected();
+        }
+    protected:
+        CRoxieServerStrandedAggregateActivity & parent;
+    } combiner;
+
+    class NullCallback : implements IOrderedOutputCallback
+    {
+    public:
+        virtual bool noteEndOfInputChunk() { return true; }
+        virtual void noteEndOfInput() {}
+    } nullCallback;
+
+public:
+    CRoxieServerStrandedAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const StrandOptions &_strandOptions)
+        : CRoxieServerStrandedActivity(_ctx, _factory, _probeManager, _strandOptions), helper((IHThorAggregateArg &)basehelper), combiner(*this)
+    {
+        isInputGrouped = false;
+        abortEarly = false;
+    }
+
+    virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
+    {
+        CRoxieServerStrandedActivity::setInput(idx, _sourceIdx, _in);
+        isInputGrouped = input->queryOutputMeta()->isGrouped();     // could be done earlier, in setInput?
+        abortEarly = !isInputGrouped && (factory->getKind() == TAKexistsaggregate); // ditto
+
+        //For EXISTS(), and aggregates that rely on the input order, force to execute single threaded
+        //MORE: Ordered should be able to process a block at a time and then merge them, similar to disk write processing.
+        if (abortEarly || (!isInputGrouped && queryFactory()->isInputOrdered(false, 0)))
+            strandOptions.numStrands = 1;
+        else if (!isInputGrouped)
+            combineStreams = true;
+    }
+
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
+    {
+        PointerArrayOf<IEngineRowStream> localStreams;
+        //If streams are being combined, this class should be notified of end of sections, otherwise grouped aggregates can inform a downstream activity.
+        IOrderedCallbackCollection * callbacks = combineStreams ? static_cast<IOrderedCallbackCollection *>(this) : orderedCallbacks;
+        Owned<IStrandJunction> outJunction = CRoxieServerStrandedActivity::getOutputStreams(ctx, idx, localStreams, consumerOptions, consumerOrdered, callbacks);
+        if (localStreams.ordinality() == 1)
+            combineStreams = false;  // Select a more efficient/simpler code path
+        if (combineStreams)
+        {
+            assertex(!outJunction); // this needs more thought!
+            streams.append(&combiner);
+        }
+        else
+        {
+            streams.swapWith(localStreams);
+        }
+        return outJunction.getClear();
+    }
+    virtual StrandProcessor *createStrandProcessor(IEngineRowStream *instream)
+    {
+        DBGLOG("Create aggregate strand processor %u", strandOptions.numStrands);
+        return new AggregateProcessor(*this, instream, (IHThorAggregateArg &) basehelper, isInputGrouped && !combineStreams, abortEarly);
+    }
+    virtual StrandProcessor *createStrandSourceProcessor(bool inputOrdered) { throwUnexpected(); }
+    virtual bool needsAllocator() const { return true; }
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
+    {
+        CRoxieServerStrandedActivity::start(parentExtractSize, parentExtract, paused);
+        if (combineStreams)
+        {
+            barrier.setown(createStrandBarrier());
+            ForEachItemIn(i, strands)
+                barrier->startStrand(queryAggregate(i));
+            active.store(1);
+        }
+        else
+            active.store(0);
+    }
+    virtual void reset() override
+    {
+        CRoxieServerStrandedActivity::reset();
+        barrier.clear();
+        calculated = false;
+    }
+
+    //Helper functions for the single aggregate case
+    const void * getCombinedAggregate()
+    {
+        if (calculated)
+            return NULL;
+        calculated= true;
+
+        barrier->waitForStrands();
+
+        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        size32_t finalSize = helper.clearAggregate(rowBuilder);
+
+        bool isFirst = true;
+        for (unsigned i=0; i < numStrands(); i++)
+        {
+            const void * next = queryAggregate(i).queryResult();
+            if (next)
+            {
+                if (isFirst)
+                {
+                    finalSize = cloneRow(rowBuilder, next, helper.queryOutputMeta());
+                    isFirst = false;
+                }
+                else
+                    finalSize = helper.mergeAggregate(rowBuilder, next);
+            }
+        }
+
+        return rowBuilder.finalizeRowClear(finalSize);
+    }
+
+    void outputStopped()
+    {
+        //only called if generating a single result.
+        assertex(combineStreams);
+        if (barrier)
+        {
+            requestAbort(); // if strands are still running, abort them
+            barrier->waitForStrands();
+        }
+        else
+        {
+            ForEachItemIn(i, strands)
+                queryAggregate(i).stopStream();
+        }
+        CRoxieServerStrandedActivity::stop();
+    }
+
+    void noteStrandFinished(IRowStream * stream)
+    {
+        barrier->noteStrandFinished(stream);
+    }
+
+    virtual IOrderedOutputCallback * queryCallback(unsigned i)
+    {
+        //The non-ordered aggregate does not need to process the ordered call back information.
+        //If the ordered single aggregate was implemented then it would need to be processed instead of ignored,
+        //however it needs some care since the strands are not yet created.  So cannot return strand(i).
+        return &nullCallback;
+    }
+
+    inline AggregateProcessor & queryAggregate(unsigned i)
+    {
+        return static_cast<AggregateProcessor &>(strands.item(i));
+    }
+
+protected:
+    IHThorAggregateArg &helper;
+    Owned<IStrandBarrier> barrier;
+    IEngineRowStream * combinedStream = nullptr;
+    bool isInputGrouped;
+    bool abortEarly;
+    bool combineStreams = false;
+    bool calculated = false;
+};
+
 class CRoxieServerAggregateActivityFactory : public CRoxieServerActivityFactory
 {
+    StrandOptions strandOptions;
 public:
-    CRoxieServerAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), strandOptions(_graphNode)
     {
+        Owned<IHThorAggregateArg> helper = (IHThorAggregateArg *) helperFactory();
+        if (!(helper->getAggregateFlags() & TAForderedmerge))
+            optStableInput = false;
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerAggregateActivity(_ctx, this, _probeManager);
+        return new CRoxieServerStrandedAggregateActivity(_ctx, this, _probeManager, strandOptions);
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -10436,7 +10970,7 @@ class CRoxieServerHashAggregateActivityFactory : public CRoxieServerActivityFact
 {
 public:
     CRoxieServerHashAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         isGroupedAggregate = _graphNode.getPropBool("att[@name='grouped']/@value");
     }
@@ -10521,8 +11055,8 @@ public:
 class CRoxieServerDegroupActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerDegroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerDegroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -10532,9 +11066,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerDegroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerDegroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerDegroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerDegroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -10652,8 +11186,8 @@ public:
 class CRoxieServerSpillReadActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerSpillReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerSpillReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -10671,9 +11205,9 @@ public:
     } 
 };
 
-IRoxieServerActivityFactory *createRoxieServerSpillReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerSpillReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerSpillReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerSpillReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -11140,8 +11674,8 @@ class CRoxieServerDiskWriteActivityFactory : public CRoxieServerMultiOutputFacto
     bool isRoot;
     bool isTemp;
 public:
-    CRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
         Owned<IHThorDiskWriteArg> helper = (IHThorDiskWriteArg *) helperFactory();
         isTemp = (helper->getFlags() & TDXtemporary) != 0;
@@ -11178,9 +11712,9 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerDiskWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerDiskWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -11516,8 +12050,8 @@ public:
 class CRoxieServerIndexWriteActivityFactory : public CRoxieServerMultiOutputFactory
 {
 public:
-    CRoxieServerIndexWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerIndexWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         setNumOutputs(0);
     }
@@ -11534,9 +12068,9 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerIndexWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerIndexWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerIndexWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerIndexWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -12242,7 +12776,7 @@ class CRoxieServerJoinActivityFactory : public CRoxieServerActivityFactory
 
 public:
     CRoxieServerJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         forceSpill = _graphNode.getPropBool("hint[@name='spill']/@value", _queryFactory.queryOptions().allSortsMaySpill);
         input2 = 0;
@@ -12336,9 +12870,9 @@ public:
         puller.setInput(this, _sourceIdx, _in);
     }
 
-    void connectOutputStreams(IRoxieSlaveContext *ctx, unsigned flags)
+    void connectInputStreams(IRoxieSlaveContext *ctx, bool consumerOrdered)
     {
-        puller.connectOutputStreams(ctx, flags);
+        puller.connectInputStreams(ctx, consumerOrdered);
     }
 
     virtual void processRow(const void *row)
@@ -12500,11 +13034,11 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         ForEachItemIn(i, pullers)
-            pullers.item(i).connectOutputStreams(ctx, flags);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
+            pullers.item(i).connectInputStreams(ctx, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, nullptr, consumerOrdered, nullptr); // No input actually connected
     }
 
     virtual const void * nextRow()
@@ -12632,8 +13166,8 @@ class CRoxieServerConcatActivityFactory : public CRoxieServerMultiInputFactory
     bool grouped;
 
 public:
-    CRoxieServerConcatActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerConcatActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         Owned <IHThorFunnelArg> helper = (IHThorFunnelArg *) helperFactory();
         ordered = helper->isOrdered();
@@ -12649,9 +13183,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerConcatActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerConcatActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerConcatActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerConcatActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -12747,8 +13281,8 @@ public:
 class CRoxieServerNonEmptyActivityFactory : public CRoxieServerMultiInputFactory
 {
 public:
-    CRoxieServerNonEmptyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerNonEmptyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -12759,9 +13293,9 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerNonEmptyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNonEmptyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerNonEmptyActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerNonEmptyActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -12976,8 +13510,8 @@ public:
 class CRoxieServerMergeActivityFactory : public CRoxieServerMultiInputFactory
 {
 public:
-    CRoxieServerMergeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerMergeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -12987,9 +13521,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerMergeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerMergeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerMergeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerMergeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -13070,8 +13604,8 @@ public:
 class CRoxieServerRegroupActivityFactory : public CRoxieServerMultiInputFactory
 {
 public:
-    CRoxieServerRegroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerRegroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -13081,9 +13615,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerRegroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerRegroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerRegroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerRegroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -13165,8 +13699,8 @@ public:
 class CRoxieServerCombineActivityFactory : public CRoxieServerMultiInputFactory
 {
 public:
-    CRoxieServerCombineActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerCombineActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -13176,9 +13710,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerCombineActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerCombineActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerCombineActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerCombineActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -13283,8 +13817,8 @@ class CRoxieServerCombineGroupActivityFactory : public CRoxieServerActivityFacto
     unsigned input2idx;
 
 public:
-    CRoxieServerCombineGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerCombineGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         input2 = 0;
         input2idx = 0;
@@ -13323,9 +13857,9 @@ public:
     virtual unsigned numInputs() const { return 2; }
 };
 
-IRoxieServerActivityFactory *createRoxieServerCombineGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerCombineGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerCombineGroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerCombineGroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -13403,8 +13937,8 @@ public:
 class CRoxieServerRollupGroupActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerRollupGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerRollupGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -13414,9 +13948,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerRollupGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerRollupGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerRollupGroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerRollupGroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -13491,9 +14025,11 @@ public:
 class CRoxieServerFilterProjectActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerFilterProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerFilterProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
+        //MORE: Code generator needs to indicate if the count is used.
+        //optStableInput = false;
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
@@ -13502,9 +14038,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerFilterProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerFilterProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerFilterProjectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerFilterProjectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================
@@ -13563,10 +14099,17 @@ public:
     {
     }
 
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerStrandedActivity::start(parentExtractSize, parentExtract, paused);
+        onStartStrands();
+    }
+
     virtual StrandProcessor *createStrandProcessor(IEngineRowStream *instream)
     {
         return new ProjectProcessor(*this, instream, (IHThorProjectArg &) basehelper);
     }
+    virtual StrandProcessor *createStrandSourceProcessor(bool inputOrdered) { throwUnexpected(); }
 };
 
 class CRoxieServerProjectActivity : public CRoxieServerActivity
@@ -13640,9 +14183,10 @@ protected:
     bool count;
 public:
     CRoxieServerProjectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), strandOptions(_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), strandOptions(_graphNode)
     {
         count = (kind==TAKcountproject || kind==TAKprefetchcountproject);
+        optStableInput = count;
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
@@ -13724,10 +14268,10 @@ public:
         puller.setInput(this, _sourceIdx, _in);
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
-        puller.connectOutputStreams(ctx, flags);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
+        puller.connectInputStreams(ctx, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -14180,8 +14724,8 @@ typedef SafeQueueOf<const void, true> SafeRowQueue;
 class CRowQueuePseudoInput : public CPseudoRoxieInput
 {
 public:
-    CRowQueuePseudoInput(SafeRowQueue & _input) : 
-        input(_input)
+    CRowQueuePseudoInput(SafeRowQueue & _input, IOutputMetaData * _meta)
+    : meta(_meta), input(_input)
     {
         eof = false;
     }
@@ -14196,8 +14740,11 @@ public:
         return ret;
     }
 
+    virtual IOutputMetaData * queryOutputMeta() const { return meta; }
+
 protected:
     SafeRowQueue & input;
+    IOutputMetaData * meta;
     bool eof;
 };
 
@@ -14252,9 +14799,9 @@ public:
         safeInput.setown(new CSafeRoxieInput(_sourceIdx, _input));
     }
 
-    void connectOutputStreams(unsigned flags)
+    void connectInputStreams(bool consumerOrdered)
     {
-        safeInput->connectOutputStreams(ctx, flags);
+        safeInput->connectInputStreams(ctx, consumerOrdered);
     }
 
     IFinalRoxieInput *queryInput() const
@@ -14285,8 +14832,6 @@ class CRoxieServerParallelLoopActivity : public CRoxieServerLoopActivity
     QueueOf<const void, true> ready;
     CriticalSection helperCS;
     CriticalSection cs;
-    size32_t sizeNumParallel;
-    rtlDataAttr listNumParallel;
     unsigned defaultNumParallel;
     LoopExecutorThread executor;
     IProbeManager* probeManager;
@@ -14309,7 +14854,6 @@ public:
     {
         probeManager = _probeManager;
         defaultNumParallel = 0;
-        sizeNumParallel = 0;
     }
 
     virtual void onCreate(IHThorArg *_colocalParent)
@@ -14327,7 +14871,6 @@ public:
         defaultNumParallel = helper.defaultParallelIterations();
         if (!defaultNumParallel)
             defaultNumParallel = DEFAULT_PARALLEL_LOOP_THREADS;
-        helper.numParallelIterations(sizeNumParallel, listNumParallel.refdata());
 
         //MORE: If numIterations <= number of parallel iterations[1], 
         //then we don't need to create a separate thread to do the processing, and the results will also avoid
@@ -14342,10 +14885,10 @@ public:
         executor.setInput(this, _sourceIdx, _in, flags);
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
-        executor.connectOutputStreams(flags);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
+        executor.connectInputStreams(consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, nullptr, consumerOrdered, nullptr);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -14398,9 +14941,7 @@ public:
 
     unsigned getNumParallel(unsigned iter)
     {
-        if (iter * sizeof(unsigned) >= sizeNumParallel)
-            return defaultNumParallel;
-        return ((unsigned *)listNumParallel.getdata())[iter];
+        return defaultNumParallel;
     }
 
     inline void enqueueResult(const void * row)
@@ -14536,7 +15077,7 @@ void LoopExecutorThread::executeLoop()
         {
             SafeRowQueue & inputQueue = tempResults[1-outputIndex];
             inputQueue.enqueue(NULL);
-            curInput.setown(new CRowQueuePseudoInput(inputQueue));
+            curInput.setown(new CRowQueuePseudoInput(inputQueue, activity->queryOutputMeta()));
         }
 
         SafeRowQueue * curOutput = NULL;
@@ -14584,7 +15125,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
     }
 
     Owned<IStrandJunction> curJunction;
-    IEngineRowStream *curStream = connectSingleStream(ctx, curInput, inputIdx, curJunction, 0);
+    IEngineRowStream *curStream = connectSingleStream(ctx, curInput, inputIdx, curJunction, true);
     try
     {
         curInput->start(savedParentExtractSize, savedParentExtract, false);
@@ -14676,8 +15217,8 @@ class CRoxieServerLoopActivityFactory : public CRoxieServerActivityFactory
     Linked<IOutputMetaData> counterMeta;
 
 public:
-    CRoxieServerLoopActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _loopGraphId)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), loopGraphId(_loopGraphId)
+    CRoxieServerLoopActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _loopGraphId)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), loopGraphId(_loopGraphId)
     {
         Owned<IHThorLoopArg> helper = (IHThorLoopArg *) helperFactory();
         flags = helper->getFlags();
@@ -14693,9 +15234,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerLoopActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _loopGraphId)
+IRoxieServerActivityFactory *createRoxieServerLoopActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _loopGraphId)
 {
-    return new CRoxieServerLoopActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _loopGraphId);
+    return new CRoxieServerLoopActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _loopGraphId);
 }
 
 //=================================================================================
@@ -14891,7 +15432,8 @@ public:
     {
         if (numUses > 1)
         {
-            factory.setown(createRoxieServerThroughSpillActivityFactory(sourceAct->queryFactory()->queryQueryFactory(), createGraphOutputSplitter, numUses));
+            Owned<IPropertyTree> splitterNode = createPTree();
+            factory.setown(createRoxieServerThroughSpillActivityFactory(sourceAct->queryFactory()->queryQueryFactory(), createGraphOutputSplitter, numUses, *splitterNode));
             IRoxieServerActivity *splitter = factory->createActivity(ctx, NULL);
             splitter->onCreate(NULL);
             IFinalRoxieInput *input = sourceAct->queryOutput(sourceIdx);
@@ -14972,10 +15514,10 @@ public:
     }
 
 
-    virtual void connectOutputStreams(unsigned flags)
+    virtual void connectInputStreams(bool consumerOrdered)
     {
-        //NB: inputExtractMapper is not connected at this point - only if/when it isused from within the graph
-        CRoxieServerActivity::connectOutputStreams(flags);
+        //NB: inputExtractMapper is not connected at this point - only if/when it is used from within the graph
+        CRoxieServerActivity::connectInputStreams(consumerOrdered);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -15053,7 +15595,7 @@ public:
         ForEachItemIn(i2, iterationGraphs)
             iterationGraphs.item(i2).associateIterationOutputs(*this);
         resultInput = outputs.tos().connectOutput(probeManager, probes, this, 0);
-        resultStream = connectSingleStream(ctx, resultInput, 0, resultJunction, 0);
+        resultStream = connectSingleStream(ctx, resultInput, 0, resultJunction, true);
     }
 
     void createSplitters(IProbeManager *probeManager, IArrayOf<IRoxieProbe> &probes)
@@ -15098,8 +15640,8 @@ class CRoxieServerGraphLoopActivityFactory : public CRoxieServerActivityFactory
     Linked<IOutputMetaData> counterMeta;
 
 public:
-    CRoxieServerGraphLoopActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _loopGraphId)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), loopGraphId(_loopGraphId)
+    CRoxieServerGraphLoopActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _loopGraphId)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), loopGraphId(_loopGraphId)
     {
         Owned<IHThorGraphLoopArg> helper = (IHThorGraphLoopArg *) helperFactory();
         flags = helper->getFlags();
@@ -15115,9 +15657,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerGraphLoopActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _loopGraphId)
+IRoxieServerActivityFactory *createRoxieServerGraphLoopActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _loopGraphId)
 {
-    return new CRoxieServerGraphLoopActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _loopGraphId);
+    return new CRoxieServerGraphLoopActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _loopGraphId);
 }
 
 //=====================================================================================================
@@ -15130,6 +15672,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
 
     public:
         CRoxieServerLibraryCallActivity *parent;
+        IOutputMetaData * meta = nullptr;
         unsigned oid;
         unsigned processed;
 
@@ -15155,6 +15698,13 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             }
         }
 
+        void setParent(CRoxieServerLibraryCallActivity * _parent, IOutputMetaData * _meta, unsigned _oid)
+        {
+            parent = _parent;
+            meta = _meta;
+            oid = _oid;
+        }
+
         void init()
         {
             processed = 0;
@@ -15167,15 +15717,22 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
         }
 
-        virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+        virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
         {
+            //MORE value of consumerOrdered depends on whether this activity is marked as ordered.
             if (!oid)  // Only need to set up once
             {
-                parent->connectOutputStreams(flags);  // To handle dependencies etc
+                parent->connectInputStreams(true);  // To handle dependencies etc
             }
-            return CExtractMapperInput::getOutputStreams(ctx, 0, streams, multiOk, flags);
+            return CExtractMapperInput::getOutputStreams(ctx, 0, streams, nullptr, true, nullptr);
         }
 
+
+        //This override should not really be needed, but input is set up too late for the call to connect strands
+        virtual IOutputMetaData * queryOutputMeta() const
+        {
+            return meta;
+        }
 
         virtual void stop()
         {
@@ -15235,8 +15792,7 @@ public:
         outputUsed = new bool[numOutputs];
         for (unsigned i2 = 0; i2 < numOutputs; i2++)
         {
-            outputAdaptors[i2].parent = this;
-            outputAdaptors[i2].oid = i2;
+            outputAdaptors[i2].setParent(this, helper.queryOutputMeta(i2), i2);
             outputUsed[i2] = false;
         }
         started = false;
@@ -15251,7 +15807,7 @@ public:
         delete [] outputAdaptors;
         delete [] outputUsed;
     }
- 
+
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_colocalParent);
@@ -15268,7 +15824,7 @@ public:
             unsigned outputIndex = extra.outputs.item(i2);
             Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+outputIndex);
             outputAdaptors[i2].setInput(0, output);   // MORE - no idea if this 0 is right??
-            outputAdaptors[i2].connectOutputStreams(ctx, 0);
+            outputAdaptors[i2].connectInputStreams(ctx, true);
         }
     }
 
@@ -15437,8 +15993,8 @@ private:
     LibraryCallFactoryExtra extra;
 
 public:
-    CRoxieServerLibraryCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, LibraryCallFactoryExtra & _extra)
-        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerLibraryCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, LibraryCallFactoryExtra & _extra)
+        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         extra.set(_extra);
         extra.calcUnused();
@@ -15468,9 +16024,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerLibraryCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, LibraryCallFactoryExtra & _extra)
+IRoxieServerActivityFactory *createRoxieServerLibraryCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, LibraryCallFactoryExtra & _extra)
 {
-    return new CRoxieServerLibraryCallActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _extra);
+    return new CRoxieServerLibraryCallActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _extra);
 }
 
 //=====================================================================================================
@@ -15604,8 +16160,8 @@ public:
 class CRoxieServerNWayInputActivityFactory : public CRoxieServerMultiInputFactory
 {
 public:
-    CRoxieServerNWayInputActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerNWayInputActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -15615,9 +16171,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNWayInputActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNWayInputActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerNWayInputActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerNWayInputActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
@@ -15666,7 +16222,7 @@ public:
                 selectedInputs.append(resultInput);
                 resultInput->onCreate(colocalParent);
                 resultInput->start(parentExtractSize, parentExtract, paused);
-                selectedStreams.append(connectSingleStream(ctx, resultInput, 0, resultJunctions[i], i));
+                selectedStreams.append(connectSingleStream(ctx, resultInput, 0, resultJunctions[i], true));
             }
         }
         else
@@ -15708,7 +16264,7 @@ public:
         {
             IFinalRoxieInput *in = processor.connectIterationOutput(selections[i], probeManager, probes, this, i);
             selectedInputs.append(in);
-            selectedStreams.append(connectSingleStream(ctx, in, 0, resultJunctions[i], i));
+            selectedStreams.append(connectSingleStream(ctx, in, 0, resultJunctions[i], true));
         }
     }
 
@@ -15727,8 +16283,8 @@ class CRoxieServerNWayGraphLoopResultReadActivityFactory : public CRoxieServerAc
      unsigned graphId;
 
 public:
-    CRoxieServerNWayGraphLoopResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _graphId)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), graphId(_graphId)
+    CRoxieServerNWayGraphLoopResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _graphId)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), graphId(_graphId)
     {
     }
 
@@ -15742,9 +16298,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNWayGraphLoopResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned graphId)
+IRoxieServerActivityFactory *createRoxieServerNWayGraphLoopResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned graphId)
 {
-    return new CRoxieServerNWayGraphLoopResultReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, graphId);
+    return new CRoxieServerNWayGraphLoopResultReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, graphId);
 }
 
 //=================================================================================
@@ -15866,7 +16422,7 @@ public:
         expandedJunctions = new Owned<IStrandJunction> [expandedInputs.length()];
         ForEachItemIn(idx, expandedInputs)
         {
-            expandedStreams.append(connectSingleStream(ctx, expandedInputs.item(idx), 0, expandedJunctions[idx], 0));  // MORE - is the index 0 right?
+            expandedStreams.append(connectSingleStream(ctx, expandedInputs.item(idx), 0, expandedJunctions[idx], true));  // MORE - is the index 0 right?
             startJunction(expandedJunctions[idx]);
         }
     }
@@ -16008,8 +16564,8 @@ protected:
 class CRoxieServerNWayMergeActivityFactory : public CRoxieServerMultiInputFactory
 {
 public:
-    CRoxieServerNWayMergeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerNWayMergeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -16019,9 +16575,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNWayMergeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNWayMergeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerNWayMergeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerNWayMergeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -16154,8 +16710,8 @@ class CRoxieServerNWayMergeJoinActivityFactory : public CRoxieServerMultiInputFa
 {
     unsigned flags;
 public:
-    CRoxieServerNWayMergeJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerNWayMergeJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         Owned<IHThorNWayMergeJoinArg> helper = (IHThorNWayMergeJoinArg *) helperFactory();
         flags = helper->getJoinFlags();
@@ -16181,9 +16737,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNWayMergeJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNWayMergeJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerNWayMergeJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerNWayMergeJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 
@@ -16217,7 +16773,7 @@ public:
                 if (whichInput < numRealInputs)
                 {
                     selectedInput = cur->queryConcreteInput(whichInput);
-                    selectedStream = connectSingleStream(ctx, selectedInput, 0, selectedJunction, 0);  // Should this be passing whichInput??
+                    selectedStream = connectSingleStream(ctx, selectedInput, 0, selectedJunction, true);  // Should this be passing whichInput??
                     break;
                 }
                 whichInput -= numRealInputs;
@@ -16281,8 +16837,8 @@ protected:
 class CRoxieServerNWaySelectActivityFactory : public CRoxieServerMultiInputFactory
 {
 public:
-    CRoxieServerNWaySelectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerNWaySelectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -16292,9 +16848,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerNWaySelectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerNWaySelectActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerNWaySelectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerNWaySelectActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -16379,8 +16935,8 @@ public:
     RemoteActivityId remoteId;
     bool isRoot;
 
-    CRoxieServerRemoteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), remoteId(_remoteId), isRoot(_isRoot)
+    CRoxieServerRemoteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), remoteId(_remoteId), isRoot(_isRoot)
     {
     }
 
@@ -16405,9 +16961,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerRemoteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerRemoteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId, bool _isRoot)
 {
-    return new CRoxieServerRemoteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _isRoot);
+    return new CRoxieServerRemoteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId, _isRoot);
 }
 
 //=================================================================================
@@ -16483,8 +17039,8 @@ public:
 class CRoxieServerIterateActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerIterateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerIterateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -16494,9 +17050,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerIterateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerIterateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerIterateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerIterateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -16582,8 +17138,8 @@ public:
 class CRoxieServerProcessActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerProcessActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerProcessActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -16593,9 +17149,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerProcessActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerProcessActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerProcessActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerProcessActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -16694,8 +17250,8 @@ public:
 class CRoxieServerGroupActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -16710,9 +17266,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerGroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerGroupActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -16799,8 +17355,8 @@ public:
 class CRoxieServerFirstNActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerFirstNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerFirstNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -16810,9 +17366,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerFirstNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerFirstNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerFirstNActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerFirstNActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -16871,8 +17427,8 @@ public:
 class CRoxieServerSelectNActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerSelectNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerSelectNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -16882,9 +17438,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSelectNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerSelectNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerSelectNActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerSelectNActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -17305,7 +17861,7 @@ class CRoxieServerSelfJoinActivityFactory : public CRoxieServerActivityFactory
     bool forceSpill;
 public:
     CRoxieServerSelfJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         forceSpill = queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);;
     }
@@ -18637,8 +19193,8 @@ public:
 class CRoxieServerTopNActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerTopNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerTopNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -18648,9 +19204,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerTopNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerTopNActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerTopNActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerTopNActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -18730,8 +19286,8 @@ public:
 class CRoxieServerLimitActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerLimitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerLimitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -18741,9 +19297,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerLimitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerLimitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerLimitActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerLimitActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
@@ -18837,8 +19393,8 @@ protected:
 class CRoxieServerSkipLimitActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerSkipLimitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerSkipLimitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -18848,9 +19404,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSkipLimitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerSkipLimitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerSkipLimitActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerSkipLimitActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -19035,8 +19591,8 @@ protected:
 class CRoxieServerCatchActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerCatchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerCatchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -19056,9 +19612,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerCatchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerCatchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerCatchActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerCatchActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -19133,8 +19689,8 @@ protected:
 class CRoxieServerPullActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerPullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerPullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -19144,9 +19700,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerPullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerPullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerPullActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerPullActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 //=================================================================================
 
@@ -19266,8 +19822,8 @@ protected:
 class CRoxieServerTraceActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerTraceActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerTraceActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -19277,9 +19833,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerTraceActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerTraceActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerTraceActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerTraceActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -19354,8 +19910,8 @@ class CRoxieServerCaseActivityFactory : public CRoxieServerMultiInputFactory
 {
     bool graphInvariant;
 public:
-    CRoxieServerCaseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _graphInvariant)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerCaseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _graphInvariant)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         graphInvariant = _graphInvariant;
     }
@@ -19371,9 +19927,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerCaseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _graphInvariant)
+IRoxieServerActivityFactory *createRoxieServerCaseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _graphInvariant)
 {
-    return new CRoxieServerCaseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphInvariant);
+    return new CRoxieServerCaseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _graphInvariant);
 }
 
 //=================================================================================
@@ -19495,11 +20051,12 @@ public:
         }
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
-        streamTrue = connectSingleStream(ctx, inputTrue, sourceIdxTrue, junctionTrue, flags);
-        streamFalse = connectSingleStream(ctx, inputFalse, sourceIdxFalse, junctionFalse, flags);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
+        //It should be possible to stream IF(), but the number of strands would need to match on the two branches.
+        streamTrue = connectSingleStream(ctx, inputTrue, sourceIdxTrue, junctionTrue, consumerOrdered);
+        streamFalse = connectSingleStream(ctx, inputFalse, sourceIdxFalse, junctionFalse, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, nullptr, consumerOrdered, nullptr);
     }
 
     virtual const void *nextRow()
@@ -19524,8 +20081,8 @@ class CRoxieServerIfActivityFactory : public CRoxieServerActivityFactory
     bool graphInvariant;
 
 public:
-    CRoxieServerIfActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _graphInvariant)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerIfActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _graphInvariant)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         graphInvariant = _graphInvariant;
         input2 = (unsigned)-1;
@@ -19570,9 +20127,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerIfActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _graphInvariant)
+IRoxieServerActivityFactory *createRoxieServerIfActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _graphInvariant)
 {
-    return new CRoxieServerIfActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphInvariant);
+    return new CRoxieServerIfActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _graphInvariant);
 }
 
 //=================================================================================
@@ -19662,8 +20219,8 @@ class CRoxieServerIfActionActivityFactory : public CRoxieServerActivityFactory
 {
     bool isRoot;
 public:
-    CRoxieServerIfActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerIfActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 
@@ -19678,9 +20235,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerIfActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerIfActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerIfActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerIfActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -19712,8 +20269,8 @@ class CRoxieServerParallelActionActivityFactory : public CRoxieServerActivityFac
 {
     bool isRoot;
 public:
-    CRoxieServerParallelActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerParallelActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
         assertex(!isRoot);      // non-internal should be expanded out..
     }
@@ -19729,9 +20286,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerParallelActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerParallelActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerParallelActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerParallelActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -19759,8 +20316,8 @@ class CRoxieServerSequentialActionActivityFactory : public CRoxieServerActivityF
 {
     bool isRoot;
 public:
-    CRoxieServerSequentialActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerSequentialActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 
@@ -19775,9 +20332,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSequentialActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerSequentialActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerSequentialActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerSequentialActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -19855,8 +20412,8 @@ protected:
 class CRoxieServerWhenActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerWhenActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerWhenActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -19867,9 +20424,9 @@ public:
 };
 
 
-extern IRoxieServerActivityFactory *createRoxieServerWhenActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+extern IRoxieServerActivityFactory *createRoxieServerWhenActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerWhenActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerWhenActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 
@@ -19919,8 +20476,8 @@ protected:
 class CRoxieServerWhenActionActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerWhenActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerWhenActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 
@@ -19937,9 +20494,9 @@ private:
     bool isRoot;
 };
 
-extern IRoxieServerActivityFactory *createRoxieServerWhenActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+extern IRoxieServerActivityFactory *createRoxieServerWhenActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerWhenActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerWhenActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -19987,12 +20544,12 @@ class CRoxieServerStrandedParseActivity : public CRoxieServerStrandedActivity
         }
         virtual void start()
         {
+            StrandProcessor::start();
             numProcessedLastGroup = 0;
             curSearchTextLen = 0;
             curSearchText = NULL;
             in = NULL;
             parser->reset();
-            StrandProcessor::start();
         }
         virtual void reset()
         {
@@ -20055,10 +20612,17 @@ public:
     {
     }
 
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerStrandedActivity::start(parentExtractSize, parentExtract, paused);
+        onStartStrands();
+    }
+
     virtual StrandProcessor *createStrandProcessor(IEngineRowStream *instream)
     {
         return new ParseProcessor(*this, instream, (IHThorParseArg &) basehelper, algorithm);
     }
+    virtual StrandProcessor *createStrandSourceProcessor(bool inputOrdered) { throwUnexpected(); }
 };
 
 
@@ -20070,10 +20634,11 @@ class CRoxieServerParseActivityFactory : public CRoxieServerActivityFactory
 
 public:
     CRoxieServerParseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, IResourceContext *rc)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), strandOptions(_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), strandOptions(_graphNode)
     {
         helper.setown((IHThorParseArg *) helperFactory());
         algorithm.setown(createThorParser(rc, *helper));
+        optStableInput = false;
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
@@ -20124,29 +20689,25 @@ public:
             storedName = "Dataset";
 
         MemoryBuffer result;
-        FlushingStringBuffer *response = NULL;
         bool saveInContext = (int) sequence < 0 || isReread;
         if (!meta.queryOriginal()) // this is a bit of a hack - don't know why no meta on an output....
             meta.set(input->queryOutputMeta());
         Owned<IOutputRowSerializer> rowSerializer;
-        Owned<IXmlWriter> writer;
+        Owned<IXmlWriter> xmlwriter;
+        bool appendRaw = false;
+
+        IHpccProtocolResultsWriter *results = NULL;
+        IHpccNativeProtocolResultsWriter *nativeResults = NULL;
+        IHpccProtocolResponse *protocol = serverContext->queryProtocol();
+        unsigned protocolFlags = (protocol) ? protocol->getFlags() : 0;
         if ((int) sequence >= 0)
         {
-            response = serverContext->queryResult(sequence);
-            if (response)
+            results = (protocol) ? protocol->queryHpccResultsSection() : NULL;
+            if (results)
             {
-                const IProperties *xmlns = serverContext->queryXmlns(sequence);
-                response->startDataset("Dataset", helper.queryName(), sequence, (helper.getFlags() & POFextend) != 0, xmlns);
-                if (response->mlFmt==MarkupFmt_XML || response->mlFmt==MarkupFmt_JSON)
-                {
-                    unsigned int writeFlags = serverContext->getXmlFlags();
-                    if (response->mlFmt==MarkupFmt_JSON)
-                        writeFlags |= XWFnoindent;
-                    writer.setown(createIXmlWriterExt(writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
-                    writer->outputBeginArray(DEFAULTXMLROWTAG);
-                }
+                nativeResults = dynamic_cast<IHpccNativeProtocolResultsWriter*>(results);
+                xmlwriter.setown(results->addDataset(helper.queryName(), sequence, "Dataset", appendRaw, serverContext->getXmlFlags(), (helper.getFlags() & POFextend) != 0, serverContext->queryXmlns(sequence)));  //xmlwriter only returned if needed
             }
-
         }
         size32_t outputLimitBytes = 0;
         IConstWorkUnit *workunit = serverContext->queryWorkUnit();
@@ -20165,7 +20726,7 @@ public:
             assertex(outputLimit<=0x1000); // 32bit limit because MemoryBuffer/CMessageBuffers involved etc.
             outputLimitBytes = outputLimit * 0x100000;
         }
-        if (workunit != NULL || (response && response->isRaw))
+        if (workunit != NULL || (results && protocol->getFlags() & HPCC_PROTOCOL_NATIVE_RAW))
         {
             createRowAllocator();
             rowSerializer.setown(rowAllocator->createDiskSerializer(ctx->queryCodeContext()));
@@ -20184,13 +20745,18 @@ public:
             {
                 if (workunit)
                     result.append(row == NULL);
-                if (response)
+                if (results)
                 {
-                    if (response->isRaw)
-                        response->append((char)(row == NULL));
-                    else
+                    if (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW && nativeResults)
                     {
-                        response->append("<Row __GroupBreak__=\"1\"/>");        // sensible, but need to handle on input
+                        char val = (char)(row == NULL);
+                        nativeResults->appendRaw(sequence, 1, &val);
+                    }
+                    else if (xmlwriter)
+                    {
+                        xmlwriter->outputBeginNested("Row", false);
+                        xmlwriter->outputCString("1", "@__GroupBreak__");
+                        xmlwriter->outputEndNested("Row");
                     }
                 }
             }
@@ -20208,31 +20774,30 @@ public:
                 CThorDemoRowSerializer serializerTarget(result);
                 rowSerializer->serialize(serializerTarget, (const byte *) row);
             }
-            if (response)
+            if ((int) sequence >= 0)
             {
-                if (response->isRaw)
+                if (appendRaw && nativeResults)
                 {
                     // MORE - should be able to serialize straight to the response...
                     MemoryBuffer rowbuff;
                     CThorDemoRowSerializer serializerTarget(rowbuff);
                     rowSerializer->serialize(serializerTarget, (const byte *) row);
-                    response->append(rowbuff.length(), rowbuff.toByteArray());
+                    nativeResults->appendRawRow(sequence, rowbuff.length(), rowbuff.toByteArray());
                 }
-                else if (writer)
+                else if (xmlwriter)
                 {
-                    writer->outputBeginNested(DEFAULTXMLROWTAG, false);
-                    helper.serializeXml((byte *) row, *writer);
-                    writer->outputEndNested(DEFAULTXMLROWTAG);
+                    xmlwriter->outputBeginNested(DEFAULTXMLROWTAG, false);
+                    helper.serializeXml((byte *) row, *xmlwriter);
+                    xmlwriter->outputEndNested(DEFAULTXMLROWTAG);
+                    results->finalizeXmlRow(sequence);
                 }
-                else
+                else if (nativeResults)
                 {
                     SimpleOutputWriter x;
                     helper.serializeXml((byte *) row, x);
                     x.newline();
-                    response->append(x.str());
+                    nativeResults->appendSimpleRow(sequence, x.str());
                 }
-                response->incrementRowCount();
-                response->flush(false);
             }
             ReleaseRoxieRow(row);
             if (outputLimitBytes && result.length() > outputLimitBytes)
@@ -20248,8 +20813,8 @@ public:
                 throw MakeStringExceptionDirect(0, errMsg.str());
             }
         }
-        if (writer)
-            writer->outputEndArray(DEFAULTXMLROWTAG);
+        if (xmlwriter)
+            xmlwriter->outputEndArray(DEFAULTXMLROWTAG);
         if (saveInContext)
             serverContext->appendResultDeserialized(storedName, sequence, builder.getcount(), builder.linkrows(), (helper.getFlags() & POFextend) != 0, LINK(meta.queryOriginal()));
         if (workunit)
@@ -20262,8 +20827,8 @@ class CRoxieServerWorkUnitWriteActivityFactory : public CRoxieServerInternalSink
     bool isReread;
 
 public:
-    CRoxieServerWorkUnitWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
-        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot)
+    CRoxieServerWorkUnitWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot)
     {
         isReread = usageCount > 0;
         Owned<IHThorWorkUnitWriteArg> helper = (IHThorWorkUnitWriteArg *) helperFactory();
@@ -20277,9 +20842,9 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerWorkUnitWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerWorkUnitWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
 {
-    return new CRoxieServerWorkUnitWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot);
+    return new CRoxieServerWorkUnitWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot);
 
 }
 
@@ -20333,8 +20898,8 @@ class CRoxieServerWorkUnitWriteDictActivityFactory : public CRoxieServerInternal
 {
 
 public:
-    CRoxieServerWorkUnitWriteDictActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
-        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot)
+    CRoxieServerWorkUnitWriteDictActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot)
     {
         Owned<IHThorDictionaryWorkUnitWriteArg> helper = (IHThorDictionaryWorkUnitWriteArg *) helperFactory();
         isInternal = (helper->getSequence()==ResultSequenceInternal);
@@ -20347,9 +20912,9 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerWorkUnitWriteDictActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerWorkUnitWriteDictActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
 {
-    return new CRoxieServerWorkUnitWriteDictActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot);
+    return new CRoxieServerWorkUnitWriteDictActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot);
 
 }
 
@@ -20376,8 +20941,8 @@ public:
 class CRoxieServerRemoteResultActivityFactory : public CRoxieServerInternalSinkFactory
 {
 public:
-    CRoxieServerRemoteResultActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
-        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot)
+    CRoxieServerRemoteResultActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot)
     {
         Owned<IHThorRemoteResultArg> helper = (IHThorRemoteResultArg *) helperFactory();
         isInternal = (helper->getSequence()==ResultSequenceInternal);
@@ -20390,9 +20955,9 @@ public:
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerRemoteResultActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerRemoteResultActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
 {
-    return new CRoxieServerRemoteResultActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _usageCount, _isRoot);
+    return new CRoxieServerRemoteResultActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot);
 }
 
 //=================================================================================
@@ -20514,8 +21079,8 @@ class CRoxieServerXmlParseActivityFactory : public CRoxieServerActivityFactory
 {
 
 public:
-    CRoxieServerXmlParseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerXmlParseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -20525,9 +21090,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerXmlParseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerXmlParseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerXmlParseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerXmlParseActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
@@ -21617,8 +22182,8 @@ public:
     const char *escapes;
     size32_t maxCsvRowSize;
 
-    CRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), remoteId(_remoteId)
+    CRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), remoteId(_remoteId)
     {
         isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
         Owned<IHThorDiskReadBaseArg> helper = (IHThorDiskReadBaseArg *) helperFactory();
@@ -21720,9 +22285,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
+IRoxieServerActivityFactory *createRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
 {
-    return new CRoxieServerDiskReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode);
+    return new CRoxieServerDiskReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId);
 }
 
 //=================================================================================
@@ -22765,8 +23330,8 @@ public:
 
     CRoxieServerSideCache *cache;
 
-    CRoxieServerBaseIndexActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), remoteId(_remoteId)
+    CRoxieServerBaseIndexActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), remoteId(_remoteId)
     {
         Owned<IHThorIndexReadBaseArg> indexHelper = (IHThorIndexReadBaseArg *) helperFactory();
         unsigned flags = indexHelper->getFlags();
@@ -22855,8 +23420,8 @@ public:
 class CRoxieServerIndexReadActivityFactory : public CRoxieServerBaseIndexActivityFactory
 {
 public:
-    CRoxieServerIndexReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
-        : CRoxieServerBaseIndexActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode)
+    CRoxieServerIndexReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
+        : CRoxieServerBaseIndexActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId)
     {
     }
 
@@ -22871,9 +23436,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerIndexReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
+IRoxieServerActivityFactory *createRoxieServerIndexReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
 {
-    return new CRoxieServerIndexReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode);
+    return new CRoxieServerIndexReadActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId);
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
@@ -23111,8 +23676,8 @@ public:
 class CRoxieServerIndexCountActivityFactory : public CRoxieServerBaseIndexActivityFactory
 {
 public:
-    CRoxieServerIndexCountActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
-        : CRoxieServerBaseIndexActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode)
+    CRoxieServerIndexCountActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
+        : CRoxieServerBaseIndexActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId)
     {
     }
 
@@ -23127,9 +23692,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerIndexCountActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
+IRoxieServerActivityFactory *createRoxieServerIndexCountActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
 {
-    return new CRoxieServerIndexCountActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode);
+    return new CRoxieServerIndexCountActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId);
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
@@ -23273,8 +23838,8 @@ public:
 class CRoxieServerIndexAggregateActivityFactory : public CRoxieServerBaseIndexActivityFactory
 {
 public:
-    CRoxieServerIndexAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
-        : CRoxieServerBaseIndexActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode)
+    CRoxieServerIndexAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
+        : CRoxieServerBaseIndexActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId)
     {
     }
 
@@ -23289,9 +23854,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerIndexAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
+IRoxieServerActivityFactory *createRoxieServerIndexAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
 {
-    return new CRoxieServerIndexAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode);
+    return new CRoxieServerIndexAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId);
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
@@ -23466,8 +24031,8 @@ public:
 class CRoxieServerIndexGroupAggregateActivityFactory : public CRoxieServerBaseIndexActivityFactory
 {
 public:
-    CRoxieServerIndexGroupAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
-        : CRoxieServerBaseIndexActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode)
+    CRoxieServerIndexGroupAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
+        : CRoxieServerBaseIndexActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId)
     {
     }
 
@@ -23482,9 +24047,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerIndexGroupAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
+IRoxieServerActivityFactory *createRoxieServerIndexGroupAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
 {
-    return new CRoxieServerIndexGroupAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode);
+    return new CRoxieServerIndexGroupAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId);
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
@@ -23602,8 +24167,8 @@ public:
 class CRoxieServerIndexNormalizeActivityFactory : public CRoxieServerBaseIndexActivityFactory
 {
 public:
-    CRoxieServerIndexNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
-        : CRoxieServerBaseIndexActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode)
+    CRoxieServerIndexNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
+        : CRoxieServerBaseIndexActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId)
     {
     }
 
@@ -23616,9 +24181,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerIndexNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
+IRoxieServerActivityFactory *createRoxieServerIndexNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
 {
-    return new CRoxieServerIndexNormalizeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode);
+    return new CRoxieServerIndexNormalizeActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId);
 }
 
 //=================================================================================
@@ -23663,10 +24228,10 @@ public:
         puller.setInput(this, _sourceIdx, _in);
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
-        puller.connectOutputStreams(ctx, flags);
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
+        puller.connectInputStreams(ctx, consumerOrdered);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -23798,8 +24363,8 @@ class CRoxieServerFetchActivityFactory : public CRoxieServerActivityFactory
     bool variableFileName;
     Owned<const IResolvedFile> datafile;
 public:
-    CRoxieServerFetchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), remoteId(_remoteId)
+    CRoxieServerFetchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), remoteId(_remoteId)
     {
         Owned<IHThorFetchBaseArg> helper = (IHThorFetchBaseArg *) helperFactory();
         IHThorFetchContext *fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
@@ -23845,9 +24410,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerFetchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
+IRoxieServerActivityFactory *createRoxieServerFetchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId)
 {
-    return new CRoxieServerFetchActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _graphNode);
+    return new CRoxieServerFetchActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId);
 }
 
 // MORE - is there any point keeping this now?
@@ -23864,7 +24429,7 @@ public:
     TranslatorArray layoutTranslators;
 
     CRoxieServerDummyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool isLoadDataOnly)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         try  // does not want any missing file errors to be fatal, or throw traps - just log it
         {
@@ -24368,11 +24933,11 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
-        puller.connectOutputStreams(ctx, flags);
+        puller.connectInputStreams(ctx, consumerOrdered);
         //No rows are read from indexReadInput, so no need to extract the streams
-        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, multiOk, flags);
+        return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -24724,12 +25289,12 @@ public:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
     }
 
-    virtual void connectOutputStreams(unsigned flags)
+    virtual void connectInputStreams(bool consumerOrdered)
     {
-        CRoxieServerActivity::connectOutputStreams(flags);
-        puller.connectOutputStreams(ctx, flags);
+        CRoxieServerActivity::connectInputStreams(consumerOrdered);
+        puller.connectInputStreams(ctx, consumerOrdered);
         if (indexReadInput)
-            indexReadStream = connectSingleStream(ctx, indexReadInput, indexReadIdx, indexReadJunction, flags);  // We never actually pull the stream
+            indexReadStream = connectSingleStream(ctx, indexReadInput, indexReadIdx, indexReadJunction, consumerOrdered);  // We never actually pull the stream
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -25119,10 +25684,10 @@ public:
         head.setInput(idx, _sourceIdx, _in);
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
-        connectOutputStreams(flags);
-        return head.getOutputStreams(ctx, idx, streams, multiOk, flags);
+        connectInputStreams(consumerOrdered);
+        return head.getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -25456,8 +26021,8 @@ class CRoxieServerKeyedJoinActivityFactory : public CRoxieServerMultiInputFactor
     bool isSimple;
 
 public:
-    CRoxieServerKeyedJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_headId, const RemoteActivityId &_tailId, IPropertyTree &_graphNode)
-        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), headId(_headId), tailId(_tailId)
+    CRoxieServerKeyedJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_headId, const RemoteActivityId &_tailId)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), headId(_headId), tailId(_tailId)
     {
         Owned<IHThorKeyedJoinArg> helper = (IHThorKeyedJoinArg *) helperFactory();
         isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
@@ -25543,9 +26108,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerKeyedJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, const RemoteActivityId &_remoteId2, IPropertyTree &_graphNode)
+IRoxieServerActivityFactory *createRoxieServerKeyedJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const RemoteActivityId &_remoteId, const RemoteActivityId &_remoteId2)
 {
-    return new CRoxieServerKeyedJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _remoteId, _remoteId2, _graphNode);
+    return new CRoxieServerKeyedJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _remoteId, _remoteId2);
 }
 
 //=================================================================================
@@ -25643,8 +26208,8 @@ public:
 class CRoxieServerSoapRowCallActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerSoapRowCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerSoapRowCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -25659,9 +26224,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSoapRowCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerSoapRowCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerSoapRowCallActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerSoapRowCallActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //---------------------------------------------------------------------------
@@ -25700,8 +26265,8 @@ class CRoxieServerSoapRowActionActivityFactory : public CRoxieServerActivityFact
 {
     bool isRoot;
 public:
-    CRoxieServerSoapRowActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerSoapRowActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 
@@ -25721,9 +26286,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSoapRowActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerSoapRowActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerSoapRowActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerSoapRowActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //---------------------------------------------------------------------------
@@ -25776,8 +26341,8 @@ public:
 class CRoxieServerSoapDatasetCallActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerSoapDatasetCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    CRoxieServerSoapDatasetCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
     }
 
@@ -25792,9 +26357,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSoapDatasetCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerSoapDatasetCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerSoapDatasetCallActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerSoapDatasetCallActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //---------------------------------------------------------------------------
@@ -25860,8 +26425,8 @@ class CRoxieServerSoapDatasetActionActivityFactory : public CRoxieServerActivity
 {
     bool isRoot;
 public:
-    CRoxieServerSoapDatasetActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    CRoxieServerSoapDatasetActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
     }
 
@@ -25881,9 +26446,9 @@ public:
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSoapDatasetActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerSoapDatasetActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerSoapDatasetActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+    return new CRoxieServerSoapDatasetActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=====================================================================================================
@@ -26170,7 +26735,7 @@ public:
         ForEachItemIn(idx2, sinks)
         {
             IRoxieServerActivity &sink = sinks.item(idx2);
-            sink.connectOutputStreams(0);
+            sink.connectInputStreams(true);
         }
     }
 
@@ -26476,6 +27041,64 @@ public:
     }
 };
 
+class CProxyActivityGraph : public CInterface, implements IActivityGraph, implements IThorChildGraph
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CProxyActivityGraph(IRoxieSlaveContext *_ctx, const char *_graphName, unsigned _id, ActivityArray &_graphDefinition, const IRoxieContextLogger &_logctx, unsigned _numParallel)
+        : ctx(_ctx), graphName(_graphName), id(_id), graphDefinition(_graphDefinition), logctx(_logctx), numParallel(_numParallel)
+    {
+    }
+    virtual void abort() { throwUnexpected(); }
+    virtual void reset() { throwUnexpected(); }
+    virtual void execute() { throwUnexpected(); }
+    virtual void getProbeResponse(IPropertyTree *query) { throwUnexpected(); }
+    virtual void onCreate(IHThorArg *_colocalArg)
+    {
+        colocalArg = _colocalArg;
+    }
+    virtual void noteException(IException *E) { throwUnexpected(); }
+    virtual void checkAbort() { throwUnexpected(); }
+    virtual IThorChildGraph * queryChildGraph() { return this; }
+    virtual IEclGraphResults * queryLocalGraph() { throwUnexpected(); }
+    virtual IRoxieServerChildGraph * queryLoopGraph() { throwUnexpected(); }
+    virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) { throwUnexpected(); }
+    virtual const char *queryName() const { throwUnexpected(); }
+
+    virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract)
+    {
+        Owned<CActivityGraph> realGraph;
+        {
+            CriticalBlock b(graphCrit);
+            if (stack.length())
+                realGraph.setown(&stack.popGet());
+        }
+        if (!realGraph)
+        {
+            realGraph.setown(new CActivityGraph(ctx, graphName, id, graphDefinition, NULL, logctx));
+            realGraph->createGraph(ctx);
+            realGraph->onCreate(colocalArg);
+        }
+        Owned<IEclGraphResults> results = realGraph->evaluate(parentExtractSize, parentExtract);
+        {
+            CriticalBlock b(graphCrit);
+            stack.append(*realGraph.getClear());
+        }
+        return results.getClear();
+    }
+
+protected:
+    IRoxieSlaveContext *ctx;
+    StringAttr graphName;
+    unsigned id;
+    ActivityArray &graphDefinition;
+    const IRoxieContextLogger &logctx;
+    unsigned numParallel;
+    IHThorArg *colocalArg = nullptr;
+    CriticalSection graphCrit;
+    CIArrayOf<CActivityGraph> stack;
+};
 
 class CIterationActivityGraph : public CActivityGraph
 {
@@ -26680,22 +27303,28 @@ public:
 
 
 
-IActivityGraph *createActivityGraph(IRoxieSlaveContext *ctx, const char *_graphName, unsigned id, ActivityArray &childFactories, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx)
+IActivityGraph *createActivityGraph(IRoxieSlaveContext *ctx, const char *_graphName, unsigned id, ActivityArray &childFactories, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx, unsigned numParallel)
 {
     if (childFactories.isDelayed())
     {
+        assertex(numParallel==1);
         return new CDelayedActivityGraph(_graphName, id, childFactories, _probeManager);
     }
     else
     {
-        Owned<IProbeManager> childProbe;
-        if (_probeManager)
-            childProbe.setown(_probeManager->startChildGraph(id, parentActivity));
-        Owned<CActivityGraph> ret = new CActivityGraph(ctx, _graphName, id, childFactories, childProbe, _logctx);
-        ret->createGraph(ctx);
-        if (_probeManager)
-            _probeManager->endChildGraph(childProbe, parentActivity);
-        return ret.getClear();
+        if (numParallel==1 || _probeManager != nullptr)
+        {
+            Owned<IProbeManager> childProbe;
+            if (_probeManager)
+                childProbe.setown(_probeManager->startChildGraph(id, parentActivity));
+            Owned<CActivityGraph> ret = new CActivityGraph(ctx, _graphName, id, childFactories, childProbe, _logctx);
+            ret->createGraph(ctx);
+            if (_probeManager)
+                _probeManager->endChildGraph(childProbe, parentActivity);
+            return ret.getClear();
+        }
+        else
+            return new CProxyActivityGraph(ctx, _graphName, id, childFactories, _logctx, numParallel);
     }
 }
 
@@ -26771,7 +27400,7 @@ public:
         ASSERT(state == STATEreset);
         state = STATEstarted; 
     }
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, bool multiOk, unsigned flags)
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         streams.append(this);
         return NULL;
@@ -26947,7 +27576,7 @@ protected:
         if (input2)
             activity->setInput(1, 0, &in2);
         IFinalRoxieInput *out = activity->queryOutput(outputIdx);
-        IEngineRowStream *outStream = connectSingleStream(ctx, out, outputIdx, 0);
+        IEngineRowStream *outStream = connectSingleStream(ctx, out, outputIdx, true);
         IOutputMetaData *meta = out->queryOutputMeta();
         void *buf = alloca(meta->getFixedSize());
 
@@ -27027,7 +27656,7 @@ protected:
             void Do(unsigned i)
             {
                 IFinalRoxieInput *out = outputs.item(i);
-                IEngineRowStream *outStream = connectSingleStream(NULL, out, 0, 0);
+                IEngineRowStream *outStream = connectSingleStream(NULL, out, 0, true);
                 out->start(0, NULL, false);
                 IOutputMetaData *meta = out->queryOutputMeta();
                 void *buf = alloca(meta->getFixedSize());
@@ -27214,7 +27843,8 @@ protected:
     {
         DBGLOG("testMerge");
         init();
-        Owned <IRoxieServerActivityFactory> factory = createRoxieServerMergeActivityFactory(1, 1, *queryFactory, mergeActivityTestFactory, TAKmerge);
+        Owned<IPropertyTree> splitterNode = createPTree();
+        Owned <IRoxieServerActivityFactory> factory = createRoxieServerMergeActivityFactory(1, 1, *queryFactory, mergeActivityTestFactory, TAKmerge, *splitterNode);
         factory->setInput(0,0,0);
         factory->setInput(1,0,0);
         Owned <IRoxieServerActivity> activity = factory->createActivity(ctx, NULL);
@@ -27247,7 +27877,8 @@ protected:
         DBGLOG("testMergeDedup");
         init();
         MergeActivityTest::isDedup = true;
-        Owned <IRoxieServerActivityFactory> factory = createRoxieServerMergeActivityFactory(1, 1, *queryFactory, mergeActivityTestFactory, TAKmerge);
+        Owned<IPropertyTree> splitterNode = createPTree();
+        Owned <IRoxieServerActivityFactory> factory = createRoxieServerMergeActivityFactory(1, 1, *queryFactory, mergeActivityTestFactory, TAKmerge, *splitterNode);
         factory->setInput(0,0,0);
         factory->setInput(1,0,0);
         Owned <IRoxieServerActivity> activity = factory->createActivity(ctx, NULL);
@@ -27276,7 +27907,8 @@ protected:
     {
         DBGLOG("testSplit %d", numOutputs);
         init();
-        Owned <IRoxieServerActivityFactory> factory = createRoxieServerThroughSpillActivityFactory(*queryFactory, splitActivityTestFactory, numOutputs);
+        Owned<IPropertyTree> splitterNode = createPTree();
+        Owned <IRoxieServerActivityFactory> factory = createRoxieServerThroughSpillActivityFactory(*queryFactory, splitActivityTestFactory, numOutputs, *splitterNode);
         factory->setInput(0,0,0);
         Owned <IRoxieServerActivity> activity = factory->createActivity(ctx, NULL);
 

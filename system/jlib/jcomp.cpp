@@ -734,8 +734,6 @@ void CppCompiler::removeTemporaries()
             remove(temp.clear().append(targetDir).append(coreName).append(".lib").str());
 #ifdef _WIN32
             remove(temp.clear().append(targetDir).append(coreName).append(".res").str());
-#elif defined (_USE_BINUTILS)
-            remove(temp.clear().append(targetDir).append(coreName).append(".res.o").str());
 #else
             temp.clear().append(coreName).append(".res.s*");
             DBGLOG("Remove %s%s",targetDir.str(), temp.str());
@@ -812,6 +810,8 @@ void CppCompiler::setTargetBitLength(unsigned bitlength)
         }
         break;
     case GccCppCompiler:
+#if defined (_ARCH_X86_64_) || defined(_ARCH_X86_)
+        // Note that gcc only seems to support these options on the x86 architecture
         switch (bitlength)
         {
         case 32: option = "-m32"; break;
@@ -819,6 +819,7 @@ void CppCompiler::setTargetBitLength(unsigned bitlength)
         default:
             throwUnexpected();
         }
+#endif
         break;
     }
     if (option)

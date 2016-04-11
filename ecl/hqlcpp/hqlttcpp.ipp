@@ -183,7 +183,7 @@ protected:
 class ThorHqlTransformer : public NewHqlTransformer
 {
 public:
-    ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * _wu);
+    ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * _wu, unsigned & _implicitFunctionId);
 
 protected:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
@@ -221,6 +221,7 @@ protected:
     const HqlCppOptions & options;
     ClusterType         targetClusterType;
     unsigned            topNlimit;
+    unsigned &          implicitFunctionId;
     bool                groupAllDistribute;
 };
 
@@ -459,6 +460,7 @@ protected:
 
     void setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int  numPersistInstances, bool refresh);
     void setWorkflowSchedule(IWorkflowItem * wf, ScheduleData const & sched);
+    void setWorkflowCritical(IWorkflowItem * wf, char const * criticalName);
 
     virtual IHqlExpression *  createTransformed(IHqlExpression * expr);
     void                      inheritDependencies(IHqlExpression * expr);

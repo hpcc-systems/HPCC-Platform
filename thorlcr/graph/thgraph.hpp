@@ -116,7 +116,7 @@ interface IThorResult : extends IInterface
     virtual IRowWriter *getWriter() = 0;
     virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count) = 0;
     virtual IRowStream *getRowStream() = 0;
-    virtual IRowInterfaces *queryRowInterfaces() = 0;
+    virtual IThorRowInterfaces *queryRowInterfaces() = 0;
     virtual CActivityBase *queryActivity() = 0;
     virtual bool isDistributed() const = 0;
     virtual void serialize(MemoryBuffer &mb) = 0;
@@ -130,8 +130,8 @@ interface IThorGraphResults : extends IEclGraphResults
 {
     virtual void clear() = 0;
     virtual IThorResult *getResult(unsigned id, bool distributed=false) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
+    virtual IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
     virtual unsigned addResult(IThorResult *result) = 0;
     virtual void setResult(unsigned id, IThorResult *result) = 0;
     virtual unsigned count() = 0;
@@ -573,6 +573,7 @@ public:
     bool queryAborted() const { return aborted; }
     CJobBase &queryJob() const { return job; }
     CJobChannel &queryJobChannel() const { return jobChannel; }
+    unsigned queryJobChannelNumber() const;
     IGraphTempHandler *queryTempHandler() const { assertex(tmpHandler.get()); return tmpHandler; }
     CGraphBase *queryOwner() { return owner; }
     CGraphBase *queryParent() { return parent?parent:this; }
@@ -703,9 +704,9 @@ public:
 
     virtual IThorResult *getResult(unsigned id, bool distributed=false);
     virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false);
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 // IEclGraphResults
     virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id);
@@ -742,7 +743,7 @@ class graph_decl CJobBase : public CInterface, implements IDiskUsage, implements
 {
 protected:
     CriticalSection crit;
-    Owned<ILoadedDllEntry> querySo;
+    Linked<ILoadedDllEntry> querySo;
     IUserDescriptor *userDesc;
     offset_t maxDiskUsage, diskUsage;
     StringAttr key, graphName;
@@ -757,16 +758,22 @@ protected:
     Owned<IPropertyTree> xgmml;
     Owned<IGraphTempHandler> tmpHandler;
     bool timeActivities;
-    unsigned maxActivityCores, globalMemorySize;
+    unsigned numChannels;
+    unsigned maxActivityCores, globalMemoryMB, sharedMemoryMB;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     Owned<IContextLogger> logctx;
     Owned<IPerfMonHook> perfmonhook;
     size32_t oldNodeCacheMem;
     CIArrayOf<CJobChannel> jobChannels;
+    OwnedMalloc<unsigned> jobChannelSlaveNumbers;
+    OwnedMalloc<unsigned> jobSlaveChannelNum;
     bool crcChecking;
     bool usePackedAllocator;
-    unsigned memorySpillAt;
-
+    rank_t myNodeRank;
+    Owned<IPropertyTree> graphXGMML;
+    unsigned memorySpillAtPercentage, sharedMemoryLimitPercentage;
+    CriticalSection sharedAllocatorCrit;
+    Owned<IThorAllocator> sharedAllocator;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -796,7 +803,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CJobBase(const char *graphName);
+    CJobBase(ILoadedDllEntry *querySo, const char *graphName);
     virtual void beforeDispose();
     ~CJobBase();
 
@@ -804,10 +811,14 @@ public:
     CJobChannel &queryJobChannel(unsigned c) const;
     CActivityBase &queryChannelActivity(unsigned c, graph_id gid, activity_id id) const;
     unsigned queryJobChannels() const { return jobChannels.ordinality(); }
+    inline unsigned queryJobChannelSlaveNum(unsigned channelNum) const { dbgassertex(channelNum<queryJobChannels()); return jobChannelSlaveNumbers[channelNum]; }
+    inline unsigned queryJobSlaveChannelNum(unsigned slaveNum) const { dbgassertex(slaveNum && slaveNum<=querySlaves()); return jobSlaveChannelNum[slaveNum-1]; }
     ICommunicator &queryNodeComm() const { return ::queryNodeComm(); }
+    const rank_t &queryMyNodeRank() const { return myNodeRank; }
     void init();
     void setXGMML(IPropertyTree *_xgmml) { xgmml.set(_xgmml); }
     IPropertyTree *queryXGMML() { return xgmml; }
+    IPropertyTree *queryGraphXGMML() const { return graphXGMML; }
     bool queryAborted() const { return aborted; }
     const char *queryKey() const { return key; }
     const char *queryGraphName() const { return graphName; }
@@ -852,10 +863,11 @@ public:
     unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
     __int64 getOptInt64(const char *opt, __int64 dft=0);
     unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
-    virtual IThorAllocator *createThorAllocator();
+    IThorAllocator *querySharedAllocator() const { return sharedAllocator; }
+    virtual IThorAllocator *getThorAllocator(unsigned channel);
 
     virtual void abort(IException *e);
-    virtual void debugRequest(CMessageBuffer &msg, const char *request) const { }
+    virtual void debugRequest(MemoryBuffer &msg, const char *request) const { }
 
 //
     virtual void addCreatedFile(const char *file) { assertex(false); }
@@ -896,7 +908,8 @@ protected:
     rank_t myrank;
     Linked<IMPServer> mpServer;
     bool aborted;
-    CThorCodeContextBase *codeCtx;
+    Owned<CThorCodeContextBase> codeCtx;
+    Owned<CThorCodeContextBase> sharedMemCodeCtx;
     unsigned channel;
 
     void removeAssociates(CGraphBase &graph)
@@ -952,14 +965,15 @@ public:
     }
 
     ICodeContext &queryCodeContext() const;
+    ICodeContext &querySharedMemCodeContext() const;
     IThorResult *getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId);
-    IThorAllocator &queryThorAllocator() const { return *thorAllocator; }
+    IThorAllocator *queryThorAllocator() const { return thorAllocator; }
     ICommunicator &queryJobComm() const { return *jobComm; }
     IMPServer &queryMPServer() const { return *mpServer; }
     const rank_t &queryMyRank() const { return myrank; }
     mptag_t deserializeMPTag(MemoryBuffer &mb);
     IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
-    roxiemem::IRowManager &queryRowManager() const;
+    roxiemem::IRowManager *queryRowManager() const;
 
     virtual void abort(IException *e);
     virtual IBarrier *createBarrier(mptag_t tag) { UNIMPLEMENTED; return NULL; }
@@ -972,7 +986,7 @@ public:
 
 interface IOutputMetaData;
 
-class graph_decl CActivityBase : public CInterface, implements IExceptionHandler, implements IRowInterfaces
+class graph_decl CActivityBase : public CInterface, implements IExceptionHandler, implements IThorRowInterfaces
 {
     Owned<IEngineRowAllocator> rowAllocator;
     Owned<IOutputRowSerializer> rowSerializer;
@@ -1001,25 +1015,24 @@ public:
     CGraphElementBase &queryContainer() const { return container; }
     CJobBase &queryJob() const { return container.queryJob(); }
     CJobChannel &queryJobChannel() const { return container.queryJobChannel(); }
+    unsigned queryJobChannelNumber() const { return queryJobChannel().queryChannel(); }
     inline IMPServer &queryMPServer() const { return queryJobChannel().queryMPServer(); }
-    inline roxiemem::IRowManager &queryRowManager() const { return queryJobChannel().queryRowManager(); }
     CGraphBase &queryGraph() const { return container.queryOwner(); }
-    CActivityBase &queryChannelActivity(unsigned channel) const
-    {
-        return queryJob().queryChannelActivity(channel, queryGraph().queryGraphId(), queryId());
-    }
+    CActivityBase &queryChannelActivity(unsigned channel) const { return queryJob().queryChannelActivity(channel, queryGraph().queryGraphId(), queryId()); }
     inline const mptag_t queryMpTag() const { return mpTag; }
     inline bool queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
     inline bool needReInit() const { return reInit; }
     inline bool queryTimeActivities() const { return timeActivities; }
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
+    bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
+    void cancelReceiveMsg(ICommunicator &comm, const rank_t rank, const mptag_t mpTag);
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
     bool firstNode() { return 1 == container.queryJobChannel().queryMyRank(); }
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
     unsigned queryMaxCores() const { return maxCores; }
-    IRowInterfaces *getRowInterfaces();
+    IThorRowInterfaces *getRowInterfaces();
     IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
 
     bool appendRowXml(StringBuffer & target, IOutputMetaData & meta, const void * row) const;
@@ -1047,12 +1060,14 @@ public:
     bool fireException(IException *e);
     __declspec(noreturn) void processAndThrowOwnedException(IException * e) __attribute__((noreturn));
 
+// IThorRowInterfaces
     virtual IEngineRowAllocator * queryRowAllocator();  
     virtual IOutputRowSerializer * queryRowSerializer(); 
     virtual IOutputRowDeserializer * queryRowDeserializer(); 
     virtual IOutputMetaData *queryRowMetaData() { return baseHelper->queryOutputMeta(); }
     virtual unsigned queryActivityId() const { return (unsigned)queryId(); }
     virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
+    virtual roxiemem::IRowManager *queryRowManager() const { return queryJobChannel().queryRowManager(); }
 
     StringBuffer &getOpt(const char *prop, StringBuffer &out) const { return container.getOpt(prop, out); }
     bool getOptBool(const char *prop, bool defVal=false) const { return container.getOptBool(prop, defVal); }
@@ -1125,7 +1140,7 @@ protected:
         virtual IRowWriter *getWriter() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual IRowStream *getRowStream() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
-        virtual IRowInterfaces *queryRowInterfaces() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual IThorRowInterfaces *queryRowInterfaces() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual CActivityBase *queryActivity() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual bool isDistributed() const { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void serialize(MemoryBuffer &mb) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
@@ -1158,8 +1173,8 @@ public:
         // NB: stream static after this, i.e. nothing can be added to this result
         return LINK(&results.item(id));
     }
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT)
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT)
     {
         return createResult(activity, results.ordinality(), rowIf, distributed, spillPriority);
     }
@@ -1200,7 +1215,7 @@ public:
     virtual activity_id queryOwnerId() const { return ownerId; }
 };
 
-extern graph_decl IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+extern graph_decl IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 
 class CGraphElementBase;

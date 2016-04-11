@@ -45,6 +45,7 @@
 #include  "../../SOAP/Platform/soapmessage.hpp"
 #include "xmlvalidator.hpp"
 #include "xsdparser.hpp"
+#include "espsecurecontext.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
 
@@ -177,41 +178,26 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
         Owned<IPropertyTree> authcfg = bnd_cfg->getPropTree("Authenticate");
         if(authcfg != NULL)
         {
-#ifdef _DEBUG
-            StringBuffer authXml;
-            toXML(authcfg, authXml);
-            PROGLOG("\nAUTHENTICATE(%s) PROPS\n%s\n", bindname, authXml.str());
-#endif
             //Instantiate a Security Manager
             m_authtype.set(authcfg->queryProp("@type"));
             m_authmethod.set(authcfg->queryProp("@method"));
             if (!m_authmethod.isEmpty())
             {
-                PROGLOG("Configuring Authenticate method=%s", m_authmethod.str());
-                Owned<IPropertyTree> process_config = getProcessConfig(tree, procname);
-
                 Owned<IPropertyTree> secMgrCfg;
-                if(process_config.get() != NULL)
-                    secMgrCfg.setown(process_config->getPropTree("SecurityManager"));//Is this a Pluggable Security Manager
+                if(proc_cfg.get() != NULL)
+                {
+                    VStringBuffer sb("SecurityManagers/SecurityManager[@name='%s']", m_authmethod.str());
+                    Owned<IPropertyTree> smTree;
+                    smTree.setown(proc_cfg->getPropTree(sb.str()));
+                    if (smTree && smTree->hasProp("@type"))
+                        secMgrCfg.setown(smTree->getPropTree(smTree->queryProp("@type")));
+                }
+
                 if (secMgrCfg)
                 {
-#ifdef _DEBUG
-                    StringBuffer secMgrXml;
-                    toXML(secMgrCfg, secMgrXml);
-                    PROGLOG("\nSECURITY MANAGER(%s) PROPS\n%s\n", bindname, secMgrXml.str());
-#endif
                     //This is a Pluggable Security Manager
-                    StringBuffer secMgrType;
-                    secMgrCfg->getProp("@type", secMgrType);
-                    if (!secMgrType.isEmpty() && 0==strcmp(secMgrType.str(), m_authmethod.str()))
-                    {
-                        m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, authcfg, secMgrCfg));
-                        m_authmap.setown(m_secmgr->createAuthMap(authcfg));
-                    }
-                    else
-                    {
-                        throw MakeStringException(-1, "Authorization type %s not found in SecurityManager configuration for %s", m_authmethod.str(), bindname);
-                    }
+                    m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, authcfg, secMgrCfg));
+                    m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                 }
                 else
                 {
@@ -223,8 +209,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                         Owned<IPropertyTree> lscfg = bnd_cfg->getPropTree(StringBuffer(".//ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str());
                         if(lscfg == NULL)
                         {
-                            if(process_config.get() != NULL)
-                                lscfg.setown(process_config->getPropTree(StringBuffer("ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str()));
+                            if(proc_cfg.get() != NULL)
+                                lscfg.setown(proc_cfg->getPropTree(StringBuffer("ldapSecurity[@name=").appendf("\"%s\"]", lsname.str()).str()));
                             if(lscfg == NULL)
                             {
                                 ERRLOG("can't find bnd_cfg for LdapSecurity %s", lsname.str());
@@ -251,20 +237,6 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     else if(stricmp(m_authmethod.str(), "Local") == 0)
                     {
                         m_secmgr.setown(SecLoader::loadSecManager("Local", "EspHttpBinding", NULL));
-                        m_authmap.setown(m_secmgr->createAuthMap(authcfg));
-                    }
-                    else if(stricmp(m_authmethod.str(), "htpasswd") == 0)
-                    {
-                        Owned<IPropertyTree> cfg;
-                        if(process_config.get() != NULL)
-                            cfg.setown(process_config->getPropTree("htpasswdSecurity"));
-                        if(cfg == NULL)
-                        {
-                            ERRLOG("can't find htpasswdSecurity in configuration");
-                            throw MakeStringException(-1, "can't find htpasswdSecurity in configuration");
-                        }
-
-                        m_secmgr.setown(SecLoader::loadSecManager("htpasswd", "EspHttpBinding", LINK(cfg)));
                         m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                     }
                     IRestartManager* restartManager = dynamic_cast<IRestartManager*>(m_secmgr.get());
@@ -509,7 +481,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     if(rlist == NULL)
         return false;
 
-    bool authenticated = m_secmgr->authorize(*user, rlist);
+    bool authenticated = m_secmgr->authorize(*user, rlist, ctx->querySecureContext());
     if(!authenticated)
     {
         if (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED || user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
@@ -544,7 +516,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     if(securitySettings == NULL)
         return authorized;
 
-    m_secmgr->updateSettings(*user,securitySettings);
+    m_secmgr->updateSettings(*user,securitySettings, ctx->querySecureContext());
 
     ctx->addTraceSummaryTimeStamp("basicAuth");
     return authorized;
@@ -763,18 +735,24 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
     }
 }
 
-static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, StringBuffer& out)
+static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, const char* name, StringBuffer& out)
 {
     Owned<IXmlSchema> sp = createXmlSchema(schema);
     Owned<IPTree> tree = createPTreeFromXMLString(in);
 
     //VStringBuffer name("tns:%s", tree->queryName());
-    const char* name = tree->queryName();
     IXmlType* type = sp->queryElementType(name);
     if (!type)
     {
-        StringBuffer method(strlen(name)-7, name);
-        type = sp->queryElementType(method);
+        name = tree->queryName();
+        type = sp->queryElementType(name);
+        if (!type)
+        {
+            StringBuffer method = name;
+            if (method.length() > 7)
+                method.setLength(method.length()-7);
+            type = sp->queryElementType(method);
+        }
     }
 
     if (type)
@@ -784,6 +762,23 @@ static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, StringBuff
         const char* value = tree->queryProp(NULL);
         DBGLOG("Unknown xml tag ignored: <%s>%s</%s>", name, value?value:"", name);
     }
+}
+
+void EspHttpBinding::getXMLMessageTag(IEspContext& ctx, bool isRequest, const char *method, StringBuffer& tag)
+{
+    MethodInfoArray info;
+    getQualifiedNames(ctx, info);
+    for (unsigned i=0; i<info.length(); i++)
+    {
+        CMethodInfo& m = info.item(i);
+        if (!stricmp(m.m_label, method))
+        {
+            tag.set(isRequest ? m.m_requestLabel : m.m_responseLabel);
+            break;
+        }
+    }
+    if (!tag.length())
+        tag.append(method).append(isRequest ? "Request" : "Response");
 }
 
 // new way to generate soap message
@@ -797,11 +792,12 @@ void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHt
     Owned<IRpcRequestBinding> rpcreq = createReqBinding(ctx, request, serv, method);
     rpcreq->serialize(*msg);
 
-    StringBuffer req, schema, filtered;
+    StringBuffer req, tag, schema, filtered;
     msg->marshall(req, NULL);
 
     getSchema(schema,ctx,request,serv,method,false);
-    filterXmlBySchema(req,schema,filtered);
+    getXMLMessageTag(ctx, true, method, tag);
+    filterXmlBySchema(req,schema,tag.str(),filtered);
     
     StringBuffer ns;
     soapmsg.appendf(
@@ -1343,24 +1339,8 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
     if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName))
         return;
 
-    MethodInfoArray info;
-    getQualifiedNames(context, info);
-    StringBuffer element;
-    for (unsigned i=0; i<info.length(); i++)
-    {
-        CMethodInfo& m = info.item(i);
-        if (stricmp(m.m_label, methodQName)==0)
-        {
-            element.set(isRequest ? m.m_requestLabel : m.m_responseLabel);
-            break;
-        }
-    }
-
-    if (!element.length())
-        element.append(methodQName.str()).append(isRequest ? "Request" : "Response");
-
-    StringBuffer schemaXml;
-
+    StringBuffer schemaXml, element;
+    getXMLMessageTag(context, isRequest, methodQName.str(), element);
     getSchema(schemaXml,context,request,serv,method,false);
     Owned<IXmlSchema> schema = createXmlSchema(schemaXml);
     if (schema.get())
@@ -1395,23 +1375,8 @@ void EspHttpBinding::generateSampleXmlFromSchema(bool isRequest, IEspContext &co
     if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName))
         return;
 
-    MethodInfoArray info;
-    getQualifiedNames(context, info);
-    StringBuffer element;
-    for (unsigned i=0; i<info.length(); i++)
-    {
-        CMethodInfo& m = info.item(i);
-        if (stricmp(m.m_label, methodQName)==0)
-        {
-            element.set(isRequest ? m.m_requestLabel : m.m_responseLabel);
-            break;
-        }
-    }
-
-    if (!element.length())
-        element.append(methodQName.str()).append(isRequest ? "Request" : "Response");
-
-    StringBuffer schemaXmlbuff(schemaxml);
+    StringBuffer element, schemaXmlbuff(schemaxml);
+    getXMLMessageTag(context, isRequest, methodQName.str(), element);
 
     Owned<IXmlSchema> schema = createXmlSchema(schemaXmlbuff);
     if (schema.get())

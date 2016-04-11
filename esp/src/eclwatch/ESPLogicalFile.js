@@ -387,6 +387,12 @@ define([
         getStateImageHTML: function () {
             return dojoConfig.getImageHTML(this.getStateImageName());
         },
+        getProtectedImage: function () {
+            if (this.IsProtected) {
+                return dojoConfig.getImageURL("locked.png");
+            }
+            return dojoConfig.getImageURL("unlocked.png");
+        },
         isDeleted: function () {
             return this.StateID === 999;
         }

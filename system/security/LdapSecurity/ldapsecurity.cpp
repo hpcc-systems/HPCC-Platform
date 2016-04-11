@@ -22,7 +22,6 @@
 #include "ldapsecurity.ipp"
 #include "ldapsecurity.hpp"
 #include "authmap.ipp"
-#include "defaultsecuritymanager.hpp"
 
 /**********************************************************
  *     CLdapSecUser                                       *
@@ -603,7 +602,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     return ok;
 }
 
-bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources)
+bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext)
 {
     if(!authenticate(&sec_user))
     {
@@ -662,7 +661,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
     return rc;
 }
 
-int CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
+int CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
 {
     if(!resourcename || !*resourcename)
         return SecAccess_Full;
@@ -671,7 +670,7 @@ int CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const c
     rlist.setown(createResourceList("resources"));
     rlist->addResource(resourcename);
     
-    bool ok = authorizeEx(rtype, user, rlist.get());
+    bool ok = authorizeEx(rtype, user, rlist.get(), secureContext);
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
     else
@@ -819,9 +818,9 @@ int CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, co
         return -1;
 }
 
-bool CLdapSecManager::authorize(ISecUser& sec_user, ISecResourceList * Resources)
+bool CLdapSecManager::authorize(ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext)
 {
-    return authorizeEx(RT_DEFAULT, sec_user, Resources);
+    return authorizeEx(RT_DEFAULT, sec_user, Resources, secureContext);
 }
 
 
@@ -1315,16 +1314,6 @@ extern "C"
 LDAPSECURITY_API ISecManager * newLdapSecManager(const char *serviceName, IPropertyTree &config)
 {
     return new CLdapSecManager(serviceName, config);
-}
-
-LDAPSECURITY_API ISecManager * newDefaultSecManager(const char *serviceName, IPropertyTree &config)
-{
-    return new CDefaultSecurityManager(serviceName, &config);
-}
-
-LDAPSECURITY_API ISecManager * newLocalSecManager(const char *serviceName, IPropertyTree &config)
-{
-    return new CLocalSecurityManager(serviceName, &config);
 }
 
 LDAPSECURITY_API IAuthMap *newDefaultAuthMap(IPropertyTree* config)

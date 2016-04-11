@@ -25,8 +25,8 @@
 project(sqlite3embed)
 
 if(SQLITE3EMBED)
-    ADD_PLUGIN(sqlite3embed PACKAGES SQLITE3 OPTION MAKE_SQLITEEMBED)
-    if(MAKE_SQLITEEMBED)
+    ADD_PLUGIN(sqlite3embed PACKAGES SQLITE3)
+    if(MAKE_SQLITE3EMBED)
         set(
             SRCS
             sqlite3.cpp)

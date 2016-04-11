@@ -36,7 +36,7 @@ define([
     return declare("PermissionsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
-        gridTitle: nlsHPCC.title_UserPermissions,
+        gridTitle: nlsHPCC.title_Permissions,
         idProperty: "__hpcc_id",
 
         //  Hitched Actions  ---

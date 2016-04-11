@@ -932,6 +932,11 @@ public:
             throw MakeStringException(-1, "ctx can't be created");
         }
 
+        const char *cipherList = config->queryProp("cipherList");
+        if (!cipherList || !*cipherList)
+            cipherList = "ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5";
+        SSL_CTX_set_cipher_list(m_ctx, cipherList);
+
         const char* passphrase = config->queryProp("passphrase");
         if(passphrase && *passphrase)
         {

@@ -78,7 +78,6 @@ unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
 unsigned restarts = 0;
 bool fieldTranslationEnabled = false;
-bool useTreeCopy = true;
 bool mergeSlaveStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
@@ -409,6 +408,24 @@ void saveTopology()
     }
 }
 
+class CHpccProtocolPluginCtx : public CInterface, implements IHpccProtocolPluginContext
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    virtual int ctxGetPropInt(const char *propName, int defaultValue) const
+    {
+        return topology->getPropInt(propName, defaultValue);
+    }
+    virtual bool ctxGetPropBool(const char *propName, bool defaultValue) const
+    {
+        return topology->getPropBool(propName, defaultValue);
+    }
+    virtual const char *ctxQueryProp(const char *propName) const
+    {
+        return topology->queryProp(propName);
+    }
+};
+
 int STARTQUERY_API start_query(int argc, const char *argv[])
 {
     EnableSEHtoExceptionMapping();
@@ -711,8 +728,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         // MORE: think of a better way/value/check maybe/and/or based on Roxie server timeout
         if (udpRequestToSendTimeout == 0)
             udpRequestToSendTimeout = 5; 
-        // This is not added to deployment\xmlenv\roxie.xsd on purpose
-        enableSocketMaxSetting = topology->getPropBool("@enableSocketMaxSetting", false);
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
         udpMulticastBufferSize = topology->getPropInt("@udpMulticastBufferSize", 262142);
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);
@@ -808,7 +823,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
-        useTreeCopy = topology->getPropBool("@useTreeCopy", true);
         mergeSlaveStatistics = topology->getPropBool("@mergeSlaveStatistics", true);
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
@@ -1010,9 +1024,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 #endif
         EnableSEHtoExceptionMapping();
         setSEHtoExceptionHandler(&abortHandler);
+        Owned<IHpccProtocolPluginContext> protocolCtx = new CHpccProtocolPluginCtx();
         if (runOnce)
         {
-            Owned <IRoxieListener> roxieServer = createRoxieSocketListener(0, 1, 0, false);
+            Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(protocolCtx, NULL);
+            Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(getNodeAddress(myNodeIndex), 0, 1, false), 0, 0, NULL);
             try
             {
                 const char *format = globals->queryProp("format");
@@ -1048,18 +1064,26 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 unsigned numThreads = roxieFarm.getPropInt("@numThreads", numServerThreads);
                 unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
                 unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
+                const IpAddress &ip = getNodeAddress(myNodeIndex);
                 if (!roxiePort)
                 {
                     roxiePort = port;
-                    ownEP.set(roxiePort, getNodeAddress(myNodeIndex));
+                    ownEP.set(roxiePort, ip);
                 }
                 bool suspended = roxieFarm.getPropBool("@suspended", false);
-                Owned <IRoxieListener> roxieServer;
+                Owned <IHpccProtocolListener> roxieServer;
                 if (port)
-                    roxieServer.setown(createRoxieSocketListener(port, numThreads, listenQueue, suspended));
+                {
+                    const char *protocol = roxieFarm.queryProp("@protocol");
+                    const char *soname =  roxieFarm.queryProp("@so");
+                    const char *config  = roxieFarm.queryProp("@config");
+                    Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
+                    roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config));
+                }
                 else
                     roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
 
+                IHpccProtocolMsgSink *sink = roxieServer->queryMsgSink();
                 const char *aclName = roxieFarm.queryProp("@aclName");
                 if (aclName && *aclName)
                 {
@@ -1071,7 +1095,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                         IPropertyTree &access = accesses->query();
                         try
                         {
-                            roxieServer->addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode"));
+                            sink->addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode"));
                         }
                         catch (IException *E)
                         {

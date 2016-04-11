@@ -320,6 +320,19 @@ public:
                             else
                                 soPath.append(remoteSoPath);
                         }
+#ifdef __linux__
+                    // only relevant if dllsToSlaves=false and query_so_dir was fully qualified remote path (e.g. //<ip>/path/file
+                        rfn.setRemotePath(soPath.str());
+                        StringBuffer tempSo;
+                        if (!rfn.isLocal())
+                        {
+                            WARNLOG("Cannot load shared object directly from remote path, creating temporary local copy: %s", soPath.str());
+                            GetTempName(tempSo,"so",true);
+                            copyFile(tempSo.str(), soPath.str());
+                            soPath.clear().append(tempSo.str());
+                        }
+#endif
+                        Owned<ILoadedDllEntry> querySo = createDllEntry(soPath.str(), false, NULL);
 
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
                         StringBuffer user;
@@ -336,7 +349,7 @@ public:
 
                         Owned<IPropertyTree> deps = createPTree(msg);
 
-                        Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, soPath.str(), mptag, slaveMsgTag);
+                        Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, querySo, mptag, slaveMsgTag);
                         job->setXGMML(deps);
                         for (unsigned sc=0; sc<channelsPerSlave; sc++)
                             job->addChannel(&mpServers.item(sc));
@@ -376,7 +389,11 @@ public:
                         if (!job)
                             throw MakeStringException(0, "Job not found: %s", jobKey.get());
 
-                        Owned<IPropertyTree> graphNode = createPTree(msg);
+                        graph_id subGraphId = 0;
+                        msg.read(subGraphId);
+
+                        VStringBuffer xpath("node[@id='%" GIDPF "u']", subGraphId);
+                        Owned<IPropertyTree> graphNode = job->queryGraphXGMML()->getPropTree(xpath.str());
                         mptag_t executeReplyTag = job->deserializeMPTag(msg);
                         size32_t len;
                         msg.read(len);
@@ -461,8 +478,7 @@ public:
                                 Owned<CGraphBase> graph = jobChannel.getGraph(gid);
                                 if (graph)
                                 {
-                                    Owned<IThorException> e = MakeThorException(0, "GraphAbort");
-                                    e->setGraphId(gid);
+                                    Owned<IThorException> e = MakeGraphException(graph, 0, "GraphAbort");
                                     graph->abort(e);
                                 }
                             }
@@ -730,8 +746,6 @@ class CThorResourceSlave : public CThorResourceBase
     Owned<IFileInProgressHandler> fipHandler;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CThorResourceSlave()
     {
         backupHandler.setown(createBackupHandler());

@@ -272,6 +272,241 @@ define([
         }
     });
 
+    var InheritedPermissionStore = declare([Memory], {
+
+        constructor: function () {
+            this.idProperty = "__hpcc_id";
+        },
+
+        put: function (row) {
+            var item = this.get(row.__hpcc_id);
+            var retVal = this.inherited(arguments);
+            var request = {
+                basedn: row.basedn,
+                rtype: row.rtype,
+                rname: row.rname,
+                rtitle: row.rtitle,
+                account_name: row.account_name,
+                account_type: 0,
+                action: "update"
+            };
+            lang.mixin(request, row);
+            self.PermissionAction({
+                request: request
+            });
+            return retVal;
+        },
+
+        query: function (query, options) {
+            var data = [];
+            var results = all([
+                this.refreshAccountPermissions(query)
+            ]).then(lang.hitch(this, function (response) {
+                var accountPermissions = {};
+                arrayUtil.forEach(response[0], function (item, idx) {
+                    accountPermissions[item.PermissionName] = item;
+                    data.push(lang.mixin(item, {
+                        __hpcc_type: "InheritedPermissions",
+                        __hpcc_id: this.TabName + CONCAT_SYMBOL + this.AccountName + CONCAT_SYMBOL + item.PermissionName + CONCAT_SYMBOL + idx,
+                        rname: item.PermissionName,
+                        rtype: item.RType,
+                        rtitle: item.ResourceName,
+                        account_name: this.TabName,
+                        allow_access: item ? item.allow_access : false,
+                        allow_read: item ? item.allow_read : false,
+                        allow_write: item ? item.allow_write : false,
+                        allow_full: item ? item.allow_full : false,
+                        deny_access: item ? item.deny_access : false,
+                        deny_read: item ? item.deny_read : false,
+                        deny_write: item ? item.deny_write : false,
+                        deny_full: item ? item.deny_full : false
+                    }));
+                }, this);
+                options = options || {};
+                this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
+                return this.data;
+            }));
+            return QueryResults(results);
+        },
+
+        refreshAccountPermissions: function () {
+            if (!this.AccountName) {
+                return [];
+            }
+            return self.AccountPermissions({
+                request: {
+                    AccountName: this.AccountName,
+                    IsGroup: false,
+                    IncludeGroup: true,
+                    TabName: this.TabName
+                }
+            }).then(lang.hitch(this, function (response) {
+                if (lang.exists("AccountPermissionsResponse.GroupPermissions.GroupPermission", response)) {
+                    var arr = response.AccountPermissionsResponse.GroupPermissions.GroupPermission;
+                    for (var index in arr) {
+                        if (arr[index].GroupName === this.TabName) {
+                            return response.AccountPermissionsResponse.GroupPermissions.GroupPermission[index].Permissions.Permission;
+                        }
+                    }
+                }
+                return [];
+            }));
+        }
+    });
+
+    var AccountResourcesStore = declare([Memory], {
+
+        constructor: function () {
+            this.idProperty = "__hpcc_id";
+        },
+
+        put: function (row) {
+            var item = this.get(row.__hpcc_id);
+            var retVal = this.inherited(arguments);
+            var request = {
+                basedn: row.basedn,
+                rtype: row.rtype,
+                rname: row.rname,
+                rtitle: row.rtitle,
+                account_name: row.account_name,
+                account_type: 0,
+                action: "update"
+            };
+            lang.mixin(request, row);
+            self.PermissionAction({
+                request: request
+            });
+            return retVal;
+        },
+
+        query: function (query, options) {
+            var data = [];
+            var results = all([
+                this.refreshAccountPermissions(query)
+            ]).then(lang.hitch(this, function (response) {
+                var accountPermissions = {};
+                arrayUtil.forEach(response[0], function (item, idx) {
+                    accountPermissions[item.PermissionName] = item;
+                    data.push(lang.mixin(item, {
+                        __hpcc_type: "AccountPermissions",
+                        __hpcc_id: this.AccountName + CONCAT_SYMBOL + item.PermissionName + CONCAT_SYMBOL + idx,
+                        rname: item.PermissionName,
+                        rtype: item.RType,
+                        rtitle: item.ResourceName,
+                        account_name: this.AccountName,
+                        allow_access: item ? item.allow_access : false,
+                        allow_read: item ? item.allow_read : false,
+                        allow_write: item ? item.allow_write : false,
+                        allow_full: item ? item.allow_full : false,
+                        deny_access: item ? item.deny_access : false,
+                        deny_read: item ? item.deny_read : false,
+                        deny_write: item ? item.deny_write : false,
+                        deny_full: item ? item.deny_full : false
+                    }));
+                }, this);
+                options = options || {};
+                this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
+                return this.data;
+            }));
+            return QueryResults(results);
+        },
+
+        refreshAccountPermissions: function () {
+            if (!this.AccountName) {
+                return [];
+            }
+            return self.AccountPermissions({
+                request: {
+                    AccountName: this.AccountName,
+                    IsGroup: this.IsGroup ? true : false,
+                    IncludeGroup: this.IsGroup ? true : false
+                }
+            }).then(lang.hitch(this, function (response) {
+                if (lang.exists("AccountPermissionsResponse.Permissions.Permission", response)) {
+                    return response.AccountPermissionsResponse.Permissions.Permission;
+                }
+                return [];
+            }));
+        }
+    });
+
+    var IndividualPermissionsStore = declare([Memory], {
+
+        constructor: function () {
+            this.idProperty = "__hpcc_id";
+        },
+
+        put: function (row) {
+            var item = this.get(row.__hpcc_id);
+            var retVal = this.inherited(arguments);
+            var request = {
+                basedn: row.basedn,
+                rtype: row.rtype,
+                rtitle: row.rtitle,
+                rname: row.name,
+                action: "update"
+            };
+            lang.mixin(request, row);
+            self.PermissionAction({
+                request: request
+            });
+            return retVal;
+        },
+
+        query: function (query, options) {
+            var data = [];
+            var results = all([
+                this.refreshAccountPermissions(query)
+            ]).then(lang.hitch(this, function (response) {
+                var accountPermissions = {};
+                arrayUtil.forEach(response[0], function (item, idx) {
+                    accountPermissions[item.account_name] = item;
+                    data.push(lang.mixin(item, {
+                        __hpcc_type: "IndividualPermissions",
+                        __hpcc_id: this.name + CONCAT_SYMBOL + idx,
+                        basedn: this.basedn,
+                        rtype: this.rtype,
+                        rtitle: this.rtitle,
+                        rname: this.name,
+                        account_name: item.account_name,
+                        allow_access: item ? item.allow_access : false,
+                        allow_read: item ? item.allow_read : false,
+                        allow_write: item ? item.allow_write : false,
+                        allow_full: item ? item.allow_full : false,
+                        deny_access: item ? item.deny_access : false,
+                        deny_read: item ? item.deny_read : false,
+                        deny_write: item ? item.deny_write : false,
+                        deny_full: item ? item.deny_full : false
+                    }));
+                }, this);
+                options = options || {};
+                this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
+                return this.data;
+            }));
+            return QueryResults(results);
+        },
+
+        refreshAccountPermissions: function () {
+            if (!this.name) {
+                return [];
+            }
+            return self.ResourcePermissions({
+                request: {
+                    basedn: this.basedn,
+                    rtype: this.rtype,
+                    rtitle: this.rtitle,
+                    name: this.name
+
+                }
+            }).then(lang.hitch(this, function (response) {
+                if (lang.exists("ResourcePermissionsResponse.Permissions.Permission", response)) {
+                    return response.ResourcePermissionsResponse.Permissions.Permission;
+                }
+                return [];
+            }));
+        }
+    });
+
     var PermissionsStore = declare([Memory], {
         service: "ws_access",
         action: "Permissions",
@@ -421,6 +656,10 @@ define([
             return this._doCall("AccountPermissions", params);
         },
 
+        ResourcePermissions: function (params) {
+            return this._doCall("ResourcePermissions", params);
+        },
+
         Resources: function (params) {
             return this._doCall("Resources", params);
         },
@@ -435,6 +674,10 @@ define([
 
         PermissionAction: function (params) {
             return this._doCall("PermissionAction", params);
+        },
+
+        FilePermission: function (params) {
+            return this._doCall("FilePermission", params);
         },
 
         ClearPermissionsCache: function() {
@@ -461,6 +704,37 @@ define([
             });
         },
 
+        DefaultPermissions: function () {
+            return this._doCall("ResourcePermissions", {
+                request: {
+                    basedn: "ou=ecl,dc=hpccdev,dc=local",
+                    rtype: "file",
+                    name: "files",
+                    action: "Default Permissions"
+                }
+            });
+        },
+
+        PhysicalFiles: function () {
+            return this._doCall("ResourcePermissions", {
+                request: {
+                    basedn: "ou=files,ou=ecl,dc=hpccdev,dc=local",
+                    rtype: "file",
+                    rtitle: "FileScope",
+                    name: "file",
+                    action: "Physical Files"
+                }
+            });
+        },
+
+        CheckFilePermissions: function () {
+            return this._doCall("FilePermission", {
+                request: {
+                    action: "Check File Permission"
+                }
+            });
+        },
+
         CreateUsersStore: function (groupname, observable) {
             var store = new UsersStore();
             store.groupname = groupname;
@@ -483,6 +757,32 @@ define([
             var store = new PermissionsStore();
             store.groupname = groupname;
             store.username = username;
+            return Observable(store);
+        },
+
+        CreateAccountPermissionsStore: function (IsGroup, IncludeGroup, AccountName) {
+            var store = new AccountResourcesStore();
+            store.IsGroup = IsGroup;
+            store.IncludeGroup = IncludeGroup;
+            store.AccountName = AccountName;
+            return Observable(store);
+        },
+
+        CreateInheritedPermissionsStore: function (IsGroup, IncludeGroup, AccountName, TabName) {
+            var store = new InheritedPermissionStore();
+            store.IsGroup = IsGroup;
+            store.IncludeGroup = IncludeGroup;
+            store.AccountName = AccountName;
+            store.TabName = TabName;
+            return Observable(store);
+        },
+
+        CreateIndividualPermissionsStore: function (basedn, rtype, rtitle, name) {
+            var store = new IndividualPermissionsStore();
+            store.basedn = basedn;
+            store.rtype = rtype;
+            store.rtitle = rtitle;
+            store.name = name;
             return Observable(store);
         },
 

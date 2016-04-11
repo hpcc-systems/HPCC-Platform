@@ -139,6 +139,18 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             //Always effectively requires a temporary
             return RETassign;
         }
+    case no_combine:
+        {
+            //can't do a skip inside an inline combine - since the generated code doesn't allow "continue" to be used.
+            if (transformContainsSkip(expr->queryChild(2)))
+                return 0;
+            unsigned lhsChildFlags = getInlineFlags(ctx, expr->queryChild(0));
+            unsigned rhsChildFlags = getInlineFlags(ctx, expr->queryChild(1));
+
+            if ((lhsChildFlags != 0) && (rhsChildFlags != 0))
+                return RETiterate;
+            return 0;
+        }
     case no_hqlproject:
         //can't do a skip inside an inline project - since the generated code doesn't allow "continue" to be used.
         if (transformContainsSkip(expr->queryChild(1)))
@@ -270,6 +282,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_sorted:
     case no_distributed:
     case no_preservemeta:
+    case no_unordered:
     case no_nofold:
     case no_nohoist:
     case no_nocombine:
@@ -727,6 +740,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr, bool optimize
     case no_sorted:
     case no_distributed:
     case no_preservemeta:
+    case no_unordered:
     case no_grouped:
     case no_alias_scope:
     case no_sequential:
@@ -1006,7 +1020,6 @@ void ParentExtract::beginCreateExtract(BuildCtx & ctx, bool doDeclare)
     //Collect a list of cursors together... NB these are in reverse order..
     gatherActiveRows(*buildctx);
 
-    serialization->BoundRow::setBuilder(queryExtractName());
     childSerialization->setBuilder(this);
 }
 
@@ -1312,6 +1325,8 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
     if (localisation == GraphCoLocal || localisation == GraphCoNonLocal)
     {
         OwnedHqlExpr colocal = createQuoted("colocal", makeVoidType());
+        HqlExprCopyArray matchBound;
+        HqlExprCopyArray matchAlias;
         ForEachItemInRev(i, activeRows)
         {
             BoundRow & cur = activeRows.item(i);
@@ -1337,16 +1352,25 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
             }
             else if (serialization)
             {
-                //A cursor active in the current scope => add it to the extract, and create an alias in the
-                //child contexts.
-                //Need to add these fields to the extract record, and do the assignments at the point of call
-                Owned<ITypeInfo> fieldType = makeRowReferenceType(cur.queryDataset());
-                if (hasOutOfLineModifier(bound->queryType()))
-                    fieldType.setown(makeAttributeModifier(LINK(fieldType), getLinkCountedAttr()));
-                OwnedHqlExpr expandedAlias = serialization->createField(NULL, fieldType);
-                OwnedHqlExpr castSource = createValue(no_implicitcast, LINK(fieldType), LINK(bound));
-                OwnedHqlExpr translated = createTranslated(castSource);
-                translator.buildAssign(ctx, expandedAlias, translated);
+                unsigned match = matchBound.find(*bound);
+                OwnedHqlExpr expandedAlias;
+                if (match == NotFound)
+                {
+                    //A cursor active in the current scope => add it to the extract, and create an alias in the
+                    //child contexts.
+                    //Need to add these fields to the extract record, and do the assignments at the point of call
+                    Owned<ITypeInfo> fieldType = makeRowReferenceType(cur.queryDataset());
+                    if (hasOutOfLineModifier(bound->queryType()))
+                        fieldType.setown(makeAttributeModifier(LINK(fieldType), getLinkCountedAttr()));
+                    expandedAlias.setown(serialization->createField(NULL, fieldType));
+                    OwnedHqlExpr castSource = createValue(no_implicitcast, LINK(fieldType), LINK(bound));
+                    OwnedHqlExpr translated = createTranslated(castSource);
+                    translator.buildAssign(ctx, expandedAlias, translated);
+                    matchBound.append(*bound);
+                    matchAlias.append(*expandedAlias);
+                }
+                else
+                    expandedAlias.set(&matchAlias.item(match));
 
                 newRow = new BoundAliasRow(cur, NULL, expandedAlias);
                 newRow->setInherited(true);

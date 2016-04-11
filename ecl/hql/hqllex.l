@@ -620,6 +620,7 @@ ABS                 { RETURNSYM(ABS); }
 ACOS                { RETURNSYM(ACOS); }
 AFTER               { RETURNSYM(AFTER); }
 AGGREGATE           { RETURNSYM(AGGREGATE); }
+ALGORITHM           { RETURNSYM(ALGORITHM); }
 __ALIAS__           { RETURNSYM(ALIAS); }
 ALL                 { RETURNSYM(ALL); }
 ALLNODES            { RETURNSYM(ALLNODES); }
@@ -666,6 +667,7 @@ COS                 { RETURNSYM(COS); }
 COSH                { RETURNSYM(COSH); }
 COUNT               { RETURNSYM(COUNT); }
 COUNTER             { RETURNSYM(COUNTER); }
+CRITICAL            { RETURNSYM(CRITICAL); }
 CRON                { RETURNSYM(CRON); }
 CSV                 { RETURNSYM(CSV); }
 DATASET             { RETURNSYM(DATASET); }
@@ -738,7 +740,6 @@ __GROUPED__         { RETURNSYM(__GROUPED__); }
 HAVING              { RETURNSYM(HAVING); }
 HEADING             { RETURNSYM(HEADING); }
 HINT                { RETURNSYM(HINT); }
-HOLE                { RETURNSYM(HOLE); }
 HTTPCALL            { RETURNSYM(HTTPCALL); }
 HTTPHEADER          { RETURNSYM(HTTPHEADER); }
 IF                  { RETURNSYM(IF); }

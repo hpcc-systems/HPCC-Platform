@@ -130,17 +130,19 @@
             var retVal = {};
             for (var key in this.fields.getAll()) {
                 var field = this.fields.getAttr(key, "field");
+                var val;
                 if (field && lang.exists(field, item)) {
-                    var val = item[field];
-                    if (val == null) {
-                        retVal[key] = "";
-                    } else if (Object.prototype.toString.call(val) === '[object Array]') {
-                        retVal[key] = this.delegateArray(val);
-                    } else if (!isNaN(parseFloat(val))) {
-                        retVal[key] = parseFloat(val);
-                    } else {
-                        retVal[key] = val.trim();
-                    }
+                    val = item[field];
+                } else {
+                    val = item[key];
+                }
+                if (val === null || val === undefined) {
+                } else if (Object.prototype.toString.call(val) === '[object Array]') {
+                    retVal[key] = this.delegateArray(val);
+                } else if (!isNaN(parseFloat(val))) {
+                    retVal[key] = parseFloat(val);
+                } else {
+                    retVal[key] = val.trim();
                 }
             }
             return retVal;

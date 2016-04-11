@@ -25,20 +25,20 @@ interface ICompare;
 
 interface ISortKeySerializer;
 interface IRecordSize;
-interface IRowInterfaces;
+interface IThorRowInterfaces;
 
 interface IThorSorterMaster: public IInterface
 {
 public:
     virtual int  AddSlave(ICommunicator *comm,rank_t rank, SocketEndpoint &endpoint,mptag_t mpTagRPC)=0;
     virtual void SortSetup(
-                            IRowInterfaces *rowif,
+                            IThorRowInterfaces *rowif,
                             ICompare * compare,
                             ISortKeySerializer *keyserializer, 
                             bool cosort,
                             bool needconnect,
                             const char *cosortfilenames,
-                            IRowInterfaces *auxrowif
+                            IThorRowInterfaces *auxrowif
                         )=0;
     virtual void Sort(unsigned __int64 threshold, double skewWarning, double skewError, size32_t deviance, bool canoptimizenullcolumns, bool usepartitionrow, bool betweensort, unsigned minisortthresholdmb)=0;
     virtual bool MiniSort(rowcount_t totalrows)=0;

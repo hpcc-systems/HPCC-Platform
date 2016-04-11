@@ -184,6 +184,7 @@ define([
         },
         _ThorLogListSetter: function (ThorLogList) {
             this.set("thorLogInfo", ThorLogList.ThorLogInfo);
+            this.getThorLogStatus(ThorLogList);
             this.refreshHelpersCount();
         },
         _HasArchiveQuerySetter: function (HasArchiveQuery) {
@@ -417,7 +418,7 @@ define([
             return this._action("Restore");
         },
 
-        publish: function (jobName, remoteDali, sourceProcess, priority, comment, allowForeign) {
+        publish: function (jobName, remoteDali, sourceProcess, priority, comment, allowForeign, updateSupers) {
             this._assertHasWuid();
             var context = this;
             WsWorkunits.WUPublishWorkunit({
@@ -429,6 +430,7 @@ define([
                     Priority: priority,
                     Comment: comment,
                     AllowForeignFiles: allowForeign,
+                    UpdateSuperFiles: updateSupers,
                     Activate: 1,
                     UpdateWorkUnitName: 1,
                     Wait: 5000
@@ -598,6 +600,9 @@ define([
                 }
             }
             return -1;
+        },
+        getThorLogStatus: function (ThorLogList) {
+            return ThorLogList.ThorLogInfo.length > 0 ? true : false;
         },
         getState: function () {
             return this.State;

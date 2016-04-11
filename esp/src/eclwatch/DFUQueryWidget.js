@@ -200,6 +200,9 @@ define([
         },
 
         _onCopyOk: function (event) {
+            var copyPreserveCompressionCheckbox = registry.byId(this.id + "CopyPreserveCompression");
+            var value = copyPreserveCompressionCheckbox.get("checked") ? 1 : 0;
+            
             if (this.copyForm.validate()) {
                 var context = this;
                 arrayUtil.forEach(this.copyGrid.store.data, function (item, idx) {
@@ -207,6 +210,7 @@ define([
                     var request = domForm.toObject(context.id + "CopyForm");
                     request.RenameSourceName = item.Name;
                     request.destLogicalName = item.targetCopyName;
+                    request.preserveCompression = value;
                     logicalFile.copy({
                         request: request
                     }).then(function (response) {
@@ -306,6 +310,7 @@ define([
 
         //  Implementation  ---
         init: function (params) {
+            var context = this;
             if (this.inherited(arguments))
                 return;
 
@@ -345,6 +350,20 @@ define([
             });
             topic.subscribe("hpcc/dfu_wu_completed", function (topic) {
                 context.refreshGrid();
+            });
+
+            WsDfu.DFUQuery({
+                request: {}
+            }).then(function (response) {
+                if (lang.exists("DFUQueryResponse.Warning", response)) {
+                    if (response.DFUQueryResponse.Warning) {
+                        dojo.publish("hpcc/brToaster", {
+                            Severity: "Error",
+                            Source: "WsDfu.DFUQuery",
+                            Exceptions: [{ Source: context.i18n.TooManyFiles, Message: context.i18n.TheReturnedResults + ": " + response.DFUQueryResponse.NumFiles + ", " + context.i18n.RepresentsASubset }]
+                        });
+                    }
+                }
             });
         },
 
@@ -456,6 +475,19 @@ define([
                         },
                         selectorType: 'checkbox'
                     }),
+                    IsProtected: {
+                        renderHeaderCell: function (node) {
+                            node.innerHTML = dojoConfig.getImageHTML("locked.png", context.i18n.Protected);
+                        },
+                        width: 25,
+                        sortable: false,
+                        formatter: function (_protected) {
+                            if (_protected == true) {
+                                return dojoConfig.getImageHTML("locked.png");
+                            }
+                            return "";
+                        }
+                    },
                     IsCompressed: {
                         width: 25, sortable: false,
                         renderHeaderCell: function (node) {

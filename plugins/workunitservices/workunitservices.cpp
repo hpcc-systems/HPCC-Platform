@@ -531,24 +531,34 @@ WORKUNITSERVICES_API void wsWorkunitTimeStamps(ICodeContext *ctx, size32_t & __l
     MemoryBuffer mb;
     if (wu)
     {
-/*
-        // Workunit timestamps have not been stored like this for a while - so this code has not been working
-        // Should look at fixing but perhaps as a separate Jira
-        Owned<IPropertyTreeIterator> iter = pt->getElements("TimeStamp");
-        ForEach(*iter)
+        Owned<StatisticsFilter> filter = new StatisticsFilter(SCTall, SSTall, SMeasureTimestampUs, StKindAll);
+        filter->setScopeDepth(1, 2);
+        Owned<IConstWUStatisticIterator> stats = &wu->getStatistics(filter);
+        ForEach(*stats)
         {
-            IPropertyTree &item = iter->query();
-            Owned<IPropertyTreeIterator> iter2 = item.getElements("*");
-            ForEach(*iter2)
-            {
-                IPropertyTree &item2 = iter2->query();
-                fixedAppend(mb, 32, item, "@application");              // item correct here
-                fixedAppend(mb, 16, item2.queryName());                 // id
-                fixedAppend(mb,  20, item2.queryProp(NULL));            // time
-                fixedAppend(mb,16, item, "@instance");                  // item correct here
-            }
+            IConstWUStatistic & cur = stats->query();
+
+            SCMStringBuffer scope;
+            cur.getScope(scope);
+
+            StatisticKind kind = cur.getKind();
+            const char * kindName = queryStatisticName(kind);
+            assertex(kindName && memicmp(kindName, "when", 4) == 0);
+            kindName += 4;
+
+            StringBuffer formattedTime;
+            convertTimestampToStr(cur.getValue(), formattedTime, true);
+
+            SCMStringBuffer creator;
+            cur.getCreator(creator);
+            const char * at = strchr(creator.str(), '@');
+            const char * instance = at ? at + 1 : creator.str();
+
+            fixedAppend(mb, 32, scope.str());
+            fixedAppend(mb, 16, kindName); // id
+            fixedAppend(mb, 20, formattedTime);            // time
+            fixedAppend(mb, 16, instance);                 // item correct here
         }
-  */
     }
     __lenResult = mb.length();
     __result = mb.detach();

@@ -167,7 +167,8 @@
         role="bold">Filter</emphasis> Action button. The Filter sub-menu
         displays. Fill in values for the filter criteria, Eventname or
         Cluster, then press the <emphasis role="bold">Apply</emphasis> button.
-        <figure>
+        When you specify any Filter options, the Filter Action button displays
+        <emphasis>Filter Set</emphasis>. <figure>
             <title>Workunits in the Scheduler Interface</title>
 
             <mediaobject>

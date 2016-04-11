@@ -55,8 +55,10 @@ ProcessSlaveActivity::ProcessSlaveActivity(CGraphElementBase *container) : CSlav
     lastCycles = 0;
 }
 
-ProcessSlaveActivity::~ProcessSlaveActivity()
+void ProcessSlaveActivity::beforeDispose()
 {
+    // Note - we can't throw from the destructor, so do this in beforeDispose instead
+    // If the exception is thrown then we are liable to leak the object, but we are dying anyway...
     ActPrintLog("destroying ProcessSlaveActivity");
     ActPrintLog("ProcessSlaveActivity : joining process thread");
     // NB: The activity thread should have already stopped,
@@ -105,7 +107,7 @@ void ProcessSlaveActivity::main()
         {
             if (!e->queryActivityId())
             {
-                e->setGraphId(container.queryOwner().queryGraphId());
+                e->setGraphInfo(container.queryJob().queryGraphName(), container.queryOwner().queryGraphId());
                 e->setActivityKind(container.getKind());
                 e->setActivityId(container.queryId());
             }
@@ -782,7 +784,7 @@ activityslaves_decl CGraphElementBase *createSlaveContainer(IPropertyTree &xgmml
     return new CGenericSlaveGraphElement(owner, xgmml);
 }
 
-activityslaves_decl IRowInterfaces *queryRowInterfaces(IThorDataLink *link) { return link?link->queryFromActivity():NULL; }
+activityslaves_decl IThorRowInterfaces *queryRowInterfaces(IThorDataLink *link) { return link?link->queryFromActivity():NULL; }
 activityslaves_decl IEngineRowAllocator * queryRowAllocator(IThorDataLink *link) { CActivityBase *base = link?link->queryFromActivity():NULL; return base?base->queryRowAllocator():NULL; }
 activityslaves_decl IOutputRowSerializer * queryRowSerializer(IThorDataLink *link) { CActivityBase *base = link?link->queryFromActivity():NULL; return base?base->queryRowSerializer():NULL; }
 activityslaves_decl IOutputRowDeserializer * queryRowDeserializer(IThorDataLink *link) { CActivityBase *base = link?link->queryFromActivity():NULL; return base?base->queryRowDeserializer():NULL; }

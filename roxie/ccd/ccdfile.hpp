@@ -40,7 +40,6 @@ interface ILazyFileIO : extends IFileIO
     virtual IFile *querySource() = 0;
     virtual IFile *queryTarget() = 0;
     virtual void copyComplete() = 0;
-    virtual int getLinkCount() const = 0;
     virtual bool createHardFileLink() = 0;
 
     virtual unsigned getLastAccessed() const = 0;
@@ -58,7 +57,7 @@ interface IRoxieFileCache : extends IInterface
 {
     virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType, IPartDescriptor *pdesc, unsigned numParts,
                                       unsigned replicationLevel, const StringArray &deployedLocationInfo, bool startFileCopy) = 0;
-    virtual RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed) = 0;
+    virtual RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed, bool autoDisconnect=true) = 0;
     virtual int numFilesToCopy() = 0;
     virtual void closeExpired(bool remote) = 0;
     virtual StringAttrMapping *queryFileErrorList() = 0;  // returns list of files that could not be open

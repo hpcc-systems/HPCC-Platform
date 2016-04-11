@@ -1389,8 +1389,8 @@ public:
             { return queryExtendedWU(c)->queryPTree(); }
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const
             { return queryExtendedWU(c)->getUnpackedTree(includeProgress); }
-    virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned)
-            { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned); }
+    virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned,bool exportAssociatedFiles)
+            { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned,exportAssociatedFiles); }
     virtual unsigned queryFileUsage(const char *filename) const
             { return c->queryFileUsage(filename); }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const
@@ -1621,6 +1621,8 @@ public:
     virtual IStringVal & getName(IStringVal & ret) const;
     virtual IStringVal & getNameTail(IStringVal & ret) const;
     virtual unsigned getCrc() const;
+    virtual unsigned getMinActivityId() const;
+    virtual unsigned getMaxActivityId() const;
 };
 
 class CLocalWUQuery : public CInterface, implements IWUQuery
@@ -1655,7 +1657,7 @@ public:
     virtual void        setQueryText(const char *pstr);
     virtual void        setQueryName(const char *);
     virtual void        setQueryMainDefinition(const char * str);
-    virtual void        addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc);
+    virtual void        addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc, unsigned minActivity, unsigned maxActivity);
     virtual void        removeAssociatedFiles();
     virtual void        removeAssociatedFile(WUFileType type, const char * name, const char * desc);
 };
@@ -2275,7 +2277,7 @@ IPropertyTree * pruneBranch(IPropertyTree * from, char const * xpath)
     return ret.getClear();
 }
 
-bool CWorkUnitFactory::restoreWorkUnit(const char *base, const char *wuid)
+bool CWorkUnitFactory::restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated)
 {
     StringBuffer path(base);
     addPathSepChar(path).append(wuid).append(".xml");
@@ -3117,6 +3119,17 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
     return factory.getLink();
 }
 
+extern WORKUNIT_API IWorkUnitFactory * getDaliWorkUnitFactory()
+{
+    if (!factory)
+    {
+        CriticalBlock b(factoryCrit);
+        if (!factory)   // NOTE - this "double test" paradigm is not guaranteed threadsafe on modern systems/compilers - I think in this instance that is harmless even in the (extremely) unlikely event that it resulted in the setown being called twice.
+            factory.setown(new CDaliWorkUnitFactory());
+    }
+    return factory.getLink();
+}
+
 // A SecureWorkUnitFactory allows the security params to be supplied once to the factory rather than being supplied to each call.
 // They can still be supplied if you want...
 
@@ -3188,9 +3201,9 @@ public:
         if (!secUser) secUser = defaultSecUser.get();
         return baseFactory->updateWorkUnit(wuid, secMgr, secUser);
     }
-    virtual bool restoreWorkUnit(const char *base, const char *wuid)
+    virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated)
     {
-        return baseFactory->restoreWorkUnit(base, wuid);
+        return baseFactory->restoreWorkUnit(base, wuid, restoreAssociated);
     }
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secMgr, ISecUser *secUser)
     {
@@ -3506,7 +3519,7 @@ bool modifyAndWriteWorkUnitXML(char const * wuid, StringBuffer & buf, StringBuff
     return (fileio->write(0,buf.length(),buf.str()) == buf.length());
 }
 
-bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned)
+bool CLocalWorkUnit::archiveWorkUnit(const char *base, bool del, bool ignoredllerrors, bool deleteOwned, bool exportAssociatedFiles)
 {
     CriticalBlock block(crit);
     StringBuffer path(base);
@@ -3547,7 +3560,6 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
         }
         return false;
     }
-
     StringArray deleteExclusions; // associated files not to delete, added if failure to copy
     Owned<IConstWUAssociatedFileIterator> iter = &q->getAssociatedFiles();
     Owned<IPropertyTree> generatedDlls = createPTree("GeneratedDlls");
@@ -3576,46 +3588,49 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 Owned<IPropertyTree> generatedDllBranch = createPTree();
                 generatedDllBranch->setProp("@name", entry->queryName());
                 generatedDllBranch->setProp("@kind", entry->queryKind());
-                try
+                if (exportAssociatedFiles)
                 {
-                    loc.setown(entry->getBestLocation()); //throws exception if no readable locations
-                }
-                catch(IException * e)
-                {
-                    exception.setown(e);
-                    loc.setown(entry->getBestLocationCandidate()); //this will be closest of the unreadable locations
-                }
-                RemoteFilename filename;
-                loc->getDllFilename(filename);
-                if (!exception)
-                {
-                    Owned<IFile> srcfile = createIFile(filename);
                     try
                     {
-                        if (dstFile->exists())
-                        {
-                            if (streq(srcfile->queryFilename(), dstFile->queryFilename()))
-                                deleteExclusions.append(name.str()); // restored workunit, referencing archive location for query dll (no longer true post HPCC-11191 fix)
-                            // still want to delete if already archived but there are source file copies
-                        }
-                        else
-                            copyFile(dstFile, srcfile);
+                        loc.setown(entry->getBestLocation()); //throws exception if no readable locations
                     }
                     catch(IException * e)
                     {
                         exception.setown(e);
+                        loc.setown(entry->getBestLocationCandidate()); //this will be closest of the unreadable locations
                     }
-                }
-                if (exception)
-                {
-                    if (ignoredllerrors)
+                    RemoteFilename filename;
+                    loc->getDllFilename(filename);
+                    if (!exception)
                     {
-                        EXCLOG(exception.get(), "archiveWorkUnit (copying associated file)");
-                        //copy failed, so don't delete the registred dll files
-                        deleteExclusions.append(name.str());
+                        Owned<IFile> srcfile = createIFile(filename);
+                        try
+                        {
+                            if (dstFile->exists())
+                            {
+                                if (streq(srcfile->queryFilename(), dstFile->queryFilename()))
+                                    deleteExclusions.append(name.str()); // restored workunit, referencing archive location for query dll (no longer true post HPCC-11191 fix)
+                                // still want to delete if already archived but there are source file copies
+                            }
+                            else
+                                copyFile(dstFile, srcfile);
+                        }
+                        catch(IException * e)
+                        {
+                            exception.setown(e);
+                        }
                     }
-                    else
-                        throw exception.getClear();
+                    if (exception)
+                    {
+                        if (ignoredllerrors)
+                        {
+                            EXCLOG(exception.get(), "archiveWorkUnit (copying associated file)");
+                            //copy failed, so don't delete the registered dll files
+                            deleteExclusions.append(name.str());
+                        }
+                        else
+                            throw exception.getClear();
+                    }
                 }
                 // Record Associated path to restore back to
                 StringBuffer restorePath;
@@ -3623,7 +3638,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 generatedDllBranch->setProp("@location", restorePath.str());
                 generatedDlls->addPropTree("GeneratedDll", generatedDllBranch.getClear());
             }
-            else // no generated dll entry
+            else if (exportAssociatedFiles) // no generated dll entry
             {
                 Owned<IFile> srcFile = createIFile(curRfn);
                 try
@@ -6186,6 +6201,7 @@ static void _noteFileRead(IDistributedFile *file, IPropertyTree *filesRead)
         }
         if (super)
         {
+            fileTree->setPropBool("@super", true);
             Owned<IDistributedFileIterator> iter = super->getSubFileIterator(false);
             ForEach (*iter)
             {
@@ -6954,6 +6970,15 @@ unsigned CLocalWUAssociated::getCrc() const
     return p->getPropInt("@crc", 0);
 }
 
+unsigned CLocalWUAssociated::getMinActivityId() const
+{
+    return p->getPropInt("@minActivity", 0);
+}
+
+unsigned CLocalWUAssociated::getMaxActivityId() const
+{
+    return p->getPropInt("@maxActivity", 0);
+}
 
 
 //=================================================================================================
@@ -7097,7 +7122,7 @@ void CLocalWUQuery::setQueryMainDefinition(const char * str)
     p->setProp("@main", str);
 }
 
-void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc)
+void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc, unsigned minActivity, unsigned maxActivity)
 {
     CriticalBlock block(crit);
     loadAssociated();
@@ -7112,6 +7137,10 @@ void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const 
 
     if (crc)
         s->setPropInt("@crc", crc);
+    if (minActivity)
+        s->setPropInt("@minActivity", minActivity);
+    if (maxActivity)
+        s->setPropInt("@maxActivity", maxActivity);
     IConstWUAssociatedFile * q = new CLocalWUAssociated(LINK(s)); 
     associated.append(*q);
 }
@@ -10223,14 +10252,14 @@ IPropertyTree * resolveDefinitionInArchive(IPropertyTree * archive, const char *
     return module->queryPropTree(xpath);
 }
 
-extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc)
+extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc, unsigned minActivity, unsigned maxActivity)
 {
     StringBuffer hostname;
     queryHostIP().getIpText(hostname);
 
     StringBuffer fullPathname;
     makeAbsolutePath(name, fullPathname);
-    query->addAssociatedFile(type, fullPathname, hostname, description, crc);
+    query->addAssociatedFile(type, fullPathname, hostname, description, crc, minActivity, maxActivity);
 }
 
 extern WORKUNIT_API void descheduleWorkunit(char const * wuid)

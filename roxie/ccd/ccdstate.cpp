@@ -620,7 +620,6 @@ protected:
                         if (resolved)
                         {
                             files.append(*const_cast<IResolvedFile *>(resolved));
-                            doPreload(0, resolved);
                             Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
                             ForEach(*it)
                             {
@@ -2789,11 +2788,6 @@ private:
                 }
                 else
                     throw MakeStringException(ROXIE_MISSING_PARAMS, "Metric name or regex missing");
-            }
-            else if (stricmp(queryName, "control:useTreeCopy")==0)
-            {
-                useTreeCopy = control->getPropBool("@val", true);
-                topology->setPropInt("@useTreeCopy", useTreeCopy);
             }
             else
                 unknown = true;

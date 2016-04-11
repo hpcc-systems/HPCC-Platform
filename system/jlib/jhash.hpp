@@ -80,7 +80,7 @@ class jlib_decl HashTable
     HashTable(unsigned initsize, int _keysize, bool _ignorecase)
         : SuperHashTableOf<IMapping, const void>(initsize),
         keysize(_keysize), ignorecase(_ignorecase) {}
-    ~HashTable() { releaseAll(); }
+    ~HashTable() { _releaseAll(); }
 
     IMPLEMENT_IINTERFACE
 
@@ -127,7 +127,7 @@ public:
         : HashTable(_keysize, _ignorecase) {}
     KeptHashTable(unsigned _initsize, int _keysize, bool _ignorecase)
         : HashTable(_initsize, _keysize, _ignorecase) {}
-    ~KeptHashTable() { releaseAll(); }
+    ~KeptHashTable() { _releaseAll(); }
 
     IMapping * create(const void *key);
 
@@ -143,7 +143,7 @@ public:
         : HashTable(_keysize, _ignorecase) {}
     ObservedHashTable(unsigned _initsize, int _keysize, bool _ignorecase)
         : HashTable(_initsize, _keysize, _ignorecase) {}
-    ~ObservedHashTable() { releaseAll(); }
+    ~ObservedHashTable() { _releaseAll(); }
 
 private:
     void       onAdd(void *et);

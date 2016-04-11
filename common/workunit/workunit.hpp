@@ -366,6 +366,8 @@ interface IConstWUAssociatedFile : extends IInterface
     virtual IStringVal & getName(IStringVal & ret) const = 0;
     virtual IStringVal & getNameTail(IStringVal & ret) const = 0;
     virtual unsigned getCrc() const = 0;
+    virtual unsigned getMinActivityId() const = 0;
+    virtual unsigned getMaxActivityId() const = 0;
 };
 
 
@@ -400,7 +402,7 @@ interface IWUQuery : extends IConstWUQuery
     virtual void setQueryType(WUQueryType qt) = 0;
     virtual void setQueryText(const char * pstr) = 0;
     virtual void setQueryName(const char * pstr) = 0;
-    virtual void addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc) = 0;
+    virtual void addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc, unsigned minActivity, unsigned maxActivity) = 0;
     virtual void removeAssociatedFiles() = 0;
     virtual void setQueryMainDefinition(const char * str) = 0;
     virtual void removeAssociatedFile(WUFileType type, const char * name, const char * desc) = 0;
@@ -551,7 +553,8 @@ enum WFMode
     WFModeBeginWait = 5,
     WFModeWait = 6,
     WFModeOnce = 7,
-    WFModeSize = 8
+    WFModeSize = 8,
+    WFModeCritical = 9
 };
 
 enum WFState
@@ -603,6 +606,7 @@ interface IConstWorkflowItem : extends IInterface
     virtual unsigned queryPersistWfid() const = 0;
     virtual int queryPersistCopies() const = 0;  // 0 - unmangled name,  < 0 - use default, > 0 - max number
     virtual bool queryPersistRefresh() const = 0;
+    virtual IStringVal &getCriticalName(IStringVal & val) const = 0;
     virtual unsigned queryScheduleCountRemaining() const = 0;
     virtual WFState queryState() const = 0;
     virtual unsigned queryRetriesRemaining() const = 0;
@@ -614,6 +618,8 @@ interface IConstWorkflowItem : extends IInterface
     virtual IStringVal & queryCluster(IStringVal & val) const = 0;
 };
 inline bool isPersist(const IConstWorkflowItem & item) { return item.queryMode() == WFModePersist; }
+inline bool isCritical(const IConstWorkflowItem & item) { return item.queryMode() == WFModeCritical; }
+
 
 interface IRuntimeWorkflowItem : extends IConstWorkflowItem
 {
@@ -635,6 +641,7 @@ interface IWorkflowItem : extends IRuntimeWorkflowItem
     virtual void setScheduleCount(unsigned count) = 0;
     virtual void addDependency(unsigned wfid) = 0;
     virtual void setPersistInfo(const char * name, unsigned wfid, int maxCopies, bool refresh) = 0;
+    virtual void setCriticalInfo(char const * name) = 0;
     virtual void syncRuntimeData(const IConstWorkflowItem & other) = 0;
     virtual void setScheduledWfid(unsigned wfid) = 0;
     virtual void setCluster(const char * cluster) = 0;
@@ -1258,7 +1265,7 @@ interface IWorkUnitFactory : extends IPluggableFactory
     virtual IConstWorkUnit * openWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
-    virtual bool restoreWorkUnit(const char *base, const char *wuid) = 0;
+    virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociatedFiles) = 0;
     virtual int setTracingLevel(int newlevel) = 0;
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
@@ -1300,7 +1307,7 @@ interface IExtendedWUInterface
 {
     virtual unsigned calculateHash(unsigned prevHash) = 0;
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all) = 0;
-    virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned) = 0;
+    virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned,bool exportAssociatedFiles) = 0;
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const = 0;
     virtual IPropertyTree *queryPTree() const = 0;
     
@@ -1454,7 +1461,8 @@ extern WORKUNIT_API void removeQuerySetAliasesFromNamedQuery(const char *querySe
 extern WORKUNIT_API void setQueryCommentForNamedQuery(const char *querySetName, const char *id, const char *comment);
 extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unresolved, IWorkUnitFactory &workunitFactory, IConstWorkUnit &cw, IPropertyTree *queryset);
 
-extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc);
+//If we add any more parameters we should consider returning an object that can be updated
+extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc, unsigned minActivity=0, unsigned maxActivity=0);
 
 interface ITimeReporter;
 extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value);

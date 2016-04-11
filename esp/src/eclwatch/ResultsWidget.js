@@ -22,6 +22,7 @@ define([
     "dojo/on",
 
     "dijit/layout/ContentPane",
+    "dijit/form/Button",
 
     "dgrid/selector",
 
@@ -32,7 +33,7 @@ define([
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
-                ContentPane,
+                ContentPane, Button,
                 selector,
                 GridDetailsWidget, ESPRequest, ESPWorkunit, DelayLoadWidget, ESPUtil) {
     return declare("ResultsWidget", [GridDetailsWidget], {
@@ -62,6 +63,9 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            this.alphanumSort["Name"] = true;
+            this.alphanumSort["Value"] = true;
+
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
                 var monitorCount = 4;
@@ -72,21 +76,19 @@ define([
                     }
                 });
             }
-            this.vizWidget.hpcc.params = params;
             this._refreshActionState();
         },
 
         createGrid: function (domID) {
-            this.vizWidget = new DelayLoadWidget({
-                id: this.id + "_Visualize",
-                title: this.i18n.Visualize,
-                closable: false,
-                delayWidget: "VizWidget",
-                hpcc: {
-                    type: "VizWidget"
+            this.openViz = new Button({
+                label: this.i18n.Visualize,
+                onClick: function (event) {
+                    context._onOpen(event, {
+                        vizMode: true
+                    });
                 }
-            });
-            this.addChild(this.vizWidget);
+            }).placeAt(this.widget.Open.domNode, "after");
+
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
@@ -155,8 +157,30 @@ define([
             return this.inherited(arguments);
         },
 
+        getDetailID: function (row, params) {
+            var retVal = "Detail" + row[this.idProperty];
+            if (params && params.vizMode) {
+                retVal += "Viz";
+            }
+            return retVal;
+        },
+
         createDetail: function (id, row, params) {
-            if (row.FileName && params && params.logicalFile) {
+            if (params && params.vizMode) {
+                return new DelayLoadWidget({
+                    id: id,
+                    title: "[V] " + row.Name,
+                    closable: true,
+                    delayWidget: "VizWidget",
+                    hpcc: {
+                        type: "VizWidget",
+                        params: {
+                            Wuid: row.Wuid,
+                            Sequence: row.Sequence
+                        }
+                    }
+                });
+            } else if (row.FileName && params && params.logicalFile) {
                 return new DelayLoadWidget({
                     id: id,
                     title: "[F] " + row.Name,
@@ -213,6 +237,12 @@ define([
                     context.grid.refresh();
                 }
             });
+        },
+
+        refreshActionState: function (selection) {
+            this.inherited(arguments);
+
+            this.openViz.set("disabled", !this.wu || !selection.length);
         }
 
     });

@@ -1,0 +1,9 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>true</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><isupper>false</isupper></Row>
+ <Row><isupper>true</isupper></Row>
+ <Row><isupper>false</isupper></Row>
+ <Row><isupper>true</isupper></Row>
+</Dataset>

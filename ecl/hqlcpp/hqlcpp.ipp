@@ -120,6 +120,18 @@ public:
 };
 
 
+class CppFileInfo : public CInterface
+{
+public:
+    explicit CppFileInfo(unsigned activityId) : minActivityId(activityId), maxActivityId(activityId)
+    {
+    }
+
+public:
+    unsigned minActivityId;
+    unsigned maxActivityId;
+};
+
 class HQLCPP_API HqlCppInstance : public CInterface, public IHqlCppInstance
 {
 public:
@@ -138,6 +150,7 @@ public:
     virtual void addManifest(const char *filename){resources.addManifest(filename);}
     virtual void addManifestFromArchive(IPropertyTree *archive){resources.addManifestFromArchive(archive);}
     virtual void addWebServiceInfo(IPropertyTree *wsinfo){resources.addWebServiceInfo(wsinfo);}
+    virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId);
     
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);
@@ -167,6 +180,7 @@ public:
     StringAttr          wupathname;
     Owned<IPropertyTree> plugins;
     Owned<IFileIOStream> hintFile;
+    CIArrayOf<CppFileInfo> cppInfo;
 };
 
 //---------------------------------------------------------------------------
@@ -1122,7 +1136,7 @@ public:
     void useInclude(const char * name)                      { code->useInclude(name); }
     HqlCppInstance * queryCode() const                      { return code; }
     unsigned curSubGraphId(BuildCtx & ctx);
-    unsigned cppIndexNextActivity(bool isChildActivity);
+    unsigned beginFunctionGetCppIndex(unsigned activityId, bool isChildActivity);
 
     void buildAssignToTemp(BuildCtx & ctx, IHqlExpression * variable, IHqlExpression * expr);       // create a bound target for the variable and assign
     void queryAddResultDependancy(ABoundActivity & whoAmIActivity, IHqlExpression * seq, IHqlExpression * name);
@@ -1225,6 +1239,7 @@ public:
 
     void buildDatasetAssignAggregate(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignChoose(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
+    void buildDatasetAssignCombine(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignInlineTable(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignDatasetFromTransform(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignJoin(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
@@ -1256,6 +1271,7 @@ public:
     void doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignAggregateClear(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignAggregateNext(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr, bool isSingleExists, IHqlExpression * guard);
+    void doBuildRowAssignCombine(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignNullRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignProject(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignUserTable(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
@@ -1773,6 +1789,8 @@ public:
     void filterExpandAssignments(BuildCtx & ctx, TransformBuilder * builder, HqlExprArray & assigns, IHqlExpression * expr);
 
 protected:
+    void buildIteratorFirst(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row);
+    void buildIteratorNext(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row);
     bool shouldEvaluateSelectAsAlias(BuildCtx & ctx, IHqlExpression * expr);
     IWUResult * createWorkunitResult(int sequence, IHqlExpression * nameExpr);
     void noteFilename(ActivityInstance & instance, const char * name, IHqlExpression * expr, bool isDynamic);
@@ -1963,6 +1981,7 @@ protected:
     unsigned            nextTypeId;
     unsigned            nextFieldId;
     unsigned            curWfid;
+    unsigned            implicitFunctionId = 0;
     HqlExprArray        internalFunctions;
     HqlExprArray        internalFunctionExternals;
     UniqueSequenceCounter spillSequence;

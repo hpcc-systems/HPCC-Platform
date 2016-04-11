@@ -31,6 +31,7 @@
 #include "hqlfold.hpp"
 #include "hqlgraph.ipp"
 #include "hqllib.ipp"
+#include "hqlmeta.hpp"
 #include "hqlpmap.hpp"
 #include "hqlopt.hpp"
 #include "hqlcerrors.hpp"
@@ -96,6 +97,7 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
         case no_stepped:
         case no_distributed:
         case no_preservemeta:
+        case no_unordered:
         case no_nofold:
         case no_nohoist:
         case no_nocombine:
@@ -964,6 +966,8 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             type = NULL;        // don't check the return type
             break;
         }
+    case no_evaluate_stmt:
+        return normalizeThor(expr->queryChild(0));
     case no_setworkflow_cond:
     case no_ensureresult:
         return OptionNo;
@@ -1995,8 +1999,8 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
 
 
 static HqlTransformerInfo thorHqlTransformerInfo("ThorHqlTransformer");
-ThorHqlTransformer::ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * wu)
-: NewHqlTransformer(thorHqlTransformerInfo), translator(_translator), options(_translator.queryOptions())
+ThorHqlTransformer::ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * wu, unsigned & _implicitFunctionId)
+: NewHqlTransformer(thorHqlTransformerInfo), translator(_translator), options(_translator.queryOptions()), implicitFunctionId(_implicitFunctionId)
 {
     targetClusterType = _targetClusterType;
     topNlimit = options.topnLimit;
@@ -2089,6 +2093,25 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
     case no_debug_option_value:
         //pick best engine etc. definitely done by now, so substitute any options that haven't been processed already
         return getDebugValueExpr(translator.wu(), expr);
+    case no_embedbody:
+        {
+            //Convert all definitions of non functional embeds to implicit functions
+            StringBuffer funcname;
+            funcname.append("userx").append(++implicitFunctionId);
+            HqlExprArray args;
+            args.append(*LINK(expr));
+            if (expr->hasAttribute(languageAtom))
+            {
+                args.append(*createAttribute(contextAtom));
+                if (expr->isDatarow())
+                    args.append(*createAttribute(allocatorAtom));
+            }
+            OwnedHqlExpr body = createWrapper(no_outofline, expr->queryType(), args);
+            IHqlExpression * formals = createValue(no_sortlist, makeSortListType(NULL));
+            OwnedHqlExpr funcdef = createFunctionDefinition(createIdAtom(funcname), body.getClear(), formals, NULL, NULL);
+            HqlExprArray actuals;
+            return createBoundFunction(NULL, funcdef, actuals, nullptr, true);
+        }
     }
 
     if (normalized && (normalized != transformed))
@@ -2571,6 +2594,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
     }
     else
     {
+        inputs.append(*getOrderedAttribute(false));
         //otherwise append the datasets and then sort them all
         OwnedHqlExpr appended = createDataset(no_addfiles, inputs);
         appended.setown(cloneInheritedAnnotations(expr, appended));
@@ -2847,7 +2871,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Tag a keyed join as ordered in the platforms that ensure it does remain ordered.  Extend if the others do.
     if (isKeyedJoin(expr))
     {
-        if ((translator.targetRoxie() || options.keyedJoinPreservesOrder) && !expr->hasAttribute(_ordered_Atom) && !expr->hasAttribute(unorderedAtom))
+        if ((translator.targetRoxie() || options.keyedJoinPreservesOrder) && !hasOrderedAttribute(expr))
             return appendOwnedOperand(expr, createAttribute(_ordered_Atom));
         return NULL;
     }
@@ -3769,7 +3793,7 @@ void HqlCppTranslator::convertLogicalToActivities(WorkflowItem & curWorkflow)
 {
     {
         cycle_t startCycles = get_cycles_now();
-        ThorHqlTransformer transformer(*this, targetClusterType, wu());
+        ThorHqlTransformer transformer(*this, targetClusterType, wu(), implicitFunctionId);
 
         HqlExprArray & exprs = curWorkflow.queryExprs();
         HqlExprArray transformed;
@@ -4378,6 +4402,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
     case no_sorted:
     case no_preservemeta:
     case no_distributed:
+    case no_unordered:
     case no_grouped:
     case no_stepped:
     case no_section:
@@ -4469,9 +4494,9 @@ bool CompoundSourceTransformer::createCompoundSource(IHqlExpression * expr)
         return false;
     if (extra->forceCompound)
         return true;
-    if (isSourceActivity(expr))
-        return false;
     if (expr->getOperator() == no_preservemeta)
+        expr = expr->queryChild(0);
+    if (isSourceActivity(expr))
         return false;
     if (extra->isPreloaded)
         return (flags & CSFpreload) != 0;
@@ -5171,6 +5196,13 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         }
 	persistRefresh = getBoolValue(queryAttributeChild(expr, refreshAtom, 0), true);
         break;
+    case no_critical:
+        setOp = no_setresult;
+        storedName.set(expr->queryChild(0));
+        originalLabel.set(storedName);
+        sequence.setown(getLocalSequenceNumber());
+        extraSetAttr.setown(createAttribute(_workflow_Atom));
+        break;
     case no_global:
         throwUnexpected();
     case no_independent:
@@ -5321,7 +5353,10 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
             OwnedHqlExpr getValue = createDataset(no_table, args);
             //getValue.setown(cloneInheritedAnnotations(value, getValue));
             if (persistOp != no_stored)
-                getValue.setown(preserveTableInfo(getValue, value, false, (persistOp == no_persist) ? filename : NULL));
+            {
+                bool clusterSizeMayChange = (persistOp == no_persist) || (cluster != nullptr);
+                getValue.setown(preserveTableInfo(getValue, value, false, clusterSizeMayChange));
+            }
 
             //Note: getValue->queryType() != valueType because the dataset used for field resolution has changed...
             if (value->isDictionary())
@@ -5423,7 +5458,7 @@ void GlobalAttributeInfo::splitSmallDataset(IHqlExpression * value, SharedHqlExp
         OwnedHqlExpr wuRead = value->isDictionary() ? createDictionary(no_workunit_dataset, args) : createDataset(no_workunit_dataset, args);
         //wuRead.setown(cloneInheritedAnnotations(value, wuRead));
         if (persistOp != no_stored)
-            getOutput->setown(preserveTableInfo(wuRead, value, true, NULL));
+            getOutput->setown(preserveTableInfo(wuRead, value, true, false));
         else
             getOutput->set(wuRead);
     }
@@ -5626,6 +5661,11 @@ void WorkflowTransformer::setWorkflowSchedule(IWorkflowItem * wf, const Schedule
 void WorkflowTransformer::setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int numPersistInstances, bool refresh)
 {
     wf->setPersistInfo(persistName, persistWfid, numPersistInstances, refresh);
+}
+
+void WorkflowTransformer::setWorkflowCritical(IWorkflowItem * wf, char const * criticalName)
+{
+    wf->setCriticalInfo(criticalName);
 }
 
 WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp)
@@ -5840,6 +5880,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 // MORE - Add dynamic attribute to ensure the file is not pre-resolved
             }
             //fall through
+        case no_critical:
         case no_checkpoint:
         case no_stored:
             {
@@ -6008,7 +6049,17 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         if ((info.persistOp != no_persist) && expr->isAction())
             setValue.setown(transformSequentialEtc(setValue));
 
-        if(info.persistOp == no_persist)
+         if(info.persistOp == no_critical)
+         {
+            StringBuffer criticalName;
+            info.storedName->queryValue()->getStringValue(criticalName);
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCritical, queryDirectDependencies(setValue), conts, info.queryCluster());
+            setWorkflowCritical(wf, criticalName.str());
+
+            workflowOut->append(*createWorkflowItem(getValue, wfid, no_none));
+            getValue.setown(createNullExpr(expr->queryType()));
+        }
+        else if(info.persistOp == no_persist)
         {
             StringBuffer persistName;
             info.storedName->queryValue()->getStringValue(persistName);
@@ -12255,7 +12306,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 children.replace(*createAttribute(_selfJoinPlaceholder_Atom), 1);       // replace the 1st dataset with an attribute so parameters are still in the same place.
                 return createDataset(no_selfjoin, children);
             }
-            if (isKeyedJoin(transformed) && translator.targetRoxie() && !expr->hasAttribute(_ordered_Atom))
+            if (isKeyedJoin(transformed) && translator.targetRoxie() && !hasOrderedAttribute(expr))
                 return appendOwnedOperand(transformed, createAttribute(_ordered_Atom));
             return transformed.getClear();
         }

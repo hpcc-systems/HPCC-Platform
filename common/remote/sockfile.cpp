@@ -191,7 +191,7 @@ public:
 static CriticalSection              secureContextCrit;
 static Owned<ISecureSocketContext>  secureContext;
 
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
 static ISecureSocket *createSecureSocket(ISocket *sock,SecureSocketType type)
 {
     {
@@ -713,7 +713,7 @@ public:
         numsockets = 0;
     }
     ~CConnectionTable() { 
-        releaseAll(); 
+        _releaseAll();
     }
 
     ISocket *lookup(const SocketEndpoint &ep)
@@ -894,7 +894,7 @@ class CRemoteBase: public CInterface
                     socket.setown(ISocket::connect(ep));
                 if (useSSL)
                 {
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
                     Owned<ISecureSocket> ssock = createSecureSocket(socket.getClear(), ClientSocket);
                     int status = ssock->secure_connect();
                     if (status < 0)
@@ -2008,51 +2008,6 @@ public:
     {
         return NULL;
     }
-
-    void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp,CFflags copyFlags=CFnone)
-    {
-        resfrom.ipset(NULL);
-        MemoryBuffer sendBuffer;
-        initSendBuffer(sendBuffer);
-        MemoryBuffer replyBuffer;
-        sendBuffer.append((RemoteFileCommandType)(usetmp?RFCtreecopytmp:RFCtreecopy));
-        RemoteFilename rfn;
-        rfn.setPath(ep,filename);
-        rfn.serialize(sendBuffer);
-        const char *d = dest->queryFilename();
-        if (!isAbsolutePath(d)) 
-            throw MakeStringException(-1,"treeCopyFile destination '%s' is not an absolute path", d);
-        rfn.setRemotePath(d);
-        rfn.serialize(sendBuffer);
-        StringBuffer tmp;
-        subnet.getNetText(tmp);
-        sendBuffer.append(tmp);
-        subnet.getMaskText(tmp.clear());
-        sendBuffer.append(tmp);
-        unsigned status=1;
-        try {
-            sendRemoteCommand(sendBuffer, replyBuffer);
-            replyBuffer.read(status);
-        }
-        catch (IDAFS_Exception *e) {
-            if (e->errorCode()!=RFSERR_InvalidCommand) 
-                throw;
-            e->Release();
-            status = (unsigned)-1;
-        }
-        if (status==-1) {
-            resfrom.ipset(ep);
-            StringBuffer tmp;
-            WARNLOG("dafilesrv on %s does not support treeCopyTo - falling back to copyTo",resfrom.getIpText(tmp).str());
-            copyTo(dest,DEFAULT_COPY_BLKSIZE,NULL,usetmp,copyFlags);
-            status = 0;
-        }
-        else if (status==0)
-            resfrom.ipdeserialize(replyBuffer);
-    }
-
-
-
 };
 
 void clientCacheFileConnect(SocketEndpoint &_ep,unsigned timeout)
@@ -3067,7 +3022,7 @@ public:
     }
     ~CClientStatsTable()
     {
-        kill();
+        _releaseAll();
     }
     CClientStats *getClientReference(RemoteFileCommandType cmd, const char *client)
     {
@@ -5119,7 +5074,7 @@ public:
                     sock.setown(acceptsock->accept(true));
                     if (useSSL)
                     {
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
                         Owned<ISecureSocket> ssock = createSecureSocket(sock.getClear(), ServerSocket);
                         int status = ssock->secure_accept();
                         if (status < 0)

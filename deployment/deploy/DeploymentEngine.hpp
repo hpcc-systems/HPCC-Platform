@@ -244,7 +244,7 @@ protected:
         EnvMachineOS os=MachineOsUnknown, const char* processName=NULL,bool isEspModuleOrPlugin=false);
    virtual void processCustomMethod(const char *method, const char *source, const char *outputFile, 
                                     const char *instanceName, EnvMachineOS os);
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
    virtual void siteCertificate(IPropertyTree& process, const char *instanceName, const char *outputFile);
 #endif
 
@@ -289,7 +289,7 @@ protected:
                                    EnvMachineOS os, bool bCacheable, 
                                    const char* params=NULL);
    static void addDeploymentFile(StringBuffer &ret, const char *in, IXslTransform*);
-#ifdef USE_OPENSSL
+#ifdef _USE_OPENSSL
    static void siteCertificateFunction(StringBuffer &ret, const char *in, IXslTransform*);
 #endif
    virtual IEnvDeploymentEngine& getEnvDepEngine() const { return m_envDepEngine; }

@@ -508,7 +508,7 @@ int main( int argc, char *argv[]  )
         Owned<IFile> iFile = createIFile("thor.xml");
         globals = iFile->exists() ? createPTree(*iFile, ipt_caseInsensitive) : createPTree("Thor", ipt_caseInsensitive);
     }
-    setStatisticsComponentName(SCTthor, globals->queryProp("@name"), false);
+    setStatisticsComponentName(SCTthor, globals->queryProp("@name"), true);
 
     globals->setProp("@masterBuildTag", BUILD_TAG);
     char **pp = argv+1;
@@ -640,7 +640,7 @@ int main( int argc, char *argv[]  )
 #ifndef __64BIT__
             if (maxMem > 2048)
             {
-            	// 32 bit OS doesn't handle whole physically installed RAM
+                // 32 bit OS doesn't handle whole physically installed RAM
                 maxMem = 2048;
             }
 #ifdef __ARM_ARCH_7A__

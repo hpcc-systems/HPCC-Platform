@@ -33,8 +33,6 @@ const char* MSG_FAILED_GET_ENVIRONMENT_INFO = "Failed to get environment informa
 
 IPropertyTree* CTpWrapper::getEnvironment(const char* xpath)
 {
-    DBGLOG("CTpWrapper::getEnvironment()");
-
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IPropertyTree> root = &constEnv->getPTree();
@@ -187,7 +185,6 @@ void CTpWrapper::fetchInstances(const char* ServiceType, IPropertyTree& service,
 
 void CTpWrapper::getTpDaliServers(IArrayOf<IConstTpDali>& list)
 {
-    DBGLOG("CTpWrapper::getTpDaliServers()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -322,7 +319,6 @@ void CTpWrapper::getTpEclCCServers(IPropertyTree* environmentSoftware, IArrayOf<
 
 void CTpWrapper::getTpEclAgents(IArrayOf<IConstTpEclAgent>& list, const char* agentName)
 {
-    DBGLOG("CTpWrapper::getTpEclAgents()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -366,7 +362,6 @@ void CTpWrapper::getTpEclAgents(IArrayOf<IConstTpEclAgent>& list, const char* ag
 
 void CTpWrapper::getTpEclSchedulers(IArrayOf<IConstTpEclScheduler>& list, const char* serverName)
 {
-    DBGLOG("CTpWrapper::getTpEclSchedulers()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -407,7 +402,6 @@ void CTpWrapper::getTpEclSchedulers(IArrayOf<IConstTpEclScheduler>& list, const 
 
 void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
 {
-    DBGLOG("CTpWrapper::getEspServers()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -416,7 +410,6 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
     ForEach(*services)
     {
         IPropertyTree& serviceTree = services->query();
-
         Owned<IEspTpEspServer> pService = createTpEspServer("","");
         const char* name = serviceTree.queryProp("@name");
         pService->setName(name);
@@ -457,9 +450,16 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
                 StringBuffer xpath;
                 xpath.appendf("EspService[@name='%s']", service);
                 IPropertyTree* pServiceNode = root->queryPropTree(xpath.str());
-                const char* serviceType = pServiceNode ? pServiceNode->queryProp("Properties/@type") : "INVALID";
-                pTpBinding->setServiceType(eqEsp);
+                const char* serviceType = pServiceNode ? pServiceNode->queryProp("Properties/@type") : NULL;
+                if (serviceType && *serviceType)
+                    pTpBinding->setServiceType(serviceType);
 
+                if (pServiceNode)
+                {
+                    const char* bindingType = pServiceNode->queryProp("Properties/@bindingType");
+                    if (bindingType && *bindingType)
+                        pTpBinding->setBindingType(bindingType);
+                }
                 tpBindings.append(*pTpBinding.getLink());
             }
         }
@@ -471,7 +471,6 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
 
 void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
 {
-    DBGLOG("CTpWrapper::getTpDfuServers()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -510,7 +509,6 @@ void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
 
 void CTpWrapper::getTpSashaServers(IArrayOf<IConstTpSashaServer>& list)
 {
-    DBGLOG("CTpWrapper::getSashaServers()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -546,7 +544,6 @@ void CTpWrapper::getTpSashaServers(IArrayOf<IConstTpSashaServer>& list)
 
 void CTpWrapper::getTpLdapServers(IArrayOf<IConstTpLdapServer>& list)
 {
-    DBGLOG("CTpWrapper::getTpLdapServers()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -598,7 +595,6 @@ void CTpWrapper::getTpLdapServers(IArrayOf<IConstTpLdapServer>& list)
 
 void CTpWrapper::getTpDropZones(IArrayOf<IConstTpDropZone>& list)
 {
-    DBGLOG("CTpWrapper::getTpDropZones()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -652,7 +648,6 @@ void CTpWrapper::getTpDropZones(IArrayOf<IConstTpDropZone>& list)
 
 void CTpWrapper::getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list)
 {
-    DBGLOG("CTpWrapper::getTpFTSlaves()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -677,7 +672,6 @@ void CTpWrapper::getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list)
 
 void CTpWrapper::getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list)
 {
-    DBGLOG("CTpWrapper::getTpDkcSlaves()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -702,7 +696,6 @@ void CTpWrapper::getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list)
 
 void CTpWrapper::getTpGenesisServers(IArrayOf<IConstTpGenesisServer>& list)
 {
-    DBGLOG("CTpWrapper::getTpGenesisServers()");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -727,7 +720,6 @@ void CTpWrapper::getTpGenesisServers(IArrayOf<IConstTpGenesisServer>& list)
 
 void CTpWrapper::getTargetClusterList(IArrayOf<IEspTpLogicalCluster>& clusters, const char* clusterType, const char* clusterName)
 {
-    DBGLOG("CTpWrapper::getLogicalClusterList");
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);

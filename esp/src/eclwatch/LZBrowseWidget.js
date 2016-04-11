@@ -393,8 +393,6 @@ define([
 
         _onSprayXml: function(event) {
             var context = this;
-            this.sprayXmlTargetRowTag = registry.byId(this.id + "sprayXmlTargetRowTag");
-            if (this.sprayXmlTargetRowTag.getValue()) {
                 this._spraySelectedOneAtATime("SprayXmlDropDown", "SprayXmlForm", function (request, item) {
                     lang.mixin(request, {
                         sourceRowTag: item.targetRowTag
@@ -405,13 +403,6 @@ define([
                         context._handleResponse("SprayResponse.wuid", response);
                     });
                 });
-            } else {
-                topic.publish("hpcc/brToaster", {
-                    Severity: "Error",
-                    Source: "FileSpray.SprayVariable",
-                    Exceptions: [{ Message: this.i18n.TargetRowTagRequired }]
-                });
-            }
         },
 
         _onSprayJson: function(event) {
@@ -655,7 +646,6 @@ define([
                         editor: dijit.form.ValidationTextBox,
                         editorArgs: {
                             required: true,
-                            id: this.id + "sprayXmlTargetRowTag",
                             placeholder: this.i18n.RequiredForXML,
                             promptMessage: this.i18n.RequiredForXML
                         }

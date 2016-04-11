@@ -216,7 +216,7 @@ public:
     }
     ~CSessionStateTable() { 
         CHECKEDCRITICALBLOCK(sessstatesect,60000);
-        releaseAll(); 
+        _releaseAll();
     }
     bool add(CSessionState *e) // takes ownership
     {
@@ -340,7 +340,7 @@ public:
     ~CMapProcessToSession()
     {
         CHECKEDCRITICALBLOCK(mapprocesssect,60000);
-        releaseAll();
+        _releaseAll();
     }
 
     bool add(CProcessSessionState *e) 
@@ -1503,7 +1503,7 @@ public:
         bool ok = true;
 #else
         bool ok = true;
-        if (ldapconn->getLDAPflags() & DLF_ENABLED)
+        if (ldapconn && ldapconn->getLDAPflags() & DLF_ENABLED)
             ok = ldapconn->clearPermissionsCache(udesc);
 #endif
         return ok;

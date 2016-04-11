@@ -35,7 +35,8 @@
                                         <option value="Low">${i18n.Low}</option>
                                         <option value="High">${i18n.High}</option>
                                     </select>
-                                    <input id="${id}AllowForeignFiles" title="${i18n.AllowForeignFiles}:" name="AllowForeignFiles" colspan="2" data-dojo-props="trim: true" checked data-dojo-type="dijit.form.CheckBox" />
+                                    <input id="${id}AllowForeignFiles" title="${i18n.AllowForeignFiles}:" name="AllowForeignFiles" colspan="2" checked data-dojo-type="dijit.form.CheckBox" />
+                                    <input id="${id}UpdateSuperFiles" title="${i18n.UpdateSuperFiles}:" name="UpdateSuperFiles" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
                                     <button type="submit" data-dojo-attach-event="onClick:_onPublish" data-dojo-type="dijit.form.Button">${i18n.Submit}</button>
@@ -45,6 +46,29 @@
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}ZapReport"  title="${i18n.ZippedAnalysisPackage}" data-dojo-attach-event="onClick:onZapReport" data-dojo-props="iconClass:'iconZap'" data-dojo-type="dijit.form.Button">${i18n.ZAP}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}SlaveLogs" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.SlaveLogs}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                        <div id="${id}LogsForm" style="width:460px" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                <select id="${id}ThorProcess" title="${i18n.ThorProcess}:" name="ThorProcess" colspan="2" data-dojo-type="dijit.form.Select" /></select>
+                                <input id="${id}SlaveNumber" maxlength="" title="${i18n.SlaveNumber}:" name="SlaveNumber" value="1" required="true" data-dojo-props="trim: true, placeHolder:'1'" data-dojo-type="dijit.form.NumberTextBox"/>
+                                <select id="${id}FileFormat" title="${i18n.File}:" name="ThorProcess" colspan="2" data-dojo-type="dijit.form.Select" />
+                                    <option value="1">${i18n.OriginalFile}</option>
+                                    <option value="2">${i18n.Zip}</option>
+                                    <option value="3">${i18n.GZip}</option>
+                                </select>
+                            </div>
+                            </br>
+                            <div><span id="SlavesMaxNumber" class="bold"></span></div>
+                            <div><span id="AllowOnlyNumber" class="boldRed"></span></div>
+                            <div class="dijitDialogPaneActionBar">
+                                <button type="submit" data-dojo-attach-event="onClick:_getDownload" data-dojo-type="dijit.form.Button">${i18n.Download}</button>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
                 </div>

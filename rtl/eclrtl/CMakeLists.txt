@@ -27,6 +27,7 @@ project( eclrtl )
 
 set (    SRCS 
          eclrtl.cpp 
+         eclregex.cpp
          rtlbcd.cpp 
          rtldistr.cpp 
          rtlds.cpp 
@@ -68,13 +69,15 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DECLRTL_EXPORTS )
 
-if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
-    set_source_files_properties(eclrtl.cpp PROPERTIES COMPILE_FLAGS -std=c++98)
-endif ()
+if (USE_BOOST_REGEX)
+    if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
+        set_source_files_properties(eclregex.cpp PROPERTIES COMPILE_FLAGS -std=c++98)
+    endif ()
 
-if (WIN32)
-else ()
-    ADD_DEFINITIONS( -DBOOST_DYN_LINK )
+    if (WIN32)
+    else ()
+        ADD_DEFINITIONS( -DBOOST_DYN_LINK )
+    endif ()
 endif ()
 
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )

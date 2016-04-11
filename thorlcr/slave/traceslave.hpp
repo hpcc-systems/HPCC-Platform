@@ -18,10 +18,26 @@
 #ifndef TRACESLAVE_HPP
 #define TRACESLAVE_HPP
 
-#include "thmem.hpp"
-#include "jstats.h"
+#include <eclhelper.hpp>
+#include <jatomic.hpp>
+#include <jbuff.hpp>
+#include <jdebug.hpp>
+#include <jiface.hpp>
+#include <jlog.hpp>
+#include <jscm.hpp>
+#include <jstats.h>
+#include <jstring.hpp>
+#include <platform.h>
+#include <stddef.h>
+#include <thmem.hpp>
+#include <thorxmlwrite.hpp>
 
-class CTracingThorDataLink : implements CInterfaceOf<IThorDataLink>
+interface IThorDebug : extends IInterface
+{
+    virtual void debugRequest(MemoryBuffer &mb) = 0;
+};
+
+class CTracingStream : public CSimpleInterfaceOf<IEngineRowStream>, implements IThorDebug
 {
 private:
     class CThorRowHistory
@@ -140,49 +156,18 @@ private:
     CTraceQueue buffers[2];
     CTraceQueue rowBufferLogCache;
     atomic_t rowBufInUse;
-    Owned<IThorDataLink> thorDataLink;
+    IThorDataLink *thorDataLink;
+    IEngineRowStream *inputStream;
     IHThorArg *helper;
 
     inline void enqueueRowForTrace(const void *row)
     {
-        buffers[atomic_read(&rowBufInUse)].enqueue(row,thorDataLink->queryEndCycles());
+        buffers[atomic_read(&rowBufInUse)].enqueue(row, thorDataLink->queryEndCycles());
     }
 public:
-    virtual void start()
-    {
-        thorDataLink->start();
-    }
-    virtual bool isGrouped() { return thorDataLink->isGrouped(); }
-    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
-    {
-        const void *row = thorDataLink->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
-        enqueueRowForTrace(row);
-        return row;
-    }    // can only be called on stepping fields.
-    virtual IInputSteppingMeta *querySteppingMeta() { return thorDataLink->querySteppingMeta(); }
-    virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return thorDataLink->gatherConjunctions(collector); }
-    virtual void resetEOF() { thorDataLink->resetEOF(); }
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IEngineRowStream>);
 
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) { thorDataLink->getMetaInfo(info); }
-    virtual CActivityBase *queryFromActivity() {return thorDataLink->queryFromActivity(); } // activity that has this as an output
-    virtual void dataLinkSerialize(MemoryBuffer &mb) {thorDataLink->dataLinkSerialize(mb); }
-    virtual unsigned __int64 queryTotalCycles() const { return thorDataLink->queryTotalCycles(); }
-    virtual unsigned __int64 queryEndCycles() const { return thorDataLink->queryEndCycles(); }
-
-    virtual const void *nextRow()
-    {
-        const void *row = thorDataLink->nextRow();
-        enqueueRowForTrace(row);
-        return row;
-    }
-    virtual void stop()
-    {
-        thorDataLink->stop();
-    }
-
-    inline const void *ungroupedNextRow() { return thorDataLink->ungroupedNextRow(); }
-
-    virtual void debugRequest(MemoryBuffer &mb)
+    virtual void debugRequest(MemoryBuffer &mb) override
     {
         // NOTE - cannot be called by more than one thread
         buffers[1].init(traceQueueSize+1);
@@ -200,8 +185,21 @@ public:
         rowBufferLogCache.dump(mb, helper);
     }
 
-    CTracingThorDataLink(IThorDataLink *_input, IHThorArg *_helper, unsigned _traceQueueSize)
-        : thorDataLink(_input), helper(_helper), traceQueueSize(_traceQueueSize)
+// IEngineRowStream
+    virtual void resetEOF() override { inputStream->resetEOF(); }
+    virtual const void *nextRow() override
+    {
+        const void *row = inputStream->nextRow();
+        enqueueRowForTrace(row);
+        return row;
+    }
+    virtual void stop() override
+    {
+        inputStream->stop();
+    }
+
+    CTracingStream(IThorDataLink *_thorDataLink, IEngineRowStream *_inputStream, IHThorArg *_helper, unsigned _traceQueueSize)
+        : thorDataLink(_thorDataLink), inputStream(_inputStream), helper(_helper), traceQueueSize(_traceQueueSize)
     {
         atomic_set(&rowBufInUse, 0);
         buffers[0].init(traceQueueSize+1);

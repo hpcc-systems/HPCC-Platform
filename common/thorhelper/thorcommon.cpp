@@ -28,6 +28,9 @@
 #include "eclrtl.hpp"
 #include "rtlread_imp.hpp"
 #include <algorithm>
+#ifdef _USE_NUMA
+#include <numa.h>
+#endif
 
 #include "thorstep.hpp"
 
@@ -61,7 +64,7 @@ void RowAggregator::reset()
         if (n)
             n->Release();
     }
-    SuperHashTable::releaseAll();
+    SuperHashTable::_releaseAll();
     eof = false;
     cursor = NULL;
     rowAllocator.clear();
@@ -1549,13 +1552,13 @@ IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned fla
         size32_t fixedSize = rowIf->queryRowMetaData()->querySerializedDiskMeta()->getFixedSize();
         if (fixedSize && TestRwFlag(flags, rw_grouped))
             ++fixedSize; // row writer will include a grouping byte
-        iFileIO.setown(createCompressedFileWriter(iFile, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, TestRwFlag(flags, rw_fastlz)));
+        iFileIO.setown(createCompressedFileWriter(iFile, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags)));
     }
     else
         iFileIO.setown(iFile->open((flags & rw_extend)?IFOwrite:IFOcreate));
     if (!iFileIO)
         return NULL;
-    flags &= ~((unsigned)(rw_compress|rw_fastlz|rw_compressblkcrc));
+    flags &= ~COMP_MASK;
     return createRowWriter(iFileIO, rowIf, flags);
 }
 
@@ -1576,7 +1579,7 @@ IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned
 
 IExtRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, unsigned flags)
 {
-    if (0 != (flags & (rw_compress|rw_fastlz|rw_extend|rw_buffered|rw_compressblkcrc)))
+    if (0 != (flags & (rw_extend|rw_buffered|COMP_MASK)))
         throw MakeStringException(0, "Unsupported createRowWriter flags");
     Owned<CRowStreamWriter> writer = new CRowStreamWriter(strm, rowIf->queryRowSerializer(), rowIf->queryRowAllocator(), TestRwFlag(flags, rw_grouped), TestRwFlag(flags, rw_crc), TestRwFlag(flags, rw_autoflush));
     return writer.getClear();
@@ -1717,5 +1720,112 @@ void ActivityTimeAccumulator::merge(const ActivityTimeAccumulator & other)
     }
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 
+//MORE: Not currently implemented for windows.
+#ifdef CPU_SETSIZE
+static unsigned getCpuId(const char * text, char * * next)
+{
+    unsigned cpu = (unsigned)strtoul(text, next, 10);
+    if (*next == text)
+        throw makeStringExceptionV(1, "Invalid CPU: %s", text);
+    else if (cpu >= CPU_SETSIZE)
+        throw makeStringExceptionV(1, "CPU %u is out of range 0..%u", cpu, CPU_SETSIZE);
+    return cpu;
+}
+#endif
 
+void setProcessAffinity(const char * cpuList)
+{
+    assertex(cpuList);
+#ifdef CPU_ZERO
+    cpu_set_t cpus;
+    CPU_ZERO(&cpus);
+
+    const char * cur = cpuList;
+    loop
+    {
+        char * next;
+        unsigned cpu1 = getCpuId(cur, &next);
+        if (*next == '-')
+        {
+            const char * range = next+1;
+            unsigned cpu2 = getCpuId(range, &next);
+            for (unsigned cpu= cpu1; cpu <= cpu2; cpu++)
+                CPU_SET(cpu, &cpus);
+        }
+        else
+            CPU_SET(cpu1, &cpus);
+
+        if (*next == '\0')
+            break;
+
+        if (*next != ',')
+            throw makeStringExceptionV(1, "Invalid cpu affinity list %s", cur);
+
+        cur = next+1;
+    }
+
+    if (sched_setaffinity(0, sizeof(cpu_set_t), &cpus))
+        throw makeStringException(errno, "Failed to set affinity");
+    DBGLOG("Process affinity set to %s", cpuList);
+#endif
+    clearAffinityCache();
+}
+
+void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char * optNodes)
+{
+#if defined(CPU_ZERO) && defined(_USE_NUMA)
+    if (processPerMachine <= 1)
+        return;
+
+    if (numa_available() == -1)
+    {
+        DBGLOG("Numa functions not available");
+        return;
+    }
+
+    if (optNodes)
+        throw makeStringException(1, "Numa node list not yet supported");
+
+    unsigned numNumaNodes = numa_max_node()+1;
+    if (numNumaNodes <= 1)
+        return;
+
+    //MORE: If processPerMachine < numNumaNodes we may want to associate with > 1 node.
+    unsigned curNode = curProcess % numNumaNodes;
+
+#if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION>=2)
+    struct bitmask * cpus = numa_allocate_cpumask();
+    numa_node_to_cpus(curNode, cpus);
+    bool ok = (numa_sched_setaffinity(0, cpus) == 0);
+    numa_bitmask_free(cpus);
+#else
+    cpu_set_t cpus;
+    CPU_ZERO(&cpus);
+    numa_node_to_cpus(curNode, (unsigned long *) &cpus, sizeof (cpus));
+    bool ok = sched_setaffinity (0, sizeof(cpus), &cpus) != 0;
+#endif
+
+    if (!ok)
+        throw makeStringExceptionV(1, "Failed to set affinity for node %u", curNode);
+
+    DBGLOG("Process bound to numa node %u of %u", curNode, numNumaNodes);
+#endif
+    clearAffinityCache();
+}
+
+void bindMemoryToLocalNodes()
+{
+#if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION>=2)
+    numa_set_bind_policy(1);
+
+    unsigned numNumaNodes = numa_max_node() + 1;
+    if (numNumaNodes <= 1)
+        return;
+    struct bitmask *nodes = numa_get_run_node_mask();
+    numa_set_membind(nodes);
+    DBGLOG("Process memory bound to numa nodemask 0x%x (of %u nodes total)", (unsigned)(*(nodes->maskp)), numNumaNodes);
+    numa_bitmask_free(nodes);
+#endif
+}

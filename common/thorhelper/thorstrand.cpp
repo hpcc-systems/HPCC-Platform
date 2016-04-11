@@ -24,11 +24,67 @@
 
 #define DEFAULT_ROWBLOCK_SIZE 500
 
+static const byte endOfSectionMarker = 0;
+const void * queryEndOfSectionMarker() { return &endOfSectionMarker; }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CStrandBarrier : public CInterfaceOf<IStrandBarrier>
+{
+public:
+    virtual void reset()
+    {
+        producerStopSem.reinit(0);
+    }
+
+    virtual void startStrand(IStrandThreaded & strand)
+    {
+        CThreaded * thread = new CThreaded("Strand", &strand);
+        threads.append(*thread);
+        thread->start();
+    }
+
+    virtual void waitForStrands()
+    {
+        producerStopSem.signal(threads.ordinality());
+        ForEachItemIn(i, threads)
+            threads.item(i).join();
+        threads.kill();
+    }
+
+    virtual void noteStrandFinished(IRowStream * stream)
+    {
+        waitForStop();
+        if (stream)
+            stream->stop();
+    }
+
+protected:
+    void waitForStop()
+    {
+        producerStopSem.wait();
+    }
+
+protected:
+    Semaphore producerStopSem;
+    CIArrayOf<CThreaded> threads;
+};
+
+
+IStrandBarrier * createStrandBarrier()
+{
+    return new CStrandBarrier;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class CStrandJunction : public CInterfaceOf<IStrandJunction>
 {
 public:
-    explicit CStrandJunction(unsigned _numProducers) : numProducers(_numProducers), stopping(false), started(false)
+    explicit CStrandJunction(unsigned _numProducers, unsigned _numStrands)
+    : numProducers(_numProducers), numStrands(_numStrands), stopping(false), started(false)
     {
+        assertex(numProducers);
     }
 
     virtual void reset()
@@ -72,6 +128,17 @@ public:
             stopInactiveProducers();
     }
 
+    void noteProducerFinished(IRowStream * stream)
+    {
+        waitForStop();
+        if (stream)
+            stream->stop();
+        notifyStopped();
+    }
+
+    inline unsigned getNumProducers() const { return numProducers; }
+
+protected:
     void waitForStop()
     {
         producerStopSem.wait();
@@ -82,11 +149,8 @@ public:
         producerStoppedSem.signal();
     }
 
-    inline unsigned getNumProducers() const { return numProducers; }
-
-protected:
-    //Stop producers that have already been started()
-    virtual void stopActiveProducers()
+    //Wait for all active producers to complete - including calling stop on their inputs
+    void waitForProducers()
     {
         producerStopSem.signal(numProducers);
         ForEachItemIn(i, threads)
@@ -94,11 +158,20 @@ protected:
         threads.kill();
     }
 
+    //Stop producers that have already been started()
+    virtual void stopActiveProducers()
+    {
+        waitForProducers();
+    }
+
     //Stop producers that have never been started()
     virtual void stopInactiveProducers() = 0;
 
+protected:
+    const unsigned numStrands;
+
 private:
-    unsigned numProducers;
+    const unsigned numProducers;
     Semaphore producerStopSem;
     Semaphore producerStoppedSem;
     CIArrayOf<CThreaded> threads;
@@ -160,6 +233,11 @@ bool RoxieRowBlock::readFromStream(IRowStream * stream)
             if (!row)
             {
                 done = true;
+                break;
+            }
+            else if (row == &endOfSectionMarker)
+            {
+                setEndOfChunk();
                 break;
             }
             if (addRowNowFull(row))
@@ -230,10 +308,10 @@ static void resetBlockQueue(IRowQueue * queue)
 }
 
 
-class BlockedReadAheadThread : public CInterface, implements IThreaded
+class StreamToBlockQueueThread : public CInterface, implements IThreaded
 {
 public:
-    BlockedReadAheadThread(CStrandJunction & _junction, IRowQueue * _queue, RowBlockAllocator & _allocator)
+    StreamToBlockQueueThread(CStrandJunction & _junction, IRowQueue * _queue, RowBlockAllocator & _allocator)
     : junction(_junction), queue(_queue), stream(NULL), allocator(_allocator) {}
 
     virtual void main()
@@ -250,9 +328,7 @@ public:
             }
         }
         queue->noteWriterStopped();
-        junction.waitForStop();
-        stream->stop();
-        junction.notifyStopped();
+        junction.noteProducerFinished(stream);
     }
 
     void setInput(IEngineRowStream * _input)
@@ -277,14 +353,14 @@ protected:
     IRowQueue * queue;
 };
 
-class BlockedReader : public CInterfaceOf<IEngineRowStream>
+class StreamFromBlockQueue : public CInterfaceOf<IEngineRowStream>
 {
 public:
-    BlockedReader(CStrandJunction & _junction, IRowQueue & _queue) : junction(_junction), queue(_queue)
+    StreamFromBlockQueue(CStrandJunction & _junction, IRowQueue & _queue) : junction(_junction), queue(_queue)
     {
         curBlock = NULL;
     }
-    ~BlockedReader()
+    ~StreamFromBlockQueue()
     {
         reset();
     }
@@ -317,6 +393,7 @@ public:
 
     virtual void stop()
     {
+        queue.noteReaderStopped();
         junction.processConsumerStop();
     }
 
@@ -346,11 +423,11 @@ class BlockedManyToOneJunction : public CStrandJunction
 {
 public:
     BlockedManyToOneJunction(roxiemem::IRowManager & _rowManager, unsigned _numStrands, unsigned blockSize, IRowQueue * _queue)
-    : CStrandJunction(_numStrands), numStrands(_numStrands), queue(_queue), allocator(_rowManager, blockSize), consumer(*this, *_queue)
+    : CStrandJunction(_numStrands, _numStrands), queue(_queue), allocator(_rowManager, blockSize), consumer(*this, *_queue)
     {
-        producers = new BlockedReadAheadThread * [numStrands];
+        producers = new StreamToBlockQueueThread * [numStrands];
         for (unsigned i=0; i < numStrands; i++)
-            producers[i] = new BlockedReadAheadThread(*this, queue, allocator);
+            producers[i] = new StreamToBlockQueueThread(*this, queue, allocator);
     }
     ~BlockedManyToOneJunction()
     {
@@ -393,11 +470,6 @@ public:
     }
 
 protected:
-    virtual void stopActiveProducers()
-    {
-        queue->abort();
-        CStrandJunction::stopActiveProducers();
-    }
     virtual void stopInactiveProducers()
     {
         for (unsigned i=0; i < numStrands; i++)
@@ -406,11 +478,10 @@ protected:
 
 
 protected:
-    unsigned numStrands;
     Owned<IRowQueue> queue;
     RowBlockAllocator allocator;
-    BlockedReadAheadThread * * producers;
-    BlockedReader consumer;
+    StreamToBlockQueueThread * * producers;
+    StreamFromBlockQueue consumer;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -420,14 +491,14 @@ class BlockedOneToManyJunction : public CStrandJunction
 {
 public:
     BlockedOneToManyJunction(roxiemem::IRowManager & _rowManager, unsigned _numStrands, unsigned _maxQueueItems, unsigned _blockSize)
-    : CStrandJunction(1), numStrands(_numStrands), allocator(_rowManager, _blockSize), producer(*this, NULL, allocator)
+    : CStrandJunction(1, _numStrands), allocator(_rowManager, _blockSize), producer(*this, NULL, allocator)
     {
         queue.setown(createRowQueue(numStrands, 1, _maxQueueItems, 0));
         producer.setQueue(queue);
 
-        consumers = new BlockedReader * [numStrands];
+        consumers = new StreamFromBlockQueue * [numStrands];
         for (unsigned i=0; i < numStrands; i++)
-            consumers[i] = new BlockedReader(*this, *queue);
+            consumers[i] = new StreamFromBlockQueue(*this, *queue);
     }
     ~BlockedOneToManyJunction()
     {
@@ -464,12 +535,6 @@ public:
     }
 
 protected:
-    virtual void stopActiveProducers()
-    {
-        queue->abort();
-        CStrandJunction::stopActiveProducers();
-    }
-
     virtual void stopInactiveProducers()
     {
         for (unsigned i=0; i < numStrands; i++)
@@ -477,24 +542,23 @@ protected:
     }
 
 protected:
-    unsigned numStrands;
     Owned<IRowQueue> queue;
     RowBlockAllocator allocator;
-    BlockedReadAheadThread producer;
-    BlockedReader * * consumers;
+    StreamToBlockQueueThread producer;
+    StreamFromBlockQueue * * consumers;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
 
 //Trivial single element queue
-class OrderedReadAheadQueue
+class SingleItemBlockQueue
 {
 public:
-    OrderedReadAheadQueue() : avail(0U), space(1U)
+    SingleItemBlockQueue() : avail(0U), space(1U)
     {
     }
 
-    ~OrderedReadAheadQueue()
+    ~SingleItemBlockQueue()
     {
         if (value)
             value->releaseBlock();
@@ -518,18 +582,27 @@ public:
         }
         abortSoon = false;
         finishedWriting = false;
+        finishedReading = false;
     }
 
     bool enqueue(RoxieRowBlock * next)
     {
-        if (abortSoon)
+        if (abortSoon || finishedReading)
             return false;
         space.wait();
-        if (abortSoon)
+        if (abortSoon || finishedReading)
             return false;
         value = next;
         avail.signal();
         return true;
+    }
+
+    void noteReaderStopped()
+    {
+        if (abortSoon)
+            return;
+        finishedReading = true;
+        space.signal();
     }
 
     void noteWriterStopped()
@@ -565,13 +638,14 @@ protected:
     RoxieRowBlock * value = nullptr;
     bool abortSoon = false;
     bool finishedWriting = false;
+    bool finishedReading = false;
     Semaphore space __attribute__((aligned(CACHE_LINE_SIZE)));
     Semaphore avail __attribute__((aligned(CACHE_LINE_SIZE)));
 };
+//may replace with
+typedef SingleItemBlockQueue OrderedJunctionBlockQueue;
 
 
-//I don't think this class really works as it stands there needs to be external control of end of chunk.
-//It needs to share some of the characteristics of the OrderedBranch
 class OrderedReadAheadThread : public CInterface, implements IThreaded
 {
     //friend class OrderedManyToOneJunction;
@@ -589,8 +663,6 @@ public:
         {
             RoxieRowBlock * block = allocator.newBlock();
             done = block->readFromStream(stream);
-            //Purely for testing - this would normally be in an independent callback
-            block->setEndOfChunk();
             if (block->empty() || !queue.enqueue(block))
             {
                 block->releaseBlock();
@@ -598,9 +670,7 @@ public:
             }
         }
         noteWriterStopped();
-        junction.waitForStop();
-        stream->stop();
-        junction.notifyStopped();
+        junction.noteProducerFinished(stream);
     }
 
     void abort()
@@ -639,24 +709,26 @@ public:
     }
 
     inline bool isAlive() const { return alive; }
-    inline OrderedReadAheadQueue & queryQueue() { return queue; }
+    inline OrderedJunctionBlockQueue & queryQueue() { return queue; }
 
 protected:
     CStrandJunction & junction;
     RowBlockAllocator & allocator;
     IEngineRowStream * stream;
-    OrderedReadAheadQueue queue;
+    OrderedJunctionBlockQueue queue;
     bool finished;
     bool alive;
 };
 
+
+//This class primarily supports multi-stranded source activities which immediately feed into a single-stranded activity.
 class OrderedManyToOneJunction : public CStrandJunction, implements IEngineRowStream
 {
 public:
     IMPLEMENT_IINTERFACE_USING(CStrandJunction)
 
     OrderedManyToOneJunction(roxiemem::IRowManager & _rowManager, unsigned _numStrands, unsigned blockSize)
-    : CStrandJunction(_numStrands), numStrands(_numStrands), allocator(_rowManager, blockSize)
+    : CStrandJunction(_numStrands, _numStrands), allocator(_rowManager, blockSize)
     {
         producers = new OrderedReadAheadThread * [numStrands];
         for (unsigned i=0; i < numStrands; i++)
@@ -684,8 +756,7 @@ public:
     }
     virtual void abort()
     {
-        for (unsigned i=0; i < numStrands; i++)
-            producers[i]->abort();
+        abortProducers();
     }
     virtual void reset()
     {
@@ -705,7 +776,6 @@ public:
         for (unsigned i=0; i < numStrands; i++)
             startProducerThread(*producers[i]);
         noteStarted();
-        throwUnexpected();  // reimplement...
     }
     virtual const void *nextRow()
     {
@@ -730,7 +800,7 @@ public:
             loop
             {
                 OrderedReadAheadThread & curProducer = *(producers[curStrand]);
-                OrderedReadAheadQueue & queue = curProducer.queryQueue();
+                OrderedJunctionBlockQueue & queue = curProducer.queryQueue();
                 if (!queue.dequeue(curBlock))
                 {
                     //Abort requested
@@ -752,6 +822,8 @@ public:
 
     virtual void stop()
     {
+        //reading no more records => abort the queue and prevent the producers adding any more rows
+        abortProducers();
         processConsumerStop();
     }
 
@@ -770,15 +842,21 @@ protected:
                 curStrand = 0;
         } while (!producers[curStrand]->isAlive());
     }
+
     virtual void stopInactiveProducers()
     {
         for (unsigned i=0; i < numStrands; i++)
             producers[i]->stopInput();
     }
 
+    void abortProducers()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            producers[i]->abort();
+    }
+
 
 protected:
-    unsigned numStrands;
     unsigned numActiveStrands;
     RowBlockAllocator allocator;
     OrderedReadAheadThread * * producers;
@@ -821,30 +899,15 @@ void clearRowQueue(IRowQueue * queue)
 //---------------------------------------------------------------------------------------------------------------------
 
 //Class for managing processing on a single ordered strand
-class OrderedStrand : public CInterface, implements IThreaded, implements IEngineRowStream
+class OrderedStrandRowBlockInput : public CInterfaceOf<IEngineRowStream>
 {
     friend class OrderedManyToOneJunction;
 
 public:
-    OrderedStrand(CStrandJunction & _splitJunction, CStrandJunction & _joinJunction, RowBlockAllocator & _allocator)
-    : splitJunction(_splitJunction), joinJunction(_joinJunction), strand(NULL), allocator(_allocator)
+    OrderedStrandRowBlockInput(CStrandJunction & _splitJunction, IOrderedOutputCallback & _callback)
+    : splitJunction(_splitJunction), callback(_callback)
     {
-        finished = false;
-        alive = true;
         curInputBlock = nullptr;
-        curOutputBlock = nullptr;
-        eoi = false;
-    }
-    IMPLEMENT_IINTERFACE
-
-    void abortInputQueue()
-    {
-        inputQueue.abort();
-    }
-
-    void abortOutputQueue()
-    {
-        outputQueue.abort();
     }
 
  //interface IEngineRowStream for the rows being supplied to the strand.
@@ -856,7 +919,7 @@ public:
             {
                 if (!inputQueue.dequeue(curInputBlock))
                 {
-                    eoi = true;
+                    callback.noteEndOfInput();
                     return NULL;
                 }
             }
@@ -866,7 +929,10 @@ public:
                 return row;
             curInputBlock->throwAnyPendingException();
             if (curInputBlock->isEndOfChunk())
-                noteEndOfInputChunk();
+            {
+                if (!callback.noteEndOfInputChunk())
+                    inputQueue.abort();
+            }
             curInputBlock->releaseBlock();
             curInputBlock = NULL;
         }
@@ -874,6 +940,8 @@ public:
 
     virtual void stop()
     {
+        //reading no more records => abort the queue and prevent the producer adding any more rows
+        inputQueue.noteReaderStopped();
         splitJunction.processConsumerStop();
     }
 
@@ -882,219 +950,79 @@ public:
         throwUnexpectedX("resetEOF called on OrderedStrand");
     }
 
-//IThreaded - main function used to read rows from the strand and add to the output
-    virtual void main()
-    {
-        bool done = false;
-        while (!done)
-        {
-            try
-            {
-                loop
-                {
-                    const void * row = strand->nextRow();
-                    //NB: Need to be check the final eog isn't lost when processing sequentially
-                    if (!row && eoi)
-                    {
-                        done = true;
-                        break;
-                    }
-
-                    //curOutputBlock may be modified within the call to strand->nextRow() above
-                    //(but not by any other threads)
-                    if (!curOutputBlock)
-                        curOutputBlock = allocator.newBlock();
-
-                    if (curOutputBlock->addRowNowFull(row))
-                        break;
-                }
-            }
-            catch (IException * e)
-            {
-                if (!curOutputBlock)
-                    curOutputBlock = allocator.newBlock();
-                curOutputBlock->setExceptionOwn(e);
-                done = true;
-            }
-
-            if (curOutputBlock)
-            {
-                if (curOutputBlock->empty() || !outputQueue.enqueue(curOutputBlock))
-                {
-                    curOutputBlock->releaseBlock();
-                    curOutputBlock = NULL;
-                    break;
-                }
-                curOutputBlock = NULL;
-            }
-        }
-        finished = true;
-        outputQueue.noteWriterStopped();
-        joinJunction.waitForStop();
-        strand->stop();
-        joinJunction.notifyStopped();
-    }
-
-    void noteEndOfInputChunk()
-    {
-        if (!curOutputBlock)
-            curOutputBlock = allocator.newBlock();
-        curOutputBlock->setEndOfChunk();
-        if (!outputQueue.enqueue(curOutputBlock))
-        {
-            curOutputBlock->releaseBlock();
-            inputQueue.abort();
-        }
-        curOutputBlock = NULL;
-    }
-
     void abort()
     {
         inputQueue.abort();
-        outputQueue.abort();
     }
 
     void reset()
     {
         inputQueue.reset();
-        outputQueue.reset();
         if (curInputBlock)
             curInputBlock->releaseBlock();
         curInputBlock = nullptr;
-        if (curOutputBlock)
-            curOutputBlock->releaseBlock();
-        curOutputBlock = nullptr;
-        finished = false;
-        alive = true;
-        eoi = false;
     }
 
-    IEngineRowStream * queryStrandInput()
+    void noteWriterStopped()
     {
-        return this;
+        queryInputQueue().noteWriterStopped();
     }
 
-    void setStrand(IEngineRowStream * _input)
-    {
-        strand = _input;
-    }
-
-    void stopStrand()
-    {
-        strand->stop();
-    }
-
-    inline OrderedReadAheadQueue & queryInputQueue() { return inputQueue; }
-    inline OrderedReadAheadQueue & queryOutputQueue() { return outputQueue; }
+    inline OrderedJunctionBlockQueue & queryInputQueue() { return inputQueue; }
 
 protected:
     CStrandJunction & splitJunction;
-    CStrandJunction & joinJunction;
-    RowBlockAllocator & allocator;
-    IEngineRowStream * strand;
-    OrderedReadAheadQueue inputQueue;
-    OrderedReadAheadQueue outputQueue;
+    IOrderedOutputCallback & callback;
+    OrderedJunctionBlockQueue inputQueue;
     RoxieRowBlock * curInputBlock;
-    RoxieRowBlock * curOutputBlock;
-    bool finished;
-    bool alive;
-    bool eoi;
 };
 
 
-class COrderedStrandBranch : public CInterface, implements IStrandBranch, implements IThreaded, implements IEngineRowStream
+class OrderedInputJunction : public CStrandJunction, implements IThreaded
 {
-    class OrderedInputJunction : public CStrandJunction
-    {
-    public:
-        OrderedInputJunction(COrderedStrandBranch & _owner) : CStrandJunction(1), owner(_owner) {}
-        virtual IEngineRowStream * queryOutput(unsigned n) { return owner.queryStrandInput(n); }
-        virtual void setInput(unsigned n, IEngineRowStream * _stream) { assertex(n==0); owner.setInput(_stream); }
-        virtual void start()
-        {
-            startProducerThread(owner);
-            noteStarted();
-        }
-        virtual void abort() { owner.abortInputQueues(); }
-        virtual void stopActiveProducers()
-        {
-            owner.abortInputQueues();
-            CStrandJunction::stopActiveProducers();
-        }
-        virtual void stopInactiveProducers()
-        {
-            owner.stopInactiveInput();
-        }
-    protected:
-        COrderedStrandBranch & owner;
-    };
-    class OrderedOutputJunction : public CStrandJunction
-    {
-    public:
-        OrderedOutputJunction(COrderedStrandBranch & _owner) : CStrandJunction(_owner.numStrands), owner(_owner) {}
-        virtual IEngineRowStream * queryOutput(unsigned n) { assertex(n==0); return owner.queryOutput(); }
-        virtual void setInput(unsigned n, IEngineRowStream * _stream) { owner.setStrand(n, _stream); }
-        virtual void start()
-        {
-            for (unsigned i=0; i < getNumProducers(); i++)
-                startProducerThread(*owner.strands[i]);
-            noteStarted();
-        }
-        virtual void abort() { owner.abortOutputQueues(); }
-        virtual void stopActiveProducers()
-        {
-            owner.abortOutputQueues();
-            CStrandJunction::stopActiveProducers();
-        }
-        virtual void reset()
-        {
-            owner.resetBranch();
-            CStrandJunction::reset();
-        }
-        virtual void stopInactiveProducers()
-        {
-            owner.stopInactiveStrands();
-        }
-    protected:
-        COrderedStrandBranch & owner;
-    };
-
 public:
-    COrderedStrandBranch(roxiemem::IRowManager & _rowManager, unsigned _numStrands, unsigned _blockSize, bool _isGrouped)
-    : inputBlockAllocator(_rowManager, _blockSize), outputBlockAllocator(_rowManager, _blockSize),
-      numStrands(_numStrands), isGrouped(_isGrouped)
+    OrderedInputJunction(roxiemem::IRowManager & _rowManager, unsigned _numStrands, unsigned _blockSize, bool _isGrouped, IOrderedCallbackCollection * callbacks)
+    : CStrandJunction(1, _numStrands), inputBlockAllocator(_rowManager, _blockSize), isGrouped(_isGrouped)
     {
-        inputJunction.setown(new OrderedInputJunction(*this));
-        outputJunction.setown(new OrderedOutputJunction(*this));
-        strands = new OrderedStrand * [numStrands];
+        strands = new OrderedStrandRowBlockInput * [numStrands];
         for (unsigned i=0; i < numStrands; i++)
-            strands[i] = new OrderedStrand(*inputJunction, *outputJunction, outputBlockAllocator);
-        input = NULL;
-        curOutputStrand = 0;
-        curOutputBlock = nullptr;
+            strands[i] = new OrderedStrandRowBlockInput(*this, *callbacks->queryCallback(i));
+
         blockSize = inputBlockAllocator.maxRowsPerBlock();
         minGroupBlockSize = (blockSize * 7 + 4) / 8;  // Fill with groups until at least 7/8 filled.
         assertex(minGroupBlockSize != 0);
     }
-    IMPLEMENT_IINTERFACE
-
-    ~COrderedStrandBranch()
+    ~OrderedInputJunction()
     {
         for (unsigned i=0; i < numStrands; i++)
             delete strands[i];
         delete [] strands;
     }
-
-    void abortInputQueues()
+    virtual IEngineRowStream * queryOutput(unsigned n) { assertex(n < numStrands); return strands[n]; }
+    virtual void setInput(unsigned n, IEngineRowStream * _stream)
     {
-        for (unsigned i=0; i < numStrands; i++)
-            strands[i]->abortInputQueue();
+        assertex(n==0);
+        input = _stream;
     }
-
-    void abortOutputQueues()
+    virtual void start()
+    {
+        startProducerThread(*this);
+        noteStarted();
+    }
+    virtual void abort()
     {
         for (unsigned i=0; i < numStrands; i++)
-            strands[i]->abortOutputQueue();
+            strands[i]->abort();
+    }
+    virtual void reset()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            strands[i]->reset();
+        CStrandJunction::reset();
+    }
+    virtual void stopInactiveProducers()
+    {
+        input->stop();
     }
 
     virtual void main()
@@ -1149,7 +1077,7 @@ public:
                                 break;
                         }
 
-                        if (inputJunction->isStopping())
+                        if (isStopping())
                             break;
                     }
                 }
@@ -1176,130 +1104,29 @@ public:
                 break;
             }
 
+            if (isEndOfChunk)
+            {
+                curStrand = curStrand+1;
+                if (curStrand == numStrands)
+                    curStrand = 0;
+            }
+        }
+
+        for (unsigned i=0; i < numStrands; i++)
+        {
+            strands[curStrand]->noteWriterStopped();
             curStrand = curStrand+1;
             if (curStrand == numStrands)
                 curStrand = 0;
         }
 
-        for (unsigned i=0; i < numStrands; i++)
-        {
-            strands[curStrand]->queryInputQueue().noteWriterStopped();
-            curStrand = curStrand+1;
-            if (curStrand == numStrands)
-                curStrand = 0;
-        }
-
-        inputJunction->waitForStop();
-        input->stop();
-        inputJunction->notifyStopped();
-    }
-
-    void resetBranch()
-    {
-        curOutputStrand = 0;
-        curOutputBlock = nullptr;
-        for (unsigned i=0; i < numStrands; i++)
-            strands[i]->reset();
-    }
-
-    const void * nextOutputRow()
-    {
-        loop
-        {
-            if (likely(curOutputBlock))
-            {
-                const void * result;
-                if (curOutputBlock->nextRow(result))
-                    return result;
-                curOutputBlock->throwAnyPendingException();
-                if (curOutputBlock->isEndOfChunk())
-                {
-                    curOutputStrand++;
-                    if (curOutputStrand == numStrands)
-                        curOutputStrand = 0;
-                }
-                curOutputBlock->releaseBlock();
-                curOutputBlock = NULL;
-            }
-
-            if (!strands[curOutputStrand]->queryOutputQueue().dequeue(curOutputBlock))
-            {
-                //If there is no more output on the next strand, then all the strands will have finished processing.
-                return NULL;
-            }
-        }
-    }
-
-    virtual void resetEOF()
-    {
-        throwUnexpectedX("resetEOF called on OrderedStrandBranch");
-    }
-
-    void setInput(IEngineRowStream * _input)
-    {
-        input = _input;
-    }
-
-    IEngineRowStream * queryStrandInput(unsigned n)
-    {
-        assertex(n < numStrands);
-        return strands[n]->queryStrandInput();
-    }
-
-    void setStrand(unsigned n, IEngineRowStream * stream)
-    {
-        assertex(n < numStrands);
-        strands[n]->setStrand(stream);
-    }
-
-    IEngineRowStream * queryOutput()
-    {
-        return this;
-    }
-
-    void stopInactiveInput()
-    {
-        input->stop();
-    }
-
-    void stopInactiveStrands()
-    {
-        for (unsigned i=0; i < numStrands; i++)
-            strands[i]->stopStrand();
-    }
-
- //interface IEngineRowStream
-     virtual const void *nextRow()
-     {
-         return nextOutputRow();
-     }
-
-     virtual void stop()
-     {
-         outputJunction->processConsumerStop();
-     }
-
-//interface IStrandBranch
-    virtual IStrandJunction * queryInputJunction()
-    {
-        return inputJunction;
-    }
-
-    virtual IStrandJunction * queryOutputJunction()
-    {
-        return outputJunction;
+        noteProducerFinished(input);
     }
 
 protected:
-    Owned<CStrandJunction> inputJunction;
-    Owned<CStrandJunction> outputJunction;
     RowBlockAllocator inputBlockAllocator;
-    RowBlockAllocator outputBlockAllocator;
-    IEngineRowStream * input;
-    OrderedStrand * * strands;
-    RoxieRowBlock * curOutputBlock;
-    unsigned numStrands;
-    unsigned curOutputStrand;
+    OrderedStrandRowBlockInput * * strands;
+    IEngineRowStream * input = nullptr;
     unsigned blockSize;
     unsigned minGroupBlockSize;
     bool isGrouped;
@@ -1307,69 +1134,409 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class CSingleStrandBranch : public CInterfaceOf<IStrandBranch>
+//Class for reading input from a streaming source activity.
+class OrderedStrandStreamInput : public CInterfaceOf<IEngineRowStream>
+{
+    friend class OrderedManyToOneJunction;
+
+public:
+    OrderedStrandStreamInput(CStrandJunction & _splitJunction, IOrderedOutputCallback & _callback)
+    : splitJunction(_splitJunction), callback(_callback)
+    {
+    }
+
+    void setInput(IEngineRowStream * _input)
+    {
+        stream = _input;
+    }
+
+ //interface IEngineRowStream for the rows being supplied to the strand.
+    virtual const void *nextRow()
+    {
+        loop
+        {
+            if (eof)
+                return NULL;
+
+            const void * row = stream->nextRow();
+            if (likely(row != &endOfSectionMarker))
+                return row;
+
+            if (!callback.noteEndOfInputChunk())
+                eof = true;
+        }
+    }
+
+    virtual void stop()
+    {
+        stream->stop();
+    }
+
+    virtual void resetEOF()
+    {
+        throwUnexpectedX("resetEOF called on OrderedStrand");
+    }
+
+    void abort()
+    {
+        eof = true;
+        //MORE: provide a callback for notifying the source?
+    }
+
+    void reset()
+    {
+        eof = false;
+    }
+
+protected:
+    CStrandJunction & splitJunction;
+    IOrderedOutputCallback & callback;
+    IRowStream * stream = nullptr;
+    bool eof = false;
+};
+
+
+class OrderedSourceJunction : public CStrandJunction
 {
 public:
-    CSingleStrandBranch()
+    OrderedSourceJunction(unsigned _numStrands, IOrderedCallbackCollection * callbacks)
+    : CStrandJunction(_numStrands, _numStrands)
+    {
+        strands = new OrderedStrandStreamInput * [numStrands];
+        for (unsigned i=0; i < numStrands; i++)
+            strands[i] = new OrderedStrandStreamInput(*this, *callbacks->queryCallback(i));
+    }
+    ~OrderedSourceJunction()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            delete strands[i];
+        delete [] strands;
+    }
+    virtual IEngineRowStream * queryOutput(unsigned n)
+    {
+        assertex(n < numStrands);
+        return strands[n];
+    }
+    virtual void reset()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            strands[i]->reset();
+        CStrandJunction::reset();
+    }
+    virtual void setInput(unsigned n, IEngineRowStream * _stream)
+    {
+        assertex(n < numStrands);
+        strands[n]->setInput(_stream);
+    }
+    virtual void start()
+    {
+        noteStarted();
+    }
+    virtual void abort()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            strands[i]->abort();
+    }
+    virtual void stopActiveProducers()
+    {
+        throwUnexpected();
+    }
+    virtual void stopInactiveProducers()
+    {
+        throwUnexpected();
+    }
+
+protected:
+    OrderedStrandStreamInput * * strands;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class OrderedStrandRowBlockOutput : public CInterface, implements IThreaded, implements IOrderedOutputCallback
+{
+    friend class OrderedManyToOneJunction;
+
+public:
+    OrderedStrandRowBlockOutput(CStrandJunction & _joinJunction, RowBlockAllocator & _allocator)
+    : joinJunction(_joinJunction), allocator(_allocator)
+    {
+    }
+
+//IThreaded - main function used to read rows from the strand and add to the output
+    virtual void main()
+    {
+        bool done = false;
+        while (!done)
+        {
+            try
+            {
+                loop
+                {
+                    const void * row = strand->nextRow();
+                    //NB: Need to be check the final eog isn't lost when processing sequentially
+                    if (!row && eoi)
+                    {
+                        done = true;
+                        break;
+                    }
+
+                    //curOutputBlock may be modified within the call to strand->nextRow() above
+                    //(but not by any other threads)
+                    if (!curOutputBlock)
+                        curOutputBlock = allocator.newBlock();
+
+                    if (curOutputBlock->addRowNowFull(row))
+                        break;
+                }
+            }
+            catch (IException * e)
+            {
+                if (!curOutputBlock)
+                    curOutputBlock = allocator.newBlock();
+                curOutputBlock->setExceptionOwn(e);
+                done = true;
+            }
+
+            if (curOutputBlock)
+            {
+                if (curOutputBlock->empty() || !outputQueue.enqueue(curOutputBlock))
+                {
+                    curOutputBlock->releaseBlock();
+                    curOutputBlock = NULL;
+                    break;
+                }
+                curOutputBlock = NULL;
+            }
+        }
+        finished = true;
+        outputQueue.noteWriterStopped();
+        joinJunction.noteProducerFinished(strand);
+    }
+
+    virtual bool noteEndOfInputChunk()
+    {
+        if (!curOutputBlock)
+            curOutputBlock = allocator.newBlock();
+        curOutputBlock->setEndOfChunk();
+        bool success = true;
+        if (!outputQueue.enqueue(curOutputBlock))
+        {
+            curOutputBlock->releaseBlock();
+            success = false;
+        }
+        curOutputBlock = NULL;
+        return success;
+    }
+
+    virtual void noteEndOfInput()
+    {
+        eoi = true;
+    }
+
+    void abort()
+    {
+        outputQueue.abort();
+    }
+
+    void reset()
+    {
+        outputQueue.reset();
+        if (curOutputBlock)
+            curOutputBlock->releaseBlock();
+        curOutputBlock = nullptr;
+        finished = false;
+        alive = true;
+        eoi = false;
+    }
+
+    void setStrand(IEngineRowStream * _input)
+    {
+        strand = _input;
+    }
+
+    void stopStrand()
+    {
+        strand->stop();
+    }
+
+    inline OrderedJunctionBlockQueue & queryOutputQueue() { return outputQueue; }
+
+protected:
+    CStrandJunction & joinJunction;
+    RowBlockAllocator & allocator;
+    IEngineRowStream * strand = nullptr; // the stream that executes in parallel processing the stream of rows
+    OrderedJunctionBlockQueue outputQueue;
+    RoxieRowBlock * curOutputBlock = nullptr;
+    bool finished = false;
+    bool alive = true;
+    bool eoi = false;
+};
+
+class OrderedOutputJunction : public CStrandJunction, implements IEngineRowStream, implements IOrderedCallbackCollection
+{
+public:
+    OrderedOutputJunction(roxiemem::IRowManager & _rowManager, unsigned _numStrands, unsigned _blockSize)
+    : CStrandJunction(_numStrands, _numStrands), outputBlockAllocator(_rowManager, _blockSize)
+    {
+        strands = new OrderedStrandRowBlockOutput * [numStrands];
+        for (unsigned i=0; i < numStrands; i++)
+            strands[i] = new OrderedStrandRowBlockOutput(*this, outputBlockAllocator);
+    }
+    ~OrderedOutputJunction()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            delete strands[i];
+        delete [] strands;
+    }
+    IMPLEMENT_IINTERFACE_USING(CStrandJunction)
+
+    virtual IEngineRowStream * queryOutput(unsigned n) { assertex(n==0); return this; }
+    virtual void setInput(unsigned n, IEngineRowStream * _stream) { strands[n]->setStrand(_stream); }
+    virtual void start()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            startProducerThread(*strands[i]);
+        noteStarted();
+    }
+    virtual void abort()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            strands[i]->abort();
+    }
+    virtual void reset()
+    {
+        curOutputStrand = 0;
+        if (curOutputBlock)
+            curOutputBlock->releaseBlock();
+        curOutputBlock = nullptr;
+        for (unsigned i=0; i < numStrands; i++)
+            strands[i]->reset();
+        CStrandJunction::reset();
+    }
+    virtual void stopInactiveProducers()
+    {
+        for (unsigned i=0; i < numStrands; i++)
+            strands[i]->stopStrand();
+    }
+    virtual IOrderedOutputCallback * queryCallback(unsigned i)
+    {
+        assertex(i < numStrands);
+        return strands[i];
+    }
+//implementation of IEngineRowStream
+     virtual const void *nextRow()
+     {
+         loop
+         {
+             if (likely(curOutputBlock))
+             {
+                 const void * result;
+                 if (curOutputBlock->nextRow(result))
+                     return result;
+                 curOutputBlock->throwAnyPendingException();
+                 if (curOutputBlock->isEndOfChunk())
+                 {
+                     curOutputStrand++;
+                     if (curOutputStrand == numStrands)
+                         curOutputStrand = 0;
+                 }
+                 curOutputBlock->releaseBlock();
+                 curOutputBlock = NULL;
+             }
+
+             if (!strands[curOutputStrand]->queryOutputQueue().dequeue(curOutputBlock))
+             {
+                 //If there is no more output on the next strand, then all the strands will have finished processing.
+                 return NULL;
+             }
+         }
+     }
+
+     virtual void stop()
+     {
+         //reading no more records => abort all strand queues and prevent the producers adding any more rows
+         for (unsigned i=0; i < numStrands; i++)
+             strands[i]->abort();
+         processConsumerStop();
+     }
+
+     virtual void resetEOF()
+     {
+         throwUnexpectedX("resetEOF called on OrderedStrandBranch");
+     }
+
+protected:
+    RowBlockAllocator outputBlockAllocator;
+    OrderedStrandRowBlockOutput * * strands;
+    RoxieRowBlock * curOutputBlock = nullptr;
+    unsigned curOutputStrand = 0;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CStrandBranch : public CInterfaceOf<IStrandBranch>
+{
+public:
+    CStrandBranch(IStrandJunction * _input, IStrandJunction * _output) : input(_input), output(_output)
+    {
+    }
+
+    virtual IStrandJunction * queryInputJunction()
+    {
+        return input;
+    }
+
+    virtual IStrandJunction * queryOutputJunction()
+    {
+        return output;
+    }
+
+protected:
+    Linked<IStrandJunction> input;
+    Linked<IStrandJunction> output;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+extern THORHELPER_API IStrandBranch * createStrandBranch(roxiemem::IRowManager & rowManager, unsigned numStrands, unsigned blockSize, bool isOrdered, bool isGrouped, bool inputIsStreamed, IOrderedCallbackCollection * orderedCallbacks)
+{
+    Linked<IStrandJunction> input;
+    Linked<IStrandJunction> output;
+
+    //Slightly inefficient to go via a junction, but makes the testing code simpler!
+    assertex(numStrands);
+    if (numStrands == 1)
     {
         input.setown(new OneToOneJunction());
         output.setown(new OneToOneJunction());
     }
-
-    virtual IStrandJunction * queryInputJunction()
+    else if (isOrdered || isGrouped)
     {
-        return input;
-    }
+        //MORE To allow parallel sinks allow callbacks to be provided and have a dummy output junction or none
+        //But the number will not be known until the branch is created, so the callback will need to create them
+        IOrderedCallbackCollection * callbacks = orderedCallbacks;
+        if (!callbacks)
+        {
+            Owned<OrderedOutputJunction> outputJunction = new OrderedOutputJunction(rowManager, numStrands, blockSize);
+            callbacks = outputJunction;
+            output.setown(outputJunction.getClear());
+        }
 
-    virtual IStrandJunction * queryOutputJunction()
+        if (inputIsStreamed)
+        {
+            input.setown(new OrderedSourceJunction(numStrands, callbacks));
+        }
+        else
+        {
+            input.setown(new OrderedInputJunction(rowManager, numStrands, blockSize, isGrouped, callbacks));
+        }
+    }
+    else
     {
-        return output;
+        input.setown(createStrandJunction( rowManager, 1, numStrands, blockSize, false));
+        output.setown(createStrandJunction( rowManager, numStrands, 1, blockSize, false));
     }
-
-protected:
-    Owned<IStrandJunction> input;
-    Owned<IStrandJunction> output;
-};
-
-//---------------------------------------------------------------------------------------------------------------------
-
-class CUnorderedStrandBranch : public CInterfaceOf<IStrandBranch>
-{
-public:
-    CUnorderedStrandBranch(roxiemem::IRowManager & rowManager, unsigned _numStrands, unsigned _blockSize)
-    {
-        input.setown(createStrandJunction( rowManager, 1, _numStrands, _blockSize, false));
-        output.setown(createStrandJunction( rowManager, _numStrands, 1, _blockSize, false));
-    }
-
-    virtual IStrandJunction * queryInputJunction()
-    {
-        return input;
-    }
-
-    virtual IStrandJunction * queryOutputJunction()
-    {
-        return output;
-    }
-
-protected:
-    Owned<IStrandJunction> input;
-    Owned<IStrandJunction> output;
-};
-
-//---------------------------------------------------------------------------------------------------------------------
-
-extern THORHELPER_API IStrandBranch * createStrandBranch(roxiemem::IRowManager & rowManager, unsigned numStrands, unsigned blockSize, bool isOrdered, bool isGrouped)
-{
-    //Slightly inefficient to go via a junction, but makes the testing code simpler!
-    assertex(numStrands);
-    if (numStrands == 1)
-        return new CSingleStrandBranch();
-    if (isOrdered)
-        return new COrderedStrandBranch(rowManager, numStrands, blockSize, isGrouped);
-    else if (!isGrouped)
-        return new CUnorderedStrandBranch(rowManager, numStrands, blockSize);
-    UNIMPLEMENTED;
+    return new CStrandBranch(input, output);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1443,8 +1610,7 @@ public:
     }
     virtual void stop()
     {
-        //MORE: What should this do?
-        queue->abort();
+        queue->noteReaderStopped();
     }
     virtual void reset()
     {

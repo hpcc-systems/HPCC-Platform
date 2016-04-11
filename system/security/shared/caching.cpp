@@ -30,7 +30,7 @@ time_t getThreadCreateTime()
     if(tslval == NULL)
         return 0;
 
-    memcpy(&t, tslval, 4);
+    memcpy(&t, tslval, sizeof(t));
     return t;
 }
 

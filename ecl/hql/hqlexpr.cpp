@@ -1191,6 +1191,7 @@ const char *getOpString(node_operator op)
     case no_notify: return "no_notify";
     case no_event: return "no_event";
     case no_persist: return "PERSIST";
+    case no_critical: return "CRITICAL";
     case no_omitted: return "no_omitted";
     case no_setconditioncode: return "no_setconditioncode";
     case no_selectfields: return "no_selectfields";
@@ -1519,10 +1520,10 @@ const char *getOpString(node_operator op)
     case no_unboundselect: return "no_unboundselect";
     case no_id: return "no_id";
     case no_orderedactionlist: return "ORDERED";
+    case no_unordered: return "UNORDERED";
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
@@ -1588,6 +1589,7 @@ bool checkConstant(node_operator op)
     case no_select:
     case no_stored:
     case no_persist:
+    case no_critical:
     case no_checkpoint:
     case no_once:
     case no_getresult:
@@ -1880,6 +1882,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_grouped:
     case no_distribute:
     case no_distributed:
+    case no_unordered:
     case no_cosort:
     case no_keyed:
     case no_sort:
@@ -2148,6 +2151,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_dedup:
     case no_distribute:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_enth:
     case no_filter:
@@ -2444,6 +2448,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_dedup:
     case no_distribute:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     case no_enth:
     case no_filter:
@@ -6282,6 +6287,7 @@ void CHqlDataset::cacheParent()
     // distributing:
     case no_distribute:
     case no_distributed:
+    case no_unordered:
     case no_preservemeta:
     // fewer records
     case no_filter:
@@ -12179,6 +12185,10 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
     if (functionBodyUsesContext(body))
         attrs.append(*LINK(cachedContextAttribute));
 
+    IHqlExpression *child = body->queryChild(0);
+    if (child && child->getOperator()==no_embedbody)
+        unwindAttribute(attrs, child, inlineAtom);
+
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryId(), LINK(returnType), attrs);
     return replaceChild(funcdef, 0, externalExpr);
@@ -14194,6 +14204,7 @@ IHqlExpression * querySkipDatasetMeta(IHqlExpression * dataset)
         case no_sorted:
         case no_grouped:
         case no_distributed:
+        case no_unordered:
         case no_preservemeta:
         case no_stepped:
             break;
@@ -15591,7 +15602,7 @@ IHqlExpression * convertToSimpleAggregate(IHqlExpression * expr)
     loop
     {
         node_operator op = ds->getOperator();
-        if ((op != no_sorted) && (op != no_distributed) && (op != no_preservemeta) && (op != no_alias_scope))
+        if ((op != no_sorted) && (op != no_distributed) && (op != no_unordered) && (op != no_preservemeta) && (op != no_alias_scope))
             break;
         ds = ds->queryChild(0);
     }
@@ -15748,6 +15759,21 @@ bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft)
     if (!attr)
         return dft;
     return getBoolAttributeValue(attr);
+}
+
+IHqlExpression * queryBoolAttribute(IHqlExpression * expr, IAtom * name)
+{
+    if (!expr)
+        return NULL;
+    IHqlExpression * attr = expr->queryAttribute(name);
+    if (!attr)
+        return NULL;
+    return queryBoolExpr(getBoolAttributeValue(attr));
+}
+
+IHqlExpression * queryBoolExpr(bool value)
+{
+    return value ? constantTrue : constantFalse;
 }
 
 bool getBoolAttributeInList(IHqlExpression * expr, IAtom * search, bool dft)
