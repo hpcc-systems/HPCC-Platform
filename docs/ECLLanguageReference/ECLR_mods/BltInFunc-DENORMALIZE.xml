@@ -241,7 +241,7 @@ OUTPUT(DeNormedRecs);
 /* DeNormedRecs result set is:
  Rec#  Value1 PVal2  CVal2_1  CVal2_2
  1       A      C      Z         T
- 2       B      B      Y         S
+ 2       B      B      S         Y
  3       C      A      X         W
  */
 </programlisting>
