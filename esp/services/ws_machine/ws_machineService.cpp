@@ -1187,7 +1187,18 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
 
         IFRunSSH * connection = createFRunSSH();
         connection->init(command.str(),NULL,NULL,NULL,m_SSHConnectTimeoutSeconds,0);
+        // executed as single connection
         connection->exec(sAddress,NULL,true);
+        response.append(connection->getReplyText()[0]);
+        exitCode = connection->getReply()[0];
+        int len = response.length();
+        if (len > 0 && response.charAt(--len) == '\n') // strip newline
+          response.setLength(len);
+        if (response.length() && !exitCode)
+          response.insert(0, "Response: ");
+        else if (!exitCode)
+          response.insert(0, "No response recieved.\n");
+
     }
     // CFRunSSH uses a MakeStringExceptionDirect throw to pass code and result string
     catch(IException* e)
