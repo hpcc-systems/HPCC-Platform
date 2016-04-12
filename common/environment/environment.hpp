@@ -93,6 +93,11 @@ interface IConstMachineInfo : extends IConstEnvBase
     virtual EnvMachineState getState() const = 0;
 };
 
+interface  IConstMachineInfoIterator : extends IIteratorOf<IConstMachineInfo>
+{
+    virtual unsigned count() const = 0;
+};
+
 
 interface IConstInstanceInfo : extends IConstEnvBase
 {
@@ -111,6 +116,11 @@ interface IConstDropZoneInfo : extends IConstEnvBase
     virtual IStringVal & getUMask(IStringVal & str) const = 0;
 };
 
+interface  IConstDropZoneInfoIterator : extends IIteratorOf<IConstDropZoneInfo>
+{
+    virtual unsigned count() const = 0;
+};
+
 interface IConstEnvironment : extends IConstEnvBase
 {
     virtual IConstDomainInfo * getDomain(const char * name) const = 0;
@@ -125,6 +135,13 @@ interface IConstEnvironment : extends IConstEnvBase
     virtual IEnvironment & lock() const = 0;
     virtual bool isConstEnvironment() const = 0;
     virtual void clearCache() = 0;
+
+    virtual IConstMachineInfoIterator * getMachineIterator() const = 0;
+    virtual IConstDropZoneInfo * getDropZoneByComputer(const char * computer, const char * dzname) const = 0;
+    virtual IConstDropZoneInfoIterator * getDropZoneIteratorByComputer(const char * computer) const = 0;
+    // returns a drop zone that is defined on IP with the shortest path that's a parent of targetPath
+    virtual IConstDropZoneInfo * getDropZoneByAddressPath(const char * netaddress, const char *targetPath) const = 0;
+    virtual IConstDropZoneInfoIterator * getDropZoneIterator() const = 0;
 };
 
 
