@@ -303,6 +303,27 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="backupLargeWarningThreshold" type="xs:nonNegativeInteger" use="optional" default="50">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Granularity of pending backups to begin issue warnings about backlog</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="backupSoftQueueLimit" type="xs:nonNegativeInteger" use="optional" default="200">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Limit above which the backup queue will start introducing delays until the backup queue decreases below this limit</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="backupSoftQueueLimitDelay" type="xs:nonNegativeInteger" use="optional" default="200">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>The maximum delay to introduce when the backupSoftQueueLimit has been introduced</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
   </xs:attributeGroup>
    <xs:attributeGroup name="DFS">
     <!--DOC-Autobuild-code-->

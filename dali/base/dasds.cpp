@@ -1040,6 +1040,12 @@ class CBackupHandler : public CInterface, implements IThreaded
     CTimeMon warningTime;
     unsigned recentTimeThrottled;
     unsigned lastNumWarnItems;
+    IPropertyTree &config;
+
+    const unsigned defaultFreeQueueLimit = 50;
+    const unsigned defaultLargeWarningThreshold = 50;
+    const unsigned defaultSoftQueueLimit = 200;
+    const unsigned defaultSoftQueueLimitDelay = 200;
 
     BackupQueueItem *getFreeItem()
     {
@@ -1159,18 +1165,18 @@ class CBackupHandler : public CInterface, implements IThreaded
     }
 
 public:
-    CBackupHandler() : threaded("CBackupHandler")
+    CBackupHandler(IPropertyTree &_config) : config(_config), threaded("CBackupHandler")
     {
         currentEdition = (unsigned)-1;
         addWaiting = waiting = async = false;
         aborted = true;
         throttleCounter = 0;
-        freeQueueLimit = 10;
-        largeWarningThreshold = 50;
-        softQueueLimit = 200;
-        softQueueLimitDelay = 200;
         recentTimeThrottled = 0;
         lastNumWarnItems = 0;
+        freeQueueLimit = config.getPropInt("@backupFreeQueueLimit", defaultFreeQueueLimit);
+        largeWarningThreshold = config.getPropInt("@backupLargeWarningThreshold", defaultLargeWarningThreshold);
+        softQueueLimit = config.getPropInt("@backupSoftQueueLimit", defaultSoftQueueLimit);
+        softQueueLimitDelay = config.getPropInt("@backupSoftQueueLimitDelay", defaultSoftQueueLimitDelay);
     }
     ~CBackupHandler()
     {
@@ -5720,7 +5726,7 @@ IStoreHelper *createStoreHelper(const char *storeName, const char *location, con
 #endif
 
 CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const char *_dataPath) 
-    : coven(_coven), config(_config), server(*this), dataPath(_dataPath)
+    : coven(_coven), config(_config), server(*this), dataPath(_dataPath), backupHandler(_config)
 {
     config.Link();
     restartOnError = config.getPropBool("@restartOnUnhandled");
