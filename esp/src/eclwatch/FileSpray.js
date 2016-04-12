@@ -317,6 +317,9 @@ define([
         Despray: function (params) {
             return ESPRequest.send("FileSpray", "Despray", params);
         },
+        Replicate: function (params) {
+          return ESPRequest.send("FileSpray", "Replicate", params);  
+        },
         Copy: function (params) {
             return ESPRequest.send("FileSpray", "Copy", params);
         },

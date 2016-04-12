@@ -221,6 +221,10 @@ define([
                             }, DFUPart));
                         }, this);
                     }
+                    if (idx === 0) {
+                        this.set("CanReplicateFlag" , DFUFilePartsOnCluster.CanReplicate);
+                        this.set("ReplicateFlag", DFUFilePartsOnCluster.Replicate);
+                    }
                 }, this);
             }
             this.set("DFUFileParts", DFUFileParts);
