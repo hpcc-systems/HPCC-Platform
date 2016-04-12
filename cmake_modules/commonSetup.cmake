@@ -950,7 +950,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     else()
       add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
-        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/${module} ${CMAKE_CURRENT_BINARY_DIR}/${module}
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${module} ${CMAKE_CURRENT_BINARY_DIR}/${module}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Adding unsigned ${module} to project"
         VERBATIM
