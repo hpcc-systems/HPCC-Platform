@@ -17738,14 +17738,18 @@ public:
                         eof = true;
                     }
                 }
-                
+
                 if (group.isItem(rightIndex))
                 {
                     const void * rhs = group.item(rightIndex++);
                     if(helper.match(lhs, rhs))
                     {
                         const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
-                        return ret;
+                        if(ret)
+                        {
+                            processed++;
+                            return ret;
+                        }
                     }
                 }
             }
@@ -18387,7 +18391,10 @@ private:
                             break;
                         ret = joinRecords(left, right, ++joinCounter);
                         if(ret)
+                        {
+                            processed++;
                             break;
+                        }
                     }
                     right = getRightNext();
                     ret = NULL;

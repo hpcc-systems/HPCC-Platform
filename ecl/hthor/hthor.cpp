@@ -5171,7 +5171,11 @@ const void * CHThorSelfJoinActivity::nextRow()
                 if(helper.match(lhs, rhs))
                 {
                     const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
-                    return ret;
+                    if(ret)
+                    {
+                        processed++;
+                        return ret;
+                    }
                 }
             }
         }
@@ -5598,7 +5602,10 @@ const void * CHThorLookupJoinActivity::nextRowJoin()
                         break;
                     ret = joinRecords(left, right, ++joinCounter);
                     if(ret)
+                    {
+                        processed++;
                         break;
+                    }
                 }
                 right = getRightNext();
                 ret = NULL;
