@@ -25,7 +25,7 @@
 project(redis)
 
 if(REDIS)
-    ADD_PLUGIN(redis PACKAGES HIREDIS)
+    ADD_PLUGIN(redis PACKAGES HIREDIS MINVERSION 0.13.0) #NOTE: If MINVERSION is altered then min versions in redis.hpp must also be altered.
     if(MAKE_REDIS)
         set(
             SRCS
