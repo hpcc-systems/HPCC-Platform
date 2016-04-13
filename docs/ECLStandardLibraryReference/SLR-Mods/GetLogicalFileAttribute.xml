@@ -31,7 +31,10 @@
           <entry><emphasis>attrname</emphasis></entry>
 
           <entry>A null-terminated string containing the name of the file
-          attribute to return.</entry>
+          attribute to return. Possible values are recordSize, recordCount,
+          size, clusterName, directory, numparts, owner, description, ECL,
+          partmask, numparts, name, modified, or protected. The value is
+          case-sensitive.</entry>
         </row>
 
         <row>
@@ -46,7 +49,7 @@
 
   <para>The <emphasis role="bold">GetLogicalFileAttribute </emphasis>function
   returns the value of the <emphasis>attrname</emphasis> for the specified
-  <emphasis>logicalfilename</emphasis>.</para>
+  <emphasis>logicalfilename</emphasis>. </para>
 
   <para>Example:</para>
 
@@ -59,5 +62,13 @@ OUTPUT(STD.File.GetLogicalFileAttribute(file,'size'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'clusterName'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'directory'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'numparts'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'owner'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'description'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'ECL'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'partmask'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'numparts'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'name'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'modified'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'protected'));
 </programlisting>
 </sect1>
