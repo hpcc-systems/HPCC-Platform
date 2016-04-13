@@ -7384,7 +7384,8 @@ bool HqlCppTranslator::ifRequiresAssignment(BuildCtx & ctx, IHqlExpression * exp
         return true;
     if (trueExpr->queryType() != falseExpr->queryType() && isStringType(expr->queryType()))
         return true;
-    if (expr->queryType()->getTypeCode() == type_decimal)
+    type_t tc = expr->queryType()->getTypeCode();
+    if ((tc == type_decimal) || (tc == type_data))
         return true;
     return false;
 }
