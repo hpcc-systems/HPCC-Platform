@@ -319,7 +319,7 @@ public:
             builder.appendOwn(row);
         }
 
-        size32_t usedCount = rtlDictionaryCount(builder.getcount(), builder.queryrows());
+        size32_t usedCount = (size32_t)rtlDictionaryCount(builder.getcount(), builder.queryrows());
         MemoryBuffer rowData;
         CThorDemoRowSerializer out(rowData);
         rtlSerializeDictionary(out, rowIf->queryRowSerializer(), builder.getcount(), builder.queryrows());
