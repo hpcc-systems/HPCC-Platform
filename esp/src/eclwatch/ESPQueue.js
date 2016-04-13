@@ -50,9 +50,11 @@ define([
             var context = this;
             return WsSMC.PauseQueue({
                 request: {
+                    ClusterType: this.ServerType,
                     QueueName: this.QueueName,
                     Cluster: this.ClusterName,
-                    ServerType: this.ServerType
+                    ServerType: this.ServerType,
+                    NetworkAddress: this.NetworkAddress
                 }
             }).then(function (response) {
                 context.refresh();
@@ -63,9 +65,11 @@ define([
             var context = this;
             return WsSMC.ResumeQueue({
                 request: {
+                    ClusterType: this.ServerType,
                     QueueName: this.QueueName,
                     Cluster: this.ClusterName,
-                    ServerType: this.ServerType
+                    ServerType: this.ServerType,
+                    NetworkAddress: this.NetworkAddress
                 }
             }).then(function (response) {
                 context.refresh();
@@ -207,7 +211,8 @@ define([
             return WsSMC.GetStatusServerInfo({
                 request: {
                     ServerName: this.ClusterName,
-                    ServerType: this.ServerType
+                    ServerType: this.ServerType,
+                    NetworkAddress: this.NetworkAddress
                 }
             }).then(function (response) {
                 if (lang.exists("GetStatusServerInfoResponse.StatusServerInfo.TargetClusterInfo", response)) {
@@ -282,7 +287,8 @@ define([
             return WsSMC.GetStatusServerInfo({
                 request: {
                     ServerName: this.ServerName,
-                    ServerType: this.ServerType
+                    ServerType: this.ServerType,
+                    NetworkAddress: this.NetworkAddress
                 }
             }).then(function (response) {
                 if (lang.exists("GetStatusServerInfoResponse.StatusServerInfo.ServerInfo", response)) {

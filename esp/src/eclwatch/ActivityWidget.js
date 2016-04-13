@@ -61,6 +61,11 @@ define([
                         context._refreshActionState();
                     });
                 }
+                if (item.ServerType === "ECLserver" || "ECLCCserver") {
+                    setTimeout(function() {
+                        context.refreshGrid();
+                    }, 100);
+                }
             }, this);
         },
 
@@ -71,6 +76,11 @@ define([
                     item.resume().then(function (response) {
                         context._refreshActionState();
                     });
+                }
+                if (item.ServerType === "ECLserver" || "ECLCCserver") {
+                    setTimeout(function() {
+                        context.refreshGrid();
+                    }, 100);
                 }
             }, this);
         },

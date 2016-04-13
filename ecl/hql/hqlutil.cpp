@@ -7381,7 +7381,7 @@ public:
             ITypeInfo *paramType = param->queryType();
 
             bool isOut = param->hasAttribute(outAtom);
-            bool isConst = param->hasAttribute(constAtom);
+            bool isConst = !param->hasAttribute(noConstAtom);
 
             if (isOut)
                 mangled.append("R");
@@ -7629,7 +7629,7 @@ public:
             ITypeInfo *paramType = param->queryType();
 
             bool isOut = param->hasAttribute(outAtom);
-            bool isConst = param->hasAttribute(constAtom);
+            bool isConst = !param->hasAttribute(noConstAtom);
 
             if (isOut)
                 appendRef(mangled, false);
