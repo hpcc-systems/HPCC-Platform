@@ -88,7 +88,7 @@
 
     <programlisting>#OPTION ('divideByZero', 'zero'); //evaluate to zero</programlisting>
 
-    <para>The &lt;option&gt; can have the following values:</para>
+    <para>The divideByZero option can have the following values:</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
