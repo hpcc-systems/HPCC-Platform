@@ -314,6 +314,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   NOBOUNDCHECK
   NOCASE
   NOCOMBINE
+  NOCONST
   NOFOLD
   NOHOIST
   NOLOCAL
@@ -3873,6 +3874,7 @@ formalQualifiers
 
 formalQualifier
     : TOK_CONST         {   $$.setExpr(createAttribute(constAtom), $1); }
+    | NOCONST           {   $$.setExpr(createAttribute(noConstAtom), $1); }
     | TOK_ASSERT TOK_CONST  
                         {   $$.setExpr(createAttribute(assertConstAtom), $1); }
     | FIELD_REF         {
