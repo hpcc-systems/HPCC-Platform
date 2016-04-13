@@ -481,6 +481,48 @@
         </tgroup>
       </informaltable></para>
 
+    <para>Division by zero<indexterm>
+        <primary>Division by zero</primary>
+      </indexterm> defaults to generating a zero result (0), rather than
+    reporting a “divide by zero” error. This avoids invalid or unexpected data
+    aborting a long job. The default behaviour can be changed using</para>
+
+    <programlisting>#option ('divideByZero', &lt;option&gt;);</programlisting>
+
+    <para>The #option can take the following values:</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup align="left" cols="2">
+        <colspec colwidth="194.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry>'zero'</entry>
+
+            <entry>Evaluate to 0 - the default behaviour.</entry>
+          </row>
+
+          <row>
+            <entry>'fail'</entry>
+
+            <entry>Stop and report a division by zero error.</entry>
+          </row>
+
+          <row>
+            <entry>'nan'</entry>
+
+            <entry>This is only currently supported for real numbers. Division
+            by zero creates a quiet NaN, which will propagate through any real
+            expressions it is used in. You can use NOT ISVALID(x) to test if
+            the value is a NaN. Integer and decimal division by zero continue
+            to return 0.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
     <para><emphasis role="bold">The following options are all about generating
     Logical graphs in a workunit. </emphasis></para>
 
@@ -953,8 +995,8 @@
 
               <entry>Default: 3 for roxie, else 0</entry>
 
-              <entry>Set the C++ compiler optimization level (optimizations can cause the compiler
-              to take a lot longer).</entry>
+              <entry>Set the C++ compiler optimization level (optimizations
+              can cause the compiler to take a lot longer).</entry>
             </row>
 
             <row>
