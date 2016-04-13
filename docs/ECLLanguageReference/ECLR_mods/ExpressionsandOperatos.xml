@@ -86,7 +86,7 @@
     reporting a “divide by zero” error. This avoids invalid or unexpected data
     aborting a long job. The default behaviour can be changed using</para>
 
-    <programlisting>#option ('divideByZero', &lt;option&gt;);</programlisting>
+    <programlisting>#OPTION ('divideByZero', 'zero'); //evaluate to zero</programlisting>
 
     <para>The &lt;option&gt; can have the following values:</para>
 
