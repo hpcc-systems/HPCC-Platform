@@ -300,7 +300,7 @@ double getCycleToNanoScale()
 
 #else
 
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
 static bool useRDTSC = _USE_RDTSC;
 #endif
 static double cycleToNanoScale;
@@ -309,9 +309,6 @@ static double cycleToMilliScale;
 
 void calibrate_timing()
 {
-    cycleToNanoScale = 1.0;
-    cycleToMicroScale = 1.0;
-    cycleToMilliScale = 1.0;
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
     if (useRDTSC) {
         unsigned long eax;
@@ -334,6 +331,9 @@ void calibrate_timing()
         if ((edx&0x10)==0)
             useRDTSC = false;
     }
+#endif
+
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC) {
         unsigned startu = usTick();
         cycle_t start = getTSC();
@@ -358,6 +358,8 @@ void calibrate_timing()
     }
 #endif
     cycleToNanoScale = 1.0;
+    cycleToMicroScale = 1.0;
+    cycleToMilliScale = 1.0;
 }
 
 
@@ -367,7 +369,7 @@ static bool use_gettimeofday=false;
 #endif
 cycle_t jlib_decl get_cycles_now()
 {
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC)
         return getTSC();
 #endif
@@ -390,19 +392,19 @@ cycle_t jlib_decl get_cycles_now()
 
 __int64 jlib_decl cycle_to_nanosec(cycle_t cycles)
 {
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC)
         return (__int64)((double)cycles * cycleToNanoScale);
+#endif
 #ifdef __APPLE__
     return cycles * (uint64_t) timebase_info.numer / (uint64_t)timebase_info.denom;
-#endif
 #endif
     return cycles;
 }
 
 __int64 jlib_decl cycle_to_microsec(cycle_t cycles)
 {
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC)
         return (__int64)((double)cycles * cycleToMicroScale);
 #endif
@@ -411,7 +413,7 @@ __int64 jlib_decl cycle_to_microsec(cycle_t cycles)
 
 __int64 jlib_decl cycle_to_millisec(cycle_t cycles)
 {
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC)
         return (__int64)((double)cycles * cycleToMilliScale);
 #endif
@@ -420,7 +422,7 @@ __int64 jlib_decl cycle_to_millisec(cycle_t cycles)
 
 cycle_t nanosec_to_cycle(__int64 ns)
 {
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC)
         return (__int64)((double)ns / cycleToNanoScale);
 #endif
