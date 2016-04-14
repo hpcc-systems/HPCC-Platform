@@ -152,8 +152,8 @@
 #define DFTERR_WrongRECFMvRecordSize_Text       "Invalid RECFMv file Record Size (%d) or the file is not RECFMv format!"
 #define DFTERR_WrongSplitRecordSize_Text        "Invalid Record Size (%d, 0x%08x)!"
 #define DFTERR_InvalidXmlPartSize_Text          "Invalid XML part size:%" I64F "d! Size is less than XML Header (%" I64F "d) + Footer (%" I64F "d)) size!"
-#define DFTERR_InvalidTargetPath_Text           "Invalid target path: '%s'. By security reason it is forbidden to use '%s' or '%s' to build a path!"
-#define DFTERR_NoMatchingDropzonePath_Text      "No matching drop zone path to target path: '%s'!"
+#define DFTERR_InvalidTargetPath_Text           "Invalid target path: '%s'. For security reason it is forbidden to use '%s' or '%s' to build a path!"
+#define DFTERR_NoMatchingDropzonePath_Text      "No matching drop zone path to target path: '%s'."
 #define DFTERR_LocalhostAddressUsed_Text        "Localhost address used in remote file name: '%s'"
 
 

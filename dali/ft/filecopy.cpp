@@ -2626,25 +2626,16 @@ void FileSprayer::setTarget(IDistributedFile * target)
 void FileSprayer::checkTargetPath(RemoteFilename & filename)
 {
     StringBuffer targetFilePath;
+    filename.getLocalPath(targetFilePath);
+    const char * ptargetFilePath = targetFilePath.str();
 
-    filename.getRemotePath(targetFilePath);
-    // prune the leading "//" from remote path
-    targetFilePath.remove(0, 2);
+    if (filename.queryIP().isLoopBack())
+        throwError1(DFTERR_LocalhostAddressUsed, ptargetFilePath);
 
-    StringBuffer netaddress;
-    filename.queryIP().getIpText(netaddress);
-    const char * pnetaddress = netaddress.str();
-
-    if (streq("127.0.0.1", pnetaddress))
-        throwError1(DFTERR_LocalhostAddressUsed, targetFilePath.str());
-
-    //remove ip address from the beginning of the path
-    targetFilePath.remove(0, netaddress.length());
 #ifdef _DEBUG
     LOG(MCdebugInfo, unknownJob, "Target file path is '%s'", targetFilePath.str());
 #endif
 
-    const char * ptargetFilePath = targetFilePath.str();
     const char pathSep = filename.getPathSeparator();
     const char dotString[]    = {pathSep, '.', pathSep, '\0'};
     const char dotDotString[] = {pathSep, '.', '.', pathSep, '\0'};
@@ -2660,7 +2651,10 @@ void FileSprayer::checkTargetPath(RemoteFilename & filename)
         Owned<IConstEnvironment> env = factory->openEnvironment();
         if (env)
         {
-            Owned<IConstDropZoneInfo> targetDropZone = env->getDropZoneByAddressPath(pnetaddress, ptargetFilePath);
+            StringBuffer netaddress;
+            filename.queryIP().getIpText(netaddress);
+
+            Owned<IConstDropZoneInfo> targetDropZone = env->getDropZoneByAddressPath(netaddress.str(), ptargetFilePath);
             if (!targetDropZone)
                     throwError1(DFTERR_NoMatchingDropzonePath, ptargetFilePath);
         }
