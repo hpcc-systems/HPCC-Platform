@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,25 +15,38 @@
     limitations under the License.
 ############################################################################## */
 
-
-
-integer4 mkRandom1 :=
+integer4 mkRandom1() :=
 BEGINC++
 return rtlRandom();
 ENDC++;
 
-integer4 mkRandom2 :=
-BEGINC++
-#option pure
-return rtlRandom();
-ENDC++;
-
-integer4 mkRandom3 :=
+integer4 mkRandom2() :=
 BEGINC++
     #option action
 return rtlRandom();
 ENDC++;
 
-output(mkRandom1 * mkRandom1);
-output(mkRandom2 * mkRandom2);
-output(mkRandom3 * mkRandom3);
+integer4 mkRandom3() :=
+BEGINC++
+    return 1
+    //comment
+*rtlRandom();
+    #option action
+/* ignore me
+*/
+ENDC++;
+
+integer4 mkRandom4() :=
+BEGINC++
+    return 1
+    /*comment
+*/*rtlRandom();
+    #option action
+/* ignore me
+*/
+ENDC++;
+
+output(mkRandom1() * mkRandom1());
+output(mkRandom2() * mkRandom2());
+output(mkRandom3() * mkRandom3());
+output(mkRandom4() * mkRandom4());
