@@ -32,10 +32,11 @@
 
           <entry>A null-terminated string containing the name of the file
           attribute to return. Possible values are recordSize, recordCount,
-          size, clusterName, directory, numparts, owner, description, ECL,
-          partmask, numparts, name, modified, format, job, checkSum, kind,
-          csvSeparate, csvTerminate, headerLength, footerLength, rowTag,
-          workunit, or protected. The value is case-sensitive.</entry>
+          size, clusterName, directory, owner, description, ECL, partmask,
+          numparts, name, modified, format, job, checkSum, kind, csvSeparate,
+          csvTerminate, headerLength, footerLength, rowTag, workunit,
+          accessed, maxRecordSize, csvQuote, blockCompressed, compressedSize,
+          or protected. The value is case-sensitive.</entry>
         </row>
 
         <row>
@@ -81,5 +82,10 @@ OUTPUT(STD.File.GetLogicalFileAttribute(file,'headerLength'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'footerLength'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'rowtag'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'workunit'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'accessed'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'maxRecordSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvQuote'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed '));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'compressedSize'));
 </programlisting>
 </sect1>
