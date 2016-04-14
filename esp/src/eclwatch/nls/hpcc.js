@@ -213,6 +213,7 @@ define({root:
     Icon: "Icon",
     ID: "ID",
     Inactive: "Inactive",
+    IncludeSlaveLogs: "Include slave logs",
     Index: "Index",
     Info: "Info",
     InfoDialog: "Info Dialog",

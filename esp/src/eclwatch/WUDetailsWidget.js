@@ -126,6 +126,7 @@ define([
             this.slaveNumber = registry.byId(this.id + "SlaveNumber");
             this.fileFormat = registry.byId(this.id + "FileFormat");
             this.slaveLogs = registry.byId(this.id + "SlaveLogs");
+            this.includeSlaveLogsCheckbox = registry.byId(this.id + "IncludeSlaveLogsCheckbox");
             this.logsForm = registry.byId(this.id + "LogsForm");
             this.allowOnlyNumber = registry.byId(this.id + "AllowOnlyNumber");
 
@@ -394,6 +395,7 @@ define([
                     context.logDate = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].LogDate;
                     context.clusterGroup = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].ClusterGroup;
                     context.slaveLogs.set("disabled", false);
+                    context.includeSlaveLogsCheckbox.set("disabled", false);
                     var targetData = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo;
                         for (var i = 0; i < targetData.length; ++i) {
                             context.thorProcess.options.push({
@@ -404,6 +406,7 @@ define([
                         context.thorProcess.set("value", targetData[0].ClusterGroup);
                 } else {
                    context.slaveLogs.set("disabled", true);
+                   context.includeSlaveLogsCheckbox.set("disabled", true);
                 }
             });
         },
