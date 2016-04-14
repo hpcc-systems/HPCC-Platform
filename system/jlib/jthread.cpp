@@ -706,6 +706,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
         for (i=0;(i<num)&&(i<maxatonce);i++)
             ready.signal();
         IArrayOf<Thread> started;
+        started.ensure(num);
         for (i=0;i<num;i++) {
             ready.wait();
             if (abortFollowingException && e) break;
