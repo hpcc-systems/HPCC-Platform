@@ -1224,6 +1224,8 @@ void FileSprayer::calculateSprayPartition()
                 distributedTarget->setECL(recStru.str());
         }
     }
+    if (compressedInput && compressOutput && streq(encryptKey.str(),decryptKey.str()))
+        copyCompressed = true;
 
 }
 
@@ -2991,7 +2993,7 @@ void FileSprayer::updateTargetProperties()
             offset_t physPartLength = curProgress.outputLength;
             if (copyCompressed) {
                 FilePartInfo & curSource = sources.item(cur.whichInput);
-                partLength = curSource.size;
+                partLength = physPartLength;
                 totalLength += partLength;
             }
             else {
@@ -3042,19 +3044,12 @@ void FileSprayer::updateTargetProperties()
                 }
                 else if (compressOutput || copyCompressed)
                     curProps.setPropInt(FAcrc, (int)COMPRESSEDFILECRC);
-                if (copyCompressed) // don't know if just compress
-                {
-                    curProps.setPropInt64(FAcompressedSize, physPartLength);
-                    totalCompressedSize += physPartLength;
-                }
-
 
                 curProps.setPropInt64(FAsize, partLength);
 
-                if (compressOutput)
+                if (compressOutput || copyCompressed)
                 {
                     curProps.setPropInt64(FAcompressedSize, curProgress.compressedPartSize);
-
                     totalCompressedSize += curProgress.compressedPartSize;
                 }
 
@@ -3114,7 +3109,7 @@ void FileSprayer::updateTargetProperties()
             gotrc = true;
         }
 
-        if (sameSizeHeaderFooter)
+        if (sameSizeHeaderFooter && ((srcFormat.markup == FMTjson ) || (srcFormat.markup == FMTxml)))
         {
             curProps.setPropInt64(FPheaderLength, headerSize);
             curProps.setPropInt64(FPfooterLength, footerSize);
@@ -3136,11 +3131,16 @@ void FileSprayer::updateTargetProperties()
                      ((stricmp(aname,FArecordCount)==0)&&!gotrc) ||
                      ((stricmp(aname,"@blockCompressed")==0)&&copyCompressed) ||
                      ((stricmp(aname,"@rowCompressed")==0)&&copyCompressed)||
-                     (stricmp(aname,"@local")==0)
+                     (stricmp(aname,"@local")==0)||
+                     (stricmp(aname,"@checkSum")==0)||
+                     (stricmp(aname,"@recordCount")==0)
                      )
                     )
                     curProps.setProp(aname,aiter->queryValue());
             }
+
+            // Keep source kind
+            curProps.setProp("@kind", srcAttr->queryProp("@kind"));
 
             // and simple (top level) elements
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");
