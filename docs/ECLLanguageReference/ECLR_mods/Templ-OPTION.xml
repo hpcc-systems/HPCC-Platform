@@ -477,9 +477,25 @@
 
               <entry>Number of records to limit to</entry>
             </row>
+
+            <row>
+              <entry><emphasis>divideByZero</emphasis></entry>
+
+              <entry>Default zero</entry>
+
+              <entry>'zero' evaluates to 0, the default behavior. 'fail'
+              causes the job to fail and report a division by zero error.
+              'nan' (only currently supported for real numbers) creates a
+              quiet NaN, which will propagate through any real expressions it
+              is used in. You can use NOT ISVALID(x) to test if the value is a
+              NaN. Integer and decimal division by zero continue to return 0.
+              </entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
+
+    <para></para>
 
     <para><emphasis role="bold">The following options are all about generating
     Logical graphs in a workunit. </emphasis></para>
@@ -953,8 +969,8 @@
 
               <entry>Default: 3 for roxie, else 0</entry>
 
-              <entry>Set the C++ compiler optimization level (optimizations can cause the compiler
-              to take a lot longer).</entry>
+              <entry>Set the C++ compiler optimization level (optimizations
+              can cause the compiler to take a lot longer).</entry>
             </row>
 
             <row>
