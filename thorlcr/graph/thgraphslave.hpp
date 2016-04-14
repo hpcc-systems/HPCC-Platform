@@ -219,8 +219,8 @@ public:
 };
 
 
-IEngineRowStream *connectSingleStream(CActivityBase &activity, IThorDataLink *input, unsigned idx, Owned<IStrandJunction> &junction, bool consumerOrdered);
-IEngineRowStream *connectSingleStream(CActivityBase &activity, IThorDataLink *input, unsigned idx, bool consumerOrdered);
+graphslave_decl IEngineRowStream *connectSingleStream(CActivityBase &activity, IThorDataLink *input, unsigned idx, Owned<IStrandJunction> &junction, bool consumerOrdered);
+graphslave_decl IEngineRowStream *connectSingleStream(CActivityBase &activity, IThorDataLink *input, unsigned idx, bool consumerOrdered);
 
 
 #define STRAND_CATCH_NEXTROWX_CATCH \
@@ -242,12 +242,12 @@ IEngineRowStream *connectSingleStream(CActivityBase &activity, IThorDataLink *in
 
 
 class CThorStrandedActivity;
-class CThorStrandProcessor : public CInterfaceOf<IEngineRowStream>, public COutputTiming
+class graphslave_decl CThorStrandProcessor : public CInterfaceOf<IEngineRowStream>, public COutputTiming
 {
 protected:
     CThorStrandedActivity &parent;
     IEngineRowStream *inputStream;
-    unsigned numProcessedLastGroup = 0;
+    rowcount_t numProcessedLastGroup = 0;
     const bool timeActivities;
     bool stopped = false;
     unsigned outputId; // if activity had >1 , this identifies (for tracing purposes) which output this strand belongs to.
@@ -282,7 +282,7 @@ public:
     }
 };
 
-class CThorStrandedActivity : public CSlaveActivity
+class graphslave_decl CThorStrandedActivity : public CSlaveActivity
 {
 protected:
     CThorStrandOptions strandOptions;

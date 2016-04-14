@@ -257,9 +257,6 @@ public:
         }
     }
 };
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 
 IStartableEngineRowStream *createRowStreamLookAhead(CSlaveActivity *activity, IEngineRowStream *inputStream, IThorRowInterfaces *rowIf, size32_t bufsize, bool allowspill, bool preserveGrouping, rowcount_t maxcount, ILookAheadStopNotify *notify, IDiskUsage *iDiskUsage)
