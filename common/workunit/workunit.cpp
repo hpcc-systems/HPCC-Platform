@@ -140,17 +140,16 @@ static bool checkWuSecAccess(IConstWorkUnit &cw, ISecManager *secmgr, ISecUser *
 }
 static bool checkWuSecAccess(const char *wuid, ISecManager *secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
 {
-    StringBuffer wuRoot;
-    Owned<IRemoteConnection> conn = querySDS().connect(getXPath(wuRoot, wuid).str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-    if (conn)
+    if (!secmgr || !secuser)
+        return true;
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+    bool ret=secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw->queryWuScope())>=required;
+    if (!ret && (log || excpt))
     {
-        Owned<IPropertyTree> ptree=conn->getRoot();
-        return checkWuScopeSecAccess(ptree->queryProp("@scope"), secmgr, secuser, required, action, excpt, log);
+        wuAccessError(secuser->getName(), action, cw->queryWuScope(), cw->queryWuid(), excpt, log);
     }
-
-    if (log || excpt)
-        wuAccessError(secuser ? secuser->getName() : NULL, action, "Unknown", NULL, excpt, log);
-    return false;
+    return ret;
 }
 
 void doDescheduleWorkkunit(char const * wuid)
