@@ -2990,10 +2990,10 @@ void FileSprayer::updateTargetProperties()
 
             partCRC.addChildCRC(curProgress.outputLength, curProgress.outputCRC, false);
             totalCRC.addChildCRC(curProgress.outputLength, curProgress.outputCRC, false);
-            offset_t physPartLength = curProgress.outputLength;
+
             if (copyCompressed) {
                 FilePartInfo & curSource = sources.item(cur.whichInput);
-                partLength = physPartLength;
+                partLength = curSource.size;
                 totalLength += partLength;
             }
             else {
@@ -3047,10 +3047,14 @@ void FileSprayer::updateTargetProperties()
 
                 curProps.setPropInt64(FAsize, partLength);
 
-                if (compressOutput || copyCompressed)
+                if (compressOutput)
                 {
                     curProps.setPropInt64(FAcompressedSize, curProgress.compressedPartSize);
                     totalCompressedSize += curProgress.compressedPartSize;
+                } else if (copyCompressed)
+                {
+                    curProps.setPropInt64(FAcompressedSize, curProgress.outputLength);
+                    totalCompressedSize += curProgress.outputLength;
                 }
 
                 TargetLocation & curTarget = targets.item(cur.whichOutput);
