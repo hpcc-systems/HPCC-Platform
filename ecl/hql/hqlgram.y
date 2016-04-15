@@ -12803,7 +12803,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
 
   if (! (YYPACT_NINF < yyn && yyn <= YYLAST))
   {
-    parser->syntaxError(s, token, NULL);
+    parser->syntaxError(s, token, NULL, 0);
     return;
   }
 
@@ -12820,6 +12820,5 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
     if (yycheck[yyx + yyn] == yyx && yyx != YYTERROR)
         expected[curExpected++] = yyuntranslate(yyx);
   }
-  expected[curExpected++] = 0;
-  parser->syntaxError(s, token, expected);
+  parser->syntaxError(s, token, expected, curExpected);
 }

@@ -95,7 +95,7 @@ public:
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)CIArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)CIArray::getArray(pos); }
     inline void append(TYPE& obj)                 { assert(&obj); CIArray::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); CIArray::appendUniq(obj); } 
+    inline bool appendUniq(TYPE& obj)             { assert(&obj); return CIArray::appendUniq(obj); }
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CIArray::add(obj, pos); } 
     inline aindex_t find(TYPE & obj) const        { assert(&obj); return CIArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); CIArray::replace(obj, pos, nodel); }
@@ -112,7 +112,7 @@ public:
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)CICopyArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)CICopyArray::getArray(pos); }
     inline void append(TYPE& obj)                 { assert(&obj); CICopyArray::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); CICopyArray::appendUniq(obj); } 
+    inline bool appendUniq(TYPE& obj)             { assert(&obj); return CICopyArray::appendUniq(obj); }
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CICopyArray::add(obj, pos); } 
     inline aindex_t find(TYPE & obj) const        { assert(&obj); return CICopyArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos)  { assert(&obj); CICopyArray::replace(obj, pos); }
@@ -129,7 +129,7 @@ public:
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)IArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)IArray::getArray(pos); }
     inline void append(TYPE& obj)                 { assert(&obj); IArray::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); IArray::appendUniq(obj); } 
+    inline bool appendUniq(TYPE& obj)             { assert(&obj); return IArray::appendUniq(obj); }
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); IArray::add(obj, pos); } 
     inline aindex_t find(TYPE & obj) const        { assert(&obj); return IArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); IArray::replace(obj, pos, nodel); }
@@ -146,7 +146,7 @@ public:
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)ICopyArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)ICopyArray::getArray(pos); }
     inline void append(TYPE& obj)                 { assert(&obj); ICopyArray::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); ICopyArray::appendUniq(obj); } 
+    inline bool appendUniq(TYPE& obj)             { assert(&obj); return ICopyArray::appendUniq(obj); }
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); ICopyArray::add(obj, pos); } 
     inline aindex_t find(TYPE & obj) const        { assert(&obj); return ICopyArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos) { assert(&obj); ICopyArray::replace(obj, pos); }
@@ -163,7 +163,7 @@ public:
     inline TYPE * tos(aindex_t num) const         { return (TYPE *)IPointerArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)IPointerArray::getArray(pos); }
     inline void append(TYPE * obj)                { IPointerArray::append(obj); } 
-    inline void appendUniq(TYPE * obj)            { IPointerArray::appendUniq(obj); } 
+    inline bool appendUniq(TYPE * obj)            { return IPointerArray::appendUniq(obj); }
     inline void add(TYPE * obj, aindex_t pos)     { IPointerArray::add(obj, pos); } 
     inline aindex_t find(TYPE * obj) const        { return IPointerArray::find(obj); }
     inline void replace(TYPE * obj, aindex_t pos, bool nodel=false) { IPointerArray::replace(obj, pos, nodel); }
