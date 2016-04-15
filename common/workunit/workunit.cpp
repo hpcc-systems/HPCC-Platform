@@ -3107,7 +3107,16 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
                 SocketEndpoint targetDali = queryCoven().queryGroup().queryNode(0).endpoint();
                 IPropertyTree *daliInfo = findDaliProcess(env->queryRoot(), targetDali);
                 if (daliInfo)
-                    pluginInfo = daliInfo->queryPropTree("Plugin[@type='WorkunitServer']");
+                {
+                    const char *daliName = daliInfo->queryProp("@name");
+                    if (daliName)
+                    {
+                        VStringBuffer xpath("Software/DaliServerPlugin[@type='WorkunitServer'][@daliServers='%s']", daliName);
+                        pluginInfo = env->queryRoot()->queryPropTree(xpath);
+                    }
+                    if (!pluginInfo)
+                        pluginInfo = daliInfo->queryPropTree("Plugin[@type='WorkunitServer']");  // Compatibility with early betas of 6.0 ...
+                }
             }
             if (pluginInfo && !forceDali)
                 factory.setown( (IWorkUnitFactory *) loadPlugin(pluginInfo));
