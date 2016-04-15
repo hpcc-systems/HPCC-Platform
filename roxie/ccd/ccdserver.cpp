@@ -1834,7 +1834,10 @@ protected:
     void onStartStrands()
     {
         ForEachItemIn(idx, strands)
+        {
             strands.item(idx).start();
+            active++;
+        }
     }
 };
 
