@@ -828,6 +828,10 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
     node_operator op = expr->getOperator();
     ITypeInfo * type = expr->queryType();
 
+    IHqlExpression * parallel = expr->queryAttribute(parallelAtom);
+    if (parallel && getIntValue(parallel->queryChild(0), 0) != 1)
+        return OptionYes;
+
     switch (op)
     {
     case no_constant:
@@ -10785,6 +10789,7 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     options.constantFoldNormalize = translatorOptions.constantFoldNormalize;
     options.allowActivityForKeyedJoin = translatorOptions.allowActivityForKeyedJoin;
     options.implicitSubSort = translatorOptions.implicitBuildIndexSubSort;
+    options.forceAllDatasetsParallel = translatorOptions.forceAllDatasetsParallel;
     errorProcessor = &translator.queryErrorProcessor();
     nextSequenceValue = 1;
 }
@@ -11849,6 +11854,29 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
         if (body == transformedBody)
             return LINK(expr);
         return expr->cloneAnnotation(transformedBody);
+    }
+
+    //This option is purely for regression testing, to ensure attributes are not lost, and no infinite recursion occurs.
+    if (options.forceAllDatasetsParallel)
+    {
+        if (expr->isDataset() && !expr->hasAttribute(parallelAtom))
+        {
+            switch (op)
+            {
+            case no_colon:
+            case no_rows:
+            case no_select:
+            case no_call:
+            case no_externalcall:
+            case no_matchattr:
+                break;
+            default:
+                {
+                    OwnedHqlExpr parallel = appendAttribute(expr, parallelAtom);
+                    return transform(parallel);
+                }
+            }
+        }
     }
 
     //MORE: Types of all pattern attributes should also be normalized.  Currently they aren't which causes discrepancies between types

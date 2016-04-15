@@ -542,6 +542,18 @@ IHqlExpression * queryLastNonAttribute(IHqlExpression * expr)
     return NULL;
 }
 
+extern HQL_API unsigned numNonAttributes(IHqlExpression * expr)
+{
+    unsigned max = expr->numChildren();
+    while (max--)
+    {
+        IHqlExpression * cur = expr->queryChild(max);
+        if (!cur->isAttribute())
+            return max+1;
+    }
+    return 0;
+}
+
 void expandRecord(HqlExprArray & selects, IHqlExpression * selector, IHqlExpression * expr)
 {
     switch (expr->getOperator())

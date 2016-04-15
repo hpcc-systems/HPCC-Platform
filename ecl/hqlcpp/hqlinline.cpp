@@ -119,6 +119,11 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     if (isGrouped(expr))
         return 0;
 
+    //If parallel is explicitly selected (rather than disabled) then ensure this is executed in a child query
+    IHqlExpression * parallel = expr->queryAttribute(parallelAtom);
+    if (parallel && getIntValue(parallel->queryChild(0), 0) != 1)
+        return 0;
+
     switch (op)
     {
     case no_select:
