@@ -81,6 +81,9 @@
 #define DFTERR_WrongSplitRecordSize             8108
 #define DFTERR_CannotFindFirstJsonRecord        8109
 #define DFTERR_InvalidXmlPartSize               8110
+#define DFTERR_InvalidTargetPath                8111
+#define DFTERR_NoMatchingDropzonePath           8112
+#define DFTERR_LocalhostAddressUsed             8113
 
 //Internal errors
 #define DFTERR_UnknownFormatType                8190
@@ -149,6 +152,10 @@
 #define DFTERR_WrongRECFMvRecordSize_Text       "Invalid RECFMv file Record Size (%d) or the file is not RECFMv format!"
 #define DFTERR_WrongSplitRecordSize_Text        "Invalid Record Size (%d, 0x%08x)!"
 #define DFTERR_InvalidXmlPartSize_Text          "Invalid XML part size:%" I64F "d! Size is less than XML Header (%" I64F "d) + Footer (%" I64F "d)) size!"
+#define DFTERR_InvalidTargetPath_Text           "Invalid target path: '%s'. For security reason it is forbidden to use '%s' or '%s' to build a path!"
+#define DFTERR_NoMatchingDropzonePath_Text      "No matching drop zone path to target path: '%s'."
+#define DFTERR_LocalhostAddressUsed_Text        "Localhost address used in remote file name: '%s'"
+
 
 #define DFTERR_UnknownFormatType_Text           "INTERNAL: Save unknown format type"
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%" I64F "d expected %" I64F "d) at %s of block %d"

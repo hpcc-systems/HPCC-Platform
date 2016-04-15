@@ -263,6 +263,7 @@ protected:
     void waitForTransferSem(Semaphore & sem);
     void addPrefix(size32_t len, const void * data, unsigned idx, PartitionPointArray & partitionWork);
     bool isSameSizeHeaderFooter();
+    void checkTargetPath(RemoteFilename & filename);
     
 private:
     bool calcUsePull();
