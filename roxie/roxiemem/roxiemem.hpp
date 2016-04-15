@@ -424,6 +424,9 @@ enum RoxieHeapFlags
     RHFunique           = 0x0004,  // create a separate fixed size allocator
     RHFoldfixed         = 0x0008,  // Don't create a special fixed size heap for this
     RHFvariable         = 0x0010,  // only used for tracing
+
+    //internal flags
+    RHForphaned         = 0x80000000,   // heap will no longer be used, can be deleted
 };
 
 //This interface is here to allow atomic updates to allocations when they are being resized.  There are a few complications:
