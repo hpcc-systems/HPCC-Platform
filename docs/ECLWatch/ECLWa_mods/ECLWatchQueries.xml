@@ -158,6 +158,146 @@ depending on where they wind up.-->
       checking the check box. You can also open a particular query by double
       clicking on it.</para>
 
+      <sect2 id="Queries_Tab" role="brk">
+        <title>Queries Tab</title>
+
+        <para>When you select the Published Queries hyperlink you open the
+        Queries tab. This tab displays published queries on the system. The
+        Action buttons allow you to perform operations on the published
+        queries selected.</para>
+
+        <para><figure>
+            <title>Published Query Action buttons</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA202.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure> <variablelist>
+            <varlistentry>
+              <term>Open</term>
+
+              <listitem>
+                <para>Opens the selected query (or queries).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Delete</term>
+
+              <listitem>
+                <para>Deletes the selected query (or queries).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Suspend</term>
+
+              <listitem>
+                <para>Suspends the selected active query (or queries).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Unsuspend</term>
+
+              <listitem>
+                <para>Unsuspends the selected suspended query (or
+                queries).</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Activate</term>
+
+              <listitem>
+                <para>Activates the selected query (or queries). This assigns
+                a query to the active alias with the same name as the
+                query.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Deactivate</term>
+
+              <listitem>
+                <para>Deactivates the selected active query (or queries) by
+                removing the active query alias from the given
+                queryset.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <?dbfo keep-together="always"?>
+
+              <term>Filter</term>
+
+              <listitem>
+                <para>Allows you to filter the queries for the criteria you
+                enter. When the Filter is applied the action button displays
+                <emphasis role="bold">Filter Set</emphasis>. This icon
+                indicates that the published queries displayed are
+                filtered.</para>
+
+                <para><graphic fileref="../../images/ECLWA203.jpg" />You can
+                filter for several query attributes. You can filter by:</para>
+
+                <itemizedlist>
+                  <listitem>
+                    <para>ID</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Name</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Published by</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>WUID</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Cluster</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Logical File Name</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Libraries Used</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Suspended queries.</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Active queries.</para>
+                  </listitem>
+                </itemizedlist>
+
+                <para>The Filter also also supports wild cards. </para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Options</term>
+
+              <listitem>
+                <para>Provides the option to search/display queries on a
+                single node or all nodes. Using this option can improve
+                performance if you have a large multi-node cluster.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+      </sect2>
+
       <sect2 id="QueryDetails" role="brk">
         <title>Query Details</title>
 

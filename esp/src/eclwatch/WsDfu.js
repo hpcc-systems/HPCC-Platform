@@ -181,12 +181,15 @@ define([
                                     FileDetail: {
                                         Name: params.request.Name,
                                         StateID: 999,
-                                        State: "deleted"
+                                        State: "not found"
                                     }
                                 }
                             });
                         }
                     });
+                } else if (lang.exists("DFUInfoResponse.FileDetail", response)) {
+                    response.DFUInfoResponse.FileDetail.StateID = 0;
+                    response.DFUInfoResponse.FileDetail.State = "";
                 }
                 return response;
             });

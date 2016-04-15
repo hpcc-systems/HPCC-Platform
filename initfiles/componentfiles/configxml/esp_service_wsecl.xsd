@@ -25,6 +25,12 @@
             <xs:attributeGroup ref="EclServer"/>
             <xs:attributeGroup ref="Roxie"/>
             <xs:attributeGroup ref="Logging"/>
+              <!--DocAutoBuildCode-->
+                <xs:annotation>
+                 <xs:appinfo>
+                   <docid>MyWS_TbL01</docid>
+                 </xs:appinfo>
+                </xs:annotation> 
             <xs:attribute name="build" type="buildType" use="required">
                 <xs:annotation>
                     <xs:appinfo>
@@ -67,9 +73,11 @@
     </xs:element>
     <xs:attributeGroup name="EclServer">
         <xs:annotation>
-            <xs:appinfo>
-                <title>ECL Server</title>
-            </xs:appinfo>
+           <xs:appinfo>
+              <title>ECL Server</title>
+              <!--DocAutoBuildCode-->
+              <docid>MyWS_TbL02</docid>
+	   </xs:appinfo>
         </xs:annotation>
         <xs:attribute name="eclServer" type="eclServerType" use="optional">
             <xs:annotation>
@@ -137,6 +145,12 @@
         </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="Roxie">
+            <!--DocAutoBuildCode-->
+            <xs:annotation>
+	      <xs:appinfo>
+	        <docid>MyWS_TbL04</docid>
+	      </xs:appinfo>
+            </xs:annotation> 
         <xs:attribute name="roxieAddress" type="roxieAddress" use="optional">
             <xs:annotation>
                 <xs:appinfo>
@@ -158,6 +172,12 @@
         </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="Logging">
+            <!--DocAutoBuildCode-->
+            <xs:annotation>
+               <xs:appinfo>
+                   <docid>MyWS_TbL05</docid>
+               </xs:appinfo>
+            </xs:annotation> 
         <xs:attribute name="loggingServer" type="xs:string" use="optional">
             <xs:annotation>
                 <xs:appinfo>

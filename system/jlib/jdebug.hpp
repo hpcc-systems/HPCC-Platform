@@ -54,6 +54,38 @@ inline __int64 getTSC()
 inline cycle_t getTSC() { return __rdtsc(); }
 #endif // WIN32
 
+#elif defined(_ARCH_PPC)
+
+#define HAS_GOOD_CYCLE_COUNTER
+
+static inline cycle_t getTSC()
+{
+    int64_t result;
+#ifdef _ARCH_PPC64
+    /*
+        This reads timebase in one 64bit go.  Does *not* include a workaround for the cell (see 
+        http://ozlabs.org/pipermail/linuxppc-dev/2006-October/027052.html)
+    */
+    __asm__ volatile(
+        "mftb    %0"
+        : "=r" (result));
+#else
+    /*
+        Read the high 32bits of the timer, then the lower, and repeat if high order has changed in the meantime.  See
+        http://ozlabs.org/pipermail/linuxppc-dev/1999-October/003889.html
+    */
+    unsigned long dummy;
+    __asm__ volatile(
+        "mfspr   %1,269\n\t"  /* mftbu */
+        "mfspr   %L0,268\n\t" /* mftb */
+        "mfspr   %0,269\n\t"  /* mftbu */
+        "cmpw    %0,%1\n\t"   /* check if the high order word has chanegd */
+        "bne     $-16"
+        : "=r" (result), "=r" (dummy));
+#endif
+    return result;
+}
+
 #else
 // ARMFIX: cycle-count is not always available in user mode
 // http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0338g/Bihbeabc.html

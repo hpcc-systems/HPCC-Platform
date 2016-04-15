@@ -27,11 +27,12 @@ from ..common.error import Error
 from ..util.util import checkClusters, getConfig
 
 class Suite:
-    def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir, args, isSetup=False,  fileList = None):
+    def __init__(self, clusterName, dir_ec, dir_a, dir_ex, dir_r, logDir, args, isSetup=False,  fileList = None):
+        self.clusterName = clusterName
+        self.targetName = clusterName
         if isSetup:
-            self.name = 'setup_'+name
-        else:
-            self.name = name
+            self.targetName = 'setup_'+clusterName
+
         self.args=args
         self.suite = []
         self.dir_ec = dir_ec
@@ -48,7 +49,7 @@ class Suite:
 
         if len(self.exclude):
             curTime = time.strftime("%y-%m-%d-%H-%M-%S")
-            logName = self.name + "-exclusion." + curTime + ".log"
+            logName = self.targetName + "-exclusion." + curTime + ".log"
             self.logName = os.path.join(self.logDir, logName)
             args.exclusionFile=self.logName
             self.log = open(self.logName, "w");
@@ -83,11 +84,11 @@ class Suite:
             if file.endswith(".ecl"):
                 ecl = os.path.join(self.dir_ec, file)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
-                                  self.dir_r,  self.args.target,  args)
+                                  self.dir_r,  self.clusterName,   args)
                 if isSetup:
                     skipResult = eclfile.testSkip('setup')
                 else:
-                    skipResult = eclfile.testSkip(self.name)
+                    skipResult = eclfile.testSkip(self.targetName)
 
                 if not skipResult['skip']:
                     exclude=False
@@ -105,7 +106,7 @@ class Suite:
                         exclude = (not included )  or excluded
                         exclusionReason=' class member excluded'
                     if not exclude:
-                        exclude = eclfile.testExclusion(self.name)
+                        exclude = eclfile.testExclusion(self.targetName)
                         exclusionReason=' ECL excluded'
 
                     if not exclude:
@@ -126,7 +127,7 @@ class Suite:
             versions = eclfile.getVersions()
             versionId = 1
             for version in versions:
-                if 'no'+self.name in version:
+                if 'no'+self.targetName in version:
                     # Exclude it from this target
                     pass
                 else:
@@ -144,7 +145,7 @@ class Suite:
             # generate ECLs to suite
             for file in files:
                 generatedEclFile = ECLFile(basename, self.dir_a, self.dir_ex,
-                                 self.dir_r,  self.name, self.args)
+                                 self.dir_r,  self.clusterName, self.args)
 
                 generatedEclFile.setDParameters(file['version'])
                 generatedEclFile.setVersionId(file['id'])
@@ -176,7 +177,7 @@ class Suite:
         return self.endTime-self.startTime
 
     def getSuiteName(self):
-        return self.name
+        return self.targetName
 
     def cleanUp(self):
         # If there are some temporary files left, then remove them

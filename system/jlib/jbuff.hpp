@@ -130,6 +130,8 @@ private:
     CLASS * ptr;
 };
 
+#define MEMBUFFER_MAXLEN UINT_MAX // size32_t
+
 class jlib_decl MemoryBuffer
 {
 public:
@@ -624,8 +626,8 @@ class CLargeMemorySequentialReader
 
 
 interface IOutOfMemException;
-jlib_decl IOutOfMemException *createOutOfMemException(int errcode, size_t wanted, size_t got=0,bool expected=false);
-jlib_decl void RaiseOutOfMemException(int errcode, size_t wanted, size_t got=0,bool expected=false);
+jlib_decl IOutOfMemException *createOutOfMemException(int errcode, size_t wanted, size_t got=0, bool expected=false, const char *errMsg=nullptr);
+jlib_decl void RaiseOutOfMemException(int errcode, size_t wanted, size_t got=0, bool expected=false, const char *errMsg=nullptr);
 
 interface ILargeMemLimitNotify: extends IInterface
 {

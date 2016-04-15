@@ -46,6 +46,7 @@ define([
     "hpcc/ESPLogicalFile",
     "hpcc/ESPDFUWorkunit",
     "hpcc/FileBelongsToWidget",
+    "hpcc/FileSpray",
 
     "dojo/text!../templates/LFDetailsWidget.html",
 
@@ -59,7 +60,7 @@ define([
 
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget,
+                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget, FileSpray,
                 template) {
     exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -71,6 +72,7 @@ define([
         copyForm: null,
         renameForm: null,
         desprayForm: null,
+        replicateForm: null,
         summaryWidget: null,
         contentWidget: null,
         sourceWidget: null,
@@ -90,6 +92,7 @@ define([
             this.copyForm = registry.byId(this.id + "CopyForm");
             this.renameForm = registry.byId(this.id + "RenameForm");
             this.desprayForm = registry.byId(this.id + "DesprayForm");
+            this.replicateForm = registry.byId(this.id + "ReplicateForm");
             this.summaryWidget = registry.byId(this.id + "_Summary");
             this.contentWidget = registry.byId(this.id + "_Content");
             this.sourceWidget = registry.byId(this.id + "_Source");
@@ -102,6 +105,9 @@ define([
             this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
             this.desprayTooltiopDialog = registry.byId(this.id + "DesprayTooltipDialog");
+            this.replicateTargetSelect = registry.byId(this.id + "ReplicateCluster");
+            this.replicateSourceLogicalFile = registry.byId(this.id + "ReplicateSourceLogicalFile");
+            this.replicateDropDown = registry.byId(this.id + "ReplicateDropDown");
             var context = this;
             var origOnOpen = this.desprayTooltiopDialog.onOpen;
             this.desprayTooltiopDialog.onOpen = function () {
@@ -197,6 +203,19 @@ define([
             }
         },
 
+        _onReplicateOk: function (event) {
+            if (this.replicateForm.validate()) {
+                var context = this;
+                var request = domForm.toObject(this.id + "ReplicateForm");
+                FileSpray.Replicate({
+                    request: request
+                }).then(function (response) {
+                    context._handleResponse("ReplicateResponse.wuid", response);
+                });
+                registry.byId(this.id + "ReplicateDropDown").closeDropDown();
+            }
+        },
+
         //  Implementation  ---
         init: function (params) {
             if (this.inherited(arguments))
@@ -212,6 +231,7 @@ define([
                 this.logicalFile.watch(function (name, oldValue, newValue) {
                     context.updateInput(name, oldValue, newValue);
                 });
+                this.replicateSourceLogicalFile.set("value", params.Name);
                 this.logicalFile.refresh();
             }
             this.copyTargetSelect.init({
@@ -219,6 +239,9 @@ define([
             });
             this.desprayTargetPath.init({
                 DropZoneFolders: true
+            });
+            this.replicateTargetSelect.init({
+                Groups: true
             });
             this.logicalFile.refresh();
         },
@@ -340,8 +363,8 @@ define([
                 //  Force Icon to Show (I suspect its not working due to Circular Reference Loading)
                 this.queriesWidget.set("iconClass", "dijitInline dijitIcon dijitTabButtonIcon iconFind");
             } else if (name === "DFUFilePartsOnClusters") {
-            	// Currently only checking first cluster may add loop through clusters and add a tab at a later date
-            	this.updateInput("DFUFilePartsOnClusters", oldValue, newValue.DFUFilePartsOnCluster[0].Replicate);
+                // Currently only checking first cluster may add loop through clusters and add a tab at a later date
+                this.updateInput("DFUFilePartsOnClusters", oldValue, newValue.DFUFilePartsOnCluster[0].Replicate);
             }
         },
 
@@ -378,6 +401,7 @@ define([
             this.setDisabled(this.id + "_Graphs", this.logicalFile.isDeleted() || !this.logicalFile.Graphs);
             this.setDisabled(this.id + "_Workunit", this.logicalFile.isDeleted());
             this.setDisabled(this.id + "_DFUWorkunit", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "ReplicateDropDown", !this.logicalFile.CanReplicateFlag || this.logicalFile.ReplicateFlag === false);
         }
     });
 });

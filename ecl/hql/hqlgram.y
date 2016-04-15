@@ -314,6 +314,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   NOBOUNDCHECK
   NOCASE
   NOCOMBINE
+  NOCONST
   NOFOLD
   NOHOIST
   NOLOCAL
@@ -3873,6 +3874,7 @@ formalQualifiers
 
 formalQualifier
     : TOK_CONST         {   $$.setExpr(createAttribute(constAtom), $1); }
+    | NOCONST           {   $$.setExpr(createAttribute(noConstAtom), $1); }
     | TOK_ASSERT TOK_CONST  
                         {   $$.setExpr(createAttribute(assertConstAtom), $1); }
     | FIELD_REF         {
@@ -8678,12 +8680,6 @@ simpleDataSet
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
 
-                            node_operator modeOp = no_none;
-                            if (left->getOperator() == no_table)
-                                modeOp = left->queryChild(2)->getOperator();
-                            if ((modeOp != no_thor) && (modeOp != no_flat) && (modeOp != no_csv) && (modeOp != no_xml) && (modeOp != no_json))
-                                parser->reportError(ERR_FETCH_NON_DATASET, $3, "First parameter of FETCH should be a disk file");
-
                             IHqlExpression *join = createDataset(no_fetch, left, createComma(right, $7.getExpr(), $9.getExpr(), createComma($10.getExpr(), $12.getExpr())));
 
                             $$.setExpr(join);
@@ -8695,12 +8691,6 @@ simpleDataSet
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
                             IHqlExpression * transform = parser->createDefJoinTransform(left, right, $7, $10.queryExpr(),NULL);
-
-                            node_operator modeOp = no_none;
-                            if (left->getOperator() == no_table)
-                                modeOp = left->queryChild(2)->getOperator();
-                            if ((modeOp != no_thor) && (modeOp != no_flat) && (modeOp != no_csv) && (modeOp != no_xml)  && (modeOp != no_json))
-                                parser->reportError(ERR_FETCH_NON_DATASET, $3, "First parameter of FETCH should be a disk file");
 
                             IHqlExpression *join = createDataset(no_fetch, left, createComma(right, $7.getExpr(), transform, createComma($8.getExpr(), $10.getExpr())));
 

@@ -44,6 +44,8 @@ interface IFRunSSH: extends IInterface
               const IpAddress &ip,
               const char *workdirname,
               bool _background) = 0;
+    virtual const StringArray &getReplyText() const = 0;
+    virtual const UnsignedArray &getReply() const= 0;
 };
 
 

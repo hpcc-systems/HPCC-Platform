@@ -1652,8 +1652,19 @@ readAnother:
         }
 
         bool isHTTP = httpHelper.isHttp();
-        TextMarkupFormat mlResponseFmt = isHTTP ? httpHelper.queryResponseMlFormat() : MarkupFmt_XML;
-        TextMarkupFormat mlRequestFmt = isHTTP ? httpHelper.queryRequestMlFormat() : MarkupFmt_XML;
+
+        TextMarkupFormat mlResponseFmt = MarkupFmt_Unknown;
+        TextMarkupFormat mlRequestFmt = MarkupFmt_Unknown;
+        if (!isStatus)
+        {
+            if (!isHTTP)
+                mlResponseFmt = mlRequestFmt = MarkupFmt_XML;
+            else
+            {
+                mlResponseFmt = httpHelper.queryResponseMlFormat();
+                mlRequestFmt = httpHelper.queryRequestMlFormat();
+            }
+        }
 
         bool failed = false;
         bool isRequest = false;

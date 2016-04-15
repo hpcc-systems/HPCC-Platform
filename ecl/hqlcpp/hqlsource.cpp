@@ -7251,6 +7251,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFetch(BuildCtx & ctx, IHqlExpr
 {
     IHqlExpression *fetch = queryFetch(expr);
     IHqlExpression *tableExpr = queryPhysicalRootTable(fetch->queryChild(0));
+    if (!tableExpr)
+        throwError(HQLERR_FetchNonDiskfile);
     FetchBuilder info(*this, tableExpr, tableExpr->queryChild(0), expr);
     info.gatherVirtualFields(false, true);//?needToSerializeRecord(mode)
 

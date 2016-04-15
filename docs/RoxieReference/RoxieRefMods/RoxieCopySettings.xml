@@ -137,7 +137,55 @@
     clusters later.</para>
   </sect3>
 
-  <sect3>
+  <sect3 id="VipsRoxieAlias" role="brk">
+    <title>VIPs and Roxie Alias</title>
+
+    <para>Roxie clusters accessed through a VIP (Virtual IP) usually use
+    separate target names to represent the same set of queries. Each Roxie can
+    also run more than one target at the same time.</para>
+
+    <para>The Topology Alias feature provides a way to specify that any of the
+    targets representing the same set of queries can be used. Allowing targets
+    that represent the same set of queries to have a shared alias allows
+    callers to select the right set of queries when calling through a
+    VIP.</para>
+
+    <para>This setting can be found in the Topology section within the HPCC
+    Configuration Manager.</para>
+
+    <para><figure>
+        <title>Roxie Alias in Configuration Manager</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../../images/RoxieAlias.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para></para>
+
+    <?hard-pagebreak ?>
+
+    <para>The following diagram shows an example of a system using
+    aliases.</para>
+
+    <figure>
+      <title>Roxie Aliases in a Production Environment</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="../../images/RoxieAliasDiagram.png" />
+        </imageobject>
+      </mediaobject>
+    </figure>
+
+    <para></para>
+
+    <para></para>
+  </sect3>
+
+  <sect3 role="brk">
     <title><emphasis role="bold">Command Line support</emphasis></title>
 
     <para>The ecl command line tool offers a means of copying queries from one

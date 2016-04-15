@@ -52,6 +52,12 @@ fetched := fetch(sq.SimplePersonBookDs, myPeople, right.filepos, makeRec(left, r
 fetched2 := fetch(sq.SimplePersonBookDs, myPeople, right.filepos, makeRec2(left, right));
 fetched3 := fetch(sq.SimplePersonBookDs, myPeople, right.filepos, makeRec3(left, right));
 
+fetchit (dataset(sq.SimplePersonBookExRec) ds, string sname) := FUNCTION
+   return fetch(ds, ds(surname=sname), right.filepos, makeRec3(left,right));
+END;
+
+fetched4 := fetchit( sq.SimplePersonBookDs, 'Halliday' );
+
 recordof(sq.SimplePersonBookDs) removeFp(recfp l) := TRANSFORM
     SELF := l;
 END;
@@ -62,5 +68,6 @@ END;
 sequential(
     output(sortIt(fetched)),
     output(sortIt(fetched2)),
-    output(sortIt(fetched3))
+    output(sortIt(fetched3)),
+    output(sortIt(fetched4))
 );

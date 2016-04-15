@@ -87,7 +87,9 @@ define([
             lang.mixin(item, {
                 __hpcc_id: createID(item.NodeGroup, item.Name),
                 __hpcc_isDir: false,
-                __hpcc_displayName: item.Name
+                __hpcc_displayName: item.Name,
+                StateID: 0,
+                State: ""
             });
         },
         mayHaveChildren: function (object) {
@@ -219,6 +221,10 @@ define([
                             }, DFUPart));
                         }, this);
                     }
+                    if (idx === 0) {
+                        this.set("CanReplicateFlag" , DFUFilePartsOnCluster.CanReplicate);
+                        this.set("ReplicateFlag", DFUFilePartsOnCluster.Replicate);
+                    }
                 }, this);
             }
             this.set("DFUFileParts", DFUFileParts);
@@ -257,7 +263,13 @@ define([
         doDelete: function (params) {
             var context = this;
             WsDfu.DFUArrayAction([this], "Delete").then(function (response) {
-                context.refresh();
+                if (lang.exists("DFUArrayActionResponse.ActionResults.DFUActionInfo", response) && 
+                        response.DFUArrayActionResponse.ActionResults.DFUActionInfo.length &&
+                        !response.DFUArrayActionResponse.ActionResults.DFUActionInfo[0].Failed) {
+                    context.updateData({ StateID: 999, State: "deleted" })
+                } else {
+                    context.refresh();
+                }
             });
         },
         despray: function (params) {

@@ -48,6 +48,12 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+                <xs:annotation>
+	          <xs:appinfo>
+	          <!--DOCS_Autobuild_Code-->
+          	    <docid>SMC-T01</docid>
+	          </xs:appinfo>
+              </xs:annotation>
             <xs:attribute name="description" type="xs:string" use="optional" default="ESP services for SMC">
                 <xs:annotation>
                     <xs:appinfo>
@@ -150,6 +156,12 @@
         </xs:complexType>
     </xs:element>
     <xs:attributeGroup name="Monitoring">
+         <xs:annotation>
+	    <xs:appinfo>
+            <!--DOCS_Autobuild_Code-->
+              <docid>SMC-T02</docid>
+            </xs:appinfo>
+         </xs:annotation> s	
         <xs:attribute name="monitorDaliFileServer" type="xs:boolean" use="optional" default="false">
             <xs:annotation>
                 <xs:appinfo>

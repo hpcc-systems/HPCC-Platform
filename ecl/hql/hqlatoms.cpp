@@ -279,6 +279,7 @@ IAtom * newSetAtom;
 IAtom * _nlpParse_Atom;
 IAtom * noBoundCheckAtom;
 IAtom * noCaseAtom;
+IAtom * noConstAtom;
 IAtom * nofoldAtom;
 IAtom * _noHoist_Atom;
 IAtom * noLocalAtom;
@@ -720,6 +721,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKESYSATOM(nlpParse);
     MAKEATOM(noBoundCheck);
     MAKEATOM(noCase);
+    MAKEATOM(noConst);
     MAKEATOM(nofold);
     MAKESYSATOM(noHoist);
     MAKEATOM(noLocal);

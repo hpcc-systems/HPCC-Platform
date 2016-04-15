@@ -664,6 +664,7 @@ define([
             this.widget.ActivityMetric.set("options", arrayUtil.map(arrayUtil.filter(columns, function (col, idx) {
                 return col.label.indexOf("Time") === 0 ||
                         col.label.indexOf("Size") === 0 ||
+                        col.label.indexOf("Skew") === 0 ||
                         col.label.indexOf("Num") === 0;
             }), function (col, idx) {
                 return {
@@ -671,6 +672,13 @@ define([
                     value: col.label,
                     selected: col.label === "TimeMaxLocalExecute"
                 };
+            }).sort(function (l, r) {
+                if (l.label < r.label) {
+                    return -1;
+                } else if (l.label > r.label) {
+                    return 1;
+                }
+                return 0;
             }));
             this.widget.ActivitiesTreeMap.setActivities(vertices, true);
             this.widget.ActivityMetric.set("value", "TimeMaxLocalExecute");

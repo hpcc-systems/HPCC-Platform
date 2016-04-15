@@ -605,6 +605,9 @@ define([
                                 } else if (name.indexOf("Size") === 0) {
                                     retVal["_" + name] = value;
                                     retVal[name] = "" + Utility.espSize2Bytes(value);
+                                } else if (name.indexOf("Skew") === 0) {
+                                    retVal["_" + name] = value;
+                                    retVal[name] = "" + Utility.espSkew2Number(value);
                                 } else {
                                     retVal[name] = value;
                                 }
