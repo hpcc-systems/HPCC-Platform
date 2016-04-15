@@ -39,13 +39,15 @@
   <para>The <emphasis role="bold">SuperFileExists </emphasis>function returns
   TRUE if the specified <emphasis>filename</emphasis> is present in the
   Distributed File Utility (DFU) and is a SuperFile. It returns FALSE if the
-  <emphasis>filename</emphasis> does exist in the DFU but is not a SuperFile
-  (i.e. is a normal DATASET—use the STD.File.FileExists function to detect
-  their presence or absence).</para>
+  <emphasis>filename</emphasis> does exist but it is not a SuperFile (in other
+  words, it is a normal DATASET. Use the STD.File.FileExists function to
+  detect their presence or absence).</para>
 
   <para>This function is not included in a superfile transaction.</para>
 
   <para>Example:</para>
 
   <programlisting format="linespecific">A := STD.File.SuperFileExists('~CLASS::RT::IN::SF1');</programlisting>
+
+  <para>See Also: <link linkend="FileExists">FileExists</link></para>
 </sect1>
