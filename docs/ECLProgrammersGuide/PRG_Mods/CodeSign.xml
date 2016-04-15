@@ -17,9 +17,8 @@
   <itemizedlist>
     <listitem>
       <para>We now limit which SERVICE functions are called at compile time
-      using the FOLD attribute. FOLD on a service or function definition
-      within it requires additional rights. Typically, for security reasons ,
-      FOLD should only be enabled in signed modules.</para>
+      using the FOLD attribute. Typically, for security reasons , FOLD should
+      only be enabled in signed modules.</para>
     </listitem>
 
     <listitem>
@@ -72,7 +71,7 @@
 
     <para>Note: Parts of the Standard Library may not function if the use of
     C++ and external definitions is denied. In general, <emphasis
-    role="bold">allowsigned</emphasis> is preferred. </para>
+    role="bold">allowsigned</emphasis> is preferred.</para>
 
     <para><emphasis role="bold">Cluster</emphasis></para>
 
