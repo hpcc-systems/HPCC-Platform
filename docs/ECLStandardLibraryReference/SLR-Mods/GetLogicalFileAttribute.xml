@@ -36,7 +36,8 @@
           numparts, name, modified, format, job, checkSum, kind, csvSeparate,
           csvTerminate, headerLength, footerLength, rowTag, workunit,
           accessed, maxRecordSize, csvQuote, blockCompressed, compressedSize,
-          or protected. The value is case-sensitive.</entry>
+          fileCrc, formatCrc, or protected. The value is
+          case-sensitive.</entry>
         </row>
 
         <row>
@@ -87,5 +88,7 @@ OUTPUT(STD.File.GetLogicalFileAttribute(file,'maxRecordSize'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvQuote'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed '));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'compressedSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'fileCrc'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'formatCrc'));
 </programlisting>
 </sect1>
