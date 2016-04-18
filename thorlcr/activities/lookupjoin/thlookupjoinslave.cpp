@@ -1573,6 +1573,13 @@ public:
 // IBCastReceive (only used if global)
     virtual void bCastReceive(CSendItem *sendItem, bool stop)
     {
+        if (bcast_stop == sendItem->queryCode())
+        {
+            sendItem->Release();
+            if (!stop)
+                return;
+            sendItem = NULL; // fall through, base signals stop to rowProcessor
+        }
         dbgassertex((sendItem==NULL) == stop); // if sendItem==NULL stop must = true, if sendItem != NULL stop must = false;
         rowProcessor->addBlock(sendItem);
     }
@@ -2662,13 +2669,6 @@ public:
             {
                 VStringBuffer msg("Notification that node %d spilt", sendItem->queryNode());
                 clearAllNonLocalRows(msg.str());
-            }
-            if (bcast_stop == sendItem->queryCode())
-            {
-                sendItem->Release();
-                if (!stop)
-                    return;
-                sendItem = NULL; // fall through, base signals stop to rowProcessor
             }
         }
         PARENT::bCastReceive(sendItem, stop);
