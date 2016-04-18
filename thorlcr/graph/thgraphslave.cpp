@@ -152,7 +152,7 @@ void CSlaveActivity::setInput(unsigned index, CActivityBase *inputActivity, unsi
         inputs.append(* new CThorInput());
     CThorInput &newInput = inputs.item(index);
     newInput.set(outLink, inputOutIdx);
-    if (!input)
+    if (0 == index && !input)
     {
         input = outLink;
         inputSourceIdx = inputOutIdx;
@@ -171,7 +171,7 @@ void CSlaveActivity::connectInputStreams(bool consumerOrdered)
 
 void CSlaveActivity::setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered)
 {
-    if (input) // will be none if source act.
+    if (_input.itdl)
     {
         Owned<IStrandJunction> junction;
         IEngineRowStream *_inputStream = connectSingleStream(*this, _input.itdl, _input.sourceIdx, junction, _input.itdl->isInputOrdered(consumerOrdered));
@@ -202,7 +202,6 @@ void CSlaveActivity::setLookAhead(unsigned index, IStartableEngineRowStream *loo
 IStrandJunction *CSlaveActivity::getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
 {
     // Default non-stranded implementation, expects activity to have 1 output.
-    assertex(!idx);
     // By default, activities are assumed NOT to support streams
     bool inputOrdered = isInputOrdered(consumerOrdered);
     connectInputStreams(inputOrdered);
@@ -214,16 +213,13 @@ IStrandJunction *CSlaveActivity::getOutputStreams(CActivityBase &ctx, unsigned i
 
 void CSlaveActivity::appendOutput(IThorDataLink *itdl)
 {
-    IThorDataLinkExt *itdlExt = QUERYINTERFACE(itdl, IThorDataLinkExt);
-    dbgassertex(itdlExt);
-    unsigned outputNum = outputs.ordinality();
-    itdlExt->setOutputIdx(outputNum);
     outputs.append(itdl);
 }
 
 void CSlaveActivity::appendOutputLinked(IThorDataLink *itdl)
 {
-    itdl->Link();
+    if (itdl)
+        itdl->Link();
     appendOutput(itdl);
 }
 
@@ -285,6 +281,7 @@ void CSlaveActivity::startInput(unsigned index, const char *extra)
         if (_input.lookAhead)
             _input.lookAhead->start();
         _input.stopped = false;
+        _input.started = true;
         if (0 == index)
             inputStopped = false;
 #ifdef TRACE_STARTSTOP_EXCEPTIONS
@@ -346,38 +343,20 @@ void CSlaveActivity::reset()
 {
     CActivityBase::reset();
     ForEachItemIn(i, inputs)
-        resetJunction(inputs.item(i).junction);
-    input = nullptr;
-    inputStream = nullptr;
-    inputStopped = true;
-}
-
-void CSlaveActivity::abort()
-{
-    CActivityBase::abort();
-    CriticalBlock b(crit);
-    ForEachItemIn(o, outputs)
-    {
-        StringBuffer msg("-------->  ");
-        msg.append("GraphId = ").append(container.queryOwner().queryGraphId());
-        msg.append(" ActivityId = ").append(container.queryId());
-        msg.append("  OutputId = ").append(o);
-        MemoryBuffer mb;
-        outputs.item(o)->dataLinkSerialize(mb); // JCSMORE should add direct method
-        rowcount_t count;
-        mb.read(count);
-        msg.append(": Count = ").append(count);
-    }
+        inputs.item(i).reset();
+    inputStopped = false;
 }
 
 void CSlaveActivity::releaseIOs()
 {
 //  inputs.kill(); // don't want inputs to die before this dies (release in deconstructor) // JCSMORE not sure why care particularly.
     outputs.kill(); // outputs tend to be self-references, this clears them explicitly, otherwise end up leaking with circular references.
+    outputStreams.kill();
 }
 
 void CSlaveActivity::clearConnections()
 {
+    outputStreams.kill();
     inputs.kill();
 }
 
@@ -415,7 +394,10 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
     {
         switch (container.getKind())
         {
+            case TAKif:
             case TAKchildif:
+            case TAKifaction:
+            case TAKcase:
             case TAKchildcase:
                 if (inputs.ordinality() && (((unsigned)-1) != container.whichBranch))
                 {
@@ -444,7 +426,13 @@ void CSlaveActivity::serializeStats(MemoryBuffer &mb)
     CriticalBlock b(crit);
     mb.append((unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
     ForEachItemIn(i, outputs)
-        outputs.item(i)->dataLinkSerialize(mb);
+    {
+        IThorDataLink *output = queryOutput(i);
+        if (output)
+            outputs.item(i)->dataLinkSerialize(mb);
+        else
+            serializeNullItdl(mb);
+    }
 }
 
 void CSlaveActivity::debugRequest(unsigned edgeIdx, MemoryBuffer &msg)
@@ -468,6 +456,11 @@ IOutputMetaData *CSlaveActivity::queryOutputMeta() const
 void CSlaveActivity::dataLinkSerialize(MemoryBuffer &mb) const
 {
     CEdgeProgress::dataLinkSerialize(mb);
+}
+
+rowcount_t CSlaveActivity::getProgressCount() const
+{
+    return CEdgeProgress::getCount();
 }
 
 void CSlaveActivity::debugRequest(MemoryBuffer &msg)
@@ -549,7 +542,6 @@ void CThorStrandedActivity::reset()
     assertex(active==0);
     ForEachItemIn(idx, strands)
         strands.item(idx).reset();
-    strands.kill();
     resetJunction(splitter);
     CSlaveActivity::reset();
     resetJunction(sourceJunction);
@@ -674,17 +666,60 @@ unsigned __int64 CThorStrandedActivity::queryTotalCycles() const
 
 void CThorStrandedActivity::dataLinkSerialize(MemoryBuffer &mb) const
 {
+    mb.append(getProgressCount());
+}
+
+rowcount_t CThorStrandedActivity::getProgressCount() const
+{
     rowcount_t totalCount = getCount();
     ForEachItemIn(i, strands)
     {
         CThorStrandProcessor &strand = strands.item(i);
         totalCount += strand.getCount();
     }
-    mb.append(totalCount);
+    return totalCount;
 }
 
+// CSlaveLateStartActivity
 
+void CSlaveLateStartActivity::lateStart(bool any)
+{
+    prefiltered = !any;
+    if (!prefiltered)
+        startInput(0);
+    else
+        stopInput(0);
+}
 
+void CSlaveLateStartActivity::start()
+{
+    Linked<CThorInput> savedInput = &inputs.item(0);
+    if (!nullInput)
+    {
+        nullInput.setown(new CThorInput);
+        nullInput->sourceIdx = savedInput->sourceIdx; // probably not needed
+    }
+    inputs.replace(* nullInput.getLink(), 0);
+    input = NULL;
+    CSlaveActivity::start();
+    inputs.replace(* savedInput.getClear(), 0);
+    input = inputs.item(0).itdl;
+}
+
+void CSlaveLateStartActivity::stop()
+{
+    if (!prefiltered)
+    {
+        stopInput(0);
+        dataLinkStop();
+    }
+}
+
+void CSlaveLateStartActivity::reset()
+{
+    CSlaveActivity::reset();
+    prefiltered = false;
+}
 
 // CSlaveGraph
 
@@ -695,7 +730,6 @@ CSlaveGraph::CSlaveGraph(CJobChannel &jobChannel) : CGraphBase(jobChannel)
 
 void CSlaveGraph::init(MemoryBuffer &mb)
 {
-    mb.read(reinit);
     mpTag = queryJobChannel().deserializeMPTag(mb);
     startBarrierTag = queryJobChannel().deserializeMPTag(mb);
     waitBarrierTag = queryJobChannel().deserializeMPTag(mb);
@@ -760,24 +794,11 @@ void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
     out.append((activity_id)0);
 }
 
-void CSlaveGraph::recvStartCtx()
-{
-    if (!sentStartCtx)
-    {
-        sentStartCtx = true;
-        CMessageBuffer msg;
-
-        if (!graphCancelHandler.recv(queryJobChannel().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
-            throw MakeStringException(0, "Error receiving startCtx data for graph: %" GIDPF "d", graphId);
-        deserializeStartContexts(msg);
-    }
-}
-
 bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *parentExtract)
 {
     bool ret = true;
     unsigned needActInit = 0;
-    Owned<IThorActivityIterator> iter = getConnectedIterator();
+    Owned<IThorActivityIterator> iter = getConnectedIterator(false);
     ForEach(*iter)
     {
         CGraphElementBase &element = (CGraphElementBase &)iter->query();
@@ -811,14 +832,14 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             assertex(!parentExtractSz || NULL!=parentExtract);
             msg.append(parentExtractSz);
             msg.append(parentExtractSz, parentExtract);
-            Owned<IThorActivityIterator> iter = getConnectedIterator();
+            Owned<IThorActivityIterator> iter = getConnectedIterator(false);
             ForEach(*iter)
             {
                 CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
                 if (!element.sentActInitData->test(0))
                 {
                     msg.append(element.queryId());
-                    element.serializeStartContext(msg);
+//                    element.serializeStartContext(msg);
                 }
             }
             msg.append((activity_id)0);
@@ -848,7 +869,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             if (queryOwner() && !isGlobal())
             {
                 // initialize any for which no data was sent
-                Owned<IThorActivityIterator> iter = getConnectedIterator();
+                Owned<IThorActivityIterator> iter = getConnectedIterator(false);
                 ForEach(*iter)
                 {
                     CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
@@ -882,13 +903,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
 
 bool CSlaveGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
 {
-    started = true;
-    recvStartCtx();
     CGraphBase::preStart(parentExtractSz, parentExtract);
-
-    if (!recvActivityInitData(parentExtractSz, parentExtract))
-        return false;
-    connect(); // only now do slave acts. have all their outputs prepared.
     if (isGlobal())
     {
         if (!startBarrier->wait(false))
@@ -926,7 +941,7 @@ void CSlaveGraph::start()
 void CSlaveGraph::connect()
 {
     CriticalBlock b(progressCrit);
-    Owned<IThorActivityIterator> iter = getConnectedIterator();
+    Owned<IThorActivityIterator> iter = getConnectedIterator(false);
     ForEach(*iter)
         iter->query().doconnect();
     iter.setown(getSinkIterator());
@@ -945,6 +960,56 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
     Owned<IException> exception;
     try
     {
+        if (!doneInit)
+        {
+            doneInit = true;
+            if (queryOwner())
+            {
+                if (isGlobal())
+                {
+                    CMessageBuffer msg;
+                    if (!graphCancelHandler.recv(queryJobChannel().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
+                        throw MakeStringException(0, "Error receiving createctx data for graph: %" GIDPF "d", graphId);
+                    try
+                    {
+                        size32_t len;
+                        msg.read(len);
+                        if (len)
+                        {
+                            MemoryBuffer initData;
+                            initData.append(len, msg.readDirect(len));
+                            deserializeCreateContexts(initData);
+                        }
+                        msg.clear();
+                        msg.append(false);
+                    }
+                    catch (IException *e)
+                    {
+                        msg.clear();
+                        msg.append(true);
+                        serializeThorException(e, msg);
+                    }
+                    if (!queryJobChannel().queryJobComm().send(msg, 0, msg.getReplyTag(), LONGTIMEOUT))
+                        throw MakeStringException(0, "Timeout sending init data back to master");
+                }
+                else
+                {
+                    CMessageBuffer msg;
+                    msg.append(smt_initGraphReq);
+                    msg.append(graphId);
+                    if (!queryJobChannel().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
+                        throwUnexpected();
+                    size32_t len;
+                    msg.read(len);
+                    if (len)
+                        deserializeCreateContexts(msg);
+        // could still request 1 off, onCreate serialization from master 1st.
+                }
+            }
+            if (!recvActivityInitData(parentExtractSz, parentExtract))
+                throw MakeThorException(0, "preStart failure");
+            connect(); // only now do slave acts. have all their outputs prepared.
+        }
         CGraphBase::executeSubGraph(parentExtractSz, parentExtract);
     }
     catch (IException *e)
@@ -966,73 +1031,6 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
     }
     else if (exception)
         throw exception.getClear();
-}
-
-void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
-{
-    CriticalBlock b(progressCrit);
-    if (queryOwner())
-    {
-        if (isGlobal())
-        {
-            CMessageBuffer msg;
-            // nothing changed if rerunning, unless conditional branches different
-            if (!graphCancelHandler.recv(queryJobChannel().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
-                throw MakeStringException(0, "Error receiving createctx data for graph: %" GIDPF "d", graphId);
-            try
-            {
-                size32_t len;
-                msg.read(len);
-                if (len)
-                {
-                    MemoryBuffer initData;
-                    initData.append(len, msg.readDirect(len));
-                    deserializeCreateContexts(initData);
-                }
-                msg.clear();
-                msg.append(false);
-            }
-            catch (IException *e)
-            {
-                msg.clear();
-                msg.append(true);
-                serializeThorException(e, msg);
-            }
-            if (!queryJobChannel().queryJobComm().send(msg, 0, msg.getReplyTag(), LONGTIMEOUT))
-                throw MakeStringException(0, "Timeout sending init data back to master");
-        }
-        else
-        {
-            ForEachItemIn(i, ifs)
-            {
-                CGraphElementBase &ifElem = ifs.item(i);
-                if (ifElem.newWhichBranch)
-                {
-                    ifElem.newWhichBranch = false;
-                    sentInitData = false; // force re-request of create data.
-                    break;
-                }
-            }
-            if ((reinit || !sentInitData))
-            {
-                sentInitData = true;
-                CMessageBuffer msg;
-                msg.append(smt_initGraphReq);
-                msg.append(graphId);
-                if (!queryJobChannel().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
-                    throwUnexpected();
-                size32_t len;
-                msg.read(len);
-                if (len)
-                    deserializeCreateContexts(msg);
-
-// could still request 1 off, onCreate serialization from master 1st.
-                CGraphBase::create(parentExtractSz, parentExtract);
-                return;
-            }
-        }
-    }
-    CGraphBase::create(parentExtractSz, parentExtract);
 }
 
 void CSlaveGraph::abort(IException *e)

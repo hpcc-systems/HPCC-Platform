@@ -228,20 +228,7 @@ void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDat
     unsigned parts;
     data.read(parts);
     if (parts)
-    {
         deserializePartFileDescriptors(data, partDescs);
-        unsigned encryptedKeyLen;
-        void *encryptedKey;
-        helper->getEncryptKey(encryptedKeyLen, encryptedKey);
-        if (0 != encryptedKeyLen) 
-        {
-            bool dfsEncrypted = partDescs.item(0).queryOwner().queryProperties().getPropBool("@encrypted");
-            if (dfsEncrypted) // otherwise ignore (warning issued by master)
-                eexp.setown(createAESExpander256(encryptedKeyLen, encryptedKey));
-            memset(encryptedKey, 0, encryptedKeyLen);
-            free(encryptedKey);
-        }
-    }
 }
 
 const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)
@@ -254,6 +241,17 @@ void CDiskReadSlaveActivityBase::start()
     PARENT::start();
     markStart = true;
     diskProgress = 0;
+    unsigned encryptedKeyLen;
+    void *encryptedKey;
+    helper->getEncryptKey(encryptedKeyLen, encryptedKey);
+    if (0 != encryptedKeyLen)
+    {
+        bool dfsEncrypted = partDescs.item(0).queryOwner().queryProperties().getPropBool("@encrypted");
+        if (dfsEncrypted) // otherwise ignore (warning issued by master)
+            eexp.setown(createAESExpander256(encryptedKeyLen, encryptedKey));
+        memset(encryptedKey, 0, encryptedKeyLen);
+        free(encryptedKey);
+    }
 }
 
 void CDiskReadSlaveActivityBase::kill()
@@ -485,16 +483,6 @@ void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDa
     }
     if (0 != (diskHelperBase->getFlags() & TDXgrouped))
         grouped = true;
-    compress = partDesc->queryOwner().isCompressed();
-    void *ekey;
-    size32_t ekeylen;
-    diskHelperBase->getEncryptKey(ekeylen,ekey);
-    if (ekeylen!=0) {
-        ecomp.setown(createAESCompressor256(ekeylen,ekey));
-        memset(ekey,0,ekeylen);
-        free(ekey);
-        compress = true;
-    }
 }
 
 void CDiskWriteSlaveActivityBase::abort()
@@ -533,6 +521,17 @@ void CDiskWriteSlaveActivityBase::kill()
 
 void CDiskWriteSlaveActivityBase::process()
 {
+    compress = partDesc->queryOwner().isCompressed();
+    void *ekey;
+    size32_t ekeylen;
+    diskHelperBase->getEncryptKey(ekeylen,ekey);
+    if (ekeylen!=0)
+    {
+        ecomp.setown(createAESCompressor256(ekeylen,ekey));
+        memset(ekey,0,ekeylen);
+        free(ekey);
+        compress = true;
+    }
     calcFileCrc = false;
     uncompressedBytesWritten = 0;
     replicateDone = 0;

@@ -2447,7 +2447,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         {
             IHqlExpression * child = expr->queryChild(0);
             IValue * constValue = child->queryValue();
-            unsigned last = expr->numChildren()-1;
+            unsigned last = numNonAttributes(expr)-1;
             if (constValue)
             {
                 unsigned idx = (unsigned)constValue->getIntValue();

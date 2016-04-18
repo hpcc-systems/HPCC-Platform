@@ -30,6 +30,10 @@
 
   <programlisting>Extern "C" _declspec(dllexport) unsigned _cdecl Countchars(const unsigned len, const char *string)</programlisting>
 
+  <para><emphasis role="bold">Note</emphasis>: The use of an external SERVICE
+  may be restricted to signed modules. See Code Signing in the ECL
+  Programmer's Guide.</para>
+
   <sect2 id="DLL_Initialization">
     <title>.SO Initialization</title>
 

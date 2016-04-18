@@ -31,7 +31,13 @@
           <entry><emphasis>attrname</emphasis></entry>
 
           <entry>A null-terminated string containing the name of the file
-          attribute to return.</entry>
+          attribute to return. Possible values are recordSize, recordCount,
+          size, clusterName, directory, owner, description, ECL, partmask,
+          numparts, name, modified, format, job, checkSum, kind, csvSeparate,
+          csvTerminate, headerLength, footerLength, rowTag, workunit,
+          accessed, maxRecordSize, csvQuote, blockCompressed, compressedSize,
+          fileCrc, formatCrc, or protected. The value is
+          case-sensitive.</entry>
         </row>
 
         <row>
@@ -59,5 +65,30 @@ OUTPUT(STD.File.GetLogicalFileAttribute(file,'size'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'clusterName'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'directory'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'numparts'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'owner'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'description'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'ECL'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'partmask'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'numparts'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'name'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'modified'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'protected'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'format'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'job'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'checkSum'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'kind'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvSeparate'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvTerminate'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'headerLength'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'footerLength'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'rowtag'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'workunit'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'accessed'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'maxRecordSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvQuote'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed '));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'compressedSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'fileCrc'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'formatCrc'));
 </programlisting>
 </sect1>

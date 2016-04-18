@@ -94,12 +94,12 @@ interface IThorDataLink : extends IInterface
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
     virtual bool isGrouped() const { return false; }
     virtual IOutputMetaData * queryOutputMeta() const = 0;
-    virtual unsigned queryOutputIdx() const = 0;
     virtual bool isInputOrdered(bool consumerOrdered) const = 0;
     virtual IStrandJunction *getOutputStreams(CActivityBase &_ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) = 0;
     virtual void setOutputStream(unsigned index, IEngineRowStream *stream) = 0;
 // progress methods
     virtual void dataLinkSerialize(MemoryBuffer &mb) const = 0;
+    virtual rowcount_t getProgressCount() const = 0;
 // timing methods
     virtual unsigned __int64 queryTotalCycles() const = 0;
     virtual unsigned __int64 queryEndCycles() const = 0;
@@ -110,11 +110,7 @@ interface IThorDataLink : extends IInterface
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
 };
 
-// helper interface. Used by maintainer of output links
-interface IThorDataLinkExt : extends IThorDataLink
-{
-    virtual void setOutputIdx(unsigned idx) = 0;
-};
+inline void serializeNullItdl(MemoryBuffer &mb) { mb.append((rowcount_t)0); }
 
 class CThorInput;
 interface IThorSlaveActivity

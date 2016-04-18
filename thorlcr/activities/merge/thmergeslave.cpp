@@ -184,7 +184,8 @@ public:
         }
         void stop() 
         {
-            if (!stopped) {
+            if (!stopped)
+            {
                 stopped = true;
                 parent->queryJobChannel().queryJobComm().cancel(RANK_ALL, tag);
                 join();
@@ -420,7 +421,7 @@ public:
     LocalMergeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container) { }
 
 // IThorSlaveActivity overloaded methods
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         helper = (IHThorMergeArg *)queryHelper();
         appendOutputLinked(this);
@@ -434,7 +435,7 @@ public:
 
 
 // IThorDataLink
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         ForEachItemIn(i, inputs)
@@ -460,9 +461,10 @@ public:
         dataLinkStart();
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
-        out->stop();
+        if (out)
+            out->stop();
         dataLinkStop();
     }
 
@@ -526,6 +528,8 @@ public:
 
 class CNWayMergeActivity : public CThorNarySlaveActivity, public CThorSteppable
 {
+    typedef CThorNarySlaveActivity PARENT;
+
     IHThorNWayMergeArg *helper;
     CThorStreamMerger merger;
     CSteppingMeta meta;
@@ -534,7 +538,7 @@ class CNWayMergeActivity : public CThorNarySlaveActivity, public CThorSteppable
     PointerArrayOf<IEngineRowStream> expandedInputStreams;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
+    IMPLEMENT_IINTERFACE_USING(PARENT);
 
     CNWayMergeActivity(CGraphElementBase *container) : CThorNarySlaveActivity(container), CThorSteppable(this)
     {
@@ -560,7 +564,7 @@ public:
         merger.done();
         CThorNarySlaveActivity::stop();
     }
-    virtual void reset()
+    virtual void reset() override
     {
         CThorNarySlaveActivity::reset();
         initializedMeta = false;

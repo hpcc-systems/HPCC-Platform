@@ -73,6 +73,11 @@ public:
                 patchTlkPart.setown(deserializePartFileDescriptor(data));
             }
         }
+    }
+    virtual void process()
+    {
+        processed = THORDATALINK_STARTED;
+        if (abortSoon) return;
 
         StringBuffer originalFilePart, updatedFilePart;
         OwnedRoxieString origName(helper->getOriginalName());
@@ -100,11 +105,6 @@ public:
                 tlkDiffGenerator.setown(createKeyDiffGenerator(originalFilePart.str(), updatedFilePart.str(), tmp.str(), 0, true, COMPRESS_METHOD_LZMA));
             }
         }
-    }
-    virtual void process()
-    {
-        processed = THORDATALINK_STARTED;
-        if (abortSoon) return;
         try
         {
             diffGenerator->run();

@@ -5251,7 +5251,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
         if (options.spotCSE)
             cseValue.setown(spotScalarCSE(cseValue, NULL, queryOptions().spotCseInIfDatasetConditions));
 
-        if ((retType == type_set) && isComplexSet(resultType, false) && castValue->getOperator() == no_list && !isNullList(castValue))
+        if ((retType == type_set) && isComplexSet(resultType, castValue->isConstant()) && castValue->getOperator() == no_list && !isNullList(castValue))
         {
             CHqlBoundTarget tempTarget;
             createTempFor(ctx, resultType, tempTarget, typemod_none, FormatBlockedDataset);
@@ -8368,7 +8368,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRegroup(BuildCtx & ctx, IHqlEx
     ForEachItemIn(idx, inExprs)
     {
         IHqlExpression & cur = inExprs.item(idx);
-        bound.append(*buildCachedActivity(ctx, &cur));
+        if (!cur.isAttribute())
+            bound.append(*buildCachedActivity(ctx, &cur));
     }
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKregroup, expr, "Regroup");
@@ -13819,7 +13820,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLinkedRawChildDataset(BuildCtx
 
     buildInstancePrefix(instance);
 
-    OwnedHqlExpr value = expr->isDatarow() ? createDatasetFromRow(LINK(expr)) : LINK(expr);
+    OwnedHqlExpr nonparallel = removeAttribute(expr, parallelAtom);
+    OwnedHqlExpr value = expr->isDatarow() ? createDatasetFromRow(nonparallel.getClear()) : nonparallel.getClear();
     BuildCtx * declarectx;
     BuildCtx * callctx;
     instance->evalContext->getInvariantMemberContext(NULL, &declarectx, &callctx, false, true);     // possibly should sometimes generate in onCreate(), if can evaluate in parent
@@ -16294,7 +16296,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChoose(BuildCtx & ctx, IHqlExp
 
     CIArrayOf<ABoundActivity> inputs;
     ForEachChildFrom(i, expr, 1)
-        inputs.append(*getConditionalActivity(ctx, expr->queryChild(i), isChild));
+    {
+        IHqlExpression * cur = queryRealChild(expr, i);
+        if (cur)
+            inputs.append(*getConditionalActivity(ctx, cur, isChild));
+    }
 
     OwnedHqlExpr branch = adjustValue(expr->queryChild(0), -1);
     return doBuildActivityChoose(ctx, expr, branch, inputs, isRoot);

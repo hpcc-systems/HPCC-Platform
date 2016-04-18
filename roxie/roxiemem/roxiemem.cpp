@@ -2259,6 +2259,7 @@ public:
         : CRoxieFixedRowHeapBase(_rowManager, _allocatorId, _flags), heap(_heap)
     {
     }
+    ~CRoxieDirectFixedRowHeap();
 
     virtual void *allocate();
 
@@ -2279,6 +2280,7 @@ public:
         : CRoxieFixedRowHeapBase(_rowManager, _allocatorId, _flags), heap(_heap)
     {
     }
+    ~CRoxieDirectPackedRowHeap();
 
     virtual void *allocate();
 
@@ -2569,6 +2571,9 @@ public:
         if (atomic_read(&possibleEmptyPages) == 0)
             return 0;
 
+        if (flags & RHForphaned)
+            forceFreeAll = true;
+
         //You will get a false positive if possibleEmptyPages is set while walking the active page list, but that
         //only mean the list is walked more than it needs to be.
         atomic_set(&possibleEmptyPages, 0);
@@ -2823,6 +2828,13 @@ public:
     const void * compactRow(const void * ptr, HeapCompactState & state);
 
     inline unsigned maxChunksPerPage() const { return chunksPerPage; }
+
+    //No longer any external references to a unique heap.  Mark so it can be cleaned up early.
+    void noteOrphaned()
+    {
+        dbgassertex(flags & RHFunique);
+        flags |= RHForphaned;
+    }
 
 
 protected:
@@ -4566,6 +4578,18 @@ void * CRoxieFixedRowHeap::allocate()
 void * CRoxieDirectFixedRowHeap::allocate()
 {
     return heap->allocate(allocatorId);
+}
+
+CRoxieDirectFixedRowHeap::~CRoxieDirectFixedRowHeap()
+{
+    if (heap && (flags & RHFunique))
+        heap->noteOrphaned();
+}
+
+CRoxieDirectPackedRowHeap::~CRoxieDirectPackedRowHeap()
+{
+    if (heap && (flags & RHFunique))
+        heap->noteOrphaned();
 }
 
 void * CRoxieDirectPackedRowHeap::allocate()

@@ -54,6 +54,7 @@ extern HQL_API IHqlExpression * createRecord(IHqlExpression * field);
 extern HQL_API IHqlExpression * queryFirstField(IHqlExpression * record);
 extern HQL_API IHqlExpression * queryLastField(IHqlExpression * record);
 extern HQL_API IHqlExpression * queryLastNonAttribute(IHqlExpression * expr);
+extern HQL_API unsigned numNonAttributes(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryNextRecordField(IHqlExpression * recorhqlutid, unsigned & idx);
 extern HQL_API void expandRecord(HqlExprArray & selects, IHqlExpression * selector, IHqlExpression * expr);
 

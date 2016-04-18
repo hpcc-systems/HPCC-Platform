@@ -73,6 +73,11 @@ public:
                     copyTlk = true;
             }
         }
+    }
+    virtual void process()
+    {
+        processed = THORDATALINK_STARTED;
+        if (abortSoon) return;
 
         StringBuffer originalFilePart, patchFilePart;
         OwnedRoxieString originalName(helper->getOriginalName());
@@ -101,11 +106,6 @@ public:
                 tlkPatchApplicator.setown(createKeyDiffApplicator(patchFilePart.str(), originalFilePart.str(), tmp.str(), NULL, true, true));
             }
         }
-    }
-    virtual void process()
-    {
-        processed = THORDATALINK_STARTED;
-        if (abortSoon) return;
         try
         {
             patchApplictor->run();

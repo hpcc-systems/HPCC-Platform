@@ -2623,6 +2623,54 @@ void FileSprayer::setTarget(IDistributedFile * target)
     }
 }
 
+void FileSprayer::checkTargetPath(RemoteFilename & filename)
+{
+    StringBuffer targetFilePath;
+    filename.getLocalPath(targetFilePath);
+    const char * ptargetFilePath = targetFilePath.str();
+
+    if (filename.queryIP().isLoopBack())
+        throwError1(DFTERR_LocalhostAddressUsed, ptargetFilePath);
+
+#ifdef _DEBUG
+    LOG(MCdebugInfo, unknownJob, "Target file path is '%s'", targetFilePath.str());
+#endif
+
+    const char pathSep = filename.getPathSeparator();
+    const char dotString[]    = {pathSep, '.', pathSep, '\0'};
+    const char dotDotString[] = {pathSep, '.', '.', pathSep, '\0'};
+
+    const char * isDotString = strstr(ptargetFilePath, dotString);
+    const char * isDotDotString = strstr(ptargetFilePath, dotDotString);
+    if ((isDotDotString != nullptr) || (isDotString != nullptr))
+        throwError3(DFTERR_InvalidTargetPath, ptargetFilePath, dotDotString, dotString);
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    if (factory)
+    {
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        if (env)
+        {
+            StringBuffer netaddress;
+            filename.queryIP().getIpText(netaddress);
+
+            Owned<IConstDropZoneInfo> targetDropZone = env->getDropZoneByAddressPath(netaddress.str(), ptargetFilePath);
+            if (!targetDropZone)
+                    throwError1(DFTERR_NoMatchingDropzonePath, ptargetFilePath);
+        }
+    }
+}
+
+void FileSprayer::checkTarget(IFileDescriptor * target)
+{
+    unsigned numParts = target->numParts();
+    RemoteFilename filename;
+    for (unsigned idx=0; idx < numParts; idx++)
+    {
+        target->getFilename(idx, 0, filename);
+        checkTargetPath(filename);
+    }
+}
 
 void FileSprayer::setTarget(IFileDescriptor * target, unsigned copy)
 {

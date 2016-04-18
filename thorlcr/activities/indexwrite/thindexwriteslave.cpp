@@ -80,7 +80,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
         receivingTag2 = false;
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
+    IMPLEMENT_IINTERFACE_USING(PARENT);
 
     IndexWriteSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
     {
@@ -119,10 +119,8 @@ public:
             {
                 if (buildTlk)
                     tlkDesc.setown(deserializePartFileDescriptor(data));
-                else if (!isLocal) // exising tlk then..
+                else if (!isLocal) // existing tlk then..
                 {
-                    OwnedRoxieString diName(helper->getDistributeIndexName());
-                    assertex(diName.get());
                     tlkDesc.setown(deserializePartFileDescriptor(data));
                     unsigned c;
                     data.read(c);
@@ -138,7 +136,7 @@ public:
                         }
                     }
                     if (!existingTlkIFile)
-                        throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", diName.get());
+                        throw MakeActivityException(this, TE_FileNotFound, "Top level key part does not exist, for key");
                 }
             }
         }

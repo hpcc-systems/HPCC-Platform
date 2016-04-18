@@ -79,6 +79,7 @@ CActivityBase *createWorkUnitActivityMaster(CMasterGraphElement *container)
 {
     StringBuffer diskFilename;
     IHThorWorkunitReadArg *wuReadHelper = (IHThorWorkunitReadArg *)container->queryHelper();
+    wuReadHelper->onCreate(container->queryCodeContext(), NULL, NULL);
     OwnedRoxieString fromWuid(wuReadHelper->getWUID());
     if (getWorkunitResultFilename(*container, diskFilename, fromWuid, wuReadHelper->queryName(), wuReadHelper->querySequence()))
     {
