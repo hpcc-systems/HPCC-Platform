@@ -127,6 +127,7 @@ public:
     virtual void setTarget(IGroup * target) = 0;
     virtual void setTarget(INode * target) = 0;
     virtual void spray() = 0;
+    virtual void checkTarget(IFileDescriptor * target) = 0;
 };
 
 extern DALIFT_API IFileSprayer * createFileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * recoveryConnection, const char *wuid);

@@ -202,6 +202,7 @@ public:
     unsigned numParallelSlaves();
     void setError(const SocketEndpoint & ep, IException * e);
     bool canLocateSlaveForNode(const IpAddress &ip);
+    void checkTarget(IFileDescriptor * target);
 
 protected:
     void addEmptyFilesToPartition(unsigned from, unsigned to);

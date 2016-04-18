@@ -2661,6 +2661,17 @@ void FileSprayer::checkTargetPath(RemoteFilename & filename)
     }
 }
 
+void FileSprayer::checkTarget(IFileDescriptor * target)
+{
+    unsigned numParts = target->numParts();
+    RemoteFilename filename;
+    for (unsigned idx=0; idx < numParts; idx++)
+    {
+        target->getFilename(idx, 0, filename);
+        checkTargetPath(filename);
+    }
+}
+
 void FileSprayer::setTarget(IFileDescriptor * target, unsigned copy)
 {
     if (tgtFormat.restore(&target->queryProperties()))
@@ -2676,7 +2687,6 @@ void FileSprayer::setTarget(IFileDescriptor * target, unsigned copy)
     for (unsigned idx=0; idx < numParts; idx++)
     {
         target->getFilename(idx, copy, filename);
-        checkTargetPath(filename);
         targets.append(*new TargetLocation(filename));
     }
 }
