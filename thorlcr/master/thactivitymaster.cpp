@@ -108,7 +108,9 @@ public:
         {
             case TAKfiltergroup:
             case TAKlocalresultread:
+            case TAKif:
             case TAKchildif:
+            case TAKcase:
             case TAKchildcase:
             case TAKdegroup:
             case TAKsplit:
@@ -384,8 +386,6 @@ public:
                 break;
             case TAKchilddataset:
                 UNIMPLEMENTED;
-            case TAKcase:           // gen. time.
-            case TAKif:
             case TAKifaction:
                 throwUnexpected();
             case TAKwhen_dataset:

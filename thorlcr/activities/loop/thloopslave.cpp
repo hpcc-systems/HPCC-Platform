@@ -210,14 +210,14 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
                     exception.setown(e);
             }
         }
-        virtual const void *nextRow()
+        virtual const void *nextRow() override
         {
             OwnedConstThorRow row = smartbuf->nextRow();
             if (exception)
                 throw exception.getClear();
             return row.getClear();
         }
-        virtual void stop()
+        virtual void stop() override
         {
             /* NB: signals wants to stop and discards further rows coming out of loop,
              * but reader thread keeps looping, until finishedLooping=true.
@@ -423,9 +423,10 @@ public:
     {
         return nextRowFeeder->nextRow();
     }
-    virtual void stop()
+    virtual void stop() override
     {
-        nextRowFeeder->stop(); // NB: This will block if this slave's loop hasn't hit eof, it will continue looping until 'finishedLooping'
+        if (nextRowFeeder)
+            nextRowFeeder->stop(); // NB: This will block if this slave's loop hasn't hit eof, it will continue looping until 'finishedLooping'
     }
 };
 
@@ -790,64 +791,176 @@ class CConditionalActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
-    IThorDataLink *selectedInput = NULL;
-    IEngineRowStream *selectInputStream = NULL;
+    bool grouped = false;
+    bool hasGrouped = false;
+    IEngineRowStream *selectInputStream = nullptr;
+    IHThorIfArg *helper;
+
+protected:
+    unsigned branch = (unsigned)-1;
+
 public:
     CConditionalActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        selectedInput = container.whichBranch>=inputs.ordinality() ? NULL : queryInput(container.whichBranch);
-        selectInputStream = NULL;
-        if (selectedInput)
+        ForEachItemIn(i, inputs)
         {
-            startInput(container.whichBranch);
-            selectInputStream = queryInputStream(container.whichBranch);
+            if (i != branch)
+                stopInput(i);
+        }
+        if (queryInput(branch))
+        {
+            startInput(branch);
+            selectInputStream = inputs.item(branch).stream;
         }
         dataLinkStart();
     }
-    virtual void stop()
+    virtual void stop() override
     {
-        if (selectInputStream)
-            stopInput(container.whichBranch);
+        if ((branch>0) && queryInput(branch)) // branch 0 stopped by PARENT::stop
+            stopInput(branch);
+        selectInputStream = NULL;
         abortSoon = true;
-        dataLinkStop();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (abortSoon)
-            return NULL;
-        if (!selectedInput)
-            return NULL;
-
+            return nullptr;
+        if (!selectInputStream)
+            return nullptr;
         OwnedConstThorRow ret = selectInputStream->nextRow();
         if (ret)
             dataLinkIncrement();
         return ret.getClear();
     }
-    virtual bool isGrouped() const override { return selectedInput?selectedInput->isGrouped():false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return grouped; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
+    }
+    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
+    {
+        PARENT::setInputStream(index, _input, consumerOrdered);
+        if (_input.itdl)
+        {
+            bool thisInputGrouped = _input.itdl->isGrouped();
+            if (!hasGrouped)
+            {
+                hasGrouped = true;
+                grouped = thisInputGrouped;
+            }
+            else
+                assertex(grouped == thisInputGrouped);
+        }
+    }
+};
+
+class CIfConditionalActivity : public CConditionalActivity
+{
+    typedef CConditionalActivity PARENT;
+
+    IHThorIfArg *helper;
+public:
+    CIfConditionalActivity(CGraphElementBase *_container) : CConditionalActivity(_container)
+    {
+        helper = (IHThorIfArg *)baseHelper.get();
+    }
+    virtual void start() override
+    {
+        ActivityTimer s(totalCycles, timeActivities);
+        branch = helper->getCondition() ? 0 : 1;
+        PARENT::start();
     }
 };
 
 activityslaves_decl CActivityBase *createIfSlave(CGraphElementBase *container)
 {
-    return new CConditionalActivity(container);
+    return new CIfConditionalActivity(container);
 }
+
+class CCaseConditionalActivity : public CConditionalActivity
+{
+    typedef CConditionalActivity PARENT;
+
+    IHThorCaseArg *helper;
+public:
+    CCaseConditionalActivity(CGraphElementBase *_container) : CConditionalActivity(_container)
+    {
+        helper = (IHThorCaseArg *)baseHelper.get();
+    }
+    virtual void start() override
+    {
+        ActivityTimer s(totalCycles, timeActivities);
+        branch = helper->getBranch();
+        if (branch >= queryNumInputs())
+            branch = queryNumInputs() - 1;
+        PARENT::start();
+    }
+};
 
 activityslaves_decl CActivityBase *createCaseSlave(CGraphElementBase *container)
 {
-    return new CConditionalActivity(container);
+    return new CCaseConditionalActivity(container);
 }
+
+class CIfActionActivity : public ProcessSlaveActivity
+{
+    typedef ProcessSlaveActivity PARENT;
+
+    bool cond = false;
+    IHThorIfArg *helper;
+
+public:
+    CIfActionActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
+    {
+        helper = (IHThorIfArg *)baseHelper.get();
+    }
+    // IThorSlaveProcess overloaded methods
+    virtual void process() override
+    {
+        processed = THORDATALINK_STARTED;
+        ActivityTimer t(totalCycles, timeActivities);
+        cond = helper->getCondition();
+        if (cond)
+        {
+            if (inputs.item(1).itdl)
+                stopInput(1); // Note: stopping unused branches early helps us avoid buffering splits too long.
+            startInput(0);
+        }
+        else
+        {
+            stopInput(0); // Note: stopping unused branches early helps us avoid buffering splits too long.
+            if (inputs.item(1).itdl)
+                startInput(1);
+        }
+    }
+    virtual void endProcess() override
+    {
+        if (processed & THORDATALINK_STARTED)
+        {
+            if (cond)
+                stopInput(0);
+            else
+                stopInput(1);
+            processed |= THORDATALINK_STOPPED;
+        }
+    }
+};
+
+activityslaves_decl CActivityBase *createIfActionSlave(CGraphElementBase *container)
+{
+    return new CIfActionActivity(container);
+}
+
 
 
 //////////// NewChild acts - move somewhere else..
@@ -993,7 +1106,7 @@ public:
         allocator.set(queryRowAllocator());
         appendOutputLinked(this);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
@@ -1001,10 +1114,6 @@ public:
         aggregated.clear();
         aggregated.setown(new RowAggregator(*helper, *helper));
         aggregated->start(queryRowAllocator());
-    }
-    virtual void stop()
-    {
-        PARENT::stop();
     }
     CATCH_NEXTROW()
     {

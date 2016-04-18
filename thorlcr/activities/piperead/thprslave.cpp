@@ -233,22 +233,17 @@ public:
         flags = helper->getPipeFlags();
         needTransform = false;
 
-        IThorRowInterfaces *_inrowif;
         if (needTransform)
-        {
-            inrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
-            _inrowif = inrowif;
-        }
-        else
-            _inrowif = this;
-        OwnedRoxieString xmlIteratorPath(helper->getXmlIteratorPath());
-        readTransformer.setown(createReadRowStream(_inrowif->queryRowAllocator(), _inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIteratorPath, flags));
+            inrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(), queryId(), queryCodeContext()));
         appendOutputLinked(this);
     }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        OwnedRoxieString xmlIteratorPath(helper->getXmlIteratorPath());
+        IThorRowInterfaces *_inrowif = needTransform ? inrowif.get() : this;
+        readTransformer.setown(createReadRowStream(_inrowif->queryRowAllocator(), _inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIteratorPath, flags));
         eof = false;
         OwnedRoxieString pipeProgram(helper->getPipeProgram());
         openPipe(pipeProgram, "PIPEREAD");
@@ -356,16 +351,16 @@ public:
         recreate = helper->recreateEachRow();
         grouped = 0 != (flags & TPFgroupeachrow);
 
-        OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
-        readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIterator, flags));
-        readTransformer->setStream(pipeStream); // NB the pipe process stream is provided to pipeStream after pipe->run()
-
         appendOutputLinked(this);
     }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
+        readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIterator, flags));
+        readTransformer->setStream(pipeStream); // NB the pipe process stream is provided to pipeStream after pipe->run()
+
         eof = anyThisGroup = inputExhausted = false;
         firstRead = true;
 

@@ -79,12 +79,13 @@ private:
 #endif
         sorter->Gather(::queryRowInterfaces(input), inputStream, compare, NULL, NULL, keyserializer, NULL, false, isUnstable(), abortSoon, NULL);
         PARENT::stop();
-        if(abortSoon)
+        if (abortSoon)
         {
             barrier->cancel();
             return NULL;
         }
-        if (!barrier->wait(false)) {
+        if (!barrier->wait(false))
+        {
             Sleep(1000); // let original error through
             throw MakeThorException(TE_BarrierAborted,"SELFJOIN: Barrier Aborted");
         }
@@ -141,9 +142,9 @@ public:
         else
             ActPrintLog("SELFJOIN: GLOBAL");
     }
-    virtual void reset()
+    virtual void reset() override
     {
-        CSlaveActivity::reset();
+        PARENT::reset();
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
         if (!isLocal && TAG_NULL != mpTagRPC)
             sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
@@ -187,7 +188,7 @@ public:
     }
     virtual void stop() override
     {
-        if(!isLocal)
+        if (!isLocal)
         {
             barrier->wait(false);
             sorter->stopMerge();
@@ -196,8 +197,11 @@ public:
             CriticalBlock b(joinHelperCrit);
             joinhelper.clear();
         }
-        strm->stop();
-        strm.clear();
+        if (strm)
+        {
+            strm->stop();
+            strm.clear();
+        }
         PARENT::stop();
     }
     

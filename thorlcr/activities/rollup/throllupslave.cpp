@@ -286,8 +286,8 @@ class CDedupBaseSlaveActivity : public CDedupRollupBaseActivity
 {
 protected:
     IHThorDedupArg *ddhelper;
-    bool keepLeft;
-    unsigned numToKeep;
+    bool keepLeft = 0;
+    unsigned numToKeep = 0;
 
 public:
     CDedupBaseSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp)
@@ -299,14 +299,14 @@ public:
         CDedupRollupBaseActivity::init(data, slaveData);
         appendOutputLinked(this);   // adding 'me' to outputs array
         ddhelper = static_cast <IHThorDedupArg *>(queryHelper());
-        keepLeft = ddhelper->keepLeft();
-        numToKeep = ddhelper->numToKeep();
-        assertex(keepLeft || numToKeep == 1);
     }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDedupRollupBaseActivity::start();
+        keepLeft = ddhelper->keepLeft();
+        numToKeep = ddhelper->numToKeep();
+        assertex(keepLeft || numToKeep == 1);
     }
     virtual bool isGrouped() const override { return groupOp; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
@@ -320,8 +320,6 @@ public:
 class CDedupSlaveActivity : public CDedupBaseSlaveActivity
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CDedupSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp)
         : CDedupBaseSlaveActivity(_container, global, groupOp)
     {
@@ -410,12 +408,12 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         CDedupBaseSlaveActivity::init(data, slaveData);
-        assertex(1 == numToKeep);
     }
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDedupBaseSlaveActivity::start();
+        assertex(1 == numToKeep);
 
         lastEog = false;
         assertex(!global);      // dedup(),local,all only supported

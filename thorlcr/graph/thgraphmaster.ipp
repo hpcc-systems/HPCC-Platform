@@ -43,6 +43,7 @@ class graphmaster_decl CMasterGraph : public CGraphBase
     CriticalSection createdCrit;
     Owned<IFatalHandler> fatalHandler;
     CriticalSection exceptCrit;
+    bool sentGlobalInit = false;
 
     CReplyCancelHandler activityInitMsgHandler, bcastMsgHandler, executeReplyMsgHandler;
 
@@ -65,19 +66,18 @@ public:
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
     CriticalSection &queryCreateLock() { return createdCrit; }
     void handleSlaveDone(unsigned node, MemoryBuffer &mb);
-    void serializeCreateContexts(MemoryBuffer &mb);
     bool serializeActivityInitData(unsigned slave, MemoryBuffer &mb, IThorActivityIterator &iter);
     void readActivityInitData(MemoryBuffer &mb, unsigned slave);
     bool deserializeStats(unsigned node, MemoryBuffer &mb);
     virtual void setComplete(bool tf=true);
-    virtual bool prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async);
-    virtual void create(size32_t parentExtractSz, const byte *parentExtract);
+    virtual bool prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async) override;
+    virtual void execute(size32_t _parentExtractSz, const byte *parentExtract, bool checkDependencies, bool async) override;
 
-    virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
-    virtual void start();
-    virtual void done();
-    virtual void reset();
-    virtual void abort(IException *e);
+    virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract) override;
+    virtual void start() override;
+    virtual void done() override;
+    virtual void reset() override;
+    virtual void abort(IException *e) override;
     IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     IThorResult *createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
@@ -328,16 +328,13 @@ public:
 
 class graphmaster_decl CMasterGraphElement : public CGraphElementBase
 {
+    bool initialized = false;
 public:
-    IMPLEMENT_IINTERFACE;
-    
-    bool sentCreateCtx;
-
     CMasterGraphElement(CGraphBase &owner, IPropertyTree &xgmml);
     void doCreateActivity(size32_t parentExtractSz=0, const byte *parentExtract=NULL);
     virtual bool checkUpdate();
 
-    virtual void initActivity();
+    virtual void initActivity() override;
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb);
 };
 

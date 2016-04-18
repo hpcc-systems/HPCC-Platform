@@ -212,10 +212,12 @@ public:
 
 class SoapRowActionSlaveActivity : public ProcessSlaveActivity, implements IWSCRowProvider
 {
+    typedef ProcessSlaveActivity PARENT;
+
     Owned<IWSCHelper> wscHelper;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
+    IMPLEMENT_IINTERFACE_USING(PARENT);
 
     SoapRowActionSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container) { }
 
@@ -262,11 +264,13 @@ public:
 
 class SoapDatasetActionSlaveActivity : public ProcessSlaveActivity, implements IWSCRowProvider
 {
+    typedef ProcessSlaveActivity PARENT;
+
     Owned<IWSCHelper> wscHelper;
     CriticalSection crit;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
+    IMPLEMENT_IINTERFACE_USING(PARENT);
 
     SoapDatasetActionSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container) { }
 

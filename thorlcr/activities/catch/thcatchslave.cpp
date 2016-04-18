@@ -196,7 +196,7 @@ public:
     {
         global = !container->queryLocalOrGrouped();
     }
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {
         CCatchSlaveActivityBase::init(data, slaveData);
         if (global)
@@ -205,7 +205,7 @@ public:
             barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
         }
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         CCatchSlaveActivityBase::start();
@@ -256,10 +256,6 @@ public:
             return NULL;
         dataLinkIncrement();
         return row.getClear();
-    }
-    virtual void stop()
-    {
-        CCatchSlaveActivityBase::stop();
     }
     virtual void abort()
     {

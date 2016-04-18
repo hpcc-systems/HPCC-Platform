@@ -78,9 +78,6 @@ public:
 
     inline void dataLinkStop()
     {
-#ifdef _TESTING
-        assertex(hasStarted());        // ITDL stopped without being started
-#endif
         count |= THORDATALINK_STOPPED;
 #ifdef _TESTING
         owner.ActPrintLog("ITDL output %d stopped, count was %" RCPF "d", outputId, getDataLinkCount());
@@ -119,15 +116,23 @@ public:
     Linked<IThorDebug> tracingStream;
     Linked<IEngineRowStream> stream;
     Linked<IStrandJunction> junction;
-    bool stopped = true;
+    bool stopped = false;
+    bool started = false;
 
     explicit CThorInput() { }
     void set(IThorDataLink *_itdl, unsigned idx) { itdl.set(_itdl); sourceIdx = idx; }
+    void reset()
+    {
+        started = stopped = false;
+        resetJunction(junction);
+    }
+    bool isStopped() const { return stopped; }
+    bool isStarted() const { return started; }
 };
 typedef IArrayOf<CThorInput> CThorInputArray;
 
 class CSlaveGraphElement;
-class graphslave_decl CSlaveActivity : public CActivityBase, public CEdgeProgress, public COutputTiming, implements IThorDataLinkExt, implements IEngineRowStream, implements IThorSlaveActivity
+class graphslave_decl CSlaveActivity : public CActivityBase, public CEdgeProgress, public COutputTiming, implements IThorDataLink, implements IEngineRowStream, implements IThorSlaveActivity
 {
     mutable MemoryBuffer *data;
     mutable CriticalSection crit;
@@ -137,14 +142,13 @@ protected:
     IPointerArrayOf<IThorDataLink> outputs;
     IPointerArrayOf<IEngineRowStream> outputStreams;
     IThorDataLink *input = nullptr;
-    bool inputStopped = true;
+    bool inputStopped = false;
     unsigned inputSourceIdx = 0;
     IEngineRowStream *inputStream = nullptr;
     MemoryBuffer startCtx;
     bool optStableInput = true; // is the input forced to ordered?
     bool optUnstableInput = false;  // is the input forced to unordered?
     bool optUnordered = false; // is the output specified as unordered?
-    unsigned outputIdx = 0; // for IThorDataLinkExt
 
 protected:
     unsigned __int64 queryLocalCycles() const;
@@ -166,6 +170,8 @@ public:
     IThorDataLink *queryInput(unsigned index) const;
     IEngineRowStream *queryInputStream(unsigned index) const;
     IEngineRowStream *queryOutputStream(unsigned index) const;
+    inline bool queryInputStarted(unsigned input) const { return inputs.item(input).isStarted(); }
+    inline bool queryInputStopped(unsigned input) const { return inputs.item(input).isStopped(); }
     unsigned queryInputOutputIndex(unsigned inputIndex) const { return inputs.item(inputIndex).sourceIdx; }
     unsigned queryNumInputs() const { return inputs.ordinality(); }
     void appendOutput(IThorDataLink *itdl);
@@ -184,8 +190,8 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override { }
     virtual bool isGrouped() const override;
     virtual IOutputMetaData * queryOutputMeta() const;
-    virtual unsigned queryOutputIdx() const override { return outputIdx; }
     virtual void dataLinkSerialize(MemoryBuffer &mb) const override;
+    virtual rowcount_t getProgressCount() const override;
     virtual bool isInputOrdered(bool consumerOrdered) const override
     {
         if (optStableInput)
@@ -202,8 +208,6 @@ public:
 
 // IThorDataLink
     virtual void start() override;
-// IThorDataLinkExt
-    virtual void setOutputIdx(unsigned idx) override { outputIdx = idx; }
 
 // IEngineRowStream
     virtual const void *nextRow() override { throwUnexpected(); }
@@ -215,9 +219,25 @@ public:
     virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override;
     virtual void processDone(MemoryBuffer &mb) override { };
     virtual void reset() override;
-    virtual void abort() override;
 };
 
+
+class graphslave_decl CSlaveLateStartActivity : public CSlaveActivity
+{
+    bool prefiltered = false;
+    Owned<CThorInput> nullInput;
+
+protected:
+    void lateStart(bool any);
+
+public:
+    CSlaveLateStartActivity(CGraphElementBase *container) : CSlaveActivity(container)
+    {
+    }
+    virtual void start() override;
+    virtual void stop() override;
+    virtual void reset() override;
+};
 
 graphslave_decl IEngineRowStream *connectSingleStream(CActivityBase &activity, IThorDataLink *input, unsigned idx, Owned<IStrandJunction> &junction, bool consumerOrdered);
 graphslave_decl IEngineRowStream *connectSingleStream(CActivityBase &activity, IThorDataLink *input, unsigned idx, bool consumerOrdered);
@@ -314,8 +334,8 @@ public:
     virtual IStrandJunction *getOutputStreams(CActivityBase &_ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override;
     virtual unsigned __int64 queryTotalCycles() const override;
     virtual void dataLinkSerialize(MemoryBuffer &mb) const override;
+    virtual rowcount_t getProgressCount() const override;
 };
-
 
 
 class graphslave_decl CSlaveGraphElement : public CGraphElementBase
@@ -334,6 +354,7 @@ class graphslave_decl CSlaveGraph : public CGraphBase
     bool initialized, progressActive, progressToCollect;
     CriticalSection progressCrit;
     SpinLock progressActiveLock;
+    bool doneInit = false;
 
 public:
 
@@ -342,7 +363,6 @@ public:
 
     void connect();
     void init(MemoryBuffer &mb);
-    void recvStartCtx();
     bool recvActivityInitData(size32_t parentExtractSz, const byte *parentExtract);
     void setExecuteReplyTag(mptag_t _executeReplyTag) { executeReplyTag = _executeReplyTag; }
     void initWithActData(MemoryBuffer &in, MemoryBuffer &out);
@@ -350,14 +370,13 @@ public:
     void serializeDone(MemoryBuffer &mb);
     IThorResult *getGlobalResult(CActivityBase &activity, IThorRowInterfaces *rowIf, activity_id ownerId, unsigned id);
 
-    virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
+    virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract) override;
     virtual bool serializeStats(MemoryBuffer &mb);
-    virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
-    virtual void start();
-    virtual void create(size32_t parentExtractSz, const byte *parentExtract);
-    virtual void abort(IException *e);
-    virtual void done();
-    virtual void end();
+    virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract) override;
+    virtual void start() override;
+    virtual void abort(IException *e) override;
+    virtual void done() override;
+    virtual void end() override;
     virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
 // IExceptionHandler

@@ -81,20 +81,14 @@ public:
         CDependencyExecutorSlaveActivity::init(data, slaveData);
         appendOutputLinked(this);
     }
-    void preStart(size32_t parentExtractSz, const byte *parentExtract)
-    {
-        CDependencyExecutorSlaveActivity::preStart(parentExtractSz, parentExtract);
-    }
-    virtual void start() override
-    {
-        ActivityTimer s(totalCycles, timeActivities);
-        PARENT::start();
-    }
     virtual void stop() override
     {
         PARENT::stop();
-        if (!executeDependencies(abortSoon ? WhenFailureId : WhenSuccessId))
-            abortSoon = true;
+        if (queryInputStarted(0))
+        {
+            if (!executeDependencies(abortSoon ? WhenFailureId : WhenSuccessId))
+                abortSoon = true;
+        }
     }
     virtual bool isGrouped() const override { return input->isGrouped(); }
     CATCH_NEXTROW()

@@ -234,6 +234,7 @@ public:
         ActPrintLog(&activity, "CRowStreamLookAhead start %x",(unsigned)(memsize_t)this);
 #endif
         stopped = false;
+        running = true;
         thread.start();
         startSem.wait();
     }
