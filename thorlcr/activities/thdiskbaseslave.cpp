@@ -229,6 +229,10 @@ void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDat
     data.read(parts);
     if (parts)
         deserializePartFileDescriptors(data, partDescs);
+
+    // put temp files in individual slave temp dirs (incl port)
+    if ((helper->getFlags() & TDXtemporary) && (!container.queryJob().queryUseCheckpoints()))
+        partDescs.item(0).queryOwner().setDefaultDir(queryTempDir());
 }
 
 const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)
@@ -475,6 +479,11 @@ void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDa
             fileCRC.reset(~crc);
     }
     partDesc.setown(deserializePartFileDescriptor(data));
+
+    // put temp files in individual slave temp dirs (incl port)
+    if ((diskHelperBase->getFlags() & TDXtemporary) && (!container.queryJob().queryUseCheckpoints()))
+        partDesc->queryOwner().setDefaultDir(queryTempDir());
+
     if (dlfn.isExternal())
     {
         mpTag = container.queryJobChannel().deserializeMPTag(data);
