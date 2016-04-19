@@ -1128,30 +1128,30 @@ public:
             CriticalBlock block(lcCrit);
             if (!createdOU)
             {
-        if(m_ldapconfig->getServerType() == OPEN_LDAP)
-        {
-            try
-            {
-                addDC(m_ldapconfig->getBasedn());
-            }
-            catch(...)
-            {
-            }
-            try
-            {
-                addGroup("Directory Administrators", m_ldapconfig->getBasedn());
-            }
-            catch(...)
-            {
-            }
-        }
-        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY);
-        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_ADMINISTRATORS_ONLY);
-        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_ADMINISTRATORS_ONLY);
-        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_ADMINISTRATORS_ONLY);
+                if(m_ldapconfig->getServerType() == OPEN_LDAP)
+                {
+                    try
+                    {
+                        addDC(m_ldapconfig->getBasedn());
+                    }
+                    catch(...)
+                    {
+                    }
+                    try
+                    {
+                        addGroup("Directory Administrators", m_ldapconfig->getBasedn());
+                    }
+                    catch(...)
+                    {
+                    }
+                }
+                createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY);
+                createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_ADMINISTRATORS_ONLY);
+                createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_ADMINISTRATORS_ONLY);
+                createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_ADMINISTRATORS_ONLY);
 
-        createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
-        createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
+                createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
+                createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
                 createdOU = true;
             }
         }
