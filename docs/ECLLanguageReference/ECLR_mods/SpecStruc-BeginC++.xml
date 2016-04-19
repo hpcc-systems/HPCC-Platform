@@ -85,12 +85,12 @@ typedef wchar_t UChar; [ unsigned short in linux ]</programlisting>
     <programlisting><emphasis role="bold">ECL                  C++ [Linux in brackets]</emphasis>
 BOOOLEAN xyz         bool xyz
 INTEGER1 xyz         signed char xyz
-INTEGER2 xyz         signed short xyz
-INTEGER4 xyz         signed int xyz
+INTEGER2 xyz         int16_t xyz
+INTEGER4 xyz         int32_t xyz
 INTEGER8 xyz         signed __int64 xyz [ long long ]
 UNSIGNED1 xyz        unsigned char xyz
-UNSIGNED2 xyz        unsigned short xyz
-UNSIGNED4 xyz        unsigned int xyz
+UNSIGNED2 xyz        uint16_t xyz
+UNSIGNED4 xyz        uint32_t xyz
 UNSIGNED8 xyz        unsigned __int64 xyz [ unsigned long long xyz ]
 REAL4 xyz            float xyz
 REAL/REAL8 xyz       double xyz
