@@ -1121,6 +1121,13 @@ public:
     virtual void init(IPermissionProcessor* pp)
     {
         m_pp = pp;
+        static CriticalSection  lcCrit;
+        static bool createdOU = false;
+        if (!createdOU)
+        {
+            CriticalBlock block(lcCrit);
+            if (!createdOU)
+            {
         if(m_ldapconfig->getServerType() == OPEN_LDAP)
         {
             try
@@ -1145,6 +1152,9 @@ public:
 
         createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
         createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
+                createdOU = true;
+            }
+        }
     }
 
     virtual LdapServerType getServerType()
