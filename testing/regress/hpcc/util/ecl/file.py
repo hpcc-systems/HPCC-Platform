@@ -230,6 +230,7 @@ class ECLFile:
             realName = self.basename + '.ecl ( version: ' + self.getVersion()  + ' )'
         else:
             realName = self.getBaseEcl()
+        logging.debug("%3d.return with:'%s'", self.taskId, realName)
         return realName
 
     def getWuid(self):
