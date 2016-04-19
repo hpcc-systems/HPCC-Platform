@@ -329,7 +329,6 @@ extern IProperties *targetAliases;
 
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
-extern bool crcResources;
 extern bool logFullQueries;
 extern bool blindLogging;
 extern bool debugPermitted;
