@@ -966,7 +966,14 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
         aborting = 2;
         LOG(MCdebugProgress, thorJob, "aborting any current active job");
         if (jM)
+        {
+            if (!e)
+            {
+                _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
+                e = _e;
+            }
             jM->fireException(e);
+        }
         if (errCode == TEC_Clean)
         {
             LOG(MCdebugProgress, thorJob, "Removing sentinel upon normal shutdown");
