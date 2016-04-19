@@ -37,7 +37,7 @@ class CSplitterOutput : public CSimpleInterfaceOf<IStartableEngineRowStream>, pu
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IStartableEngineRowStream>);
 
-    CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned activeOutput);
+    CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned outIdx, unsigned activeOutput);
 
     void reset()
     {
@@ -180,8 +180,9 @@ public:
             unsigned activeOutput = 0;
             ForEachItemIn(o, container.outputs)
             {
-                if (nullptr != container.connectedOutputs.queryItem(o))
-                    appendOutput(new CSplitterOutput(*this, activeOutput++));
+                CIOConnection *io = container.connectedOutputs.queryItem(o);
+                if (nullptr != io)
+                    appendOutput(new CSplitterOutput(*this, io->index, activeOutput++));
                 else
                     appendOutput(nullptr);
             }
@@ -418,8 +419,8 @@ void CSplitterOutput::debugRequest(MemoryBuffer &mb)
 }
 
 
-CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned _activeOutput)
-   : CEdgeProgress(_activity), activity(_activity), activeOutput(_activeOutput)
+CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned outIdx, unsigned _activeOutput)
+   : CEdgeProgress(&_activity, outIdx), activity(_activity), activeOutput(_activeOutput)
 {
 }
 
@@ -434,7 +435,6 @@ void CSplitterOutput::start()
 // IEngineRowStream
 void CSplitterOutput::stop()
 { 
-    CriticalBlock block(activity.startLock);
     stopped = true;
     activity.inputStopped(activeOutput);
     dataLinkStop();
@@ -450,6 +450,8 @@ const void *CSplitterOutput::nextRow()
     ActivityTimer t(totalCycles, activity.queryTimeActivities());
     const void *row = activity.nextRow(activeOutput); // pass ptr to max if need more
     ++rec;
+    if (row)
+        dataLinkIncrement();
     return row;
 }
 
