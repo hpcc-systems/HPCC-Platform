@@ -505,7 +505,7 @@
 
               <entry>Default 10 [MB]</entry>
 
-              <entry>Upper limit of a CSV lin e read in MB.</entry>
+              <entry>Upper limit of a CSV line read in MB.</entry>
             </row>
 
             <row>
@@ -514,7 +514,7 @@
               <entry>Default true</entry>
 
               <entry>Compress internal spills. (e.g., spills created by
-              lookahead or sort gathering). </entry>
+              lookahead or sort gathering).</entry>
             </row>
 
             <row>
@@ -555,7 +555,7 @@
             <row>
               <entry><emphasis>smallSortThreshold</emphasis></entry>
 
-              <entry></entry>
+              <entry>Default 0 (disabled)</entry>
 
               <entry>If estimated size is below this threshold in bytes, a
               minisort approach should be used.</entry>
