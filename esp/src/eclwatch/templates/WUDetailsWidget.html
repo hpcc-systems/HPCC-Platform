@@ -17,8 +17,11 @@
                     <div id="${id}Abort" data-dojo-attach-event="onClick:_onAbort" data-dojo-type="dijit.form.Button">${i18n.Abort}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Recover" data-dojo-attach-event="onClick:_onRecover" data-dojo-type="dijit.form.Button">${i18n.Recover}</div>
+                    <div data-dojo-props="connectId:'${id}Recover',position:['above']" data-dojo-type="dijit.Tooltip">${i18n.RecoverTooltip}</div>
                     <div id="${id}Resubmit" data-dojo-attach-event="onClick:_onResubmit" data-dojo-type="dijit.form.Button">${i18n.Resubmit}</div>
+                    <div data-dojo-props="connectId:'${id}Resubmit',position:['above']" data-dojo-type="dijit.Tooltip">${i18n.ResubmitTooltip}</div>
                     <div id="${id}Clone" data-dojo-attach-event="onClick:_onClone" data-dojo-type="dijit.form.Button">${i18n.Clone}</div>
+                    <div data-dojo-props="connectId:'${id}Clone',position:['above']" data-dojo-type="dijit.Tooltip">${i18n.CloneTooltip}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Publish" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Publish}</span>
