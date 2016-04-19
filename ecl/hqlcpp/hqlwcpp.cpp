@@ -892,14 +892,19 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-        if (isConst)
-            out.append("const ");
         if (hasStreamedModifier(paramType))
             out.append("IRowStream *");
         else if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
+        {
+            //At some point in the future this should change to "const byte * const *"
             out.append("byte * *");
+        }
         else
+        {
+            if (isConst)
+                out.append("const ");
             out.append("void *");
+        }
         if (isOut)
             out.append(" &");
         break;

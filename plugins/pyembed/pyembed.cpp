@@ -1378,7 +1378,7 @@ public:
         addArg(name, vval);
         rtlFree(unicode);
     }
-    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, const void *setData)
     {
         if (isAll)
             rtlFail(0, "pyembed: Cannot pass ALL");
