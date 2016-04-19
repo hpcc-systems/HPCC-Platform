@@ -526,7 +526,7 @@ public:
         size32_t sizeBytes = chars * sizeof(UChar);
         checkSqliteError(sqlite3_bind_text16(stmt, findParameter(name), val, sizeBytes, SQLITE_TRANSIENT)); // NOTE - requires size in bytes not chars
     }
-    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, const void *setData)
     {
         UNSUPPORTED("SET parameters");
     }

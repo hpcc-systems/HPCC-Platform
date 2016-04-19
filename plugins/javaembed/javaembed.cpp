@@ -2720,7 +2720,7 @@ public:
         }
         addArg(v);
     }
-    virtual void bindSetParam(const char *name, int _elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    virtual void bindSetParam(const char *name, int _elemType, size32_t elemSize, bool isAll, size32_t totalBytes, const void *setData)
     {
         jvalue v;
         if (*argsig != '[')

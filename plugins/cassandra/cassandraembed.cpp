@@ -1599,7 +1599,7 @@ public:
                                                  utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr())),
                   name);
     }
-    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, const void *setData)
     {
         if (isAll)
             UNSUPPORTED("SET(ALL)");

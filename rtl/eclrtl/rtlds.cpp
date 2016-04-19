@@ -1700,7 +1700,7 @@ bool rtlCheckInList(const void * lhs, IRtlDatasetCursor * cursor, ICompare * com
 }
 
 
-void rtlSetToSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool inIsAll, size32_t inLen, void * inData)
+void rtlSetToSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool inIsAll, size32_t inLen, const void * inData)
 {
     outIsAll = inIsAll;
     outLen = inLen;
@@ -1709,7 +1709,7 @@ void rtlSetToSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool inI
 }
 
 
-void rtlAppendSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool leftIsAll, size32_t leftLen, void * leftData, bool rightIsAll, size32_t rightLen, void * rightData)
+void rtlAppendSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool leftIsAll, size32_t leftLen, const void * leftData, bool rightIsAll, size32_t rightLen, const void * rightData)
 {
     outIsAll = leftIsAll | rightIsAll;
     if (outIsAll)
