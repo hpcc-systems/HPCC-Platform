@@ -85,6 +85,8 @@ if (MEMCACHED)
             TARGETS memcached
             DESTINATION plugins)
         install(FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/libmemcached/.libs/libmemcached.so
+            ${CMAKE_CURRENT_BINARY_DIR}/libmemcached/.libs/libmemcached.so.11
             ${CMAKE_CURRENT_BINARY_DIR}/libmemcached/.libs/libmemcached.so.11.0.0
             DESTINATION lib
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
