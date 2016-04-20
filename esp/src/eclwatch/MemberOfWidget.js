@@ -62,7 +62,10 @@ define([
             this.grid.on("dgrid-datachange", function(event){
                 if (dojoConfig.isAdmin && params.username === context.currentUser && event.oldValue === true) {
                     var msg = confirm(context.i18n.RemoveUser + " " + event.rowId + ". " + context.i18n.ConfirmRemoval);
-                    if (!msg){
+                    if (msg) {
+                        location.hash = "";
+                        location.reload();
+                    } else {
                         event.preventDefault();
                     }
                 }
