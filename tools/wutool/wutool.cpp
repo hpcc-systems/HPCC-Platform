@@ -155,55 +155,55 @@ int main(int argc, const char *argv[])
         usage();
         _exit(4);
     }
-    StringBuffer cassandraServer;
-    bool serverSpecified = false;
-    if (globals->getProp("CASSANDRASERVER", cassandraServer))
-    {
-        // If they explicitly specify a cassandra server, use it even if the info in the environment in dali does not indicate there is a cassandra associated
-        // Conversely, if the explicitly specify "none" then don't use cassandra even if there is one specified in the dali environment...
-        if (!strieq(cassandraServer, "none"))
-        {
-            Owned<IPTree> pluginInfo = createPTreeFromXMLString(
-                  "<WorkUnitsServer name='cassandraembed' entrypoint='createWorkUnitFactory'>"
-                    "<Option name='server' value='.'/>"
-                    "<Option name='randomWuidSuffix' value='4'/>"
-                    "<Option name='traceLevel' value='0'/>"
-                    "<Option name='keyspace' value='hpcc'/>"
-                    "<Option name='user' value=''/>"
-                    "<Option name='password' value=''/>"
-                  "</WorkUnitsServer>");
-            pluginInfo->setProp("Option[@name='server']/@value", cassandraServer.str());
-            pluginInfo->setPropInt("Option[@name='traceLevel']/@value", globals->getPropInt("tracelevel", 0));
-            StringBuffer keySpace,user,password;
-            if (globals->getProp("CASSANDRA_KEYSPACE", keySpace))
-                pluginInfo->setProp("Option[@name='keyspace']/@value", keySpace.str());
-            if (globals->getProp("CASSANDRA_USER", user))
-                pluginInfo->setProp("Option[@name='user']/@value", user.str());
-            else
-                pluginInfo->removeProp("Option[@name='user']");
-            if (globals->getProp("CASSANDRA_PASSWORD", password))
-                pluginInfo->setProp("Option[@name='password']/@value", password.str());
-            else
-                pluginInfo->removeProp("Option[@name='password']");
-            setWorkUnitFactory((IWorkUnitFactory *) loadPlugin(pluginInfo));
-            serverSpecified = true;
-        }
-    }
-
-    StringBuffer daliServers;
-    if (globals->getProp("DALISERVER", daliServers))
-    {
-        Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
-        initClientProcess(serverGroup,DCR_Other);
-        setPasswordsFromSDS();
-    }
-    else if (!serverSpecified)
-    {
-        printf("No server specified (at least one of daliserver or cassandraserver required)\n");
-        _exit(4);
-    }
     try
     {
+        StringBuffer cassandraServer;
+        bool serverSpecified = false;
+        if (globals->getProp("CASSANDRASERVER", cassandraServer))
+        {
+            // If they explicitly specify a cassandra server, use it even if the info in the environment in dali does not indicate there is a cassandra associated
+            // Conversely, if the explicitly specify "none" then don't use cassandra even if there is one specified in the dali environment...
+            if (!strieq(cassandraServer, "none"))
+            {
+                Owned<IPTree> pluginInfo = createPTreeFromXMLString(
+                      "<WorkUnitsServer pluginName='cassandraembed' entrypoint='createWorkUnitFactory'>"
+                        "<Option name='server' value='.'/>"
+                        "<Option name='randomWuidSuffix' value='4'/>"
+                        "<Option name='traceLevel' value='0'/>"
+                        "<Option name='keyspace' value='hpcc'/>"
+                        "<Option name='user' value=''/>"
+                        "<Option name='password' value=''/>"
+                      "</WorkUnitsServer>");
+                pluginInfo->setProp("Option[@name='server']/@value", cassandraServer.str());
+                pluginInfo->setPropInt("Option[@name='traceLevel']/@value", globals->getPropInt("tracelevel", 0));
+                StringBuffer keySpace,user,password;
+                if (globals->getProp("CASSANDRA_KEYSPACE", keySpace))
+                    pluginInfo->setProp("Option[@name='keyspace']/@value", keySpace.str());
+                if (globals->getProp("CASSANDRA_USER", user))
+                    pluginInfo->setProp("Option[@name='user']/@value", user.str());
+                else
+                    pluginInfo->removeProp("Option[@name='user']");
+                if (globals->getProp("CASSANDRA_PASSWORD", password))
+                    pluginInfo->setProp("Option[@name='password']/@value", password.str());
+                else
+                    pluginInfo->removeProp("Option[@name='password']");
+                setWorkUnitFactory((IWorkUnitFactory *) loadPlugin(pluginInfo));
+                serverSpecified = true;
+            }
+        }
+
+        StringBuffer daliServers;
+        if (globals->getProp("DALISERVER", daliServers))
+        {
+            Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
+            initClientProcess(serverGroup,DCR_Other);
+            setPasswordsFromSDS();
+        }
+        else if (!serverSpecified)
+        {
+            printf("No server specified (at least one of daliserver or cassandraserver required)\n");
+            _exit(4);
+        }
         CDateTime cutoff;
         int days = globals->getPropInt("days", 0);
         if (days)
