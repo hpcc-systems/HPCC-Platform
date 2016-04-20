@@ -28,6 +28,7 @@ protected:
     Semaphore finishedSem;
     rowcount_t counter = 0, localRecCount = 0;
     rowcount_t denominator = 0, numerator = 0;
+    IEngineRowStream *originalInputStream = nullptr;
 
     bool haveLocalCount() { return RCUNBOUND != localRecCount; }
     inline bool wanted()
@@ -81,7 +82,7 @@ protected:
         else
         {
             localRecCount = RCUNBOUND;
-            IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());
+            IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, originalInputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());
             setLookAhead(0, lookAhead); // NB: this is post base start()
             lookAhead->start();
         }
@@ -95,6 +96,11 @@ public:
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
+    }
+    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
+    {
+        PARENT::setInputStream(index, _input, consumerOrdered);
+        originalInputStream = inputStream;
     }
     virtual void start() override
     {
