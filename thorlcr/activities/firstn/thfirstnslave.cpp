@@ -216,7 +216,6 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
     rowcount_t maxres, skipped, totallimit;
     bool firstget;
     ThorDataLinkMetaInfo inputMeta;
-    Owned<IStartableEngineRowStream> firstNLookAhead;
 
 protected:
     virtual void doStop()
@@ -247,15 +246,10 @@ public:
         totallimit = (rowcount_t)helper->getLimit();
         rowcount_t _skipCount = validRC(helper->numToSkip()); // max
         rowcount_t maxRead = (totallimit>(RCUNBOUND-_skipCount))?RCUNBOUND:totallimit+_skipCount;
-        firstNLookAhead.setown(createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), FIRSTN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false,
-                                          maxRead, this, &container.queryJob().queryIDiskUsage())); // if a very large limit don't bother truncating
-        firstNLookAhead->start();
-    }
-    virtual void stop() override
-    {
-        if (firstNLookAhead)
-            firstNLookAhead->stop(); // will call input stop()
-        dataLinkStop();
+        IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), FIRSTN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false,
+                                                                              maxRead, this, &container.queryJob().queryIDiskUsage()); // if a very large limit don't bother truncating
+        setLookAhead(0, lookAhead);
+        lookAhead->start();
     }
     virtual void abort()
     {
@@ -337,7 +331,7 @@ public:
                     return NULL;
                 while (skipped<skipCount)
                 {
-                    OwnedConstThorRow row = firstNLookAhead->ungroupedNextRow();
+                    OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                     {
                         stop();
@@ -348,7 +342,7 @@ public:
             }
             if (getDataLinkCount() < limit)
             {
-                OwnedConstThorRow row = firstNLookAhead->ungroupedNextRow();
+                OwnedConstThorRow row = inputStream->ungroupedNextRow();
                 if (row)
                 {
                     dataLinkIncrement();

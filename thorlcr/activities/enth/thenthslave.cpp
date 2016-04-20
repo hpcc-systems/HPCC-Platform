@@ -23,12 +23,11 @@ class BaseEnthActivity : public CSlaveActivity, implements ILookAheadStopNotify
 {
     typedef CSlaveActivity PARENT;
 
-    ThorDataLinkMetaInfo intoMetaInfo;
 protected:
     StringBuffer actStr;
     Semaphore finishedSem;
-    rowcount_t counter, localRecCount;
-    rowcount_t denominator, numerator;
+    rowcount_t counter = 0, localRecCount = 0;
+    rowcount_t denominator = 0, numerator = 0;
 
     bool haveLocalCount() { return RCUNBOUND != localRecCount; }
     inline bool wanted()
@@ -69,16 +68,23 @@ protected:
     }
     void setLocalCountReq()
     {
+        ThorDataLinkMetaInfo info;
+        input->getMetaInfo(info);
         // Need lookahead _unless_ row count pre-known.
         if (0 == numerator)
             localRecCount = 0;
-        else if (intoMetaInfo.totalRowsMin == intoMetaInfo.totalRowsMax)
+        else if (info.totalRowsMin == info.totalRowsMax)
         {
-            localRecCount = (rowcount_t)intoMetaInfo.totalRowsMax;
+            localRecCount = (rowcount_t)info.totalRowsMax;
             ActPrintLog("%s: row count pre-known to be %" RCPF "d", actStr.str(), localRecCount);
         }
         else
+        {
             localRecCount = RCUNBOUND;
+            IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());
+            setLookAhead(0, lookAhead); // NB: this is post base start()
+            lookAhead->start();
+        }
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
@@ -86,19 +92,11 @@ public:
     BaseEnthActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
     }
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {
         appendOutputLinked(this);
     }
-    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
-    {
-        PARENT::setInputStream(index, _input, consumerOrdered);
-        input->getMetaInfo(intoMetaInfo);
-        // Need lookahead _unless_ row count pre-known.
-        if (numerator && (intoMetaInfo.totalRowsMin != intoMetaInfo.totalRowsMax))
-            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()));
-    }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
