@@ -228,11 +228,13 @@ void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDat
     unsigned parts;
     data.read(parts);
     if (parts)
+    {
         deserializePartFileDescriptors(data, partDescs);
 
-    // put temp files in individual slave temp dirs (incl port)
-    if ((helper->getFlags() & TDXtemporary) && (!container.queryJob().queryUseCheckpoints()))
-        partDescs.item(0).queryOwner().setDefaultDir(queryTempDir());
+        // put temp files in individual slave temp dirs (incl port)
+        if ((helper->getFlags() & TDXtemporary) && (!container.queryJob().queryUseCheckpoints()))
+            partDescs.item(0).queryOwner().setDefaultDir(queryTempDir());
+    }
 }
 
 const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)
