@@ -412,6 +412,7 @@ public:
         else
             limit = (rowcount_t)helper->getRowLimit();
         stopAfter = (rowcount_t)helper->getChooseNLimit();
+        appendOutputLinked(this);
     }
     ~CDiskReadSlaveActivity()
     {
@@ -443,9 +444,6 @@ public:
                 unsorted = false;
             }
         }
-
-        appendOutputLinked(this);
-
     }
     virtual void kill()
     {
@@ -601,6 +599,7 @@ public:
             limit = (rowcount_t)helper->getRowLimit();
         stopAfter = (rowcount_t)helper->getChooseNLimit();
         out = NULL;
+        appendOutputLinked(this);
     }
     ~CDiskNormalizeSlave()
     {
@@ -611,7 +610,6 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         CDiskReadSlaveActivityRecord::init(data, slaveData);
-        appendOutputLinked(this);
         partHandler.setown(new CNormalizePartHandler(*this));
     }
 
@@ -727,6 +725,7 @@ public:
         helper = (IHThorDiskAggregateArg *)queryHelper();
         eoi = false;
         allocator.set(queryRowAllocator());
+        appendOutputLinked(this);
     }
 
 // IThorSlaveActivity
@@ -735,7 +734,6 @@ public:
         CDiskReadSlaveActivityRecord::init(data, slaveData);
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJobChannel().deserializeMPTag(data);
-        appendOutputLinked(this);
         partHandler.setown(new CDiskSimplePartHandler(*this));
     }
     virtual void abort()
@@ -846,6 +844,7 @@ public:
         mpTag = TAG_NULL;
         stopAfter = (rowcount_t)helper->getChooseNLimit();
         totalCountKnown = false;
+        appendOutputLinked(this);
     }
 
 // IThorSlaveActivity
@@ -856,7 +855,6 @@ public:
             mpTag = container.queryJobChannel().deserializeMPTag(data);
         data.read(totalCountKnown);
         data.read(preknownTotalCount);
-        appendOutputLinked(this);
         partHandler.setown(new CDiskSimplePartHandler(*this));
     }
     virtual void abort()
@@ -969,6 +967,7 @@ public:
     {
         helper = (IHThorDiskGroupAggregateArg *)queryHelper();
         merging = false;
+        appendOutputLinked(this);
     }
 
 // IHThorGroupAggregateCallback
@@ -981,7 +980,6 @@ public:
     {
         CDiskReadSlaveActivityRecord::init(data, slaveData);
         mpTag = container.queryJobChannel().deserializeMPTag(data);
-        appendOutputLinked(this);
         partHandler.setown(new CDiskSimplePartHandler(*this));
         allocator.set(queryRowAllocator());
     }

@@ -293,12 +293,8 @@ public:
     CDedupBaseSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp)
         : CDedupRollupBaseActivity(_container, false, global, groupOp)
     {
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        CDedupRollupBaseActivity::init(data, slaveData);
-        appendOutputLinked(this);   // adding 'me' to outputs array
         ddhelper = static_cast <IHThorDedupArg *>(queryHelper());
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void start() override
     {
@@ -455,12 +451,8 @@ public:
     CRollupSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp) 
         : CDedupRollupBaseActivity(_container, true, global, groupOp)
     {
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        CDedupRollupBaseActivity::init(data, slaveData);
-        appendOutputLinked(this);   // adding 'me' to outputs array
         ruhelper = static_cast <IHThorRollupArg *>  (queryHelper());
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     inline bool eog()
     {
@@ -560,13 +552,12 @@ class CRollupGroupSlaveActivity : public CSlaveActivity
 public:
     CRollupGroupSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), rows(*this, NULL)
     {
+        helper = (IHThorRollupGroupArg *)queryHelper();
         eoi = false;
-        helper = NULL;
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        helper = (IHThorRollupGroupArg *)queryHelper();
-        appendOutputLinked(this);   // adding 'me' to outputs array
         groupLoader.setown(createThorRowLoader(*this, NULL, stableSort_none, rc_allMem));
     }
     virtual void start()

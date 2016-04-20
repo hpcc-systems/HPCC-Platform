@@ -28,11 +28,6 @@ class PullSlaveActivity : public CSlaveActivity
 public:
     PullSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-    }
-
-// IThorSlaveActivity overloaded methods
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
         appendOutputLinked(this);
     }
 

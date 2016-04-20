@@ -44,9 +44,6 @@ public:
     {
         stopped = true;
         helper = (IHThorFirstNArg *)container.queryHelper();
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
         appendOutputLinked(this);
     }
     virtual void start() override

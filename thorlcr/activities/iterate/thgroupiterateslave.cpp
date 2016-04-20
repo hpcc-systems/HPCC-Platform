@@ -34,11 +34,8 @@ class GroupIterateSlaveActivity : public CSlaveActivity
 public:
     GroupIterateSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorGroupIterateArg *> (queryHelper());
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void start() override
     {
@@ -119,11 +116,11 @@ class GroupProcessSlaveActivity : public CSlaveActivity
 public:
     GroupProcessSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
+        helper = static_cast <IHThorProcessArg *> (queryHelper());
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);   // adding 'me' to outputs array
-        helper = static_cast <IHThorProcessArg *> (queryHelper());
         rightrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryRightRecordSize(),queryId(),queryCodeContext()));
         rightAllocator.set(rightrowif->queryRowAllocator());
     }

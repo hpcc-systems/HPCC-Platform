@@ -1962,6 +1962,7 @@ public:
     HashDistributeSlaveBase(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
+        appendOutputLinked(this);
     }
     ~HashDistributeSlaveBase()
     {
@@ -1975,7 +1976,6 @@ public:
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        appendOutputLinked(this);
         mptag = container.queryJobChannel().deserializeMPTag(data);
         ActPrintLog("HASHDISTRIB: %sinit tag %d",mergecmp?"merge, ":"",(int)mptag);
 
@@ -2814,15 +2814,16 @@ public:
     HashDedupSlaveActivityBase(CGraphElementBase *_container, bool _local)
         : CSlaveActivity(_container), local(_local)
     {
+        helper = (IHThorHashDedupArg *)queryHelper();
         initialNumBuckets = 0;
         inputstopped = eos = lastEog = extractKey = local = isVariable = grouped = false;
-        helper = NULL;
         iHash = iKeyHash = NULL;
         iCompare = rowKeyCompare = NULL;
         keyRowInterfaces = NULL;
         hashTables = NULL;
         numHashTables = initialNumBuckets = 0;
         roxiemem::RoxieHeapFlags allocFlags = roxiemem::RHFnone;
+        appendOutputLinked(this);
     }
     ~HashDedupSlaveActivityBase()
     {
@@ -2831,9 +2832,7 @@ public:
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        helper = (IHThorHashDedupArg *)queryHelper();
         iHash = helper->queryHash();
-        appendOutputLinked(this);
         iCompare = helper->queryCompare();
 
         // JCSMORE - really should ask / lookup what flags the allocator created for extractKey has...
@@ -3551,6 +3550,7 @@ public:
         lhsProgressCount = rhsProgressCount = 0;
         mptag = TAG_NULL;
         mptag2 = TAG_NULL;
+        appendOutputLinked(this);
     }
     ~HashJoinSlaveActivity()
     {
@@ -3561,7 +3561,6 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         joinargs = (IHThorHashJoinArg *)queryHelper();
-        appendOutputLinked(this);
         mptag = container.queryJobChannel().deserializeMPTag(data);
         mptag2 = container.queryJobChannel().deserializeMPTag(data);
         ActPrintLog("HASHJOIN: init tags %d,%d",(int)mptag,(int)mptag2);
@@ -3888,14 +3887,13 @@ public:
     CHashAggregateSlave(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
+        helper = static_cast <IHThorHashAggregateArg *> (queryHelper());
         mptag = TAG_NULL;
         eos = true;
+        appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {
-        helper = static_cast <IHThorHashAggregateArg *> (queryHelper());
-        appendOutputLinked(this);
-
         if (!container.queryLocalOrGrouped())
         {
             mptag = container.queryJobChannel().deserializeMPTag(data);
@@ -3983,9 +3981,6 @@ public:
         ihash = distribargs->queryHash();
         myNode = queryJobChannel().queryMyRank()-1;
         nodes = container.queryJob().querySlaves();
-    }
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
-    {
         appendOutputLinked(this);
     }
     virtual void start() override

@@ -83,6 +83,7 @@ class CProjectSlaveActivity : public CThorStrandedActivity
 public:
     explicit CProjectSlaveActivity(CGraphElementBase *_container) : CThorStrandedActivity(_container)
     {
+        helper = static_cast <IHThorProjectArg *> (queryHelper());
         appendOutputLinked(this);
     }
 
@@ -91,11 +92,6 @@ public:
         return new CProjecStrandProcessor(*this, instream, 0);
     }
     virtual CThorStrandProcessor *createStrandSourceProcessor(bool inputOrdered) override { throwUnexpected(); }
-
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        helper = static_cast <IHThorProjectArg *> (queryHelper());
-    }
 
 // IThorDataLink
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
@@ -255,10 +251,10 @@ public:
         preload = helper->getLookahead();
         if (!preload)
             preload = 10; // default
+        appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        appendOutputLinked(this);
         allocator.set(queryRowAllocator());
     }
     virtual void start() override

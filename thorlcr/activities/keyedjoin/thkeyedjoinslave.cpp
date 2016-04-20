@@ -1598,6 +1598,7 @@ public:
 #endif
         helper = (IHThorKeyedJoinArg *)queryHelper();
         reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
+        appendOutputLinked(this);
     }
     ~CKeyedJoinSlave()
     {
@@ -2014,7 +2015,6 @@ public:
             parallelLookups = 0;
             resultDistStream = new CKeyLocalLookup(*this);
         }
-        appendOutputLinked(this);
     }
     virtual void abort()
     {

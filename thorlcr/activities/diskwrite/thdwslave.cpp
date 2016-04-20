@@ -132,11 +132,13 @@ protected:
     }
 
 public:
-    CCsvWriteSlaveActivity(CGraphElementBase *container) : CDiskWriteSlaveActivity(container) { }
+    CCsvWriteSlaveActivity(CGraphElementBase *container) : CDiskWriteSlaveActivity(container)
+    {
+        helper = static_cast <IHThorCsvWriteArg *> (queryHelper());
+    }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         CDiskWriteSlaveActivity::init(data, slaveData);
-        helper = static_cast <IHThorCsvWriteArg *> (queryHelper());
 
         singleHF = 0 != (ICsvParameters::singleHeaderFooter & helper->queryCsvParameters()->getFlags());
         csvOutput.init(helper->queryCsvParameters(), 0 != container.queryJob().getWorkUnitValueInt("oldCSVoutputFormat", 0));

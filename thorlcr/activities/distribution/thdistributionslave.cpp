@@ -27,11 +27,11 @@ class CDistributionSlaveActivity : public ProcessSlaveActivity
 public:
     CDistributionSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {
+        helper = static_cast <IHThorDistributionArg *> (queryHelper());
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         mpTag = container.queryJobChannel().deserializeMPTag(data);
-        helper = static_cast <IHThorDistributionArg *> (queryHelper()); 
         aggy = (IDistributionTable * *)ma.allocate(helper->queryInternalRecordSize()->getMinRecordSize());
     }
     void kill()

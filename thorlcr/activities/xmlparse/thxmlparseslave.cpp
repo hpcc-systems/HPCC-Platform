@@ -40,7 +40,9 @@ public:
 
     CXmlParseSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
+        helper = static_cast <IHThorXmlParseArg *> (queryHelper());
         searchStr = NULL;
+        appendOutputLinked(this);
     }
 
 // IXMLSelect
@@ -52,8 +54,6 @@ public:
 // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);
-        helper = static_cast <IHThorXmlParseArg *> (queryHelper());
         allocator.set(queryRowAllocator());
     }
     virtual void kill()

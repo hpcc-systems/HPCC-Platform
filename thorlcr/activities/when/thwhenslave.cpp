@@ -22,32 +22,37 @@
 #include "commonext.hpp"
 #include "slave.ipp"
 
-class CDependencyExecutorSlaveActivity : public CSimpleInterface
+class CDependencyExecutorSlaveActivity : public CSlaveActivity
 {
 protected:
     size32_t savedParentExtractSz;
     const byte *savedParentExtract;
     bool global;
     Owned<IBarrier> barrier;
-    CSlaveActivity *activity;
 
 public:
-    CDependencyExecutorSlaveActivity(CSlaveActivity *_activity) : activity(_activity)
+    CDependencyExecutorSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        global = !activity->queryContainer().queryOwner().queryOwner() || activity->queryContainer().queryOwner().isGlobal();
+        global = !queryContainer().queryOwner().queryOwner() || queryContainer().queryOwner().isGlobal();
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         if (global)
         {
-            mptag_t barrierTag = activity->queryContainer().queryJobChannel().deserializeMPTag(data);
-            barrier.setown(activity->queryContainer().queryJobChannel().createBarrier(barrierTag));
+            mptag_t barrierTag = queryJobChannel().deserializeMPTag(data);
+            barrier.setown(queryJobChannel().createBarrier(barrierTag));
         }
     }
-    void preStart(size32_t parentExtractSz, const byte *parentExtract)
+    virtual void preStart(size32_t parentExtractSz, const byte *parentExtract) override
     {
         savedParentExtractSz = parentExtractSz;
         savedParentExtract = parentExtract;
+    }
+    virtual void abort()
+    {
+        CSlaveActivity::abort();
+        if (global)
+            barrier->cancel();
     }
     bool executeDependencies(int controlId)
     {
@@ -58,27 +63,21 @@ public:
         }
         else
         {
-            ActPrintLog(activity, "Executing dependencies");
-            activity->queryContainer().executeDependencies(savedParentExtractSz, savedParentExtract, controlId, true);
+            ActPrintLog("Executing dependencies");
+            queryContainer().executeDependencies(savedParentExtractSz, savedParentExtract, controlId, true);
         }
         return true;
     }
 };
 
 
-class CWhenSlaveActivity : public CSlaveActivity, public CDependencyExecutorSlaveActivity
+class CWhenSlaveActivity : public CDependencyExecutorSlaveActivity
 {
-    typedef CSlaveActivity PARENT;
+    typedef CDependencyExecutorSlaveActivity PARENT;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CDependencyExecutorSlaveActivity);
-
-    CWhenSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CDependencyExecutorSlaveActivity(this)
+    CWhenSlaveActivity(CGraphElementBase *_container) : CDependencyExecutorSlaveActivity(_container)
     {
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        CDependencyExecutorSlaveActivity::init(data, slaveData);
         appendOutputLinked(this);
     }
     virtual void stop() override
@@ -99,12 +98,6 @@ public:
             return NULL;
         dataLinkIncrement();
         return row.getClear();
-    }
-    virtual void abort()
-    {
-        CSlaveActivity::abort();
-        if (global)
-            barrier->cancel();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {

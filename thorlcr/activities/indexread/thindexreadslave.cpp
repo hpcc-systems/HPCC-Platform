@@ -579,6 +579,7 @@ public:
             for (unsigned i=1; i < maxFields; i++)
                 seekSizes.append(seekSizes.item(i-1) + fields[i].size);
         }
+        appendOutputLinked(this);
     }
     ~CIndexReadSlaveActivity()
     {
@@ -611,7 +612,6 @@ public:
             else
                 steppingMeta.init(rawMeta, hasPostFilter);
         }
-        appendOutputLinked(this);
     }
 
 // IThorDataLink
@@ -783,17 +783,12 @@ public:
     {
         helper = (IHThorIndexGroupAggregateArg *)container.queryHelper();
         merging = false;
+        appendOutputLinked(this);
     }
 // IHThorGroupAggregateCallback
     virtual void processRow(const void *next)
     {
         localAggTable->addRow(next);
-    }
-// IThorSlaveActivity
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        CIndexReadSlaveBase::init(data, slaveData);
-        appendOutputLinked(this);
     }
 // IThorDataLink
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
@@ -889,12 +884,6 @@ public:
     CIndexCountSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
         helper = static_cast <IHThorIndexCountArg *> (container.queryHelper());
-    }
-
-// IThorSlaveActivity
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        CIndexReadSlaveBase::init(data, slaveData);
         appendOutputLinked(this);
     }
 
@@ -1035,6 +1024,7 @@ public:
     CIndexNormalizeSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), partHelper(*this)
     {
         helper = (IHThorIndexNormalizeArg *)container.queryHelper();
+        appendOutputLinked(this);
     }
 
     virtual bool keyed()
@@ -1049,13 +1039,6 @@ public:
             return true;
         }
         return false;
-    }
-
-// IThorSlaveActivity
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        CIndexReadSlaveBase::init(data, slaveData);
-        appendOutputLinked(this);
     }
 
 // IThorDataLink
@@ -1233,12 +1216,6 @@ public:
         : CIndexReadSlaveBase(_container), partHelper(*this), aggregator(*this)
     {
         helper = (IHThorIndexAggregateArg *)container.queryHelper();
-    }
-
-// IThorSlaveActivity
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        CIndexReadSlaveBase::init(data, slaveData);
         appendOutputLinked(this);
     }
 

@@ -26,12 +26,6 @@ public:
     CApplySlaveActivity(CGraphElementBase *container) 
         : ProcessSlaveActivity(container)
     { 
-        helper = NULL;
-    }
-
-// IThorSlaveActivity overloaded methods
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         helper = static_cast <IHThorApplyArg *> (queryHelper());
     }
 // IThorSlaveProcess overloaded methods

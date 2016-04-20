@@ -283,6 +283,7 @@ public:
         readThisInput = 0;
         stopped = true;
         parallel = false;
+        appendOutputLinked(this);
     }
     ~FunnelSlaveActivity()
     {
@@ -293,7 +294,6 @@ public:
         IHThorFunnelArg *helper = (IHThorFunnelArg *)queryHelper();
         parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
         grouped = container.queryGrouped();
-        appendOutputLinked(this);
         ActPrintLog("FUNNEL mode = %s, grouped=%s", parallel?"PARALLEL":"ORDERED", grouped?"GROUPED":"UNGROUPED");
     }
     virtual void start() override
@@ -476,15 +476,8 @@ public:
         : CSlaveActivity(_container), rows(*this, this)
     {
         grouped = container.queryGrouped();
-    }
-    void init()
-    {
         helper = (IHThorCombineArg *) queryHelper();
         appendOutputLinked(this);
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        init();
     }
     virtual void start() override
     {
@@ -582,15 +575,8 @@ public:
     RegroupSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         grouped = container.queryGrouped();
-    }
-    void init()
-    {
         helper = (IHThorRegroupArg *) queryHelper();
         appendOutputLinked(this);
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        init();
     }
     virtual void start() override
     {
@@ -695,6 +681,7 @@ public:
         helper = (IHThorNonEmptyArg *) queryHelper();
         sendReceiving = false;
         masterMpTag = TAG_NULL;
+        appendOutputLinked(this);
     }
 
 // IThorSlaveActivity overloaded methods
@@ -702,7 +689,6 @@ public:
     {
         if (!container.queryLocalOrGrouped())
             masterMpTag = container.queryJobChannel().deserializeMPTag(data);
-        appendOutputLinked(this);
     }
     void abort()
     {
@@ -790,9 +776,6 @@ public:
     CNWaySelectActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorSteppable(this)
     {
         helper = (IHThorNWaySelectArg *)queryHelper();
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -903,9 +886,6 @@ public:
     {
         helper = (IHThorNWayInputArg *)queryHelper();
         grouped = helper->queryOutputMeta()->isGrouped(); // JCSMORE should match graph info, i.e. container.queryGrouped()
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
         appendOutputLinked(this);
     }
     virtual void start() override

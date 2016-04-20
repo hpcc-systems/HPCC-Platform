@@ -1330,6 +1330,7 @@ public:
             rightThorAllocator = queryJobChannel().queryThorAllocator();
         rightRowManager = rightThorAllocator->queryRowManager();
         broadcastLock = NULL;
+        appendOutputLinked(this);
     }
     ~CInMemJoinBase()
     {
@@ -1362,8 +1363,6 @@ public:
 // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);
-
         StringBuffer str;
         ActPrintLog("Join type is %s", getJoinTypeStr(str).str());
 

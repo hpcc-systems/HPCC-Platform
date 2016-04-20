@@ -27,16 +27,12 @@ class CCatchSlaveActivityBase : public CSlaveActivity
     typedef CSlaveActivity PARENT;
 protected:
     IHThorCatchArg *helper;
-    bool eos;
+    bool eos = false;
 
 public:
     CCatchSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
         helper = static_cast <IHThorCatchArg *> (queryHelper());
-        eos = false;
         appendOutputLinked(this);
     }
     virtual void start() override

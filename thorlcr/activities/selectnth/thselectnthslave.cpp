@@ -65,8 +65,10 @@ class CSelectNthSlaveActivity : public CSlaveActivity, implements ILookAheadStop
 public:
     CSelectNthSlaveActivity(CGraphElementBase *_container, bool _isLocal) : CSlaveActivity(_container)
     {
+        helper = static_cast <IHThorSelectNArg *> (queryHelper());
         isLocal = _isLocal;
         createDefaultIfFail = isLocal || lastNode();
+        appendOutputLinked(this);
     }
 
 // IThorSlaveActivity overloaded methods
@@ -74,8 +76,6 @@ public:
     {
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJobChannel().deserializeMPTag(data);
-        appendOutputLinked(this);
-        helper = static_cast <IHThorSelectNArg *> (queryHelper());
     }
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {
