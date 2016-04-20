@@ -237,6 +237,8 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.02")] bool HaveSubGraphTimings;
     [min_ver("1.28"), depr_ver("1.53")] string TotalThorTime;
     [min_ver("1.53")] string TotalClusterTime;
+    [min_ver("1.59")] string AbortBy;
+    [min_ver("1.59")] string AbortTime;
 
     ESPstruct ECLQuery Query;
     [min_ver("1.03")] ESParray<ESPstruct ECLHelpFile> Helpers;

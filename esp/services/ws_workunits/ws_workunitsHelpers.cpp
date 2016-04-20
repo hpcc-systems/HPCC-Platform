@@ -973,6 +973,18 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
         info.setDateTimeScheduled(dt.getString(s).str());
 }
 
+void WsWuInfo::setWUAbortTime(IEspECLWorkunit &info, unsigned __int64 abortTS)
+{
+    StringBuffer abortTimeStr;
+    formatStatistic(abortTimeStr, abortTS, SMeasureTimestampUs);
+    if ((abortTimeStr.length() > 19) && (abortTimeStr.charAt(10) == 'T') && (abortTimeStr.charAt(19) == '.'))
+    {
+        abortTimeStr.setCharAt(10, ' ');
+        abortTimeStr.setLength(19);
+    }
+    info.setAbortTime(abortTimeStr.str());
+}
+
 void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
 {
     getCommon(info, flags);
@@ -982,6 +994,18 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
 
     SCMStringBuffer s;
     info.setStateEx(cw->getStateEx(s).str());
+    WUState state = cw->getState();
+    if ((state == WUStateAborting) || (state == WUStateAborted))
+    {
+        unsigned __int64 abortTS = cw->getAbortTimeStamp();
+        if (abortTS > 0) //AbortTimeStamp may not be set in old wu
+        {
+            setWUAbortTime(info, abortTS);
+            cw->getAbortBy(s);
+            if (s.length())
+                info.setAbortBy(s.str());
+        }
+    }
     info.setPriorityClass(cw->getPriority());
     info.setPriorityLevel(cw->getPriorityLevel());
     if (context.querySecManager())

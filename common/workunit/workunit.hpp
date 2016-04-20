@@ -1074,6 +1074,8 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const = 0;
     virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const = 0;
     virtual void clearGraphProgress() const = 0;
+    virtual IStringVal & getAbortBy(IStringVal & str) const = 0;
+    virtual unsigned __int64 getAbortTimeStamp() const = 0;
 };
 
 
@@ -1105,6 +1107,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) = 0;
     virtual void setTracingValue(const char * propname, const char * value) = 0;
     virtual void setTracingValueInt(const char * propname, int value) = 0;
+    virtual void setTracingValueInt64(const char * propname, __int64 value) = 0;
     virtual void setUser(const char * value) = 0;
     virtual void setWuScope(const char * value) = 0;
     virtual void setSnapshot(const char * value) = 0;
