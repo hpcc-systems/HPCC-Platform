@@ -27,13 +27,14 @@ PREFIX_PATH=`sed -n "/\[${SECTION}\]/,/\[/p" ${HPCC_CONFIG} | grep "^path *= *" 
 source $PREFIX_PATH/sbin/alter_confs.sh
 
 if grep "\\#includedir /etc/sudoers.d" /etc/sudoers > /dev/null 2>&1; then
-  [[ ! -d /etc/sudoers.d ]] && mkdir -p /etc/sudoers.d
+  [[ ! -d /etc/sudoers.d ]] && mkdir -m 0750 /etc/sudoers.d
   cat > /etc/sudoers.d/${USER_NAME}  <<- EOF
 Cmnd_Alias HPCC_DAFILESRV = /etc/init.d/dafilesrv
 Cmnd_Alias HPCC_HPCCINIT = /etc/init.d/hpcc-init
 ${USER_NAME} ALL = NOPASSWD: HPCC_DAFILESRV, HPCC_HPCCINIT
 Defaults:${USER_NAME} !requiretty
 EOF
+  chmod 0440 /etc/sudoers.d/${USER_NAME}
 else
   alter_file /etc/sudoers "^Cmnd_Alias HPCC_|^${USER_NAME} ALL =|^Defaults\:${USER_NAME} !requiretty" <<-%EOF
 Cmnd_Alias HPCC_DAFILESRV = /etc/init.d/dafilesrv
