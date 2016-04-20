@@ -91,6 +91,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     Owned<ISharedSmartBuffer> smartBuf;
     bool inputPrepared = false;
     bool inputConnected = false;
+    unsigned remainingOutputs = 0;
 
     // NB: CWriter only used by 'balanced' splitter, which blocks write when too far ahead
     class CWriter : public CSimpleInterface, IThreaded
@@ -201,7 +202,7 @@ public:
         {
             inputPrepared = true;
             PARENT::start();
-            unsigned remainingOutputs = activeOutputs;
+            remainingOutputs = activeOutputs;
             ForEachItemIn(o, outputs)
             {
                 CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
@@ -242,7 +243,7 @@ public:
     }
     inline const void *nextRow(unsigned activeOutput)
     {
-        if (!smartBuf) // will be true, if only 1 input connect, or only 1 input was active (others stopped) when it started reading
+        if (1 == remainingOutputs) // will be true, if only 1 input connect, or only 1 input was active (others stopped) when it started reading
             return inputStream->nextRow();
         OwnedConstThorRow row = smartBuf->queryOutput(activeOutput)->nextRow(); // will block until available
         if (writeAheadException)
