@@ -1505,6 +1505,7 @@ class CRowPullDistributor: public CDistributorBase
     Semaphore selfready;
     Semaphore selfdone;
     bool stopping;
+    bool stopped = true;
 
     class cTxThread: public Thread
     {
@@ -1871,6 +1872,7 @@ public:
     void startTX()
     {
         clean();
+        stopped = false;
         stopping = false;
         txthread = new cTxThread(*this);
         txthread->start();
@@ -1888,6 +1890,9 @@ public:
     }
     void stop()
     {
+        if (stopped)
+            return;
+        stopped = true;
         selfdone.wait();
         if (txthread)
         {
@@ -1998,6 +2003,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        inputstopped = false;
         eofin = false;
         instrm.set(inputStream);
         if (setupDist)
@@ -2823,7 +2829,7 @@ public:
         for (unsigned i=0; i<numHashTables; i++)
             ::Release(hashTables[i]);
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         helper = (IHThorHashDedupArg *)queryHelper();
         iHash = helper->queryHash();
@@ -2865,7 +2871,7 @@ public:
         }
         grouped = container.queryGrouped();
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();

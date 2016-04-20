@@ -62,6 +62,7 @@ class CEdgeProgress
     unsigned outputId = 0;
 public:
     explicit CEdgeProgress(CActivityBase *_owner) : owner(*_owner) { }
+    explicit CEdgeProgress(CActivityBase *_owner, unsigned _outputId) : owner(*_owner), outputId(_outputId) { }
 
     inline void dataLinkStart()
     {
