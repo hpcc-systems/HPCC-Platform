@@ -125,7 +125,7 @@ define([
                     arrayUtil.forEach(response.TpServiceQueryResponse.ServiceList.TpEspServers.TpEspServer, function (item, idx) {
                         if (lang.exists("TpBindings.TpBinding", item)) {
                             arrayUtil.forEach(item.TpBindings.TpBinding, function (binding, idx) {
-                                if (binding.Service === type) {
+                                if (binding.ServiceType === type && binding.Protocol + ":" === location.protocol) {
                                     retVal = ESPRequest.getURL({
                                         port: binding.Port,
                                         pathname: ""
