@@ -1092,6 +1092,7 @@ static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _bas
     return maxPwdAge;
 }
 
+static CriticalSection  lcCrit;
 class CLdapClient : public CInterface, implements ILdapClient
 {
 private:
@@ -1118,7 +1119,6 @@ public:
         //m_defaultWorkunitScopePermission = -2;
     }
 
-    static CriticalSection  lcCrit;
     virtual void init(IPermissionProcessor* pp)
     {
         m_pp = pp;
