@@ -313,7 +313,7 @@ define([
                         return this.cleanObjects(this.graphData.edges);
                     },
 
-                    getLocalisedXGMML: function (selectedItems, depth, distance, noSpills) {
+                    getLocalisedXGMML2: function (selectedItems, depth, distance, noSpills) {
                         return this.graphData.getLocalisedXGMML(selectedItems, depth, distance, noSpills);
                     },
 
