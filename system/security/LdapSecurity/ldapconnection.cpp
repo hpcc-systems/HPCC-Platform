@@ -1118,42 +1118,39 @@ public:
         //m_defaultWorkunitScopePermission = -2;
     }
 
+    static CriticalSection  lcCrit;
     virtual void init(IPermissionProcessor* pp)
     {
         m_pp = pp;
-        static CriticalSection  lcCrit;
         static bool createdOU = false;
+        CriticalBlock block(lcCrit);
         if (!createdOU)
         {
-            CriticalBlock block(lcCrit);
-            if (!createdOU)
+            if(m_ldapconfig->getServerType() == OPEN_LDAP)
             {
-                if(m_ldapconfig->getServerType() == OPEN_LDAP)
+                try
                 {
-                    try
-                    {
-                        addDC(m_ldapconfig->getBasedn());
-                    }
-                    catch(...)
-                    {
-                    }
-                    try
-                    {
-                        addGroup("Directory Administrators", m_ldapconfig->getBasedn());
-                    }
-                    catch(...)
-                    {
-                    }
+                    addDC(m_ldapconfig->getBasedn());
                 }
-                createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY);
-                createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_ADMINISTRATORS_ONLY);
-                createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_ADMINISTRATORS_ONLY);
-                createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_ADMINISTRATORS_ONLY);
-
-                createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
-                createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
-                createdOU = true;
+                catch(...)
+                {
+                }
+                try
+                {
+                    addGroup("Directory Administrators", m_ldapconfig->getBasedn());
+                }
+                catch(...)
+                {
+                }
             }
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_ADMINISTRATORS_ONLY);
+
+            createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
+            createdOU = true;
         }
     }
 
