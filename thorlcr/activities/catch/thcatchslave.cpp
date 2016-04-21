@@ -151,7 +151,7 @@ class CSkipCatchSlaveActivity : public CCatchSlaveActivityBase
 {
     bool gathered, global, grouped, running;
     Owned<IBarrier> barrier;
-    Owned<IRowStream> inputStream;
+    Owned<IRowStream> gatheredInputStream;
 
     bool gather()
     {
@@ -174,7 +174,7 @@ class CSkipCatchSlaveActivity : public CCatchSlaveActivityBase
                 overflowBuf->putRow(row.getClear());
             }
             overflowBuf->flush();
-            inputStream.setown(overflowBuf->getReader()); 
+            gatheredInputStream.setown(overflowBuf->getReader());
         }
         catch (IException *)
         {
@@ -251,7 +251,7 @@ public:
                 return NULL;
             }
         }
-        OwnedConstThorRow row(inputStream->nextRow());
+        OwnedConstThorRow row(gatheredInputStream->nextRow());
         if (!row)
             return NULL;
         dataLinkIncrement();
