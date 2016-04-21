@@ -1092,6 +1092,7 @@ static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _bas
     return maxPwdAge;
 }
 
+static CriticalSection  lcCrit;
 class CLdapClient : public CInterface, implements ILdapClient
 {
 private:
@@ -1121,30 +1122,36 @@ public:
     virtual void init(IPermissionProcessor* pp)
     {
         m_pp = pp;
-        if(m_ldapconfig->getServerType() == OPEN_LDAP)
+        static bool createdOU = false;
+        CriticalBlock block(lcCrit);
+        if (!createdOU)
         {
-            try
+            if(m_ldapconfig->getServerType() == OPEN_LDAP)
             {
-                addDC(m_ldapconfig->getBasedn());
+                try
+                {
+                    addDC(m_ldapconfig->getBasedn());
+                }
+                catch(...)
+                {
+                }
+                try
+                {
+                    addGroup("Directory Administrators", m_ldapconfig->getBasedn());
+                }
+                catch(...)
+                {
+                }
             }
-            catch(...)
-            {
-            }
-            try
-            {
-                addGroup("Directory Administrators", m_ldapconfig->getBasedn());
-            }
-            catch(...)
-            {
-            }
-        }
-        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY);
-        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_ADMINISTRATORS_ONLY);
-        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_ADMINISTRATORS_ONLY);
-        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_ADMINISTRATORS_ONLY);
 
-        createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
-        createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
+            createdOU = true;
+        }
     }
 
     virtual LdapServerType getServerType()
