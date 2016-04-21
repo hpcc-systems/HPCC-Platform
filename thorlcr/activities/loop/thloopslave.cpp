@@ -791,10 +791,8 @@ class CConditionalActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
-    bool grouped = false;
-    bool hasGrouped = false;
-    IEngineRowStream *selectInputStream = nullptr;
-    IHThorIfArg *helper;
+    IThorDataLink *selectedItdl = nullptr;
+    IEngineRowStream *selectedInputStream = nullptr;
 
 protected:
     unsigned branch = (unsigned)-1;
@@ -818,7 +816,9 @@ public:
         if (queryInput(branch))
         {
             startInput(branch);
-            selectInputStream = inputs.item(branch).stream;
+            CThorInput &selectedInput = inputs.item(branch);
+            selectedItdl = selectedInput.itdl;
+            selectedInputStream = selectedInput.stream;
         }
         dataLinkStart();
     }
@@ -826,7 +826,7 @@ public:
     {
         if ((branch>0) && queryInput(branch)) // branch 0 stopped by PARENT::stop
             stopInput(branch);
-        selectInputStream = NULL;
+        selectedInputStream = NULL;
         abortSoon = true;
         PARENT::stop();
     }
@@ -835,32 +835,17 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (abortSoon)
             return nullptr;
-        if (!selectInputStream)
+        if (!selectedInputStream)
             return nullptr;
-        OwnedConstThorRow ret = selectInputStream->nextRow();
+        OwnedConstThorRow ret = selectedInputStream->nextRow();
         if (ret)
             dataLinkIncrement();
         return ret.getClear();
     }
-    virtual bool isGrouped() const override { return grouped; }
+    virtual bool isGrouped() const override { return selectedItdl ? selectedItdl->isGrouped() : false; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
-    }
-    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
-    {
-        PARENT::setInputStream(index, _input, consumerOrdered);
-        if (_input.itdl)
-        {
-            bool thisInputGrouped = _input.itdl->isGrouped();
-            if (!hasGrouped)
-            {
-                hasGrouped = true;
-                grouped = thisInputGrouped;
-            }
-            else
-                assertex(grouped == thisInputGrouped);
-        }
     }
 };
 

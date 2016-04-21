@@ -174,23 +174,23 @@
    <RoxieServerProcess computer="localhost" name="localhost" netAddress="."/>
   </RoxieCluster>
   <Topology build="_" buildSet="topology" name="topology">
-   <Cluster name="hthor" prefix="hthor">
+   <Cluster name="hthor" prefix="hthor" alias="">
     <EclSchedulerProcess process="myeclscheduler"/>
     <EclAgentProcess process="myeclagent"/>
     <EclCCServerProcess process="myeclccserver"/>
    </Cluster>
-   <Cluster name="thor" prefix="thor">
+   <Cluster name="thor" prefix="thor" alias="">
     <EclAgentProcess process="myeclagent"/>
     <EclCCServerProcess process="myeclccserver"/>
     <ThorCluster process="mythor"/>
     <EclSchedulerProcess process="myeclscheduler"/>
    </Cluster>
-   <Cluster name="roxie" prefix="roxie">
+   <Cluster name="roxie" prefix="roxie" alias="">
     <RoxieCluster process="myroxie"/>
     <EclCCServerProcess process="myeclccserver"/>
     <EclSchedulerProcess process="myeclscheduler"/>
    </Cluster>
-   <Cluster name="thor_roxie" prefix="thor">
+   <Cluster name="thor_roxie" prefix="thor" alias="">
     <EclCCServerProcess process="myeclccserver"/>
     <ThorCluster process="mythor"/>
     <RoxieCluster process="myroxie"/>

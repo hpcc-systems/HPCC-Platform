@@ -1030,7 +1030,7 @@ IPropertyTree* CWizardInputs::createTopologyForComp(IPropertyTree* pNewEnvTree, 
      
    xpath.clear().appendf("./%s/%s[1]/%s", XML_TAG_SOFTWARE, xmlTag.str(), XML_ATTR_NAME);
 
-   clusterStr.clear().appendf("<Cluster name=\"%s\" prefix=\"%s\"></Cluster>", component, component);
+   clusterStr.clear().appendf("<Cluster name=\"%s\" prefix=\"%s\" alias=\"\"></Cluster>", component, component);
  
    IPropertyTree* pCluster = createPTreeFromXMLString(clusterStr.str());
    if(pCluster)

@@ -37,7 +37,7 @@ class CSplitterOutput : public CSimpleInterfaceOf<IStartableEngineRowStream>, pu
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IStartableEngineRowStream>);
 
-    CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned activeOutput);
+    CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned outIdx, unsigned activeOutput);
 
     void reset()
     {
@@ -91,6 +91,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     Owned<ISharedSmartBuffer> smartBuf;
     bool inputPrepared = false;
     bool inputConnected = false;
+    unsigned remainingOutputs = 0;
 
     // NB: CWriter only used by 'balanced' splitter, which blocks write when too far ahead
     class CWriter : public CSimpleInterface, IThreaded
@@ -180,8 +181,9 @@ public:
             unsigned activeOutput = 0;
             ForEachItemIn(o, container.outputs)
             {
-                if (nullptr != container.connectedOutputs.queryItem(o))
-                    appendOutput(new CSplitterOutput(*this, activeOutput++));
+                CIOConnection *io = container.connectedOutputs.queryItem(o);
+                if (nullptr != io)
+                    appendOutput(new CSplitterOutput(*this, io->index, activeOutput++));
                 else
                     appendOutput(nullptr);
             }
@@ -200,7 +202,7 @@ public:
         {
             inputPrepared = true;
             PARENT::start();
-            unsigned remainingOutputs = activeOutputs;
+            remainingOutputs = activeOutputs;
             ForEachItemIn(o, outputs)
             {
                 CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
@@ -241,7 +243,7 @@ public:
     }
     inline const void *nextRow(unsigned activeOutput)
     {
-        if (!smartBuf) // will be true, if only 1 input connect, or only 1 input was active (others stopped) when it started reading
+        if (1 == remainingOutputs) // will be true, if only 1 input connect, or only 1 input was active (others stopped) when it started reading
             return inputStream->nextRow();
         OwnedConstThorRow row = smartBuf->queryOutput(activeOutput)->nextRow(); // will block until available
         if (writeAheadException)
@@ -418,8 +420,8 @@ void CSplitterOutput::debugRequest(MemoryBuffer &mb)
 }
 
 
-CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned _activeOutput)
-   : CEdgeProgress(_activity), activity(_activity), activeOutput(_activeOutput)
+CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned outIdx, unsigned _activeOutput)
+   : CEdgeProgress(&_activity, outIdx), activity(_activity), activeOutput(_activeOutput)
 {
 }
 
@@ -434,7 +436,6 @@ void CSplitterOutput::start()
 // IEngineRowStream
 void CSplitterOutput::stop()
 { 
-    CriticalBlock block(activity.startLock);
     stopped = true;
     activity.inputStopped(activeOutput);
     dataLinkStop();
@@ -450,6 +451,8 @@ const void *CSplitterOutput::nextRow()
     ActivityTimer t(totalCycles, activity.queryTimeActivities());
     const void *row = activity.nextRow(activeOutput); // pass ptr to max if need more
     ++rec;
+    if (row)
+        dataLinkIncrement();
     return row;
 }
 

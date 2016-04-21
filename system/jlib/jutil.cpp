@@ -500,7 +500,7 @@ void SharedObject::unload()
 
 IPluggableFactory *loadPlugin(const IPropertyTree *pluginInfo)
 {
-    const char *pluginName = pluginInfo->queryProp("@name");
+    const char *pluginName = pluginInfo->queryProp("@pluginName");
     const char *entrypoint = pluginInfo->queryProp("@entrypoint");
     if (!pluginName || !entrypoint)
         throw makeStringException(0, "Plugin information missing plugin name or entrypoint");

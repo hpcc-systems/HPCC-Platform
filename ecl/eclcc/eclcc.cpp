@@ -263,7 +263,7 @@ public:
         optGenerateHeader = false;
         optShowPaths = false;
         optNoSourcePath = false;
-        optTargetClusterType = HThorCluster;
+        optTargetClusterType = RoxieCluster;
         optTargetCompiler = DEFAULT_COMPILER;
         optThreads = 0;
         optLogDetail = 0;

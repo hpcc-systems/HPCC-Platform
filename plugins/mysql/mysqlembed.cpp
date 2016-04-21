@@ -1271,7 +1271,7 @@ public:
         bindInfo.buffer_length = rtlUtf8Size(utf8chars, utf8);
         bindInfo.length = &bindInfo.buffer_length;
     }
-    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, const void *setData)
     {
         UNSUPPORTED("SET parameters");  // MySQL does support sets, so MIGHT be possible...
     }

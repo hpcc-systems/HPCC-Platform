@@ -306,7 +306,7 @@ void CSlaveActivity::stopInput(unsigned index, const char *extra)
     CThorInput &_input = inputs.item(index);
     if (_input.stopped)
         return;
-    StringBuffer s("Stopping input for");
+    VStringBuffer s("Stopping input %u for", index);
     if (extra)
         s.append(" ").append(extra);
     ActPrintLog("%s", s.str());
