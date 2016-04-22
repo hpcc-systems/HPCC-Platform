@@ -1576,12 +1576,11 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * ne
 
     ForEach(*zoneIt)
     {
-        SCMStringBuffer dropZoneName;
-        zoneIt->query().getName(dropZoneName);
-
         SCMStringBuffer dropZoneDir;
         zoneIt->query().getDirectory(dropZoneDir);
-        const char * pdropzoneDir = dropZoneDir.str();
+        StringBuffer fullDropZoneDir(dropZoneDir.str());
+        addPathSepChar(fullDropZoneDir);
+        const char * pdropzoneDir = fullDropZoneDir.str();
 
         // Check target file path starts with this Drop zone path
         // the drop zone paths can be nested (nothing forbids it) like
