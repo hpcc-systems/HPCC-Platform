@@ -2234,16 +2234,23 @@ void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, S
     if (!computer.length())
         return;
 
-    Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByComputer(computer.str());
-    if (!dropZone)
-        return;
-    dropZone->getDirectory(directory);
+    Owned<IConstDropZoneInfo> dropZone;
 
     StringBuffer destFile;
     if (isAbsolutePath(destFileIn))
+    {
         destFile.set(destFileIn);
+        dropZone.setown(env->getDropZoneByAddressPath(ip, destFile.str()));
+        if (!dropZone)
+            return;
+        dropZone->getDirectory(directory);
+    }
     else
     {
+        dropZone.setown(env->getDropZoneByComputer(computer.str()));
+        if (!dropZone)
+            return;
+        dropZone->getDirectory(directory);
         destFile.set(directory.str());
         if (destFile.length())
             addPathSepChar(destFile);
