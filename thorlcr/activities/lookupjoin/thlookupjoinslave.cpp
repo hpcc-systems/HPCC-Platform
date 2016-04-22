@@ -630,8 +630,6 @@ public:
         parallelMinChunkSize = 1024;
         parallelChunkSize = 10*parallelMinChunkSize;
         threadCount = activity.getOptInt(THOROPT_JOINHELPER_THREADS, activity.queryMaxCores());
-        if (0 == threadCount)
-            threadCount = getAffinityCpus();
     }
     bool init(rowidx_t rowCount, roxiemem::IRowManager *rowManager)
     {

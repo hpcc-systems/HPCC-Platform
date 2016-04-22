@@ -256,6 +256,7 @@ protected:
     Owned<IThorBoundLoopGraph> loopGraph; // really only here as master and slave derivatives set/use
     MemoryBuffer createCtxMb, startCtxMb;
     bool haveCreateCtx, haveStartCtx;
+    unsigned maxCores;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -336,6 +337,7 @@ public:
         return NULL;
     }
     IHThorArg *queryHelper() const { return baseHelper; }
+    unsigned queryMaxCores() const { return maxCores; }
 
     IPropertyTree &queryXGMML() const { return *xgmml; }
     const activity_id &queryOwnerId() const { return ownerId; }
@@ -1002,7 +1004,6 @@ protected:
     size32_t parentExtractSz;
     const byte *parentExtract;
     bool receiving, cancelledReceive, reInit;
-    unsigned maxCores; // NB: only used by acts that sort at the moment
     Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
 
 public:
@@ -1029,7 +1030,7 @@ public:
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
     bool firstNode() { return 1 == container.queryJobChannel().queryMyRank(); }
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
-    unsigned queryMaxCores() const { return maxCores; }
+    unsigned queryMaxCores() const { return container.queryMaxCores(); }
     IThorRowInterfaces *getRowInterfaces();
     IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
 
