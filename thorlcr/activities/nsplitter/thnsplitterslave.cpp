@@ -31,13 +31,13 @@ class CSplitterOutput : public CSimpleInterfaceOf<IStartableEngineRowStream>, pu
     Semaphore writeBlockSem;
     bool started = false, stopped = false;
 
-    unsigned activeOutput;
+    unsigned outIdx;
     rowcount_t rec = 0, max = 0;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IStartableEngineRowStream>);
 
-    CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned outIdx, unsigned activeOutput);
+    CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned outIdx);
 
     void reset()
     {
@@ -139,8 +139,12 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         }
     }
 public:
-    NSplitterSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), writer(*this)
+    NSplitterSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), writer(*this)
     {
+        activeOutputs = container.getOutputs();
+        ActPrintLog("Number of connected outputs: %u", activeOutputs);
+        ForEachItemIn(o, container.outputs)
+            appendOutput(new CSplitterOutput(*this, o));
     }
     virtual void reset() override
     {
@@ -158,36 +162,8 @@ public:
                 output->reset();
         }
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        ForEachItemIn(o, container.outputs)
-        {
-            if (nullptr != container.connectedOutputs.queryItem(o))
-                ++activeOutputs;
-        }
-        ActPrintLog("Number of connected outputs: %u", activeOutputs);
-        if (activeOutputs <= 1)
-        {
-            ForEachItemIn(o2, container.outputs)
-            {
-                if (o2 == o)
-                    appendOutputLinked(this);
-                else
-                    appendOutput(nullptr);
-            }
-        }
-        else
-        {
-            unsigned activeOutput = 0;
-            ForEachItemIn(o, container.outputs)
-            {
-                CIOConnection *io = container.connectedOutputs.queryItem(o);
-                if (nullptr != io)
-                    appendOutput(new CSplitterOutput(*this, io->index, activeOutput++));
-                else
-                    appendOutput(nullptr);
-            }
-        }
         IHThorSplitArg *helper = (IHThorSplitArg *)queryHelper();
         int dV = getOptInt(THOROPT_SPLITTER_SPILL, -1);
         if (-1 == dV)
@@ -209,7 +185,7 @@ public:
                 if (output && output->isStopped())
                     --remainingOutputs;
             }
-            assertex(remainingOutputs); // must be >=1, as this output (activeOutput) has invoked prepareInput
+            assertex(remainingOutputs); // must be >=1, as this output (outIdx) has invoked prepareInput
             if (1 == remainingOutputs)
                 return false;
             if (smartBuf)
@@ -241,11 +217,11 @@ public:
         }
         return true;
     }
-    inline const void *nextRow(unsigned activeOutput)
+    inline const void *nextRow(unsigned outIdx)
     {
         if (1 == remainingOutputs) // will be true, if only 1 input connect, or only 1 input was active (others stopped) when it started reading
             return inputStream->nextRow();
-        OwnedConstThorRow row = smartBuf->queryOutput(activeOutput)->nextRow(); // will block until available
+        OwnedConstThorRow row = smartBuf->queryOutput(outIdx)->nextRow(); // will block until available
         if (writeAheadException)
             throw LINK(writeAheadException);
         return row.getClear();
@@ -307,7 +283,7 @@ public:
         }
         return recsReady;
     }
-    void inputStopped(unsigned activeOutput)
+    void inputStopped(unsigned outIdx)
     {
         CriticalBlock block(startLock);
         if (smartBuf)
@@ -315,7 +291,7 @@ public:
             /* If no output has started reading (nextRow()), then it will not have been prepared
              * If only 1 output is left, it will bypass the smart buffer when it starts.
              */
-            smartBuf->queryOutput(activeOutput)->stop();
+            smartBuf->queryOutput(outIdx)->stop();
         }
         ++stoppedOutputs;
         if (stoppedOutputs == activeOutputs)
@@ -420,8 +396,8 @@ void CSplitterOutput::debugRequest(MemoryBuffer &mb)
 }
 
 
-CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned outIdx, unsigned _activeOutput)
-   : CEdgeProgress(&_activity, outIdx), activity(_activity), activeOutput(_activeOutput)
+CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned _outIdx)
+   : CEdgeProgress(&_activity, _outIdx), activity(_activity), outIdx(_outIdx)
 {
 }
 
@@ -437,7 +413,7 @@ void CSplitterOutput::start()
 void CSplitterOutput::stop()
 { 
     stopped = true;
-    activity.inputStopped(activeOutput);
+    activity.inputStopped(outIdx);
     dataLinkStop();
 }
 
@@ -449,7 +425,7 @@ const void *CSplitterOutput::nextRow()
         // NB: if this is sole input that actually started, writeahead will have returned RCMAX and calls to activity.nextRow will go directly to splitter input
     }
     ActivityTimer t(totalCycles, activity.queryTimeActivities());
-    const void *row = activity.nextRow(activeOutput); // pass ptr to max if need more
+    const void *row = activity.nextRow(outIdx); // pass ptr to max if need more
     ++rec;
     if (row)
         dataLinkIncrement();

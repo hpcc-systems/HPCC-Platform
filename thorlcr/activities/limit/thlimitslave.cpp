@@ -49,11 +49,10 @@ public:
         resultSent = container.queryLocal(); // i.e. local, so don't send result to master
         eos = stopped = anyThisGroup = eogNext = false;
         rowLimit = RCMAX;
+        appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        appendOutputLinked(this);
-
         if (!container.queryLocal())
             mpTag = container.queryJobChannel().deserializeMPTag(data);
     }

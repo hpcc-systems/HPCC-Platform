@@ -36,10 +36,10 @@ public:
     IterateSlaveActivityBase(CGraphElementBase *_container, bool _global) : CSlaveActivity(_container)
     {
         global = _global;
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);   // adding 'me' to outputs array
         if (global)
             mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
@@ -105,11 +105,7 @@ public:
     IterateSlaveActivity(CGraphElementBase *_container, bool _global) 
         : IterateSlaveActivityBase(_container,_global)
     {
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
         helper = static_cast <IHThorIterateArg *> (queryHelper());
-        IterateSlaveActivityBase::init(data,slaveData);
     }
     virtual void start() override
     {
@@ -189,19 +185,13 @@ public:
     CProcessSlaveActivity(CGraphElementBase *_container, bool _global) 
         : IterateSlaveActivityBase(_container,_global)
     {
-    }
-
-    ~CProcessSlaveActivity()
-    {
-    }
-
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         helper = static_cast <IHThorProcessArg *> (queryHelper());
+    }
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
+    {
         rightRowAllocator.setown(getRowAllocator(helper->queryRightRecordSize()));
         IterateSlaveActivityBase::init(data,slaveData);
     }
-
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
@@ -281,11 +271,8 @@ class CChildIteratorSlaveActivity : public CSlaveActivity
 public:
     CChildIteratorSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorChildIteratorArg *> (queryHelper());
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void start() override
     {
@@ -334,11 +321,11 @@ public:
     CLinkedRawIteratorSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container)
     {
+        helper = static_cast <IHThorLinkedRawIteratorArg *> (queryHelper());
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);   // adding 'me' to outputs array
-        helper = static_cast <IHThorLinkedRawIteratorArg *> (queryHelper());
         grouped = helper->queryOutputMeta()->isGrouped();
     }
     virtual void start() override
@@ -393,11 +380,8 @@ public:
     CStreamedIteratorSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container)
     {
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorStreamedIteratorArg *> (queryHelper());
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void start() override
     {

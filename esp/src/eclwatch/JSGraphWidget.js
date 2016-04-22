@@ -313,7 +313,7 @@ define([
                         return this.cleanObjects(this.graphData.edges);
                     },
 
-                    getLocalisedXGMML: function (selectedItems, depth, distance, noSpills) {
+                    getLocalisedXGMML2: function (selectedItems, depth, distance, noSpills) {
                         return this.graphData.getLocalisedXGMML(selectedItems, depth, distance, noSpills);
                     },
 
@@ -467,14 +467,16 @@ define([
                                         source = inputs[0];
                                     }
                                 }
-                                item.__widget = new Edge()
-                                    .sourceVertex(source.__widget)
-                                    .targetVertex(target.__widget)
-                                    .targetMarker("arrowHead")
-                                    .weight(weight)
-                                    .strokeDasharray(strokeDasharray)
-                                ;
-                                item.__widget.__hpcc_globalID = item.__hpcc_id;
+                                if (!merge || !item.__widget) {
+                                    item.__widget = new Edge()
+                                        .sourceVertex(source.__widget)
+                                        .targetVertex(target.__widget)
+                                        .targetMarker("arrowHead")
+                                        .weight(weight)
+                                        .strokeDasharray(strokeDasharray)
+                                    ;
+                                    item.__widget.__hpcc_globalID = item.__hpcc_id;
+                                }
                                 item.__widget.text(label);
                                 item.__widget.tooltip(tooltip);
                                 item.__widget.classed({

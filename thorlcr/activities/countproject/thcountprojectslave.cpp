@@ -35,11 +35,8 @@ protected:
 public:
     BaseCountProjectActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-    }
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
-    {
-        appendOutputLinked(this);
         helper = static_cast <IHThorCountProjectArg *> (queryHelper());
+        appendOutputLinked(this);
     }
 };
 

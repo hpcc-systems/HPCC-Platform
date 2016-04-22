@@ -28,9 +28,6 @@ public:
     explicit CFilterSlaveActivityBase(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -63,10 +60,6 @@ public:
     CFilterSlaveActivity(CGraphElementBase *container)
         : CFilterSlaveActivityBase(container), CThorSteppable(this)
     {
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        PARENT::init(data,slaveData);
         helper = static_cast <IHThorFilterArg *> (queryHelper());
     }
     virtual void start() override
@@ -183,11 +176,11 @@ public:
     CFilterProjectSlaveActivity(CGraphElementBase *container) 
         : CFilterSlaveActivityBase(container)
     {
+        helper = static_cast <IHThorFilterProjectArg *> (queryHelper());
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         PARENT::init(data,slaveData);
-        helper = static_cast <IHThorFilterProjectArg *> (queryHelper());
         allocator.set(queryRowAllocator());
     }
     virtual void start() override
@@ -261,8 +254,8 @@ class CFilterGroupSlaveActivity : public CFilterSlaveActivityBase, public CThorS
 public:
     CFilterGroupSlaveActivity(CGraphElementBase *container) : CFilterSlaveActivityBase(container), CThorSteppable(this)
     {
+        helper = (IHThorFilterGroupArg *)queryHelper();
         groupLoader.setown(createThorRowLoader(*this, NULL, stableSort_none, rc_allMem));
-        helper = NULL;
         spillCompInfo = 0x0;
         if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
         {
@@ -270,11 +263,6 @@ public:
             getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
             setCompFlag(compType, spillCompInfo);
         }
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        PARENT::init(data,slaveData);
-        helper = (IHThorFilterGroupArg *)queryHelper();
     }
     virtual void start() override
     {   

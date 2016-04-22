@@ -85,7 +85,9 @@ public:
         : CSlaveActivity(_container), global(_global), grouped(_grouped), sortedRows(*this, this)
     {
         assertex(!(global && grouped));
+        helper = (IHThorTopNArg *) queryHelper();
         eog = eos = false;
+        appendOutputLinked(this);
     }
     ~TopNSlaveActivity()
     {
@@ -94,8 +96,6 @@ public:
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);
-        helper = (IHThorTopNArg *) queryHelper();
         topNLimit = RIUNSET;
         compare = helper->queryCompare();
 

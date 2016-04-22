@@ -61,10 +61,10 @@ public:
         numGroups = 0;
         numGroupMax = 0;
         startLastGroup = 0;
+        appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);
         if (!container.queryLocalOrGrouped())
         {
             mpTag = container.queryJobChannel().deserializeMPTag(data);

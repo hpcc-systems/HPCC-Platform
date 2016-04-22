@@ -1767,6 +1767,7 @@ public:
 // ISharedWriteBuffer impl.
     virtual IRowWriter *getWriter()
     {
+        CThorArrayLockBlock block(rows);
         ++numWriters;
         return new CAWriter(*this);
     }

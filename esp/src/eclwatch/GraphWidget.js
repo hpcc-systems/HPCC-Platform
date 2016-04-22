@@ -432,6 +432,14 @@ define([
                     this.isIE11 = true;
                 }
                 this.graphViewHistory = new GraphViewHistory(this);
+                this._options = {};
+            },
+
+            option: function (key, _) {
+                if (arguments.length < 1) throw Error("Invalid Call:  option");
+                if (arguments.length === 1) return this._options[key];
+                this._options[key] = _ instanceof Array ? _.length > 0 : _;
+                return this;
             },
 
             _onClickRefresh: function () {
@@ -946,7 +954,10 @@ define([
 
             getLocalisedXGMML: function (selectedItems, depth, distance, hideSpills) {
                 if (this.hasPlugin()) {
-                    return this._plugin.getLocalisedXGMML(selectedItems, depth, distance, hideSpills);
+                    if (this._plugin.getLocalisedXGMML2) {
+                        return this._plugin.getLocalisedXGMML2(selectedItems, depth, distance, hideSpills);
+                    }
+                    return this._plugin.getLocalisedXGMML(selectedItems, depth, distance);
                 }
                 return null;
             },
