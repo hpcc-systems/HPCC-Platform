@@ -1579,9 +1579,7 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * ne
         SCMStringBuffer dropZoneDir;
         zoneIt->query().getDirectory(dropZoneDir);
         StringBuffer fullDropZoneDir(dropZoneDir.str());
-        const char pathSeparator = fullDropZoneDir.charAt(0);
-        if (fullDropZoneDir.charAt(fullDropZoneDir.length()) != pathSeparator)
-            fullDropZoneDir.append(pathSeparator);
+        addPathSepChar(fullDropZoneDir);
         const char * pdropzoneDir = fullDropZoneDir.str();
 
         // Check target file path starts with this Drop zone path
