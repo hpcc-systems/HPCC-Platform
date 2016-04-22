@@ -839,7 +839,7 @@ public:
             dataLinkIncrement();
         return ret.getClear();
     }
-    virtual bool isGrouped() const override { return selectedItdl ? selectedItdl->isGrouped() : false; }
+    virtual bool isGrouped() const override { return container.queryGrouped(); }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
