@@ -2392,7 +2392,7 @@ void DependenciesUsed::addResultRead(IHqlExpression * wuid, IHqlExpression * seq
     if (!isGraphResult)
         if (!seq || !seq->queryValue())
             return;         //Can be called in parser when no sequence has been allocated
-    OwnedHqlExpr result = createAttribute(resultAtom, LINK(seq), LINK(name), LINK(wuid));
+    OwnedHqlExpr result = createExprAttribute(resultAtom, LINK(seq), LINK(name), LINK(wuid));
     if (resultsWritten.find(*result) == NotFound)
         appendUniqueExpr(resultsRead, LINK(result));
 }
@@ -2402,7 +2402,7 @@ void DependenciesUsed::addResultWrite(IHqlExpression * seq, IHqlExpression * nam
     if (!isGraphResult)
         if (!seq || !seq->queryValue())
             return;         //Can be called in parser when no sequence has been allocated
-    OwnedHqlExpr result = createAttribute(resultAtom, LINK(seq), LINK(name));
+    OwnedHqlExpr result = createExprAttribute(resultAtom, LINK(seq), LINK(name));
     if (appendUniqueExpr(resultsWritten, LINK(result)))
         if (resultsRead.contains(*result))
             noteInconsistency(result);
