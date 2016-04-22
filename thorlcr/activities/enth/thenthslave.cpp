@@ -92,9 +92,6 @@ public:
 
     BaseEnthActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-    }
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
-    {
         appendOutputLinked(this);
     }
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override

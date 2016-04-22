@@ -49,6 +49,7 @@ public:
         compress = false;
         grouped = false;
         usageCount = 0;
+        appendOutputLinked(this);
     }
 
     ~SpillSlaveActivity()
@@ -56,14 +57,13 @@ public:
         close();
     }
 
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         partDesc.setown(deserializePartFileDescriptor(data));
         compress = partDesc->queryOwner().isCompressed();
         data.read(usageCount);
         getPartFilename(*partDesc, 0, fileName);
         grouped = 0 != (TDXgrouped & ((IHThorSpillArg *)queryHelper())->getFlags());
-        appendOutputLinked(this);
     }
 
     void open()

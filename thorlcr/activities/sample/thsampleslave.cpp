@@ -28,12 +28,10 @@ class SampleSlaveActivity : public CSlaveActivity
     bool eogNext;
 
 public:
-    SampleSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container) { }
-
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
+    SampleSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        appendOutputLinked(this);
         helper = static_cast <IHThorSampleArg *> (queryHelper());
+        appendOutputLinked(this);
     }
     virtual void start() override
     {

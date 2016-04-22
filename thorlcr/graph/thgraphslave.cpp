@@ -798,7 +798,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
 {
     bool ret = true;
     unsigned needActInit = 0;
-    Owned<IThorActivityIterator> iter = getConnectedIterator(false);
+    Owned<IThorActivityIterator> iter = getConnectedIterator();
     ForEach(*iter)
     {
         CGraphElementBase &element = (CGraphElementBase &)iter->query();
@@ -832,7 +832,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             assertex(!parentExtractSz || NULL!=parentExtract);
             msg.append(parentExtractSz);
             msg.append(parentExtractSz, parentExtract);
-            Owned<IThorActivityIterator> iter = getConnectedIterator(false);
+            Owned<IThorActivityIterator> iter = getConnectedIterator();
             ForEach(*iter)
             {
                 CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
@@ -869,7 +869,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             if (queryOwner() && !isGlobal())
             {
                 // initialize any for which no data was sent
-                Owned<IThorActivityIterator> iter = getConnectedIterator(false);
+                Owned<IThorActivityIterator> iter = getConnectedIterator();
                 ForEach(*iter)
                 {
                     CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
@@ -1006,10 +1006,10 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
         // could still request 1 off, onCreate serialization from master 1st.
                 }
             }
-            if (!recvActivityInitData(parentExtractSz, parentExtract))
-                throw MakeThorException(0, "preStart failure");
             connect(); // only now do slave acts. have all their outputs prepared.
         }
+        if (!recvActivityInitData(parentExtractSz, parentExtract))
+            throw MakeThorException(0, "preStart failure");
         CGraphBase::executeSubGraph(parentExtractSz, parentExtract);
     }
     catch (IException *e)

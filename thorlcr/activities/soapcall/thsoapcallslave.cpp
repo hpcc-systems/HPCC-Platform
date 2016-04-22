@@ -43,13 +43,15 @@ class CWscRowCallSlaveActivity : public CSlaveActivity, implements IWSCRowProvid
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CWscRowCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container) { }
+    CWscRowCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
+    {
+        appendOutputLinked(this);
+    }
 
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
-        appendOutputLinked(this);
     }
     // IThorDataLink methods
     virtual void start()
@@ -136,14 +138,16 @@ class SoapDatasetCallSlaveActivity : public CSlaveActivity, implements IWSCRowPr
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    SoapDatasetCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container) { }
+    SoapDatasetCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
+    {
+        appendOutputLinked(this);
+    }
 
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         StringBuffer authToken;
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
-        appendOutputLinked(this);
         wscHelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
     }
     // IThorDataLink methods

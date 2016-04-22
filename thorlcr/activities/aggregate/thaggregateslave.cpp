@@ -118,12 +118,12 @@ public:
     AggregateSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         hadElement = inputStopped = false;
+        appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         if (!container.queryLocal())
             mpTag = container.queryJobChannel().deserializeMPTag(data);
-        appendOutputLinked(this);
     }
 };
 

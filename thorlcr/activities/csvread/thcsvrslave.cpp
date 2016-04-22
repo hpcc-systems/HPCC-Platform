@@ -316,6 +316,7 @@ public:
         headerLines = helper->queryCsvParameters()->queryHeaderLen();
         superFDesc = NULL;
         subFiles = 0;
+        appendOutputLinked(this);
     }
 
 // IThorSlaveActivity
@@ -360,7 +361,6 @@ public:
             sentHeaderLines.setown(createThreadSafeBitSet());
         }
         partHandler.setown(new CCsvPartHandler(*this));
-        appendOutputLinked(this);
     }
     virtual void kill()
     {

@@ -248,6 +248,8 @@ public:
     {
         partitionpos = NULL;
         linkcounter.setown(new CThorRowLinkCounter);
+        helper = (IHThorMergeArg *)queryHelper();
+        appendOutputLinked(this);
     }
 
     ~GlobalMergeSlaveActivity()
@@ -267,8 +269,6 @@ public:
 // IThorSlaveActivity overloaded methods
     void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        helper = (IHThorMergeArg *)queryHelper();
-        appendOutputLinked(this);
         masterMpTag = container.queryJobChannel().deserializeMPTag(data);
     }
 
@@ -418,21 +418,16 @@ class LocalMergeSlaveActivity : public CSlaveActivity
     Owned<IRowStream> out;
     IHThorMergeArg *helper;
 public:
-    LocalMergeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container) { }
-
-// IThorSlaveActivity overloaded methods
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
+    LocalMergeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorMergeArg *)queryHelper();
         appendOutputLinked(this);
     }
-
     void abort()
     {
         ActPrintLog("abort");
         CSlaveActivity::abort();
     }
-
 
 // IThorDataLink
     virtual void start() override
@@ -545,14 +540,11 @@ public:
         helper = (IHThorNWayMergeArg *)queryHelper();
         merger.init(helper->queryCompare(), helper->dedup(), helper->querySteppingMeta()->queryCompare());
         initializedMeta = false;
+        appendOutputLinked(this);
     }
     ~CNWayMergeActivity()
     {
         merger.cleanup();
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        appendOutputLinked(this);
     }
     virtual void start() override
     {

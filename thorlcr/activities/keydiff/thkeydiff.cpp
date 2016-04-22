@@ -37,7 +37,7 @@ class CKeyDiffMaster : public CMasterActivity
 public:
     CKeyDiffMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
-        helper = NULL;
+        helper = (IHThorKeyDiffArg *)queryHelper();
         local = false;
         width = 0;
         copyTlk = globals->getPropBool("@diffCopyTlk", true); // because tlk can have meta data and diff/patch does not support
@@ -45,7 +45,6 @@ public:
     virtual void init()
     {
         CMasterActivity::init();
-        helper = (IHThorKeyDiffArg *)queryHelper();
         OwnedRoxieString originalHelperName(helper->getOriginalName());
         OwnedRoxieString updatedHelperName(helper->getUpdatedName());
         OwnedRoxieString outputHelperName(helper->getOutputName());

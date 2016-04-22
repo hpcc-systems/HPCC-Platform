@@ -40,16 +40,11 @@ class CKeyPatchSlave : public ProcessSlaveActivity
 public:
     CKeyPatchSlave(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {
-        helper = NULL;
+        helper = (IHThorKeyPatchArg *)queryHelper();
         tlk = copyTlk = false;
     }
-    ~CKeyPatchSlave()
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-    }
-
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        helper = (IHThorKeyPatchArg *)queryHelper();
         bool active;
         data.read(active);
         if (!active)

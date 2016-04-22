@@ -62,6 +62,7 @@ public:
     {
         portbase = 0;
         totalrows = RCUNSET;
+        appendOutputLinked(this);
     }
     ~MSortSlaveActivity()
     {
@@ -78,7 +79,6 @@ public:
         server.setLocalHost(portbase); 
         helper = (IHThorSortArg *)queryHelper();
         sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
-        appendOutputLinked(this);
         server.serialize(slaveData);
     }
     virtual void start() override

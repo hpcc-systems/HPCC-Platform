@@ -83,7 +83,7 @@ public:
         ActPrintLog("JoinActivityMaster");
         lhsProgress.setown(new ProgressInfo(queryJob()));
         rhsProgress.setown(new ProgressInfo(queryJob()));
-        helper = NULL;
+        helper = (IHThorJoinArg *)queryHelper();
         islocal = local;
         imaster = NULL;
         selfJoinWarnLevel = INITIAL_SELFJOIN_MATCH_WARNING_LEVEL;
@@ -134,7 +134,6 @@ public:
         CMasterActivity::process();
         if (!islocal)
         {
-            helper = (IHThorJoinArg *)queryHelper();
             StringBuffer skewV;
             double skewError;
             container.queryJob().getWorkUnitValue("overrideSkewError", skewV);

@@ -103,6 +103,7 @@ public:
     SelfJoinSlaveActivity(CGraphElementBase *_container, bool _isLocal, bool _isLightweight)
         : CSlaveActivity(_container), spillStats(spillStatistics)
     {
+        helper = static_cast <IHThorJoinArg *> (queryHelper());
         isLocal = _isLocal||_isLightweight;
         isLightweight = _isLightweight;
         portbase = 0;
@@ -110,6 +111,7 @@ public:
         keyserializer = NULL;
         inputStopped = false;
         mpTagRPC = TAG_NULL;
+        appendOutputLinked(this);
     }
 
     ~SelfJoinSlaveActivity()
@@ -121,7 +123,6 @@ public:
 // IThorSlaveActivity
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {       
-        appendOutputLinked(this);
         if(!isLocal)
         {
             mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
@@ -132,7 +133,6 @@ public:
             sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
             server.serialize(slaveData);
         }
-        helper = static_cast <IHThorJoinArg *> (queryHelper());
         compare = helper->queryCompareLeft();                   // NB not CompareLeftRight
         keyserializer = helper->querySerializeLeft();           // hopefully never need right
         if(isLightweight) 

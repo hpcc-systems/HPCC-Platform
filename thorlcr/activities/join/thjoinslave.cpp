@@ -49,37 +49,33 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
     IEngineRowStream *secondaryInputStream = nullptr;
     Owned<IThorDataLink> leftInput, rightInput;
     Owned<IThorDataLink> secondaryInput, primaryInput;
-    IHThorJoinBaseArg *helper;
-    IHThorJoinArg *helperjn;
-    IHThorDenormalizeArg *helperdn;
     Owned<IThorSorter> sorter;
-    unsigned portbase;
-    mptag_t mpTagRPC;
-    ICompare *leftCompare;
-    ICompare *rightCompare;
-    ISortKeySerializer *leftKeySerializer;
-    ISortKeySerializer *rightKeySerializer;
-    ICompare *primarySecondaryCompare;
-    ICompare *primarySecondaryUpperCompare; // if non-null then between join
+    unsigned portbase = 0;
+    mptag_t mpTagRPC = TAG_NULL;
+    ICompare *primarySecondaryCompare = nullptr;
+    ICompare *primarySecondaryUpperCompare = nullptr; // if non-null then between join
 
     Owned<IRowStream> leftStream, rightStream;
     Owned<IException> secondaryStartException;
 
-    bool islocal;
     Owned<IBarrier> barrier;
     SocketEndpoint server;
 
-#ifdef _TESTING
-    bool started;
-#endif
-
     Owned<IJoinHelper> joinhelper;
-    rowcount_t lhsProgressCount, rhsProgressCount;
+    rowcount_t lhsProgressCount = 0, rhsProgressCount = 0;
     CriticalSection joinHelperCrit;
-    bool leftInputStopped;
-    bool rightInputStopped;
-    bool rightpartition;
+    bool leftInputStopped = true;
+    bool rightInputStopped = true;
     CRuntimeStatisticCollection spillStats;
+    IHThorJoinBaseArg *helper;
+    IHThorJoinArg *helperjn;
+    IHThorDenormalizeArg *helperdn;
+    ICompare *leftCompare;
+    ICompare *rightCompare;
+    ISortKeySerializer *leftKeySerializer;
+    ISortKeySerializer *rightKeySerializer;
+    bool rightpartition;
+    bool islocal;
 
 
     bool noSortPartitionSide()
@@ -144,15 +140,32 @@ public:
         : CSlaveActivity(_container), spillStats(spillStatistics)
     {
         islocal = local;
-        portbase = 0;
-#ifdef _TESTING
-        started = false;
-#endif
-        leftInputStopped = true;
-        rightInputStopped = true;
-        lhsProgressCount = 0;
-        rhsProgressCount = 0;
-        mpTagRPC = TAG_NULL;
+        switch (container.getKind())
+        {
+            case TAKdenormalize:
+            case TAKdenormalizegroup:
+            {
+                helperjn = nullptr;
+                helperdn = (IHThorDenormalizeArg *)container.queryHelper();
+                helper = helperdn;
+                break;
+            }
+            case TAKjoin:
+            {
+                helperjn = (IHThorJoinArg *)container.queryHelper();
+                helperdn = nullptr;
+                helper = helperjn;
+                break;
+            }
+            default:
+                throwUnexpected();
+        }
+        leftCompare = helper->queryCompareLeft();
+        rightCompare = helper->queryCompareRight();
+        leftKeySerializer = helper->querySerializeLeft();
+        rightKeySerializer = helper->querySerializeRight();
+        rightpartition = (container.getKind()==TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
+        appendOutputLinked(this);
     }
 
     ~JoinSlaveActivity()
@@ -174,32 +187,7 @@ public:
             sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
             server.serialize(slaveData);
         }
-        appendOutputLinked(this);
-        switch (container.getKind())
-        {
-            case TAKdenormalize:
-            case TAKdenormalizegroup:
-            {
-                helperjn = NULL;        
-                helperdn = (IHThorDenormalizeArg *)container.queryHelper();     
-                helper = helperdn;
-                break;
-            }
-            case TAKjoin:
-            {
-                helperjn = (IHThorJoinArg *)container.queryHelper();        
-                helperdn = NULL;        
-                helper = helperjn;
-                break;
-            }
-            default:
-                throwUnexpected();
-        }
-        leftCompare = helper->queryCompareLeft();
-        rightCompare = helper->queryCompareRight();
-        leftKeySerializer = helper->querySerializeLeft();
-        rightKeySerializer = helper->querySerializeRight();
-        rightpartition = (container.getKind()==TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
+
     }
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {
@@ -653,9 +641,6 @@ public:
         helper = (IHThorNWayMergeJoinArg *)queryHelper();
         inputAllocator.setown(getRowAllocator(helper->queryInputMeta()));
         outputAllocator.setown(getRowAllocator(helper->queryOutputMeta()));
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
         appendOutputLinked(this);
     }
     virtual void start() override

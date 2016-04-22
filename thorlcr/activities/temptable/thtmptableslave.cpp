@@ -42,17 +42,13 @@ public:
     CInlineTableSlaveActivity(CGraphElementBase *_container)
     : CSlaveActivity(_container)
     {
-        helper = NULL;
+        helper = static_cast <IHThorInlineTableArg *> (queryHelper());
         startRow = 0;
         currentRow = 0;
         maxRow = 0;
+        appendOutputLinked(this);
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        appendOutputLinked(this);
-        helper = static_cast <IHThorInlineTableArg *> (queryHelper());
-    }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);

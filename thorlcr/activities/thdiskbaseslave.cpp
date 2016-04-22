@@ -456,6 +456,7 @@ void CDiskWriteSlaveActivityBase::close()
 CDiskWriteSlaveActivityBase::CDiskWriteSlaveActivityBase(CGraphElementBase *container)
 : ProcessSlaveActivity(container), fileStats(diskWriteRemoteStatistics)
 {
+    diskHelperBase = static_cast <IHThorDiskWriteArg *> (queryHelper());
     grouped = false;
     compress = calcFileCrc = false;
     uncompressedBytesWritten = 0;
@@ -466,8 +467,6 @@ CDiskWriteSlaveActivityBase::CDiskWriteSlaveActivityBase(CGraphElementBase *cont
 
 void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveData)
 {
-    diskHelperBase = static_cast <IHThorDiskWriteArg *> (queryHelper());
-
     StringAttr logicalFilename;
     data.read(logicalFilename);
     dlfn.set(logicalFilename);

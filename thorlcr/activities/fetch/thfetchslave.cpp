@@ -299,6 +299,7 @@ public:
         fetchBaseHelper = (IHThorFetchBaseArg *)queryHelper();
         fetchContext = static_cast<IHThorFetchContext *>(fetchBaseHelper->selectInterface(TAIfetchcontext_1));
         reInit = 0 != (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
+        appendOutputLinked(this);
     }
     ~CFetchSlaveBase()
     {
@@ -340,7 +341,6 @@ public:
             free(encryptedKey);
         }
         fetchDiskRowIf.setown(createThorRowInterfaces(queryRowManager(), fetchContext->queryDiskRecordSize(), queryId(), queryCodeContext()));
-        appendOutputLinked(this);
     }
 
     virtual void initializeFileParts()

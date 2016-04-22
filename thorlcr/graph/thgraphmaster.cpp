@@ -2292,7 +2292,7 @@ void CMasterGraph::sendActivityInitData()
     for (; w<queryJob().querySlaves(); w++)
     {
         unsigned needActInit = 0;
-        Owned<IThorActivityIterator> iter = getConnectedIterator(false);
+        Owned<IThorActivityIterator> iter = getConnectedIterator();
         ForEach(*iter)
         {
             CGraphElementBase &element = iter->query();
@@ -2307,7 +2307,7 @@ void CMasterGraph::sendActivityInitData()
             try
             {
                 msg.rewrite(pos);
-                Owned<IThorActivityIterator> iter = getConnectedIterator(false);
+                Owned<IThorActivityIterator> iter = getConnectedIterator();
                 serializeActivityInitData(w, msg, *iter);
             }
             catch (IException *e)
@@ -2419,11 +2419,11 @@ void CMasterGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentE
                 }
             }
         }
-        if (syncInitData())
-        {
-            sendActivityInitData(); // has to be done at least once
-            // NB: At this point, on the slaves, the graphs will start
-        }
+    }
+    if (syncInitData())
+    {
+        sendActivityInitData(); // has to be done at least once
+        // NB: At this point, on the slaves, the graphs will start
     }
     fatalHandler.clear();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));

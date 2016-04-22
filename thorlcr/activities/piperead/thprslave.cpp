@@ -189,6 +189,8 @@ public:
     CPipeReadSlaveActivity(CGraphElementBase *_container) 
         : CPipeSlaveBase(_container)
     {
+        helper = static_cast <IHThorPipeReadArg *> (queryHelper());
+        appendOutputLinked(this);
     }
     CATCH_NEXTROW()
     {   
@@ -229,13 +231,11 @@ public:
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        helper = static_cast <IHThorPipeReadArg *> (queryHelper());
         flags = helper->getPipeFlags();
         needTransform = false;
 
         if (needTransform)
             inrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(), queryId(), queryCodeContext()));
-        appendOutputLinked(this);
     }
     virtual void start() override
     {
@@ -337,8 +337,10 @@ public:
     CPipeThroughSlaveActivity(CGraphElementBase *_container)
         : CPipeSlaveBase(_container)
     {
+        helper = static_cast <IHThorPipeThroughArg *> (queryHelper());
         pipeWriter = NULL;
         grouped = false;
+        appendOutputLinked(this);
     }
     ~CPipeThroughSlaveActivity()
     {
@@ -346,12 +348,9 @@ public:
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        helper = static_cast <IHThorPipeThroughArg *> (queryHelper());
         flags = helper->getPipeFlags();
         recreate = helper->recreateEachRow();
         grouped = 0 != (flags & TPFgroupeachrow);
-
-        appendOutputLinked(this);
     }
     virtual void start() override
     {

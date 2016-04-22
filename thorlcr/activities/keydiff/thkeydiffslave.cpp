@@ -42,7 +42,7 @@ class CKeyDiffSlave : public ProcessSlaveActivity
 public:
     CKeyDiffSlave(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {
-        helper = NULL;
+        helper = (IHThorKeyDiffArg *)queryHelper();
         tlk = false;
         copyTlk = globals->getPropBool("@diffCopyTlk", true); // because tlk can have meta data and diff/patch does not support
     }
@@ -52,7 +52,6 @@ public:
 
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        helper = (IHThorKeyDiffArg *)queryHelper();
         bool active;
         data.read(active);
         if (!active)
