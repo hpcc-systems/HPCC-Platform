@@ -391,11 +391,10 @@ public:
     };
 
 public:
-    bool needTransform, unsorted, countSent;
-    rowcount_t limit;
-    rowcount_t stopAfter;
-    IRowStream *out;
-    size32_t maxrecsize;
+    bool needTransform = false, unsorted = false, countSent = false;
+    rowcount_t limit = 0;
+    rowcount_t stopAfter = 0;
+    IRowStream *out = nullptr;
 
     IHThorDiskReadArg *helper;
 
@@ -405,13 +404,6 @@ public:
         unsorted = 0 != (TDRunsorted & helper->getFlags());
         grouped = 0 != (TDXgrouped & helper->getFlags());
         needTransform = segMonitors.length() || helper->needTransform();
-        out = NULL;
-        countSent = false;
-        if (helper->getFlags() & TDRlimitskips)
-            limit = RCMAX;
-        else
-            limit = (rowcount_t)helper->getRowLimit();
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
         appendOutputLinked(this);
     }
     ~CDiskReadSlaveActivity()
@@ -475,6 +467,11 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
+        if (helper->getFlags() & TDRlimitskips)
+            limit = RCMAX;
+        else
+            limit = (rowcount_t)helper->getRowLimit();
+        stopAfter = (rowcount_t)helper->getChooseNLimit();
         out = createSequentialPartHandler(partHandler, partDescs, grouped); // **
     }
     virtual bool isGrouped() const override { return grouped; }
@@ -584,21 +581,15 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
     };
 
     IHThorDiskNormalizeArg *helper;
-    rowcount_t limit;
-    rowcount_t stopAfter;
-    IRowStream *out;
+    rowcount_t limit = 0;
+    rowcount_t stopAfter = 0;
+    IRowStream *out = nullptr;
 
 public:
     CDiskNormalizeSlave(CGraphElementBase *_container) 
         : CDiskReadSlaveActivityRecord(_container)
     {
         helper = (IHThorDiskNormalizeArg *)queryHelper();
-        if (helper->getFlags() & TDRlimitskips)
-            limit = RCMAX;
-        else
-            limit = (rowcount_t)helper->getRowLimit();
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
-        out = NULL;
         appendOutputLinked(this);
     }
     ~CDiskNormalizeSlave()
@@ -630,6 +621,11 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
+        if (helper->getFlags() & TDRlimitskips)
+            limit = RCMAX;
+        else
+            limit = (rowcount_t)helper->getRowLimit();
+        stopAfter = (rowcount_t)helper->getChooseNLimit();
         out = createSequentialPartHandler(partHandler, partDescs, false);
     }
     virtual bool isGrouped() const override { return false; }
@@ -832,18 +828,13 @@ class CDiskCountSlave : public CDiskReadSlaveActivityRecord
     typedef CDiskReadSlaveActivityRecord PARENT;
 
     IHThorDiskCountArg *helper;
-    rowcount_t stopAfter, preknownTotalCount;
-    bool eoi, totalCountKnown;
+    rowcount_t stopAfter = 0, preknownTotalCount = 0;
+    bool eoi = false, totalCountKnown = false;
 
 public:
     CDiskCountSlave(CGraphElementBase *_container) : CDiskReadSlaveActivityRecord(_container)
     {
         helper = (IHThorDiskCountArg *)queryHelper();
-        totalCountKnown = eoi = false;
-        preknownTotalCount = 0;
-        mpTag = TAG_NULL;
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
-        totalCountKnown = false;
         appendOutputLinked(this);
     }
 
@@ -876,6 +867,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
+        stopAfter = (rowcount_t)helper->getChooseNLimit();
         eoi = false;
         if (!helper->canMatchAny())
         {

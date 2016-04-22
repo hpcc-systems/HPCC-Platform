@@ -111,12 +111,12 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
     typedef CSlaveActivity PARENT;
 
     IHThorPrefetchProjectArg *helper;
-    rowcount_t numProcessedLastGroup;
-    bool eof;
+    rowcount_t numProcessedLastGroup = 0;
+    bool eof = false;
     Owned<IEngineRowAllocator> allocator;
     IThorChildGraph *child = nullptr;
-    bool parallel;
-    unsigned preload;
+    bool parallel = false;
+    unsigned preload = 0;
 
     class PrefetchInfo : public CSimpleInterface
     {
@@ -248,9 +248,6 @@ public:
     {
         helper = (IHThorPrefetchProjectArg *) queryHelper();
         parallel = 0 != (helper->getFlags() & PPFparallel);
-        preload = helper->getLookahead();
-        if (!preload)
-            preload = 10; // default
         appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
@@ -261,6 +258,9 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        preload = helper->getLookahead();
+        if (!preload)
+            preload = 10; // default
         child = helper->queryChild();
         numProcessedLastGroup = getDataLinkGlobalCount();
         eof = !helper->canMatchAny();
