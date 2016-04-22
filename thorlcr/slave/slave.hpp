@@ -73,7 +73,7 @@ public:
         //PARALLEL(1) can be used to explicitly disable parallel processing.
         numStrands = container.queryXGMML().getPropInt("att[@name='parallel']/@value", 0);
         if ((numStrands == NotFound) || (numStrands > MAX_SENSIBLE_STRANDS))
-            numStrands = getAffinityCpus();
+            numStrands = container.queryMaxCores();
         if (0 == numStrands)
             numStrands = container.queryJob().getOptInt("forceNumStrands");
         blockSize = container.queryJob().getOptInt("strandBlockSize");
