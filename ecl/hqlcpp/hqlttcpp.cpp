@@ -5600,6 +5600,18 @@ void intersectDependencies(UnsignedArray & target, UnsignedArray const & d1, Uns
     }
 }
 
+static IHqlExpression * createResultsAttribute(const HqlExprArray & results)
+{
+    HqlExprArray globalResults;
+    ForEachItemIn(i, results)
+    {
+        IHqlExpression & cur = results.item(i);
+        //Only include global results - it may be possible to have a result read in a child query, from a workunit with an unknown wuid.
+        if (cur.isIndependentOfScope())
+            globalResults.append(OLINK(cur));
+    }
+    return createExprAttribute(_results_Atom, globalResults);
+}
 
 //------------------------------------------------------------------------
 
@@ -6082,7 +6094,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             inheritDependencies(&checkArgs.item(0));
             if (dependencies.resultsRead.ordinality())
             {
-                checkArgs.append(*createExprAttribute(_results_Atom, dependencies.resultsRead));
+                checkArgs.append(*createResultsAttribute(dependencies.resultsRead));
                 inheritDependencies(&checkArgs.item(1));
             }
             checkArgs.append(*createAttribute(_codehash_Atom, LINK(codehash)));
@@ -6328,7 +6340,7 @@ IHqlExpression * WorkflowTransformer::createTransformed(IHqlExpression * expr)
                         updateArgs.append(*attr.getClear());
                 }
                 if (dependencies.resultsRead.ordinality())
-                    updateArgs.append(*createExprAttribute(_results_Atom, dependencies.resultsRead));
+                    updateArgs.append(*createResultsAttribute(dependencies.resultsRead));
 
                 HqlExprArray args;
                 unwindChildren(args, transformed);
