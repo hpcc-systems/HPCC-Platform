@@ -216,7 +216,7 @@ Connection::Connection(ICodeContext * ctx, const char * _options, int _database,
   : context(nullptr), database(0), timeout(_timeout), port(0), serverIpPortPasswordHash(0)
 {
 #if HIREDIS_VERSION_OK
-    serverIpPortPasswordHash = hashServerIpPortPassword(ctx, _options, pass);
+    serverIpPortPasswordHash = hashServerIpPortPassword(ctx, _options, password);
 #endif
     options.set(_options, strlen(_options));
     parseOptions(ctx, _options);
