@@ -38,6 +38,7 @@ public:
     StringBuffer();
     StringBuffer(String & value);
     StringBuffer(const char *value);
+    StringBuffer(StringBuffer && value);
     StringBuffer(unsigned len, const char *value);
     StringBuffer(const StringBuffer & value);
     StringBuffer(bool useInternal);
@@ -131,6 +132,7 @@ public:
     {
         return clear().append(value.str());
     }
+    StringBuffer& operator=(StringBuffer&& value);
 
     StringBuffer &  appendlong(long value);
     StringBuffer &  appendulong(unsigned long value);
@@ -180,6 +182,7 @@ public:
 
     virtual const char * str() const { return s.str(); };
     virtual void set(const char *val) { s.clear().append(val); };
+    virtual void set(StringBuffer &&str) { s.swapWith(str); }
     virtual void clear() { s.clear(); };
     virtual void setLen(const char *val, unsigned length) { s.clear().append(length, val); };
     virtual unsigned length() const { return s.length(); };
@@ -249,6 +252,8 @@ public:
     StringAttr(const char * _text, unsigned _len);
     StringAttr(const char * _text);
     StringAttr(const StringAttr & src);
+    StringAttr(StringAttr && src);
+    StringAttr& operator = (StringAttr && from);
     inline ~StringAttr(void) { free(text); }
     
     inline operator const char * () const       { return text; }

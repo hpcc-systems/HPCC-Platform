@@ -93,6 +93,12 @@ StringBuffer::StringBuffer(const StringBuffer & value)
     append(value);
 }
 
+StringBuffer::StringBuffer(StringBuffer && value)
+{
+    init();
+    swapWith(value);
+}
+
 StringBuffer::StringBuffer(bool useInternal)
 {
     if (useInternal)
@@ -1279,6 +1285,20 @@ StringAttr::StringAttr(const StringAttr & src)
 {
     text = NULL;
     set(src.get());
+}
+
+StringAttr::StringAttr(StringAttr && src)
+{
+    text = src.text;
+    src.text = nullptr;
+}
+
+StringAttr& StringAttr::operator = (StringAttr && from)
+{
+    char *temp = text;
+    text = from.text;
+    from.text = temp;
+    return *this;
 }
 
 void StringAttr::set(const char * _text)
@@ -2481,4 +2501,10 @@ const char * nullText(const char * text)
 {
     if (text) return text;
     return "(null)";
+}
+
+StringBuffer& StringBuffer::operator=(StringBuffer&& value)
+{
+    swapWith(value);
+    return *this;
 }
