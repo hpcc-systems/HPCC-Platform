@@ -9180,6 +9180,8 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
         subGraph->setPropBool("@child", true);
     if (expr->hasAttribute(sequentialAtom))
         subGraph->setPropBool("@sequential", true);
+    if (kind == SubGraphLoop)
+        subGraph->setPropBool("@loopBody", true);
 
     if (insideChildOrLoopGraph(ctx))
     {
