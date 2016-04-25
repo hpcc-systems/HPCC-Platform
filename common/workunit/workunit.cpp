@@ -8815,12 +8815,9 @@ extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr,
         return;
 
     WorkunitUpdate wu(&cw->lock());
-    if (&secuser)
-    {
-        const char *abortBy = secuser.getName();
-        if (abortBy && *abortBy)
-            wu->setTracingValue("AbortBy", abortBy);
-    }
+    const char *abortBy = secuser.getName();
+    if (abortBy && *abortBy)
+        wu->setTracingValue("AbortBy", abortBy);
     wu->setTracingValueInt64("AbortTimeStamp", getTimeStampNowValue());
 }
 
