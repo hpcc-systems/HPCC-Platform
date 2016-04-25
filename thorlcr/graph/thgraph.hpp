@@ -553,6 +553,7 @@ protected:
     MemoryBuffer parentExtractMb; // retain copy, used if slave transmits to master (child graph 1st time initialization of global graph)
     unsigned counter;
     CReplyCancelHandler graphCancelHandler;
+    bool loopBodySubgraph;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -587,6 +588,7 @@ public:
     bool isStarted() const { return started; }
     bool isLocalOnly() const; // this graph and all upstream dependencies
     bool isLocalChild() const { return localChild; }
+    bool isLoopSubGraph() const { return loopBodySubgraph; }
     void setCompleteEx(bool tf=true) { complete = tf; }
     void setGlobal(bool tf) { global = tf; }
     void setLogging(bool tf);
