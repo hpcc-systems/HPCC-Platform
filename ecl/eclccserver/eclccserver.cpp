@@ -632,7 +632,7 @@ public:
     {
         DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueName.get());
         queue.setown(createJobQueue(queueName.get()));
-        queue->connect();
+        queue->connect(false);
         running = true;
         LocalIAbortHandler abortHandler(*this);
         while (running)

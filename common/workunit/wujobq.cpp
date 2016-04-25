@@ -1105,11 +1105,15 @@ public:
         if (connected)
             disconnect();
         dosubscribe();
-        ForEachQueue(qd) {
-            unsigned connected;
-            unsigned waiting;
-            unsigned count;
-            getStats(*qd,connected,waiting,count); // clear any duff clients
+        ForEachQueue(qd)
+        {
+            if (validateitemsessions)
+            {
+                unsigned connected;
+                unsigned waiting;
+                unsigned count;
+                getStats(*qd,connected,waiting,count); // clear any duff clients
+            }
             IPropertyTree *croot = queryClientRootSession(*qd);
             croot->setPropInt64("@connected",croot->getPropInt64("@connected",0)+1);
         }
@@ -1640,7 +1644,7 @@ public:
             IPropertyTree *croot = queryClientRootIndex(qd,i);
             if (!croot)
                 break;
-            if (!validSession(croot)) {
+            if (validateitemsessions && !validSession(croot)) {
                 Cconnlockblock block(this,true);
                 qd.root->removeTree(croot);
             }
