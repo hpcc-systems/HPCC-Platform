@@ -25,27 +25,11 @@
 project( memcached )
 
 if (MEMCACHED)
-    ADD_PLUGIN(memcached)
+    if(NOT DEFINED LIBMEMCACHED_MINVERSION)
+        set(LIBMEMCACHED_MINVERSION "1.0.10")
+    endif()
+    ADD_PLUGIN(memcached PACKAGES LIBMEMCACHED MINVERSION ${LIBMEMCACHED_MINVERSION})
     if(MAKE_MEMCACHED)
-        # Currently libmemcached versions are not sufficient on ubuntu 12.04 and 14.04 LTS
-        # until then, we build the required libraries from source
-
-        set(LIBMEMCACHED_VERSION "1.0.10")
-        add_custom_command(
-            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libmemcached/.libs/libmemcached.so
-            COMMAND wget -q https://launchpad.net/libmemcached/1.0/${LIBMEMCACHED_VERSION}/+download/libmemcached-${LIBMEMCACHED_VERSION}.tar.gz
-            COMMAND tar -xzf ${CMAKE_CURRENT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION}.tar.gz
-            COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION}
-            COMMAND ${CMAKE_CURRENT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION}/configure > /dev/null
-            COMMAND make -j > /dev/null
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            COMMENT "fetching and building libmemcached-${LIBMEMCACHED_VERSION}")
-        add_custom_target(generate-libmemcached
-            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/libmemcached/.libs/libmemcached.so)
-        add_library(libmemcached SHARED IMPORTED)
-        set_target_properties(libmemcached
-            PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/libmemcached/.libs/libmemcached.so.11.0.0)
-        set(LIBMEMCACHED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION})
 
         set(
             SRCS
@@ -73,23 +57,19 @@ if (MEMCACHED)
             set_target_properties(memcached PROPERTIES NO_SONAME 1)
         endif()
 
-        add_dependencies(memcached generate-libmemcached)
+        #if we are using generated libmemcached, target appropriate dependencies
+        if(MEMCACHED_USE_EXTERNAL_LIBRARY)
+            add_dependencies(memcached libmemcached libmemcachedutil)
+        endif()
         target_link_libraries(
             memcached
             eclrtl
             jlib
-            libmemcached)
+            ${LIBMEMCACHED_LIBRARIES})
 
-        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libmemcached/.libs\")")
         install(
             TARGETS memcached
             DESTINATION plugins)
-        install(FILES
-            ${CMAKE_CURRENT_BINARY_DIR}/libmemcached/.libs/libmemcached.so
-            ${CMAKE_CURRENT_BINARY_DIR}/libmemcached/.libs/libmemcached.so.11
-            ${CMAKE_CURRENT_BINARY_DIR}/libmemcached/.libs/libmemcached.so.11.0.0
-            DESTINATION lib
-            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
     endif()
 endif()
 
