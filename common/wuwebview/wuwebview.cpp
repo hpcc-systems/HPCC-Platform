@@ -28,6 +28,8 @@
 #include "wuwebview.hpp"
 #include "wuweberror.hpp"
 
+typedef MapStringTo<bool> BoolHash;
+
 class WuExpandedResultBuffer : public CInterface, implements IPTreeNotifyEvent
 {
 public:
@@ -142,9 +144,21 @@ public:
         assertex(!finalized);
         if (!dll)
             return;
+        BoolHash uniqueResultNames;
         Owned<IPropertyTreeIterator> iter = manifest.getElements("Resource[@type='RESULT_XSD']");
         ForEach(*iter)
-            appendSchemaResource(iter->query(), dll);
+        {
+            IPropertyTree& res = iter->query();
+            const char* name = res.queryProp("@name");
+            if (name && *name)
+            {
+                bool* found = uniqueResultNames.getValue(name);
+                if (found && *found)
+                    continue;
+                uniqueResultNames.setValue(name, true);
+            }
+            appendSchemaResource(res, dll);
+        }
     }
 
     void appendManifestResultSchema(IPropertyTree &manifest, const char *resultname, ILoadedDllEntry *dll)
