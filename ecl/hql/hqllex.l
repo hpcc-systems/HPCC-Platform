@@ -1702,13 +1702,13 @@ FUNCTIONMACRO|MACRO {
                         for (finger++; finger[1]; finger++)
                         {
                             unsigned char next = *finger;
+                            size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
                             if (next == '\\')
                             {
                                 next = finger[1];
                                 if (finger[2]==0)  // finger[1] must be '.
                                 {
                                     assertex(false);
-                                    size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
                                     returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     StringBuffer msg("Can not terminate a string with escape char '\\': ");
                                     msg.append(CUR_TOKEN_TEXT);
@@ -1769,7 +1769,6 @@ FUNCTIONMACRO|MACRO {
                                     }
                                     if(count != 3)
                                     {
-                                        size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
                                         returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                         StringBuffer msg;
                                         msg.append("3-digit numeric escape sequence contained non-octal digit: ").append(next);
@@ -1780,7 +1779,6 @@ FUNCTIONMACRO|MACRO {
                                     *bf++ = value;
                                     if(!(isValidAsciiLikeCharacter(value) || (tc == type_data)))
                                     {
-                                        size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
                                         returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                         lexer->reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
                                         if (lexer->isAborting())
@@ -1794,7 +1792,6 @@ FUNCTIONMACRO|MACRO {
                                     StringBuffer msg;
                                     msg.append("Unrecognized escape sequence: ");
                                     msg.append("\\").append(finger[1]);
-                                    size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
                                     returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
                                     if (lexer->isAborting())
@@ -1804,7 +1801,6 @@ FUNCTIONMACRO|MACRO {
                             }
                             else if (next == '\'')
                             {
-                                size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
                                 returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                 lexer->reportError(returnToken, ERR_STRING_NEEDESCAPE,"' needs to be escaped by \\ inside string");
                                 if (lexer->isAborting())
@@ -1819,7 +1815,6 @@ FUNCTIONMACRO|MACRO {
                                 {
                                     //This really has to be an error, otherwise it will work most of the time, but will then sometimes fail
                                     //because two characters > 128 are next to each other.
-                                    size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
                                     returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     lexer->reportError(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not legal UTF-8");
                                     if (lexer->isAborting())
@@ -1830,7 +1825,6 @@ FUNCTIONMACRO|MACRO {
                                 {
                                     if (*bf == ASCII_LIKE_SUBS_CHAR)
                                     {
-                                        size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
                                         returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                         lexer->reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE ", try using a unicode constant");
                                     }
@@ -1843,7 +1837,6 @@ FUNCTIONMACRO|MACRO {
                                 *bf++ = next;
                                 if(!(isValidAsciiLikeCharacter(next) || (tc == type_data)))
                                 {
-                                    size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
                                     returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     lexer->reportError(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
                                     if (lexer->isAborting())
