@@ -538,6 +538,7 @@ define([
             this.persist.setObj("options", optionsValues);
             this.optionsDropDown.closeDropDown();
             this._plugin.optionsReset(optionsValues);
+            this.refreshRootState();
             delete this.xgmml;
             this._onRefreshScope();
         },
@@ -589,6 +590,7 @@ define([
                         minor: 0
                     };
                     context.registerEvents();
+                    context.refreshRootState();
                     context.emit("ready");
                 });
             }
