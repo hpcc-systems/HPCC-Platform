@@ -1692,6 +1692,7 @@ static unsigned dowaitpid(HANDLE pid, int mode)
     return 0;
 }
 
+static CriticalSection runsect; // single thread process start to avoid forked handle open/closes interleaving
 class CLinuxPipeProcess: public CInterface, implements IPipeProcess
 {
 
@@ -1971,7 +1972,6 @@ public:
 
     bool run(const char *_title,const char *_prog,const char *_dir,bool _hasinput,bool _hasoutput, bool _haserror, size32_t stderrbufsize, bool _newProcessGroup)
     {
-        static CriticalSection runsect; // single thread process start to avoid forked handle open/closes interleaving
         CriticalBlock runblock(runsect);
         kill();
         CriticalBlock block(sect); 
