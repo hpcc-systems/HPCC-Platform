@@ -28,6 +28,8 @@
 #include "wuwebview.hpp"
 #include "wuweberror.hpp"
 
+typedef MapStringTo<bool> BoolHash;
+
 class WuExpandedResultBuffer : public CInterface, implements IPTreeNotifyEvent
 {
 public:
@@ -135,16 +137,31 @@ public:
         }
     }
 
-    void appendManifestSchemas(IPropertyTree &manifest, ILoadedDllEntry *dll)
+    void appendManifestSchemas(IPropertyTree &manifest, ILoadedDllEntry *dll, bool uniqueNameOnly)
     {
         if (flags & WWV_OMIT_SCHEMAS)
             return;
         assertex(!finalized);
         if (!dll)
             return;
+        BoolHash uniqueResultNames;
         Owned<IPropertyTreeIterator> iter = manifest.getElements("Resource[@type='RESULT_XSD']");
         ForEach(*iter)
+        {
+            if (uniqueNameOnly)
+            {
+                IPropertyTree& res = iter->query();
+                const char* name = res.queryProp("@name");
+                if (name && *name)
+                {
+                    bool* found = uniqueResultNames.getValue(name);
+                    if (found && *found)
+                        continue;
+                    uniqueResultNames.setValue(name, true);
+                }
+            }
             appendSchemaResource(iter->query(), dll);
+        }
     }
 
     void appendManifestResultSchema(IPropertyTree &manifest, const char *resultname, ILoadedDllEntry *dll)
@@ -642,7 +659,7 @@ void WuWebView::renderExpandedResults(const char *viewName, WuExpandedResultBuff
     }
 
     expanded.appendXML(view, "view");
-    expanded.appendManifestSchemas(*mf, loadDll());
+    expanded.appendManifestSchemas(*mf, loadDll(), false);
     expanded.finalize();
     if (strieq(type, "xml"))
         return out.swapWith(expanded.buffer);
@@ -698,7 +715,7 @@ void expandWuXmlResults(StringBuffer &out, const char *name, const char *xml, un
     WuExpandedResultBuffer expander(name, flags);
     expander.appendDatasetsFromXML(xml);
     if (!(flags & WWV_OMIT_SCHEMAS) && manifest && dll)
-        expander.appendManifestSchemas(*manifest, dll);
+        expander.appendManifestSchemas(*manifest, dll, false);
     expander.finalize();
     out.append(expander.buffer);
 }
@@ -742,7 +759,7 @@ void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBu
 {
     WuExpandedResultBuffer buffer(name.str(), WWV_ADD_RESPONSE_TAG | WWV_ADD_RESULTS_TAG);
     buffer.appendDatasetsFromXML(xml);
-    buffer.appendManifestSchemas(*ensureManifest(), loadDll());
+    buffer.appendManifestSchemas(*ensureManifest(), loadDll(), true);
 
     Owned<IXslTransform> t = getXslProcessor()->createXslTransform();
     t->setIncludeHandler(this);
