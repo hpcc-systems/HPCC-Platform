@@ -119,7 +119,7 @@ int CEclAgentExecutionServer::run()
         initClientProcess(serverGroup, DCR_AgentExec);
         getAgentQueueNames(queueNames, agentName);
         queue.setown(createJobQueue(queueNames.str()));
-        queue->connect();
+        queue->connect(false);
     }
     catch (IException *e) 
     {
