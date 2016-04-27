@@ -1056,6 +1056,7 @@ CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(
     executeReplyTag = TAG_NULL;
     parentExtractSz = 0;
     counter = 0; // loop/graph counter, will be set by loop/graph activity if needed
+    loopBodySubgraph = false;
 }
 
 CGraphBase::~CGraphBase()
@@ -1371,7 +1372,7 @@ IMPServer &CGraphBase::queryMPServer() const
 bool CGraphBase::syncInitData()
 {
     CGraphElementBase *parentElement = queryOwner() ? queryOwner()->queryElement(queryParentActivityId()) : NULL;
-    if (parentElement && isLoopActivity(*parentElement))
+    if (parentElement && isLoopActivity(*parentElement) && loopBodySubgraph)
         return parentElement->queryLoopGraph()->queryGraph()->isGlobal();
     else
         return !isLocalChild();
@@ -1679,7 +1680,14 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
         CGraphElementBase *parentElement = owner->queryElement(parentActivityId);
         parentElement->addAssociatedChildGraph(this);
         if (isLoopActivity(*parentElement))
+        {
             localChild = parentElement->queryOwner().isLocalChild();
+            unsigned loopId = parentElement->queryXGMML().getPropInt("att[@name=\"_loopid\"]/@value");
+            if ((graphId == loopId) || (owner->queryGraphId() == loopId))
+                loopBodySubgraph = true;
+            else
+                localChild = true;
+        }
         else
             localChild = true;
     }
@@ -2691,6 +2699,11 @@ void CJobChannel::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
         }
         CGraphElementBase *targetActivity = (CGraphElementBase *)target->queryElement(edge.getPropInt("att[@name=\"_targetActivity\"]/@value"));
         CGraphElementBase *sourceActivity = (CGraphElementBase *)source->queryElement(edge.getPropInt("att[@name=\"_sourceActivity\"]/@value"));
+        if (TAKlocalresultwrite == sourceActivity->getKind() && (TAKlocalresultread != targetActivity->getKind()))
+        {
+            if (source->isLoopSubGraph())
+                source->setGlobal(true);
+        }
         int controlId = 0;
         if (edge.getPropBool("att[@name=\"_dependsOn\"]/@value", false))
         {
