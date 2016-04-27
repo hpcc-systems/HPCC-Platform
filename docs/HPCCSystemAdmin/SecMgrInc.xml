@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <title>The HPCC Developers Guide</title>
+    <title>Security Manager Plug-in Framework</title>
 
     <!--some-book-set-up-stuff-->
 
@@ -54,9 +54,9 @@
 
   <!--/end-book-set-up-stuff-->
 
- <!--include-at-chapterlevel-->
-    <xi:include href="HPCCSystemAdmin/SA-Mods/SecMgrMod.xml"
-                xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  <!--include-at-chapterlevel-->
 
+  <xi:include href="HPCCSystemAdmin/SA-Mods/SecMgrMod.xml"
+              xpointer="element(/1)"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 </book>

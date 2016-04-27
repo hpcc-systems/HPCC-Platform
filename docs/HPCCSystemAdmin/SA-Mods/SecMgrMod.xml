@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<chapter id="security-manager-plugin-framework" >
+<chapter id="security-manager-plugin-framework">
   <title role="nbrk">Security Manager Plug-in Framework</title>
 
   <para>The Security Manager Plug-in framework provides a mechanism for the
-  creation and deployment of custom security manager plug-in implementations.
-  </para>
+  creation and deployment of custom security manager plug-in
+  implementations.</para>
 
- <para>The plug-in architecture allows you to add any security method you develop to the HPCC platform.</para>
-
+  <para>The plug-in architecture allows you to add any security method you
+  develop to the HPCC platform.</para>
 
   <sect1 id="how-to-create-a-security-manager-plugin">
-    <title>Security Manager Plug-in development</title>
+    <title>Security Manager Plug-in Development</title>
 
     <para>A custom Security Manager Plug-in consists of a <emphasis
     role="bold">library</emphasis> (.so or .dll) file which provides
@@ -210,7 +210,7 @@
   </sect1>
 
   <sect1 id="how-to-configure-an-existing-security-manager-plugin">
-    <title>How to Configure an existing Security Manager Plug-in</title>
+    <title>How to Configure a Security Manager Plug-in</title>
 
     <para>Once the plug-in has been installed, the plug-in can be configured
     onto the HPCC platform using Configuration Manager.</para>
