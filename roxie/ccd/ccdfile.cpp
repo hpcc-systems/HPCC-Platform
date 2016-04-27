@@ -2696,7 +2696,7 @@ protected:
         CPPUNIT_ASSERT(wrote==sizeof(int));
         close(f);
 
-        Owned<ILazyFileIO> io = cache.openFile("test.local", 0, "test.local", NULL, remotes, sizeof(int), dummy, 0);
+        Owned<ILazyFileIO> io = cache.openFile("test.local", 0, "test.local", NULL, remotes, sizeof(int), dummy);
         CPPUNIT_ASSERT(io != NULL);
 
         // Reading it should read 1
