@@ -223,7 +223,7 @@ define([
         _initTree: function () {
             this.treeStore = this.global.createTreeStore();
             this.treeGrid = new declare([ESPUtil.Grid(false, true)])({
-                treeDepth: this.main.depth.get("value"),
+                treeDepth: this.main.getDepth(),
                 store: this.treeStore
             }, this.id + "TreeGrid");
             this._initItemGrid(this.treeGrid);
@@ -300,7 +300,7 @@ define([
         },
 
         _onTreeRefresh: function () {
-            this.treeGrid.set("treeDepth", this.main.depth.get("value"));
+            this.treeGrid.set("treeDepth", this.main.getDepth());
             this.treeGrid.refresh();
         },
 
@@ -787,7 +787,7 @@ define([
         },
 
         setMainRootItems: function (globalIDs) {
-            var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"), this.main.option("subgraph"), this.main.option("vhidespills"));
+            var graphView = this.global.getGraphView(globalIDs, this.main.getDepth(), this.main.distance.get("value"), this.main.option("subgraph"), this.main.option("vhidespills"));
             return graphView.navigateTo(this.main);
         },
 

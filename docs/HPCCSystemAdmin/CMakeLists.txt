@@ -16,3 +16,4 @@
 
 DOCBOOK_TO_PDF( ${FO_XSL} HPCCSystemAdministratorsGuide.xml "HPCCSystemAdministratorsGuide" "SA-Mods")
 
+DOCBOOK_TO_PDF( ${FO_XSL} SecMgrInc.xml "HPCCSecurityManagerGuide" "SA-Mods")
