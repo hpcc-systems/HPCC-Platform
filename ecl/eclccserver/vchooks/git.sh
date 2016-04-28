@@ -134,7 +134,7 @@ function fetch_repo {
         echo "Failed to run git rev-parse $git_branch" 1>&2
         exit 2
     fi
-    export GIT_INCLUDE_PATH="${GIT_INCLUDE_PATH} -I${git_directory}/{$last_commit}/ -a${repo}_commit=${last_commit} -a${repo}_branch=${git_branch}"
+    export GIT_INCLUDE_PATH="${GIT_INCLUDE_PATH} -I${git_directory}/{$last_commit}/ -a${repo}_commit=${last_commit} -a${repo}_branch=${git_branch} -qa"
 }
 
 repositories=(${GIT_REPOSITORIES//:/ })
