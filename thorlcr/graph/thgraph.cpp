@@ -2699,10 +2699,13 @@ void CJobChannel::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
         }
         CGraphElementBase *targetActivity = (CGraphElementBase *)target->queryElement(edge.getPropInt("att[@name=\"_targetActivity\"]/@value"));
         CGraphElementBase *sourceActivity = (CGraphElementBase *)source->queryElement(edge.getPropInt("att[@name=\"_sourceActivity\"]/@value"));
-        if (TAKlocalresultwrite == sourceActivity->getKind() && (TAKlocalresultread != targetActivity->getKind()))
+        if (!edge.getPropBool("att[@name=\"_childGraph\"]/@value"))
         {
-            if (source->isLoopSubGraph())
-                source->setGlobal(true);
+            if (TAKlocalresultwrite == sourceActivity->getKind() && (TAKlocalresultread != targetActivity->getKind()))
+            {
+                if (source->isLoopSubGraph())
+                    source->setGlobal(true);
+            }
         }
         int controlId = 0;
         if (edge.getPropBool("att[@name=\"_dependsOn\"]/@value", false))
