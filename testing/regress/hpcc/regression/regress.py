@@ -348,7 +348,7 @@ class Regression:
             sleepTime = defSleepTime
             if self.timeouts[threadId] >= 0:
                 self.loggermutex.acquire()
-                logging.debug("%3d. timeout counter:%d" % (cnt, self.timeouts[threadId]),  extra={'taskId':cnt})
+                logging.debug("%3d. timeout counter:%d (%d)" % (cnt, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
                 self.loggermutex.release()
                 sleepTime = defSleepTime
             if self.timeouts[threadId] == 0:
@@ -496,12 +496,14 @@ class Regression:
                     res = eclCmd.runCmd("publish", cluster, query, report[0],
                                       server=self.config.espIp,
                                       username=self.config.username,
-                                      password=self.config.password)
+                                      password=self.config.password, 
+                                      retryCount=self.config.maxAttemptCount)
                 else:
                     res = eclCmd.runCmd("run", cluster, query, report[0],
                                       server=self.config.espIp,
                                       username=self.config.username,
-                                      password=self.config.password)
+                                      password=self.config.password, 
+                                      retryCount=self.config.maxAttemptCount)
             except Error as e:
                 logging.debug("Exception raised:'%s'"  % ( str(e)),  extra={'taskId':cnt})
                 res = False
