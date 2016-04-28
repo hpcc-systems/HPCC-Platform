@@ -300,7 +300,7 @@
           <title>Plug-Ins</title>
 
           <para>There are several optional plug-ins that you could choose to
-          add to your installation. </para>
+          add to your installation.</para>
 
           <para>For RPM based systems, you could install using yum.</para>
 
@@ -344,10 +344,6 @@
 
                     <entry><itemizedlist>
                         <listitem>
-                          <para>Cassandra : cassandraembed</para>
-                        </listitem>
-
-                        <listitem>
                           <para>Kafka : kafka</para>
                         </listitem>
 
@@ -367,6 +363,9 @@
                 </tbody>
               </tgroup>
             </informaltable></para>
+
+          <para>Although Cassandra support (cassandraembed) is a plug-in, it
+          is not optional and is installed with the platform.</para>
         </sect3>
       </sect2>
 
