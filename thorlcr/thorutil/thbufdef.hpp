@@ -55,6 +55,10 @@
 #define LOOP_SMART_BUFFER_SIZE                  (0x100000*12)           // 12MB
 #define LOCALRESULT_BUFFER_SIZE                 (0x100000*10)           // 10MB
 
+#define DEFAULT_KEYNODECACHEMB                  10
+#define DEFAULT_KEYLEAFCACHEMB                  50
+#define DEFAULT_KEYBLOBCACHEMB                  0
+
 #define DISTRIBUTE_RESMEM(N) ((DISTRIBUTE_DEFAULT_OUT_BUFFER_SIZE * (N)) + DISTRIBUTE_DEFAULT_IN_BUFFER_SIZE)
 
 
