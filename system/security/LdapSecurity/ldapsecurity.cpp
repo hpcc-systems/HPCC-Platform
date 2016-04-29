@@ -535,8 +535,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     m_pp.setown(pp);
     int cachetimeout = cfg->getPropInt("@cacheTimeout", 5);
 
-    bool sharedCache = cfg->getPropInt("@sharedCache", true);
-    if (sharedCache)
+    if (cfg->getPropBool("@sharedCache", true))
         m_permissionsCache = CPermissionsCache::queryInstance();
     else
         m_permissionsCache = new CPermissionsCache();
@@ -555,7 +554,7 @@ CLdapSecManager::CLdapSecManager(const char *serviceName, IPropertyTree &config)
 
 CLdapSecManager::~CLdapSecManager()
 {
-    if (!m_cfg->getPropInt("@sharedCache", true))
+    if (!m_cfg->getPropBool("@sharedCache", true))
         delete m_permissionsCache;
 }
 
