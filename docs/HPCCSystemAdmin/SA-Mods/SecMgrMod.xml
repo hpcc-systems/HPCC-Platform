@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="security-manager-plugin-framework">
+  <title role="nbrk">Security Manager Plug-in Framework</title>
+
+  <para>The Security Manager Plug-in framework provides a mechanism for the
+  creation and deployment of custom security manager plug-in
+  implementations.</para>
+
+  <para>The plug-in architecture allows you to add any security method you
+  develop to the HPCC platform.</para>
+
+  <sect1 id="how-to-create-a-security-manager-plugin">
+    <title>Security Manager Plug-in Development</title>
+
+    <para>A custom Security Manager Plug-in consists of a <emphasis
+    role="bold">library</emphasis> (.so or .dll) file which provides
+    implementation(s) of the iSecManager interface, a <emphasis
+    role="bold">configuration definition</emphasis> (articulated as an XSD
+    schema), and a component declaration (buildset.xml file).</para>
+
+    <itemizedlist spacing="compact">
+      <listitem>
+        <para><emphasis role="bold">Library
+        requirements</emphasis><itemizedlist>
+            <listitem>
+              <para>Must implement the ISecManager interface</para>
+            </listitem>
+
+            <listitem>
+              <para>Must expose a factory method which returns instances of
+              the ISecmanager implementation.</para>
+
+              <para>Example of a standard factory method name :</para>
+
+              <programlisting>extern "C"
+{ 
+    ISecManager * createInstance(const char *serviceName,
+                                 IPropertyTree &amp;secMgrCfg,
+                                 IPropertyTree &amp;authCfg); 
+} </programlisting>
+
+              <para>The framework expects to have access to the
+              "createInstance()" method, if the developer chooses to provide
+              other factory methods, it can override the default name in
+              configuration, but must have the expected signature:</para>
+
+              <programlisting>ISecManager methodname(const char *, IPropertyTree &amp;, IPropertyTree &amp;)</programlisting>
+
+              <para></para>
+            </listitem>
+          </itemizedlist></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">Buildset definition</emphasis> - The
+        plug-in declares itself as an HPCC Security Manager Plug-in component,
+        and declares the location of the plug-in files and the configuration
+        definition schema.</para>
+
+        <para><emphasis role="bold">EXAMPLE:</emphasis></para>
+
+        <para><programlisting>&lt;Environment&gt;
+   &lt;Programs&gt;
+      &lt;Build name="_" url="/opt/HPCCSystems"&gt;
+          &lt;BuildSet  deployable="no"
+                     installSet="deploy_map.xml"
+                     name="mysecuritypluginname"
+                     path="componentfiles/mysecuritypluginname"
+                     processName="MySecurityPluginName"
+                     schema="myCustom_secmgr.xsd"&gt;
+          &lt;/BuildSet&gt;
+      &lt;/Build&gt;
+   &lt;/Programs&gt;
+&lt;/Environment&gt;</programlisting></para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist spacing="compact">
+      <listitem>
+        <para><emphasis role="bold">Configuration Definition</emphasis> - The
+        plug-in must provide a definition of the configuration elements and
+        the structure it expects to receive at the time it is instantiated.
+        The XSD file is consumed by the HPCC Configuration manager component
+        and is rendered as a GUI form. The configuration definition is defined
+        as an element of the component name (as declared in the buildset)
+        followed by attributes and/or complex elements.</para>
+
+        <para>There are four attributes every plug-in is required to declare
+        in its configuration definition in addition to any custom
+        configuration defined by the plug-in: 'type', 'name', 'libName', and
+        'instanceFactoryName'</para>
+
+        <itemizedlist spacing="compact">
+          <listitem>
+            <para><emphasis role="bold">type</emphasis> - This attribute
+            should be read-only and set to 'SecurityManager'</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">name</emphasis> - The name of the
+            custom Security Manager Plug-in instance</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">libName</emphasis> - The name of the
+            library which provides instances of this Security Manager Plug-in
+            type</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">instanceFactoryName</emphasis> - Name
+            of the method provided by the library, which is responsible for
+            creating instances of the Security Manager Plug-in</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><emphasis role="bold">EXAMPLE:</emphasis></para>
+
+        <programlisting>&lt;xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"&gt;
+  &lt;xs:element name="MySecurityPluginType"&gt;
+     &lt;xs:complexType&gt;
+        &lt;xs:attribute name="type" type="SecurityManager" 
+                      use="required" default="SecurityManager"&gt;
+           &lt;xs:annotation&gt;&lt;xs:appinfo&gt;
+                 &lt;viewType&gt;hidden&lt;/viewType&gt;
+              &lt;/xs:appinfo&gt;&lt;/xs:annotation&gt;
+        &lt;/xs:attribute&gt;
+        &lt;xs:attribute name="name" type="xs:string" use="required"&gt;
+           &lt;xs:annotation&gt;&lt;xs:appinfo&gt;
+                 &lt;tooltip&gt;Name for this Security Manager Plugin instance&lt;/tooltip&gt;
+                 &lt;required&gt;true&lt;/required&gt;
+              &lt;/xs:appinfo&gt;&lt;/xs:annotation&gt;
+        &lt;/xs:attribute&gt;  
+        &lt;xs:attribute name="libName" type="xs:string" use="optional"&gt;
+           &lt;xs:annotation&gt;&lt;xs:appinfo&gt;
+                  &lt;tooltip&gt;The Security Manager library name (.so)&lt;/tooltip&gt;
+               &lt;/xs:appinfo&gt;&lt;/xs:annotation&gt;
+         &lt;/xs:attribute&gt;
+         &lt;xs:attribute name="instanceFactoryName" type="xs:string" 
+                       use="optional" default="createInstance"&gt;
+            &lt;xs:annotation&gt;&lt;xs:appinfo&gt;
+                  &lt;tooltip&gt;The factory method name in the 
+                   Security Mangager library (.so)&lt;/tooltip&gt;
+               &lt;/xs:appinfo&gt;&lt;/xs:annotation&gt;
+         &lt;/xs:attribute&gt;
+           &lt;xs:sequence&gt;
+             &lt;xs:element name="compoundOption" minOccurs="0" maxOccurs="unbounded"&gt;
+                &lt;xs:complexType&gt;
+                   &lt;xs:attribute name="Option" type="xs:string" use="required"&gt;
+                       &lt;xs:annotation&gt;&lt;xs:appinfo&gt;
+                             &lt;tooltip&gt;This is an example compound option element 
+                             which Security Manager Plug-ins can define&lt;/tooltip&gt;
+                           &lt;/xs:appinfo&gt;&lt;/xs:annotation&gt;
+                   &lt;/xs:attribute&gt;
+               &lt;/xs:complexType&gt;
+             &lt;/xs:element&gt;
+         &lt;/xs:sequence&gt;
+        &lt;xs:attribute name="optionalAttribute" type="xs:string" use="optional"&gt;
+            &lt;xs:annotation&gt;&lt;xs:appinfo&gt;
+                   &lt;tooltip&gt;This is an example optional attribute 
+                           which Security Manager Plug-ins can define&lt;/tooltip&gt;
+                &lt;/xs:appinfo&gt;&lt;/xs:annotation&gt;
+         &lt;/xs:attribute&gt;
+         &lt;xs:attribute name="samplepasswordfile" type="xs:string" use="required"&gt;
+            &lt;xs:annotation&gt;&lt;xs:appinfo&gt;
+                  &lt;tooltip&gt;An attribute which defines a file name required 
+                          by this Security Manager Plug-in&lt;/tooltip&gt;
+               &lt;/xs:appinfo&gt;&lt;/xs:annotation&gt;
+         &lt;/xs:attribute&gt;
+     &lt;/xs:complexType&gt;
+  &lt;/xs:element&gt;
+&lt;/xs:schema&gt;</programlisting>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist spacing="compact">
+      <listitem>
+        <para><emphasis role="bold">genenvrules.conf</emphasis> - (optional)
+        This file allows the plug-in to add itself to the
+        "do_not(automatically)_generate" list. While this is an optional file,
+        more often than not it is actually needed.</para>
+
+        <para><emphasis role="bold">EXAMPLE:</emphasis></para>
+
+        <para><programlisting> do_not_generate=mysecuritypluginname</programlisting></para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist spacing="compact">
+      <listitem>
+        <para><emphasis role="bold">Configuration transformation
+        rules</emphasis> - (optional) specified as an xsl template, this set
+        of rules can be applied to the configuration XML. Refer to XSL
+        templates in the HPCC source tree.</para>
+      </listitem>
+    </itemizedlist>
+
+    <sect2 id="concrete-example">
+      <title>Concrete Example</title>
+
+      <para>The HPCC Platform includes a security manager plug-in
+      implementation (HTPasswd) and can be used as a guidance for the plug-in
+      development process:</para>
+
+      <para><ulink
+      url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/system/security/plugins/htpasswdSecurity">https://github.com/hpcc-systems/HPCC-Platform/tree/master/system/security/plugins/htpasswdSecurity</ulink></para>
+    </sect2>
+  </sect1>
+
+  <sect1 id="how-to-configure-an-existing-security-manager-plugin">
+    <title>How to Configure a Security Manager Plug-in</title>
+
+    <para>Once the plug-in has been installed, the plug-in can be configured
+    onto the HPCC platform using Configuration Manager.</para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Stop all HPCC Components.</para>
+
+          <para>Verify that they are stopped. You can use a single command,
+          such as : <programlisting>  sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Connect your web browser to the Configuration Manager web
+          interface.</para>
+
+          <para>Use the url
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015</para>
+
+          <para>where <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the
+          IP address of the node running Configuration Manager.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="strong">Advanced View</emphasis>
+          radio button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the appropriate XML configuration file.</para>
+
+          <para><emphasis role="strong">Note:</emphasis> Configuration Manager
+          never works on the active configuration file. After you finish
+          editing you will have to copy the environment.xml to the active
+          location and push it out to all nodes.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the Write Access box.</para>
+        </listitem>
+
+        <listitem>
+          <para>Create an instance of the Security Manager Plug-in:
+          <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Right-click on Navigator Pane on the left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select <emphasis role="bold">New
+                Components</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>Select the appropriate component
+                &lt;name_of_Security_Manager_plug-in&gt;</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Configure the Security Manager Plug-in: (Example shown using
+          the Htpasswd plug-in*)<figure>
+              <title>Security Mgr Configuration page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/SECM_001.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <orderedlist numeration="loweralpha">
+            <listitem>
+              <para>Provide an instance name</para>
+            </listitem>
+
+            <listitem>
+              <para>Provide a (fully qualified) library name</para>
+            </listitem>
+
+            <listitem>
+              <para>InstanceFactoryName defaults to "createInstance" if the
+              library specified in the previous step provides an alternate
+              factory method, it can be specified here.</para>
+            </listitem>
+
+            <listitem>
+              <para>Provide any custom entries required. In the example shown,
+              <emphasis>htpasswdFile</emphasis> is a custom entry.</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+
+        <listitem>
+          <para>Associate the Security Manager Plug-in with the ESP binding(s)
+          <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Click on the target Esp in the Navigator Pane on the
+                left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the<emphasis role="bold"> ESP</emphasis>
+                (Process) <emphasis role="bold">Service bindings</emphasis>
+                tab</para>
+              </listitem>
+
+              <listitem>
+                <para>On the target binding(s) select the appropriate
+                securityMgrPlugin instance from the drop list.</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enable the use of the Security Manager Plug-in - Select the
+          <emphasis role="bold">Authentication</emphasis> tab, in the method
+          entry select <emphasis role="bold">secmgrPlugin</emphasis> <figure>
+              <title>Security Mgr Configuration page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/SECM_002.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Save the environment file</para>
+        </listitem>
+
+        <listitem>
+          <para>Distribute the environment file to every node in your
+          cluster</para>
+        </listitem>
+
+        <listitem>
+          <para>Restart your environment.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <sect2 id="even-more-info">
+      <title>A video tutorial</title>
+
+      <para>Need further information? Check out the following video tutorial
+      demonstrating how to configure a security plug-in.</para>
+
+      <para><ulink
+      url="https://www.youtube.com/watch?v=lNVwEOFkKgY&amp;feature=youtu.be">https://www.youtube.com/watch?v=lNVwEOFkKgY&amp;feature=youtu.be</ulink></para>
+
+      <para>Click the above link to watch the video.</para>
+    </sect2>
+  </sect1>
+</chapter>

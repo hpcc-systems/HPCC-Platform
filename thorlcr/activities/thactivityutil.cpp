@@ -104,9 +104,11 @@ public:
                 smartbuf.setown(createSmartInMemoryBuffer(&activity, rowIf, bufsize));
             startSem.signal();
             IRowWriter *writer = smartbuf->queryWriter();
+
+            rowcount_t requiredLeft = required;
             if (preserveGrouping)
             {
-                while (required&&running)
+                while (requiredLeft&&running)
                 {
                     OwnedConstThorRow row = inputStream->nextRow();
                     if (!row)
@@ -119,21 +121,21 @@ public:
                     }
                     ++count;
                     writer->putRow(row.getClear());
-                    if (required!=RCUNBOUND)
-                        required--;
+                    if (requiredLeft!=RCUNBOUND)
+                        requiredLeft--;
                 }
             }
             else
             {
-                while (required&&running)
+                while (requiredLeft&&running)
                 {
                     OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                         break;
                     ++count;
                     writer->putRow(row.getClear());
-                    if (required!=RCUNBOUND)
-                        required--;
+                    if (requiredLeft!=RCUNBOUND)
+                        requiredLeft--;
                 }
             }
         }
