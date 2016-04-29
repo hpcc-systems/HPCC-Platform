@@ -1781,6 +1781,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
         DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),
         DebugOption(options.forceAllDatasetsParallel,"forceAllDatasetsParallel",false),  // Purely for regression testing.
+        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsAsErrors",true)
     };
 
     //get options values from workunit
@@ -11715,17 +11716,20 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
         startLine += memcount(body-start, start, '\n');
     }
 
-    funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
-            "#pragma GCC diagnostic error \"-Wall\"\n"
-            "#pragma GCC diagnostic error \"-Wextra\"\n"
-            "#pragma GCC diagnostic ignored \"-Wunused-parameter\"\n"  // Generated prototype tends to include ctx that is often not used
-            "#endif\n");
+    if (options.embeddedWarningsAsErrors)
+    {
+        funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+                "#pragma GCC diagnostic error \"-Wall\"\n"
+                "#pragma GCC diagnostic error \"-Wextra\"\n"
+                "#pragma GCC diagnostic ignored \"-Wunused-parameter\"\n"  // Generated prototype tends to include ctx that is often not used
+                "#endif\n");
 
-    funcctx.addQuotedCompound(proto, "\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
-            "#pragma GCC diagnostic ignored \"-Wall\"\n"
-            "#pragma GCC diagnostic ignored \"-Wextra\"\n"
-            "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"  // Some variants of gcc seemt to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
-            "#endif\n");
+        funcctx.addQuotedCompound(proto, "\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+                "#pragma GCC diagnostic ignored \"-Wall\"\n"
+                "#pragma GCC diagnostic ignored \"-Wextra\"\n"
+                "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"  // Some variants of gcc seem to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
+                "#endif\n");
+    }
     if (location)
         funcctx.addLine(locationFilename, startLine);
     funcctx.addQuoted(body);

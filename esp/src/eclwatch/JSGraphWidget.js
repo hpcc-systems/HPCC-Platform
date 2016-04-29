@@ -112,7 +112,7 @@ define([
 
     var loadJSPlugin = function (callback) {
         function requireWidgets() {
-            require(["src/common/Shape", "src/common/Icon", "src/common/TextBox", "src/graph/Graph", "src/graph/Vertex", "src/graph/Edge", "src/layout/Layered"], function (Shape, Icon, TextBox, Graph, Vertex, Edge, Layered) {
+            require(["src/common/Shape", "src/common/Icon", "src/common/TextBox", "src/common/Surface", "src/graph/Graph", "src/graph/Vertex", "src/graph/Edge", "src/layout/Layered"], function (Shape, Icon, TextBox, Surface, Graph, Vertex, Edge, Layered) {
                 callback(declare([Evented], {
                     KeyState_None: 0,
                     KeyState_Shift: 1,
@@ -380,11 +380,12 @@ define([
                         if (this.option("subgraph")) {
                             arrayUtil.forEach(this.graphData.subgraphs, function (subgraph, idx) {
                                 if (!merge || !subgraph.__widget) {
-                                    subgraph.__widget = new Shape()
-                                        .shape("rect")
+                                    subgraph.__widget = new Surface()
                                         .classed({ subgraph: true })
+                                        .showIcon(false)
                                         .width(0)
                                         .height(0)
+                                        .title(subgraph.__hpcc_id)
                                     ;
                                     subgraph.__widget.__hpcc_globalID = subgraph.__hpcc_id;
                                 }
@@ -538,6 +539,7 @@ define([
             this.persist.setObj("options", optionsValues);
             this.optionsDropDown.closeDropDown();
             this._plugin.optionsReset(optionsValues);
+            this.refreshRootState();
             delete this.xgmml;
             this._onRefreshScope();
         },
@@ -589,6 +591,7 @@ define([
                         minor: 0
                     };
                     context.registerEvents();
+                    context.refreshRootState();
                     context.emit("ready");
                 });
             }
