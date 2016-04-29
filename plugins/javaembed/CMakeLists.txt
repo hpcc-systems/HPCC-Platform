@@ -83,7 +83,7 @@ if(JAVAEMBED)
             jlib)
     endif()
 endif()
-if(PLATFORM)
+if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/java.ecllib
         DESTINATION plugins

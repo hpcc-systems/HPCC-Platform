@@ -63,7 +63,8 @@ if(V8EMBED)
         message(WARNING "Cannot build v8embed plugin")
     endif()
 endif()
-if(PLATFORM)
+
+if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/javascript.ecllib
         DESTINATION plugins
