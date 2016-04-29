@@ -158,7 +158,7 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
     }
     
     //Parse the content
-    auto_ptr<XmlPullParser> xpp(new XmlPullParser());
+    std::unique_ptr<XmlPullParser> xpp(new XmlPullParser());
     int bufSize = requeststr.length();
     xpp->setSupportNamespaces(true);
     xpp->setInput(requeststr.str(), bufSize);
