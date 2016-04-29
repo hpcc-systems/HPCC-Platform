@@ -395,7 +395,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
 {
     if (ctx)
     {
-        updateFromContext(priority, ctx, "@priority", "_Priority");
+        // Note: priority cannot be set at context level
         updateFromContext(timeLimit, ctx, "@timeLimit", "_TimeLimit");
         updateFromContext(warnTimeLimit, ctx, "@warnTimeLimit", "_WarnTimeLimit");
         updateFromContextM(memoryLimit, ctx, "@memoryLimit", "_MemoryLimit");
@@ -503,10 +503,19 @@ protected:
     IRoxieServerActivityFactory *createActivityFactory(ThorActivityKind kind, unsigned subgraphId, IPropertyTree &node)
     {
         unsigned id = node.getPropInt("@id", 0);
+        unsigned rid = id;
 
         if (isSuspended)
             return createRoxieServerDummyActivityFactory(id, subgraphId, *this, NULL, TAKnone, node, false); // Is there actually any point?
-
+        switch (options.priority)
+        {
+        case 1:
+            rid |= ROXIE_HIGH_PRIORITY;
+            break;
+        case 2:
+            rid |= ROXIE_SLA_PRIORITY;
+            break;
+        }
         StringBuffer helperName;
         node.getProp("att[@name=\"helper\"]/@value", helperName);
         if (!helperName.length())
@@ -514,6 +523,9 @@ protected:
         HelperFactory *helperFactory = dll->getFactory(helperName);
         if (!helperFactory)
             throw MakeStringException(ROXIE_INTERNAL_ERROR, "Internal error: helper function %s not exported", helperName.str());
+
+        RemoteActivityId remoteId(rid, hashValue);
+        RemoteActivityId remoteId2(rid | ROXIE_ACTIVITY_FETCH, hashValue);
 
         switch (kind)
         {
@@ -562,10 +574,7 @@ protected:
             if (node.getPropBool("att[@name='_isSpill']/@value", false) || node.getPropBool("att[@name='_isSpillGlobal']/@value", false))
                 return createRoxieServerSpillReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
             else
-            {
-                RemoteActivityId remoteId(id, hashValue);
                 return createRoxieServerDiskReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
-            }
         }
         case TAKmemoryspillread:
             return createRoxieServerSpillReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
@@ -573,10 +582,7 @@ protected:
         case TAKdiskcount:
         case TAKdiskaggregate:
         case TAKdiskgroupaggregate:
-        {
-            RemoteActivityId remoteId(id, hashValue);
             return createRoxieServerDiskReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
-        }
         case TAKchildnormalize:
             return createRoxieServerNewChildNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKchildaggregate:
@@ -599,10 +605,7 @@ protected:
         case TAKcsvfetch:
         case TAKxmlfetch:
         case TAKjsonfetch:
-            {
-                RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerFetchActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
-            }
+            return createRoxieServerFetchActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
         case TAKfilter:
             return createRoxieServerFilterActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKfiltergroup:
@@ -625,32 +628,17 @@ protected:
         case TAKsequential:
             return createRoxieServerSequentialActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
         case TAKindexread:
-            {
-                RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerIndexReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
-            }
+            return createRoxieServerIndexReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
         case TAKindexnormalize:
-            {
-                RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerIndexNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
-            }
+            return createRoxieServerIndexNormalizeActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
         case TAKindexcount:
-            {
-                RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerIndexCountActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
-            }
+            return createRoxieServerIndexCountActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
         case TAKindexaggregate:
-            {
-                RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerIndexAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
-            }
+            return createRoxieServerIndexAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
         case TAKindexgroupaggregate:
         case TAKindexgroupexists:
         case TAKindexgroupcount:
-            {
-                RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerIndexGroupAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
-            }
+            return createRoxieServerIndexGroupAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
         case TAKhashdedup:
             return createRoxieServerHashDedupActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKhashdenormalize:
@@ -672,11 +660,7 @@ protected:
         case TAKkeyedjoin:
         case TAKkeyeddenormalize:
         case TAKkeyeddenormalizegroup:
-        {
-            RemoteActivityId remoteId(id, hashValue);
-            RemoteActivityId remoteId2(id | ROXIE_ACTIVITY_FETCH, hashValue);
             return createRoxieServerKeyedJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId, remoteId2);
-        }
         case TAKlimit:
             return createRoxieServerLimitActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKlookupjoin:
@@ -795,10 +779,7 @@ protected:
                 return createRoxieServerLoopActivityFactory(id, subgraphId, *this, helperFactory, kind, node, loopId);
             }
         case TAKremotegraph:
-            {
-                RemoteActivityId remoteId(id, hashValue);
-                return createRoxieServerRemoteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId, isRootAction(node));
-            }
+            return createRoxieServerRemoteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId, isRootAction(node));
         case TAKgraphloopresultread:
             {
                 unsigned graphId = getGraphId(node);
