@@ -337,7 +337,11 @@ define([
                                 field: prefix + name,
                                 width: this.extractWidth(type, name) * 9,
                                 formatter: function (cell, row) {
-                                    return cell.replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+                                    switch (typeof cell) {
+                                        case "string":
+                                            return cell.replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+                                    }
+                                    return cell;
                                 }
                             };
                         }
