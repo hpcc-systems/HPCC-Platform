@@ -136,7 +136,7 @@ static bool IP6preferred=false;         // e.g. for DNS and socket create
 IpSubNet PreferredSubnet(NULL,NULL);    // set this if you prefer a particular subnet for debugging etc
                                         // e.g. PreferredSubnet("192.168.16.0", "255.255.255.0")
 
-static atomic_t pre_conn_unreach_cnt = ATOMIC_INIT(0);    // global count of pre_connect() JSE_NETUNREACH error
+static RelaxedAtomic<unsigned> pre_conn_unreach_cnt{0};    // global count of pre_connect() JSE_NETUNREACH error
 
 #define IPV6_SERIALIZE_PREFIX (0x00ff00ff)
 
@@ -838,19 +838,19 @@ int CSocket::pre_connect (bool block)
         err = ERRNO();
         if ((err != JSE_INPROGRESS)&&(err != JSE_WOULDBLOCK)&&(err != JSE_TIMEDOUT)&&(err!=JSE_CONNREFUSED)) {   // handled by caller
             if (err != JSE_NETUNREACH) {
-                atomic_set(&pre_conn_unreach_cnt, 0);
+                pre_conn_unreach_cnt.store(0);
                 LOGERR2(err,1,"pre_connect");
             } else {
-                int ecnt = atomic_read(&pre_conn_unreach_cnt);
+                int ecnt = pre_conn_unreach_cnt.load();
                 if (ecnt <= PRE_CONN_UNREACH_ELIM) {
-                    atomic_inc(&pre_conn_unreach_cnt);
+                    pre_conn_unreach_cnt.fetch_add(1);
                     LOGERR2(err,1,"pre_connect network unreachable");
                 }
             }
         } else
-            atomic_set(&pre_conn_unreach_cnt, 0);
+            pre_conn_unreach_cnt.store(0);
     } else
-        atomic_set(&pre_conn_unreach_cnt, 0);
+        pre_conn_unreach_cnt.store(0);
 #ifdef SOCKTRACE
     PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%p) err=%d", block?"(block)":"", sock, sock, this, err);
 #endif
@@ -3618,7 +3618,7 @@ protected:
     bool terminating;
     CriticalSection sect;
     Semaphore ticksem;
-    atomic_t tickwait;
+    std::atomic_uint tickwait;
     SelectItemArray items;
     unsigned offset;
     bool selectvarschange;
@@ -3635,7 +3635,7 @@ protected:
 #endif
     bool dummysockopen;
 
-    CSocketBaseThread(const char *trc) : Thread("CSocketBaseThread")
+    CSocketBaseThread(const char *trc) : Thread("CSocketBaseThread"), tickwait(0)
     {
     }
 
@@ -3646,7 +3646,7 @@ protected:
 public:
     void triggerselect()
     {
-        if (atomic_read(&tickwait))
+        if (tickwait)
             ticksem.signal();
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
         CriticalBlock block(sect);
@@ -3893,7 +3893,6 @@ public:
         dummysockopen = false;
         opendummy();
         terminating = false;
-        atomic_set(&tickwait,0);
         waitingchange = 0;
         selectvarschange = false;
         validateselecterror = 0;
@@ -4097,10 +4096,10 @@ public:
                 }
                 if (ni==0) {
                     validateerrcount = 0;
-                    atomic_inc(&tickwait);                  
+                    tickwait++;
                     if(!selectvarschange&&!terminating) 
-                    ticksem.wait(SELECT_TIMEOUT_SECS*1000);
-                    atomic_dec(&tickwait);
+                        ticksem.wait(SELECT_TIMEOUT_SECS*1000);
+                    tickwait--;
                         
                     continue;
                 }
@@ -4408,7 +4407,6 @@ public:
     {
         dummysockopen = false;
         terminating = false;
-        atomic_set(&tickwait,0);
         waitingchange = 0;
         selectvarschange = false;
         validateselecterror = 0;
@@ -4624,10 +4622,10 @@ public:
                 }
                 if (ni==0) {
                     validateerrcount = 0;
-                    atomic_inc(&tickwait);
+                    tickwait++;
                     if(!selectvarschange&&!terminating)
                         ticksem.wait(SELECT_TIMEOUT_SECS*1000);
-                    atomic_dec(&tickwait);
+                    tickwait--;
 
                     continue;
                 }

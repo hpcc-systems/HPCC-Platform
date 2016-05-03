@@ -61,7 +61,7 @@ protected:
     void writeLogFile(const char* filepath, StringBuffer& log);
 
 public:
-    atomic_t        numFailed;
+    std::atomic_uint numFailed;
 
 protected:
     StringBuffer    compilerOptions;

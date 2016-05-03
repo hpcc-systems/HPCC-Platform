@@ -727,7 +727,7 @@ private:
     friend class DropLogMsg;
 
 public:
-    CLogMsgManager() : prefilter(0, 0, 0, false), suspendedChildren(false), port(0), session(UnknownSession) { atomic_set(&nextID, 0); }
+    CLogMsgManager() : prefilter(0, 0, 0, false), nextID(0), suspendedChildren(false), port(0), session(UnknownSession) { }
     ~CLogMsgManager();
     IMPLEMENT_IINTERFACE;
     void                      enterQueueingMode();
@@ -767,7 +767,7 @@ public:
     bool                      isActiveMonitor(const ILogMsgHandler * handler) const { return (find(handler) != NotFound); }
     bool                      changeMonitorFilter(const ILogMsgHandler * handler, ILogMsgFilter * newFilter);
     bool                      changeMonitorFilterOwn(const ILogMsgHandler * handler, ILogMsgFilter * newFilter) { bool ret = changeMonitorFilter(handler, newFilter); newFilter->Release(); return ret; }
-    LogMsgId                  getNextID() { return static_cast<LogMsgId>(atomic_add_exchange(&nextID, 1)); }
+    LogMsgId                  getNextID() { return nextID.fetch_add(1, std::memory_order_relaxed); }
     void                      prepAllHandlers() const;
     void                      addChildOwn(ILogMsgLinkToChild * child) { WriteLockBlock block(childLock); children.append(*child); }
     void                      removeChild(ILogMsgLinkToChild * child) { WriteLockBlock block(childLock); children.remove(findChild(child)); }
@@ -796,7 +796,7 @@ private:
     CIArrayOf<LogMsgMonitor>  monitors;
     mutable ReadWriteLock     monitorLock;
     CategoryLogMsgFilter      prefilter;
-    atomic_t                  nextID;
+    std::atomic<LogMsgId>     nextID;
     IArrayOf<ILogMsgLinkToChild> children;
     mutable ReadWriteLock     childLock;
     bool                      suspendedChildren;

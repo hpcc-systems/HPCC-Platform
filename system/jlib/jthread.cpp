@@ -544,10 +544,9 @@ StringBuffer &getThreadName(int thandle,unsigned tid,StringBuffer &name)
 
 // CThreadedPersistent
 
-CThreadedPersistent::CThreadedPersistent(const char *name, IThreaded *_owner) : athread(*this, name), owner(_owner)
+CThreadedPersistent::CThreadedPersistent(const char *name, IThreaded *_owner) : athread(*this, name), owner(_owner), state(s_ready)
 {
     halt = false;
-    atomic_set(&state, s_ready);
     athread.start();
 }
 
@@ -579,15 +578,20 @@ void CThreadedPersistent::main()
             joinSem.signal(); // leave in running state, signal to join to handle
             continue;
         }
-        if (!atomic_cas(&state, s_ready, s_running))
-            if (atomic_cas(&state, s_ready, s_joining))
+        unsigned expected = s_running;
+        if (!state.compare_exchange_strong(expected, s_ready))
+        {
+            expected = s_joining;
+            if (state.compare_exchange_strong(expected, s_ready))
                 joinSem.signal();
+        }
     }
 }
 
 void CThreadedPersistent::start()
 {
-    if (!atomic_cas(&state, s_running, s_ready))
+    unsigned expected = s_ready;
+    if (!state.compare_exchange_strong(expected, s_running))
     {
         VStringBuffer msg("CThreadedPersistent::start(%s) - not ready", athread.getName());
         WARNLOG("%s", msg.str());
@@ -599,11 +603,13 @@ void CThreadedPersistent::start()
 
 bool CThreadedPersistent::join(unsigned timeout)
 {
-    if (atomic_cas(&state, s_joining, s_running))
+    unsigned expected = s_running;
+    if (!state.compare_exchange_strong(expected, s_joining))
     {
         if (!joinSem.wait(timeout))
         {
-            if (atomic_cas(&state, s_running, s_joining)) // if still joining, restore running state 
+            unsigned expected = s_joining;
+            if (state.compare_exchange_strong(expected, s_running)) // if still joining, restore running state
                 return false;
             // if here, main() set s_ready after timeout and has or will signal
             if (!joinSem.wait(60000)) // should be instant
@@ -614,7 +620,8 @@ bool CThreadedPersistent::join(unsigned timeout)
         {
             // switch back to ready state and throw
             Owned<IException> e = exception.getClear();
-            if (!atomic_cas(&state, s_ready, s_joining))
+            unsigned expected = s_joining;
+            if (!state.compare_exchange_strong(expected, s_ready))
                 throwUnexpected();
             throw e.getClear();
         }
@@ -779,7 +786,7 @@ protected: friend class CPooledThreadWrapper;
     unsigned targetpoolsize;
     unsigned delay;
     Semaphore availsem;
-    atomic_t numrunning;
+    std::atomic_uint numrunning{0};
     virtual void notifyStarted(CPooledThreadWrapper *item)=0;
     virtual bool notifyStopped(CPooledThreadWrapper *item)=0;
 };
@@ -822,12 +829,12 @@ public:
         PooledThreadHandle ret=handle;
         handle = 0;
         if (ret) // JCSMORE - I can't see how handle can not be set if here..
-            atomic_dec(&parent.numrunning);
+            parent.numrunning--;
         return ret;
     }
     void markStarted()
     {
-        atomic_inc(&parent.numrunning);
+        parent.numrunning++;
     }
 
     int run()
@@ -1016,7 +1023,6 @@ public:
         stacksize = _stacksize;
         timeoutOnRelease = _timeoutOnRelease;
         targetpoolsize = _targetpoolsize?_targetpoolsize:defaultmax;
-        atomic_set(&numrunning,0);
         traceStartDelayPeriod = 0;
         startsInPeriod = 0;
         startDelayInPeriod = 0;
@@ -1204,7 +1210,7 @@ public:
 
     unsigned runningCount()
     {
-        return (unsigned)atomic_read(&numrunning);
+        return numrunning;
     }
 
     void notifyStarted(CPooledThreadWrapper *item)
