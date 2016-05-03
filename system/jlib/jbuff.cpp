@@ -36,7 +36,6 @@
 #include "jexcept.hpp"
 #include "jmisc.hpp"
 #include "jutil.hpp"
-#include "jvmem.hpp"
 
 #ifdef _DEBUG
 #define KILL_CLEARS_MEMORY  
@@ -44,6 +43,10 @@
 //#define TRACE_LARGEMEM_ALLOC
 #define TRACE_LARGEMEM_OOM
 #endif
+
+#define VMPAGESIZE     (0x1000)
+#define VMPAGEMASK     (VMPAGESIZE-1)
+#define VMPAGEROUND(s) (((s)+VMPAGEMASK)&~VMPAGEMASK)
 
 
 
@@ -1259,20 +1262,6 @@ void *CLargeMemoryAllocator::nextBuffer(void *prev,size32_t &sz)
     return p->base;
 }
 
-void CJMallocLargeMemoryAllocator::allocchunkmem()
-{
-    chunk.base = (byte *)allocator->allocMem(chunk.max); 
-#ifdef TRACE_LARGEMEM_ALLOC
-    PROGLOG("CJMallocLargeMemoryAllocator::allocchunkmem malloced %d at %p",chunk.max,chunk.base);
-#endif
-}
-
-void CJMallocLargeMemoryAllocator::disposechunkmem() 
-{ 
-    allocator->freeMem(chunk.base); 
-}
-
-
 CFixedSizeAllocator::CFixedSizeAllocator()
 {
     chunklist = NULL;
@@ -1369,201 +1358,4 @@ void CFixedSizeAllocator::stats(size32_t &sizealloc, size32_t &sizeunused)
     NonReentrantSpinBlock block(lock);
     sizealloc = numalloc*allocsize;
     sizeunused = numfree*allocsize;
-}
-
-
-//============================================================
-
-#define LARGEST_CONTIGUOUS_BLOCK (0xffff0000)
-
-void CContiguousLargeMemoryAllocator::init(size32_t _totalmax,size32_t _chunkmin,bool _throwexception)
-{
-    throwexception = _throwexception;
-    totalmax = (_totalmax<LARGEST_CONTIGUOUS_BLOCK)?VMPAGEROUND(_totalmax):LARGEST_CONTIGUOUS_BLOCK;
-    chunkmin = _chunkmin;
-    ofs = 0;
-    mapped = 0;
-    base = NULL; 
-#ifdef WIN32
-    LARGE_INTEGER li;
-    li.QuadPart = totalmax; 
-    hmap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE|SEC_RESERVE, li.HighPart, li.LowPart, NULL);
-#endif
-}
-
-CContiguousLargeMemoryAllocator::CContiguousLargeMemoryAllocator()
-{
-    // values overwritten by init
-    throwexception = true;
-    totalmax = 0;
-    chunkmin = 0x1000;
-    ofs = 0;
-    mapped = 0;
-    base = NULL;
-}
-
-CContiguousLargeMemoryAllocator::~CContiguousLargeMemoryAllocator()
-{
-    reset();
-#ifdef WIN32
-    if (hmap) {
-        if (base) 
-            UnmapViewOfFile(base);
-        CloseHandle(hmap);
-    }
-#endif
-}
-
-void *CContiguousLargeMemoryAllocator::getBase()
-{
-    if (!base) {
-#ifdef WIN32
-        if (hmap)
-            base = (byte *) MapViewOfFile(hmap, FILE_MAP_READ|FILE_MAP_WRITE, 0, 0, totalmax);
-        else
-            base = NULL;
-#else
-        base = (byte *) mmap(NULL,totalmax,PROT_NONE,MAP_PRIVATE|MAP_NORESERVE|MAP_ANONYMOUS,-1,0);
-        // create initially with no access
-        if (base == (byte *)MAP_FAILED)
-            base = NULL;
-#endif
-    }
-    return base;
-}
-
-bool CContiguousLargeMemoryAllocator::map(size32_t tot,size32_t sz)
-{
-    getBase();
-    if (!base||(tot>totalmax)) {
-        outOfMem(sz);
-        return false;
-    }
-    if (tot>mapped) {
-        void * a = base+mapped;
-        size32_t tomap = VMPAGEROUND(chunkmin); 
-#ifdef WIN32
-        if (VirtualAlloc(a,tomap,MEM_COMMIT,PAGE_READWRITE)!=a) {
-            outOfMem(sz);
-            return false;
-        }
-#else
-        if (mprotect(a,tomap,PROT_READ|PROT_WRITE)<0) {
-            int err = errno;
-            if ((err==ENOMEM)||(err==EFAULT)) {
-                outOfMem(sz);
-                return false;
-            }
-            WARNLOG("CContiguousLargeMemoryAllocator:map madvise err=%d",err);
-        }
-
-#endif
-        mapped = mapped+tomap;
-    }
-    return true;
-}
-
-
-
-
-void CContiguousLargeMemoryAllocator::unmap()
-{
-    // ensures above ofs is unmapped
-    size32_t ch = VMPAGEROUND(chunkmin);
-    size32_t newmapped = ((ofs+ch-1)/ch)*ch;
-    if (newmapped<mapped) {
-        void * a = base+newmapped;
-#ifdef WIN32
-        if (newmapped==0) { // free completely
-            if (base) {
-                UnmapViewOfFile(base);
-                base = NULL;  
-            }
-        }
-        else {
-            VirtualFree(a,mapped-newmapped,MEM_DECOMMIT); // can't fail
-        }
-#else
-        if (newmapped==0) { // free completely
-            if (base) {
-                munmap(base,totalmax);
-                base = NULL;  
-            }
-        }
-        else {
-            if (mprotect(a,mapped-newmapped,PROT_NONE)<0) 
-                WARNLOG("CContiguousLargeMemoryAllocator:unmap mprotect err=%d",errno);
-//          if (madvise(a,mapped-newmapped,MADV_DONTNEED)<0)  // not sure if this does anything but tell it anyway
-//              WARNLOG("CContiguousLargeMemoryAllocator:unmap madvise err=%d",errno);
-        }
-#endif
-        mapped = newmapped;
-    }
-}
-
-
-void CContiguousLargeMemoryAllocator::reset()
-{
-    reduceSize(ofs);
-}
-
-void CContiguousLargeMemoryAllocator::setSize(size32_t pos)
-{
-    assertex(ofs>=pos);
-    reduceSize(ofs-pos);
-}
-
-void CContiguousLargeMemoryAllocator::reduceSize(size32_t amount)
-{
-    assertex(ofs>=amount);
-    ofs-=amount;
-    unmap();
-}
-
-void *CContiguousLargeMemoryAllocator::nextBuffer(void *prev,size32_t &sz)
-{
-    // have to be careful as approaches 4GB
-
-    byte *p = prev?((byte *)prev):base;
-    size32_t o = p-base;
-    size32_t r = (o<ofs)?ofs-o:0;
-    sz = (r<=chunkmin)?0:(r-chunkmin);
-    if (sz==0)
-        return NULL;
-    if (sz>chunkmin) 
-        sz = chunkmin;
-    return p+chunkmin;
-}
-
-
-byte *CContiguousLargeMemoryAllocator::next(size32_t pos,size32_t &size)
-{
-    if (ofs<=pos) {
-        size = 0;
-        return NULL;
-    }
-    size = ofs-pos;
-    return base+pos;
-}
-
-MemoryBuffer &CContiguousLargeMemoryAllocator::serialize(MemoryBuffer &mb)
-{
-    memcpy(mb.reserveTruncate(ofs),base,ofs);
-    return mb;
-}
-
-MemoryBuffer &CContiguousLargeMemoryAllocator::deserialize(MemoryBuffer &mb,size32_t sz, size32_t extra)
-{
-    mb.read(sz,alloc(sz,extra));
-    return mb;
-}
-
-
-
-
-void CContiguousLargeMemoryAllocator::outOfMem(size32_t sz)
-{
-    if (throwexception) {
-        throw createOutOfMemException(-6,sz, ofs,true);
-    }
 }
