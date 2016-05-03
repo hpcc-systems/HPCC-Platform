@@ -28,7 +28,7 @@
         <tgroup cols="2">
           <colspec colwidth="300pt" />
 
-          <colspec colwidth="300.pt" />
+          <colspec />
 
           <thead>
             <row>
