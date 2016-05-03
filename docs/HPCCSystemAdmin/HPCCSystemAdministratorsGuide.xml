@@ -1206,6 +1206,9 @@ lock=/var/lock/HPCCSystems</programlisting>
           </variablelist></para>
       </sect2>
     </sect1>
+    <xi:include href="HPCCSystemAdmin/SA-Mods/CassandraWUServer.xml"
+                xpointer="CassandraWUStorage"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="Redefining_Thor_Nodes">
       <title>Redefining nodes in a Thor Cluster</title>
