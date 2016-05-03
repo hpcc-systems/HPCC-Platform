@@ -43,8 +43,8 @@ unsigned numSlaves[MAX_CLUSTER_SIZE];
 unsigned replicationLevel[MAX_CLUSTER_SIZE];
 unsigned IBYTIDelays[MAX_CLUSTER_SIZE]; // MORE: this will cover only 2 slaves per channel, change to cover all. 
 
-SpinLock suspendCrit;
-bool suspendedChannels[MAX_CLUSTER_SIZE];
+static SpinLock suspendCrit; // MORE: Could remove this, and replace the following with an atomic boolean array.
+static bool suspendedChannels[MAX_CLUSTER_SIZE];
 
 using roxiemem::OwnedRoxieRow;
 using roxiemem::OwnedConstRoxieRow;

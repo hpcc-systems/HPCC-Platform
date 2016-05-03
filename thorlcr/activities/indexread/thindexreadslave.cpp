@@ -97,7 +97,7 @@ protected:
     bool localKey;
     __int64 lastSeeks, lastScans;
     UInt64Array _statsArr;
-    SpinLock statLock;
+    SpinLock statLock;  // MORE: Can this be avoided by passing in the delta?
     unsigned __int64 *statsArr;
     size32_t fixedDiskRecordSize;
     rowcount_t progress;
@@ -173,11 +173,6 @@ public:
     inline void resetLastStats()
     {
         lastSeeks = lastScans = 0;
-    }
-    inline void incScan()
-    {
-        SpinBlock b(statLock);
-        lastScans++;
     }
     inline void noteStats(unsigned seeks, unsigned scans)
     {

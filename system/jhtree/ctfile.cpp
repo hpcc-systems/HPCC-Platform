@@ -530,7 +530,7 @@ unsigned __int64 CJHTreeNode::totalAllocatedCurrent;
 unsigned __int64 CJHTreeNode::totalAllocatedEver;
 unsigned CJHTreeNode::countAllocationsCurrent;
 unsigned CJHTreeNode::countAllocationsEver;
-SpinLock CJHTreeNode::spin;
+SpinLock CJHTreeNode::spin; // MORE: Could replace with atomic operations, but since 4 of them it may be less efficient when uncontested
 
 char *CJHTreeNode::expandKeys(void *src,unsigned keylength,size32_t &retsize, bool rowcompression)
 {

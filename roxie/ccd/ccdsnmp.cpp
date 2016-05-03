@@ -852,7 +852,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
     CIArrayOf<QueryStatsAggregateRecord> aggregated; // stored with most recent first
     unsigned expirySeconds;  // time to keep exact info (rather than just aggregated)
     StringAttr queryName;
-    SpinLock lock;
+    SpinLock lock; // MORE: This could be held this for a while.  Is this significant?  Should it be a CriticalSection?
 
     QueryStatsAggregateRecord &findAggregate(time_t startTime)
     {
@@ -908,7 +908,6 @@ public:
     CQueryStatsAggregator(const char *_queryName, unsigned _expirySeconds)
         : queryName(_queryName)
     {
-        SpinBlock b(queryStatsCrit);
         expirySeconds = _expirySeconds;
         queryStatsAggregators.append(*LINK(this));
     }
@@ -1010,7 +1009,7 @@ public:
 
 CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::queryStatsAggregators;
 CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
-SpinLock CQueryStatsAggregator::queryStatsCrit;
+SpinLock CQueryStatsAggregator::queryStatsCrit; //MORE: Should probably be a critical section
 
 IQueryStatsAggregator *queryGlobalQueryStatsAggregator()
 {

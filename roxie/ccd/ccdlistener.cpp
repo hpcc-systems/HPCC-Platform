@@ -554,6 +554,7 @@ public:
     bool match(IpAddress &peer, const char *query, bool isBlind, bool &access, StringBuffer &errMsg, int &errCode)
     {
         {
+            //MORE: This could use a regex class that is thread safe and remove this spin lock
             SpinBlock b(crappyUnsafeRegexLock);
             if (!queries.find(query))
                 return false;

@@ -46,13 +46,13 @@
 #endif
 
 static RegExpr *signature;
-static SpinLock *lock;
+static CriticalSection *lock;
 
 static const char *splitName(const char *fileName)
 {
     if (!fileName)
         return NULL;
-    SpinBlock b(*lock);
+    CriticalBlock b(*lock);
     const char *sig = signature->find(fileName);
     if (sig)
         return sig+signature->findlen();
@@ -608,7 +608,7 @@ protected:
 
 extern ARCHIVEFILE_API void installFileHook()
 {
-    SpinBlock b(*lock); // Probably overkill!
+    CriticalBlock b(*lock); // Probably overkill!
     if (!archiveFileHook)
     {
         archiveFileHook = new CArchiveFileHook;
@@ -620,7 +620,7 @@ extern ARCHIVEFILE_API void removeFileHook()
 {
     if (lock)
     {
-        SpinBlock b(*lock); // Probably overkill!
+        CriticalBlock b(*lock); // Probably overkill!
         if (archiveFileHook)
         {
             removeContainedFileHook(archiveFileHook);
@@ -632,7 +632,7 @@ extern ARCHIVEFILE_API void removeFileHook()
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    lock = new SpinLock;
+    lock = new CriticalSection;
     signature = new RegExpr(ARCHIVE_SIGNATURE);
     archiveFileHook = NULL;
     return true;

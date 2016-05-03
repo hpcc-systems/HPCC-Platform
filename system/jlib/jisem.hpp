@@ -89,7 +89,7 @@ public:
 
 class jlib_decl TokenBucket : public CInterface
 {
-    SpinLock crit;
+    SpinLock crit; // MORE: I suspect this should be a critical section
     Semaphore tokens;
     unsigned tokensAvailable;
     unsigned maxBucketSize;
@@ -122,8 +122,6 @@ class jlib_decl TokenBucket : public CInterface
 
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     TokenBucket(unsigned _tokensPerPeriod, unsigned _period, unsigned _maxBucketSize)
         : tokens(_maxBucketSize), maxBucketSize(_maxBucketSize), tokensPerPeriod(_tokensPerPeriod), period(_period)
     {

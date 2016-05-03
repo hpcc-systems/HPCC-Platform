@@ -51,7 +51,7 @@
 
 #include "portlist.h"
 
-static SpinLock * cvtLock;
+static NonReentrantSpinLock * cvtLock;
 
 #ifdef _WIN32
 static IRandomNumberGenerator * protectedGenerator;
@@ -66,7 +66,7 @@ mach_timebase_info_data_t timebase_info  = { 1,1 };
 
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
-    cvtLock = new SpinLock;
+    cvtLock = new NonReentrantSpinLock;
 #ifdef _WIN32
     protectedGenerator = createRandomNumberGenerator();
     protectedGeneratorCs = new CriticalSection;
@@ -95,7 +95,7 @@ bool safe_ecvt(size_t len, char * buffer, double value, int numDigits, int * dec
 #ifdef _WIN32
     return _ecvt_s(buffer, len, value, numDigits, decimal, sign) == 0;
 #else
-    SpinBlock block(*cvtLock);
+    NonReentrantSpinBlock block(*cvtLock);
     const char * result = ecvt(value, numDigits, decimal, sign);
     if (!result)
         return false;
@@ -109,7 +109,7 @@ bool safe_fcvt(size_t len, char * buffer, double value, int numPlaces, int * dec
 #ifdef _WIN32
     return _fcvt_s(buffer, len, value, numPlaces, decimal, sign) == 0;
 #else
-    SpinBlock block(*cvtLock);
+    NonReentrantSpinBlock block(*cvtLock);
     const char * result = fcvt(value, numPlaces, decimal, sign);
     if (!result)
         return false;
