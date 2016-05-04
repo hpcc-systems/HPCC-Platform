@@ -119,9 +119,15 @@ public :
     //set
     template <class type> void set(ICodeContext * ctx, const char * key, type value, unsigned expire);
     template <class type> void set(ICodeContext * ctx, const char * key, size32_t valueSize, const type * value, unsigned expire);
+    void setInt(ICodeContext * ctx, const char * key, signed __int64 value, unsigned expire, bool _unsigned);
+    void setReal(ICodeContext * ctx, const char * key, double value, unsigned expire);
+
     //get
     template <class type> void get(ICodeContext * ctx, const char * key, type & value);
     template <class type> void get(ICodeContext * ctx, const char * key, size_t & valueSize, type * & value);
+    template <class type> void getNumeric(ICodeContext * ctx, const char * key, type & value);
+    signed __int64 returnInt(const char * key, const char * cmd, const redisReply * reply);
+
 
     //-------------------------------LOCKING------------------------------------------------
     void lockSet(ICodeContext * ctx, const char * key, size32_t valueSize, const char * value, unsigned expire);
@@ -140,6 +146,7 @@ public :
     void clear(ICodeContext * ctx);
     unsigned __int64 dbSize(ICodeContext * ctx);
     bool exists(ICodeContext * ctx, const char * key);
+    signed __int64 incrBy(ICodeContext * ctx, const char * key, signed __int64 value);
 
 protected :
     void redisSetTimeout();
@@ -158,7 +165,10 @@ protected :
     void assertConnection(const char * _msg);
     void assertConnectionWithCmdMsg(const char * cmd, const char * key = NULL);
     void fail(const char * cmd, const char * errmsg, const char * key = NULL);
-    void * redisCommand(redisContext * context, const char * format, ...);
+    void * redisCommand(const char * format, ...);
+    void strto(const char * str, double & ret, const char * key);
+    void strto(const char * str, signed __int64 & ret, const char * key);
+    void strto(const char * str, unsigned __int64 & ret, const char * key);
 #if HIREDIS_VERSION_OK
     static unsigned hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password);
     bool isSameConnection(ICodeContext * ctx, const char * _options, const char * password) const;
@@ -268,7 +278,7 @@ void Connection::connect(ICodeContext * ctx, int _database, const char * passwor
         database = _database;
     }
 }
-void * Connection::redisCommand(redisContext * context, const char * format, ...)
+void * Connection::redisCommand(const char * format, ...)
 {
     //Copied from https://github.com/redis/hiredis/blob/master/hiredis.c ~line:1008 void * redisCommand(redisContext * context, const char * format, ...)
     //with redisSetTimeout(); added.
@@ -409,7 +419,7 @@ void Connection::selectDB(ICodeContext * ctx, int _database)
         return;
     database = _database;
     VStringBuffer cmd("SELECT %d", database);
-    OwnedReply reply = Reply::createReply(redisCommand(context, cmd.str()));
+    OwnedReply reply = Reply::createReply(redisCommand(cmd.str()));
     assertOnErrorWithCmdMsg(reply->query(), cmd.str());
 }
 void Connection::fail(const char * cmd, const char * errmsg, const char * key)
@@ -488,38 +498,68 @@ void Connection::assertConnection(const char * _msg)
 void Connection::clear(ICodeContext * ctx)
 {
     //NOTE: flush is the actual cache flush/clear/delete and not an io buffer flush.
-    OwnedReply reply = Reply::createReply(redisCommand(context, "FLUSHDB"));//NOTE: FLUSHDB deletes current database where as FLUSHALL deletes all dbs.
+    OwnedReply reply = Reply::createReply(redisCommand("FLUSHDB"));//NOTE: FLUSHDB deletes current database where as FLUSHALL deletes all dbs.
     //NOTE: documented as never failing, but in case
     assertOnErrorWithCmdMsg(reply->query(), "FlushDB");
 }
 void Connection::del(ICodeContext * ctx, const char * key)
 {
-    OwnedReply reply = Reply::createReply(redisCommand(context, "DEL %b", key, strlen(key)));
+    OwnedReply reply = Reply::createReply(redisCommand("DEL %b", key, strlen(key)));
     assertOnErrorWithCmdMsg(reply->query(), "Del", key);
 }
 void Connection::persist(ICodeContext * ctx, const char * key)
 {
-    OwnedReply reply = Reply::createReply(redisCommand(context, "PERSIST %b", key, strlen(key)));
+    OwnedReply reply = Reply::createReply(redisCommand("PERSIST %b", key, strlen(key)));
     assertOnErrorWithCmdMsg(reply->query(), "Persist", key);
 }
 void Connection::expire(ICodeContext * ctx, const char * key, unsigned _expire)
 {
-    OwnedReply reply = Reply::createReply(redisCommand(context, "PEXPIRE %b %u", key, strlen(key), _expire));
+    OwnedReply reply = Reply::createReply(redisCommand("PEXPIRE %b %u", key, strlen(key), _expire));
     assertOnErrorWithCmdMsg(reply->query(), "Expire", key);
 }
 bool Connection::exists(ICodeContext * ctx, const char * key)
 {
-    OwnedReply reply = Reply::createReply(redisCommand(context, "EXISTS %b", key, strlen(key)));
+    OwnedReply reply = Reply::createReply(redisCommand("EXISTS %b", key, strlen(key)));
     assertOnErrorWithCmdMsg(reply->query(), "Exists", key);
     return (reply->query()->integer != 0);
 }
 unsigned __int64 Connection::dbSize(ICodeContext * ctx)
 {
-    OwnedReply reply = Reply::createReply(redisCommand(context, "DBSIZE"));
+    OwnedReply reply = Reply::createReply(redisCommand("DBSIZE"));
     assertOnErrorWithCmdMsg(reply->query(), "DBSIZE");
     return reply->query()->integer;
 }
+signed __int64 Connection::incrBy(ICodeContext * ctx, const char * key, signed __int64 value)
+{
+    OwnedReply reply = Reply::createReply(redisCommand("INCRBY %b %" I64F "d", key, strlen(key), value));
+    return returnInt(key, "INCRBY", reply->query());
+}
 //-------------------------------------------SET-----------------------------------------
+void Connection::setInt(ICodeContext * ctx, const char * key, signed __int64 value, unsigned expire, bool _unsigned)
+{
+    StringBuffer cmd("SET %b %" I64F);
+    if (_unsigned)
+        cmd.append("u");
+    else
+        cmd.append("d");
+
+    appendExpire(cmd, expire);
+
+    OwnedReply reply = Reply::createReply(redisCommand(cmd.str(), key, strlen(key), value));
+    assertOnErrorWithCmdMsg(reply->query(), "SET", key);
+}
+void Connection::setReal(ICodeContext * ctx, const char * key, double value, unsigned expire)
+{
+    /*MORE: I really think that this should be 15 and that we are printing 1 to many (i.e. 16) significant digits for results.
+     * This may be related to https://track.hpccsystems.com/browse/HPCC-12177 "Instability in floating point calculations for statistical functions".
+     * The soln. to HPCC-12177 would be to stop storing results on disk as 16 digits but as either 15 or DBL_DIG from <cfloats> (should be same thing though).
+     */
+    StringBuffer cmd("SET %b %.16g");
+    appendExpire(cmd, expire);
+
+    OwnedReply reply = Reply::createReply(redisCommand(cmd.str(), key, strlen(key), value));
+    assertOnErrorWithCmdMsg(reply->query(), "SET", key);
+}
 //--OUTER--
 template<class type> void SyncRSet(ICodeContext * ctx, const char * _options, const char * key, type value, int database, unsigned expire, const char * password, unsigned _timeout)
 {
@@ -540,7 +580,7 @@ template<class type> void Connection::set(ICodeContext * ctx, const char * key, 
     StringBuffer cmd("SET %b %b");
     appendExpire(cmd, expire);
 
-    OwnedReply reply = Reply::createReply(redisCommand(context, cmd.str(), key, strlen(key), _value, sizeof(type)));
+    OwnedReply reply = Reply::createReply(redisCommand(cmd.str(), key, strlen(key), _value, sizeof(type)));
     assertOnErrorWithCmdMsg(reply->query(), "SET", key);
 }
 template<class type> void Connection::set(ICodeContext * ctx, const char * key, size32_t valueSize, const type * value, unsigned expire)
@@ -549,11 +589,26 @@ template<class type> void Connection::set(ICodeContext * ctx, const char * key, 
 
     StringBuffer cmd("SET %b %b");
     appendExpire(cmd, expire);
-    OwnedReply reply = Reply::createReply(redisCommand(context, cmd.str(), key, strlen(key), _value, (size_t)valueSize));
+    OwnedReply reply = Reply::createReply(redisCommand(cmd.str(), key, strlen(key), _value, (size_t)valueSize));
     assertOnErrorWithCmdMsg(reply->query(), "SET", key);
 }
 //-------------------------------------------GET-----------------------------------------
+signed __int64 Connection::returnInt(const char * key, const char * cmd, const redisReply * reply)
+{
+    assertOnErrorWithCmdMsg(reply, cmd, key);
+    assertKey(reply, key);
+    if (reply->type == REDIS_REPLY_INTEGER)
+        return reply->integer;
+
+    fail(cmd, "expected RESP integer from redis", key);
+    throwUnexpected(); //stop compiler complaining
+}
 //--OUTER--
+template<class type> void SyncRGetNumeric(ICodeContext * ctx, const char * options, const char * key, type & returnValue, int database, const char * password, unsigned _timeout)
+{
+    Owned<Connection> master = Connection::createConnection(ctx, cachedConnection, options, database, password, _timeout);
+    master->getNumeric(ctx, key, returnValue);
+}
 template<class type> void SyncRGet(ICodeContext * ctx, const char * options, const char * key, type & returnValue, int database, const char * password, unsigned _timeout)
 {
     Owned<Connection> master = Connection::createConnection(ctx, cachedConnection, options, database, password, _timeout);
@@ -564,10 +619,39 @@ template<class type> void SyncRGet(ICodeContext * ctx, const char * options, con
     Owned<Connection> master = Connection::createConnection(ctx, cachedConnection, options, database, password, _timeout);
     master->get(ctx, key, returnSize, returnValue);
 }
+void Connection::strto(const char * str, double & ret, const char * key)
+{
+    char * end = nullptr;
+    ret = strtod(str, &end);
+    if (errno == ERANGE)
+        fail("GetReal", "value returned out of range", key);
+}
+void Connection::strto(const char * str, __int64 & ret, const char * key)
+{
+    char* end = nullptr;
+    ret = strtoll(str, &end, 10);
+    if (errno == ERANGE)
+        fail("GetInteger", "value returned out of range", key);
+}
+void Connection::strto(const char * str, unsigned __int64 & ret, const char * key)
+{
+    char* end = nullptr;
+    ret = strtoull(str, &end, 10);
+    if (errno == ERANGE)
+        fail("GetUnsigned", "value returned out of range", key);
+}
 //--INNER--
+template<class type> void Connection::getNumeric(ICodeContext * ctx, const char * key, type & returnValue)
+{
+    OwnedReply reply = Reply::createReply(redisCommand("GET %b", key, strlen(key)));
+
+    assertOnErrorWithCmdMsg(reply->query(), "GET", key);
+    assertKey(reply->query(), key);
+    strto(reply->query()->str, returnValue, key);
+}
 template<class type> void Connection::get(ICodeContext * ctx, const char * key, type & returnValue)
 {
-    OwnedReply reply = Reply::createReply(redisCommand(context, "GET %b", key, strlen(key)));
+    OwnedReply reply = Reply::createReply(redisCommand("GET %b", key, strlen(key)));
 
     assertOnErrorWithCmdMsg(reply->query(), "GET", key);
     assertKey(reply->query(), key);
@@ -582,7 +666,7 @@ template<class type> void Connection::get(ICodeContext * ctx, const char * key, 
 }
 template<class type> void Connection::get(ICodeContext * ctx, const char * key, size_t & returnSize, type * & returnValue)
 {
-    OwnedReply reply = Reply::createReply(redisCommand(context, "GET %b", key, strlen(key)));
+    OwnedReply reply = Reply::createReply(redisCommand("GET %b", key, strlen(key)));
 
     assertOnErrorWithCmdMsg(reply->query(), "GET", key);
     assertKey(reply->query(), key);
@@ -598,7 +682,7 @@ unsigned __int64 Connection::publish(ICodeContext * ctx, const char * keyOrChann
     else
         channel.set(keyOrChannel);
 
-    OwnedReply reply = Reply::createReply(redisCommand(context, "PUBLISH %b %b", channel.str(), (size_t)channel.length(), message, (size_t)messageSize));
+    OwnedReply reply = Reply::createReply(redisCommand("PUBLISH %b %b", channel.str(), (size_t)channel.length(), message, (size_t)messageSize));
     assertOnErrorWithCmdMsg(reply->query(), "PUBLISH", channel.str());
     if (reply->query()->type == REDIS_REPLY_INTEGER)
     {
@@ -619,12 +703,12 @@ void Connection::subscribe(ICodeContext * ctx, const char * keyOrChannel, size_t
 
 #if(0)//Replicate a lingering SUBSCRIBE to test channel comparison test when reading message.
     {
-    OwnedReply reply = Reply::createReply(redisCommand(context, "SUBSCRIBE oldChannel"));
+    OwnedReply reply = Reply::createReply(redisCommand("SUBSCRIBE oldChannel"));
     assertOnErrorWithCmdMsg(reply->query(), "Test lingering SUBSCRIBE", "oldChannel");
     }
 #endif
 
-    OwnedReply reply = Reply::createReply(redisCommand(context, "SUBSCRIBE %b", channel.str(), (size_t)channel.length()));
+    OwnedReply reply = Reply::createReply(redisCommand("SUBSCRIBE %b", channel.str(), (size_t)channel.length()));
     assertOnErrorWithCmdMsg(reply->query(), "SUBSCRIBE", channel.str());
     if (reply->query()->type != REDIS_REPLY_ARRAY || strcmp("subscribe", reply->query()->element[0]->str) != 0 )
         fail("SUBSCRIBE", "failed to register SUB", channel.str());
@@ -693,6 +777,11 @@ ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL RDBSize(ICodeContext * ctx, const 
     Owned<Connection> master = Connection::createConnection(ctx, cachedConnection, options, database, password, timeout);
     return master->dbSize(ctx);
 }
+ECL_REDIS_API signed __int64 ECL_REDIS_CALL SyncRINCRBY(ICodeContext * ctx, const char * key, signed __int64 value, const char * options, int database, const char * password, unsigned timeout)
+{
+    Owned<Connection> master = Connection::createConnection(ctx, cachedConnection, options, database, password, timeout);
+    return master->incrBy(ctx, key, value);
+}
 //-----------------------------------SET------------------------------------------
 ECL_REDIS_API void ECL_REDIS_CALL SyncRSetStr(ICodeContext * ctx, const char * key, size32_t valueSize, const char * value, const char * options, int database, unsigned expire, const char * password, unsigned timeout)
 {
@@ -704,15 +793,18 @@ ECL_REDIS_API void ECL_REDIS_CALL SyncRSetUChar(ICodeContext * ctx, const char *
 }
 ECL_REDIS_API void ECL_REDIS_CALL SyncRSetInt(ICodeContext * ctx, const char * key, signed __int64 value, const char * options, int database, unsigned expire, const char * password, unsigned timeout)
 {
-    SyncRSet(ctx, options, key, value, database, expire, password, timeout);
+    Owned<Connection> master = Connection::createConnection(ctx, cachedConnection, options, database, password, timeout);
+    master->setInt(ctx, key, value, expire, false);
 }
 ECL_REDIS_API void ECL_REDIS_CALL SyncRSetUInt(ICodeContext * ctx, const char * key, unsigned __int64 value, const char * options, int database, unsigned expire, const char * password, unsigned timeout)
 {
-    SyncRSet(ctx, options, key, value, database, expire, password, timeout);
+    Owned<Connection> master = Connection::createConnection(ctx, cachedConnection, options, database, password, timeout);
+    master->setInt(ctx, key, value, expire, true);
 }
 ECL_REDIS_API void ECL_REDIS_CALL SyncRSetReal(ICodeContext * ctx, const char * key, double value, const char * options, int database, unsigned expire, const char * password, unsigned timeout)
 {
-    SyncRSet(ctx, options, key, value, database, expire, password, timeout);
+    Owned<Connection> master = Connection::createConnection(ctx, cachedConnection, options, database, password, timeout);
+    master->setReal(ctx, key, value, expire);
 }
 ECL_REDIS_API void ECL_REDIS_CALL SyncRSetBool(ICodeContext * ctx, const char * key, bool value, const char * options, int database, unsigned expire, const char * password, unsigned timeout)
 {
@@ -735,21 +827,21 @@ ECL_REDIS_API bool ECL_REDIS_CALL SyncRGetBool(ICodeContext * ctx, const char * 
 }
 ECL_REDIS_API double ECL_REDIS_CALL SyncRGetDouble(ICodeContext * ctx, const char * key, const char * options, int database, const char * password, unsigned timeout)
 {
-    double value;
-    SyncRGet(ctx, options, key, value, database, password, timeout);
-    return value;
+    double returnValue;
+    SyncRGetNumeric(ctx, options, key, returnValue, database, password, timeout);
+    return returnValue;
 }
 ECL_REDIS_API signed __int64 ECL_REDIS_CALL SyncRGetInt8(ICodeContext * ctx, const char * key, const char * options, int database, const char * password, unsigned timeout)
 {
-    signed __int64 value;
-    SyncRGet(ctx, options, key, value, database, password, timeout);
-    return value;
+    signed __int64 returnValue;
+    SyncRGetNumeric(ctx, options, key, returnValue, database, password, timeout);
+    return returnValue;
 }
 ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL SyncRGetUint8(ICodeContext * ctx, const char * key, const char * options, int database, const char * password, unsigned timeout)
 {
-    unsigned __int64 value;
-    SyncRGet(ctx, options, key, value, database, password, timeout);
-    return value;
+    unsigned __int64 returnValue;
+    SyncRGetNumeric(ctx, options, key, returnValue, database, password, timeout);
+    return returnValue;
 }
 ECL_REDIS_API void ECL_REDIS_CALL SyncRGetStr(ICodeContext * ctx, size32_t & returnSize, char * & returnValue, const char * key, const char * options, int database, const char * password, unsigned timeout)
 {
@@ -816,7 +908,7 @@ bool Connection::lock(ICodeContext * ctx, const char * key, const char * channel
     StringBuffer cmd("SET %b %b NX PX ");
     cmd.append(expire);
 
-    OwnedReply reply = Reply::createReply(redisCommand(context, cmd.str(), key, strlen(key), channel, strlen(channel)));
+    OwnedReply reply = Reply::createReply(redisCommand(cmd.str(), key, strlen(key), channel, strlen(channel)));
     assertOnErrorWithCmdMsg(reply->query(), cmd.str(), key);
 
     return (reply->query()->type == REDIS_REPLY_STATUS && strcmp(reply->query()->str, "OK") == 0);
@@ -861,7 +953,7 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
 
 #if(0)//Test empty string handling by deleting the lock/value, and thus GET returns REDIS_REPLY_NIL as the reply type and an empty string.
     {
-    OwnedReply pubReply = Reply::createReply(redisCommand(context, "DEL %b", key, strlen(key)));
+    OwnedReply pubReply = Reply::createReply(redisCommand("DEL %b", key, strlen(key)));
     assertOnError(pubReply->query(), "del fail");
     }
 #endif
@@ -869,23 +961,23 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
     //SUB before GET
     //Requires separate connection from GET so that the replies are not mangled. This could be averted
     Owned<Connection> subConnection = new Connection(ctx, options.str(), ip.str(), port, serverIpPortPasswordHash, database, password, timeLeft());
-    OwnedReply subReply = Reply::createReply(redisCommand(subConnection->context, "SUBSCRIBE %b", channel.str(), (size_t)channel.length()));
+    OwnedReply subReply = Reply::createReply(subConnection->redisCommand("SUBSCRIBE %b", channel.str(), (size_t)channel.length()));
     //Defer checking of reply/connection errors until actually needed.
 
 #if(0)//Test publish before GET.
     {
-    OwnedReply pubReply = Reply::createReply(redisCommand(context, "PUBLISH %b %b", channel.str(), (size_t)channel.length(), "foo", (size_t)3));
+    OwnedReply pubReply = Reply::createReply(redisCommand("PUBLISH %b %b", channel.str(), (size_t)channel.length(), "foo", (size_t)3));
     assertOnError(pubReply->query(), "pub fail");
     }
 #endif
 
     //Now GET
-    OwnedReply getReply = Reply::createReply((redisReply*)redisCommand(context, "GET %b", key, strlen(key)));
+    OwnedReply getReply = Reply::createReply((redisReply*)redisCommand("GET %b", key, strlen(key)));
     assertOnErrorWithCmdMsg(getReply->query(), "GetOrLock<type>", key);
 
 #if(0)//Test publish after GET.
     {
-    OwnedReply pubReply = Reply::createReply(redisCommand(context, "PUBLISH %b %b", channel.str(), (size_t)channel.length(), "foo", (size_t)3));
+    OwnedReply pubReply = Reply::createReply(redisCommand("PUBLISH %b %b", channel.str(), (size_t)channel.length(), "foo", (size_t)3));
     assertOnError(pubReply->query(), "pub fail");
     }
 #endif
@@ -956,21 +1048,21 @@ void Connection::handleLockOnSet(ICodeContext * ctx, const char * key, const cha
         if (expire == 0)
         {
             const char * luaScriptSHA1 = "2a4a976d9bbd806756b2c7fc1e2bc2cb905e68c3"; //NOTE: update this if luaScript is updated!
-            replyContainer->setClear(redisCommand(context, "EVALSHA %b %d %b %b %b", luaScriptSHA1, (size_t)40, 1, key, strlen(key), channel.str(), (size_t)channel.length(), value, size));
+            replyContainer->setClear(redisCommand("EVALSHA %b %d %b %b %b", luaScriptSHA1, (size_t)40, 1, key, strlen(key), channel.str(), (size_t)channel.length(), value, size));
             if (noScript(replyContainer->query()))
             {
                 const char * luaScript = "redis.call('SET', KEYS[1], ARGV[2]) redis.call('PUBLISH', ARGV[1], ARGV[2]) return";//NOTE: MUST update luaScriptSHA1 if luaScript is updated!
-                replyContainer->setClear(redisCommand(context, "EVAL %b %d %b %b %b", luaScript, strlen(luaScript), 1, key, strlen(key), channel.str(), (size_t)channel.length(), value, size));
+                replyContainer->setClear(redisCommand("EVAL %b %d %b %b %b", luaScript, strlen(luaScript), 1, key, strlen(key), channel.str(), (size_t)channel.length(), value, size));
             }
         }
         else
         {
             const char * luaScriptWithExpireSHA1 = "6f6bc88ccea7c6853ccc395eaa7abd8cb91fb2d8"; //NOTE: update this if luaScriptWithExpire is updated!
-            replyContainer->setClear(redisCommand(context, "EVALSHA %b %d %b %b %b %d", luaScriptWithExpireSHA1, (size_t)40, 1, key, strlen(key), channel.str(), (size_t)channel.length(), value, size, expire));
+            replyContainer->setClear(redisCommand("EVALSHA %b %d %b %b %b %d", luaScriptWithExpireSHA1, (size_t)40, 1, key, strlen(key), channel.str(), (size_t)channel.length(), value, size, expire));
             if (noScript(replyContainer->query()))
             {
                 const char * luaScriptWithExpire = "redis.call('SET', KEYS[1], ARGV[2], 'PX', ARGV[3]) redis.call('PUBLISH', ARGV[1], ARGV[2]) return";//NOTE: MUST update luaScriptWithExpireSHA1 if luaScriptWithExpire is updated!
-                replyContainer->setClear(redisCommand(context, "EVAL %b %d %b %b %b %d", luaScriptWithExpire, strlen(luaScriptWithExpire), 1, key, strlen(key), channel.str(), (size_t)channel.length(), value, size, expire));
+                replyContainer->setClear(redisCommand("EVAL %b %d %b %b %b %d", luaScriptWithExpire, strlen(luaScriptWithExpire), 1, key, strlen(key), channel.str(), (size_t)channel.length(), value, size, expire));
             }
         }
         assertOnErrorWithCmdMsg(replyContainer->query(), "SET", key);
