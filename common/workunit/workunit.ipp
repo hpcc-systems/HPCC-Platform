@@ -321,6 +321,8 @@ public:
     virtual unsigned getDebugAgentListenerPort() const;
     virtual IStringVal & getDebugAgentListenerIP(IStringVal &ip) const;
     virtual unsigned getTotalThorTime() const;
+    virtual IStringVal & getAbortBy(IStringVal & str) const;
+    virtual unsigned __int64 getAbortTimeStamp() const;
 
     void clearExceptions();
     void commit();
@@ -349,6 +351,7 @@ public:
     void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction);
     void setTracingValue(const char * propname, const char * value);
     void setTracingValueInt(const char * propname, int value);
+    void setTracingValueInt64(const char * propname, __int64 value);
     void setUser(const char * value);
     void setWarningSeverity(unsigned code, ErrorSeverity severity);
     void setWuScope(const char * value);

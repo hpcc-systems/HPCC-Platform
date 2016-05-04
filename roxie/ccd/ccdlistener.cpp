@@ -1017,7 +1017,7 @@ public:
                     try
                     {
                         queue.setown(createJobQueue(queueNames.str()));
-                        queue->connect();
+                        queue->connect(false);
                         daliHelper->noteQueuesRunning(queueNames.str());
                         while (running && daliHelper->connected())
                         {

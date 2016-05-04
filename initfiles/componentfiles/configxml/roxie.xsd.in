@@ -479,13 +479,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="crcResources" type="xs:boolean" use="optional" default="false">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Performs Cyclic Redundancy Check and/or other validity checks on resource files at startup.</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="debugPermitted" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>

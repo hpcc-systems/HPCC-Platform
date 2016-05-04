@@ -214,7 +214,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                             wu->setState(WUStateAborted);
                         }
                         else
-                            secAbortWorkUnit(wuid, *context.querySecManager(), *context.queryUser());
+                            abortWorkUnit(wuid, context.querySecManager(), context.queryUser());
                         AuditSystemAccess(context.queryUserId(), true, "Aborted %s", wuid);
                     }
                     break;
@@ -1155,7 +1155,7 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
                 throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "Workunit %s cannot be deleted.", wuid.str());
             break;
         default:
-            secAbortWorkUnit(wuid.str(), *context.querySecManager(), *context.queryUser());
+            abortWorkUnit(wuid.str(), context.querySecManager(), context.queryUser());
             if (!factory->deleteWorkUnit(wuid.str()))
             {
                 throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT,

@@ -33,7 +33,6 @@
                 checkCompleted="true"
                 checkFileDate="true"
                 copyResources="false"
-                crcResources="false"
                 cyclicOffset="1"
                 dafilesrvLookupTimeout="10000"
                 daliServers="mydali"

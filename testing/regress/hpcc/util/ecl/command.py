@@ -39,7 +39,9 @@ class ECLcmd(Shell):
         args.append('-fpickBestEngine=false')
         args.append('--target=' + cluster)
         args.append('--cluster=' + cluster)
-        args.append('--wait='+str(eclfile.getTimeout()*1000))
+        
+        retryCount = int(kwargs.pop('retryCount',  1))
+        args.append('--wait='+str(retryCount * eclfile.getTimeout() * 1000))  # ms
 
         server = kwargs.pop('server', False)
         if server:

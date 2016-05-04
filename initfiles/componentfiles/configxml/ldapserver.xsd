@@ -169,6 +169,15 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+
+            <xs:attribute name="sharedCache" type="xs:boolean" use="optional" default="true">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Use a single, shared LDAP cache.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+
             <xs:attribute name="systemUser" type="xs:string" use="optional">
                 <xs:annotation>
                     <xs:appinfo>

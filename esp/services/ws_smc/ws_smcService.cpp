@@ -1471,7 +1471,7 @@ bool CWsSMCEx::onRemoveJob(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
     {
         checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
 
-        secAbortWorkUnit(req.getWuid(), *context.querySecManager(), *context.queryUser());
+        abortWorkUnit(req.getWuid(), context.querySecManager(), context.queryUser());
 
         {
             Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
@@ -1601,7 +1601,7 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
             for(unsigned i=0;i<queue->ordinality();i++)
             {
                 Owned<IJobQueueItem> item = queue->getItem(i);
-                secAbortWorkUnit(item->queryWUID(), *context.querySecManager(), *context.queryUser());
+                abortWorkUnit(item->queryWUID(), context.querySecManager(), context.queryUser());
             }
             queue->clear();
         }
