@@ -198,14 +198,17 @@ static IPropertyTree *getEnvironmentTree(IConstEnvironment * daliEnv)
     return getHPCCEnvironment();
 }
 
+static StringAttr espurl;           // Default ESP url if none specified
+static CriticalSection espURLcrit;
+
 static const char *getEspServerURL(const char *param)
 {
     if (param&&*param)
         return param;
 
-    //MORE: Not thread safe, although not very likely to cause problems.
-    static StringAttr espurl;
-    if (espurl.isEmpty()) {
+    CriticalBlock b(espURLcrit);
+    if (espurl.isEmpty())
+    {
         Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
         Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
         StringBuffer tmp;
