@@ -2289,7 +2289,7 @@ protected:
     roxiemem::RoxieHeapFlags defaultFlags;
     IContextLogger *logctx;
     unsigned numChannels;
-    unsigned channelBits = 0;
+    unsigned __int64 channelBits = 0;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -2323,8 +2323,7 @@ public:
         defaultFlags = sharedAllocator.queryFlags();
         logctx = sharedAllocator.queryLoggingContext();
         numChannels = 0;
-        dbgassertex(channel <= 0xffff);
-        channelBits = (channel+1) << (8*3); // channel bits occupt top byte;
+        channelBits = ((unsigned __int64)(channel+1)) << 32; // channel bits occupy top 4 bytes;
     }
     ~CThorAllocator()
     {
@@ -2340,11 +2339,11 @@ public:
 // IThorAllocator
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags) const
     {
-        return allocatorMetaCache->ensure(meta, activityId | channelBits, flags);
+        return allocatorMetaCache->ensure(meta, ((unsigned __int64)activityId) | channelBits, flags);
     }
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId) const
     {
-        return allocatorMetaCache->ensure(meta, activityId | channelBits, defaultFlags);
+        return allocatorMetaCache->ensure(meta, ((unsigned __int64)activityId) | channelBits, defaultFlags);
     }
     virtual roxiemem::IRowManager *queryRowManager() const
     {
