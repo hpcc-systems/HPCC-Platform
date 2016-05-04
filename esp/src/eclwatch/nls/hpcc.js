@@ -422,6 +422,7 @@ define({root:
     RemoteDaliIP: "Remote Dali IP Address",
     Remove: "Remove",
     RemoveSubfiles: "Remove Subfile(s)",
+    RemoveSubfiles2: "Remove Subfile(s)?",
     RemoveUser: "You are about to remove yourself from the group:",
     Rename: "Rename",
     RenderedSVG: "Rendered SVG",
