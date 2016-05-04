@@ -218,7 +218,7 @@ int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resou
 {
     const char* userId = sec_user.getName();
     int nFound;
-    ReadLockBlock b(m_resPermCacheRWLock);
+    ReadLockBlock readLock(m_resPermCacheRWLock);
     MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( userId ); 
     if (i != m_resPermissionsMap.end())
     {
@@ -242,7 +242,7 @@ int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resou
 void CPermissionsCache::add( ISecUser& sec_user, IArrayOf<ISecResource>& resources )
 {
     const char* user = sec_user.getName();
-    WriteLockBlock b(m_resPermCacheRWLock);
+    WriteLockBlock writeLock(m_resPermCacheRWLock);
     MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( user ); 
     CResPermissionsCache* pResPermissionsCache;
 
@@ -272,7 +272,7 @@ void CPermissionsCache::removePermissions( ISecUser& sec_user)
 #ifdef _DEBUG
         DBGLOG("CACHE: CPermissionsCache Removing permissions for user %s", user);
 #endif
-        WriteLockBlock b(m_resPermCacheRWLock);
+        WriteLockBlock writeLock(m_resPermCacheRWLock);
         m_resPermissionsMap.erase(user); 
     }
 }
@@ -280,7 +280,7 @@ void CPermissionsCache::removePermissions( ISecUser& sec_user)
 void CPermissionsCache::remove(SecResourceType rtype, const char* resourcename)
 {
     MapResPermissionsCache::const_iterator i;
-    WriteLockBlock b(m_resPermCacheRWLock);
+    WriteLockBlock writeLock(m_resPermCacheRWLock);
     MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end(); 
 
     for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
@@ -300,7 +300,7 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
         return false;
 
     string key(username);
-    ReadLockBlock b(m_userCacheRWLock );
+    ReadLockBlock readLock(m_userCacheRWLock );
 
     MapUserCache::iterator it = m_userCache.find(key);
     if (it == m_userCache.end())
@@ -354,7 +354,7 @@ ISecUser* CPermissionsCache::getCachedUser( ISecUser& sec_user)
         return NULL;
 
     string key(username);
-    ReadLockBlock b(m_userCacheRWLock );
+    ReadLockBlock readLock(m_userCacheRWLock );
     MapUserCache::iterator it = m_userCache.find(key);
     if (it == m_userCache.end())
         return NULL;
@@ -372,7 +372,7 @@ void CPermissionsCache::add(ISecUser& sec_user)
         return;
     
     string key(username);
-    WriteLockBlock b(m_userCacheRWLock );
+    WriteLockBlock writeLock(m_userCacheRWLock );
     MapUserCache::iterator it = m_userCache.find(key);
     CachedUser* user = NULL;
     if (it != m_userCache.end())
@@ -393,7 +393,7 @@ void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
     if(username && *username)
     {
         string key(username);
-        WriteLockBlock b(m_userCacheRWLock );
+        WriteLockBlock writeLock(m_userCacheRWLock );
         MapUserCache::iterator it = m_userCache.find(key);
         if (it != m_userCache.end())
         {
@@ -409,7 +409,7 @@ void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
 
 bool CPermissionsCache::addManagedFileScopes(IArrayOf<ISecResource>& scopes)
 {
-    WriteLockBlock readBlock(m_scopesRWLock);
+    WriteLockBlock writeLock(m_scopesRWLock);
     ForEachItemIn(x, scopes)
     {
         ISecResource* scope = &scopes.item(x);
@@ -435,7 +435,7 @@ bool CPermissionsCache::addManagedFileScopes(IArrayOf<ISecResource>& scopes)
 
 inline void CPermissionsCache::removeManagedFileScopes(IArrayOf<ISecResource>& scopes)
 {
-    WriteLockBlock readBlock(m_scopesRWLock);
+    WriteLockBlock writeLock(m_scopesRWLock);
     ForEachItemIn(x, scopes)
     {
         ISecResource* scope = &scopes.item(x);
@@ -456,7 +456,7 @@ inline void CPermissionsCache::removeManagedFileScopes(IArrayOf<ISecResource>& s
 
 inline void CPermissionsCache::removeAllManagedFileScopes()
 {
-    WriteLockBlock readBlock(m_scopesRWLock);
+    WriteLockBlock writeLock(m_scopesRWLock);
     map<string, ISecResource*>::const_iterator cit;
     map<string, ISecResource*>::const_iterator iEnd = m_managedFileScopesMap.end();
 
@@ -524,11 +524,11 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
         }
         scopes.append(scope.str());
     }
-    ReadLockBlock readBlock(m_scopesRWLock);
+
     ISecResource *matchedRes = NULL;
     ISecResource *res = NULL;
     bool isManaged = false;
-
+    ReadLockBlock readLock(m_scopesRWLock);
     for(unsigned i = 0; i < scopes.length(); i++)
     {
         const char* scope = scopes.item(i);
@@ -607,7 +607,7 @@ int CPermissionsCache::queryDefaultPermission(ISecUser& user)
 void CPermissionsCache::flush()
 {
     {
-        WriteLockBlock b(m_resPermCacheRWLock);
+        WriteLockBlock writeLock(m_resPermCacheRWLock);
         MapResPermissionsCache::const_iterator i;
         MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end();
         for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
@@ -615,7 +615,7 @@ void CPermissionsCache::flush()
         m_resPermissionsMap.clear();
     }
     {
-        WriteLockBlock b(m_userCacheRWLock );
+        WriteLockBlock writeLock(m_userCacheRWLock );
         MapUserCache::const_iterator ui;
         MapUserCache::const_iterator uiEnd = m_userCache.end();
         for (ui = m_userCache.begin(); ui != uiEnd; ui++)
