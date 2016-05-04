@@ -31,8 +31,6 @@
 #endif 
 
 #include <string>
-#include "platform.h"
-#include "jlib.hpp"
 
 using namespace std;
 
@@ -95,9 +93,12 @@ ZCRYPT_API void releaseIZ(IZInterface* iz);
 #define GZ_BEST_COMPRESSION       9
 #define GZ_DEFAULT_COMPRESSION  (-1)
 
+class StringBuffer;
+typedef unsigned char byte;
+
 // Compress a character buffer using zlib in gzip format with given compression level
-char* gzip( const char* inputBuffer, unsigned int inputSize,
+ZCRYPT_API char* gzip( const char* inputBuffer, unsigned int inputSize,
     unsigned int* outlen, int compressionLevel=GZ_DEFAULT_COMPRESSION);
-void gunzip(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput);
+ZCRYPT_API void gunzip(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput);
 
 #endif
