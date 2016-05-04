@@ -21,7 +21,6 @@
 #include "jio.hpp"
 #include "jsort.hpp"
 #include "jsorta.hpp"
-#include "jvmem.hpp"
 #include "jflz.hpp"
 
 #include "thbufdef.hpp"

@@ -22,7 +22,6 @@
 
 #include "jiface.hpp"
 #include "jmutex.hpp"
-#include "jmalloc.hpp"
 
 class StringAttr;
 class StringBuffer;
@@ -382,95 +381,6 @@ extern jlib_decl MemoryBuffer & serialize(MemoryBuffer & buffer, const char * va
 extern jlib_decl MemoryBuffer & deserialize(MemoryBuffer & buffer, StringAttr & value);
 
 
-class  jlib_decl CContiguousLargeMemoryAllocator
-{
-    // limited to 4GB for the moment
-protected:
-    byte *base;
-    size32_t totalmax;
-    size32_t ofs;
-    size32_t chunkmin;  // only used for next and nextBuffer;
-    size32_t mapped;    // amount of 'real' memory
-    bool throwexception;
-    HANDLE hfile;
-#ifdef WIN32
-    HANDLE hmap;        
-#endif
-
-    void outOfMem(size32_t sz);
-    bool map(size32_t tot,size32_t sz);
-    void unmap();
-
-public:
-    CContiguousLargeMemoryAllocator(size32_t _totalmax,size32_t _chunkmin,bool _throwexception)
-    {
-        init(_totalmax,_chunkmin,_throwexception);
-    }
-
-    CContiguousLargeMemoryAllocator();
-
-    void init(size32_t _totalmax,size32_t _chunkmin,bool _throwexception);
-
-    virtual ~CContiguousLargeMemoryAllocator();
-
-    inline void setTotalMax(size32_t total)
-    {
-        totalmax = total;
-    }
-
-    inline size32_t getTotalMax()
-    {
-        return totalmax;
-    }
-
-    inline bool checkAvail(size32_t sz, size32_t sza=0,size32_t extra=0)
-    {
-        if (sza>sz)
-            sz = sza;
-        if (ofs+sz+extra>mapped) 
-            if (!map(ofs+sz+extra,sz))
-                return false;
-        return true;
-    }
-
-    inline byte *alloc(size32_t sz,size32_t extra=0)
-    {
-        if (mapped<ofs+sz+extra) 
-            if (!map(ofs+sz+extra,sz))
-                return NULL;
-        byte *ret = base+ofs;
-        ofs += sz;
-        return ret;
-    }
-
-
-    inline size32_t allocated()
-    {
-        return ofs;
-    }
-
-    inline size32_t maxallocated()
-    {
-        return mapped;
-    }
-
-    void setChunkGranularity(size32_t sz)
-    {
-        if (sz&&(chunkmin>sz)) 
-            chunkmin -= (chunkmin%sz);
-    }
-
-    void reset();
-    void setSize(size32_t pos);
-    void reduceSize(size32_t amount);
-    byte *next(size32_t pos,size32_t &size); 
-    MemoryBuffer &serialize(MemoryBuffer &mb);
-    MemoryBuffer &deserialize(MemoryBuffer &mb,size32_t sz, size32_t extra=0);
-    void *nextBuffer(void *prev,size32_t &sz);
-    void *getBase();
-};
-
-
 class  jlib_decl CLargeMemoryAllocator
 {
 protected:
@@ -567,28 +477,6 @@ public:
 
 
 
-
-class  jlib_decl CJMallocLargeMemoryAllocator: public CLargeMemoryAllocator
-{
-    IAllocator *allocator;
-    virtual void allocchunkmem();
-    virtual void disposechunkmem();
-public:
-    CJMallocLargeMemoryAllocator(IAllocator *_allocator,memsize_t _totalmax,size32_t _chunkmin,bool _throwexception)
-        : allocator(_allocator)
-    {
-        allocator = _allocator;
-        allocator->Link();
-        CLargeMemoryAllocator::init(_totalmax,_chunkmin,_throwexception);
-    }
-    ~CJMallocLargeMemoryAllocator()
-    {
-        CLargeMemoryAllocator::reset();
-        allocator->Release();
-    }
-    IAllocator *queryAllocator() { return allocator; }
-
-};
 
 class CLargeMemorySequentialReader
 {

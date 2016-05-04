@@ -67,7 +67,6 @@ set (    SRCS
          jlz4.cpp
          jlzma.cpp 
          jlzw.cpp 
-         jmalloc.cpp 
          jmd5.cpp 
          jmemleak.cpp 
          jmisc.cpp 
@@ -90,7 +89,6 @@ set (    SRCS
          jtime.cpp 
          junicode.cpp 
          jutil.cpp 
-         jvmem.cpp 
          sourcedoc.xml
     )
 
@@ -133,7 +131,6 @@ set (    INCLUDES
         jlzma.hpp
         jlzw.hpp
         jlzw.ipp
-        jmalloc.hpp
         jmd5.hpp
         jmisc.hpp
         jmutex.hpp
@@ -166,11 +163,9 @@ set (    INCLUDES
         jtime.ipp
         junicode.hpp
         jutil.hpp
-        jvmem.hpp
         )
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    set_property (SOURCE jmalloc.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -fno-strict-aliasing")
     set_property (SOURCE jencrypt.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -fno-strict-aliasing")
 endif ()
 if (CMAKE_COMPILER_IS_GNUCC)
