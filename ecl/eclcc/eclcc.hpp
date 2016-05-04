@@ -50,6 +50,7 @@ const char * const helpText[] = {
     "!   -Md           Output dependency information",
     "!   -Me           eclcc should evaluate supplied ecl code rather than generating a workunit",
     "    -q            Save ECL query text as part of workunit",
+    "    -qa           Save ECL query archive as part of workunit",
     "    -wu           Only generate workunit information as xml file",
     "",
     "c++ options",
