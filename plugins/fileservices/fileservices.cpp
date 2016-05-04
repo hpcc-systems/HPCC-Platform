@@ -263,7 +263,7 @@ StringBuffer & constructLogicalName(IConstWorkUnit * wu, const char * partialLog
 
     if (*partialLogicalName == '~')
         ++partialLogicalName;
-    else
+    else if (wu)
     {
         StringBuffer prefix;
         wu->getScope(StringBufferAdaptor(prefix));
@@ -887,7 +887,8 @@ FILESERVICES_API char * FILESERVICES_CALL fsfDespray(ICodeContext *ctx, const ch
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
     server.addServiceUrl(getEspServerURL(espServerIpPort));
-    setServerAccess(server, wu);
+    if (wu)
+        setServerAccess(server, wu);
 
     Owned<IClientDespray> req = server.createDesprayRequest();
     StringBuffer logicalName;
