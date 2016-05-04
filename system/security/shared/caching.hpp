@@ -135,7 +135,7 @@ public:
 // main cache that stores all user-specific caches (defined by CResPermissionsCache above)
 //
 static CriticalSection PCCritSect;//guards instance factory
-
+static CPermissionsCache* instance = nullptr;//accessed via CPermissionsCache::queryInstance()
 class CPermissionsCache
 {
 public:
@@ -152,8 +152,6 @@ public:
 
     static CPermissionsCache* queryInstance()
     {
-        static CPermissionsCache* instance = nullptr;
-
         {
             CriticalBlock block(PCCritSect);
             if (instance == nullptr)
