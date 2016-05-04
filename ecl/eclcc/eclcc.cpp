@@ -260,6 +260,7 @@ public:
         optOnlyCompile = false;
         optBatchMode = false;
         optSaveQueryText = false;
+        optSaveQueryArchive = false;
         optGenerateHeader = false;
         optShowPaths = false;
         optNoSourcePath = false;
@@ -383,6 +384,7 @@ protected:
     bool optShared;
     bool optOnlyCompile;
     bool optSaveQueryText;
+    bool optSaveQueryArchive;
     bool optLegacyImport;
     bool optLegacyWhen;
     bool optGenerateHeader;
@@ -1246,11 +1248,19 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         return;
     }
 
-    if (instance.archive)
+    if (optArchive || optGenerateDepend)
         return;
 
     if (syntaxChecking || optGenerateMeta || optEvaluateResult)
         return;
+
+    if (optSaveQueryArchive && instance.wu)
+    {
+        Owned<IWUQuery> q = instance.wu->updateQuery();
+        StringBuffer buf;
+        toXML(instance.archive, buf);
+        q->setQueryText(buf);
+    }
 
     StringBuffer targetFilename;
     const char * outputFilename = instance.outputFilename;
@@ -1458,7 +1468,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     Owned<ISourcePath> sourcePath = optNoSourcePath ? NULL : createSourcePath(curFilename);
     Owned<IFileContents> queryText = createFileContentsFromFile(curFilename, sourcePath, false);
     const char * queryTxt = queryText->getText();
-    if (optArchive || optGenerateDepend)
+    if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());
 
     instance.wu.setown(createLocalWorkUnit(NULL));
@@ -1656,7 +1666,8 @@ void EclCC::generateOutput(EclCompileInstance & instance)
             ForEachItemIn(i, resourceManifestFiles)
                 addManifestResourcesToArchive(instance.archive, resourceManifestFiles.item(i));
 
-            outputXmlToOutputFile(instance, instance.archive);
+            if (optArchive)
+                outputXmlToOutputFile(instance, instance.archive);
         }
     }
 
@@ -2068,6 +2079,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optSaveQueryText, "-q"))
+        {
+        }
+        else if (iter.matchFlag(optSaveQueryArchive, "-qa"))
         {
         }
         else if (iter.matchFlag(optNoCompile, "-S"))
