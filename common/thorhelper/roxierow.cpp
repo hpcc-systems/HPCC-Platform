@@ -386,9 +386,9 @@ IEngineRowAllocator * createCrcRoxieRowAllocator(IRowAllocatorMetaActIdCache * c
 struct AllocatorKey
 {
     IOutputMetaData *meta;
-    unsigned activityId;
+    unsigned __int64 activityId;
     roxiemem::RoxieHeapFlags flags;
-    AllocatorKey(IOutputMetaData *_meta, unsigned &_activityId, roxiemem::RoxieHeapFlags _flags)
+    AllocatorKey(IOutputMetaData *_meta, unsigned __int64 &_activityId, roxiemem::RoxieHeapFlags _flags)
         : meta(_meta), activityId(_activityId), flags(_flags)
     {
     }
@@ -412,7 +412,7 @@ public:
     unsigned queryAllocatorId() const { return allocatorId; }
 };
 
-class CAllocatorCache : public CSimpleInterface, implements IRowAllocatorMetaActIdCache
+class CAllocatorCache : public CSimpleInterfaceOf<IRowAllocatorMetaActIdCache>
 {
     OwningSimpleHashTableOf<CAllocatorCacheItem, AllocatorKey> cache;
     IArrayOf<IEngineRowAllocator> allAllocators;
@@ -420,39 +420,29 @@ class CAllocatorCache : public CSimpleInterface, implements IRowAllocatorMetaAct
     Owned<roxiemem::IRowManager> rowManager;
     IRowAllocatorMetaActIdCacheCallback *callback;
 
-    inline CAllocatorCacheItem *_lookup(IOutputMetaData *meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+    inline CAllocatorCacheItem *lookup(IOutputMetaData *meta, unsigned __int64 activityId, roxiemem::RoxieHeapFlags flags) const
     {
         AllocatorKey key(meta, activityId, flags);
         return cache.find(key);
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CAllocatorCache(IRowAllocatorMetaActIdCacheCallback *_callback) : callback(_callback)
     {
     }
 // IRowAllocatorMetaActIdCache
-    inline IEngineRowAllocator *lookup(IOutputMetaData *meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
-    {
-        SpinBlock b(allAllocatorsLock);
-        CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
-        if (!container)
-            return NULL;
-        return &container->queryElement();
-    }
-    virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags)
+    virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned __int64 activityId, roxiemem::RoxieHeapFlags flags) override
     {
         SpinBlock b(allAllocatorsLock);
         loop
         {
-            CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
+            CAllocatorCacheItem *container = lookup(meta, activityId, flags);
             if (container)
             {
                 if (0 == (roxiemem::RHFunique & flags))
                     return LINK(&container->queryElement());
                 // if in cache but unique, reuse allocatorId
                 SpinUnblock b(allAllocatorsLock);
-                return callback->createAllocator(this, meta, activityId, container->queryAllocatorId(), flags);
+                return callback->createAllocator(this, meta, (unsigned)(activityId & ACTIVITY_MASK), container->queryAllocatorId(), flags);
             }
             // NB: a RHFunique allocator, will cause 1st to be added to 'allAllocators'
             // subsequent requests for the same type of unique allocator, will share same allocatorId
@@ -463,7 +453,7 @@ public:
             IEngineRowAllocator *ret;
             {
                 SpinUnblock b(allAllocatorsLock);
-                ret = callback->createAllocator(this, meta, activityId, allocatorId, flags);
+                ret = callback->createAllocator(this, meta, (unsigned)(activityId & ACTIVITY_MASK), allocatorId, flags);
                 assertex(ret);
             }
             if (allocatorId == allAllocators.ordinality())
