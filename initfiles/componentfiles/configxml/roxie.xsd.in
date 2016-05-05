@@ -692,6 +692,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="prestartSlaveThreads" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Prestart slave worker threads at startup</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="reloadRetriesFailed" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>

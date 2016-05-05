@@ -368,6 +368,7 @@ extern unsigned minFilesOpen[2];
 extern unsigned maxFilesOpen[2];
 extern unsigned restarts;
 extern bool checkCompleted;
+extern bool prestartSlaveThreads;
 extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
