@@ -126,3 +126,16 @@
 <Dataset name='Result 31'>
  <Row><Result_31>true</Result_31></Row>
 </Dataset>
+<Dataset name='Result 32'>
+ <Row><ok>true</ok></Row>
+ <Row><ok>false</ok></Row>
+ <Row><ok>false</ok></Row>
+ <Row><ok>false</ok></Row>
+ <Row><ok>false</ok></Row>
+ <Row><ok>true</ok></Row>
+ <Row><ok>false</ok></Row>
+ <Row><ok>false</ok></Row>
+ <Row><ok>false</ok></Row>
+ <Row><ok>false</ok></Row>
+ <Row><ok>false</ok></Row>
+</Dataset>

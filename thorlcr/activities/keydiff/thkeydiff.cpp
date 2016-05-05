@@ -174,7 +174,7 @@ public:
         container.queryTempHandler()->registerFile(outputName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
         Owned<IDistributedFile> patchFile;
         // set part sizes etc
-        queryThorFileManager().publish(container.queryJob(), outputName, *patchDesc, &patchFile, 0, false);
+        queryThorFileManager().publish(container.queryJob(), outputName, *patchDesc, &patchFile);
         try { // set file size
             if (patchFile) {
                 __int64 fs = patchFile->getFileSize(true,false);

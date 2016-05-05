@@ -2352,7 +2352,6 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
     mpJobTag = TAG_NULL;
     globalMemoryMB = globals->getPropInt("@globalMemorySize"); // in MB
     numChannels = globals->getPropInt("@channelsPerSlave", 1);
-    oldNodeCacheMem = 0;
     pluginMap = new SafePluginMap(&pluginCtx, true);
 
 // JCSMORE - Will pass down at job creation time...
@@ -2462,12 +2461,14 @@ void CJobBase::startJob()
     }
     PrintMemoryStatusLog();
     logDiskSpace();
-    unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", 0);
-    if (keyNodeCacheMB)
-    {
-        oldNodeCacheMem = setNodeCacheMem(keyNodeCacheMB * 0x100000);
-        PROGLOG("Key node cache size set to: %d MB", keyNodeCacheMB);
-    }
+    unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", DEFAULT_KEYNODECACHEMB * queryJobChannels());
+    unsigned keyLeafCacheMB = (unsigned)getWorkUnitValueInt("keyLeafCacheMB", DEFAULT_KEYLEAFCACHEMB * queryJobChannels());
+    unsigned keyBlobCacheMB = (unsigned)getWorkUnitValueInt("keyBlobCacheMB", DEFAULT_KEYBLOBCACHEMB * queryJobChannels());
+    setNodeCacheMem(keyNodeCacheMB * 0x100000);
+    setLeafCacheMem(keyLeafCacheMB * 0x100000);
+    setBlobCacheMem(keyBlobCacheMB * 0x100000);
+    PROGLOG("Key node caching setting: node=%u MB, leaf=%u MB, blob=%u MB", keyNodeCacheMB, keyLeafCacheMB, keyBlobCacheMB);
+
     unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
     if (!keyFileCacheLimit)
         keyFileCacheLimit = (querySlaves()+1)*2;
@@ -2480,8 +2481,6 @@ void CJobBase::endJob()
     stopPerformanceMonitor();
     LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
     clearKeyStoreCache(true);
-    if (oldNodeCacheMem)
-        setNodeCacheMem(oldNodeCacheMem);
     PrintMemoryStatusLog();
 }
 

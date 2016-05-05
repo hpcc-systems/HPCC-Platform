@@ -669,7 +669,10 @@ void TransferServer::transferChunk(unsigned chunkIndex)
     PartitionPoint & curPartition = partition.item(chunkIndex);
     OutputProgress & curProgress = progress.item(chunkIndex);
 
-    LOG(MCdebugProgress, unknownJob, "Begin to transfer chunk %d: Start at length %" I64F "d", chunkIndex, curProgress.inputLength);
+    StringBuffer targetPath;
+    curPartition.outputName.getPath(targetPath);
+    LOG(MCdebugProgress, unknownJob, "Begin to transfer chunk %d (offset: %" I64F "d, size: %" I64F "d) to target:'%s' (offset: %" I64F "d, size: %" I64F "d) ",
+                        chunkIndex, curPartition.inputOffset, curPartition.inputLength, targetPath.str(), curPartition.outputOffset, curPartition.outputLength);
     const unsigned __int64 startOutOffset = out->tell();
     if (startOutOffset != curPartition.outputOffset+curProgress.outputLength)
         throwError4(DFTERR_OutputOffsetMismatch, out->tell(), curPartition.outputOffset+curProgress.outputLength, "start", chunkIndex);

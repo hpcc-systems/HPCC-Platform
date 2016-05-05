@@ -127,7 +127,7 @@ public:
     inline bool isHighPriority() const { return (activityId & ROXIE_PRIORITY_MASK) == ROXIE_HIGH_PRIORITY; }
     inline bool isSLAPriority() const { return (activityId & ROXIE_PRIORITY_MASK) == ROXIE_SLA_PRIORITY; }
 
-    inline RemoteActivityId(unsigned _activityId, hash64_t _queryHash) 
+    inline RemoteActivityId(unsigned _activityId, hash64_t _queryHash)
         : activityId(_activityId), queryHash(_queryHash)
     {
     }

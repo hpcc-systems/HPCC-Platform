@@ -6020,13 +6020,19 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             assertex(thisDali);
             IPropertyTree *thisDaliInfo = findDaliProcess(envTree, thisDali->queryMyNode()->endpoint());
             assertex(thisDaliInfo);
-            Owned<IPropertyTreeIterator> plugins = thisDaliInfo->getElements("Plugin");
-            ForEach(*plugins)
+
+            const char *daliName = thisDaliInfo->queryProp("@name");
+            if (daliName)
             {
-                Owned<IPluggableFactory> factory = loadPlugin(&plugins->query());
-                assertex (factory);
-                if (!factory->initializeStore())
-                    throw MakeStringException(0, "Failed to initialize plugin store '%s'", plugins->query().queryProp("@name"));
+                VStringBuffer xpath("Software/DaliServerPlugin[@daliServers='%s']", daliName);
+                Owned<IPropertyTreeIterator> plugins = envTree->getElements(xpath);
+                ForEach(*plugins)
+                {
+                    Owned<IPluggableFactory> factory = loadPlugin(&plugins->query());
+                    assertex (factory);
+                    if (!factory->initializeStore())
+                        throw MakeStringException(0, "Failed to initialize plugin store '%s'", plugins->query().queryProp("@type"));
+                }
             }
 
             oldEnvironment.setown(root->getPropTree("Environment"));

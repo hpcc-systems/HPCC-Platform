@@ -427,6 +427,7 @@ IHqlExpression * HqlCppCaseInfo::buildIndexedMap(BuildCtx & ctx, IHqlExpression 
             break;
         case type_string:
             tableIndex = createValue(no_index, makeCharType(), LINK(test), getZero());
+            tableIndex = createValue(no_cast, makeIntType(1, false), tableIndex);
             break;
         default:
             throwUnexpectedType(compareType);

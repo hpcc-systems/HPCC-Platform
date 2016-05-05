@@ -37,5 +37,6 @@
  systemBasedn="<xsl:value-of select="@systemBasedn"/>"
  usersBasedn="<xsl:value-of select="@usersBasedn"/>"
  workunitsBasedn="<xsl:value-of select="@workunitsBasedn"/>"
+ sharedCache="<xsl:value-of select="@sharedCache"/>"
    </xsl:template>
 </xsl:stylesheet>

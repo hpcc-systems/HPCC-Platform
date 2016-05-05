@@ -1253,7 +1253,10 @@ void CKeyStore::clearCache(bool killAll)
     synchronized block(mutex);
 
     if (killAll)
+    {
+        clearNodeCache(); // no point in keeping old nodes cached if key store cache has been cleared
         keyIndexCache.kill();
+    }
     else
     {
         StringArray goers;

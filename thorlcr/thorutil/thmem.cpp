@@ -2288,6 +2288,7 @@ protected:
     roxiemem::RoxieHeapFlags defaultFlags;
     IContextLogger *logctx;
     unsigned numChannels;
+    unsigned __int64 channelBits = 0;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -2314,19 +2315,21 @@ public:
             rowManager->setReleaseWhenModifyCallback(true, true);
         }
     }
-    CThorAllocator(IThorAllocator &sharedAllocator, unsigned channel)
+    CThorAllocator(CThorAllocator &sharedAllocator, unsigned channel)
     {
-        allocatorMetaCache.setown(createRowAllocatorCache(this));
+        allocatorMetaCache.set(sharedAllocator.queryAllocateCache());
         rowManager.set(sharedAllocator.queryRowManager()->querySlaveRowManager(channel));
         defaultFlags = sharedAllocator.queryFlags();
         logctx = sharedAllocator.queryLoggingContext();
         numChannels = 0;
+        channelBits = ((unsigned __int64)(channel+1)) << 32; // channel bits occupy top 4 bytes;
     }
     ~CThorAllocator()
     {
         rowManager.clear();
         allocatorMetaCache.clear();
     }
+    IRowAllocatorMetaActIdCache *queryAllocateCache() const { return allocatorMetaCache; }
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
     virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
@@ -2335,11 +2338,11 @@ public:
 // IThorAllocator
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags) const
     {
-        return allocatorMetaCache->ensure(meta, activityId, flags);
+        return allocatorMetaCache->ensure(meta, ((unsigned __int64)activityId) | channelBits, flags);
     }
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId) const
     {
-        return allocatorMetaCache->ensure(meta, activityId, defaultFlags);
+        return allocatorMetaCache->ensure(meta, ((unsigned __int64)activityId) | channelBits, defaultFlags);
     }
     virtual roxiemem::IRowManager *queryRowManager() const
     {
@@ -2363,7 +2366,7 @@ public:
         : CThorAllocator(memLimitMB, sharedMemLimitMB, numChannels, memorySpillAtPercentage, logctx, flags)
     {
     }
-    CThorCrcCheckingAllocator(IThorAllocator &sharedAllocator, unsigned channel) : CThorAllocator(sharedAllocator, channel)
+    CThorCrcCheckingAllocator(CThorCrcCheckingAllocator &sharedAllocator, unsigned channel) : CThorAllocator(sharedAllocator, channel)
     {
     }
 // IThorAllocator
