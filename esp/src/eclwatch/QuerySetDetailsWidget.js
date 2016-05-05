@@ -238,19 +238,12 @@ define([
                 if (lang.exists("SuperFile.length", newValue)) {
                     this.superFilesTab.set("title", this.i18n.SuperFiles + " (" + newValue.SuperFile.length + ")");
                     var superFileToolTip = "";
-                    var logicalFileToolTip = "";
                     for (var i = 0; i < newValue.SuperFile.length; ++i) {
                         if (superFileToolTip != "")
                             superFileToolTip += "\n";
                         superFileToolTip += newValue.SuperFile[i].Name;
                     }
                     this.superFilesTab.set("tooltip", superFileToolTip);
-                    for (var i = 0; i < newValue.SuperFile.length; ++i) {
-                        if (logicalFileToolTip != "")
-                            logicalFileToolTip += "\n";
-                        logicalFileToolTip += newValue.SuperFile[i].SubFiles.File;
-                    }
-                    this.logicalFilesTab.set("tooltip", logicalFileToolTip);
                 }
                 var count = 0;
                 arrayUtil.forEach(context.query.SuperFiles.SuperFile, function (item, idx) {
@@ -258,7 +251,17 @@ define([
                         count++
                     });
                 });
-                this.logicalFilesTab.set("title", this.i18n.LogicalFiles + " (" + count + ")");
+            } else if (name === "LogicalFiles") {
+                if (lang.exists("Item.length", newValue)) {
+                    this.logicalFilesTab.set("title", this.i18n.LogicalFiles + " (" + context.query.LogicalFiles.Item.length + ")");
+                    var logicalFileToolTip = "";
+                    for (var i = 0; i < newValue.Item.length; ++i) {
+                        if (logicalFileToolTip != "")
+                            logicalFileToolTip += "\n";
+                        logicalFileToolTip += newValue.Item[i];
+                    }
+                    this.logicalFilesTab.set("tooltip", logicalFileToolTip);
+                }
             } else if (name === "LibrariesUsed") {
                 this.librariesUsedTab.set("title", this.i18n.LibrariesUsed + " (" + newValue.Item.length + ")");
                 var tooltip = "";

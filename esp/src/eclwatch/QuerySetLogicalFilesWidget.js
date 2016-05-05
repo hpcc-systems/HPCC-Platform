@@ -79,15 +79,13 @@ define([
             var context = this;
             this.query.refresh().then(function (response) {
                 var logicalFiles = [];
-                if (lang.exists("SuperFiles.SuperFile", context.query)) {
-                    arrayUtil.forEach(context.query.SuperFiles.SuperFile, function (item, idx) {
-                        arrayUtil.forEach(item.SubFiles.File, function (item, idx) {
+                if (lang.exists("LogicalFiles.Item", context.query)) {
+                        arrayUtil.forEach(context.query.LogicalFiles.Item, function (item, idx) {
                             var file = {
                                 File: item
                             }
                             logicalFiles.push(file);
                         });
-                    });
                 }
                 context.store.setData(logicalFiles);
                 context.grid.refresh();
