@@ -909,6 +909,8 @@ public:
         : queryName(_queryName)
     {
         expirySeconds = _expirySeconds;
+
+        SpinBlock b(queryStatsCrit); // protect the global list
         queryStatsAggregators.append(*LINK(this));
     }
     ~CQueryStatsAggregator()
