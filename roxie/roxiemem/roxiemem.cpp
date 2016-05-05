@@ -4990,8 +4990,9 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
     friend class DataBufferBottom;
     CriticalSection crit;
     DataBufferBottom *curBlock;
-    char *nextAddr;
     DataBufferBottom *freeChain;
+    char * nextBase = nullptr;
+    size32_t nextOffset = 0; // offset within a page
     atomic_t freePending;
 
     void unlink(DataBufferBottom *goer)
@@ -5013,7 +5014,7 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
         if (goer==curBlock)
         {
             curBlock = NULL;
-            nextAddr = NULL;
+            nextBase = NULL;
             assertex(!"ERROR: heap block freed too many times!");
         }
     }
@@ -5058,7 +5059,6 @@ public:
     {
         assertex(size==DATA_ALIGNMENT_SIZE);
         curBlock = NULL;
-        nextAddr = NULL;
         freeChain = NULL;
         atomic_set(&freePending, 0);
     }
@@ -5068,7 +5068,7 @@ public:
         CriticalBlock b(crit);
 
         if (memTraceLevel >= 5)
-            DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() curBlock=%p nextAddr=%p", curBlock, nextAddr);
+            DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() curBlock=%p nextAddr=%p:%x", curBlock, nextBase, nextOffset);
 
         if (atomic_cas(&freePending, 0, 1))
             freeUnused();
@@ -5078,7 +5078,6 @@ public:
             if (curBlock)
             {
                 DataBufferBottom *bottom = curBlock;
-                assertex(((memsize_t)bottom & HEAP_PAGE_OFFSET_MASK) == 0);
                 CriticalBlock c(bottom->crit);
                 if (bottom->freeChain)
                 {
@@ -5091,19 +5090,20 @@ public:
                         DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() reallocated DataBuffer - addr=%p", x);
                     return ::new(x) DataBuffer();
                 }
-                else if ((((memsize_t)nextAddr) & HEAP_PAGE_OFFSET_MASK) != 0) // Is there any space in the current block
+                else if (nextOffset < HEAP_ALIGNMENT_SIZE) // Is there any space in the current block (it must be a whole block)
                 {
                     atomic_inc(&dataBuffersActive);
                     curBlock->Link();
-                    DataBuffer *x = ::new(nextAddr) DataBuffer();
-                    nextAddr += DATA_ALIGNMENT_SIZE;
-                    if ((((memsize_t)nextAddr) & HEAP_PAGE_OFFSET_MASK) == 0)
+                    DataBuffer *x = ::new(nextBase+nextOffset) DataBuffer();
+                    nextOffset += DATA_ALIGNMENT_SIZE;
+                    if (nextOffset == HEAP_ALIGNMENT_SIZE)
                     {
                         // MORE: May want to delete this "if" logic !!
                         //       and let it be handled in the similar logic of "else" part below.
                         curBlock->Release();
                         curBlock = NULL;
-                        nextAddr = NULL;
+                        nextBase = NULL;
+                        //nextOffset = 0 - not needed since only used if curBlock is set
                     }
                     if (memTraceLevel >= 4)
                         DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() allocated DataBuffer - addr=%p", x);
@@ -5113,7 +5113,8 @@ public:
                 {
                     curBlock->Release();
                     curBlock = NULL;
-                    nextAddr = NULL;
+                    nextBase = NULL;
+                    //nextOffset = 0 - not needed since only used if curBlock is set
                 }
             }
             // see if a previous block that is waiting to be freed has any on its free chain
@@ -5130,7 +5131,8 @@ public:
                         if (finger->isAlive())
                         {
                             curBlock = finger;
-                            nextAddr = (char *)curBlock + HEAP_ALIGNMENT_SIZE;
+                            nextBase = nullptr; // should never be accessed
+                            nextOffset = HEAP_ALIGNMENT_SIZE; // only use the free chain to allocate
                             atomic_inc(&dataBuffersActive);
                             finger->Link(); // and once for the value we are about to return
                             DataBuffer *x = finger->freeChain;
@@ -5146,13 +5148,14 @@ public:
                         break;
                 }
             }
-            curBlock = (DataBufferBottom *)suballoc_aligned(1, false);
+            nextBase = (char *)suballoc_aligned(1, false);
+            nextOffset = DATA_ALIGNMENT_SIZE;
+            curBlock = (DataBufferBottom *)nextBase;
             atomic_inc(&dataBufferPages);
             assertex(curBlock);
             if (memTraceLevel >= 3)
                     DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() allocated new DataBuffers Page - addr=%p", curBlock);
             freeChain = ::new(curBlock) DataBufferBottom(this, freeChain);   // we never allocate the lowest one in the heap - used just for refcounting the rest
-            nextAddr = (char *)curBlock + DATA_ALIGNMENT_SIZE;
         }
     }
 
@@ -5319,6 +5322,9 @@ extern void setDataAlignmentSize(unsigned size)
 {
     if (memTraceLevel >= 3) 
         DBGLOG("RoxieMemMgr: setDataAlignmentSize to %u", size); 
+
+    if ((size == 0) || ((HEAP_ALIGNMENT_SIZE % size) != 0))
+        throw MakeStringException(ROXIEMM_INVALID_MEMORY_ALIGNMENT, "setDataAlignmentSize %u must be a factor of %u", size, (unsigned)HEAP_ALIGNMENT_SIZE);
 
     if (size==0x400 || size==0x2000)
         DATA_ALIGNMENT_SIZE = size;
