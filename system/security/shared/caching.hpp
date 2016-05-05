@@ -134,18 +134,33 @@ public:
 
 // main cache that stores all user-specific caches (defined by CResPermissionsCache above)
 //
+static CriticalSection PCCritSect;//guards instance factory
+static CPermissionsCache* instance = nullptr;//accessed via CPermissionsCache::queryInstance()
 class CPermissionsCache
 {
 public:
     CPermissionsCache()
-    { 
+    {
         m_cacheTimeout = 300;
         m_transactionalEnabled = false;
         m_secMgr = NULL;
         m_lastManagedFileScopesRefresh = 0;
         m_defaultPermission = SecAccess_Unknown;
     }
+
     virtual ~CPermissionsCache();
+
+    static CPermissionsCache* queryInstance()
+    {
+        {
+            CriticalBlock block(PCCritSect);
+            if (instance == nullptr)
+            {
+                instance = new CPermissionsCache();
+            }
+        }
+        return instance;
+    }
 
     //finds cached permissions for a number of resources and sets them in
     //and also returns status in the boolean array passed in
@@ -181,8 +196,6 @@ private:
     typedef std::map<string, CResPermissionsCache*> MapResPermissionsCache;
     typedef std::map<string, CachedUser*> MapUserCache;
 
-    CPermissionsCache(const CPermissionsCache&);
-
     MapResPermissionsCache m_resPermissionsMap;  //user specific resource permissions cache
     Monitor m_cachemonitor;                               //for thread safety
     int m_cacheTimeout; //cleanup cycle period
@@ -201,5 +214,6 @@ private:
 };
 
 time_t getThreadCreateTime();
+
 
 #endif

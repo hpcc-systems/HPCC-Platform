@@ -73,8 +73,9 @@ int CResPermissionsCache::lookup( IArrayOf<ISecResource>& resources, bool* pFoun
             *pFound++ = false;
             continue;
         }
-        //DBGLOG("CACHE: Looking up %s:%s", m_user.c_str(), resource);
-
+#ifdef _DEBUG
+        DBGLOG("CACHE: Looking up resource(%d) %s:%s", i, m_user.c_str(), resource);
+#endif
         MapResAccess::iterator it = m_resAccessMap.find(SecCacheKeyEntry(resource, secResource.getResourceType()));
         if (it != m_resAccessMap.end())//exists in cache
         {
@@ -93,6 +94,9 @@ int CResPermissionsCache::lookup( IArrayOf<ISecResource>& resources, bool* pFoun
                 else
                 {
                     secResource.copy(resParamCacheEntry.second);
+#ifdef _DEBUG
+                    DBGLOG("CACHE: FoundA %s:%s=>%d", m_user.c_str(), resource, ((ISecResource*)resParamCacheEntry.second)->getAccessFlags());
+#endif
                     *pFound++ = true;
                     nFound++;
                 }
@@ -100,7 +104,9 @@ int CResPermissionsCache::lookup( IArrayOf<ISecResource>& resources, bool* pFoun
             else
             {
                 secResource.copy(resParamCacheEntry.second);
-                //DBGLOG("CACHE: Found %s:%s=>%d", m_user.c_str(), resource, resParamCacheEntry.second);
+#ifdef _DEBUG
+                DBGLOG("CACHE: FoundB %s:%s=>%d", m_user.c_str(), resource, ((ISecResource*)resParamCacheEntry.second)->getAccessFlags());
+#endif
                 *pFound++ = true;
                 nFound++;
             }
@@ -154,7 +160,9 @@ void CResPermissionsCache::add( IArrayOf<ISecResource>& resources )
             }
             m_resAccessMap.erase(SecCacheKeyEntry(resource, resourcetype));
         }
-        //DBGLOG("CACHE: Adding %s:%s(%d)", m_user.c_str(), resource, permissions);
+#ifdef _DEBUG
+        DBGLOG("CACHE: Adding %s:%s(%d)", m_user.c_str(), resource, permissions);
+#endif
         m_resAccessMap.insert( pair<SecCacheKeyEntry, ResPermCacheEntry>(SecCacheKeyEntry(resource, resourcetype),  ResPermCacheEntry(tstamp, secResource->clone())));
         m_timestampMap.insert( pair<time_t, SecCacheKeyEntry>(tstamp, SecCacheKeyEntry(resource, resourcetype)));
     }
@@ -222,9 +230,11 @@ int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resou
     {
         nFound = 0;
         memset(pFound, 0, sizeof(bool)*resources.ordinality());
-        //DBGLOG("CACHE: Looking up %s:*", userId);
     }
 
+#ifdef _DEBUG
+    DBGLOG("CACHE: Looking up resources for %s:*, found %d matches", userId, nFound);
+#endif
     return nFound;
 }
 
@@ -239,7 +249,9 @@ void CPermissionsCache::add( ISecUser& sec_user, IArrayOf<ISecResource>& resourc
 
     if (i == m_resPermissionsMap.end())
     {
-        //DBGLOG("CACHE: Adding cache for %s", user);
+#ifdef _DEBUG
+        DBGLOG("CACHE: Adding resources to cache for %s", user);
+#endif
         pResPermissionsCache = new CResPermissionsCache(this, user);
         m_resPermissionsMap.insert(pair<string, CResPermissionsCache*>(user, pResPermissionsCache));
     }
