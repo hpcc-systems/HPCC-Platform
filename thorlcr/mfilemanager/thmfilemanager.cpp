@@ -479,70 +479,12 @@ public:
         return LINK(desc);
     }
 
-    void publish(CJobBase &job, const char *logicalName, IFileDescriptor &fileDesc, Owned<IDistributedFile> *publishedFile=NULL, unsigned partOffset=0, bool createMissingParts=true)
+    void publish(CJobBase &job, const char *logicalName, IFileDescriptor &fileDesc, Owned<IDistributedFile> *publishedFile=NULL)
     {
         IPropertyTree &props = fileDesc.queryProperties();
         bool temporary = props.getPropBool("@temporary");
         if (!temporary || job.queryUseCheckpoints())
             queryDistributedFileDirectory().removeEntry(logicalName, job.queryUserDescriptor());
-
-        if (!temporary && createMissingParts && !isFileKey(fileDesc.queryProperties()))
-        {
-            // create empty parts for a fileDesc being published that is larger than this clusters
-            unsigned clusterIdx = 0;
-            for (; clusterIdx<fileDesc.numClusters(); clusterIdx++)
-            {
-                if (job.querySlaves() < fileDesc.numParts())
-                {
-                    StringBuffer clusterName;
-                    fileDesc.getClusterGroupName(clusterIdx, clusterName, &queryNamedGroupStore());
-                    PROGLOG("Creating blank parts for file '%s', cluster '%s'", logicalName, clusterName.str());
-                    unsigned p=0;
-                    while (p<fileDesc.numParts())
-                    {
-                        if (p == partOffset)
-                            p += job.querySlaves();
-                        IPartDescriptor *partDesc = fileDesc.queryPart(p);
-                        CDateTime createTime, modifiedTime;
-                        unsigned c=0;
-                        for (; c<partDesc->numCopies(); c++)
-                        {
-                            RemoteFilename rfn;
-                            partDesc->getFilename(c, rfn);
-                            StringBuffer path;
-                            rfn.getPath(path);
-                            try
-                            {
-                                ensureDirectoryForFile(path.str());
-                                OwnedIFile iFile = createIFile(path.str());
-                                OwnedIFileIO iFileIO = iFile->open(IFOcreate);
-                                iFileIO.clear();
-                                // ensure copies have matching datestamps, as they would do normally (backupnode expects it)
-                                if (partDesc->numCopies() > 1)
-                                {
-                                    if (0 == c)
-                                        iFile->getTime(&createTime, &modifiedTime, NULL);
-                                    else
-                                        iFile->setTime(&createTime, &modifiedTime, NULL);
-                                }
-                            }
-                            catch (IException *e)
-                            {
-                                if (0 == c)
-                                    throw;
-                                Owned<IThorException> e2 = MakeThorException(e);
-                                e->Release();
-                                e2->setAction(tea_warning);
-                                job.fireException(e2);
-                            }
-                        }
-                        partDesc->queryProperties().setPropInt64("@size", 0);
-                        p++;
-                    }
-                }
-                clusterIdx++;
-            }
-        }       
         // thor clusters are backed up so if replicateOutputs set *always* assume a replicate
         if (replicateOutputs && (!temporary || job.queryUseCheckpoints()))
         {

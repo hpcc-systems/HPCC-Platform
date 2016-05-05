@@ -62,7 +62,7 @@ if(SQLITE3EMBED)
     endif()
 endif()
 
-if(PLATFORM)
+if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3.ecllib
         DESTINATION plugins

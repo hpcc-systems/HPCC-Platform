@@ -411,21 +411,6 @@ void EspHttpBinding::populateRequest(CHttpRequest *request)
 
     ctx->setUser(user);
 
-    CEspCookie* cookie = request->queryCookie("SEQUEST");
-    if(cookie)
-    {
-        const char* val = cookie->getValue();
-        if(val && *val)
-            user->setProperty("SEQUEST", val);
-    }
-    cookie = request->queryCookie("OTP2FACTOR");
-    if(cookie)
-    {
-        const char* val = cookie->getValue();
-        if(val && *val)
-            user->setProperty("OTP2FACTOR", val);
-    }
-
     if(m_setting_authmap.get() != NULL)
     {
         ISecResourceList* settinglist = m_setting_authmap->getResourceList("*");

@@ -1570,7 +1570,7 @@ public:
 // IBCastReceive (only used if global)
     virtual void bCastReceive(CSendItem *sendItem, bool stop)
     {
-        if (bcast_stop == sendItem->queryCode())
+        if (sendItem && (bcast_stop == sendItem->queryCode()))
         {
             sendItem->Release();
             if (!stop)

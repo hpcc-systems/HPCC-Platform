@@ -96,3 +96,7 @@ set2 = ALL;
 set2 != ALL;
 set2 = [];
 set2 != [];
+
+dsx := dataset(['a','b','d','X','È','Ö','â','\240','\241','\376','\377'], { string1 f1 });
+
+output (nofold(dsx), { ok := f1 in ['a','c','e','f','g','h','i','j','0','_','Ö','ü','¢'] });

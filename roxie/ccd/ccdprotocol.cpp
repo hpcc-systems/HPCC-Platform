@@ -1947,6 +1947,7 @@ readAnother:
         }
         unsigned bytesOut = client? client->bytesOut() : 0;
         unsigned elapsed = msTick() - qstart;
+        sink->noteQuery(msgctx.get(), peerStr, failed, bytesOut, elapsed,  memused, slavesReplyLen, continuationNeeded);
         if (continuationNeeded)
         {
             rawText.clear();

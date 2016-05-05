@@ -765,7 +765,6 @@ protected:
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     Owned<IContextLogger> logctx;
     Owned<IPerfMonHook> perfmonhook;
-    size32_t oldNodeCacheMem;
     CIArrayOf<CJobChannel> jobChannels;
     OwnedMalloc<unsigned> jobChannelSlaveNumbers;
     OwnedMalloc<unsigned> jobSlaveChannelNum;
