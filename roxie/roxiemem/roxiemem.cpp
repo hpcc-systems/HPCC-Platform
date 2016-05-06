@@ -1033,6 +1033,12 @@ static inline bool isValidRoxiePtr(const void *_ptr)
     return ptr >= heapBase && ptr < heapEnd;
 }
 
+inline static HeapletBase *findBase(const void *ptr)
+{
+    return (HeapletBase *) ((memsize_t) ptr & HEAP_ALIGNMENT_MASK);
+}
+
+
 void HeapletBase::release(const void *ptr)
 {
     if (isValidRoxiePtr(ptr))
@@ -3485,7 +3491,7 @@ private:
     CIArrayOf<CFixedChunkedHeap> normalHeaps;
     CHugeHeap hugeHeap;
     ITimeLimiter *timeLimit;
-    DataBufferBase *activeBuffs;
+    DataBuffer *activeBuffs;
     const IContextLogger &logctx;
     unsigned peakPages;
     unsigned dataBuffs;
@@ -3583,10 +3589,10 @@ public:
                 fixedRowHeaps.item(i).clearRowManager();
         }
 
-        DataBufferBase *dfinger = activeBuffs;
+        DataBuffer *dfinger = activeBuffs;
         while (dfinger)
         {
-            DataBufferBase *next = dfinger->next;
+            DataBuffer *next = dfinger->next;
             if (memTraceLevel >= 2 && dfinger->queryCount()!=1)
                 logctx.CTXLOG("RoxieMemMgr: Memory leak: %d records remain linked in active dataBuffer list - addr=%p rowMgr=%p", 
                         dfinger->queryCount()-1, dfinger, this);
@@ -3947,15 +3953,15 @@ public:
                     dataBuff, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this);
 
         dataBuff->Link();
-        DataBufferBase *last = NULL;
+        DataBuffer *last = NULL;
         bool needCheck;
         {
             CriticalBlock b(activeBufferCS);
-            DataBufferBase *finger = activeBuffs;
+            DataBuffer *finger = activeBuffs;
             while (finger && atomic_read(&possibleGoers))
             {
                 // MORE - if we get a load of data in and none out this can start to bog down...
-                DataBufferBase *next = finger->next;
+                DataBuffer *next = finger->next;
                 if (finger->queryCount()==1)
                 {
                     if (memTraceLevel >= 4)
@@ -4873,7 +4879,7 @@ const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state
                 //since we know what all blocks before this must be filled.
                 state.next = finger;
 
-                HeapletBase *srcBase = HeapletBase::findBase(ptr);
+                HeapletBase *srcBase = findBase(ptr);
                 if (srcBase->isEmpty())
                 {
                     state.numPagesEmptied++;
@@ -4932,29 +4938,10 @@ void * CPackedChunkingHeap::allocate()
 //================================================================================
 // Buffer manager - blocked 
 
-void DataBufferBase::noteReleased(const void *ptr)
-{
-    //The link counter is shared by all the rows that are contained in this DataBuffer
-    if (atomic_dec_and_test(&count))
-        released();
-}
-
-void DataBufferBase::noteLinked(const void *ptr)
-{
-    atomic_inc(&count);
-}
-
-bool DataBufferBase::_isShared(const void *ptr) const
-{
-    // Because the link counter is shared you cannot know if an individual pointer is shared
-    throwUnexpected();
-    return true;
-}
-
-void DataBufferBase::Release()
+void DataBuffer::Release()
 {
     if (atomic_read(&count)==2 && mgr)
-        mgr->noteDataBuffReleased((DataBuffer*) this);
+        mgr->noteDataBuffReleased(this);
     if (atomic_dec_and_test(&count)) released(); 
 }
 
@@ -4967,7 +4954,7 @@ void DataBuffer::released()
         DBGLOG("RoxieMemMgr: DataBuffer::released() releasing DataBuffer - addr=%p", this);
     atomic_dec(&dataBuffersActive);
     bottom->addToFreeChain(this);
-    HeapletBase::release(bottom);
+    bottom->Release();
 }
 
 bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
@@ -4986,16 +4973,26 @@ bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
     }
 }
 
-memsize_t DataBuffer::_capacity() const { throwUnexpected(); }
-void DataBuffer::_setDestructorFlag(const void *ptr) { throwUnexpected(); }
+void DataBuffer::noteReleased(const void *ptr)
+{
+    //The link counter is shared by all the rows that are contained in this DataBuffer
+    if (atomic_dec_and_test(&count))
+        released();
+}
+
+void DataBuffer::noteLinked(const void *ptr)
+{
+    atomic_inc(&count);
+}
 
 class CDataBufferManager : public CInterface, implements IDataBufferManager
 {
     friend class DataBufferBottom;
     CriticalSection crit;
-    char *curBlock;
-    char *nextAddr;
+    DataBufferBottom *curBlock;
     DataBufferBottom *freeChain;
+    char * nextBase = nullptr;
+    size32_t nextOffset = 0; // offset within a page
     atomic_t freePending;
 
     void unlink(DataBufferBottom *goer)
@@ -5014,10 +5011,10 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
             if (freeChain == goer)
                 freeChain = goer->nextBottom;
         }
-        if ((char *) goer==curBlock)
+        if (goer==curBlock)
         {
             curBlock = NULL;
-            nextAddr = NULL;
+            nextBase = NULL;
             assertex(!"ERROR: heap block freed too many times!");
         }
     }
@@ -5062,7 +5059,6 @@ public:
     {
         assertex(size==DATA_ALIGNMENT_SIZE);
         curBlock = NULL;
-        nextAddr = NULL;
         freeChain = NULL;
         atomic_set(&freePending, 0);
     }
@@ -5072,7 +5068,7 @@ public:
         CriticalBlock b(crit);
 
         if (memTraceLevel >= 5)
-            DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() curBlock=%p nextAddr=%p", curBlock, nextAddr);
+            DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() curBlock=%p nextAddr=%p:%x", curBlock, nextBase, nextOffset);
 
         if (atomic_cas(&freePending, 0, 1))
             freeUnused();
@@ -5081,32 +5077,33 @@ public:
         {
             if (curBlock)
             {
-                DataBufferBottom *bottom = (DataBufferBottom *) curBlock;
+                DataBufferBottom *bottom = curBlock;
                 CriticalBlock c(bottom->crit);
                 if (bottom->freeChain)
                 {
                     atomic_inc(&dataBuffersActive);
-                    HeapletBase::link(curBlock);
-                    DataBufferBase *x = bottom->freeChain;
+                    curBlock->Link();
+                    DataBuffer *x = bottom->freeChain;
                     bottom->freeChain = x->next;
                     x->next = NULL;
                     if (memTraceLevel >= 4)
                         DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() reallocated DataBuffer - addr=%p", x);
                     return ::new(x) DataBuffer();
                 }
-                else if ((memsize_t)(nextAddr - curBlock) <= HEAP_ALIGNMENT_SIZE-DATA_ALIGNMENT_SIZE)
+                else if (nextOffset < HEAP_ALIGNMENT_SIZE) // Is there any space in the current block (it must be a whole block)
                 {
                     atomic_inc(&dataBuffersActive);
-                    HeapletBase::link(curBlock);
-                    DataBuffer *x = ::new(nextAddr) DataBuffer();
-                    nextAddr += DATA_ALIGNMENT_SIZE;
-                    if (nextAddr - curBlock == HEAP_ALIGNMENT_SIZE)
+                    curBlock->Link();
+                    DataBuffer *x = ::new(nextBase+nextOffset) DataBuffer();
+                    nextOffset += DATA_ALIGNMENT_SIZE;
+                    if (nextOffset == HEAP_ALIGNMENT_SIZE)
                     {
                         // MORE: May want to delete this "if" logic !!
                         //       and let it be handled in the similar logic of "else" part below.
-                        HeapletBase::release(curBlock);
+                        curBlock->Release();
                         curBlock = NULL;
-                        nextAddr = NULL;
+                        nextBase = NULL;
+                        //nextOffset = 0 - not needed since only used if curBlock is set
                     }
                     if (memTraceLevel >= 4)
                         DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() allocated DataBuffer - addr=%p", x);
@@ -5114,9 +5111,10 @@ public:
                 }
                 else
                 {
-                    HeapletBase::release(curBlock);
+                    curBlock->Release();
                     curBlock = NULL;
-                    nextAddr = NULL;
+                    nextBase = NULL;
+                    //nextOffset = 0 - not needed since only used if curBlock is set
                 }
             }
             // see if a previous block that is waiting to be freed has any on its free chain
@@ -5128,15 +5126,16 @@ public:
                     CriticalBlock c(finger->crit);
                     if (finger->freeChain)
                     {
-                        HeapletBase::link(finger); // Link once for the reference we save in curBlock
-                                                   // Release (to dec ref count) when no more free blocks in the page
+                        finger->Link(); // Link once for the reference we save in curBlock
+                                        // Release (to dec ref count) when no more free blocks in the page
                         if (finger->isAlive())
                         {
-                            curBlock = (char *) finger;
-                            nextAddr = curBlock + HEAP_ALIGNMENT_SIZE;
+                            curBlock = finger;
+                            nextBase = nullptr; // should never be accessed
+                            nextOffset = HEAP_ALIGNMENT_SIZE; // only use the free chain to allocate
                             atomic_inc(&dataBuffersActive);
-                            HeapletBase::link(finger); // and once for the value we are about to return
-                            DataBufferBase *x = finger->freeChain;
+                            finger->Link(); // and once for the value we are about to return
+                            DataBuffer *x = finger->freeChain;
                             finger->freeChain = x->next;
                             x->next = NULL;
                             if (memTraceLevel >= 4)
@@ -5149,13 +5148,14 @@ public:
                         break;
                 }
             }
-            curBlock = nextAddr = (char *) suballoc_aligned(1, false);
+            nextBase = (char *)suballoc_aligned(1, false);
+            nextOffset = DATA_ALIGNMENT_SIZE;
+            curBlock = (DataBufferBottom *)nextBase;
             atomic_inc(&dataBufferPages);
             assertex(curBlock);
             if (memTraceLevel >= 3)
                     DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() allocated new DataBuffers Page - addr=%p", curBlock);
-            freeChain = ::new(nextAddr) DataBufferBottom(this, freeChain);   // we never allocate the lowest one in the heap - used just for refcounting the rest
-            nextAddr += DATA_ALIGNMENT_SIZE;
+            freeChain = ::new(curBlock) DataBufferBottom(this, freeChain);   // we never allocate the lowest one in the heap - used just for refcounting the rest
         }
     }
 
@@ -5192,11 +5192,17 @@ DataBufferBottom::DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom 
     freeChain = NULL;
 }
 
-void DataBufferBottom::addToFreeChain(DataBufferBase * buffer)
+void DataBufferBottom::addToFreeChain(DataBuffer * buffer)
 {
     CriticalBlock b(crit);
     buffer->next = freeChain;
     freeChain = buffer;
+}
+
+void DataBufferBottom::Release()
+{
+    if (atomic_dec_and_test(&count))
+        released();
 }
 
 void DataBufferBottom::released()
@@ -5212,29 +5218,24 @@ void DataBufferBottom::released()
 
 void DataBufferBottom::noteReleased(const void *ptr)
 {
-    HeapletBase * base = realBase(ptr);
-    if (base == this)
-        DataBufferBase::noteReleased(ptr);
-    else
-        base->noteReleased(ptr);
+    DataBuffer * buffer = queryDataBuffer(ptr);
+    assertex(buffer);
+    buffer->noteReleased(ptr);
 }
 
 void DataBufferBottom::noteLinked(const void *ptr)
 {
-    HeapletBase * base = realBase(ptr);
-    if (base == this)
-        DataBufferBase::noteLinked(ptr);
-    else
-        base->noteLinked(ptr);
+    DataBuffer * buffer = queryDataBuffer(ptr);
+    assertex(buffer);
+    return buffer->noteLinked(ptr);
 }
 
 bool DataBufferBottom::_isShared(const void *ptr) const
 {
-    HeapletBase * base = realBase(ptr);
-    if (base == this)
-        return DataBufferBase::_isShared(ptr);
-    else
-        return base->_isShared(ptr);
+    DataBuffer * buffer = queryDataBuffer(ptr);
+    assertex(buffer);
+    // Because the link counter is shared assume all pointers are shared
+    return true;
 }
 
 memsize_t DataBufferBottom::_capacity() const { throwUnexpected(); }
@@ -5321,6 +5322,9 @@ extern void setDataAlignmentSize(unsigned size)
 {
     if (memTraceLevel >= 3) 
         DBGLOG("RoxieMemMgr: setDataAlignmentSize to %u", size); 
+
+    if ((size == 0) || ((HEAP_ALIGNMENT_SIZE % size) != 0))
+        throw MakeStringException(ROXIEMM_INVALID_MEMORY_ALIGNMENT, "setDataAlignmentSize %u must be a factor of %u", size, (unsigned)HEAP_ALIGNMENT_SIZE);
 
     if (size==0x400 || size==0x2000)
         DATA_ALIGNMENT_SIZE = size;
