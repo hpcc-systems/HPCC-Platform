@@ -32,7 +32,7 @@ from ..regression.suite import Suite
 from ..util.ecl.cc import ECLCC
 from ..util.ecl.command import ECLcmd
 from ..util.expandcheck import ExpandCheck
-from ..util.util import getConfig, queryWuid,  abortWorkunit, getVersionNumbers
+from ..util.util import getConfig, queryWuid,  abortWorkunit, getVersionNumbers, createZAP
 
 
 class Regression:
@@ -78,6 +78,7 @@ class Regression:
         self.dir_ex = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.keyDir), True)
         self.dir_a = os.path.join(self.regressionDir, self.config.archiveDir)
         self.dir_r = os.path.join(self.regressionDir, self.config.resultDir)
+        self.dir_zap =  os.path.join(self.regressionDir,self.config.zapDir)
         logging.debug("Suite Dir      : %s", self.suiteDir)
         logging.debug("Regression Dir : %s", self.regressionDir)
         logging.debug("Result Dir     : %s", self.dir_r)
@@ -85,6 +86,7 @@ class Regression:
         logging.debug("ECL Dir        : %s", self.dir_ec)
         logging.debug("Key Dir        : %s", self.dir_ex)
         logging.debug("Archive Dir    : %s", self.dir_a)
+        logging.debug("ZAP Dir        : %s", self.dir_zap )
 
 
         numOfThreads=1
@@ -126,6 +128,7 @@ class Regression:
         self.createDirectory(self.dir_a)
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
+        self.createDirectory(self.dir_zap)
 
         self.suites[cluster] = Suite(cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir, args, False, fileList)
         self.maxtasks = len(self.suites[cluster].getSuite())
@@ -543,6 +546,8 @@ class Regression:
             else:
                 logging.error("%3d. Fail %s (%d sec)" % (cnt, wuid,  elapsTime),  extra={'taskId':cnt})
                 logging.error("%3d. URL %s" %  (cnt,url),  extra={'taskId':cnt})
+                zapRes = createZAP(wuid,  cnt)
+                logging.error("%3d. Zipped Analysis Package: %s" %  (cnt, zapRes),  extra={'taskId':cnt})
         self.loggermutex.release()
         query.setElapsTime(elapsTime)
         self.exitmutexes[th].release()
