@@ -30,6 +30,10 @@
 
 #ifndef _WIN32
 #include <sys/mman.h>
+# if defined(__linux__)
+   // MADV_HUGEPAGE on CentOS
+#  include <linux/mman.h>
+# endif
 #endif
 
 #if defined(_USE_TBB)

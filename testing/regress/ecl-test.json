@@ -11,6 +11,7 @@
         "keyDir": "ecl/key",
         "archiveDir": "archives",
         "resultDir": "results",
+        "zapDir":"zap",
         "regressionDir": "~/HPCCSystems-regression",
         "logDir": "~/HPCCSystems-regression/log",
         "Clusters": [
