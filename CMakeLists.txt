@@ -131,6 +131,24 @@ endif (APPLE OR WIN32)
 ## CPack install and packaging setup.
 ###
 INCLUDE(InstallRequiredSystemLibraries)
+if ( WIN32 )
+    set ( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE )
+    if (MSVC14)
+        find_file(MSVC14_REDIST "vcredist_${CMAKE_MSVC_ARCH}.exe" HINTS ${MSVC14_REDIST_DIR}/1033 )
+        if (EXISTS "${MSVC14_REDIST}")
+            install ( PROGRAMS ${MSVC14_REDIST} DESTINATION tmp )
+            get_filename_component(MSVC14_REDIST_NAME ${MSVC14_REDIST} NAME)
+            list ( APPEND CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+                ExecWait '$INSTDIR\\\\tmp\\\\${MSVC14_REDIST_NAME} /S'
+            ")
+        else ()
+            MESSAGE(WARNING "-- Unable to locate vcredist_x86.exe")
+        endif ()
+    else ()
+        MESSAGE(WARNING "-- Unknown compiler version")
+    endif ()
+endif ()
+
 if ( PLATFORM )
     set(CPACK_PACKAGE_NAME "hpccsystems-platform")
     set(PACKAGE_FILE_NAME_PREFIX "hpccsystems-platform-${projname}")
