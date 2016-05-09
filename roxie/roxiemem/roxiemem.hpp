@@ -23,6 +23,7 @@
 #include "jdebug.hpp"
 #include "jstats.h"
 #include "errorlist.h"
+#include <atomic>
 
 #ifdef _WIN32
  #ifdef ROXIEMEM_EXPORTS
