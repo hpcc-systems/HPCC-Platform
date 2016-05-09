@@ -151,6 +151,7 @@ public:
 
     virtual ~CPermissionsCache();
 
+    //Returns a shared cache
     static CPermissionsCache* queryInstance()
     {
         {
@@ -161,6 +162,29 @@ public:
             }
         }
         return instance;
+    }
+
+    //Returns a shared cache of a given type
+    //Call this method with a unique class string ("LDAP", "MyOtherSecMgr")
+    //to create a cache shared amongst security managers of the same class
+    static CPermissionsCache* queryInstance(const char * secMgrClass)
+    {
+        if (secMgrClass == nullptr)
+            return queryInstance();
+
+        typedef map<string, CPermissionsCache*> MapCache;
+        static MapCache m_mapCache;
+
+        CriticalBlock block(PCCritSect);
+        MapCache::iterator it = m_mapCache.find(secMgrClass);
+        if (it != m_mapCache.end())//exists in cache
+            return (*it).second;
+        else
+        {
+            CPermissionsCache * instance = new CPermissionsCache();
+            m_mapCache.insert(pair<string, CPermissionsCache*>(secMgrClass, instance));
+            return instance;
+        }
     }
 
     //finds cached permissions for a number of resources and sets them in

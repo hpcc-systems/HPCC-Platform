@@ -536,7 +536,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     int cachetimeout = cfg->getPropInt("@cacheTimeout", 5);
 
     if (cfg->getPropBool("@sharedCache", true))
-        m_permissionsCache = CPermissionsCache::queryInstance();
+        m_permissionsCache = CPermissionsCache::queryInstance(cfg->queryProp("@name"));
     else
         m_permissionsCache = new CPermissionsCache();
 
