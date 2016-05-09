@@ -76,17 +76,15 @@ public:
 class HQL_API UniqueSequenceCounter
 {
 public:
-    inline UniqueSequenceCounter() { value = 0; }
+    inline UniqueSequenceCounter() : value(1) {}
 
     inline unique_id_t next() 
-    { 
-        SpinBlock block(lock);
-        return ++value; 
+    {
+        return value.fetch_add(1, std::memory_order_relaxed);
     }
 
 protected:
-    unique_id_t value;
-    SpinLock lock;
+    std::atomic<unique_id_t> value;
 };
 
 

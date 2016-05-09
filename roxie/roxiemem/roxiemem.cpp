@@ -3710,7 +3710,7 @@ public:
         Owned<IActivityMemoryUsageMap> map = getActivityUsage();
 
         NonReentrantSpinBlock block(peakSpinLock);
-        peakUsageMap.setown(map.getClear());
+        peakUsageMap.swap(map);
     }
 
     //MORE: inline??

@@ -3779,6 +3779,7 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
 
 IInterface * CHqlExpression::queryExistingProperty(ExprPropKind propKind) const
 {
+    //If this was used significantly in a multi threaded environment then reduce the work in the spinblock
     SpinBlock block(*propertyLock);
     CHqlDynamicProperty * cur = attributes;
     while (cur)

@@ -36,7 +36,7 @@ protected:
     CThreadedPersistent threaded;
     rowcount_t processed;
     unsigned __int64 lastCycles;
-    SpinLock cycleLock;
+    SpinLock cycleLock; // MORE: Could probably remove this and use atomic variables instead
 
     virtual void endProcess() = 0;
     virtual void process() { }
