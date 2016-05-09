@@ -151,27 +151,12 @@ public:
 
     virtual ~CPermissionsCache();
 
-    //Returns a shared cache
-    static CPermissionsCache* queryInstance()
-    {
-        {
-            CriticalBlock block(PCCritSect);
-            if (instance == nullptr)
-            {
-                instance = new CPermissionsCache();
-            }
-        }
-        return instance;
-    }
-
     //Returns a shared cache of a given type
     //Call this method with a unique class string ("LDAP", "MyOtherSecMgr")
     //to create a cache shared amongst security managers of the same class
-    static CPermissionsCache* queryInstance(const char * secMgrClass)
+    static CPermissionsCache* queryInstance(const char * _secMgrClass)
     {
-        if (secMgrClass == nullptr)
-            return queryInstance();
-
+        const char * secMgrClass = (_secMgrClass && *_secMgrClass) : _secMgrClass ? "genericSecMgrClass";
         typedef map<string, CPermissionsCache*> MapCache;
         static MapCache m_mapCache;
 
