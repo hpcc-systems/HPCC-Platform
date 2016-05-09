@@ -5034,7 +5034,7 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
     DataBufferBottom *freeChain;
     char * nextBase = nullptr;
     size32_t nextOffset = 0; // offset within a page
-    atomic_t freePending;
+    atomic_uint freePending;
 
     void unlink(DataBufferBottom *goer)
     {
@@ -5070,7 +5070,7 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
                 // NOTE - do NOT put a CriticalBlock c(finger->crit) here since:
                 // 1. It's not needed - no-one modifies finger->nextBottom chain but me and I hold CDataBufferManager::crit
                 // 2. finger->crit is about to get released back to the pool and it's important that it is not locked at the time!
-                if (atomic_read(&finger->okToFree) == 1)
+                if (finger->okToFree.load(std::memory_order_relaxed)) // relaxed since okToFree has the acquire/release synchronization
                 {
                     assert(!finger->isAlive());
                     DataBufferBottom *goer = finger;
@@ -5096,12 +5096,11 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDataBufferManager(size32_t size)
+    CDataBufferManager(size32_t size) : freePending(false)
     {
         assertex(size==DATA_ALIGNMENT_SIZE);
         curBlock = NULL;
         freeChain = NULL;
-        atomic_set(&freePending, 0);
     }
 
     DataBuffer *allocate()
@@ -5111,7 +5110,7 @@ public:
         if (memTraceLevel >= 5)
             DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() curBlock=%p nextAddr=%p:%x", curBlock, nextBase, nextOffset);
 
-        if (atomic_cas(&freePending, 0, 1))
+        if (freePending.exchange(false, std::memory_order_acquire))
             freeUnused();
 
         loop
@@ -5214,9 +5213,8 @@ public:
     }
 };
 
-DataBufferBottom::DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain)
+DataBufferBottom::DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain) : okToFree(false)
 {
-    atomic_set(&okToFree, 0);
     owner = _owner;
     if (ownerFreeChain)
     {
@@ -5257,8 +5255,9 @@ void DataBufferBottom::released()
     unsigned expected = 0;
     if (count.compare_exchange_strong(expected, DEAD_PSEUDO_COUNT, std::memory_order_relaxed))
     {
-        atomic_set(&owner->freePending, 1);
-        atomic_set(&okToFree, 1);
+        //No acquire fence required since the following code doesn't read anything from the object
+        okToFree.store(true, std::memory_order_relaxed);
+        owner->freePending.store(true, std::memory_order_release);
     }
 }
 

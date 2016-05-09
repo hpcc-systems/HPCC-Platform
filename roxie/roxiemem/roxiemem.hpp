@@ -232,7 +232,7 @@ class roxiemem_decl DataBufferBottom : public HeapletBase
 private:
     friend class CDataBufferManager;
     CDataBufferManager * volatile owner;
-    atomic_t okToFree;
+    std::atomic_uint okToFree;      // use uint since it is more efficient on some architectures
     DataBufferBottom *nextBottom;   // Used when chaining them together in CDataBufferManager 
     DataBufferBottom *prevBottom;   // Used when chaining them together in CDataBufferManager 
     DataBuffer *freeChain;
