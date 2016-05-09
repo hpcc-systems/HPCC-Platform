@@ -2314,7 +2314,13 @@ void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, S
 
     StringBuffer destFile;
     if (isAbsolutePath(destFileIn))
+    {
         destFile.set(destFileIn);
+        // if multiple DZs per computer, use umask of single DZ returned
+        dropZone->getUMask(maskBuf);
+        if (maskBuf.length())
+            mask.set(maskBuf.str());
+    }
     else
     {
         destFile.set(directory.str());
