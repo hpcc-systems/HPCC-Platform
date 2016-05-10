@@ -151,12 +151,12 @@ public:
 
     virtual ~CPermissionsCache();
 
-    //Returns a shared cache of a given type
+    //Returns a shared cache of a given class type.
     //Call this method with a unique class string ("LDAP", "MyOtherSecMgr")
     //to create a cache shared amongst security managers of the same class
     static CPermissionsCache* queryInstance(const char * _secMgrClass)
     {
-        const char * secMgrClass = (_secMgrClass && *_secMgrClass) : _secMgrClass ? "genericSecMgrClass";
+        const char * secMgrClass = (_secMgrClass != nullptr  &&  *_secMgrClass) ? _secMgrClass : "genericSecMgrClass";
         typedef map<string, CPermissionsCache*> MapCache;
         static MapCache m_mapCache;
 
