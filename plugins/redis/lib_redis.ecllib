@@ -35,6 +35,8 @@ EXPORT redis := SERVICE : plugin('redis'), namespace('RedisPlugin')
   REAL          GetReal(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRGetDouble';
   DATA          GetData(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRGetData';
 
+  INTEGER8 INCRBY(CONST VARSTRING key, INTEGER8 value = 1, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='SyncRINCRBY';
+
   BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,once,context,entrypoint='RExist';
   FlushDB(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='RClear';
   Delete(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='RDel';
@@ -76,6 +78,8 @@ EXPORT RedisServer(VARSTRING options, VARSTRING password = '', UNSIGNED4 timeout
   EXPORT GetUnsigned(VARSTRING key, INTEGER4 database = 0) := redis.GetUnsigned(key, options, database, password, timeout, cacheConnections);
   EXPORT     GetData(VARSTRING key, INTEGER4 database = 0) :=     redis.GetData(key, options, database, password, timeout, cacheConnections);
 
+  EXPORT INCRBY(VARSTRING key, INTEGER8 value = 1) := redis.INCRBY(key, value, options, database, password, timeout, cacheConnections);
+
   EXPORT Exists(VARSTRING key, INTEGER4 database = 0) := redis.Exists(key, options, database, password, timeout, cacheConnections);
   EXPORT FlushDB(INTEGER4 database = 0) := redis.FlushDB(options, database, password, timeout, cacheConnections);
   EXPORT Delete(VARSTRING key, INTEGER4 database = 0) := redis.Delete(key, options, database, password, timeout, cacheConnections);
@@ -116,6 +120,8 @@ EXPORT RedisServerWithoutTimeout(VARSTRING options, VARSTRING password = '', BOO
   EXPORT  GetInteger(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=  redis.GetInteger(key, options, database, password, timeout, cacheConnections);
   EXPORT GetUnsigned(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.GetUnsigned(key, options, database, password, timeout, cacheConnections);
   EXPORT     GetData(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) :=     redis.GetData(key, options, database, password, timeout, cacheConnections);
+
+  EXPORT INCRBY(VARSTRING key, INTEGER8 value = 1, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.INCRBY(key, value, options, database, password, timeout, cacheConnections);
 
   EXPORT Exists(VARSTRING key, INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.Exists(key, options, database, password, timeout, cacheConnections);
   EXPORT FlushDB(INTEGER4 database = 0, UNSIGNED4 timeout = 1000) := redis.FlushDB(options, database, password, timeout, cacheConnections);

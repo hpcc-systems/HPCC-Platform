@@ -76,6 +76,11 @@ REAL          GetReal(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 dat
 DATA          GetData(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
 ```
 
+###Numeric
+```
+INTEGER8 INCRBY(CONST VARSTRING key, INTEGER8 value = 1, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+```
+
 ###Utility
 ```
 BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
