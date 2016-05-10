@@ -601,9 +601,10 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     {
         StringBuffer umaskStr;
         options->getProp(ANumask, umaskStr);
+        char *eptr = '\0';
         errno = 0;
-        fileUmask = (int)strtol(umaskStr.str(), NULL, 8);
-        if (errno)
+        fileUmask = (int)strtol(umaskStr.str(), &eptr, 8);
+        if (errno || *eptr != '\0')
         {
             LOG(MCdebugInfo, job, "Invalid umask value <%s> ignored", umaskStr.str());
             fileUmask = -1;
