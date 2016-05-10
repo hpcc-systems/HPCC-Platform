@@ -217,7 +217,7 @@ public:
         {
             StringBuffer filesTried;
             unsigned tries = 0;
-            bool firstTime = true; // first time try the "fast / cache" way - if that fails - try original away - if that still fails, error
+            bool firstTime = true;
             RoxieFileStatus fileStatus = FileNotFound;
 
             loop
@@ -226,7 +226,7 @@ public:
                     currentIdx = 0;
                 if (tries==sources.length())
                 {
-                    if (firstTime)  // if first time - reset and try again - non cache way
+                    if (firstTime)  // if first time - reset and try again
                     {
                         firstTime = false;
                         tries = 0;
@@ -245,14 +245,6 @@ public:
                         throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Pretending to fail on an open");
 #endif
                     IFile *f = &sources.item(currentIdx);
-                    if (firstTime)
-                        cacheFileConnect(f, dafilesrvLookupTimeout);  // set timeout to 10 seconds
-                    else
-                    {
-                        if (traceLevel > 10)
-                            DBGLOG("Looking for file using non-cached file open");
-                    }
-
                     fileStatus = queryFileCache().fileUpToDate(f, fileSize, fileDate, crc, isCompressed, false);
                     if (fileStatus == FileIsValid)
                     {
@@ -605,7 +597,6 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             IFile *f;
         } autoDisconnector(f, autoDisconnect);
 
-        cacheFileConnect(f, dafilesrvLookupTimeout);  // set timeout to 10 seconds
         if (f->exists())
         {
             // only check size if specified

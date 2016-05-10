@@ -2010,58 +2010,6 @@ public:
     }
 };
 
-void clientCacheFileConnect(SocketEndpoint &_ep,unsigned timeout)
-{
-    if (!timeout) {
-        SocketEndpoint ep(_ep);
-        setDafsEndpointPort(ep);
-        Owned<CRemoteFile> cfile = new CRemoteFile(ep, "null");
-        cfile->connect();
-        return; // frees file and adds its socket to cache
-    }
-    // timeout needed so start a thread (that may become orphaned)
-    class cThread: public Thread
-    {
-        SocketEndpoint ep;
-    public:
-        cThread(SocketEndpoint &_ep)
-            : Thread("cacheFileConnect")
-        {
-            ep = _ep;
-        }
-        int run()
-        {
-            try {
-                clientCacheFileConnect(ep,0);
-            }
-            catch (IException *e) {
-                CriticalBlock block(sect);
-                except.setown(e);
-            }
-            return 0;
-        }
-        Owned<IException> except;
-        CriticalSection sect;
-        
-    } *thread;
-    thread = new cThread(_ep);
-    thread->start();
-    IException *e =NULL;
-    if (!thread->join(timeout)) {
-        StringBuffer msg("Timed out connecting to ");
-        _ep.getUrlStr(msg);
-        e =  createDafsException(RFSERR_AuthenticateFailed,msg.str());
-    }
-    {
-        CriticalBlock block(thread->sect);
-        if (!e&&thread->except) 
-            e = thread->except.getClear();
-    }
-    thread->Release();
-    if (e)
-        throw e;
-}
-
 void clientAddSocketToCache(SocketEndpoint &ep,ISocket *socket)
 {
     CriticalBlock block(CConnectionTable::crit); 

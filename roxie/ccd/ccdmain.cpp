@@ -678,6 +678,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         lowTimeout = topology->getPropInt("@lowTimeout", 10000);
         highTimeout = topology->getPropInt("@highTimeout", 2000);
         slaTimeout = topology->getPropInt("@slaTimeout", 2000);
+        unsigned remoteConnectTimeout = topology->getPropInt("@remoteConnectTimeout", 10000);
+        unsigned remoteReadTimeout = topology->getPropInt("@remoteReadTimeout", 0);
+        setRemoteFileTimeouts(remoteConnectTimeout, remoteReadTimeout);
         parallelLoopFlowLimit = topology->getPropInt("@parallelLoopFlowLimit", 100);
         perChannelFlowLimit = topology->getPropInt("@perChannelFlowLimit", 10);
         copyResources = topology->getPropBool("@copyResources", true);
