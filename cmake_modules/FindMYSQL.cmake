@@ -26,7 +26,8 @@ IF (NOT MYSQL_FOUND)
   IF (WIN32)
     SET (mysql_lib "libmysql")
   ELSE()
-    SET (mysql_lib "mysqlclient")
+    SET (mysql_lib "mysqlclient_r")    # Use the re-entrant version if it exists
+    SET (mysql_lib_alt "mysqlclient")  # (but newer versions do not make the distinction and supply just the one)
   ENDIF()
   IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (UNIX)
@@ -49,6 +50,8 @@ IF (NOT MYSQL_FOUND)
         "${EXTERNALS_DIRECTORY}/mysql/include" NO_DEFAULT_PATH)
       FIND_LIBRARY (MYSQL_LIBRARIES NAMES ${mysql_lib} PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}/lib"
         "${EXTERNALS_DIRECTORY}/mysql/${osdir}" "${EXTERNALS_DIRECTORY}/mysql/lib" NO_DEFAULT_PATH)
+      FIND_LIBRARY (MYSQL_LIBRARIES NAMES ${mysql_lib_alt} PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}/lib"
+        "${EXTERNALS_DIRECTORY}/mysql/${osdir}" "${EXTERNALS_DIRECTORY}/mysql/lib" NO_DEFAULT_PATH)
     ENDIF()
   ENDIF()
 
@@ -56,6 +59,7 @@ IF (NOT MYSQL_FOUND)
     # if we didn't find in externals, look in system include path
     FIND_PATH (MYSQL_INCLUDE_DIR NAMES mysql.h PATH_SUFFIXES mysql)
     FIND_LIBRARY (MYSQL_LIBRARIES NAMES ${mysql_lib} PATH_SUFFIXES mysql)
+    FIND_LIBRARY (MYSQL_LIBRARIES NAMES ${mysql_lib_alt} PATH_SUFFIXES mysql)
   endif()
 
   include(FindPackageHandleStandardArgs)
