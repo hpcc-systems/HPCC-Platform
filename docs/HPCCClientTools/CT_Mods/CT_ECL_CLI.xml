@@ -2393,6 +2393,406 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
           </informaltable></para>
       </sect2>
 
+      <sect2 id="eclpackagemapaddpart" role="brk">
+        <title>ecl packagemap add-part</title>
+
+        <para><emphasis role="bold">ecl packagemap add-part &lt;target&gt;
+        &lt;pmid&gt; &lt;filename&gt; </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl packagemap add-part roxie multipart.pkg addresses.pkg 
+</programlisting>
+
+        <para>The packagemap add-part command adds additional packagemap
+        content to an existing packagemap</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap add-part</entry>
+
+                  <entry>Calls the packagemap add-part command.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>add-part</entry>
+
+                  <entry><para>Adds additional packagemap content to an
+                  existing packagemap</para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>Name of target to use when adding packagemap
+                  part</entry>
+                </row>
+
+                <row>
+                  <entry>pmid</entry>
+
+                  <entry>Identifier of packagemap to add the part to</entry>
+                </row>
+
+                <row>
+                  <entry>filename</entry>
+
+                  <entry>one or more part files</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--part-name</entry>
+
+                  <entry>Name of part being added (defaults to
+                  filename)</entry>
+                </row>
+
+                <row>
+                  <entry>--delete-prev</entry>
+
+                  <entry>Replace an existing part with matching name</entry>
+                </row>
+
+                <row>
+                  <entry> --daliip=&lt;ip&gt;</entry>
+
+                  <entry>IP of the remote Dali to use for logical file
+                  lookups</entry>
+                </row>
+
+                <row>
+                  <entry>--global-scope</entry>
+
+                  <entry>The specified packagemap is shared across multiple
+                  targets</entry>
+                </row>
+
+                <row>
+                  <entry>--source-process=&lt;value&gt;</entry>
+
+                  <entry>Process cluster to copy files from</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Do not fail if foreign files are used in
+                  packagemap</entry>
+                </row>
+
+                <row>
+                  <entry>--preload-all</entry>
+
+                  <entry>Set preload files option for all packages</entry>
+                </row>
+
+                <row>
+                  <entry>--update-super-files </entry>
+
+                  <entry>Update local DFS superfiles if remote DALI has
+                  changed</entry>
+                </row>
+
+                <row>
+                  <entry>--update-clone-from</entry>
+
+                  <entry>Update local clone from location if remote DALI has
+                  changed</entry>
+                </row>
+
+                <row>
+                  <entry>--dont-append-cluster</entry>
+
+                  <entry>Use only to avoid locking issues due to adding
+                  cluster to file</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagemapgetpart" role="brk">
+        <title>ecl packagemap get-part</title>
+
+        <para><emphasis role="bold">ecl packagemap get-part &lt;target&gt;
+        &lt;packagemap&gt; &lt;partname&gt; </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl packagemap get-part roxie multipart.pkg contacts
+</programlisting>
+
+        <para>The get-part command fetches the given part from the given
+        packagemap <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap get-part</entry>
+
+                  <entry>Calls the packagemap get-part command.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>get-part</entry>
+
+                  <entry><para>Fetches the given part from the given
+                  packagemap </para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>Name of target to use when adding packagemap
+                  part</entry>
+                </row>
+
+                <row>
+                  <entry>packagemap</entry>
+
+                  <entry>Name of the packagemap containing the part</entry>
+                </row>
+
+                <row>
+                  <entry>partname</entry>
+
+                  <entry>Name of the part to retrieve </entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--global-scope</entry>
+
+                  <entry>The specified packagemap is sharable across multiple
+                  targets</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagemapremovepart" role="brk">
+        <title>ecl packagemap remove-part</title>
+
+        <para><emphasis role="bold">ecl packagemap remove-part &lt;target&gt;
+        &lt;pmid&gt; &lt;partname&gt; </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl packagemap remove-part roxie multipart.pkg contacts
+</programlisting>
+
+        <para>The remove-part command will remove the given part from the
+        given packagemap</para>
+
+        <para></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="175.55pt" />
+
+            <colspec colwidth="384.85pt" />
+
+            <tbody>
+              <row>
+                <entry>ecl packagemap remove-part</entry>
+
+                <entry>Calls the packagemap remove-part command.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Actions</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>remove-part</entry>
+
+                <entry><para>Removes the given part from the given
+                packagemap</para></entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Arguments</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>target</entry>
+
+                <entry>Name of target to use </entry>
+              </row>
+
+              <row>
+                <entry>packagemap</entry>
+
+                <entry>Name of the packagemap containing the part</entry>
+              </row>
+
+              <row>
+                <entry>partname</entry>
+
+                <entry>Name of the part to remove</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Options</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>--global-scope</entry>
+
+                <entry>The specified packagemap is sharable across multiple
+                targets</entry>
+              </row>
+
+              <row>
+                <entry>-v, --verbose</entry>
+
+                <entry>Output additional tracing information</entry>
+              </row>
+
+              <row>
+                <entry>-s, --server</entry>
+
+                <entry>The IP Address or hostname of ESP server running ECL
+                Watch services</entry>
+              </row>
+
+              <row>
+                <entry>--port</entry>
+
+                <entry>The ECL Watch services port (Default is 8010)</entry>
+              </row>
+
+              <row>
+                <entry>-ssl</entry>
+
+                <entry>Use SSL to secure the connection to the server.</entry>
+              </row>
+
+              <row>
+                <entry>-u, --username</entry>
+
+                <entry>The username (if necessary)</entry>
+              </row>
+
+              <row>
+                <entry>-pw, --password</entry>
+
+                <entry>The password (if necessary)</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+      </sect2>
+
       <sect2 id="eclpackagevalidate" role="brk">
         <title>ecl packagemap validate</title>
 
