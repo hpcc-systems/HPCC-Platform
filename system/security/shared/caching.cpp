@@ -210,7 +210,10 @@ void CResPermissionsCache::remove(SecResourceType rtype, const char* resourcenam
 
 CPermissionsCache::~CPermissionsCache()
 {
-    g_mapCache.clear();
+    {
+        CriticalBlock block(PCCritSect);
+        g_mapCache.erase(m_secMgrClass.str());
+    }
     flush();
 }
 

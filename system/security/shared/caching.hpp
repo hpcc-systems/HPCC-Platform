@@ -143,13 +143,14 @@ class CPermissionsCache : public CInterface, implements IInterface
 public:
     IMPLEMENT_IINTERFACE
 
-    CPermissionsCache()
+    CPermissionsCache(const char * _secMgrClass = nullptr)
     {
         m_cacheTimeout = 300;
         m_transactionalEnabled = false;
         m_secMgr = NULL;
         m_lastManagedFileScopesRefresh = 0;
         m_defaultPermission = SecAccess_Unknown;
+        m_secMgrClass.set(_secMgrClass);
     }
 
     virtual ~CPermissionsCache();
@@ -170,7 +171,7 @@ public:
         }
         else
         {
-            CPermissionsCache * instance = new CPermissionsCache();
+            CPermissionsCache * instance = new CPermissionsCache(_secMgrClass);
             g_mapCache.insert(pair<string, CPermissionsCache*>(secMgrClass, instance));
             return instance;
         }
@@ -218,6 +219,8 @@ private:
 
     MapUserCache m_userCache;
     mutable ReadWriteLock m_userCacheRWLock;    //guards m_userCache
+
+    StringAttr                  m_secMgrClass;
 
     //Managed File Scope support
     int                         m_defaultPermission;
