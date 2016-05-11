@@ -4756,7 +4756,6 @@ class CSocketEpollHandler: public CInterface, implements ISocketSelectHandler
 {
     CSocketEpollThread *epollthread;
     CriticalSection sect;
-    bool started;
     StringAttr epolltrace;
 public:
     IMPLEMENT_IINTERFACE;
