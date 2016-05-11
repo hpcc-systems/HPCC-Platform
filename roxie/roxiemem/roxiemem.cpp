@@ -1456,9 +1456,14 @@ protected:
     inline void inlineReleasePointer(char * ptr)
     {
         unsigned r_ptr = makeRelative(ptr);
+#ifdef HAS_EFFICIENT_CAS
         unsigned old_blocks = r_blocks.load(std::memory_order_relaxed);  // can be relaxed because the cas will fail if not up to date.
+#endif
         loop
         {
+#ifndef HAS_EFFICIENT_CAS
+            unsigned old_blocks = r_blocks.load(std::memory_order_relaxed);  // can be relaxed because the cas will fail if not up to date.
+#endif
             //To prevent the ABA problem the top part of r_blocks stores an incrementing tag
             //which is incremented whenever something is added to the free list
             * (unsigned *) ptr = (old_blocks & RBLOCKS_OFFSET_MASK);
@@ -1466,7 +1471,7 @@ protected:
             unsigned new_blocks = new_tag | r_ptr;
 
             //memory_order_release ensures updates to next and count etc are available once the cas completes.
-            if (r_blocks.compare_exchange_weak(old_blocks, new_blocks, std::memory_order_release))
+            if (compare_exchange_efficient(r_blocks, old_blocks, new_blocks, std::memory_order_release, std::memory_order_relaxed))
             {
                 //Try and add it to the potentially free page chain if it isn't already present.
                 //It is impossible to make it more restrictive -e.g., only when freeing and full because of
@@ -2973,9 +2978,15 @@ char * ChunkedHeaplet::allocateChunk()
     //The spin lock for the heap this chunk belongs to must be held when this function is called
     char *ret;
     const size32_t size = chunkSize;
+#ifdef HAS_EFFICIENT_CAS
     unsigned old_blocks = r_blocks.load(std::memory_order_acquire); // acquire ensures that *(unsigned *)ret is up to date
+#endif
     loop
     {
+#ifndef HAS_EFFICIENT_CAS
+        unsigned old_blocks = r_blocks.load(std::memory_order_acquire); // acquire ensures that *(unsigned *)ret is up to date
+#endif
+
         unsigned r_ret = (old_blocks & RBLOCKS_OFFSET_MASK);
         if (r_ret)
         {
@@ -2989,7 +3000,7 @@ char * ChunkedHeaplet::allocateChunk()
             //To avoid that a tag is stored in the top bits of r_blocks which is modified whenever an item is added
             //onto the free list.  The offsets in the freelist do not need tags.
             unsigned new_blocks = (old_blocks & RBLOCKS_CAS_TAG_MASK) | next;
-            if (r_blocks.compare_exchange_weak(old_blocks, new_blocks, std::memory_order_acquire))
+            if (compare_exchange_efficient(r_blocks, old_blocks, new_blocks, std::memory_order_acquire, std::memory_order_acquire))
                 break;
 
             //NOTE: Currently I think a lock is always held before allocating from a chunk, so I'm not sure there is an ABA problem!
