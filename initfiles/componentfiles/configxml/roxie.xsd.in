@@ -706,24 +706,10 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="remoteConnectTimeout" type="xs:integer" use="optional" default="10000">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Timeout (in ms) for remote file connections</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="remoteFilesExpire" type="xs:integer" use="optional" default="3600000">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Period (in ms) of inactivity before a remote datafile handle is closed</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="remoteReadTimeout" type="xs:integer" use="optional" default="0">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Timeout (in ms) for remote file reads</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
