@@ -210,6 +210,7 @@ void CResPermissionsCache::remove(SecResourceType rtype, const char* resourcenam
 
 CPermissionsCache::~CPermissionsCache()
 {
+    g_mapCache.clear();
     flush();
 }
 

@@ -18,7 +18,7 @@
 #ifndef _CACHING_HPP__
 #define _CACHING_HPP__
 #pragma warning(disable:4786)
- 
+
 #include "jliball.hpp"
 #include "seclib.hpp"
 #undef new
@@ -39,10 +39,10 @@ using std::string;
 
 typedef pair<time_t, ISecResource*> ResPermCacheEntry;
 typedef pair<string, SecResourceType> SecCacheKeyEntry;
-//this a cache for a given user that stores permissions for individual resources 
-//along with their timestamps when they were fetched.  The cache is periodically 
+//this a cache for a given user that stores permissions for individual resources
+//along with their timestamps when they were fetched.  The cache is periodically
 //cleaned up to remove stale (older than 5 minutes) entries - triggered by a lookup
-//itself.  Note that each user has an instance of this cache, which is stored in 
+//itself.  Note that each user has an instance of this cache, which is stored in
 //another map (CPermissionsCache) as defined below.
 //
 //
@@ -135,11 +135,14 @@ public:
 // main cache that stores all user-specific caches (defined by CResPermissionsCache above)
 //
 static CriticalSection PCCritSect;//guards instance factory
-static CPermissionsCache* instance = nullptr;//accessed via CPermissionsCache::queryInstance()
+typedef map<string, CPermissionsCache*> MapCache;
+static MapCache g_mapCache;
 
-class CPermissionsCache
+class CPermissionsCache : public CInterface, implements IInterface
 {
 public:
+    IMPLEMENT_IINTERFACE
+
     CPermissionsCache()
     {
         m_cacheTimeout = 300;
@@ -151,23 +154,24 @@ public:
 
     virtual ~CPermissionsCache();
 
-    //Returns a shared cache of a given class type.
+    //Returns an owned reference to a shared cache of a given class type.
     //Call this method with a unique class string ("LDAP", "MyOtherSecMgr")
     //to create a cache shared amongst security managers of the same class
-    static CPermissionsCache* queryInstance(const char * _secMgrClass)
+    static CPermissionsCache* getInstance(const char * _secMgrClass)
     {
         const char * secMgrClass = (_secMgrClass != nullptr  &&  *_secMgrClass) ? _secMgrClass : "genericSecMgrClass";
-        typedef map<string, CPermissionsCache*> MapCache;
-        static MapCache m_mapCache;
 
         CriticalBlock block(PCCritSect);
-        MapCache::iterator it = m_mapCache.find(secMgrClass);
-        if (it != m_mapCache.end())//exists in cache
+        MapCache::iterator it = g_mapCache.find(secMgrClass);
+        if (it != g_mapCache.end())//exists in cache
+        {
+            LINK((*it).second);
             return (*it).second;
+        }
         else
         {
             CPermissionsCache * instance = new CPermissionsCache();
-            m_mapCache.insert(pair<string, CPermissionsCache*>(secMgrClass, instance));
+            g_mapCache.insert(pair<string, CPermissionsCache*>(secMgrClass, instance));
             return instance;
         }
     }
