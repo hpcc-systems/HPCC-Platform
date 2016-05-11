@@ -67,7 +67,7 @@ static const unsigned char charmap[] = {
     0370, 0371, 0372, 0373, 0374, 0375, 0376, 0377,
 };
 
-unsigned int Utils::hash (register const char *str, register unsigned int len)
+unsigned int Utils::hash (const char *str, unsigned int len)
 {
   static unsigned short asso_values[] =
     {
@@ -292,7 +292,7 @@ __int64 Utils::getLine(__int64 total_len, __int64 cur_pos, const char* buf, int&
     return cur_pos;
 }
 
-int Utils::strncasecmp(const char* s1, const char* s2, register size32_t n) 
+int Utils::strncasecmp(const char* s1, const char* s2, size32_t n)
 {
     bool s1isnull = (s1 == NULL);
     bool s2isnull = (s2 == NULL);
@@ -301,7 +301,7 @@ int Utils::strncasecmp(const char* s1, const char* s2, register size32_t n)
 
     if (n != 0) 
     {
-        register const unsigned char *cm = charmap,
+        const unsigned char *cm = charmap,
                 *us1 = (const unsigned char *)s1,
                 *us2 = (const unsigned char *)s2;
 
@@ -337,7 +337,7 @@ int Utils::strcasecmp(const char* s1, const char* s2)
     if(s1isnull || s2isnull)
         return s1isnull - s2isnull;
 
-    register const unsigned char *cm = charmap,
+    const unsigned char *cm = charmap,
             *us1 = (const unsigned char *)s1,
             *us2 = (const unsigned char *)s2;
 
