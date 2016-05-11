@@ -15,15 +15,14 @@
 ################################################################################
 
 
-# - Try to find the TBB library
+# - Try to find the TBB malloc proxy library
 # Once done this will define
 #
-#  TBB_FOUND - system has the TBB library
-#  TBB_INCLUDE_DIR - the TBB include directory
-#  TBB_LIBRARIES - The libraries needed to use TBB
+#  TBBMALLOC_FOUND - system has the TBBMALLOC library
+#  TBBMALLOC_LIBRARIES - The libraries needed to use TBBMALLOC
 
-IF (NOT TBB_FOUND)
-  SET (tbb_lib "tbb")
+IF (NOT TBBMALLOC_FOUND)
+  SET (tbbmalloc_lib "tbbmalloc_proxy")
 
   IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (WIN32)
@@ -38,22 +37,19 @@ IF (NOT TBB_FOUND)
       SET (tbbver "unknown")
     ENDIF()
     IF (NOT ("${osdir}" STREQUAL "unknown"))
-      FIND_PATH (TBB_INCLUDE_DIR NAMES tbb/tbb.h PATHS "${EXTERNALS_DIRECTORY}/tbb/${tbbver}/include" NO_DEFAULT_PATH)
-      FIND_LIBRARY (TBB_LIBRARIES NAMES ${tbb_lib} PATHS "${EXTERNALS_DIRECTORY}/tbb/${tbbver}/lib/${osdir}" NO_DEFAULT_PATH)
+      FIND_LIBRARY (TBBMALLOC_LIBRARIES NAMES ${tbbmalloc_lib} PATHS "${EXTERNALS_DIRECTORY}/tbb/${tbbver}/lib/${osdir}" NO_DEFAULT_PATH)
     ENDIF()
   ENDIF()
 
   if (USE_NATIVE_LIBRARIES)
     # if we didn't find in externals, look in system include path
-    FIND_PATH (TBB_INCLUDE_DIR NAMES tbb/tbb.h)
-    FIND_LIBRARY (TBB_LIBRARIES NAMES ${tbb_lib})
+    FIND_LIBRARY (TBBMALLOC_LIBRARIES NAMES ${tbbmalloc_lib})
   endif()
 
   include(FindPackageHandleStandardArgs)
-  find_package_handle_standard_args(TBB DEFAULT_MSG
-    TBB_LIBRARIES
-    TBB_INCLUDE_DIR
+  find_package_handle_standard_args(TBBMALLOC DEFAULT_MSG
+    TBBMALLOC_LIBRARIES
   )
 
-  MARK_AS_ADVANCED(TBB_INCLUDE_DIR TBB_LIBRARIES)
+  MARK_AS_ADVANCED(TBBMALLOC_LIBRARIES)
 ENDIF()
