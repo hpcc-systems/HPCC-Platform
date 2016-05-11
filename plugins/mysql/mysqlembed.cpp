@@ -1040,13 +1040,17 @@ struct MySQLOptionDefinition
 MySQLOptionDefinition options[] =
 {
   addoption(MYSQL_DEFAULT_AUTH, ParamTypeString),
+#if (MYSQL_VERSION_ID >= 50607)
   addoption(MYSQL_ENABLE_CLEARTEXT_PLUGIN, ParamTypeBool),
+#endif
   addoption(MYSQL_INIT_COMMAND, ParamTypeString),
+#if (MYSQL_VERSION_ID >= 50601)
   addoption(MYSQL_OPT_BIND, ParamTypeString),
+#endif
+#if (MYSQL_VERSION_ID >= 50610)
   addoption(MYSQL_OPT_CAN_HANDLE_EXPIRED_PASSWORDS, ParamTypeBool),
+#endif
   addoption(MYSQL_OPT_COMPRESS, ParamTypeNone),
-  addoption(MYSQL_OPT_CONNECT_ATTR_DELETE, ParamTypeString),
-  addoption(MYSQL_OPT_CONNECT_ATTR_RESET, ParamTypeNone),
   addoption(MYSQL_OPT_CONNECT_TIMEOUT, ParamTypeUInt),
   addoption(MYSQL_OPT_GUESS_CONNECTION, ParamTypeNone),
   addoption(MYSQL_OPT_LOCAL_INFILE, ParamTypeUInt),
@@ -1058,16 +1062,18 @@ MySQLOptionDefinition options[] =
   addoption(MYSQL_OPT_PROTOCOL, ParamTypeUInt),
   addoption(MYSQL_OPT_READ_TIMEOUT, ParamTypeUInt),
   addoption(MYSQL_OPT_RECONNECT, ParamTypeBool),
+#if (MYSQL_VERSION_ID >= 50603)
   addoption(MYSQL_OPT_SSL_CA, ParamTypeString),
   addoption(MYSQL_OPT_SSL_CAPATH, ParamTypeString),
   addoption(MYSQL_OPT_SSL_CERT, ParamTypeString),
   addoption(MYSQL_OPT_SSL_CIPHER, ParamTypeString),
   addoption(MYSQL_OPT_SSL_CRL, ParamTypeString),
   addoption(MYSQL_OPT_SSL_CRLPATH, ParamTypeString),
+  addoption(MYSQL_OPT_SSL_KEY, ParamTypeString),
+#endif
 #if (MYSQL_VERSION_ID >= 50703)
   addoption(MYSQL_OPT_SSL_ENFORCE, ParamTypeBool),
 #endif
-  addoption(MYSQL_OPT_SSL_KEY, ParamTypeString),
 #if (MYSQL_VERSION_ID >= 50711)
   addoption(MYSQL_OPT_SSL_MODE, ParamTypeUInt),
 #endif
@@ -1084,7 +1090,9 @@ MySQLOptionDefinition options[] =
   addoption(MYSQL_READ_DEFAULT_GROUP, ParamTypeString),
   addoption(MYSQL_REPORT_DATA_TRUNCATION, ParamTypeBool),
   addoption(MYSQL_SECURE_AUTH, ParamTypeBool),
+#if (MYSQL_VERSION_ID >= 50606)
   addoption(MYSQL_SERVER_PUBLIC_KEY, ParamTypeString),
+#endif
   addoption(MYSQL_SET_CHARSET_DIR, ParamTypeString),
   addoption(MYSQL_SET_CHARSET_NAME, ParamTypeString),
   addoption(MYSQL_SET_CLIENT_IP, ParamTypeString),
