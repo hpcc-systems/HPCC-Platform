@@ -79,7 +79,6 @@ extern void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const 
 
 // client only
 extern void clientSetDaliServixSocketCaching(bool set);
-extern void clientCacheFileConnect(SocketEndpoint &ep,unsigned timeout);
 extern void clientDisconnectRemoteFile(IFile *file);
 extern void clientDisconnectRemoteIoOnExit(IFileIO *fileio,bool set);
 
