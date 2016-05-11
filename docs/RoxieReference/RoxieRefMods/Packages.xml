@@ -381,7 +381,7 @@
 ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
 </programlisting>
 
-    <para>And then activate the entire packagemap (which consists of all part
+    <para>And then activate the entire packagemap (which consists of all parts
     added to the given target_pmid):</para>
 
     <programlisting>ecl packagemap activate &lt;target&gt; target_pmid</programlisting>
