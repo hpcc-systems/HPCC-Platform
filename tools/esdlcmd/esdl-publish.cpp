@@ -75,10 +75,10 @@ public:
     virtual void usage()
     {
          printf(
-                "   -s, --server <ip>            IP of server running ESDL services\n"
+                "   -s, --server <ip>            IP of server running WsESDLConfig service\n"
                 "   --port <port>                ESDL services port\n"
-                "   -u, --username <name>        Username for accessing ESDL services\n"
-                "   -pw, --password <pw>         Password for accessing ESDL services\n"
+                "   -u, --username <name>        Username for accessing WsESDLConfig service\n"
+                "   -pw, --password <pw>         Password for accessing WsESDLConfig service\n"
                 "   --version <ver>              ESDL service version\n"
                 );
         EsdlCmdCommon::usage();
@@ -291,7 +291,7 @@ public:
                 "   ESDLServiceName                                  The Name of the ESDL Service (as defined in the ESDL Definition)\n"
 
                 "\nOptions (use option flag followed by appropriate value):\n"
-                "   --config <file|xml>                              Configuration XML for all methods associated with the target Service\n"
+                "   --config <file|\"xml\">                              Configuration XML for all methods associated with the target Service\n"
                 "   --overwrite                                      Overwrite binding if it already exists\n");
 
                 EsdlPublishCmdCommon::usage();
@@ -449,21 +449,22 @@ public:
     void usage()
     {
         printf( "\nUsage:\n\n"
-                "esdl unbind-service <TargetESPProcessName> <TargetESPBindingPort | TargetESPServiceName> [command options]\n\n"
-                "   TargetESPProcessName                             The target ESP Process name\n"
-                "   TargetESPBindingPort | TargetESPServiceName      Either target ESP binding port or target ESP service name\n");
+                "esdl unbind-service <TargetESPProcessName> <TargetESPServiceName> [command options]\n\n"
+                "   TargetESPProcessName      The target ESP Process name\n"
+                "   TargetESPServiceName      The target ESP Service name\n"
+                "\n\nOptions:\n"
+              );
 
         EsdlPublishCmdCommon::usage();
 
-        printf( "\n   Use this command to unpublish ESDL Service based bindings.\n"
-                "   To unbind an ESDL Service, provide the target ESP process name\n"
+        printf( "\n   Use this command to un-bind ESDL Service based bindings.\n"
+                "   To un-bind an ESDL Service, provide the target ESP process name\n"
                 "   (ESP Process which will host the ESP Service as defined in the ESDL Definition.) \n"
-                "   It is also necessary to provide the Port on which this service is configured to run (ESP Binding),\n"
-                "   and the name of the service you are unbinding.\n"
+                "   It is also necessary to provide the name of the service.\n"
                 );
 
         printf("\nExample:"
-                ">esdl unbind-service myesp 8088 \n"
+                ">esdl unbind-service myesp wsmyservice \n"
                 );
     }
 
