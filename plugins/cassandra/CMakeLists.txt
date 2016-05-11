@@ -28,7 +28,7 @@ project(cassandraembed)
 # When there is (and the distros catch up) we may want to add them as dependencies here
 # until then, we build the required libraries from source
 # Build libuv, required by the cassandra driver but not available on all distros
-if(PLATFORM OR CASSANDRAEMBED)
+if(USE_CASSANDRA OR CASSANDRAEMBED)
   if(APPLE)
     add_custom_command(
       OUTPUT ${PROJECT_BINARY_DIR}/libuv.dylib
