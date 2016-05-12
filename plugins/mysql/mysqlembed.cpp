@@ -1039,65 +1039,67 @@ struct MySQLOptionDefinition
 
 MySQLOptionDefinition options[] =
 {
-  addoption(MYSQL_DEFAULT_AUTH, ParamTypeString),
-#if (MYSQL_VERSION_ID >= 50607)
-  addoption(MYSQL_ENABLE_CLEARTEXT_PLUGIN, ParamTypeBool),
+    addoption(MYSQL_OPT_COMPRESS, ParamTypeNone),
+    addoption(MYSQL_OPT_CONNECT_TIMEOUT, ParamTypeUInt),
+    addoption(MYSQL_OPT_GUESS_CONNECTION, ParamTypeNone),
+    addoption(MYSQL_OPT_LOCAL_INFILE, ParamTypeUInt),
+    addoption(MYSQL_OPT_NAMED_PIPE, ParamTypeNone),
+    addoption(MYSQL_OPT_PROTOCOL, ParamTypeUInt),
+    addoption(MYSQL_OPT_READ_TIMEOUT, ParamTypeUInt),
+    addoption(MYSQL_OPT_RECONNECT, ParamTypeBool),
+    addoption(MYSQL_OPT_SSL_VERIFY_SERVER_CERT, ParamTypeBool),
+    addoption(MYSQL_OPT_USE_EMBEDDED_CONNECTION, ParamTypeNone),
+    addoption(MYSQL_OPT_USE_REMOTE_CONNECTION, ParamTypeNone),
+    addoption(MYSQL_OPT_USE_RESULT, ParamTypeNone),
+    addoption(MYSQL_OPT_WRITE_TIMEOUT, ParamTypeUInt),
+    addoption(MYSQL_READ_DEFAULT_FILE, ParamTypeString),
+    addoption(MYSQL_READ_DEFAULT_GROUP, ParamTypeString),
+    addoption(MYSQL_REPORT_DATA_TRUNCATION, ParamTypeBool),
+    addoption(MYSQL_SECURE_AUTH, ParamTypeBool),
+    addoption(MYSQL_SET_CHARSET_DIR, ParamTypeString),
+    addoption(MYSQL_SET_CHARSET_NAME, ParamTypeString),
+    addoption(MYSQL_SET_CLIENT_IP, ParamTypeString),
+    addoption(MYSQL_SHARED_MEMORY_BASE_NAME, ParamTypeString),
+#if MYSQL_VERSION_ID >= 50507
+    addoption(MYSQL_DEFAULT_AUTH, ParamTypeString),
+    addoption(MYSQL_PLUGIN_DIR, ParamTypeString),
 #endif
-  addoption(MYSQL_INIT_COMMAND, ParamTypeString),
 #if (MYSQL_VERSION_ID >= 50601)
-  addoption(MYSQL_OPT_BIND, ParamTypeString),
+    addoption(MYSQL_OPT_BIND, ParamTypeString),
 #endif
-#if (MYSQL_VERSION_ID >= 50610)
-  addoption(MYSQL_OPT_CAN_HANDLE_EXPIRED_PASSWORDS, ParamTypeBool),
-#endif
-  addoption(MYSQL_OPT_COMPRESS, ParamTypeNone),
-  addoption(MYSQL_OPT_CONNECT_TIMEOUT, ParamTypeUInt),
-  addoption(MYSQL_OPT_GUESS_CONNECTION, ParamTypeNone),
-  addoption(MYSQL_OPT_LOCAL_INFILE, ParamTypeUInt),
-  addoption(MYSQL_OPT_NAMED_PIPE, ParamTypeNone),
-#if (MYSQL_VERSION_ID >= 50709)
-  addoption(MYSQL_OPT_MAX_ALLOWED_PACKET, ParamTypeULong),
-  addoption(MYSQL_OPT_NET_BUFFER_LENGTH, ParamTypeULong),
-#endif
-  addoption(MYSQL_OPT_PROTOCOL, ParamTypeUInt),
-  addoption(MYSQL_OPT_READ_TIMEOUT, ParamTypeUInt),
-  addoption(MYSQL_OPT_RECONNECT, ParamTypeBool),
 #if (MYSQL_VERSION_ID >= 50603)
-  addoption(MYSQL_OPT_SSL_CA, ParamTypeString),
-  addoption(MYSQL_OPT_SSL_CAPATH, ParamTypeString),
-  addoption(MYSQL_OPT_SSL_CERT, ParamTypeString),
-  addoption(MYSQL_OPT_SSL_CIPHER, ParamTypeString),
-  addoption(MYSQL_OPT_SSL_CRL, ParamTypeString),
-  addoption(MYSQL_OPT_SSL_CRLPATH, ParamTypeString),
-  addoption(MYSQL_OPT_SSL_KEY, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CA, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CAPATH, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CERT, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CIPHER, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CRL, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CRLPATH, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_KEY, ParamTypeString),
+#endif
+#if (MYSQL_VERSION_ID >= 50606)
+    addoption(MYSQL_SERVER_PUBLIC_KEY, ParamTypeString),
+#endif
+#if (MYSQL_VERSION_ID >= 50527 && MYSQL_VERSION_ID < 50600) || MYSQL_VERSION_ID >= 50607
+    addoption(MYSQL_ENABLE_CLEARTEXT_PLUGIN, ParamTypeBool),
+#endif
+    addoption(MYSQL_INIT_COMMAND, ParamTypeString),
+#if (MYSQL_VERSION_ID >= 50610)
+    addoption(MYSQL_OPT_CAN_HANDLE_EXPIRED_PASSWORDS, ParamTypeBool),
 #endif
 #if (MYSQL_VERSION_ID >= 50703)
-  addoption(MYSQL_OPT_SSL_ENFORCE, ParamTypeBool),
+    addoption(MYSQL_OPT_SSL_ENFORCE, ParamTypeBool),
+#endif
+#if (MYSQL_VERSION_ID >= 50709)
+    addoption(MYSQL_OPT_MAX_ALLOWED_PACKET, ParamTypeULong),
+    addoption(MYSQL_OPT_NET_BUFFER_LENGTH, ParamTypeULong),
+#endif
+#if (MYSQL_VERSION_ID >= 50710)
+    addoption(MYSQL_OPT_TLS_VERSION, ParamTypeString),
 #endif
 #if (MYSQL_VERSION_ID >= 50711)
-  addoption(MYSQL_OPT_SSL_MODE, ParamTypeUInt),
+    addoption(MYSQL_OPT_SSL_MODE, ParamTypeUInt),
 #endif
-  addoption(MYSQL_OPT_SSL_VERIFY_SERVER_CERT, ParamTypeBool),
-#if (MYSQL_VERSION_ID >= 50710)
-  addoption(MYSQL_OPT_TLS_VERSION, ParamTypeString),
-#endif
-  addoption(MYSQL_OPT_USE_EMBEDDED_CONNECTION, ParamTypeNone),
-  addoption(MYSQL_OPT_USE_REMOTE_CONNECTION, ParamTypeNone),
-  addoption(MYSQL_OPT_USE_RESULT, ParamTypeNone),
-  addoption(MYSQL_OPT_WRITE_TIMEOUT, ParamTypeUInt),
-  addoption(MYSQL_PLUGIN_DIR, ParamTypeString),
-  addoption(MYSQL_READ_DEFAULT_FILE, ParamTypeString),
-  addoption(MYSQL_READ_DEFAULT_GROUP, ParamTypeString),
-  addoption(MYSQL_REPORT_DATA_TRUNCATION, ParamTypeBool),
-  addoption(MYSQL_SECURE_AUTH, ParamTypeBool),
-#if (MYSQL_VERSION_ID >= 50606)
-  addoption(MYSQL_SERVER_PUBLIC_KEY, ParamTypeString),
-#endif
-  addoption(MYSQL_SET_CHARSET_DIR, ParamTypeString),
-  addoption(MYSQL_SET_CHARSET_NAME, ParamTypeString),
-  addoption(MYSQL_SET_CLIENT_IP, ParamTypeString),
-  addoption(MYSQL_SHARED_MEMORY_BASE_NAME, ParamTypeString),
-  { nullptr, (enum mysql_option) 0, ParamTypeNone }
+    { nullptr, (enum mysql_option) 0, ParamTypeNone }
 };
 
 static MySQLOptionDefinition &lookupOption(const char *optName)
