@@ -97,7 +97,7 @@ public:
                     }
                     if (ok) {
                         qnames.append(qname);
-                        cnames.append(cna.item(i1));
+                        cnames.append(tna.item(i1));
                     }
                 }
             }

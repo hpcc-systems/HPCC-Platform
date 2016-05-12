@@ -1914,8 +1914,6 @@ class CLinuxAuthenticatedUser: public CInterface, implements IAuthenticatedUser
     gid_t gid;
     uid_t saveuid;
     gid_t savegid;
-    int saveegrplen;
-    gid_t *saveegrp;
 
 public:
     IMPLEMENT_IINTERFACE;

@@ -568,17 +568,6 @@ void setDaliServixSocketCaching(bool set)
     clientSetDaliServixSocketCaching(set);
 }
 
-void cacheFileConnect(IFile *file,unsigned timeout)
-{
-    RemoteFilename rfn;
-    rfn.setRemotePath(file->queryFilename());
-    if (!rfn.isLocal()&&!rfn.isNull()) {
-        SocketEndpoint ep = rfn.queryEndpoint();
-        if (ep.port)
-            clientCacheFileConnect(ep,timeout);
-    }
-}
-
 void disconnectRemoteFile(IFile *file)
 {
     clientDisconnectRemoteFile(file);

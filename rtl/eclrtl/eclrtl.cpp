@@ -3652,7 +3652,7 @@ unsigned rtlHash32VUnicode(UChar const * k, unsigned initval)
 unsigned rtlHashData( unsigned length, const void *_k, unsigned initval)
 {
    const unsigned char * k = (const unsigned char *)_k;
-   register unsigned a,b,c,len;
+   unsigned a,b,c,len;
 
    /* Set up the internal state */
    len = length;
@@ -3724,7 +3724,7 @@ unsigned rtlHashVUnicode(UChar const * k, unsigned initval)
 unsigned rtlHashDataNC( unsigned length, const void * _k, unsigned initval)
 {
    const unsigned char * k = (const unsigned char *)_k;
-   register unsigned a,b,c,len;
+   unsigned a,b,c,len;
 
    /* Set up the internal state */
    len = length;
