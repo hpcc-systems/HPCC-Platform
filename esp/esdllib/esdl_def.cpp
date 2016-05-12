@@ -1826,7 +1826,7 @@ public:
         return enumDef;
     }
 
-    bool loadXMLDefinitionFrombuffer(const StringBuffer & xmlDef, const char * path="", int indent = 0)
+    bool loadXMLDefinitionFrombuffer(const StringBuffer & xmlDef, const char * path="", int indent = 0, bool loadImports = true)
     {
         bool esxdlFound = false;
 
@@ -1857,7 +1857,14 @@ public:
                                 xpp->readStartTag(stag);
                                 //we're loading from buffer, no need to load includes from file
                                 if(!stricmp(stag.getLocalName(), "EsdlInclude"))
+                                {
+                                    if (loadImports)
+                                    {
+                                        const char *incname = stag.getValue("file");
+                                        loadfile(path, incname, indent+3);
+                                    }
                                     xpp->skipSubTree();
+                                }
                                 else if(!stricmp(stag.getLocalName(), "EsdlStruct"))
                                     loadStruct(xpp.get(), stag, EsdlTypeStruct);
                                 else if(!stricmp(stag.getLocalName(), "EsdlRequest"))
@@ -1959,7 +1966,7 @@ void EsdlDefinition::addDefinitionFromXML(const StringBuffer & xmlDef, const cha
         TimeSection ts("adding XML ESDL definition");
 
         EsdlDefLoader loader(this);
-        if (loader.loadXMLDefinitionFrombuffer(xmlDef))
+        if (loader.loadXMLDefinitionFrombuffer(xmlDef, "", 0, false))
             added.setValue(esdlDefId, true);
         else
             throw MakeStringException(-1, "Could not load XML ESDL def: %s", xmlDef.str());
