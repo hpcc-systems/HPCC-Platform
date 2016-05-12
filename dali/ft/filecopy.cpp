@@ -597,16 +597,15 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     decryptKey.set(options->queryProp(ANdecryptKey));
 
     fileUmask = -1;
-    if (options->hasProp(ANumask))
+    const char *umaskStr = options->queryProp(ANumask);
+    if (umaskStr)
     {
-        StringBuffer umaskStr;
-        options->getProp(ANumask, umaskStr);
-        char *eptr = '\0';
+        char *eptr = nullptr;
         errno = 0;
-        fileUmask = (int)strtol(umaskStr.str(), &eptr, 8);
+        fileUmask = (int)strtol(umaskStr, &eptr, 8);
         if (errno || *eptr != '\0')
         {
-            LOG(MCdebugInfo, job, "Invalid umask value <%s> ignored", umaskStr.str());
+            LOG(MCdebugInfo, job, "Invalid umask value <%s> ignored", umaskStr);
             fileUmask = -1;
         }
         else
