@@ -648,7 +648,11 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
 
     LOG(MCdebugProgress, unknownJob, "throttle(%d), transferBufferSize(%d)", throttleNicSpeed, transferBufferSize);
     PROGLOG("compressedInput(%d), compressedOutput(%d), copyCompressed(%d)", compressedInput?1:0, compressOutput?1:0, copyCompressed?1:0);
-    PROGLOG("encrypt(%d), decrypt(%d), umask(%d)", encryptKey.isEmpty()?0:1, decryptKey.isEmpty()?0:1, fileUmask);
+    PROGLOG("encrypt(%d), decrypt(%d)", encryptKey.isEmpty()?0:1, decryptKey.isEmpty()?0:1);
+    if (fileUmask != -1)
+        PROGLOG("umask(0%o)", fileUmask);
+    else
+        PROGLOG("umask(default)");
 
     //---Finished deserializing ---
     displayProgress(progress);
