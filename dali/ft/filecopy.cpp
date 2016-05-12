@@ -600,7 +600,7 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     const char *umaskStr = options->queryProp(ANumask);
     if (umaskStr)
     {
-        char *eptr = nullptr;
+        char *eptr = NULL;
         errno = 0;
         fileUmask = (int)strtol(umaskStr, &eptr, 8);
         if (errno || *eptr != '\0')
