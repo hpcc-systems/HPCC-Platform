@@ -78,7 +78,7 @@ EXPORT RedisServer(VARSTRING options, VARSTRING password = '', UNSIGNED4 timeout
   EXPORT GetUnsigned(VARSTRING key, INTEGER4 database = 0) := redis.GetUnsigned(key, options, database, password, timeout, cacheConnections);
   EXPORT     GetData(VARSTRING key, INTEGER4 database = 0) :=     redis.GetData(key, options, database, password, timeout, cacheConnections);
 
-  EXPORT INCRBY(VARSTRING key, INTEGER8 value = 1) := redis.INCRBY(key, value, options, database, password, timeout, cacheConnections);
+  EXPORT INCRBY(VARSTRING key, INTEGER8 value = 1, INTEGER4 database = 0) := redis.INCRBY(key, value, options, database, password, timeout, cacheConnections);
 
   EXPORT Exists(VARSTRING key, INTEGER4 database = 0) := redis.Exists(key, options, database, password, timeout, cacheConnections);
   EXPORT FlushDB(INTEGER4 database = 0) := redis.FlushDB(options, database, password, timeout, cacheConnections);
