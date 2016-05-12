@@ -210,6 +210,7 @@ void CResPermissionsCache::remove(SecResourceType rtype, const char* resourcenam
 
 CPermissionsCache::~CPermissionsCache()
 {
+    if (!m_secMgrClass.isEmpty())
     {
         CriticalBlock block(PCCritSect);
         g_mapCache.erase(m_secMgrClass.str());
