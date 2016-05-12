@@ -3807,7 +3807,8 @@ public:
         catch (IException *e)
         {
             EXCLOG(e, "CChunkingRowManager::allocate(memsize_t _size, unsigned activityId, unsigned maxSpillCost)");
-            doOomReport();
+            if (maxSpillCost == SpillAllCost)
+                doOomReport();
             throw;
         }
     }
@@ -3913,7 +3914,8 @@ public:
             catch (IException *e)
             {
                 EXCLOG(e, "CChunkingRowManager::resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback)");
-                doOomReport();
+                if (maxSpillCost == SpillAllCost)
+                    doOomReport();
                 throw;
             }
         }

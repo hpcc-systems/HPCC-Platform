@@ -36,6 +36,7 @@
 #include "eclrtl.hpp"
 #include "dafdesc.hpp"
 #include "dautils.hpp"
+#include "rmtfile.hpp"
 
 #include "pkgimpl.hpp"
 #include "roxiehelper.hpp"
@@ -2107,6 +2108,7 @@ private:
             {
                 dafilesrvLookupTimeout = control->getPropInt("@val", 10000);
                 topology->setPropInt("@dafilesrvLookupTimeout", dafilesrvLookupTimeout);
+                setRemoteFileTimeouts(dafilesrvLookupTimeout, 0);
             }
             else if (stricmp(queryName, "control:defaultConcatPreload")==0)
             {

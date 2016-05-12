@@ -819,6 +819,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         maxFilesOpen[false] = topology->getPropInt("@maxLocalFilesOpen", 4000);
         maxFilesOpen[true] = topology->getPropInt("@maxRemoteFilesOpen", 1000);
         dafilesrvLookupTimeout = topology->getPropInt("@dafilesrvLookupTimeout", 10000);
+        setRemoteFileTimeouts(dafilesrvLookupTimeout, 0);
         topology->getProp("@daliServers", fileNameServiceDali);
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);

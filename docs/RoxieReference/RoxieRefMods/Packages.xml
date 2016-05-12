@@ -303,16 +303,162 @@
   </sect1>
 
   <sect1>
-    <title>Working with Packages using the ecl command
-    line tool</title>
+    <title>Multi-Part Packagemaps</title>
+
+    <para>In version 6.0.0 or later, you can organize your packagemap file
+    mappings into a collection of files that define the files for some subset
+    of queries. These subsets are called parts and can be used to organize by
+    various groupings such as function, files, or developer, etc.</para>
+
+    <para>With a single part packagmap file like:</para>
+
+    <para><emphasis role="bold">master.pkg</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="my_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::person_superkey"&gt;
+       &lt;SubFile value="thor1::key::people::person_file_today"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="another_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::contact_superkey"&gt;
+      &lt;SubFile value="thor1::key::people::contacts"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="person_query" 2016HondaAccordLX-23041.xhtml preload="1"&gt;
+    &lt;Base id="my_base"/&gt;
+  &lt;/Package&gt;
+  &lt;Package id="contacts_query" preload="1"&gt;
+    &lt;Base id="another_base"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting><parameter>To add the packagmap to the target and activate
+    it, you would use:</parameter></para>
+
+    <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg –activate</programlisting></para>
+
+    <para>To update the mappings, you would edit the packagemap file (or a
+    copy) add and activate the new one, and then delete the old one.</para>
+
+    <para>Using <emphasis role="bold">parts</emphasis>, package management can
+    be performed in a more granular fashion. You can break the mappings up
+    into individual part files.</para>
+
+    <para><emphasis role="bold">contacts.pkg</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="contact_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::contacts_superkey"&gt;
+      &lt;SubFile value="thor1::key::people::contacts_file_today"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="contact_query" preload="1"&gt;
+    &lt;Base id="contact_base"/&gt;
+  &lt;/Package&gt;
+  &lt;Package id="contact_references_query" preload="1"&gt;
+    &lt;Base id="contact_base"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting></para>
+
+    <para><emphasis role="bold">persons.pkg</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="person_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::person_superkey"&gt;
+      &lt;SubFile value="thor1::key::people::person_file_today"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="person_query" preload="1"&gt;
+    &lt;Base id="person_base"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting></para>
+
+    <para>This allows you to add them separately:</para>
+
+    <programlisting>ecl packagemap add-part &lt;target&gt; target_pmid contacts.pkg
+ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
+</programlisting>
+
+    <para>And then activate the entire packagemap (which consists of all parts
+    added to the given target_pmid):</para>
+
+    <programlisting>ecl packagemap activate &lt;target&gt; target_pmid</programlisting>
+
+    <para>You can then change individual parts, and update them in the
+    packagemap:</para>
+
+    <programlisting>ecl packagemap add-part &lt;target&gt; &lt;target_pmid&gt; persons.pkg --delete-previous</programlisting>
+
+    <para>Notice that target_pmid is the identifier for the collection of all
+    the packagmap parts. That identifier can be used to activate or delete the
+    entire collection (packagemap).</para>
+
+    <para>You can use "get-part" to see what the named part looks like in Dali
+    for the given identifier:</para>
+
+    <programlisting>ecl packagemap get-part &lt;target&gt; &lt;packagemap&gt; contents.pkg</programlisting>
+
+    <para>You could potentially retrieve the part that way, edit it, and
+    replace it as shown above. You can use <emphasis
+    role="bold">remove-part</emphasis> to remove a part explicitly from a
+    packagemap.</para>
+
+    <para>You can still treat the entire packagemap as a single file, although
+    its organization has changed a bit to reflect its parts:</para>
+
+    <para><emphasis role="bold">multipart.pkg</emphasis></para>
+
+    <para><programlisting>&lt;PackageMaps multipart="1"&gt;
+  &lt;Part id="contacts.pkg"&gt;
+    &lt;Package id="contact_base" preload="1"&gt;
+      &lt;SuperFile id="thor1::people::key::contacts_superkey"&gt;
+        &lt;SubFile value="thor1::key::people::contacts_file_today"/&gt;
+      &lt;/SuperFile&gt;
+    &lt;/Package&gt;
+    &lt;Package id="contact_query" preload="1"&gt;
+      &lt;Base id="contact_base"/&gt;
+    &lt;/Package&gt;
+    &lt;Package id="contact_references_query" preload="1"&gt;
+      &lt;Base id="contact_base"/&gt;
+    &lt;/Package&gt;
+  &lt;/Part&gt;
+  &lt;Part id="persons.pkg"&gt;
+    &lt;Package id="person_base" preload="1"&gt;
+      &lt;SuperFile id="thor1::people::key::person_superkey"&gt;
+        &lt;SubFile value="thor1::key::people::person_file_today"/&gt;
+      &lt;/SuperFile&gt;
+    &lt;/Package&gt;
+    &lt;Package id="person_query" preload="1"&gt;
+      &lt;Base id="person_base"/&gt;
+    &lt;/Package&gt;
+  &lt;/Part&gt;
+&lt;/PackageMaps&gt;
+</programlisting></para>
+
+    <para>Notice how the content is now divided into &lt;Part/&gt; parts. But
+    you can still use</para>
+
+    <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg</programlisting>on
+    that multipart packagemap and then continue by managing its individual
+    parts. In this case:</para>
+
+    <programlisting>ecl packagemap add &lt;target&gt; multipart.pkg
+ecl packagemap add-part &lt;target&gt; multipart.pkg addresses.pkg 
+ecl packagemap activate &lt;target&gt; multipart.pkg
+</programlisting>
+
+    <para>This would be useful, for example, when copying an entire packagemap
+    from one target to another.</para>
+  </sect1>
+
+  <sect1>
+    <title>Working with Packages using the ecl command line tool</title>
 
     <para>This section contains details about the actions and options used to
     work with packages. The ECL command line tool is fully documented in the
     Client Tools Manual.</para>
-
-    <para></para>
-
-    <para></para>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackageadd"
@@ -336,6 +482,18 @@
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackageinfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackagemapaddpart"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackagemapgetpart"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackagemapremovepart"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"

@@ -51,7 +51,6 @@ extern REMOTE_API IDaFileSrvHook *queryDaFileSrvHook();
 extern REMOTE_API unsigned short getDaliServixPort();  // assumed just the one for now
 extern REMOTE_API void setCanAccessDirectly(RemoteFilename & file,bool set);
 extern REMOTE_API void setDaliServixSocketCaching(bool set);
-extern REMOTE_API void cacheFileConnect(IFile *file,unsigned timeout);
 extern REMOTE_API bool canAccessDirectly(const RemoteFilename & file);
 extern REMOTE_API IFile *createDaliServixFile(const RemoteFilename & file);
 extern REMOTE_API bool testDaliServixPresent(const IpAddress &ip);
