@@ -76,7 +76,7 @@ public:
     {
          printf(
                 "   -s, --server <ip>            IP of server running WsESDLConfig service\n"
-                "   --port <port>                ESDL services port\n"
+                "   --port <port>                WsESDLConfig service port\n"
                 "   -u, --username <name>        Username for accessing WsESDLConfig service\n"
                 "   -pw, --password <pw>         Password for accessing WsESDLConfig service\n"
                 "   --version <ver>              ESDL service version\n"
