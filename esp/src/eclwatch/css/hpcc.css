@@ -1148,3 +1148,9 @@ margin-left:-20px;
     overflow: hidden;
     width: 80px;
 }
+
+.dojoxUploaderFileListHeader th {
+    background-color:#eee;
+    padding:3px;
+    text-align: left;
+}
